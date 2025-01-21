@@ -1,11 +1,39 @@
 <template>
     <div>
         <v-card elevation="10">
-            <v-card-title>Instance - {{ instanceId }} 
+            <v-row class="ma-0 pa-4">
+                <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-btn v-bind="props"
+                            @click="$router.push('/admin')"
+                            icon variant="text"
+                            type="file"
+                            class="text-medium-emphasis mr-3" 
+                            density="comfortable" 
+                            size="28"
+                        >
+                            <v-icon left>mdi-arrow-left</v-icon>
+                        </v-btn>
+                    </template>
+                    <span>{{ $t('adminDetail.goBack') }}</span>
+                </v-tooltip>
+                <v-card-title class="ma-0 pa-0">Instance - {{ instanceId }}</v-card-title>
                 <div v-for="event in eventList" :key="event">
-                    <v-btn @click="$try({context: this, action: () => fireMessage(event.tracingTag), successMsg: `${event.name} 실행 완료`})"> {{ event.name ? event.name : event.tracingTag }} 보내기 </v-btn>
+                    <v-btn 
+                        @click="$try({
+                            context: this, 
+                            action: () => fireMessage(event.tracingTag), 
+                            successMsg: `${event.name} ${this.$t('adminDetail.success')}`
+                        })"
+                        color="primary"
+                        rounded
+                        style="font-size:12px;"
+                        density="comfortable"
+                        class="ml-3"
+                    > {{ event.name ? event.name : event.tracingTag }} {{ $t('adminDetail.send') }} 
+                    </v-btn>
                 </div>
-            </v-card-title>
+            </v-row>
             <v-row class="ma-0 pa-0 pb-2">
                 <v-col class="ma-0 pa-0" 
                     cols="12"
@@ -26,14 +54,14 @@
                         :currentActivities="currentActivities"
                         :executionScopeActivities="executionScopeActivities"
                         :selectedExecutionScope="selectedExecutionScope"
-                        :task-status="taskStatus"
+                        :taskStatus="taskStatus"
                         v-on:selectedExecutionScope="(scope) => (selectedExecutionScope = scope)"
                         v-on:openDefinition="(ele) => openSubProcess(ele)"
                         v-on:openPanel="(id) => openPanel(id)"
-                        v-on:rollback="(id) => rollback(id)"
+                        v-on:rollback="(id) => showRollbackDialog(true, id)"
                         style="height: 100%"
                     ></BpmnUengine>
-                    <div v-else>{{ $t('adminDetail.noProcessDefinition') }}</div>
+                    <div v-else class="pa-6">{{ $t('adminDetail.noProcessDefinition') }}</div>
                 </v-col>
                 <v-col class="ma-0 pa-4 pt-0" 
                     cols="12"
@@ -66,7 +94,7 @@
                                         dense
                                         hide-details="true"
                                     ></v-text-field>
-                                    <span v-else style="white-space: pre-wrap;">{{ item.value }}</span>
+                                    <span v-else style="white-space: pre-wrap;">{{ formatJsonValue(item.value) }}</span>
                                 </template>
                                 <template v-slot:[`item.save`]="{ item }">
                                     <v-tooltip v-if="item.editMode" :text="$t('adminDetail.save')">
@@ -140,6 +168,31 @@
                             </v-data-table>
                         </v-window-item>
                     </v-window>
+
+                    <v-dialog v-model="rollbackDialog"
+                        width="500"
+                        style="z-index: 9999;"
+                        :key="rollbackElement"
+                    >
+                        <v-card class="pa-4">
+                            <v-row class="ma-0 pa-0">
+                                <v-card-title class="ma-0 pa-0">{{ $t('adminDetail.rollback') }}</v-card-title>
+                                <v-spacer></v-spacer>
+                                <v-btn @click="showRollbackDialog(false, null)" icon variant="text" density="comfortable"
+                                    style="margin-top:-8px;"
+                                >
+                                    <Icons :icon="'close'" :size="16" />
+                                </v-btn>
+                            </v-row>
+                            <v-card-text class="pa-0 pt-4 pb-4">
+                                <div>"{{ rollbackElementName }}"{{ $t('adminDetail.rollbackMessage') }}</div>
+                            </v-card-text>
+                            <v-row class="pa-0 ma-0">
+                                <v-spacer></v-spacer>
+                                <v-btn color="primary" rounded @click="rollback(rollbackElement)">{{ $t('adminDetail.start') }}</v-btn>
+                            </v-row>
+                        </v-card>
+                    </v-dialog>
                 </v-col>
             </v-row>
         </v-card>
@@ -149,7 +202,7 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
-import BpmnUengine from '@/components/BpmnUengine.vue';
+import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import customBpmnModule from '@/components/customBpmn';
 import { VDataTable } from 'vuetify/components/VDataTable';
 export default {
@@ -169,16 +222,15 @@ export default {
         loaded: false,
         eventList: [],
         options: {
-            propertiesPanel: {
-                invalidationList: {}
-            },
             additionalModules: [customBpmnModule]
         },
         roles: [],
         currentActivities: [],
         activityVariables: {},
         selectedExecutionScope: null,
-        taskStatus:{}
+        taskStatus:{},
+        rollbackDialog: false,
+        rollbackElement: null
     }),
     async created() {
         await this.init();
@@ -203,7 +255,14 @@ export default {
             },
         ];
     },
-    computed: {},
+    computed: {
+        rollbackElementName(){
+            if(this.rollbackElement){
+                return this.rollbackElement.businessObject ? this.rollbackElement.businessObject.name : '';
+            }
+            return null;
+        }
+    },
     watch: {
         processDefinition() {
         },
@@ -216,20 +275,27 @@ export default {
         }
     },
     methods: {
+        formatJsonValue(value) {
+            try {
+                const parsed = JSON.parse(value);
+                return JSON.stringify(parsed, null, 4); // 들여쓰기 4칸으로 포맷
+            } catch (e) {
+                alert('AdminDetail formatJsonValue methods error' + e.message);
+                return value; // JSON 파싱 실패 시 원래 값 반환
+            }
+        },
         async init() {  
             let me = this;
             let startTime = performance.now();
             this.loaded = false;
             this.instanceId = this.$route.params.id;
-            this.eventList = await backend.getEventList(this.instanceId);
-            await this.getInstanceDetail();
-            await this.getProcessDefinition();
-            me.$try({
-                action: async () => {
-                    me.taskStatus = await backend.getActivitiesStatus(this.instanceId);
-                }
-            });
-            await this.getProcessVariables();
+            if(this.instanceId) {
+                this.eventList = await backend.getEventList(this.instanceId);
+                me.taskStatus = await backend.getActivitiesStatus(this.instanceId);
+                await this.getInstanceDetail();
+                await this.getProcessDefinition();
+                await this.getProcessVariables();
+            }
             let endTime = performance.now();
             console.log(`Result Time :  ${endTime - startTime} ms`);
             // this.getCurrentActivities();
@@ -293,6 +359,10 @@ export default {
         //         }
         //     }
         // },
+        showRollbackDialog(isOpen, ele){
+            this.rollbackDialog = isOpen
+            this.rollbackElement = ele;
+        },
         async rollback(ele) {
             let me = this;
             console.log(ele);
@@ -307,7 +377,7 @@ export default {
                 .backToHere(this.instanceId, id)
                 .then((response) => {
                     me.init();
-                    alert('rollback success');
+                    me.showRollbackDialog(false, null);
                 })
                 .catch((error) => {
                     alert(error);
@@ -379,8 +449,8 @@ export default {
                     // if(validateText != me.selectedExecutionScope) {
                     //     continue;
                     // }
-                } else if (key.includes('_status')) {
-                    if (variables[key] == 'Completed' || variables[key] == 'Running') {
+                } else if (key.includes('_status') && !key.includes('Flow_')) {
+                    if (variables[key] != 'Running' && variables[key] != 'Cancelled' && variables[key] != 'Ready') {
                         if (count == 3) {
                             let executionScope = key.split(':')[1];
                             if(me.selectedExecutionScope) { 

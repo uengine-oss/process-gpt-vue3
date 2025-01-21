@@ -53,13 +53,11 @@
                     <BpmnuEngine
                         v-else
                         ref="bpmnVue"
-                        :key="bpmnKey"
                         :bpmn="bpmn"
                         :options="options"
                         :isViewMode="isViewMode"
                         :isPreviewMode="isPreviewMode"
                         :currentActivities="currentActivities"
-                        :taskStatus="taskStatus"
                         :generateFormTask="generateFormTask"
                         v-on:error="handleError"
                         v-on:shown="handleShown"
@@ -70,7 +68,7 @@
                         v-on:definition="(def) => (definitions = def)"
                         v-on:add-shape="onAddShape"
                         v-on:done="setDefinition"
-                        @change="changeElement"
+                        @changeElement="changeElement"
                         style="height: 100%"
                     ></BpmnuEngine>
                     
@@ -83,7 +81,30 @@
                         v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
-            <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
+            <div v-if="panel && !isViewMode " style="position: fixed; z-index: 999; right: 0; height: 100%">
+                <v-card elevation="1">
+                    <bpmn-property-panel
+                        :element="element"
+                        @close="closePanel"
+                        :roles="roles"
+                        :process-variables="processVariables"
+                        :key="element.id"
+                        :isViewMode="isViewMode"
+                        v-on:updateElement="(val) => updateElement(val)"
+                        :definition="thisDefinition"
+                        :processDefinitionId="definitionPath"
+                        :processDefinition="processDefinition"
+                        :validationList="validationList"
+                        :isPreviewMode="isPreviewMode"
+                        v-on:change-sequence="onChangeSequence"
+                        v-on:remove-shape="onRemoveShape"
+                        v-on:change-shape="onChangeShape"
+                        @addUengineVariable="addUengineVariable"
+                    ></bpmn-property-panel>
+                    <!-- {{ definition }} -->
+                </v-card>
+            </div>
+            <div v-else-if="panel && isPal && isViewMode" style="position: fixed; z-index: 999; right: 0; top:123px; height: 100%">
                 <v-card elevation="1">
                     <bpmn-property-panel
                         :element="element"
@@ -244,6 +265,7 @@ import customBpmnModule from './customBpmn';
 import customPaletteModule from './customPalette';
 import customContextPadModule from './customContextPad';
 import customReplaceElement from './customReplaceElement';
+import customPopupMenu from './customPopupMenu';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 // import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
@@ -281,7 +303,6 @@ export default {
         definitionChat: Object,
         definitionPath: String,
         isXmlMode: Boolean,
-        validationList: Object,
         isAdmin: Boolean,
         generateFormTask: Object,
     },
@@ -317,13 +338,13 @@ export default {
             { title: 'processDefinition.actions', key: 'actions' }
         ],
         taskStatus: null,
-        bpmnKey: 0,
 
         // preview
         isPreviewMode: false,
         currentStepIndex: 0,
         stepIds: [],
         currentActivities: [],
+        validationList: {},
         // definitionPath: null
     }),
     computed: {
@@ -333,6 +354,9 @@ export default {
             } else {
                 return window.$mode;
             }
+        },
+        isPal() {
+            return window.$pal;
         },
         thisDefinition() {
             return {
@@ -357,10 +381,7 @@ export default {
         },
         options() {
             let result = {
-                propertiesPanel: {
-                    invalidationList: this.validationList
-                },
-                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule, customContextPadModule, customReplaceElement]
+                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule, customContextPadModule, customReplaceElement, customPopupMenu]
             };
             return result;
         }
@@ -404,15 +425,12 @@ export default {
                 this.$emit('valueToStr', str);
             }
         },
-        validationList: {
-            handler(newVal) {
-                this.options.propertiesPanel.invalidationList = newVal;
-            }
-        },
         panel: {
             handler() {
                 let me = this;
                 me.roles = [];
+                const store = useBpmnStore();
+                this.bpmnModeler = store.getModeler;
 
                 let def = this.bpmnModeler.getDefinitions();
                 const processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
@@ -486,17 +504,6 @@ export default {
             this.copyProcessDefinition = value;
         });
 
-
-        
-        me.$try({
-            action: async () => {
-                if(me.$route.params && me.$route.params.instId) {
-                    const instId =  window.$mode == 'ProcessGPT' ? atob(me.$route.params.instId) : me.$route.params.instId;
-                    me.taskStatus = await backend.getActivitiesStatus(instId);
-                    me.bpmnKey++;
-                }
-            }
-        });
         // const def = this.bpmnModeler.getDefinitions();
         // console.log(this.definitions)
         // LLM과 uEngine 각각 처리 필요.
@@ -507,7 +514,6 @@ export default {
             this.closePanel();
             this.isPreviewMode = true
             this.currentActivities = [this.stepIds[this.currentStepIndex]];
-            this.bpmnKey++;
             this.openPanel(this.stepIds[this.currentStepIndex]);
         },
         prevStep() {
@@ -575,6 +581,9 @@ export default {
                     variable.$parent = uengineProperties;
                 }
             });
+            if (this.mode == 'uEngine') {
+                this.$emit('onLoaded');
+            }
         },
 
         updateInstanceNamePattern(val) {
@@ -605,8 +614,15 @@ export default {
             processJson.instanceNamePattern = val;
             uengineProperties.json = JSON.stringify(processJson);
         },
-        changeElement() {
-            this.$emit('change');
+        async changeElement() {
+            let me = this;
+            me.$nextTick(async () => {
+                const store = useBpmnStore();
+                let modeler = store.getModeler;
+                let xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                me.validationList = await backend.validate(xmlObj.xml);
+                this.$emit('changeElement', xmlObj.xml);
+            });
         },
         changeBpmn(newVal) {
             this.$emit('changeBpmn', newVal);
@@ -621,7 +637,6 @@ export default {
             if (this.stepIds.length > 0) {
                 this.isPreviewMode = true
                 this.currentActivities = [this.stepIds[this.currentStepIndex]];
-                this.bpmnKey++;
                 this.openPanel(this.stepIds[0]);
             }
         },
@@ -644,7 +659,7 @@ export default {
                     me.EventBus.emit('instances-updated');
                     
                 },
-                successMsg: 'Process 실행 완료'
+                successMsg: this.$t('successMsg.processExecutionCompleted')
             });
         },
         addUengineVariable(val) {
@@ -843,9 +858,10 @@ export default {
             if (val.type == 'Form') {
                 let defaultValue = {
                     _type: 'org.uengine.contexts.HtmlFormContext',
-                    formDefId: val.defaultValue.id,
-                    filePath: val.defaultValue.path
+                    formDefId: val.defaultValue.id ? val.defaultValue.id : `${val.defaultValue}`,
+                    filePath: val.defaultValue.path ? val.defaultValue.path : `${val.defaultValue}.form`
                 };
+                
                 val.defaultValue = defaultValue;
             }
 
@@ -895,13 +911,18 @@ export default {
             }
         },
         closePanel() {
+            let me = this;
             this.element = null;
             this.panel = false;
             this.isPreviewMode = false;
             this.currentActivities = [];
-            // Todo: 재형씨 확인
-            // this.bpmnKey++;
-            this.$emit('change');
+            me.$nextTick(async () => {
+                const store = useBpmnStore();
+                let modeler = store.getModeler;
+                let xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                me.validationList = await backend.validate(xmlObj.xml);
+                this.$emit('changeElement', xmlObj.xml);
+            });
         },
         handleError() {
             console.error('failed to show diagram', err);

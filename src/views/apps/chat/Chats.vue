@@ -106,81 +106,96 @@
                 </div>
             </template>
         </AppBaseCard>
-        <v-dialog style="max-width: 1000px;" v-model="openWorkOrderDialog" persistent>
-            <v-card style="height: 800px;" v-if="!isMobile && assistantRes" class="description-card">
-                <v-card-title style="margin-bottom: -20px;"><h3>Title:</h3></v-card-title>
-                <v-card-text>
-                    <v-textarea rows="1" v-model="assistantRes.title" auto-grow></v-textarea>
-                </v-card-text>
-                <v-card-title style="margin-bottom: -20px;"><h3>Specific:</h3></v-card-title>
-                <v-card-text>
-                    <v-textarea rows="1" v-model="assistantRes.specific" auto-grow></v-textarea>
-                </v-card-text>
-                <v-card-title style="margin-bottom: -20px;"><h3>Measurable:</h3></v-card-title>
-                <v-card-text>
-                    <v-textarea rows="1" v-model="assistantRes.measurable" auto-grow></v-textarea>
-                </v-card-text>
-                <v-card-title style="margin-bottom: -20px;"><h3>Attainable:</h3></v-card-title>
-                <v-card-text>
-                    <v-textarea rows="1" v-model="assistantRes.attainable" auto-grow></v-textarea>
-                </v-card-text>
-                <v-card-title style="margin-bottom: -20px;"><h3>Relevant:</h3></v-card-title>
-                <v-card-text>
-                    <v-textarea rows="1" v-model="assistantRes.relevant" auto-grow></v-textarea>
-                </v-card-text>
-                <v-card-title style="margin-bottom: -20px;"><h3>Time-bound:</h3></v-card-title>
-                <v-card-text>
-                    <v-col style="max-width: 100%;" cols="12" sm="6" md="4">
-                        <v-menu
-                            v-model="timeBoundMenu"
-                            :close-on-content-click="false"
-                            :nudge-right="40"
-                            transition="scale-transition"
-                            offset-y
-                            min-width="auto"
-                        >
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-text-field
-                                    v-model="assistantRes.time_bound"
-                                    prepend-icon="mdi-calendar"
-                                    v-bind="attrs"
-                                    v-on="on"
-                                ></v-text-field>
-                            </template>
-                            <v-date-picker
-                                v-model="assistantRes.time_bound"
-                                @input="timeBoundMenu = false"
-                            ></v-date-picker>
-                        </v-menu>
-                    </v-col>
-                </v-card-text>
-                <v-card-title style="margin-bottom: -20px;"><h3>Descriptions:</h3></v-card-title>
-                <v-card-text>
-                    <div v-for="(desc, index) in assistantRes.descriptions" :key="index">
-                        <h4>{{ desc.word }}:</h4>{{ desc.description }}
-                    </div>
-                </v-card-text>
-                <v-card-title style="margin-bottom: -20px;"><h3>CheckList:</h3></v-card-title>
-                <v-card-text>
-                    <v-checkbox
-                        v-for="(check, index) in assistantRes.checkPoints"
-                        :key="index"
-                        :label="check"
-                        readonly
-                        v-model="checked"
-                        class="mb-2"
-                    ></v-checkbox>
-                </v-card-text>
-                <v-btn @click="workOrder" color="primary">업무 지시하기</v-btn>
-            </v-card>
-            <v-card :style="!isMobile && assistantRes ? 'position: absolute; left: 30%; margin-top: -500px;':''">
-                <v-card-title style="height: 55px; background-color: rgb(227, 240, 250); align-content: center;">
-                    <v-icon small style="margin-right: 10px;">mdi-file-document</v-icon>
-                    업무 지시
-                    <v-icon @click="closeWorkOrderDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
-                </v-card-title>
-                <AssistantChats @genFinished="genFinished" @clickedWorkOrder="workOrder"/>
-            </v-card>
+        <v-dialog v-model="openWorkOrderDialog" persistent>
+            <v-row class="ma-0 pa-0">
+                <v-col  v-if="!isMobile && assistantRes" class="pa-0 mr-2"
+                    cols="4"
+                >
+                    <v-card>
+                        <div class="description-card">
+                            <v-card-title><h3>Title:</h3></v-card-title>
+                            <v-card-text class="pa-0 pl-4 pr-4">
+                                <v-textarea rows="1" v-model="assistantRes.title" auto-grow></v-textarea>
+                            </v-card-text>
+                            <v-card-title><h3>Specific:</h3></v-card-title>
+                            <v-card-text class="pa-0 pl-4 pr-4">
+                                <v-textarea rows="1" v-model="assistantRes.specific" auto-grow></v-textarea>
+                            </v-card-text>
+                            <v-card-title><h3>Measurable:</h3></v-card-title>
+                            <v-card-text class="pa-0 pl-4 pr-4">
+                                <v-textarea rows="1" v-model="assistantRes.measurable" auto-grow></v-textarea>
+                            </v-card-text>
+                            <v-card-title><h3>Attainable:</h3></v-card-title>
+                            <v-card-text class="pa-0 pl-4 pr-4">
+                                <v-textarea rows="1" v-model="assistantRes.attainable" auto-grow></v-textarea>
+                            </v-card-text>
+                            <v-card-title><h3>Relevant:</h3></v-card-title>
+                            <v-card-text class="pa-0 pl-4 pr-4">
+                                <v-textarea rows="1" v-model="assistantRes.relevant" auto-grow></v-textarea>
+                            </v-card-text>
+                            <v-card-title><h3>Time-bound:</h3></v-card-title>
+                            <v-card-text  class="pa-0 pl-4 pr-4">
+                                <v-col class="pa-0" style="max-width: 100%;" cols="12" sm="6" md="4">
+                                    <v-menu
+                                        v-model="timeBoundMenu"
+                                        :close-on-content-click="false"
+                                        :nudge-right="40"
+                                        transition="scale-transition"
+                                        offset-y
+                                        min-width="auto"
+                                    >
+                                        <template v-slot:activator="{ on, attrs }">
+                                            <v-text-field
+                                                v-model="assistantRes.time_bound"
+                                                prepend-icon="mdi-calendar"
+                                                v-bind="attrs"
+                                                v-on="on"
+                                            ></v-text-field>
+                                        </template>
+                                        <v-date-picker
+                                            v-model="assistantRes.time_bound"
+                                            @input="timeBoundMenu = false"
+                                        ></v-date-picker>
+                                    </v-menu>
+                                </v-col>
+                            </v-card-text>
+                            <v-card-title><h3>Descriptions:</h3></v-card-title>
+                            <v-card-text class="pa-0 pl-4 pr-4 mb-4">
+                                <div v-for="(desc, index) in assistantRes.descriptions" :key="index">
+                                    <h4>{{ desc.word }}:</h4>{{ desc.description }}
+                                </div>
+                            </v-card-text>
+                            <v-card-title><h3>CheckList:</h3></v-card-title>
+                            <v-card-text class="pa-0 pl-2 pr-2">
+                                <v-checkbox
+                                    v-for="(check, index) in assistantRes.checkPoints"
+                                    :key="index"
+                                    :label="check"
+                                    readonly
+                                    v-model="checked"
+                                    class="delete-input-details"
+                                ></v-checkbox>
+                            </v-card-text>
+                        </div>
+                        <v-row class="pa-0">
+                            <v-col cols="12" class="pa-6">
+                                <v-btn block @click="workOrder" rounded color="primary">{{ $t('chats.assignTask') }}</v-btn>
+                            </v-col>
+                        </v-row>
+                    </v-card>
+                </v-col>
+                <v-col class="pa-0">
+                    <v-card>
+                    <!-- <v-card> -->
+                        <v-card-title style="height: 55px; background-color: rgb(var(--v-theme-primary), 0.15) !important; align-content: center;">
+                            <v-icon small style="margin-right: 10px;">mdi-file-document</v-icon>
+                            {{ $t('chats.document') }}
+                            <v-icon @click="closeWorkOrderDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
+                        </v-card-title>
+                        <AssistantChats @genFinished="genFinished" @clickedWorkOrder="workOrder"/>
+                    </v-card>
+                </v-col>
+            </v-row>
         </v-dialog>
     </v-card>
 </template>
@@ -226,7 +241,6 @@ export default {
         path: "chats",
         organizationChart: [],
         calendarData: null,
-        currentChatRoom: null,
         userList: [],
         chatRenderKey: 0,
         generatedWorkList: [],
@@ -519,46 +533,29 @@ export default {
                 this.sendMessage(newMessage);
             }
         },
-
-        async beforeExecuteProcess(newMessage) {
+        async executeProcess(input) {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    var url = '/process-search/invoke'
-                    var req = {
-                        input: {
-                            answer: newMessage.text || '',
-                            image: newMessage.image || ''
-                        }
-                    }
-                    let response = await axios.post(url, req);
-                    const output = JSON.parse(response.data.output)
-                    if (output && output.processDefinitionList) {
-                        const processDefinition = output.processDefinitionList.pop();
-                        me.executeProcess(processDefinition.id);
+                    const response = await me.backend.start(input);
+                    console.log(response);
+                    if (response) {
+                        me.EventBus.emit('instances-updated');
+                    } else {
+                        const systemMsg = this.$t('chats.processExecutionFailed', { title: input.process_name });
+                        me.putMessage(me.createMessageObj(systemMsg, 'system'));
                     }
                 }
             })
         },
-        async executeProcess(processDefinitionId) {
-            var me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    await me.backend.start({processDefinitionId: processDefinitionId});
-                    me.EventBus.emit('instances-updated');
-                }
-            })
-        },
-
         afterModelCreated(response) {
         },
         deleteSystemMessage(response){
             this.storage.delete(`chats/${response.uuid}`, {key: 'uuid'});
         },
         cancelProcess(response){
-            let systemMsg = `${this.userInfo.name}님의 요청이 취소되었습니다.`
+            let systemMsg = this.$t('chats.requestCancelled', { name: this.name })
             this.putMessage(this.createMessageObj(systemMsg, 'system'))
             this.deleteSystemMessage(response)
         },
@@ -584,11 +581,19 @@ export default {
                         const userMsgs = this.messages.filter(msg => msg.role === 'user');
                         this.lastSendMessage = userMsgs[userMsgs.length - 1];
                     }
-                    systemMsg = `"${responseObj.title}" 프로세스를 시작하겠습니다.`
-                    this.beforeExecuteProcess({ text: responseObj.title, image: this.lastSendMessage.image });
+                    systemMsg = this.$t('chats.startProcess', { title: responseObj.title });
+                    const input = {
+                        process_name: responseObj.title,
+                        process_definition_id: responseObj.process_definition_id,
+                        answer: {
+                            text: responseObj.prompt,
+                            image: this.lastSendMessage.image
+                        }
+                    };
+                    await this.executeProcess(input);
 
                 } else if(responseObj.work == 'TodoListRegistration'){
-                    systemMsg = `"${responseObj.activity_id}" 할 일이 추가되었습니다.`
+                    systemMsg = this.$t('chats.todoAdded', { activityId: responseObj.activity_id })
 
                     if(!responseObj.participants){
                         responseObj.participants = []
@@ -611,7 +616,7 @@ export default {
                     })
 
                 } else if(responseObj.work == 'ScheduleRegistration'){
-                    systemMsg = `"${responseObj.title}" 일정이 추가되었습니다.`
+                    systemMsg = this.$t('chats.scheduleAdded', { title: responseObj.title })
                     let start = responseObj.startDateTime.split('/')
                     let startDate = start[0].split("-")
                     let end = responseObj.endDateTime.split('/')
@@ -661,16 +666,16 @@ export default {
                         me.putObject(`calendar/${participant}`, calendarObj);
                     });
                 } else if(responseObj.work == 'CreateProcessDefinition'){
-                    systemMsg = `프로세스 정의가 생성되었습니다.`
+                    systemMsg = this.$t('chats.processDefinitionCreated')
                     me.$store.dispatch('updateMessages', me.messages);
                     me.$router.push('/definitions/chat');
                 } else if(responseObj.work == 'ModifyProcessDefinition'){
-                    systemMsg = `프로세스 정의 수정이 시작되었습니다.`
+                    systemMsg = this.$t('chats.processDefinitionModificationStarted')
                     me.$store.dispatch('updateEditMessages', me.messages)
                     me.$router.push(`/definitions/${responseObj.processId}`);
                 }
 
-                systemMsg = `${me.userInfo.name}님이 요청하신 ${systemMsg}`
+                systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
                 me.putMessage(me.createMessageObj(systemMsg, 'system'))
                 if(response.content){
                     me.deleteSystemMessage(response)
@@ -747,9 +752,7 @@ export default {
 
 <style scoped>
 .description-card {
-    position: absolute;
-    left: -34%;
-    max-width: 600px;
-    margin-top: -500px;
+    height:81.6vh;
+    overflow: auto;
 }
 </style>

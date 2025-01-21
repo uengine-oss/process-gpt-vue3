@@ -79,6 +79,7 @@ export default class WorkAssistantGenerator extends AIGenerator {
     "work": "StartProcessInstance",
     "title": "프로세스명",
     "content": "프로세스명 + 프로세스 실행",
+    "process_definition_id": "시작할 프로세스 ID", // 전체 프로세스 정보에서 존재하는 id 값으로 생성되어야함.
     "messageForUser": "프로세스명 + 프로세스 실행", // 프로세스에 대한 요약 정보등을 포함하여 시작하고자 하는 프로세스와 다른 프로세스가 구분될 수 있도록 생성해야함.
     "prompt": "유저 요청 내용"
 }

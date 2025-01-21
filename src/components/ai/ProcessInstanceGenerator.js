@@ -38,7 +38,17 @@ export default class ProcessInstanceGenerator extends AIGenerator {
     }
 
     async generate() {
-        const data = await backend.start(this.input);
+        let data;
+        const taskId = this.client.$route.params.taskId;
+        if (taskId) {
+            const input = {
+                answer: this.input.answer,
+                image: this.input.image
+            }
+            data = await backend.putWorkItemComplete(taskId, input);
+        } else {
+            data = await backend.start(this.input);
+        }
         this.client.onGenerationFinished(data);
     }
 

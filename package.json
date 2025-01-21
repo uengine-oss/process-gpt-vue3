@@ -80,6 +80,7 @@
         "lodash": "^4.17.21",
         "maska": "^1.5.0",
         "mitt": "^3.0.1",
+        "monaco-editor": "0.52.0",
         "partial-json-parser": "^1.2.2",
         "pinia": "2.0.11",
         "prismjs": "^1.29.0",
@@ -120,7 +121,9 @@
         "webfontloader": "^1.6.28",
         "xml2js": "^0.6.2",
         "yamljs": "^0.3.0",
-        "yup": "^0.32.11"
+        "yup": "^0.32.11",
+        "@vue-js-cron/core": "^5.3.1",
+        "@vueup/vue-quill": "^1.2.0"
     },
     "devDependencies": {
         "@4tw/cypress-drag-drop": "^2.2.5",
@@ -155,6 +158,7 @@
         "eslint-plugin-promise": "^6.0.1",
         "eslint-plugin-sonarjs": "^0.14.0",
         "eslint-plugin-vue": "^8.2.0",
+        "monaco-editor": "0.52.0",
         "postcss-html": "^1.5.0",
         "prettier": "^2.5.1",
         "sass": "^1.49.9",
@@ -163,22 +167,29 @@
         "stylelint-config-idiomatic-order": "^10.0.0",
         "stylelint-config-standard-scss": "^5.0.0",
         "stylelint-use-logical-spec": "^4.1.0",
-        "typescript": "^5.5.4",
+        "typescript": "^5.6.3",
         "unplugin-auto-import": "^0.17.3",
         "unplugin-vue-components": "^0.26.0",
-        "vite": "^4.5.2",
+        "vite": "^5.4.10",
         "vite-plugin-pages": "^0.25.0",
         "vite-plugin-vue-layouts": "^0.7.0",
         "vite-plugin-vuetify": "^1.0.2",
         "vue-cli-plugin-vuetify": "2.5.5",
-        "vue-tsc": "^1.0.3",
+        "vue-tsc": "^2.1.10",
         "vue3-treeview": "^0.4.2",
-        "vuetify": "3.4.10"
+        "vuetify": "3.4.10",
+        "@vue-js-cron/core": "^5.3.1",
+        "@vueup/vue-quill": "^1.2.0"
     },
     "packageManager": "yarn@1.22.18",
     "resolutions": {
+        "vue": "3.2.31",
         "postcss": "8",
         "stylelint-order": "5",
-        "postcss-sorting": "^7.0.1"
+        "postcss-sorting": "^7.0.1",
+        "quill": "^2.0.2"
+    },
+    "overrides": {
+        "quill": "^2.0.2"
     }
 }

@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: gcr.io/process-gpt-419207/process-gpt:v2.6.1
+        ports:
+        - containerPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: execution-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: execution
+  template:
+    metadata:
+      labels:
+        app: execution
+    spec:
+      containers:
+      - name: execution
+        image: gcr.io/process-gpt-419207/process-gpt-execution:v0.3.2
+        ports:
+        - containerPort: 8000
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-secret
+              key: OPENAI_API_KEY
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autonomous-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: autonomous
+  template:
+    metadata:
+      labels:
+        app: autonomous
+    spec:
+      containers:
+      - name: autonomous
+        image: gcr.io/process-gpt-419207/process-gpt-autonomous:v0.1.4
+        ports:
+        - containerPort: 6789
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-secret
+              key: OPENAI_API_KEY
+        - name: SERPER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: serper-api-key-secret
+              key: SERPER_API_KEY
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memento-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: memento
+  template:
+    metadata:
+      labels:
+        app: memento
+    spec:
+      containers:
+      - name: memento
+        image: gcr.io/process-gpt-419207/process-gpt-memento:v0.0.5
+        ports:
+        - containerPort: 8005
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-secret
+              key: OPENAI_API_KEY

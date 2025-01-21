@@ -16,18 +16,7 @@
                     <DetailComponent
                         :title="$t('ProcessDefinitionVersionDialog.versionDescriptionTitle')"
                     />
-                    <div v-if="isVersion">
-                        <!-- <v-switch
-                            v-model="isMajor"
-                            :label="
-                                this.isMajor
-                                    ? `${$t('ProcessDefinitionVersionDialog.majorUpdate')}: ${newVersion}`
-                                    : `${$t('ProcessDefinitionVersionDialog.minorUpdate')}: ${newVersion}`
-                            "
-                            color="primary"
-                            :disabled="isNew"
-                            hide-details
-                        ></v-switch> -->
+                    <div v-if="mode == 'ProcessGPT'">
                         <div v-if="isNew">
                             <v-text-field
                                 v-model="information.proc_def_id"
@@ -45,26 +34,38 @@
                             ></v-text-field>
                         </div>
                         <v-textarea
+                            v-if="isVersion"
                             v-model="information.message"
                             :label="$t('ProcessDefinitionVersionDialog.message')"
                             hide-details
                             rows="3"
                         ></v-textarea>
-                        <!-- <v-switch
-                            v-model="isRelease"
-                            :label="`${$t('ProcessDefinitionVersionDialog.release')}`"
-                            color="primary"
-                            :disabled="isNew"
-                            hide-details
-                        ></v-switch>
-                        <v-text-field
-                            v-if="isRelease"
-                            v-model="information.releaseName"
-                            :label="$t('ProcessDefinitionVersionDialog.releaseName')"
-                            :rules="[(v) => !!v || 'Name is required']"
-                            required
-                            class="pb-2"
-                        ></v-text-field> -->
+                    </div>
+                    <div v-else>
+                        <div v-if="isVersion">
+                            <div v-if="isNew">
+                                <v-text-field
+                                    v-model="information.proc_def_id"
+                                    :label="$t('ProcessDefinitionVersionDialog.id')"
+                                    :rules="[(v) => !!v || 'ID is required']"
+                                    required
+                                    class="pb-2"
+                                ></v-text-field>
+                                <v-text-field
+                                    v-model="information.name"
+                                    :label="$t('ProcessDefinitionVersionDialog.name')"
+                                    :rules="[(v) => !!v || 'Name is required']"
+                                    required
+                                    class="pb-2"
+                                ></v-text-field>
+                            </div>
+                            <v-textarea
+                                v-model="information.message"
+                                :label="$t('ProcessDefinitionVersionDialog.message')"
+                                hide-details
+                                rows="3"
+                            ></v-textarea>
+                        </div>
                     </div>
                 </v-card-text>
                 <v-row class="ma-0 pa-4 pt-0 pr-5">
@@ -116,7 +117,7 @@ export default {
             let major = Math.floor(this.information.version); // 4
             let minor = this.information.version.toString().includes('.') ? Number(this.information.version.toString().split('.')[1]) : 0; // 13
 
-            if (this.isMajor) {
+            if (this.isVersion) {
                 major += 1;
                 return Number(major).toFixed(1); // major 업데이트 시, major만 1 증가하고 minor를 0으로 초기화
             }
@@ -124,114 +125,121 @@ export default {
             return `${major}.${minor}`;
         },
         useLock() {
-            if (window.$mode == 'ProcessGPT') {
+            if (this.mode == 'ProcessGPT') {
                 return true;
             } else {
                 return false;
             }
+        },
+        mode() {
+            return window.$mode;
         }
     },
     watch: {
-        open: function (newVal) {
-            if (newVal) {
-                this.load();
-            } else {
-                this.isOpen = false;
-            }
+        open: {
+            async handler(newVal) {
+                if (newVal) {
+                    await this.load();
+                    this.isOpen = true;
+                } else {
+                    this.isOpen = false;
+                }
+            },
         },
         $route: function (newVal) {
             if (newVal) {
-                if (this.isOpen) {
-                    this.load();
-                }
+                this.load();
             }
         }
     },
     async mounted() {},
     methods: {
-        load() {
+        async load() {
             var me = this;
-            this.$try({
-                context: me,
-                action: async () => {
-                    if (me.process && me.process.processDefinitionId) {
-                        me.isNew = false;
-                        var bpmn = null;
-                        try {
-                            bpmn =
-                                me.process.processDefinitionId != 'Unknown'
-                                    ? await backend.getRawDefinition(me.process.processDefinitionId, { type: 'bpmn' })
-                                    : null;
-                        } catch (e) {}
-                        if (bpmn) {
-                            if (me.useLock) {
-                                // GPT
-                                let definitionInfo = await backend.getRawDefinition(me.process.processDefinitionId);
-                                let versionInfo = await backend.getDefinitionVersions(me.process.processDefinitionId, {
-                                    sort: 'desc',
-                                    orderBy: 'timeStamp',
-                                    size: 1
-                                });
+            if (me.process && me.process.processDefinitionId) {
+                me.isNew = false;
+                var bpmn = null;
+                try {
+                    bpmn =
+                        me.process.processDefinitionId != 'Unknown'
+                            ? await backend.getRawDefinition(me.process.processDefinitionId, { type: 'bpmn' })
+                            : null;
+                } catch (e) {}
+                if (bpmn) {
+                    if (me.useLock) {
+                        // GPT
+                        let definitionInfo = await backend.getRawDefinition(me.process.processDefinitionId);
+                        let versionInfo = await backend.getDefinitionVersions(me.process.processDefinitionId, {
+                            sort: 'desc',
+                            orderBy: 'timeStamp',
+                            size: 1
+                        });
 
-                                if (versionInfo.length > 0) {
-                                    me.information = versionInfo[0];
-                                    me.information.name = me.processName ? me.processName : definitionInfo.name;
-                                    me.information.message = '';
-                                } else {
-                                    me.information = {
-                                        arcv_id: definitionInfo.id,
-                                        version: 0.0,
-                                        name: me.processName ? me.processName : definitionInfo.name,
-                                        proc_def_id: definitionInfo.id,
-                                        snapshot: bpmn,
-                                        diff: null,
-                                        timeStamp: null,
-                                        message: null
-                                    };
-                                }
-                            } else {
-                                let defId = me.$route.params.pathMatch.join('/');
-                                let versionInfo = await backend.getDefinitionVersions(defId, {
-                                    sort: 'desc',
-                                    type: 'bpmn',
-                                    orderBy: 'timeStamp',
-                                    size: 1
-                                });
-                                console.log(versionInfo);
-                                if(versionInfo) {
-                                    versionInfo.sort((a, b) => {
-                                        const [majorA, minorA] = a.version.split('.').map(Number);
-                                        const [majorB, minorB] = b.version.split('.').map(Number);
-                                        if (majorA === majorB) {
-                                            return minorB - minorA;
-                                        }
-                                        return majorB - majorA;
-                                    });
-                                    const highestVersion = versionInfo.length > 0 ? versionInfo[0].version : null;
-                                    me.information.version = highestVersion
-                                } else {
-                                    me.information.version = "0.0"
-                                }
-                                
-                                me.information.proc_def_id = defId
-                                me.information.name = defId
-                            }
+                        if (versionInfo.length > 0) {
+                            me.information = versionInfo[0];
+                            me.information.name = me.processName ? me.processName : definitionInfo.name;
+                            me.information.message = '';
                         } else {
-                            me.isNew = true;
-                            me.information.proc_def_id = me.process.processDefinitionId;
-                            me.information.name = me.process.processDefinitionName;
+                            me.information = {
+                                arcv_id: definitionInfo.id,
+                                version: 0.0,
+                                name: me.processName ? me.processName : definitionInfo.name,
+                                proc_def_id: definitionInfo.id,
+                                snapshot: bpmn,
+                                diff: null,
+                                timeStamp: null,
+                                message: null
+                            };
                         }
                     } else {
-                        me.isNew = true;
-                        if (me.$route.query && me.$route.query.id && me.$route.query.name) {
-                            me.information.id = me.$route.query.id;
-                            me.information.name = me.$route.query.name;
-                            me.information.message = '';
+                        let defId = me.$route.params.pathMatch.join('/');
+                        if(me.process && me.process.processDefinitionId) {
+                            defId = me.process.processDefinitionId;
                         }
+                        let versionInfo = await backend.getDefinitionVersions(defId, {
+                            sort: 'desc',
+                            type: 'bpmn',
+                            orderBy: 'timeStamp',
+                            size: 1
+                        });
+                        console.log(versionInfo);
+                        if(versionInfo) {
+                            versionInfo.sort((a, b) => parseFloat(b.version) - parseFloat(a.version));
+                            const highestVersion = versionInfo.length > 0 ? versionInfo[0].version : null;
+                            me.information.version = highestVersion
+                        } else {
+                            me.information.version = "0.0"
+                        }
+                        
+                        me.information.proc_def_id = defId
+                        me.information.name = defId
                     }
-                    me.isOpen = true;
+                } else {
+                    me.isNew = true;
+                    me.information.proc_def_id = me.process.processDefinitionId;
+                    me.information.name = me.process.processDefinitionName;
                 }
-            });
+            } else {
+                me.isNew = true;
+                me.isVersion = false;
+                if (me.$route.query && me.$route.query.id && me.$route.query.name) {
+                    me.information.id = me.$route.query.id;
+                    me.information.name = me.$route.query.name;
+                    me.information.message = '';
+                } else {
+                    me.information = {
+                        arcv_id: '',
+                        version: 0.0,
+                        name: me.processName ? me.processName : '',
+                        proc_def_id: '',
+                        snapshot: '',
+                        diff: '',
+                        timeStamp: '',
+                        message: ''
+                    };
+                }
+            }
+            // me.isOpen = true;
         },
         save() {
             var me = this;
@@ -246,7 +254,7 @@ export default {
                             ? `${me.process.processDefinitionId}_${me.newVersion}`
                             : `${me.information.proc_def_id}_${me.newVersion}`,
                         version: this.isVersion ? me.newVersion : null,
-                        name: me.information.name,
+                        name: (me.processName && me.processName.length > 0) ? me.processName : me.information.name,
                         proc_def_id: me.information.proc_def_id,
                         prevSnapshot: me.information.snapshot,
                         prevDiff: me.information.diff,

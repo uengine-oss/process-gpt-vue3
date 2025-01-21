@@ -1,6 +1,19 @@
 {
     "message": "ko",
     "changePath": "저장되지 않은 변경사항이 있습니다. 이동하시겠습니까?",
+    "successMsg": {
+        "runningTheProcess": "Process 실행",
+        "processExecutionCompleted": "프로세스 실행 완료",
+        "workCompleted": "해당 업무 완료",
+        "save": "저장되었습니다.",
+        "intermediate": "중간 저장 완료",
+        "delete": "삭제되었습니다.",
+        "instanceDelete": "인스턴스가 삭제되었습니다.",
+        "completed": "실행 완료"
+    },
+    "App": {
+        "view": "자세히 보기"
+    },
     "mainPage": {
         "login": "로그인",
         "logout": "로그아웃",
@@ -53,10 +66,24 @@
         "description": "설명",
         "color": "색상",
         "save": "저장",
-        "delete": "삭제"
+        "delete": "삭제",
+        "newEventTitle": "새 일정의 제목을 입력하세요."
     },
     "chats": {
-        "title": "채팅"
+        "title": "채팅",
+        "document": "업무 지시",
+        "assignTask": "업무 지시하기",
+        "requestCancelled": "{name}님의 요청이 취소되었습니다.",
+        "startProcess": "{title}프로세스를 시작하겠습니다.",
+        "todoAdded": "{activityId} 할 일이 추가되었습니다.",
+        "scheduleAdded": "{title} 일정이 추가되었습니다.",
+        "processDefinitionCreated": "프로세스 정의가 생성되었습니다.",
+        "processDefinitionModificationStarted": "프로세스 정의 수정이 시작되었습니다.",
+        "userRequestedAction": "{name}님이 요청하신 {action}",
+        "processExecutionFailed": "요청하신 {title} 프로세스 실행에 실패하였습니다. 다시 시도해주세요."
+    },
+    "AssistantChats": {
+        "document": "지시할 업무 내용을 입력하세요. 업무에 관한 정보를 주시면 업무를 받는 사람이 확인할 업무 미리보기가 좌측에 표시됩니다. 미리보기를 확인하고 부족한 부분을 개선합니다. 개선이 완료되었다면 '업무 지시하기'로 업무를 지시합니다."
     },
     "proposals": {
         "title": "제안서"
@@ -85,11 +112,14 @@
         "instanceId": "인스턴스 ID",
         "name": "이름",
         "status": "상태",
-        "startedDate": "시작 날짜",
-        "finishedDate": "종료 날짜",
+        "startedDate": "시작일",
+        "finishedDate": "종료일",
         "initiator": "요청자",
         "subProcess": "서브 프로세스",
-        "actions": "작업"
+        "actions": "작업",
+        "search": "검색",
+        "itemsPerPageText": "페이지 수",
+        "noSearch": "검색 결과가 없습니다."
     },
     "adminDetail": {
         "processVariables": "프로세스 변수",
@@ -99,7 +129,13 @@
         "value": "값",
         "tools": "작업",
         "edit": "수정",
-        "save": "저장"
+        "save": "저장",
+        "rollback": "되돌리기",
+        "rollbackMessage": "으로 되돌리시겠습니까?",
+        "start": "실행",
+        "success": "실행 완료",
+        "send": "보내기",
+        "goBack": "뒤로가기"
     },
     "completeInstance": {
         "title": "종료된 인스턴스"
@@ -107,7 +143,7 @@
     "definitionManagement": {
         "title": "정의 관리",
         "upload": "정의 목록 업로드",
-        "release": "정의 목록 다운로드"
+        "release": "정의 내보내기"
     },
     "systemDefinition": {
         "title": "시스템 정의"
@@ -132,14 +168,32 @@
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
-        "lock": "체크인(저장)하려면 자물쇠를 눌러 자물쇠를 닫으십시오.",
-        "unlock": "체크아웃(편집)하려면 자물쇠를 눌러 자물쇠를 여십시오",
+        "lock": "저장하려면 자물쇠를 눌러 자물쇠를 닫으십시오.",
+        "unlock": "편집하려면 자물쇠를 눌러 자물쇠를 여십시오",
         "addMega": "Mega 프로세스",
         "addMajor": "Major 프로세스",
         "addSub": "Sub 프로세스",
         "save" : "저장",
         "downloadImage": "정의 체계도를 이미지로 다운로드",
-        "consultingAI": "프로세스 컨설팅 AI"
+        "consultingAI": "프로세스 컨설팅 AI",
+        "consultingButton": "프로세스 컨설팅 시작하기",
+        "editingUser": "{name} 님이 수정 중 입니다.",
+        "checkIn": "잠금",
+        "checkOut": "잠금 해제",
+        "saveCheckIn": "저장 후 잠금",
+        "cancelCheckIn": "취소 후 잠금",
+        "confirm": "확인",
+        "close": "닫기",
+        "cancel": "취소",
+        "download": "다운로드",
+        "uncategorized": "미분류",
+        "closeConsulting": "저장하지 않은 정보는 모두 유실됩니다. 컨설팅을 종료하시겠습니까?",
+        "closeConsultingInPreview": "저장하지 않은 정보는 모두 유실됩니다.\n저장하시려면 우측 자물쇠 버튼을 클릭하여 저장하실 수 있습니다.\n\n컨설팅을 종료하시겠습니까?",
+        "checkInDBError": "DB 연결이 끊어졌습니다. 수정된 데이터를 다운로드하여 저장하고 관리자에게 문의주세요.",
+        "checkOutDBError": "DB 연결이 끊어졌습니다. 관리자에게 문의해주세요.",
+        "checkInMessage": "수정된 내용을 저장 혹은 잠금 하시겠습니까? \n취소 후 잠금을 진행하는 경우 수정된 내용은 저장되지 않습니다.",
+        "checkOutMessage": "프로세스 정의 체계도를 수정하시겠습니까?",
+        "forcedCheckOutMessage": "현재 {name} 님께서 수정 중입니다. 편집을 진행하는 경우 {name}님이 수정한 내용은 손상되어 저장되지 않습니다. \n편집을 진행 하시겠습니까?"
     },
     "uiDefinition": {
         "title": "화면 정의",
@@ -212,7 +266,9 @@
         "document": "업무 지시",
         "camera": "카메라",
         "user": "유저",
-        "chatRoom": "대화방"
+        "chatRoom": "대화방",
+        "viewDetails": "상세보기",
+        "executeProcess": "프로세스 실행"
     },
     "accountTab": {
         "accountSetting": "계정 설정",
@@ -283,7 +339,7 @@
         "step3-3": "STEP 3. DataBase 연결",
         "step3-3-text": "1. Settings 메뉴리스트중 Database 메뉴를 선택합니다.<br>2. Connection parameters 섹션에서 Host, Database name, Port, User 값을 복사하여 아래의 각 입력창에 붙혀넣습니다.",
         "step4": "STEP 1. 사용할 회사명 입력하기",
-        "step4-text": "1. 사용할 회사명을 아래의 ID 입력창에 입력하고 생성하기 버튼을 클릭해서 회사를 생성합니다.<br>입력한 회사명은 서브도메인으로 사용됩니다.<br>e.g. { 입력한 회사명 }.process-gpt.io",
+        "step4-text": "1. 사용할 회사명을 아래의 ID 입력창에 입력하고 생성하기 버튼을 클릭해서 회사를 생성합니다.<br>입력한 회사명은 서브도메인으로 사용됩니다.<br>e.g. 입력한 회사명.process-gpt.io",
         "step5": "STEP 5. Supabase Site URL 설정하기",
         "step5-text": "1. 왼쪽 메뉴 중 자물쇠 아이콘(Authentication) 메뉴를 선택합니다.<br>2. URL Configuration을 클릭합니다.<br>3. 아래 보이는 STEP 4에서 입력한 회사명이 포함된 Site URL을 복사 버튼을 눌러 복사 후 복사하여 Site URL 입력란에 입력합니다.<br>4. save 버튼을 눌러 저장합니다."
     },
@@ -320,6 +376,12 @@
         "mapperDescriptionTitle": "데이터 매핑이란 다음 작업으로 변수들을 전달하는 기능",
         "mapperDescriptionSubTitle1": "1. Variables : 변수항목에 추가한 값들 \n2. Roles : 스윔 레인에 등록한 역할(이름) \n3. Instance : 다음 실행될 task 작업의 종료일 등을 저장하는 곳 \n4. Activities : task에 등록한 역할(이름) \n5. Arguments : 속성에 등록한 이름(값)",
         "mapperDescriptionSubTitle2": "사용 방법 \n- 마우스를 누른 상태로 연결할 곳에 끌어다 놓으면 연결\n- 선을 클릭하면 삭제"
+    },
+    "EscalationEventDefinitionPanel": {
+        "expression": "이벤트 키"
+    },
+    "SignalEventDefinitionPanel": {
+        "eventKey": "이벤트 키"
     },
     "NotificationDD": {
         "notification": "알림"
@@ -405,6 +467,8 @@
         "methodTypeDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n"
     },
     "EventSynchronizationForm": {
+        "edit": "수정",
+        "delete": "삭제",
         "dataMapping": "데이터 매핑",
         "eventAttributes": "속성",
         "primaryKey": "고유 키",
@@ -492,6 +556,9 @@
     },
     "TimerEventDefinitionPanel" : {
         "cron": "시간 입력(Cron)",
+        "date": "날짜 선택",
+        "time": "시간 선택",
+        "frequency": "빈도 선택",
         "cronDescriptionTitle": "Cron 표현식을 사용하여 Timer Intermediate Catch Event가 트리거될 시간을 정밀하게 설정할 수 있습니다.",
         "cronDescriptionSubTitle": "형식: Cron 표현식은 다섯 개의 필드로 구성되며, 각 필드는 분, 시간, 일, 월, 요일을 나타냅니다. \n예시: \n0 0 * * * : 매일 자정 (00:00)에 이벤트가 트리거됩니다. \n15 10 * * * : 매일 10:15 AM에 이벤트가 트리거됩니다. \n0 9 1 * * : 매월 1일 9:00 AM에 이벤트가 트리거됩니다. \n0 0 * * 1 : 매주 월요일 자정 (00:00)에 이벤트가 트리거됩니다. \n*/10 * * * * : 매 10분마다 이벤트가 트리거됩니다."
     },
@@ -504,15 +571,20 @@
         "gatewayDescriptionSubTitle4" : "Complex Gateway(미구현) : 사용자가 임의의 조건을 추가하여 다음 작업으로 넘어가는 것을 선택할 수 있음"
     },
     "SystemList" : {
-        "dialogTitle" : "시스템 추가",
+        "addDialogTitle" : "시스템 추가",
+        "editDialogTitle": "시스템 수정",
         "name" : "이름",
         "description" : "설명",
         "apiUrl" : "API URL",
-        "add" : "추가"
+        "add" : "추가",
+        "edit" : "수정"
     },
     "System" : {
         "description" : "설명",
-        "edit" : "수정"
+        "edit" : "수정",
+        "delete": "삭제",
+        "confirmDeleteTitle" : "시스템 정의 삭제",
+        "confirmDeleteText" : "을/를 삭제하시겠습니까?"
     },
     "PaletteProvider": {
         "undoCmdZ": "되돌리기 (Cmd + Z)",
@@ -539,7 +611,19 @@
         "dataObject": "데이터 객체 생성"
     },
     "chatListing": {
-        "search": "검색"
+        "title": "채팅방 설정",
+        "search": "검색",
+        "chatRoomName": "채팅방 이름",
+        "selectParticipants": "참여자 선택",
+        "save": "저장",
+        "delete": "삭제",
+        "create": "생성",
+        "cancel": "취소",
+        "setting": "설정",
+        "deleteChatRoom": "채팅방 삭제",
+        "confirmDeleteChatRoom": "채팅방을 삭제하시겠습니까?",
+        "enterChatRoomName": "채팅방 이름을 입력해주세요.",
+        "selectAtLeastOneParticipant": "참여자를 하나 이상 선택해주세요."
     },
     "userListing": {
         "search": "유저 검색",
@@ -557,6 +641,7 @@
         "replace": "요소 변경",
         "delete": "삭제",
         "connect": "다른 요소에 연결",
+        "lane": "레인 추가",
         "laneAbove": "위쪽에 레인 추가",
         "laneToTheLeft": "왼쪽에 레인 추가",
         "laneBelow": "아래에 레인 추가",
@@ -564,6 +649,70 @@
         "laneDivideTwo": "두 개의 레인으로 나누기",
         "laneDivideThree": "세 개의 레인으로 나누기",
         "connectionMulti": "메시지 연결"
+    },
+    "CustomReplaceElement": {
+        "replace-with-call-activity": "호출 활동으로 변경",
+        "replace-with-collapsed-subprocess": "접힌 하위 프로세스로 변경",
+        "replace-with-expanded-subprocess": "확장된 하위 프로세스로 변경",
+        "replace-with-manual-task": "수동 작업으로 변경",
+        "replace-with-receive-task": "수신 작업으로 변경",
+        "replace-with-rule-task": "비즈니스 규칙 작업으로 변경",
+        "replace-with-script-task": "스크립트 작업으로 변경",
+        "replace-with-send-task": "전송 작업으로 변경",
+        "replace-with-service-task": "서비스 작업으로 변경",
+        "replace-with-task": "작업으로 변경",
+        "replace-with-user-task": "사용자 작업으로 변경",
+        "toggle-loop": "반복",
+        "toggle-parallel-mi": "병렬 다중 인스턴스",
+        "toggle-sequential-mi": "순차 다중 인스턴스",
+        "replace-with-compensation-end": "보상 종료 이벤트로 변경",
+        "replace-with-error-end": "오류 종료 이벤트로 변경",
+        "replace-with-escalation-end": "에스컬레이션 종료 이벤트로 변경",
+        "replace-with-message-end": "메시지 종료 이벤트로 변경",
+        "replace-with-none-intermediate-throw": "빈 중간 이벤트로 변경",
+        "replace-with-signal-start": "신호 시작 이벤트로 변경",
+        "replace-with-terminate-end": "종료 이벤트로 변경",
+        "replace-with-signal-end": "신호 종료 이벤트로 변경",
+        "replace-with-conditional-start": "조건부 시작 이벤트로 변경",
+        "replace-with-message-start": "메시지 시작 이벤트로 변경",
+        "replace-with-none-intermediate-throwing": "빈 중간 이벤트로 변경",
+        "replace-with-timer-start": "타이머 시작 이벤트로 변경",
+        "replace-with-compensation-intermediate-throw": "보상 중간 던지기로 변경",
+        "replace-with-conditional-intermediate-catch": "조건부 중간 잡기로 변경",
+        "replace-with-escalation-intermediate-throw": "에스컬레이션 중간 던지기로 변경",
+        "replace-with-link-intermediate-catch": "링크 중간 잡기로 변경",
+        "replace-with-link-intermediate-throw": "링크 중간 던지기로 변경",
+        "replace-with-message-intermediate-catch": "메시지 중간 잡기로 변경",
+        "replace-with-message-intermediate-throw": "메시지 중간 던지기로 변경",
+        "replace-with-none-end": "종료 이벤트로 변경",
+        "replace-with-none-start": "시작 이벤트로 변경",
+        "replace-with-signal-intermediate-catch": "신호 중간 잡기로 변경",
+        "replace-with-signal-intermediate-throw": "신호 중간 던지기로 변경",
+        "replace-with-timer-intermediate-catch": "타이머 중간 잡기로 변경",
+        "replace-with-complex-gateway": "복잡 게이트웨이로 변경",
+        "replace-with-event-based-gateway": "이벤트 기반 게이트웨이로 변경",
+        "replace-with-inclusive-gateway": "포괄적 게이트웨이로 변경",
+        "replace-with-parallel-gateway": "병렬 게이트웨이로 변경",
+        "replace-with-data-object-reference": "데이터 객체 참조로 변경",
+        "replace-with-event-subprocess": "이벤트 하위 프로세스로 변경",
+        "replace-with-transaction": "트랜잭션으로 변경",
+        "replace-with-data-store-reference": "데이터 저장소 참조로 변경",
+        "toggle-is-collection": "컬렉션 여부 전환",
+        "toggle-adhoc": "애드혹 전환",
+        "replace-with-collapsed-pool": "접힌 풀로 변경",
+        "toggle-participant-multiplicity": "참가자 다중성 전환",
+        "replace-with-compensation-boundary": "보상 경계 이벤트로 변경",
+        "replace-with-conditional-boundary": "조건부 경계 이벤트로 변경",
+        "replace-with-error-boundary": "오류 경계 이벤트로 변경",
+        "replace-with-escalation-boundary": "에스컬레이션 경계 이벤트로 변경",
+        "replace-with-message-boundary": "메시지 경계 이벤트로 변경",
+        "replace-with-non-interrupting-conditional-boundary": "조건부 경계 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-escalation-boundary": "에스컬레이션 경계 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-message-boundary": "메시지 경계 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-signal-boundary": "신호 경계 이벤트 (비중단)로 변경",
+        "replace-with-non-interrupting-timer-boundary": "타이머 경계 이벤트 (비중단)로 변경",
+        "replace-with-signal-boundary": "신호 경계 이벤트로 변경",
+        "replace-with-timer-boundary": "타이머 경계 이벤트로 변경"
     },
     "WorkItem": {
         "progress": "진행 상황",
@@ -577,11 +726,53 @@
         "worklist": "작업 목록",
         "success": "성공",
         "taskID": "작업 ID: ",
-        "instanceID": "인스턴스 ID: "
+        "instanceID": "인스턴스 ID: ",
+        "processRecord": "프로세스 실행 기록",
+        "startRecording": "프로세스 실행 기록 시작",
+        "stopRecording": "프로세스 실행 기록 중지",
+        "recordingSave": "프로세스 실행 기록 저장",
+        "confirm": "확인",
+        "name": "제목"
+    },
+    "TestVariables": {
+        "key": "키값",
+        "value": "밸류",
+        "action": "작업",
+        "noData": "데이터가 없습니다."
+    },
+    "TestVariable": {
+        "start": "실행",
+        "delete": "삭제"
     },
     "VerticalSidebar": {
+        "instanceList": "인스턴스 목록",
+        "instanceMyGroup": "내 그룹 인스턴스",
         "saveFileName": "저장될 파일명",
-        "downloadDefinitionList": "정의 목록 다운로드",
+        "downloadDefinitionList": "정의 내보내기",
         "save": "저장"
+    },
+    "ProfitExpanse": {
+        "processExecutionPerformance": "프로세스 실행실적",
+        "startDate": "시작일",
+        "endDate": "종료일",
+        "toDo": "할 일",
+        "inProcess": "진행 중",
+        "done": "완료 됨",
+        "all": "전체",
+        "typeSelection": "유형 선택",
+        "taskId": "작업 ID"
+    },
+    "InstanceCard": {
+        "progress": "진행 상황",
+        "workItem": "워크 아이템",
+        "workHistory": "워크 히스토리",
+        "ganttChart": "간트 차트",
+        "sendEvent": "{event} 이벤트 보내기"
+    },
+    "DryRunProcess": {
+        "notFound": "워크아이템을 찾을 수 없습니다."
+    },
+    "PALUserTaskPanel": {
+        "insertDescription": "태스크 설명을 넣어주세요"
     }
 }

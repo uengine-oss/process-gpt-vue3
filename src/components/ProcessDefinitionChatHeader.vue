@@ -5,10 +5,10 @@
                 :style="modelValueStyle ? 'padding: 12px 16px 2px 16px;' : 'padding: 9px 16px 9px 16px;'"
             >
                 <v-row class="ma-0 pa-0">
-                    <div v-if="modelValue && modelValue !== ''" class="d-flex gap-2 align-center"
+                    <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center"
                         style="max-width:80%;"
                     >
-                        <v-text-field v-if="!lock && editUser != '' && editUser == userInfo.name" v-model="processName"
+                        <v-text-field v-if="isEditableTitle" v-model="processName"
                             label="프로세스 정의명" variant="underlined" hide-details class="pa-0 ma-0"
                             style="min-width:150px; width:150px;"
                         ></v-text-field>
@@ -38,21 +38,22 @@
                     <v-row class="ma-0 pa-0 pt-3"
                         :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : 'margin-top: 12px;'"
                     >
-                        <!-- 파일업로드 아이콘 -->
-                        <v-tooltip location="bottom">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                    density="comfortable" @click="triggerFileInput">
-                                    <Icons :icon="'upload'" />
-                                </v-btn>
-                            </template>
-                            <span>{{ $t('chat.import') }}</span>
-                        </v-tooltip>
-                        <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold" style="display: none" />
-                
-                        <div v-if="bpmn && fullPath != 'chat'">
-                            <!-- 자물쇠 아이콘 -->
-                             <div class="process-definition-chat-btn-set">
+                        <!-- 저장 관련 버튼  -->
+                        <div class="mr-4 d-flex">
+                            <!-- 파일업로드 아이콘 -->
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                        density="comfortable" @click="triggerFileInput">
+                                        <Icons :icon="'upload'" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('chat.import') }}</span>
+                            </v-tooltip>
+                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold" style="display: none" />
+                    
+                            <div v-if="bpmn || fullPath != 'chat'">
+                                <!-- 자물쇠 아이콘 -->
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
@@ -68,64 +69,66 @@
                                     <span v-else>{{ $t('chat.lock') }}</span>
                                 </v-tooltip>
                             </div>
-                
-                            <div class="process-definition-chat-btn-set">
-                                <!-- 히스토리 아이콘 -->
-                                <v-tooltip location="bottom">
+                    
+                            <!-- 저장아이콘 -->
+                            <div v-else>
+                                <v-tooltip location="bottom">   
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                            density="comfortable" @click="toggleVerMangerDialog">
-                                            <HistoryIcon size="24" />
+                                            density="comfortable" @click="toggleLock">
+                                            <Icons :icon="'save'" />
                                         </v-btn>
                                     </template>
-                                    <span>{{ $t('chat.history') }}</span>
-                                </v-tooltip>
-                        
-                                <!-- xml보기 아이콘 -->
-                                <v-tooltip location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                            density="comfortable" @click="showXmlMode">
-                                            <Icons :icon="'code-xml'" :color="isXmlMode ? '#1976D2' : '#666666'"/>
-                                        </v-btn>
-                                    </template>
-                                    <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
+                                    <span>{{ $t('chat.processDefinitionSave') }}</span>
                                 </v-tooltip>
                             </div>
                         </div>
-                
-                        <!-- 저장아이콘 -->
-                        <div v-else>
-                            <v-tooltip location="bottom">   
+                        <!-- 보기 관련 버튼  -->
+                        <div class="mr-4 d-flex">
+                            <!-- 히스토리 아이콘 -->
+                            <v-tooltip v-if="bpmn && fullPath != 'chat'" location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                        density="comfortable" @click="toggleLock">
-                                        <Icons :icon="'save'" />
+                                        density="comfortable" @click="toggleVerMangerDialog">
+                                        <HistoryIcon size="24" />
                                     </v-btn>
                                 </template>
-                                <span>{{ $t('chat.processDefinitionSave') }}</span>
+                                <span>{{ $t('chat.history') }}</span>
+                            </v-tooltip>
+                            <!-- xml보기 아이콘 -->
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                        density="comfortable" @click="showXmlMode">
+                                        <Icons :icon="'code-xml'" :color="isXmlMode ? '#1976D2' : '#666666'"/>
+                                    </v-btn>
+                                </template>
+                                <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
                             </v-tooltip>
                         </div>
+                        
+                        <!-- 실행 관련 버튼  -->
+                        <div class="mr-4 d-flex" v-if="!Pal">
+                            <!-- 시뮬레이션 아이콘 -->
+                            <v-tooltip location="bottom" :text="$t('processDefinition.simulate')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" @click="executeSimulate" icon variant="text" class="text-medium-emphasis" density="comfortable"
+                                    >
+                                        <Icons :icon="'bug-play'" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
 
-                        <!-- 시뮬레이션 아이콘 -->
-                        <v-tooltip location="bottom" :text="$t('processDefinition.simulate')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" @click="executeSimulate" icon variant="text" class="text-medium-emphasis" density="comfortable"
-                                >
-                                    <Icons :icon="'bug-play'" />
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-
-                        <!-- 실행 아이콘 -->
-                        <v-tooltip location="bottom" :text="$t('processDefinition.execution')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" @click="executeProcess" icon variant="text" class="text-medium-emphasis" density="comfortable"
-                                >
-                                    <Icons :icon="'play'" />
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
+                            <!-- 실행 아이콘 -->
+                            <v-tooltip location="bottom" :text="$t('processDefinition.execution')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" @click="executeProcess" icon variant="text" class="text-medium-emphasis" density="comfortable"
+                                    >
+                                        <Icons :icon="'play'" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </div>
                     </v-row>
                 </div>
             </div>
@@ -163,12 +166,19 @@ export default {
         }
     },
     computed: {
+        Pal() {
+            return window.$pal;
+        },
         modelValueStyle() {
             if(this.modelValue && this.modelValue !== '' && !this.lock && this.editUser != '' && this.editUser == this.userInfo.name) {
                 return true
             } else {
                 return false
             }
+        },
+        isEditableTitle() {
+            const checkGPT =  window.$mode === 'ProcessGPT' ? ( this.editUser != '' && this.editUser == this.userInfo.name) : true;
+            return !this.lock && checkGPT;
         }
     },
     methods: {

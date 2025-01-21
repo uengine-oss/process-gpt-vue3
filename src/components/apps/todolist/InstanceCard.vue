@@ -1,7 +1,7 @@
 <template>
     <v-card elevation="10" v-if="instance" style="height: calc(100vh - 155px); ">
         <div class="d-flex">
-            <div class="px-3 py-3 pb-2 align-center">
+            <div class="px-3 py-3 pb-2 pl-4 align-center">
                 <div class="d-flex">
                     <h5 class="text-h5 font-weight-semibold">
                         {{ instance.name }}
@@ -11,8 +11,15 @@
                         style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center">
                         {{ instance.status }}
                     </v-chip>
-                    <div v-for="event in eventList">
-                        <v-btn @click="fireMessage(event)"> {{ event }} 보내기 </v-btn>
+                    <div v-for="event in eventList" :key="event.tracingTag">
+                        <v-btn @click="fireMessage(event)"
+                            color="primary"
+                            rounded
+                            style="font-size:12px;"
+                            density="comfortable"
+                            class="ml-3"
+                        > {{  $t('InstanceCard.sendEvent', {event: event.name ? event.name : event.type}) }}
+                        </v-btn>
                     </div>
                 </div>
                 <div v-if="instance.instanceId" class="font-weight-medium" style="color:gray; font-size:14px;">
@@ -27,7 +34,7 @@
         <div style="height: 100%;">
             <v-tabs v-model="tab" bg-color="transparent" height="40" color="primary">
                 <v-tab v-for="tabItem in tabItems" :key="tabItem.value" :value="tabItem.value">
-                    {{ tabItem.label }}
+                    {{ $t(tabItem.label) }}
                 </v-tab>
             </v-tabs>
             <v-divider></v-divider>
@@ -67,10 +74,10 @@ export default {
         // tab
         tab: "progress",
         tabItems: [
-            { value: 'progress', label: '진행 상황', component: 'InstanceProgress' },
-            { value: 'todo', label: '워크 아이템', component: 'InstanceTodo' },
-            { value: 'workhistory', label: '워크 히스토리', component: 'InstanceWorkHistory' },
-            { value: 'gantt', label: '간트 차트', component: 'InstanceGantt' }
+            { value: 'progress', label: 'InstanceCard.progress', component: 'InstanceProgress' },
+            { value: 'todo', label: 'InstanceCard.workItem', component: 'InstanceTodo' },
+            { value: 'workhistory', label: 'InstanceCard.workHistory', component: 'InstanceWorkHistory' },
+            { value: 'gantt', label: 'InstanceCard.ganttChart', component: 'InstanceGantt' }
         ]
     }),
     watch: {
@@ -84,10 +91,9 @@ export default {
         },
         async tab(newVal, oldVal) {
             if (newVal !== oldVal) {
-                await this.$nextTick();
-                const activeComponent = this.$refs[newVal];
-                if (activeComponent && typeof activeComponent.init === 'function') {
-                    await activeComponent.init();
+                const activeComponents = this.$refs[newVal];
+                if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
+                    await activeComponents[0].init();
                 }
             }
         }
@@ -133,8 +139,13 @@ export default {
         delay(time) {
             return new Promise((resolve) => setTimeout(resolve, time));
         },
-        fireMessage(event) {
-            backend.fireMessage(this.instance.instanceId, event);
+        async fireMessage(event) {
+            await backend.fireMessage(this.instance.instanceId, event);
+            this.init();
+            const progressComponent = this.$refs.progress[0];
+            if (progressComponent) {
+                progressComponent.initStatus();
+            }
         },
         deleteInstance() {
             var me = this;
@@ -146,7 +157,7 @@ export default {
                     me.EventBus.emit('instances-updated');
                     me.$router.push("/todolist");
                 },
-                successMsg: '인스턴스가 삭제되었습니다.',
+                successMsg: this.$t('successMsg.instanceDelete')
             });
         }
     }

@@ -18,12 +18,14 @@
                                     {{ $t('TestProcess.mainInstanceId') }}{{ instanceId }}
                                     <BpmnUengine
                                         ref="bpmnVue"
+                                        :key="bpmnKey"
                                         :bpmn="bpmn"
+                                        :taskStatus="taskStatus"
                                         :options="options"
                                         :isViewMode="true"
                                         :currentActivities="currentActivities"
                                         v-on:openDefinition="(ele) => openSubProcess(ele)"
-                                        style="height: 100%;"
+                                        style="height: 45vh;"
                                     ></BpmnUengine>
                                 </div>
                                 <div v-if="subBpmn">
@@ -33,12 +35,14 @@
                                         {{ $t('TestProcess.subInstanceId') }}{{ key }}
                                         <BpmnUengine
                                             ref="bpmnVue"
+                                            :key= "subBpmnKey"
                                             :bpmn="sub"
                                             :options="options"
                                             :isViewMode="true"
+                                            :taskStatus="subTaskStatus[key]"
                                             :currentActivities="subCurrentActivities[key]"
                                             v-on:openDefinition="(ele) => openSubProcess(ele)"
-                                            style="height: 100%"
+                                            style="height: 45vh"
                                         ></BpmnUengine>
                                     </div>
                                 </div>
@@ -52,7 +56,20 @@
                     </v-row>
                 </v-col>
                 <v-col class="pa-4" :cols="6">
-                    <v-card-title class="pa-0">{{ $t('TestProcess.worklist') }}</v-card-title>
+                    <v-row class="pa-0 mb-0">
+                        <v-card-title >{{ $t('TestProcess.worklist') }}</v-card-title>
+                        <!-- <v-tooltip :text="isRecording ? $t('TestProcess.stopRecording') : $t('TestProcess.startRecording')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn @click="isRecording = !isRecording" class="ml-auto" v-bind="props">
+                                    <v-icon>{{ isRecording ? 'mdi-video-off' : 'mdi-video' }}</v-icon>
+                                </v-btn>
+                            </template>
+                        </v-tooltip> -->
+                        <!-- 프로세스 기록버튼 -->
+                        <v-btn icon @click="refreshProcess" class="ml-auto">
+                            <v-icon>mdi-refresh</v-icon>
+                        </v-btn>
+                    </v-row>
                     <div
                         style="max-height: calc(-270px + 100vh);
                         color: black;
@@ -97,6 +114,38 @@
                                     @work-item="(e) => addWorkItem(e, task.taskId)"
                                 ></test-variables>
                             </v-card>
+                            
+                            <v-card-title class="mt-4" >{{ $t('TestProcess.processRecord') }}</v-card-title>
+                            <v-card class="pa-4" variant="outlined">
+                                <v-table>
+                                    <tbody>
+                                        <tr v-for="key in Object.keys(recordedProcess)" :key="key">
+                                            <td class="pa-0" style="width: calc(100% - 65px); ">
+                                                <div style="display: flex; overflow-x: auto; white-space: nowrap; flex-direction: row; flex-wrap: wrap;">
+                                                    <test-record-card class="mr-2" :testRecord="item" :isLast="(index === JSON.parse(recordedProcess[key]).length - 1)" v-for="(item, index) in JSON.parse(recordedProcess[key])" :key="item" @card-click="handleCardClick" />
+                                                </div>
+                                                <v-divider class="pb-2"/>
+                                            </td>
+                                            <td class="align-right" style="width: 65px; padding: 0px; text-align: right;">
+                                                <v-tooltip :text="$t('TestVariable.start')">
+                                                    <template v-slot:activator="{ props }">
+                                                        <v-btn density="compact" icon flat @click="executeRecordProcess(recordedProcess[key])" v-bind="props" style="margin-right:5px;">
+                                                            <Icons :icon="'play-outline'" :size="17" stroke-width="1.5" :color="'rgb(var(--v-theme-primary))'" />
+                                                        </v-btn>
+                                                    </template>
+                                                </v-tooltip>
+                                                <v-tooltip :text="$t('TestVariable.delete')">
+                                                    <template v-slot:activator="{ props }">
+                                                        <v-btn density="compact" icon flat @click="deleteRecordProcess(key)" v-bind="props">
+                                                            <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                                                        </v-btn>
+                                                    </template>
+                                                </v-tooltip>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </v-table>
+                            </v-card>
                         </div>
                         <v-row v-else class="ma-0 pa-0 test-process-work-list-skeleton" style="height: 100%;">
                             <v-col cols="12" class="pa-0">
@@ -108,6 +157,25 @@
             </v-row>
         </div>
 
+        <v-dialog v-model="recodingDialog" max-width="600px">
+            <v-card>
+                <v-card-title class="pb-0">{{ testRecord.name }}</v-card-title>
+                <v-card-text class="pt-0 pl-4 pr-4">
+                    <v-form ref="form">
+                        <v-simple-table>
+                            <tbody>
+                                <tr v-for="(value, key) in testRecord.workItem" :key="key" style="font-size: 12px;">
+                                    <td><strong>{{ key }}</strong></td>
+                                    <td>&nbsp;</td>
+                                    <td>{{ value }}</td>
+                                </tr>
+                            </tbody>
+                        </v-simple-table>
+                    </v-form>
+                </v-card-text>
+            </v-card>
+        </v-dialog>
+
         <!-- <v-card-actions class="justify-center" v-if="tool == 'DefaultWorkItem'">
             <v-btn color="primary" variant="flat" class="cp-process-save" @click="executeProcess">실행</v-btn>
             <v-btn color="error" variant="flat" @click="closeDialog()">닫기</v-btn>
@@ -118,12 +186,14 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import TestVariables from '@/components/apps/definition-map/TestVariables.vue';
+import TestRecordCard from '@/components/apps/definition-map/TestRecordCard.vue';
 import customBpmnModule from '@/components/customBpmn';
-import BpmnUengine from '@/components/BpmnUengine.vue';
+import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 export default {
-    components: { TestVariables, BpmnUengine },
+    components: { TestVariables, BpmnUengine, TestRecordCard },
     props: {
-        definitionId: String // proceeName (proceeName.bpmn)
+        definitionId: String, // proceeName (proceeName.bpmn)
+        executeDialog: Boolean
     },
     data: () => ({
         backend: null,
@@ -134,7 +204,6 @@ export default {
         bpmn: null,
         updatedDefKey: 0,
         options: {
-            propertiesPanel: {},
             additionalModules: [customBpmnModule]
         },
         eventList: [],
@@ -145,21 +214,49 @@ export default {
         instanceId: null,
         tool: null,
         subBpmn: null,
-        subCurrentActivities: null
+        subBpmnKey: 0,
+        subTaskStatus : {},
+        subCurrentActivities: null,
+        taskStatus: null,
+        bpmnKey: 0,
+        recordedProcess: [],
+        isRecording: false,
+        confirmRecording: false,
+        recordedProcessQueue: [],
+        recodingDialog: false,
+        testRecord: null,
+        intervalId: null
     }),
     created() {
         let me = this;
         me.backend = BackendFactory.createBackend();
         me.startProcess();
     },
+    mounted() {
+        this.getRecordList();
+        this.intervalId = setInterval(() => {
+            this.refreshProcess();
+        }, 10000);
+    },
     watch: {
-        // taskId: {
-        //     handler() {
-        //         this.setTaskInfo();
-        //     }
-        // }
+        executeDialog(newVal) {
+            if(!newVal) {
+                clearInterval(this.intervalId);
+            }
+        }
     },
     methods: {
+        async refreshProcess() {
+            let me = this;
+            me.setTaskInfo();
+            let taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
+            me.taskList = taskInfo;
+            await me.setStatus();
+        },
+        async getRecordList() {
+            const recordList = await this.backend.testRecordList(this.definitionId);
+            this.recordedProcess = recordList;
+        },
         async addWorkItem(item, taskId) {
             let me = this;
             this.workItem[taskId] = item;
@@ -176,7 +273,10 @@ export default {
 
                 if (me.subBpmn == null) me.subBpmn = {};
                 me.subBpmn[item.worklist.instId] = await me.backend.getRawDefinition(item.worklist.defId, { type: 'bpmn' });
+                await me.setStatus();
                 me.updatedDefKey++;
+
+                
                 // me.subCurrentActivities ?  : me.subCurrentActivities
             }
         },
@@ -196,11 +296,70 @@ export default {
                     if (task?.execScope) value.execScope = task.execScope;
                     let result = await me.backend.putWorkItemComplete(task.taskId, value, me.isSimulate);
                     let taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
+                    // if (!me.recordedProcess) {
+                    //     me.recordedProcess = [];
+                    // }
+                    // me.recordedProcess.push({
+                    //     trcTag: task.trcTag,
+                    //     workItem: value
+                    // });
+                    
                     me.taskList = taskInfo;
                     me.setTaskInfo();
+                    
+                    await me.setStatus();
+                    
                 },
-                successMsg: '해당 업무 완료'
+                successMsg: this.$t('successMsg.workCompleted')
             });
+            
+        },
+        async executeRecordProcess(process) {
+            let me = this;
+            let recordProcess = JSON.parse(process);
+            console.log(recordProcess);
+            for (const item of recordProcess) {
+                let taskId;
+                let taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
+                me.taskList = taskInfo;
+                for (let task of me.taskList) {
+                    if (task.trcTag === item.tracingTag) {
+                        taskId = task.taskId;
+                        break;
+                    }
+                }
+
+                let value;
+                if (this.tool == 'FormWorkItem') {
+                    me.saveForm(item.workItem, task);
+                }
+                if (item.workItem.parameterValues) value = item.workItem;
+                else value = { parameterValues: item.workItem };
+
+                if(taskId) {
+                    await me.backend.putWorkItemComplete(taskId, value, me.isSimulate);
+                } else {
+                    while (!taskId) {
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+                        taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
+                        me.taskList = taskInfo;
+                        for (let task of me.taskList) {
+                            if (task.trcTag === item.tracingTag) {
+                                taskId = task.taskId;
+                                break;
+                            }
+                        }
+                    }
+                    await me.backend.putWorkItemComplete(taskId, value, me.isSimulate);
+                }
+            }
+
+            this.setTaskInfo();
+            await me.setStatus();
+        },
+        async deleteRecordProcess(key) {
+            await this.backend.deleteRecordTest(this.definitionId, key);
+            await this.getRecordList();
         },
         async saveForm(testData, task) {
             let me = this;
@@ -232,6 +391,17 @@ export default {
             const keyToDelete = 'specificKey'; // Replace 'specificKey' with the actual key you want to delete
             if (me.workItem.hasOwnProperty(task.taskId)) {
                 delete me.workItem[task.taskId];
+            }
+        },
+        setStatus() {
+            let me = this;
+            if(me.subBpmn) {
+                Object.keys(me.subBpmn).forEach(async function (instId) {
+                    me.subTaskStatus[instId] = await me.backend.getActivitiesStatus(instId);
+                    me.bpmnKey++;
+                    me.subBpmnKey++;
+                    me.updatedDefKey++;
+                });
             }
         },
         startProcess() {
@@ -279,6 +449,8 @@ export default {
             // me.currentActivities = [];
             // me.workItem = await me.backend.getWorkItem(me.taskId);
 
+            me.taskStatus = tasks;
+            me.bpmnKey++;
             me.updatedDefKey++;
         },
         async fireMessage(event) {
@@ -287,6 +459,11 @@ export default {
             let taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
             me.taskList = taskInfo;
             me.setTaskInfo();
+        },
+        handleCardClick(testRecord) {
+            console.log('Card clicked:', testRecord);
+            this.recodingDialog = true;
+            this.testRecord = testRecord;
         }
     }
 };

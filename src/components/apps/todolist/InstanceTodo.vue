@@ -68,7 +68,6 @@ export default {
         this.init();
         if (this.mode === 'ProcessGPT') {
             this.defId = this.id.split('.')[0];
-            console.log(this.defId);
         }
     },
     computed: {
@@ -95,9 +94,12 @@ export default {
         },
     },
     methods: {
-        init() {
-            this.loadToDo();
-            this.loadCompletedWorkList();
+        async init() {
+            this.todolist.forEach(column => {
+                column.tasks = [];
+            });
+            await this.loadToDo();
+            await this.loadCompletedWorkList();
         },
         executeTask(item) {
             var me = this

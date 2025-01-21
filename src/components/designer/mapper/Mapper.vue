@@ -607,8 +607,9 @@ export default {
         },
         addTreeViewPort() {
             var me = this;
-            const formAreaRect = document.getElementById('formArea').getBoundingClientRect();
-
+            const formAreaRect = document.getElementById('formArea')?.getBoundingClientRect();
+            if(!formAreaRect) return;
+            
             if (this.blocks['Source']) {
                 delete this.blocks['Source'];
             }

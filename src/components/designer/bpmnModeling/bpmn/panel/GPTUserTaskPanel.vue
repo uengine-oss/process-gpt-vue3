@@ -1,4 +1,5 @@
 <template>
+    
     <div class="gpt-user-task-panel">
         <v-tabs v-model="activeTab" class="ma-3">
             <v-tab value="setting">설정</v-tab>
@@ -12,6 +13,23 @@
                 <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
                 <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
+                <div v-if="isPal">
+                    <v-file-input
+                        label="첨부파일"
+                        multiple
+                        class="mb-4"
+                        @update:modelValue="onFileChange"
+                    ></v-file-input>
+                    <div v-if="activity.attachments && activity.attachments.length > 0">
+                        <div v-for="(attachment, index) in activity.attachments" :key="index">
+                            <div class="d-flex align-center cursor-pointer">
+                                <v-icon @click="openFile(attachment)">mdi-file-document-outline</v-icon>
+                                <div class="ml-2 mr-auto" @click="openFile(attachment)">{{ attachment.replace('uploads/', '') }}</div>
+                                <v-icon v-if="!isViewMode" @click="activity.attachments = activity.attachments.filter(a => a !== attachment)">mdi-delete-outline</v-icon>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </v-window-item>
             <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
                 <FormDefinition
@@ -20,6 +38,7 @@
                     :formId="formId"
                     v-model="tempFormHtml"
                 />
+                
             </v-window-item>
         </v-window>
     </div>
@@ -60,12 +79,15 @@ export default {
             copyDefinition: null,
             backend: null,
             activity: {
+                duration: 5,
+                attachments: [],
                 instruction: '',
                 checkpoints: ['']
             },
             formId: '',
             tempFormHtml: '',
-            activeTab: 'setting'
+            activeTab: 'setting',
+            fieldsJson: []
         };
     },
     created() {
@@ -82,6 +104,11 @@ export default {
     async mounted() {
         let me = this;
         await me.init();
+    },
+    computed: {
+        isPal() {
+            return window.$pal;
+        }
     },
     watch: {
         activity: {
@@ -116,7 +143,12 @@ export default {
                     activity_id: me.element.id
                 }
             }
-            me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
+            const lastPath = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1];
+            if (lastPath == 'chat') {
+                me.tempFormHtml = localStorage.getItem(me.formId);
+            } else {
+                me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
+            }
             
             me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
             me.copyUengineProperties.role = {'name': me.role || ''};
@@ -145,71 +177,37 @@ export default {
 
             if (me.tempFormHtml && me.tempFormHtml != '') {
                 if (options && options.proc_def_id && options.activity_id) {
-                    await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
-                }
-
-                const taskFields = me.processDefinition.data.map(data => { 
-                    return {name: data.name, type: data.type}
-                });
-                const fields = me.extractFields(me.tempFormHtml);
-                fields.forEach(field => {
-                    const existVar = taskFields.find(data => data.name === field.text && data.type === field.type);
-                    if (!existVar) {
-                        me.$emit('addUengineVariable', {
-                            name: field.text,
-                            type: field.type,
-                            defaultValue: '',
-                            description: '',
-                            datasource: {
-                                type: '',
-                                sql: ''
-                            },
-                            table: '',
-                            backend: null
-                        });
+                    const lastPath = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1];
+                    if (lastPath == 'chat') {
+                        localStorage.setItem(me.formId, me.tempFormHtml);
+                    } else {
+                        await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
                     }
-                });
+                }
             }
             
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },
-        extractFields(htmlString) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlString, 'text/html');
-            const fields = [];
-
-            function extractFieldAttributes(elements) {
-                elements.forEach((element) => {
-                    const alias = element.getAttribute('alias');
-                    const key = element.getAttribute('name') || '';
-                    if (alias) {
-                        let type = "Text";
-                        const tagName = element.tagName.toLowerCase();
-                        if (tagName === 'text-field' && element.getAttribute('type') === 'number') {
-                            type = "Number";
-                        } else if (tagName === 'text-field' && element.getAttribute('type') === 'date') {
-                            type = "Date";
-                        } else if (tagName === 'file-field') {
-                            type = "Attachment";
-                        }
-                        fields.push({ text: alias, key: key, type: type });
+        onFileChange(files) {
+            var me = this;
+            if (!me.activity.attachments) {
+                me.activity.attachments = [];
+            }
+            if (files && files.length > 0) {
+                files.forEach(async (file) => {
+                    const fileName = `uploads/${Date.now()}_${file.name}`;
+                    const data = await me.backend.uploadFile(fileName, file);
+                    if (data && data.path) {
+                        me.activity.attachments.push(data.path);
                     }
                 });
             }
-
-            const fieldTags = [
-                'text-field', 'select-field', 'checkbox-field', 'radio-field', 
-                'file-field', 'label-field', 'boolean-field', 'textarea-field', 
-                'user-select-field'
-            ];
-
-            fieldTags.forEach(tag => {
-                const elements = doc.querySelectorAll(tag);
-                extractFieldAttributes(elements);
-            });
-
-            return fields;
+            me.$emit('update:processDefinition', me.processDefinition);
         },
+        async openFile(path) {
+            const downloadUrl = await this.backend.getFileUrl(path);
+            window.open(downloadUrl, '_blank');
+        }
     }
 };
 </script>

@@ -177,7 +177,7 @@ export default {
                     ///////////////////////////////////
                     await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} }, me.isSimulate);
                 },
-                successMsg: '중간 저장 완료'
+                successMsg: this.$t('successMsg.intermediate')
             });
         },
         async saveForm(variables){
@@ -232,7 +232,7 @@ export default {
 
 
                     //#region 폼 정의시에 검증 스크립트가 등록된 경우, 해당 스크립트를 실행시켜서 유효성을 검사
-                    const error = me.$refs.dynamicForm.validate()
+                    const error = me.$refs.dynamicForm ? me.$refs.dynamicForm.validate() : null;
                     if (error && error.length > 0) {
                         alert("※ 폼에 정의된 유효성 검사에 실패했습니다 !\n> " + error)
                         return;
@@ -243,7 +243,8 @@ export default {
 
                     if(me.isDryRun){
                         let processExecutionCommand = {
-                            processDefinitionId: me.definitionId
+                            processDefinitionId: me.definitionId,
+                            groups: window.localStorage.getItem('groups')
                         }
                                 
                         await backend.startAndComplete({
@@ -261,6 +262,7 @@ export default {
                         let path = ''
                         if ($mode == 'ProcessGPT') {
                             path = btoa(me.workItem.worklist.instId)
+                            me.EventBus.emit('instances-updated');
                         } else {
                             path = me.workItem.worklist.instId
                         }

@@ -67,10 +67,9 @@
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
-// import StorageBaseFactory from '@/utils/StorageBaseFactory';
-// const storage = StorageBaseFactory.getStorage()
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue';
+
 
 export default {
     name: 'call-activity-panel',
@@ -152,6 +151,7 @@ export default {
             me.definitions = value;
         }
         if (me.copyUengineProperties.definitionId) me.setDefinitionInfo(me.copyUengineProperties.definitionId);
+   
     },
     computed: {
         inputData() {
@@ -191,6 +191,24 @@ export default {
         }
     },
     methods: {
+        async beforeSave() {
+            const backend = BackendFactory.createBackend();
+            if(this.copyUengineProperties.definitionId) {
+                let result = await backend.getDefinitionVersions(this.copyUengineProperties.definitionId.replace('.bpmn', ''), {
+                    key: 'version, message',
+                    sort: 'asc',
+                    orderBy: 'timeStamp',
+                    type: 'bpmn'
+                });
+                if(result) {
+                    this.lists = result.map(item => ({ ...item, xml: null }));
+                    this.copyUengineProperties.version = this.lists[this.lists.length - 1].version;
+                } else {
+                    delete this.copyUengineProperties.version;
+                }
+                this.$emit('update:uEngineProperties', this.copyUengineProperties);
+            }
+        },
         parseType(type) {
             switch (type) {
                 case 'Text':
@@ -204,9 +222,9 @@ export default {
             }
         },
         async setDefinitionInfo(definitionId) {
+            const backend = BackendFactory.createBackend();
             if(!definitionId) return;
             // definition 정보 호출
-            const backend = BackendFactory.createBackend();
             if (definitionId.includes('.bpmn')) {
                 definitionId = definitionId.split('.bpmn')[0];
             }
@@ -276,15 +294,7 @@ export default {
             this.copyUengineProperties.variableBindings.push({ key: this.paramKey, value: this.paramValue });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
-        async getData(path, options) {
-            // let value;
-            // if (path) {
-            //     value = await this.storage.getObject(`db://${path}`, options);
-            // } else {
-            //     value = await this.storage.getObject(`db://${this.path}`, options);
-            // }
-            // return value;
-        },
+        
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);

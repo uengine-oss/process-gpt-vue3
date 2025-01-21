@@ -71,6 +71,7 @@ export default {
                     fragmentToParse = fragmentToParse.replace(/>\\n\\/g, '>');
                     fragmentToParse = fragmentToParse.replace(/>\\n/g, '>');
                     fragmentToParse = fragmentToParse.replace(/>\\/g, '>');
+                    fragmentToParse = fragmentToParse.replace(/\\/g, ``);
                 } catch (error) {
                     console.log('### 유효 문자열을 JSON에 적합한 문자열로 변환시키는 과정에서 오류 발생! ###');
                     console.log(error);
@@ -242,6 +243,45 @@ export default {
 
             return dom.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
         },
+        
+        extractFields(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const fields = [];
+        
+            function extractFieldAttributes(elements) {
+                elements.forEach((element) => {
+                    const alias = element.getAttribute('alias');
+                    const vModel = element.getAttribute('v-model');
+                    const match = vModel.match(/slotProps\.modelValue\['(.*?)'\]/);
+                    const tagName = element.tagName.toLowerCase();
+                    const disabled = element.getAttribute('disabled');
+                    const readonly = element.getAttribute('readonly');
+
+                    let field = {
+                        text: alias || '',
+                        key: match[1] || '',
+                        type: tagName.replace('-field', '') || '',
+                        disabled: disabled ? disabled : false,
+                        readonly: readonly ? readonly : false
+                    };
+                    fields.push(field);
+                });
+            }
+        
+            const fieldTags = [
+                'text-field', 'select-field', 'checkbox-field', 'radio-field', 
+                'file-field', 'label-field', 'boolean-field', 'textarea-field', 
+                'user-select-field'
+            ];
+        
+            fieldTags.forEach(tag => {
+                const elements = doc.querySelectorAll(tag);
+                extractFieldAttributes(elements);
+            });
+        
+            return fields;
+        }
     }
 }
 </script>

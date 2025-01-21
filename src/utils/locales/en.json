@@ -1,6 +1,19 @@
 {
     "message": "en",
     "changePath": "You have unsaved changes. Are you sure you want to leave?",
+    "successMsg": {
+        "runningTheProcess": "Running the process",
+        "processExecutionCompleted": "Process execution completed",
+        "workCompleted": "Completion of work",
+        "save": "Saved successfully.",
+        "intermediate": "Intermediate save completed",
+        "delete": "Deleted successfully.",
+        "instanceDelete": "The instance has been deleted.",
+        "completed": "Completed"
+    },
+    "App": {
+        "view": "Read more"
+    },
     "mainPage": {
         "login": "login",
         "logout": "logout",
@@ -53,10 +66,24 @@
         "description": "Description",
         "color": "Color",
         "save": "Save",
-        "delete": "Delete"
+        "delete": "Delete",
+        "newEventTitle": "Please enter a new title for your event"
     },
     "chats": {
-        "title": "Chats"
+        "title": "Chats",
+        "document": "Work Instructions",
+        "assignTask": "Assign Task",
+        "requestCancelled": "{name}'s request has been cancelled.",
+        "startProcess": "Starting the {title} process.",
+        "todoAdded": "Todo {activityId} has been added.",
+        "scheduleAdded": "Schedule {title} has been added.",
+        "processDefinitionCreated": "Process definition has been created.",
+        "processDefinitionModificationStarted": "Process definition modification has started.",
+        "userRequestedAction": "{name} requested {action}",
+        "processExecutionFailed": "Failed to start the {title} process. Please try again."
+    },
+    "AssistantChats": {
+        "document": "Enter the task details you want to assign. When you provide information about the task, a preview of the task that the recipient will see is displayed on the left. Review the preview and improve any lacking areas. Once the improvements are complete, use 'Assign Task' to give the task."
     },
     "proposals": {
         "title": "Proposal"
@@ -89,7 +116,10 @@
         "finishedDate": "Finished Date",
         "initiator": "Initiator",
         "subProcess": "SubProcess",
-        "actions": "Actions"
+        "actions": "Actions",
+        "search": "Search",
+        "itemsPerPageText": "Items per page",
+        "noSearch": "No search results found."
     },
     "adminDetail": {
         "processVariables": "Process Variables",
@@ -99,7 +129,13 @@
         "value": "Value",
         "tools": "Tools",
         "edit": "Edit",
-        "save": "Save"
+        "save": "Save",
+        "rollback": "Rollback",
+        "rollbackMessage": "Do you want to roll back to this point?",
+        "start": "Start",
+        "success": "Execution completed",
+        "send": "Send",
+        "goBack": "Go back"
     },
     "completeInstance": {
         "title": "Complete Instance"
@@ -107,7 +143,7 @@
     "definitionManagement": {
         "title": "Definition Management",
         "upload": "Upload definition list",
-        "release": "Download definition list"
+        "release": "Definition Export"
     },
     "systemDefinition": {
         "title": "System Definition"
@@ -132,14 +168,32 @@
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
-        "lock": "Please press the lock to lock it in order to check in (save).",
-        "unlock": "Please press the lock to unlock it in order to check out (edit).",
+        "lock": "Please press the lock to lock it in order to save.",
+        "unlock": "Please press the lock to unlock it in order to edit.",
         "addMega": "Mega Process",
         "addMajor": "Major Process",
         "addSub": "Sub Process",
         "save": "Save",
         "downloadImage": "Download definition diagram as an image",
-        "consultingAI": "Process Consulting AI"
+        "consultingAI": "Process Consulting AI",
+        "consultingButton": "Start Process Consulting",
+        "editingUser": "is editing.",
+        "checkIn": "Check In",
+        "checkOut": "Check Out",
+        "saveCheckIn": "Save and Check In",
+        "cancelCheckIn": "Cancel and Check In",
+        "confirm": "Confirm",
+        "close": "Close",
+        "cancel": "Cancel",
+        "download": "Download",
+        "uncategorized": "Uncategorized",
+        "closeConsulting": "Are you sure you want to end the consultation without saving?",
+        "closeConsultingInPreview": "Are you sure you want to end the consultation without saving?\nYou can save by clicking the lock button on the right.\n\nDo you want to end the consultation?",
+        "checkInDBError": "DB connection is lost. Download the modified data and save it, then contact the administrator.",
+        "checkOutDBError": "DB connection is lost. Contact the administrator.",
+        "checkInMessage": "Do you want to save the modified content or lock it?",
+        "checkOutMessage": "Do you want to modify the process definition map?",
+        "forcedCheckOutMessage": "Currently, {name} is editing. If you proceed with editing, the content modified by {name} will be damaged and not saved. \nDo you want to proceed with editing?"
     },
     "uiDefinition": {
         "title": "Screen Definition",
@@ -212,7 +266,9 @@
         "document": "Work Instruction",
         "camera": "Camera",
         "user": "User",
-        "chatRoom": "Chat Room"
+        "chatRoom": "Chat Room",
+        "viewDetails": "View Details",
+        "executeProcess": "Execute Process"
     },
     "accountTab": {
         "accountSetting": "Account Settings",
@@ -321,6 +377,12 @@
         "mapperDescriptionSubTitle1": "1. Variables: Values added to the variable section \n2. Roles: Roles (names) registered in the swimlane \n3. Instance: Stores the end date of the next task to be executed \n4. Activities: Roles (names) registered in the task \n5. Arguments: Names (values) registered in the attributes",
         "mapperDescriptionSubTitle2": "How to use \n- Drag and drop while holding the mouse to connect\n- Click the line to delete"
     },
+    "EscalationEventDefinitionPanel": {
+        "expression": "Event Key"
+    },
+    "SignalEventDefinitionPanel": {
+        "eventKey": "Event Key"
+    },
     "NotificationDD": {
         "notification": "Notifications"
     },
@@ -405,6 +467,8 @@
         "methodTypeDescriptionSubTitle1": "1. GET: A request to retrieve data from the server \n2. POST: A request to create and send new data to the server \n3. PUT: A request to update or replace existing data entirely \n4. PATCH: A request to partially modify existing data \n5. API URL: The endpoint URL of the server where the request will be sent\n"
     },
     "EventSynchronizationForm": {
+        "edit": "Edit",
+        "delete": "Delete",
         "dataMapping": "Data Mapping",
         "eventAttributes": "Event Attributes",
         "primaryKey": "Primary Key",
@@ -503,16 +567,21 @@
         "gatewayDescriptionSubTitle3": "Event-based gateway: It can only proceed to the next task when a specific event occurs.",
         "gatewayDescriptionSubTitle4": "Complex Gateway (Not Implemented): Users can add arbitrary conditions to select the next task."
     },
-    "SystemList": {
-        "dialogTitle": "Add System",
-        "name": "Name",
-        "description": "Description",
-        "apiUrl": "API URL",
-        "add": "Add"
+    "SystemList" : {
+        "addDialogTitle" : "Add System",
+        "editDialogTitle": "Edit System",
+        "name" : "Name",
+        "description" : "Description",
+        "apiUrl" : "API URL",
+        "add" : "Add",
+        "edit" : "Edit"
     },
     "System" : {
         "description" : "Description",
-        "edit" : "Edit"
+        "edit" : "Edit",
+        "delete": "Delete",
+        "confirmDeleteTitle" : "Delete System Definition",
+        "confirmDeleteText" : "Are you sure you want to delete?"
     },
     "PaletteProvider" : {
         "undoCmdZ": "Undo (Cmd + Z)",
@@ -539,7 +608,19 @@
         "dataObject": "Create Data Object"
     },
     "chatListing": {
-        "search": "search"
+        "title": "Chat Room Settings",
+        "search": "Search",
+        "chatRoomName": "Chat Room Name",
+        "selectParticipants": "Select Participants",
+        "save": "Save",
+        "delete": "Delete",
+        "create": "Create",
+        "cancel": "Cancel",
+        "setting": "Setting",
+        "deleteChatRoom": "Delete Chat Room",
+        "confirmDeleteChatRoom": "Are you sure you want to delete this chat room?",
+        "enterChatRoomName": "Please enter a chat room name.",
+        "selectAtLeastOneParticipant": "Please select at least one participant."
     },
     "userListing": {
         "search": "User search",
@@ -557,6 +638,7 @@
         "replace": "Change element",
         "delete": "Delete",
         "connect": "Connect to other element",
+        "lane": "Add Lane",
         "laneAbove": "Add Lane Above",
         "laneToTheLeft": "Add Lane to the Left",
         "laneBelow": "Add Lane Below",
@@ -564,6 +646,70 @@
         "laneDivideTwo": "Divide into Two Lanes",
         "laneDivideThree": "Divide into Three Lanes",
         "connectionMulti": "Connect using Message Flow"
+    },
+    "CustomReplaceElement": {
+        "replace-with-call-activity": "Replace with call activity",
+        "replace-with-collapsed-subprocess": "Replace with collapsed subprocess",
+        "replace-with-expanded-subprocess": "Replace with expanded subprocess",
+        "replace-with-manual-task": "Replace with manual task",
+        "replace-with-receive-task": "Replace with receive task",
+        "replace-with-rule-task": "Replace with business rule task",
+        "replace-with-script-task": "Replace with script task",
+        "replace-with-send-task": "Replace with send task",
+        "replace-with-service-task": "Replace with service task",
+        "replace-with-task": "Replace with task",
+        "replace-with-user-task": "Replace with user task",
+        "toggle-loop": "Toggle loop",
+        "toggle-parallel-mi": "Parallel multi-instance",
+        "toggle-sequential-mi": "Sequential multi-instance",
+        "replace-with-compensation-end": "Replace with compensation end event",
+        "replace-with-error-end": "Replace with error end event",
+        "replace-with-escalation-end": "Replace with escalation end event",
+        "replace-with-message-end": "Replace with message end event",
+        "replace-with-none-intermediate-throw": "Replace with none intermediate throw event",
+        "replace-with-signal-start": "Replace with signal start event",
+        "replace-with-terminate-end": "Replace with terminate end event",
+        "replace-with-signal-end": "Replace with signal end event",
+        "replace-with-conditional-start": "Replace with conditional start event",
+        "replace-with-message-start": "Replace with message start event",
+        "replace-with-none-intermediate-throwing": "Replace with none intermediate throwing event",
+        "replace-with-timer-start": "Replace with timer start event",
+        "replace-with-compensation-intermediate-throw": "Replace with compensation intermediate throw",
+        "replace-with-conditional-intermediate-catch": "Replace with conditional intermediate catch",
+        "replace-with-escalation-intermediate-throw": "Replace with escalation intermediate throw",
+        "replace-with-link-intermediate-catch": "Replace with link intermediate catch",
+        "replace-with-link-intermediate-throw": "Replace with link intermediate throw",
+        "replace-with-message-intermediate-catch": "Replace with message intermediate catch",
+        "replace-with-message-intermediate-throw": "Replace with message intermediate throw",
+        "replace-with-none-end": "Replace with none end",
+        "replace-with-none-start": "Replace with none start",
+        "replace-with-signal-intermediate-catch": "Replace with signal intermediate catch",
+        "replace-with-signal-intermediate-throw": "Replace with signal intermediate throw",
+        "replace-with-timer-intermediate-catch": "Replace with timer intermediate catch",
+        "replace-with-complex-gateway": "Replace with complex gateway",
+        "replace-with-event-based-gateway": "Replace with event-based gateway",
+        "replace-with-inclusive-gateway": "Replace with inclusive gateway",
+        "replace-with-parallel-gateway": "Replace with parallel gateway",
+        "replace-with-data-object-reference": "Replace With Data Object Reference",
+        "replace-with-event-subprocess": "Replace with event subprocess",
+        "replace-with-transaction": "Replace with transaction",
+        "replace-with-data-store-reference": "Replace with data store reference",
+        "toggle-is-collection": "Toggle Is Collection",
+        "toggle-adhoc": "Toggle Adhoc",
+        "replace-with-collapsed-pool": "Replace With Collapsed Pool",
+        "toggle-participant-multiplicity": "Toggle participant multiplicity",
+        "replace-with-compensation-boundary": "Replace with compensation boundary event",
+        "replace-with-conditional-boundary": "Replace with conditional boundary event",
+        "replace-with-error-boundary": "Replace with error boundary event",
+        "replace-with-escalation-boundary": "Replace with escalation boundary event",
+        "replace-with-message-boundary": "Replace with message boundary event",
+        "replace-with-non-interrupting-conditional-boundary": "Replace with non-interrupting conditional boundary event",
+        "replace-with-non-interrupting-escalation-boundary": "Replace with non-interrupting escalation boundary event",
+        "replace-with-non-interrupting-message-boundary": "Replace with non-interrupting message boundary event",
+        "replace-with-non-interrupting-signal-boundary": "Replace with non-interrupting signal boundary event",
+        "replace-with-non-interrupting-timer-boundary": "Replace with non-interrupting timer boundary event",
+        "replace-with-signal-boundary": "Replace with signal boundary event",
+        "replace-with-timer-boundary": "Replace with timer boundary event"
     },
     "WorkItem": {
         "progress": "Progress",
@@ -577,11 +723,53 @@
         "worklist": "Worklist",
         "success": "Success",
         "taskID": "Task ID: ",
-        "instanceID": "Instance ID: "
+        "instanceID": "Instance ID: ",
+        "processRecord": "Process Execution Record",
+        "startRecording": "Start Recording Process Execution",
+        "stopRecording": "Stop Recording Process Execution",
+        "recordingSave": "Save Process Execution Recording",
+        "confirm": "Confirm",
+        "name": "Title"
+    },
+    "TestVariables": {
+        "key": "Key",
+        "value": "Value",
+        "action": "Action",
+        "noData": "No Data"
+    },
+    "TestVariable": {
+        "start": "Start",
+        "delete": "Delete"
     },
     "VerticalSidebar": {
+        "instanceList": "Instance List",
+        "instanceMyGroup": "My Group Instance",
         "saveFileName": "File name to be saved",
-        "downloadDefinitionList": "Download definition list",
+        "downloadDefinitionList": "Definition Export",
         "save": "Save"
+    },
+    "ProfitExpanse": {
+        "processExecutionPerformance": "Process Execution Performance",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "toDo": "To Do",
+        "inProcess": "In Progress",
+        "done": "Completed",
+        "all": "All",
+        "typeSelection": "Type Selection",
+        "taskId": "Task ID"
+    },
+    "InstanceCard": {
+        "progress": "Progress",
+        "workItem": "Work Item",
+        "workHistory": "Work History",
+        "ganttChart": "Gantt Chart",
+        "sendEvent": "Send {event} event"
+    },
+    "DryRunProcess": {
+        "notFound": "Work item not found."
+    },
+    "PALUserTaskPanel": {
+        "insertDescription": "Please enter the task description"
     }
 }

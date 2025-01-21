@@ -155,18 +155,28 @@
                                                                             </template>
                                                                             <div style="margin-left:5px; margin-top:0px;">{{ work.messageForUser }}</div>
                                                                             <div>
-                                                                                <v-btn @click="work.expanded = !work.expanded"
-                                                                                    class="ml-2"
-                                                                                    size="small" icon density="comfortable"
-                                                                                >
-                                                                                    <icons :icon="work.expanded ? 'arrow-up-2' : 'arrow-down-2'" />
-                                                                                </v-btn>
-                                                                                <v-btn  @click="startProcess(work, index)"
-                                                                                    class="ml-2"
-                                                                                    size="small" icon density="comfortable"
-                                                                                >
-                                                                                    <Icons :icon="'play'" />
-                                                                                </v-btn>
+                                                                                <v-tooltip v-if="!isViewMode" :text="$t('chat.viewDetails')">
+                                                                                    <template v-slot:activator="{ props }">
+                                                                                        <v-btn v-bind="props"
+                                                                                            @click="work.expanded = !work.expanded"
+                                                                                            class="ml-2"
+                                                                                            size="small" icon variant="text" density="comfortable"
+                                                                                        >
+                                                                                        <icons :icon="work.expanded ? 'arrow-up-2' : 'arrow-down-2'" />
+                                                                                        </v-btn>
+                                                                                    </template>
+                                                                                </v-tooltip>
+                                                                                <v-tooltip v-if="!isViewMode" :text="$t('chat.executeProcess')">
+                                                                                    <template v-slot:activator="{ props }">
+                                                                                        <v-btn v-bind="props"
+                                                                                            @click="startProcess(work, index)"
+                                                                                            class="ml-2"
+                                                                                            size="small" icon variant="text" density="comfortable"
+                                                                                        >
+                                                                                            <Icons :icon="'play'" :color="'rgb(var(--v-theme-primary))'"/>
+                                                                                        </v-btn>
+                                                                                    </template>
+                                                                                </v-tooltip>
                                                                             </div>
                                                                         </v-row>
                                                                         <v-expand-transition>
@@ -408,7 +418,7 @@
                                 
                                 <v-tooltip :text="$t('chat.headset')">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn @click="recordingModeChange()"
+                                        <v-btn @click="openChatMenu(); recordingModeChange()"
                                             class="text-medium-emphasis"
                                             icon
                                             variant="text"
@@ -421,7 +431,7 @@
                                 </v-tooltip>
                                 <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="startWorkOrder" v-bind="props"
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
                                             <Icons :icon="'document'" :size="20" />
                                         </v-btn>
@@ -429,7 +439,7 @@
                                 </v-tooltip>
                                 <v-tooltip :text="$t('chat.camera')">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="capture" v-bind="props"
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
                                             <Icons :icon="'camera'" :size="20" />
                                         </v-btn>
@@ -437,7 +447,7 @@
                                 </v-tooltip>
                                 <v-tooltip :text="$t('chat.addImage')">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="uploadImage" v-bind="props"
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); uploadImage()" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
                                             <Icons :icon="'add-media-image'" :size="20" />
                                         </v-btn>
@@ -447,7 +457,7 @@
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
                                             :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
-                                            class="text-medium-emphasis" @click="requestDraftAgent" v-bind="props"
+                                            class="text-medium-emphasis" @click="openChatMenu(); requestDraftAgent()" v-bind="props"
                                             style="width:30px; height:30px; margin:1px 0px 0px 5px;">
                                             <Icons :icon="'document-sparkle'" :size="20"  />
                                         </v-btn>
@@ -458,7 +468,7 @@
                                     </template>
                                 </v-tooltip>
                                 <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && !agentInfo.isRunning"
-                                    ref="uploadForm" @submit.prevent="submitFile"
+                                    ref="uploadForm" @submit.prevent="openChatMenu(); submitFile()"
                                     style="height:30px;"
                                     class="chat-selected-file"
                                 >
@@ -490,7 +500,7 @@
                                     ></v-file-input>
                                     <v-tooltip v-if="type == 'chats'" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn icon variant="text" class="text-medium-emphasis" @click="toggleProcessGPTActive" v-bind="props"
+                                            <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); toggleProcessGPTActive()" v-bind="props"
                                                 style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
                                                 <img :style="ProcessGPTActive ? 'opacity:1' : 'opacity:0.5'"
                                                     src="@/assets/images/chat/chat-icon.png"
@@ -507,6 +517,11 @@
                 <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
                     <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
                 </div> -->
+                <!-- image preview -->
+                <div style="position: absolute; bottom: 20%; z-index: 9999;" class="d-flex">
+                    <div id="imagePreview"></div>
+                    <v-btn v-if="delImgBtn" @click="deleteImage()" density="compact" icon="mdi-close" variant="text" class="ml-1"></v-btn>
+                </div>
             </div>
             <v-divider />
 
@@ -543,7 +558,6 @@
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
             <!-- image upload -->
             <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-            <div id="imagePreview" style="max-width: 200px;"></div>
             <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex align-center pa-0">
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
@@ -564,16 +578,16 @@
                             icon
                             variant="text"
                         >
-                            <Icons :icon="'sharp-mic'"  />
+                            <Icons :icon="'sharp-mic'" />
                         </v-btn>
                         <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
                             density="comfortable"
                             icon
                             variant="text"
                         >
-                            <Icons :icon="'stop'" :size="'20'"  />
+                            <Icons :icon="'stop'" :size="'20'" />
                         </v-btn>
-                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'"  />
+                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
                     </template>
                     <template v-slot:append-inner>
                         <div style="height: -webkit-fill-available; margin:5px 5px 0px 0px;">
@@ -623,6 +637,9 @@ import Record from './Record.vue';
 // import Record from './Record2.vue';
 import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
+
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 export default {
     components: {
@@ -686,6 +703,7 @@ export default {
             isViewJSON: [],
             isviewJSONStatus: false,
             attachedImg: null,
+            delImgBtn: false,
             showNewMessageNoti: false,
             lastMessage: { name: '', content: '' },
             showNewMessageNotiTimer: null,
@@ -711,9 +729,17 @@ export default {
             }
         });
         if (window.location.pathname && window.location.pathname.includes('/definitions/')) {
-            this.chatHeight = 'height:calc(100vh - 337px)'
+            if (!this.isMobile) {
+                this.chatHeight = 'height:calc(100vh - 337px)'
+            } else {
+                this.chatHeight = 'height:calc(100vh - 450px)'
+            }
         } else if (window.location.pathname && window.location.pathname.includes('/instancelist')) {
-            this.chatHeight = 'height:calc(100vh - 350px)' // 원하는 height 값으로 변경
+            if (!this.isMobile) {
+                this.chatHeight = 'height:calc(100vh - 350px)'
+            } else {
+                this.chatHeight = 'height:calc(100vh - 450px)'
+            }
         }
 
         this.EventBus.on('scroll_update', () => {
@@ -919,8 +945,8 @@ export default {
             if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
                 this.mediaRecorder.stop();
                 this.mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
-                this.uploadAudio(audioBlob);
+                    const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+                    this.uploadAudio(audioBlob);
                 };
             }
         },
@@ -945,8 +971,8 @@ export default {
             if (this.micRecorder && this.micRecorder.state === 'recording') {
                 this.micRecorder.stop();
                 this.micRecorder.onstop = async () => {
-                const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
-                await this.uploadAudio(audioBlob);
+                    const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
+                    await this.uploadAudio(audioBlob);
                 };
             }
         },
@@ -1165,6 +1191,7 @@ export default {
             this.attachedImg = null;
             var imagePreview = document.querySelector("#imagePreview");
             imagePreview.innerHTML = '';
+            this.delImgBtn = false;
             this.isAtBottom = true
             setTimeout(() => {
                 this.newMessage = "";
@@ -1211,34 +1238,45 @@ export default {
             this.attachedImg = null;
             this.$refs.uploader.click();
         },
-        changeImage(e) {
+        async changeImage(e) {
             const me = this;
             const imageFile = e.target.files[0];
-            const reader = new FileReader();
-
-            reader.onload = (event) => {
-                const imgElement = document.createElement("img");
-                imgElement.src = event.target.result;
-                imgElement.onload = () => {
-                    const canvas = document.createElement("canvas");
-                    const max_width = 200; // 최대 너비 설정
-                    const scaleSize = max_width / imgElement.width;
-                    canvas.width = max_width;
-                    canvas.height = imgElement.height * scaleSize;
-
-                    const ctx = canvas.getContext("2d");
-                    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-                    const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
-
-                    // 이미지 미리보기에 추가
-                    var html = `<img src=${srcEncoded} width='100%' />`;
+            
+            if (window.location.hostname !== 'localhost') {
+                const fileName = `uploads/${Date.now()}_${imageFile.name}`;
+                const data = await backend.uploadImage(fileName, imageFile);
+                if (data && data.path) {
+                    const imageUrl = await backend.getImageUrl(data.path);
+                    var html = `<img src=${imageUrl} width='100%' />`;
                     $('#imagePreview').append(html);
-                    me.attachedImg = srcEncoded;
-                };
-            };
+                    me.attachedImg = imageUrl;
+                }
+            } else {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const imgElement = document.createElement("img");
+                    imgElement.src = event.target.result;
+                    imgElement.onload = () => {
+                        const canvas = document.createElement("canvas");
+                        const max_width = 200; // 최대 너비 설정
+                        const scaleSize = max_width / imgElement.width;
+                        canvas.width = max_width;
+                        canvas.height = imgElement.height * scaleSize;
 
-            if (imageFile) {
-                reader.readAsDataURL(imageFile);
+                        const ctx = canvas.getContext("2d");
+                        ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+                        const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
+
+                        // 이미지 미리보기에 추가
+                        var html = `<img src=${srcEncoded} width='100%' />`;
+                        $('#imagePreview').append(html);
+                        me.attachedImg = srcEncoded;
+                        me.delImgBtn = true;
+                    };
+                };
+                if (imageFile) {
+                    reader.readAsDataURL(imageFile);
+                }
             }
         },
         capture() {
@@ -1246,6 +1284,12 @@ export default {
             this.attachedImg = null;
             this.$refs.captureImg.click();
         },
+        deleteImage() {
+            this.delImgBtn = false;
+            this.attachedImg = null;
+            var imagePreview = document.querySelector("#imagePreview");
+            imagePreview.innerHTML = '';
+        }
     }
 };
 </script>

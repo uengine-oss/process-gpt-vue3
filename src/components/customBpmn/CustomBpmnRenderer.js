@@ -15,11 +15,7 @@ import { is } from 'bpmn-js/lib/util/ModelUtil';
 import { isAny } from 'bpmn-js/lib/features/modeling/util/ModelingUtil';
 
 const HIGH_PRIORITY = 1500,
-  TASK_BORDER_RADIUS = 10,
-  ERROR_COLOR = '#e53935',
-  WARNING_COLOR = '#FFA500',
-  WARNING = 0,
-  ERROR = 1;
+  TASK_BORDER_RADIUS = 10;
 
 
 export default class CustomBpmnRenderer extends BaseRenderer {
@@ -30,39 +26,11 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     this.elementRegistry = elementRegistry;
     this.graphicsFactory = graphicsFactory;
 
-    this.invalidationList = options.propertiesPanel?.invalidationList || {};
     // 'canvas.init' 이벤트에 리스너를 등록합니다.
     eventBus.on('canvas.init', () => {
       this.addTitleToDiagram(this.canvas); // canvas를 addTitleToDiagram에 전달합니다.
     });
 
-
-    eventBus.on('config.changed', (event) => {
-      this.updateConfig(event.config);
-    });
-
-  }
-
-
-  updateConfig(newConfig) {
-    this.config = newConfig;
-    this.invalidationList = newConfig.propertiesPanel?.invalidationList || {};
-    this.redrawAllElements();
-  }
-
-
-  redrawAllElements() {
-    const elements = this.elementRegistry.getAll();
-    elements.forEach((element) => {
-      if (!element.labelTarget) { // 라벨 요소는 제외
-        try {
-          const gfx = this.elementRegistry.getGraphics(element);
-          this.graphicsFactory.update('shape', element, gfx);
-        } catch (error) {
-
-        }
-      }
-    });
   }
 
   addTitleToDiagram(canvas) {
@@ -124,13 +92,6 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     return shape;
   }
 
-
-  drawCustomLane(parentNode, shape, element) {
-    svgAttr(shape, {
-      color: 'red'
-    });
-  }
-
   // 스윔레인 배경 색상 및 선 색상 bpmn:Lane, (stroke : 선 색상, fill: 배경 색상)
   drawCustomLane(parentNode, shape, element) {
     svgAttr(shape, {
@@ -153,13 +114,9 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     const existingWidth = shape.width.baseVal.value;
     const existingHeight = shape.height.baseVal.value
 
-    var strokColor = 'none';
+    var strokeColor = 'none';
 
-    var strokColor = this.getValidateColor(this.validate(element.id));
-    if (strokColor == null) {
-      strokColor = 'none';
-    }
-    const borderRect = drawBorderRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokColor);
+    const borderRect = drawBorderRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokeColor);
     prependTo(borderRect, parentNode);
     const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, 'none', '#fdf2d0', shape.style);
     prependTo(rect, parentNode);
@@ -170,12 +127,9 @@ export default class CustomBpmnRenderer extends BaseRenderer {
   drawCustomStartEvent(parentNode, shape, element) {
     const size = 34;
     const radius = 100;
-    var strokColor = this.getValidateColor(this.validate(element.id));
-    if (strokColor == null) {
-      strokColor = 'none';
-    }
+    var strokeColor = 'none';
     
-    const borderRect = drawBorderRect(parentNode, size, size, radius, strokColor);
+    const borderRect = drawBorderRect(parentNode, size, size, radius, strokeColor);
     prependTo(borderRect, parentNode);
     const rect = drawRect(parentNode, size, size, radius, 'none', '#f6c745');
     prependTo(rect, parentNode);
@@ -186,12 +140,9 @@ export default class CustomBpmnRenderer extends BaseRenderer {
   drawCustomEndEvent(parentNode, shape, element) {
     const size = 34;
     const radius = 100;
-    var strokColor = this.getValidateColor(this.validate(element.id));
-    if (strokColor == null) {
-      strokColor = 'none';
-    }
+    var strokeColor =  'none';
     
-    const borderRect = drawBorderRect(parentNode, size, size, radius, strokColor);
+    const borderRect = drawBorderRect(parentNode, size, size, radius, strokeColor);
     prependTo(borderRect, parentNode);
     const rect = drawRect(parentNode, size, size, radius, 'none', '#f6c745');
     prependTo(rect, parentNode);
@@ -202,13 +153,11 @@ export default class CustomBpmnRenderer extends BaseRenderer {
   drawConnection(parentNode, element) {
 
     if (is(element, 'bpmn:SequenceFlow')) {
-      var strokColor = this.getValidateColor(this.validate(element.id));
-      if (strokColor == null) {
-        strokColor = 'black';
-      }
-      const customMarkerUrl = createCustomMarker(parentNode, strokColor); // 화살표 색상 설정
+      var strokeColor =  'black';
+
+      const customMarkerUrl = createCustomMarker(parentNode, strokeColor); // 화살표 색상 설정
       const options = {
-        stroke: strokColor, // 연결선 색상 변경
+        stroke: strokeColor, // 연결선 색상 변경
         strokeWidth: '2',
         markerEnd: customMarkerUrl // 사용자 정의 마커 적용
       }
@@ -234,13 +183,10 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     const diamond = drawPolygon(parentNode, points);
 
     copyAttributes(shape, diamond);
-    var strokColor = this.getValidateColor(this.validate(element.id));
-    if (strokColor == null) {
-      strokColor = '#000000';
-    }
-    diamond.style.stroke = strokColor;
-    diamond.style.strokeWidth = strokColor === '#000000' ? '2' : '5';
-    if(strokColor != '#000000' ) {
+    var strokeColor = '#000000';
+    diamond.style.stroke = strokeColor;
+    diamond.style.strokeWidth = strokeColor === '#000000' ? '2' : '5';
+    if(strokeColor != '#000000' ) {
       diamond.style.strokeDasharray = '10, 10';
     }
 
@@ -254,11 +200,9 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     const existingWidth = shape.width.baseVal.value;
     const existingHeight = shape.height.baseVal.value
 
-    var strokColor = this.getValidateColor(this.validate(element.id));
-    if (strokColor == null) {
-      strokColor = '#000000';
-    }
-    const borderRect = drawBorderRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokColor);
+    var strokeColor = '#000000';
+
+    const borderRect = drawBorderRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokeColor);
     prependTo(borderRect, parentNode);
     const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, '#000000', '#ffffff');
     prependTo(rect, parentNode);
@@ -273,35 +217,6 @@ export default class CustomBpmnRenderer extends BaseRenderer {
 
     return this.bpmnRenderer.getShapePath(shape);
   }
-
-  validate(key) {
-    var state = 'info';
-    if (Object.keys(this.invalidationList).length > 0) {
-      if (Object.keys(this.invalidationList).includes(key)) {
-        this.invalidationList[key].forEach((error) => {
-          if (error.errorLevel == WARNING) {
-            state = WARNING;
-          }
-        })
-        this.invalidationList[key].forEach((error) => {
-          if (error.errorLevel == ERROR) {
-            state = ERROR;
-          }
-        })
-      }
-    }
-    return state;
-  }
-
-  getValidateColor(state) {
-    if (state == ERROR) {
-      return ERROR_COLOR;
-    } else if (state == WARNING) {
-      return WARNING_COLOR;
-    }
-    return null;
-  }
-
 }
 
 CustomBpmnRenderer.$inject = ['eventBus', 'bpmnRenderer', 'canvas', 'config', 'elementRegistry', 'graphicsFactory'];

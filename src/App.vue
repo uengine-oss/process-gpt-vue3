@@ -16,7 +16,7 @@
             location="top"
             >{{ snackbarMessage }}
             <v-btn v-if="snackbarColor == 'error'" variant="plain" @click="show = !show">
-                {{ show ? '자세히 보기' : '자세히 보기' }}
+                {{ show ? $t('App.view') : $t('App.view') }}
             </v-btn>
             <v-expand-transition>
                 <div v-if="snackbarColor == 'error' && show" style="text-align: left;">{{ snackbarMessageDetail }}</div>
@@ -44,7 +44,6 @@
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { createClient } from '@supabase/supabase-js';
 import { RouterView } from 'vue-router';
 

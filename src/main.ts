@@ -21,8 +21,8 @@ import './_mockApis';
 // print
 // import print from 'vue3-print-nb';
 // Table
-import Vue3EasyDataTable from 'vue3-easy-data-table';
-import 'vue3-easy-data-table/dist/style.css';
+// import Vue3EasyDataTable from 'vue3-easy-data-table';
+// import 'vue3-easy-data-table/dist/style.css';
 //i18
 import messages from '@/utils/locales/messages';
 import { createI18n } from 'vue-i18n';
@@ -46,7 +46,6 @@ import 'vue-diff/dist/index.css';
 VueDiff.hljs.registerLanguage('xml', xml);
 
 import VueScrollTo from 'vue-scrollto';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 import ModelerImageGenerator from '@/components/designer/ModelerImageGenerator.vue';
 import type { KeycloakOnLoad } from 'keycloak-js';
@@ -74,14 +73,24 @@ const ModelingEmitter = mitt();
 declare global {
     interface Window {
         $mode: any; 
+        $pal: any;
         $supabase: any;
         $jms: any;
         $isTenantServer: boolean;
         $tenantName: string;
+        _env_: any;
     }
 }
 
+Object.defineProperty(window, '$pal', {
+    value: false,
+    writable: false,
+    configurable: false
+});
+
+
 Object.defineProperty(window, '$mode', {
+    // value: 'uEngine',
     value: 'ProcessGPT',
     writable: false,
     configurable: false
@@ -95,223 +104,26 @@ Object.defineProperty(window, '$jms', {
 
 
 async function setupSupabase() {
-    window.$mode = 'uEngine';
+    // window.$mode = 'uEngine';
     // window.$mode = 'ProcessGPT';
-    window.$jms = false;
+    // window.$jms = false;
+    const supabaseUrl = window._env_?.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = window._env_?.VITE_SUPABASE_KEY || import.meta.env.VITE_SUPABASE_KEY;
 
-    if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
-        window.$mode == 'uEngine') {
-        Object.defineProperty(window, '$supabase', {
-            value: createClient(
-                'http://127.0.0.1:54321',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-                {
-                    auth: {
-                        autoRefreshToken: true,
-                        persistSession: true
-                    }
+    Object.defineProperty(window, '$supabase', {
+        value: createClient(
+            supabaseUrl,
+            supabaseKey,
+            {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true
                 }
-            ),
-            writable: false,
-            configurable: false
-        });
-    } else {
-        Object.defineProperty(window, '$supabase', {
-            value: createClient(
-                'https://qivmgbtrzgnjcpyynpam.supabase.co',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpdm1nYnRyemduamNweXlucGFtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNTU4ODc3NSwiZXhwIjoyMDMxMTY0Nzc1fQ.z8LIo50hs1gWcerWxx1dhjri-DMoDw9z0luba_Ap4cI',
-                {
-                    auth: {
-                        autoRefreshToken: true,
-                        persistSession: true
-                    }
-                }
-            ),
-            writable: false,
-            configurable: false
-        });
-        const subdomain = window.location.host.split('.')[0];
-        if(subdomain == 'www'){
-            Object.defineProperty(window, '$isTenantServer', {
-                value: true,
-                writable: false,
-                configurable: true
-            });
-        } else {
-            Object.defineProperty(window, '$isTenantServer', {
-                value: false,
-                writable: false,
-                configurable: true
-            });
-            Object.defineProperty(window, '$tenantName', {
-                value: subdomain,
-                writable: false,
-                configurable: false
-            });
-        }
-    }
-    
-    // if (window.location.host.includes('localhost') || window.location.host.includes('192.168') || window.location.host.includes('127.0.0.1') || 
-    //     window.$mode == 'uEngine') {
-    //     window.$isTenantServer = false
-    //     window.$supabase = createClient(
-    //         'http://127.0.0.1:54321',
-    //         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
-    //         {
-    //             auth: {
-    //                 autoRefreshToken: false,
-    //                 persistSession: false
-    //             }
-    //         }
-    //     );
-    // } else {
-    //     window.$masterDB = createClient(
-    //         'https://qivmgbtrzgnjcpyynpam.supabase.co',
-    //         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpdm1nYnRyemduamNweXlucGFtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNTU4ODc3NSwiZXhwIjoyMDMxMTY0Nzc1fQ.z8LIo50hs1gWcerWxx1dhjri-DMoDw9z0luba_Ap4cI',
-    //         {
-    //             auth: {
-    //                 autoRefreshToken: false,
-    //                 persistSession: false
-    //             }
-    //         }
-    //     );
-    //     const subdomain = window.location.host.split('.')[0];
-    //     if(subdomain == 'www'){
-    //         window.$isTenantServer = true;
-    //         window.$supabase = createClient(
-    //             'https://qivmgbtrzgnjcpyynpam.supabase.co',
-    //             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpdm1nYnRyemduamNweXlucGFtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNTU4ODc3NSwiZXhwIjoyMDMxMTY0Nzc1fQ.z8LIo50hs1gWcerWxx1dhjri-DMoDw9z0luba_Ap4cI',
-    //             {
-    //                 auth: {
-    //                     autoRefreshToken: false,
-    //                     persistSession: false
-    //                 }
-    //             }
-    //         );
-    //     } else {
-    //         let res: any;
-    //         window.$isTenantServer = false;
-    //         window.$tenantName = subdomain;
-    //         await (async () => {
-    //             let options: {
-    //                 key: string;
-    //                 match?: Record<string, any>;
-    //             } = {
-    //                 key: "id"
-    //             };
-    //             let obj: {
-    //                 table: string;
-    //                 searchKey?: string;
-    //                 searchVal?: string;
-    //             } = {
-    //                 table: ''
-    //             };
-            
-    //             let path = `db://tenant_def/${subdomain}`
-    //             path = path.includes('://') ? path.split('://')[1] : path;
-            
-    //             if (path.includes('/')) {
-    //                 obj.table = path.split('/')[0];
-    //                 if (options && options.key) {
-    //                     obj.searchKey = options.key;
-    //                     obj.searchVal = path.split('/')[1];
-    //                 }
-    //             } else {
-    //                 obj.table = path;
-    //             }
-    //             if (options && options.match) {
-    //                 const { data, error } = await window.$masterDB
-    //                     .from(obj.table)
-    //                     .select()
-    //                     .match(options.match)
-    //                     .maybeSingle();
-            
-    //                 if (error) {
-    //                     alert(error);
-    //                 } else if (data) {
-    //                     res = data;
-    //                 }
-    //             } else if (obj.searchVal) {
-    //                 const { data, error } = await window.$masterDB
-    //                     .from(obj.table)
-    //                     .select()
-    //                     .eq(obj.searchKey, obj.searchVal)
-    //                     .maybeSingle();
-            
-    //                 if (error) {
-    //                     alert(error);
-    //                 } else if (data) {
-    //                     res = data;
-    //                 }
-    //             } else {
-    //                 const { data, error } = await window.$masterDB
-    //                     .from(obj.table)
-    //                     .select()
-    //                     .maybeSingle();
-                    
-    //                 if (error) {
-    //                     alert(error);
-    //                 } else if (data) {
-    //                     res = data;
-    //                 }
-    //             }
-    //             if(res && res.url && res.secret){
-    //                 window.$supabase = createClient(res.url, res.secret, {
-    //                     auth: {
-    //                         autoRefreshToken: false,
-    //                         persistSession: false
-    //                     }
-    //                 });
-                    
-    //                 const storage = StorageBaseFactory.getStorage();
-
-    //                 try {
-    //                     await axios.post(`/execution/update_db`);
-    //                 } catch (error: any) {
-    //                     if (error.response && error.response.status === 500) {
-    //                         console.error('Error updating DB:', error);
-    //                         alert('DB 연결에 실패하였습니다. 연결된 DB가 정상적으로 동작 중인지 확인 후 다시 시도해주세요.');
-    //                     } else {
-    //                         console.error('An unexpected error occurred:', error);
-    //                     }
-    //                 }
-
-    //                 const response = await storage.list(`users`);
-    //                 if (response && response.length == 0) {
-    //                     if (res && res.owner) {
-    //                         const { data, error } = await window.$masterDB
-    //                             .from('users')
-    //                             .select('*')
-    //                             .eq('email', res.owner)
-    //                             .maybeSingle();
-        
-    //                         if (error) {
-    //                             console.error('Error fetching user:', error);
-    //                             throw error;
-    //                         } else if (data && data.pw) {
-    //                             let userInfo = {
-    //                                 username: data.username,
-    //                                 email: data.email,
-    //                                 password: data.pw,
-    //                             };
-    //                             const result = await storage.signUp(userInfo);
-    //                             let dbUserInfo = {
-    //                                 id: result.user.id,
-    //                                 username: data.username,
-    //                                 email: data.email,
-    //                             };
-    //                             await storage.putObject('users', dbUserInfo);
-    //                         }
-    //                     }
-    //                 } 
-
-    //             } else {
-    //                 alert('해당 주소는 존재하지 않는 주소입니다. 가입 후 이용하세요.');
-    //                 window.location.href = 'https://www.process-gpt.io';
-    //             }
-    //         })();
-    //     }
-    // }
+            }
+        ),
+        writable: false,
+        configurable: false
+    });
 }
 
 async function initializeApp() {
@@ -319,8 +131,7 @@ async function initializeApp() {
     const app = createApp(App);
     app.use(VueMonacoEditorPlugin, {
         paths: {
-            // The recommended CDN config
-            vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs'
+            vs: '/node_modules/monaco-editor/min/vs'
         }
     });
     app.use(store);
@@ -343,7 +154,7 @@ async function initializeApp() {
 
     fakeBackend();
     app.use(router);
-    app.component('EasyDataTable', Vue3EasyDataTable);
+    // app.component('EasyDataTable', Vue3EasyDataTable);
     app.use(PerfectScrollbar);
     app.use(createPinia());
     app.use(VCalendar, {});
@@ -415,6 +226,8 @@ async function initializeApp() {
                     localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
                     localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
                     localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
+                    localStorage.setItem('groups', `${keycloak.tokenParsed.groups}`);
+                    localStorage.setItem('roles', `${keycloak.tokenParsed.realm_access?.roles}`);
                     localStorage.setItem('isAdmin', 'true');
                     localStorage.setItem('picture', '');
                 }

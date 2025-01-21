@@ -28,11 +28,9 @@
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import ConditionField from './ConditionField.vue';
 import TextConditionField from './TextConditionField.vue';
 
-const storage = StorageBaseFactory.getStorage()
 export default {
     name: 'sequence-flow-panel',
     components: {

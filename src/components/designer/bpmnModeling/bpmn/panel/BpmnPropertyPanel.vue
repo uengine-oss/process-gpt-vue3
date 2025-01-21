@@ -1,13 +1,20 @@
 <template>
     <div style="height: calc(100vh - 155px)">
-        <v-btn @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
-            <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
-        </v-btn>
-        <v-card-text class="delete-input-details pt-3" style="overflow: auto; width: 700px; height: 100%;">
+        <v-row class="ma-0 pa-4 pb-0">
+            <v-card-title v-if="isViewMode" class="pa-0">{{ name }}</v-card-title>
+            <v-text-field v-else v-model="name" :label="$t('BpmnPropertyPanel.name')" 
+                :disabled="isViewMode" ref="cursor" 
+                class="bpmn-property-panel-name mb-3 delete-input-details"
+            ></v-text-field>
+            <v-spacer></v-spacer>
+            <v-btn @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
+                <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
+            </v-btn>
+        </v-row>
+        <v-card-text class="delete-input-details pa-4 pt-0" style="overflow: auto; width: 700px; height:calc(100% - 60px);">
             <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="mt-4">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
                 <div class="mb-3">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
-                <v-text-field v-model="name" :label="$t('BpmnPropertyPanel.name')" :disabled="isViewMode" ref="cursor" class="bpmn-property-panel-name mb-3"></v-text-field>
             </div>
             <component
                 style="height: 100%"
@@ -125,8 +132,14 @@ export default {
         isGPTMode() {
             return this.mode == 'ProcessGPT';
         },
+        isPALMode() {
+            return window.$pal;
+        },
         panelName() {
             var type = _.kebabCase(this.element.$type.split(':')[1])
+            if(type.indexOf('task') > -1 && this.isPALMode) {
+                type = 'pal-user-task';
+            }
             if (type == 'user-task' && this.isGPTMode) {
                 type = 'gpt-user-task';
             }
@@ -176,19 +189,15 @@ export default {
         // addParameter() {
         //     this.uengineProperties.parameters.push({ key: this.paramKey, value: this.paramValue });
         // },
-        async getData(path, options) {
-            // let value;
-            // if (path) {
-            //     value = await this.storage.getObject(`db://${path}`, options);
-            // } else {
-            //     value = await this.storage.getObject(`db://${this.path}`, options);
-            // }
-            // return value;
-        },
+        
         addCheckpoint() {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
         },
         async save() {
+            if(window.$pal && this.isViewMode) {
+                this.$emit('close');
+                return;
+            }
             if (this.$refs.panelComponent && this.$refs.panelComponent.beforeSave) {
                 await this.$refs.panelComponent.beforeSave();
                 console.log(this.uengineProperties)
@@ -202,7 +211,11 @@ export default {
             const json = JSON.stringify(this.uengineProperties);
             
             const elementCopyDeep = _.cloneDeep(this.elementCopy);
-            modeling.updateProperties(task, { name: name });
+            if(task) {
+                modeling.updateProperties(task, { name: name });
+            } else {
+                this.$emit('close');
+            }
             if (task.type == 'bpmn:TextAnnotation') {
                 // TextAnnotation Size 깨지는 현상 해결
                 const originTaskWidth = task.width? JSON.parse(JSON.stringify(task.width)) : null;
@@ -256,11 +269,5 @@ export default {
 </script>
 
 <style>
-.panel-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 20px;
-    z-index: 1000;
-}
 </style>
 

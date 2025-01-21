@@ -33,7 +33,7 @@ export default {
         processInstanceId: null,
         chatRoomId: '',
         isVisionMode: false,
-
+        currentChatRoom: null,
         // consulting
         isMentoMode: false,
     }),
@@ -90,12 +90,9 @@ export default {
         this.releaseAgent()
     },
     async created() {
-        var me = this;
+        // var me = this;
         this.storage = StorageBaseFactory.getStorage();
-        // this.openaiToken = await this.getToken();
-        this.openaiToken = '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';
-        
-        
+        this.openaiToken = await this.getToken();
         this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
@@ -147,12 +144,17 @@ export default {
                 }
             })
         },
-        async getToken(){
-            let option = {
-                key: "key"
+        async getToken() {
+            if (window.$mode == 'ProcessGPT') {
+                let option = {
+                    key: "key"
+                }
+                const res = await this.storage.getObject('configuration/openai_key', option);
+                return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
+            } else {
+                const token = window.localStorage.getItem('openAIToken');
+                return token || '';
             }
-            const res = await this.storage.getObject('db://configuration/openai_key', option);
-            return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
         },
         async init() {
             this.disableChat = false;
@@ -177,7 +179,12 @@ export default {
                             me.messages.splice(messageIndex, 1);
                         }
                     } else {
-                        if(data.new.messages.email != me.userInfo.email){
+                        if (!me.currentChatRoom && me.chatRoomId) {
+                            me.currentChatRoom = {
+                                id: me.chatRoomId
+                            }
+                        }
+                        if (data.new.messages.email != me.userInfo.email) {
                             if(data.new.id == me.currentChatRoom.id){
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
@@ -203,17 +210,6 @@ export default {
                                     
                                 }
                             }
-                        } else {
-                            // if(data.eventType == "INSERT" && data.new.id == me.currentChatRoom.id) {
-                            //     let lastMessage = me.messages[me.messages.length - 1]
-                            //     if(!(lastMessage.content == data.new.messages.content &&
-                            //         lastMessage.role == data.new.messages.role &&
-                            //         lastMessage.name == data.new.messages.name &&
-                            //         lastMessage.email == data.new.messages.email)
-                            //     ) {
-                            //         me.messages.push(data.new.messages)
-                            //     }
-                            // }
                         }
                     }
                 }
@@ -389,7 +385,7 @@ export default {
                         }
                     ];
 
-                    this.generator.model = "gpt-4-vision-preview";
+                    this.generator.model = "gpt-4o-mini";
 
                 } else {
                     chatObj.content= message.text;
@@ -707,15 +703,18 @@ export default {
                     window.open('https://platform.openai.com/settings/profile?tab=api-keys', '_blank');
                 } 
                 var apiKey = prompt('openAI API Key 를 입력하세요.\n\ngpt-4o 모델을 사용가능한 API key를 입력해야합니다.');
-                if(apiKey != ''){
-                    let token = {
-                        "key": 'openai_key',
-                        "value": {
-                            "key": apiKey
-                        }
-                    }
-                    this.putObject('configuration', token);
+                if(apiKey != '') {
                     this.openaiToken = apiKey;
+                    window.localStorage.setItem('openAIToken', apiKey);
+                    if(window.$mode == 'ProcessGPT') {
+                        let token = {
+                            "key": 'openai_key',
+                            "value": {
+                                "key": apiKey
+                            }
+                        }
+                        this.putObject('configuration', token);
+                    }
                     this.startGenerate();
                 }
             } else {

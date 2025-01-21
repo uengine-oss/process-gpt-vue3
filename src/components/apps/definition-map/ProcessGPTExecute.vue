@@ -183,7 +183,7 @@ export default {
                         me.$router.push(`/instancelist/${btoa(result.instanceId)}`);
                     }
                 },
-                successMsg: 'Process 실행 완료'
+                successMsg: this.$t('successMsg.processExecutionCompleted')
             });
         },
         uuid() {

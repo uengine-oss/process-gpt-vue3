@@ -1,48 +1,51 @@
 <template>
-    <template v-if="Object.values(selectedTask).some(val => Array.isArray(val))">
-        <tr v-for="(val, key, index) in selectedTask" :key="key">
-            <td>{{ key }}</td>
-            <td>{{ val }}</td>
-            <template v-if="index === Object.keys(selectedTask).length - 1">
-                <td>
-                    <v-btn @click="executeProcess"
-                        class="cp-process-save"
-                        color="primary"
-                        rounded
-                        density="comfortable"
-                    >실행</v-btn>
-                </td>
-            </template>
+    <template v-if="selectedTask && Object.values(selectedTask).some(val => Array.isArray(val))">
+        <tr>
+            <td v-for="(val, key) in tableData" :key="key">
+                {{ val }}
+            </td>
+            <td class="align-right" style="width: 65px; padding: 0px; text-align: right;">
+                <v-tooltip :text="$t('TestVariable.start')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn density="compact" icon flat @click="executeProcess" v-bind="props" style="margin-right:5px;">
+                            <Icons :icon="'play-outline'" :size="17" stroke-width="1.5" :color="'rgb(var(--v-theme-primary))'" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+                <v-tooltip :text="$t('TestVariable.delete')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn density="compact" icon flat @click="deleteTest" v-bind="props">
+                            <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+            </td>
         </tr>
     </template>
     <template v-else>
         <tr>
             <!-- key를 세로로 배치 -->
-            <td>
-                <div v-for="(val, key) in selectedTask" :key="key">
-                    {{ key }}
-                </div>
-            </td>
             <!-- value를 세로로 배치 -->
-            <td>
-                <div v-for="(val, key) in selectedTask" :key="key">
-                    {{ val }}
-                </div>
+            <td v-for="(val, key) in tableData" :key="key">
+                {{ val }}
             </td>
+
             <!-- 실행 버튼을 마지막에 추가 -->
-            <td>
-                <v-btn @click="executeProcess"
-                    class="cp-process-save"
-                    color="primary"
-                    rounded
-                    density="comfortable"
-                >실행</v-btn>
-                <v-btn @click="deleteTest"
-                    class="cp-process-save"
-                    color="error"
-                    rounded
-                    density="comfortable"
-                >삭제</v-btn>
+            <td class="align-right" style="width: 65px; padding: 0px; text-align: right;">
+                <v-tooltip :text="$t('TestVariable.start')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn density="compact" icon flat @click="executeProcess" v-bind="props" style="margin-right:5px;">
+                            <Icons :icon="'play-outline'" :size="17" stroke-width="1.5" :color="'rgb(var(--v-theme-primary))'" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+                <v-tooltip :text="$t('TestVariable.delete')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn density="compact" icon flat @click="deleteTest" v-bind="props">
+                            <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
             </td>
         </tr>
     </template>
@@ -66,6 +69,17 @@ export default {
         deleteTest() {
             // backend.deleteTest(this.idx);
             this.$emit('delete', this.idx)
+        }
+    },
+    computed: {
+        tableData() {
+            let result = { empty: '' };
+            if(this.selectedTask) {
+                result = Object.keys(this.selectedTask).length > 0
+                    ? this.selectedTask
+                    : { empty: '' };
+            }
+            return result;
         }
     }
 };

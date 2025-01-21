@@ -1,5 +1,5 @@
 <template>
-    <v-row v-if="!isCompleted" class="ma-0 pa-0 task-btn" style="right: 50px">
+    <v-row v-if="!isCompleted" class="ma-0 pa-0 task-btn" style="right: 10px">
         <v-spacer></v-spacer>
         <v-btn v-if="!isDryRun" @click="intermediateSave" color="primary" rounded class="mr-1">중간 저장</v-btn>
         <v-btn @click="executeProcess" color="primary" rounded>완료</v-btn>
@@ -147,7 +147,8 @@ export default {
                         if (workItem.execScope) value.execScope = workItem.execScope;
 
                         let processExecutionCommand = {
-                            processDefinitionId: me.definitionId
+                            processDefinitionId: me.definitionId,
+                            groups: window.localStorage.getItem('groups')
                         };
 
                         await backend.startAndComplete(
@@ -165,7 +166,7 @@ export default {
                         me.$router.push(`/instancelist/${route}`);
                     }
                 },
-                successMsg: '해당 업무 완료'
+                successMsg: this.$t('successMsg.workCompleted')
             });
         },
         executeProcess() {
@@ -199,7 +200,7 @@ export default {
                         });
                     }
                 },
-                successMsg: '중간 저장 완료'
+                successMsg: this.$t('successMsg.intermediate')
             });
         }
     }

@@ -5,8 +5,7 @@
             :disableChat="disableChat" :type="'instances'" :name="chatName" :chatRoomId="chatRoomId"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
-            @reGenerateAgentAI="reGenerateAgentAI"
-            >
+            @reGenerateAgentAI="reGenerateAgentAI">
             <template v-slot:custom-title>
                 <div></div>
             </template>
@@ -15,9 +14,6 @@
 </template>
 
 <script>
-
-import { VectorStorage } from 'vector-storage';
-
 import ChatModule from '@/components/ChatModule.vue';
 import ChatGenerator from './ai/ProcessInstanceGenerator.js';
 import AgentGenerator from './ai/WorkItemAgentGenerator.js';
@@ -60,15 +56,6 @@ export default {
             }
             return '';
         },
-        chatRoomId () {
-            let result = '';
-            if (this.processInstance && this.processInstance.proc_inst_id) {
-                result = this.processInstance.proc_inst_id;
-            } else if (this.$route.params.instId) {
-                result = atob(this.$route.params.instId);
-            }
-            return result;
-        }
     },
     async created() {
         await this.init();
@@ -204,14 +191,9 @@ export default {
                 })
             }
             if(this.processInstance && this.processInstance.proc_inst_id){
-                const options = {
-                    match: {
-                        id: this.processInstance.proc_inst_id
-                    }
-                };
-                const inst_data = await this.storage.list('proc_inst', options);
+                const instance = await backend.getInstance(this.processInstance.proc_inst_id);
                 this.generator.previousMessages.push({
-                    "content": "이전 작업 내역 리스트: " + JSON.stringify(inst_data),
+                    "content": "이전 작업 내역 리스트: " + JSON.stringify(instance),
                     "role": "user"
                 })
             } else {
@@ -240,7 +222,7 @@ export default {
                 "content": "생성해야할 답변 형식: " + JSON.stringify(formValues),
                 "role": "user"
             })
-            let userList = await this.storage.list('users');
+            const userList = await backend.getUserList();
             this.generator.previousMessages.push({
                 "content": "유저 목록: " + JSON.stringify(userList),
                 "role": "user"
@@ -294,16 +276,20 @@ export default {
             const me = this;
             me.processInstance = null;
             me.bpmn = null;
+            
             let id;
             if (me.$route.params.taskId) {
                 const taskId = me.$route.params.taskId;
                 const workitem = await backend.getWorkItem(taskId);     
                 if (workitem) {
                     id = workitem.worklist.instId;
+                    this.chatRoomId = id;
                 }
             } else if (me.$route.params.instId) {
                 id = atob(me.$route.params.instId);
+                this.chatRoomId = id;
             }
+
             if (id) {
                 const value = await backend.getInstance(id);
                 if (value) {
@@ -312,11 +298,9 @@ export default {
                 }
                 await me.loadProcess();
                 if(this.isAgentMode){
-                    // await me.loadAgentMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
                     me.processInstanceId = value.proc_inst_id
                 } else {
                     await me.getChatList(id)
-                    // await me.loadMessages(`proc_inst/${value.proc_inst_id}`, { key: 'id' });
                 }
             } 
         },
@@ -335,12 +319,12 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            if (newMessage && newMessage.text != '') {
+            if (newMessage) {
                 if (this.chatRoomId) {
                     this.putMessage(this.createMessageObj(newMessage));
-                    this.generator.beforeGenerate(newMessage, false);
+                    await this.generator.beforeGenerate(newMessage, false);
                 } else {
-                    this.generator.beforeGenerate(newMessage, true);
+                    await this.generator.beforeGenerate(newMessage, true);
                 }
                 this.sendMessage(newMessage);
             }
@@ -367,7 +351,6 @@ export default {
             let messageWriting = me.messages[me.messages.length - 1];
             messageWriting.jsonContent = response;
 
-            // const jsonData = JSON.parse(response);
             const jsonData = response;
             if (jsonData) {
                 if (jsonData.instanceId) {
@@ -392,44 +375,7 @@ export default {
             }
 
             if (id != '') {
-                let putObj = {
-                    messages: this.messages
-                };
-                this.putObject(`proc_inst/${id}`, putObj, { key: 'id' });
-            }
-        },
-
-        async saveDefinitionToVectorDB() {
-            const list = await this.storage.list("proc_def");
-            if (list && list.length > 0) {
-                // const apiToken = this.generator.getToken();
-                const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
-
-                list.forEach(async (item) => {
-                    if (item.definition) {
-                        const jsonText = JSON.stringify(item.definition);
-                        await vectorStore.addText(jsonText, {
-                            category: item.definition.processDefinitionId
-                        });
-                    }
-                })
-            }
-        },
-
-        async queryFromVectorDB(messsage) {
-            // const apiToken = this.generator.getToken();
-            const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
-
-            // Perform a similarity search
-            const results = await vectorStore.similaritySearch({
-                query: messsage
-            });
-            if (results.similarItems.length > 0) {
-                const res = results.similarItems.map(item => item.text);
-                return res
-            } else {
-                await this.saveDefinitionToVectorDB();
-                return this.queryFromVectorDB(messsage);
+                
             }
         },
     }

@@ -56,8 +56,7 @@
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
-const storage = StorageBaseFactory.getStorage();
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     name: 'lane-panel',
@@ -136,7 +135,8 @@ export default {
             });
         });
         // // bpmn2:process 요소 내의 bpmn2:extensionElements 요소를 찾거나 새로 생성합니다.
-        const value = await storage.list('proc_def');
+        const backend = BackendFactory.createBackend();
+        const value = await backend.listDefinition();
         if (value) {
             this.definitions = value;
         }
@@ -181,15 +181,7 @@ export default {
 
             return obj;
         },
-        async getData(path, options) {
-            // let value;
-            // if (path) {
-            //     value = await this.storage.getObject(`db://${path}`, options);
-            // } else {
-            //     value = await this.storage.getObject(`db://${this.path}`, options);
-            // }
-            // return value;
-        },
+        
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);

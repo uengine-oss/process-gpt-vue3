@@ -16,12 +16,21 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
+    async deleteRecordTest(path: string, index: number): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+
     async releaseVersion(releaseName: string): Promise<any> {
     }
     
     testList(path: string): Promise<any> {
         throw new Error('Method not implemented.');
     }
+
+    testRecordList(path: string): Promise<any> {
+        throw new Error('Method not implemented.');
+    }
+
     findCurrentWorkItemByInstId(instId: string): Promise<any> {
         throw new Error('Method not implemented.');
     }
@@ -36,7 +45,7 @@ class ProcessGPTBackend implements Backend {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
             let procDefs = await storage.list('proc_def', (path ? { like: `${path}%` } : undefined));
             procDefs.map((item: any) => {
-                item.path = `${item.id}.bpmn`
+                item.path = `${item.id}`
                 item.name = item.name || item.path 
             });
             return procDefs
@@ -95,16 +104,6 @@ class ProcessGPTBackend implements Backend {
                 ]);
                 
                 await storage.delete(`proc_def/${defId}`, { key: 'id' });
-
-                // if (!window.$jms) {
-                //     await axios.post(`/execution/drop-process-table/invoke`, {
-                //         "input": {
-                //             "process_definition_id": defId
-                //         }
-                //     }).catch(error => {
-                //         throw new Error(error && error.detail ? error.detail : error);
-                //     });
-                // }
             }
         } catch (e) {
             
@@ -120,6 +119,7 @@ class ProcessGPTBackend implements Backend {
 
             // 폼 정보를 저장하기 위해서
             if(options && options.type === "form") {
+                const fieldsJson = this.extractFields(xml);
                 var formDef: any = await storage.getObject('form_def', {
                     match: {
                         proc_def_id: options.proc_def_id,
@@ -128,13 +128,17 @@ class ProcessGPTBackend implements Backend {
                 });
                 if(formDef) {
                     formDef.html = xml;
+                    if (fieldsJson) {
+                        formDef.fields_json = fieldsJson;
+                    }
                     await storage.putObject('form_def', formDef);
                 } else {
                     await storage.putObject('form_def', {
                         id: defId.replace(/\//g, "#"),
-                    html: xml,
+                        html: xml,
                         proc_def_id: options.proc_def_id,
                         activity_id: options.activity_id,
+                        fields_json: fieldsJson
                     });
                 }
                 return
@@ -181,19 +185,6 @@ class ProcessGPTBackend implements Backend {
                 throw new Error("Error when to unlock: " + (error && error.detail ? error.detail : error));
             }
 
-            // if (!window.$jms) {
-            //     try {
-            //         await axios.post(`/execution/process-db-schema/invoke`, {
-            //             "input": {
-            //                 "process_definition_id": defId
-            //             }
-            //         })
-            //     } catch(error) {
-            //         //@ts-ignore
-            //         throw new Error("Error when to creating database for the definition: " + (error && error.detail ? error.detail : error));
-            //     }
-            // }
-
         } catch (e) {
             
             throw new Error('error when to save definition: ' + (e instanceof Error ? e.message : ''));
@@ -215,7 +206,6 @@ class ProcessGPTBackend implements Backend {
                     const data = await storage.getString(`form_def/${defId}`, { key: 'id', column: 'html' });
                     if(!data) {
                         return null;
-                        // throw new Error('no such form definition');
                     }
                     return data;
                 } else if(options.type === "bpmn") {
@@ -254,21 +244,8 @@ class ProcessGPTBackend implements Backend {
             if (window.$jms) return;
 
             let defId = input.process_definition_id || input.processDefinitionId;
-            if (defId && defId != '') {
-                // const list = await storage.list(defId);
-                // if (list.code == ErrorCode.TableNotFound) {
-                //     await axios.post(`/execution/process-db-schema/invoke`, {
-                //         "input": {
-                //             "process_definition_id": defId
-                //         }
-                //     }).catch(error => {
-                //         throw new Error(error && error.detail ? error.detail : error);
-                //     });
-                // }
-            } else {
-                if (input.process_instance_id && input.process_instance_id != '') {
-                    defId = input.process_instance_id.split('.')[0];
-                }
+            if (!defId && input.process_instance_id && input.process_instance_id != '') {
+                defId = input.process_instance_id.split('.')[0];
             }
 
             if (!input.answer) {
@@ -289,7 +266,7 @@ class ProcessGPTBackend implements Backend {
 
             var result: any = null;
             var url = `/execution/complete`;
-            if (input.image != null) {
+            if (input.answer && input.answer.image != null) {
                 url = `/execution/vision-complete`;
             }
             var req = {
@@ -308,23 +285,22 @@ class ProcessGPTBackend implements Backend {
                         result = data;
                         if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
                             result.errors = result.cannotProceedErrors;
-                            const dataNotExist = result.cannotProceedErrors.find((item: any) => item.type === 'DATA_FIELD_NOT_EXIST');
-                            if (!dataNotExist) {
-                                throw new Error(result.cannotProceedErrors.map((item: any) => item.reason).join('\n'));
-                            }
+                            // const dataNotExist = result.cannotProceedErrors.find((item: any) => item.type === 'DATA_FIELD_NOT_EXIST');
+                            // if (!dataNotExist) {
+                            //     throw new Error(result.cannotProceedErrors.map((item: any) => item.reason).join('\n'));
+                            // }
                         }
                     }
                 }
             })
             .catch(error => {
-                throw new Error(error && error.detail ? error.detail : error);
+                return error;
             });
 
             return result;
         } catch (error) {
-            
             //@ts-ignore
-            throw new Error(error.message);
+            return error;
         }
     }
 
@@ -346,7 +322,6 @@ class ProcessGPTBackend implements Backend {
                     instance.status = 'COMPLETED'
                 }
             }
-            console.log(instance);
             return instance;
         } catch (e) {
             
@@ -355,7 +330,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getAllInstanceList(page: any) {
+    async getAllInstanceList(page: any, size: any) {
         try {
             const list = await storage.list('bpm_proc_inst');
             return list;
@@ -441,7 +416,7 @@ class ProcessGPTBackend implements Backend {
                 const email = localStorage.getItem("email");
                 filter.match.user_id = email;
             }
-            const list = await storage.list('worklist', filter);
+            const list = await storage.list('todolist', filter);
             const worklist: any[] = [];
             if (list && list.length > 0) {
                 for (const item of list) {
@@ -505,7 +480,7 @@ class ProcessGPTBackend implements Backend {
                         proc_inst_id: workItem.instId,
                         current_activity_ids: [workItem.tracingTag || workItem.title]
                     }
-                    await storage.putObject(workItem.defId, putInst);
+                    await storage.putObject('bpm_proc_inst', putInst);
                 }
             } else { // instance workItem
                 const answer = {
@@ -689,9 +664,9 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
-    extractFields(htmlString: string) {
+    extractFields(html: string) {
         const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlString, 'text/html');
+        const doc = parser.parseFromString(html, 'text/html');
         const fields: any[] = [];
     
         function extractFieldAttributes(elements: any) {
@@ -700,11 +675,15 @@ class ProcessGPTBackend implements Backend {
                 const vModel = element.getAttribute('v-model');
                 const match = vModel.match(/slotProps\.modelValue\['(.*?)'\]/);
                 const tagName = element.tagName.toLowerCase();
+                const disabled = element.getAttribute('disabled');
+                const readonly = element.getAttribute('readonly');
 
                 let field: any = {
                     text: alias || '',
                     key: match[1] || '',
-                    type: tagName.replace('-field', '') || ''
+                    type: tagName.replace('-field', '') || '',
+                    disabled: disabled ? disabled : false,
+                    readonly: readonly ? readonly : false
                 };
                 fields.push(field);
             });
@@ -726,14 +705,23 @@ class ProcessGPTBackend implements Backend {
 
     async getVariableWithTaskId(instId: string, taskId: string, varName: string) {
         try {
-            const html = await storage.getString(`form_def/${varName}`, { key: 'id', column: 'html' });
-            const fields = this.extractFields(html);
+            var fields: any = [];
+            const formObject: any = await storage.getObject(`form_def/${varName}`, { key: 'id' });
+            if (formObject) {
+                fields = formObject.fields_json;
+            } else {
+                const html = await storage.getString(`form_def/${varName}`, { key: 'id', column: 'html' });
+                fields = this.extractFields(html);
+            }
             const instance: any = await this.getInstance(instId);
             let varData: any = {};
             if (instance && fields.length > 0) {
-                fields.forEach((field) => {
+                fields.forEach((field: any) => {
                     let fieldName = field.text.toLowerCase().replace(/ /g, '_') || field.text;
                     let fieldValue = instance.variables_data[fieldName];
+                    if (!fieldValue) {
+                        fieldValue = instance.variables_data[field.key];
+                    }
                     if (field.type === 'boolean') {
                         fieldValue = fieldValue === 'true' ? true : false;
                     }
@@ -743,7 +731,6 @@ class ProcessGPTBackend implements Backend {
             const result = {
                 valueMap: varData
             }
-            console.log(result);
             return result;
         } catch (error) {
             //@ts-ignore
@@ -754,7 +741,6 @@ class ProcessGPTBackend implements Backend {
     async setVariable(instanceId: string, varName: string, varValue: any) {
         try {
             const columnName: any = varName.toLowerCase().replace(/ /g, '_');
-            const defId: any = instanceId.split('.')[0];
             const putObj: any = {
                 proc_inst_id: instanceId,
                 variables_data: {
@@ -762,7 +748,7 @@ class ProcessGPTBackend implements Backend {
                 }
             }
 
-            await storage.putObject(defId, putObj);
+            await storage.putObject('bpm_proc_inst', putObj);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -772,12 +758,13 @@ class ProcessGPTBackend implements Backend {
     async setVariableWithTaskId(instId: string, taskId: string, varName: string, varValue: any) {
         try {
             const columnName: any = varName.toLowerCase().replace(/ /g, '_');
-            const defId: any = instId.split('.')[0];
             const putObj: any = {
                 proc_inst_id: instId,
-                [columnName]: varValue.valueMap ? varValue.valueMap : varValue
+                variables_data: {
+                    [columnName]: varValue.valueMap ? varValue.valueMap : varValue
+                }
             }
-            await storage.putObject(defId, putObj);
+            await storage.putObject('bpm_proc_inst', putObj);
         } catch (error) {
             
             //@ts-ignore
@@ -840,7 +827,7 @@ class ProcessGPTBackend implements Backend {
             }
 
             const input = {
-                answer: JSON.stringify(inputData),
+                answer: inputData,
                 process_instance_id: workItem.proc_inst_id,
                 process_definition_id: workItem.proc_def_id,
                 activity_id: workItem.activity_id,
@@ -851,6 +838,9 @@ class ProcessGPTBackend implements Backend {
             };
             const token = localStorage.getItem('accessToken');
             let url = `/execution/complete`;
+            if (input.answer && input.answer.image != null) {
+                url = `/execution/vision-complete`;
+            }
             await axios.post(url, req, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -870,10 +860,8 @@ class ProcessGPTBackend implements Backend {
     
             return result;
 
-        } catch (e) {
-            
-            //@ts-ignore
-            throw new Error(e.message);
+        } catch (error) {
+            return error;
         }
     }
 
@@ -922,6 +910,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getInstanceListByRole(roles: string) {
+        return this.getInstanceList();
+    }
+    
+    async getInstanceListByGroup(group: string) {
+        return null;
+    }
+
     async getCompleteInstanceList() {
         try {
             let instList: any[] = await this.fetchInstanceListByStatus("COMPLETED");
@@ -935,7 +931,7 @@ class ProcessGPTBackend implements Backend {
 
     async getWorkListByInstId(instId: number) {
         try {
-            const list = await storage.list(`todolist`, { match: { 'proc_inst_id': instId } });
+            const list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
             const worklist: any[] = list.map((item: any) => {
                 return {
                     defId: item.proc_def_id,
@@ -962,6 +958,11 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getFilteredInstanceList(filters: object, page: number) {
+        //TODO: 인스턴스 목록 관리자 페이지 필터 결과
+        return null
+    }
+
     
     async getCompletedTaskId(instId: string) {
         // instance/{instanceId}/completed
@@ -970,11 +971,11 @@ class ProcessGPTBackend implements Backend {
         return null;
     }
     
-    async getActivitiesStatus(instId: string) {
+    async getActivitiesStatus(instId: string, executionScope: String = "0") {
         // instance/{instanceId}/completed
         //TODO: 현재 프로세스 진행상태 추가
         try {
-            const list = await storage.list(`worklist`, { match: { 'proc_inst_id': instId } });
+            const list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
             let result: any = {};
             list.forEach((item: any) => {
                 if(item.status == 'DONE') {
@@ -1003,6 +1004,10 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async fireMessage(instanceId: string, event: any) {
+        throw new Error("Method not implemented.");
+    }
+
     async dryRun(defPath: string) {
         try {
             return null;
@@ -1022,6 +1027,15 @@ class ProcessGPTBackend implements Backend {
     }
 
     async putSystem(system: any) {
+        try {
+            return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteSystem(system: any) {
         try {
             return null;
         } catch (error) {
@@ -1068,9 +1082,7 @@ class ProcessGPTBackend implements Backend {
 
     async deleteInstance(instId: string) {
         try {
-            // const defId = instId.split('.')[0];
             await Promise.all([
-                // await storage.delete(defId, { match: { proc_inst_id: instId } }),
                 await storage.delete('bpm_proc_inst', { match: { proc_inst_id: instId } }),
                 await storage.delete('todolist', { match: { proc_inst_id: instId } }),
                 await storage.delete('chats', { match: { id: instId } })
@@ -1102,7 +1114,9 @@ class ProcessGPTBackend implements Backend {
                 }
             })
             .catch(error => {
-                throw new Error(error && error.detail ? error.detail : error);
+                console.log(error);
+                return null;
+                // throw new Error(error && error.detail ? error.detail : error);
             });
             return result;
         } catch (error) {
@@ -1218,7 +1232,19 @@ class ProcessGPTBackend implements Backend {
     async updateUserInfo(value: any) {
         try {
             if (value.type === 'update') {
+                value.user.current_tenant = window.$tenantName;
                 await storage.putObject('users', value.user);
+                const user: any = await this.getUserInfo();
+                if (user && value.user.id === user.uid) {
+                    const userInfo = {
+                        email: value.user.email,
+                        user_metadata: {
+                            name: value.user.username
+                        }
+                    }
+                    await storage.updateUser(userInfo);
+                    await storage.writeUserData(value);
+                }
             } else if (value.type === 'delete') {
                 await storage.delete('users', { match: { id: value.user.id } });
             }
@@ -1319,6 +1345,16 @@ class ProcessGPTBackend implements Backend {
                 throw new Error("Tenant ID cannot be null or empty");
             }
             await storage.putObject('tenants', { id: tenantId });
+            const user: any = await this.getUserInfo();
+            const tenantList = user?.tenants || [];
+            if (!tenantList.includes(tenantId)) {
+                tenantList.push(tenantId);
+            }
+            await storage.putObject('users', {
+                id: user.uid,
+                tenants: tenantList,
+                current_tenant: tenantId
+            });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1338,6 +1374,57 @@ class ProcessGPTBackend implements Backend {
         try {
             const list = await this.getWorkList();
             return list;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getOpenAIToken() {
+        try {
+            let option = {
+                match: {
+                    key: 'openai_key'
+                }
+            };
+            const res = await storage.getObject('configuration', option);
+            return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async uploadImage(fileName: string, image: File) {
+        try {
+            return await storage.uploadImage(fileName, image);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getImageUrl(fileName: string) {
+        try {
+            return await storage.getImageUrl(fileName);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async uploadFile(fileName: string, file: File) {
+        try {
+            return await storage.uploadFile(fileName, file);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getFileUrl(path: string) {
+        try {
+            return await storage.getFileUrl(path);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

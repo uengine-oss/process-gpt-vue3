@@ -129,7 +129,12 @@ export default {
                 activity_id: activityId
             };
             const formId = `${options.proc_def_id}_${options.activity_id}_form`;
-            await backend.putRawDefinition(html, formId, options);
+            const lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
+            if (lastPath == 'chat') {
+                localStorage.setItem(formId, html);
+            } else {
+                await backend.putRawDefinition(html, formId, options);
+            }
             return html;
         },
         extractPropertyNameAndIndex(jsonPath) {
@@ -784,8 +789,10 @@ export default {
                                     if (roleInnerElements.length > 0) {
                                         let maxY = componentY;
                                         roleInnerElements.forEach(element => {
-                                            if(maxY < activityPos[element.id].y) {
-                                                maxY = activityPos[element.id].y;
+                                            if(activityPos[element.id]) {
+                                                if(maxY < activityPos[element.id].y) {
+                                                    maxY = activityPos[element.id].y;
+                                                }
                                             }
                                         });
                                         componentY = isHorizontal ? maxY + 100 : 0;
@@ -866,7 +873,6 @@ export default {
                         eventLabel.appendChild(dcBoundsLabel);
                         componentShape.appendChild(eventLabel);
                     }
-
                     bpmnPlane.appendChild(componentShape);
 
                     activityPos[component.id] = {
@@ -1946,6 +1952,8 @@ export default {
                                     if (oldActivity) {
                                         activity.instruction = oldActivity.instruction;
                                         activity.checkpoints = oldActivity.checkpoints;
+                                        activity.duration = oldActivity.duration;
+                                        activity.attachments = oldActivity.attachments;
                                     }
                                     return activity;
                                 });
@@ -1981,7 +1989,7 @@ export default {
                     me.loading = false;
                     me.isChanged = true;
                 },
-                successMsg: '저장되었습니다.'
+                successMsg: this.$t('successMsg.save')
             });
         },
         async convertXMLToJSON(xmlString) {
@@ -1991,7 +1999,11 @@ export default {
 
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                 const result = await parser.parseStringPromise(xmlString);
-                var processDefinitionId = 'Unknown';
+                let processDefinitionId = 'Unknown';
+                let definitionName = null;
+                let version = null;
+                let shortDescription = null;
+
                 if(this.fullPath) {
                     processDefinitionId = this.fullPath;
                 } else {
@@ -2072,12 +2084,20 @@ export default {
                             }))
                             : [];
                     data = data.concat(dataTmp);
-                    instanceNamePattern = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? JSON.parse(process['bpmn:extensionElements']['uengine:properties']['uengine:json']).instanceNamePattern : null;
+                    let processJson = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? JSON.parse(process['bpmn:extensionElements']['uengine:properties']['uengine:json']) : null;
+                    if(processJson){
+                        instanceNamePattern = processJson.instanceNamePattern ? processJson.instanceNamePattern : null;
+                        definitionName = processJson.definitionName ? processJson.definitionName : null;
+                        version = processJson.version ? processJson.version : null;
+                        shortDescription = processJson.shortDescription ? processJson.shortDescription : null;         
+                    }
                 }
 
                 const jsonData = {
-                    processDefinitionName: processDefinitionId,
+                    processDefinitionName: definitionName,
                     processDefinitionId: processDefinitionId,
+                    version: version,
+                    shortDescription: shortDescription,
                     description: 'process.description',
                     data: data,
                     roles: lanes.map((lane) => ({
@@ -2295,6 +2315,38 @@ export default {
                         if (!me.processDefinition.processDefinitionId) me.processDefinition.processDefinitionId = null;
                         if (!me.processDefinition.processDefinitionName) me.processDefinition.processDefinitionName = null;
 
+                        // 최초 저장 시 폼 정보 저장
+                        const lastPath = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1];
+                        if (lastPath == 'chat') {
+                            if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
+                                me.processDefinition.data = [];
+                                me.processDefinition.activities.forEach(async (activity) => {
+                                    if (activity.tool && activity.tool.includes('formHandler:')) {
+                                        const formId = activity.tool.split(':')[1];
+                                        if (formId) {
+                                            const formHtml = localStorage.getItem(formId);
+                                            if (formHtml) {
+                                                let fieldData = me.extractFields(formHtml);
+                                                fieldData = fieldData.map((field) => ({
+                                                    name: field.key,
+                                                    description: field.text,
+                                                    type: field.type
+                                                }));
+                                                me.processDefinition.data = me.processDefinition.data.concat(fieldData);
+                                                const options = {
+                                                    type: 'form',
+                                                    proc_def_id: me.processDefinition.processDefinitionId,
+                                                    activity_id: activity.id
+                                                }
+                                                await backend.putRawDefinition(formHtml, formId, options);
+                                            }
+                                            localStorage.removeItem(formId);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+
                         me.processDefinition.processDefinitionId = info.proc_def_id
                             ? info.proc_def_id
                             : prompt('please give a ID for the process definition');
@@ -2325,7 +2377,7 @@ export default {
                     if (me.$route.query && me.$route.query.modeling) {
                         let bpmn;
                         if (me.$route.query.id) {
-                            bpmn = await backend.getRawDefinition(me.$route.query.id, { type: 'bpmn' });
+                            bpmn = await backend.getRawDefinition(me.$route.query.id.replace('.bpmn', ''), { type: 'bpmn' });
                         } else {
                             bpmn = await backend.getRawDefinition(info.proc_def_id, { type: 'bpmn' });
                         }

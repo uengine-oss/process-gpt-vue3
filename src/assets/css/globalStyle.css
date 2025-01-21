@@ -95,6 +95,40 @@ hr {
     stroke: #e53935 !important;
 }
 
+.error.djs-connection .djs-visual > path {
+    stroke: #ff0000 !important;
+}
+
+.error.djs-connection .djs-visual > defs > marker > path {
+    stroke: #ff0000 !important;
+    fill: #ff0000 !important;
+}
+
+
+.error:not(.djs-connection) .djs-visual > :nth-child(1) {
+    stroke-width: 5px !important;
+    stroke: #ff0000 !important;
+    stroke-dasharray: 10, 10 !important;
+}
+
+
+.warning.djs-connection .djs-visual > path {
+    stroke: #ffa500 !important;
+}
+
+.warning.djs-connection .djs-visual > defs > marker > path {
+    stroke: #ffa500 !important;
+    fill: #ffa500 !important;
+}
+
+
+.warning:not(.djs-connection) .djs-visual > :nth-child(1) {
+    stroke-width: 5px !important;
+    stroke: #ffa500 !important;
+    stroke-dasharray: 10, 10 !important;
+}
+
+
 /* 팔레트 커스텀 부분 */
 .vue-bpmn-diagram-container .separator {
     display: none;
@@ -228,7 +262,6 @@ hr {
 }
 
 .user-task-panel-check-points .check-points-field-box {
-    height: 300px;
     overflow: auto;
 }
 
@@ -334,11 +367,6 @@ hr {
     right: 80px;
     top: 20px;
     z-index: 1;
-}
-
-.process-definition-chat-btn-set {
-    margin-right:20px;
-    display: inline-block;
 }
 
 .test-variables-table-box tr {
@@ -451,6 +479,10 @@ hr {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.no-border .v-field__outline {
+    display: none;
 }
 
 @media only screen and (max-width:1450px) {

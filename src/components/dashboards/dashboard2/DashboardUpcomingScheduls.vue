@@ -93,15 +93,13 @@ export default {
         },
         async initProcessGPTMode() {
             const storage = await StorageBaseFactory.getStorage();
-            let userId = localStorage.getItem('uid');
+            let userInfo = await storage.getUserInfo();
+            let userId = userInfo.uid;
             let option = {
                 key: "uid"
             }
-
-            const calendarsData = await storage.getObject(`db://calendar/${userId}`, option);
-
+            const calendarsData = await storage.getObject(`calendar/${userId}`, option);
             let calendars = [];
-            
             if (calendarsData) {
                 const today = new Date();
                 today.setHours(0, 0, 0, 0); // 시간 정보 초기화

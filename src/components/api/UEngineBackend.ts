@@ -7,6 +7,22 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async uploadImage(fileName: string, image: File) {
+        return null;
+    }
+
+    async getImageUrl(fileName: string) {
+        return null;
+    }
+
+    async uploadFile(fileName: string, file: File) {
+        return null;
+    }
+
+    async getFileUrl(path: string) {
+        return null;
+    }
+
     async getUserList() {
         return [];
     }
@@ -267,6 +283,12 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async testRecordList(path: string) {
+        const response = await axiosInstance.get(`/test/${path}/record`);
+        return response.data;
+    }
+
+
     async getEventList(instanceId: string) {
         const response = await axiosInstance.get(`/instance/${instanceId}/eventList`);
         return response.data;
@@ -497,8 +519,8 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async getAllInstanceList(page: any) {
-        const response = await axiosInstance.get(`/instances/search/findAll?page=${page}&size=10`);
+    async getAllInstanceList(page: any, size: any) {
+        const response = await axiosInstance.get(`/instances/search/findAll?page=${page}&size=${size}`);
         return response.data._embedded.instances;
     }
 
@@ -509,12 +531,94 @@ class UEngineBackend implements Backend {
         if (!response.data) return null;
         if (!response.data._embedded) return null;
         return response.data._embedded.instances.map((inst: any) => ({
-            instId: inst.rootInstId,
+            instId: inst._links.self.href.split('/').pop(),
             instName: inst.name,
             status: inst.status,
             startedDate: inst.startedDate,
             defId: inst.defId
         }));
+    }
+
+    async getInstanceListByRole(roles: string) {
+        if(!roles) {
+            return this.getInstanceList();
+        }
+        
+        let pattern = roles
+        .split(',')
+        .map(item => {
+            const trimmedItem = item.trim();
+            return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+        })
+        .join('|');
+    
+
+        const response = await axiosInstance.get(`/instances/search/findFilterICanSee?status=Running&rolePattern=${encodeURIComponent(pattern)}`);
+        if (!response.data) return null;
+        if (!response.data._embedded) return null;
+        return response.data._embedded.instances.map((inst: any) => ({
+            instId: inst._links.self.href.split('/').pop(),
+            instName: inst.name,
+            status: inst.status,
+            startedDate: inst.startedDate,
+            defId: inst.defId
+        }));
+    }
+
+    async getInstanceListByGroup(groups: string) {
+        let pattern = groups
+        .split(',')
+        .map(item => {
+            const trimmedItem = item.trim();
+            return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+        })
+        .join('|');
+    
+        const response = await axiosInstance.get(
+            `/instances/search/findAllByGroupsRegex?status=Running&pattern=${encodeURIComponent(pattern)}`
+        );
+    
+        return response.data._embedded.instances.map((inst: any) => ({
+            instId: inst._links.self.href.split('/').pop(),
+            instName: inst.name,
+            status: inst.status,
+            startedDate: inst.startedDate,
+            defId: inst.defId
+        }));
+    }
+    
+    
+    // 관리자 페이지 필터링 관련  API
+    async getFilteredInstanceList(filters: object, page: number, size: number) {
+        const queryParams = new URLSearchParams();
+        queryParams.append('page', page.toString());
+        queryParams.append('size', size.toString()); // size 추가
+    
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                queryParams.append(key, value as string);
+            }
+        });
+    
+        const request = `/instances/search/findFilterICanSee?${queryParams.toString()}`
+        const response = await axiosInstance.get(request);
+        if (!response.data) return null;
+        if (!response.data._embedded) return null;
+        return {
+            instances: response.data._embedded.instances.map((inst: any) => ({
+                instId: inst.rootInstId,
+                instName: inst.name,
+                status: inst.status,
+                startedDate: inst.startedDate,
+                finishedDate: inst.finishedDate,
+                defId: inst.defId,
+                initEp: inst.initEp,
+                subProcess: inst.subProcess
+            })),
+            totalElements: response.data.page.totalElements, // totalElements 반환
+            totalPages: response.data.page.totalPages,  // totalPages 반환
+            currentPage: response.data.page.number      // currentPage 반환
+        };
     }
 
     // Complate Instance API
@@ -538,9 +642,8 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async getActivitiesStatus(instId: string) {
-        // instance/{instanceId}/completed
-        const response = await axiosInstance.get(`/instance/${instId}/status`);
+    async getActivitiesStatus(instId: string, executionScope: String = "0") {
+        const response = await axiosInstance.get(`/instance/${instId}/status/${executionScope}`);
 
         return response.data;
     }
@@ -575,6 +678,16 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async deleteSystem(system: any) {
+        try {
+            const response = await axiosInstance.delete(`/definition/system/${system.name}`);
+            return response.data;
+        } catch (error) {
+            alert(`시스템 삭제 중 오류 발생: ${error}`);
+            throw error;
+        }
+    }
+
     async getSystemList() {
         const response = await axiosInstance.get(`/definition/system`);
         if (response.data._embedded.definitions.length > 0) return response.data._embedded.definitions;
@@ -595,11 +708,16 @@ class UEngineBackend implements Backend {
     }
 
     async validate(xml: string) {
-        const response = await axiosInstance.post(`/validate`, xml);
-        if (!response.data) return {};
-        return response.data;
+        try {
+            const response = await axiosInstance.post(`/validate`, xml);
+            if (!response.data) return {};
+            return response.data;
+        } catch (error) {
+            // console.error('유효성 검사 중 오류 발생:', error);
+            throw error;
+        }
     }
-
+    
     async uploadDefinition(file: File, path: string) {
         const formData = new FormData();
         formData.append('file', file);
@@ -645,8 +763,19 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async deleteRecordTest(path: string, index: number): Promise<any> {
+        const response = await axiosInstance.delete(`/test/${path}/record`, {
+            data: { idx: index }
+        });
+        return response.data;
+    }
+
     async checkDBConnection() {
         return true;
+    }
+
+    async getOpenAIToken(){
+        return window.localStorage.getItem('openAIToken') || null;
     }
 }
 

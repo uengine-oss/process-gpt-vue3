@@ -99,6 +99,10 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
   }
 
 
+  function insertLanes(num) {
+    modeling.splitLane(element, num);
+  }
+
   function divideIntoTwoLanes(event) {
     modeling.splitLane(element, 2);
   }
@@ -195,6 +199,17 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
           click: divideIntoThreeLanes
         }
       },
+      'lane-insert-single': {
+        group: 'lane',
+        className: isHorizontal ? 'bpmn-icon-participant' : 'bpmn-icon-participant icon-rotate-90',
+        title: isHorizontal ? i18n.global.t('customContextPad.lane') : i18n.global.t('customContextPad.laneToTheLeft'),
+        action: {
+          click: function(event, element) {
+            const laneCount = element.children.filter(child => child.type === 'bpmn:Lane').length;
+            insertLanes(1);
+          }
+        }
+      },
       'connect': {
         group: 'connect',
         className: 'bpmn-icon-connection-multi',
@@ -237,7 +252,28 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
     actions['append.text-annotation'].title = i18n.global.t('customContextPad.textAnnotation');
   }
   if(actions['replace']) {
-    actions['replace'].title = i18n.global.t('customContextPad.replace');
+    actions['replace'] = {
+      group: 'edit',
+      className: 'bpmn-icon-screw-wrench',
+      title: i18n.global.t('customContextPad.replace'),
+      action: {
+        click: function(event, element) {
+          var position = assign({
+            x: event.x,
+            y: event.y
+          }, 
+          {
+            cursor: { x: event.x, y: event.y }
+          });
+
+          popupMenu.open(element, 'bpmn-replace', position, {
+            title: i18n.global.t('customContextPad.replace'),
+            width: 300,
+            search: true
+          });
+        }
+      }
+    }
   }
   if(actions['connect']) {
     actions['connect'].title = i18n.global.t('customContextPad.connect');

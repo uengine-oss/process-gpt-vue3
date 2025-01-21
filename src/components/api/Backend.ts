@@ -18,7 +18,9 @@ export interface Backend {
     suspend(instanceId: string): Promise<any>;
     resume(instanceId: string): Promise<any>;
     getInstance(instanceId: string): Promise<any>;
-    getAllInstanceList(page: any): Promise<any>;
+    getAllInstanceList(page: any, size: any): Promise<any>;
+    getInstanceListByGroup(group: string): Promise<any>;
+    getFilteredInstanceList(filters: object, page: number, size: number): Promise<any>;
     backToHere(instanceId: string, tracingTag: string): Promise<any>;
     getProcessVariables(instanceId: string): Promise<any>;
     getVariable(instId: string, varName: string): Promise<any>;
@@ -33,6 +35,7 @@ export interface Backend {
     putWorkItem(taskId: string, workItem: any): Promise<any>;
     putWorkItemComplete(taskId: string, workItem: any, isSimulate: string): Promise<any>;
     postMessage(instanceId: string, message: any): Promise<any>;
+    fireMessage(instanceId: string, event: any): Promise<any>;
     getWorkList(options?: any): Promise<any>;
     getProcessDefinitionMap(): Promise<any>;
     putProcessDefinitionMap(definitionMap: any): Promise<any>;
@@ -45,6 +48,7 @@ export interface Backend {
     startAndComplete(command: object, isSimulate: string) : Promise<any>;
     getSystemList(): Promise<any>;
     putSystem(system: any): Promise<any>;
+    deleteSystem(system: any): Promise<any>;
     getSystem(systemId: String): Promise<any>;
     getCurrentWorkItemByCorrKey(corrKey: number): Promise<any>;
     deleteInstance(instanceId: string): Promise<any>;
@@ -52,15 +56,22 @@ export interface Backend {
     setNotifications(value: any): Promise<any>;
     search(keyword: string): Promise<any>;
     testList(path: string): Promise<any>;
+    testRecordList(path: string): Promise<any>;
     findCurrentWorkItemByInstId(instId: string): Promise<any>;
     getUserList(): Promise<any>;
     releaseVersion(releaseName: string) : Promise<any>;
     uploadDefinition(file: File, path: string): Promise<any>;
     getCompletedTaskId(instId: string): Promise<any>;
-    getActivitiesStatus(instId: string): Promise<any>;
+    getActivitiesStatus(instId: string, executionScope: String): Promise<any>;
     deleteTest(path: string, tracingTag: string, index: number): Promise<any>;
+    deleteRecordTest(path: string, index: number): Promise<any>;
     checkDBConnection(): Promise<any>;
     getWorkListAll(): Promise<any>;
+    getOpenAIToken(): Promise<any>;
+    uploadImage(fileName: string, image: File): Promise<any>;
+    getImageUrl(fileName: string): Promise<any>;
+    uploadFile(fileName: string, file: File): Promise<any>;
+    getFileUrl(path: string): Promise<any>;
 }
 
 // export type { Backend }

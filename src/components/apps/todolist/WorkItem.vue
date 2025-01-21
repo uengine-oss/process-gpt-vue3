@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10" v-if="currentComponent" :key="updatedKey">
-        <div class="px-3 py-3 pb-2 align-center">
+        <div class="px-3 py-3 pb-4 align-center">
             <div class="d-flex">
                 <h5 class="text-h5 font-weight-semibold">
                     {{ activityName }}
@@ -33,7 +33,8 @@
                         @executeProcess="executeProcess"
                         :is-simulate="isSimulate"
                     ></component>
-                    <v-tooltip :text="$t('processDefinition.zoom')">
+                    <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                    <!-- <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn
                                 @click="$globalState.methods.toggleZoom()"
@@ -42,7 +43,6 @@
                                 v-bind="props"
                                 class="processVariables-zoom task-btn"
                             >
-                                <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
                                 <Icons
                                     :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
                                     :width="32"
@@ -50,7 +50,7 @@
                                 />
                             </v-btn>
                         </template>
-                    </v-tooltip>
+                    </v-tooltip> -->
                 </div>
             </v-col>
             <!-- Right -->
@@ -75,7 +75,7 @@
                                             :options="options"
                                             :isViewMode="true"
                                             :currentActivities="currentActivities"
-                                            :task-status="taskStatus"
+                                            :taskStatus="taskStatus"
                                             v-on:error="handleError"
                                             v-on:shown="handleShown"
                                             v-on:openDefinition="(ele) => openSubProcess(ele)"
@@ -145,7 +145,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import DefaultWorkItem from './DefaultWorkItem.vue';
 import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
 import URLWorkItem from './URLWorkItem.vue';
-import BpmnUengine from '@/components/BpmnUengine.vue';
+import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
@@ -200,7 +200,6 @@ export default {
         eventList: [],
         html: null,
         formData: null,
-        taskStatus: {}
     }),
     created() {
         this.init();
@@ -303,7 +302,9 @@ export default {
                             // });
                         }
                     }
-                    // me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
+                    if(me.workItem.worklist) {//dry-run에서는 실제 실행상태가 아니라 안나옴
+                        me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
+                    }
 
                     if (me.mode == 'ProcessGPT') {
                         me.currentComponent = 'FormWorkItem';

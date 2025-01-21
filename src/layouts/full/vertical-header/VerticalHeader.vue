@@ -51,7 +51,7 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'overview',
         to: '/todolist',
         disable: false,
-        isVisible: true
+        isVisible: !window.$pal
     },
     {
         title: 'headerMenu.admin',
@@ -65,14 +65,14 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'calendar-line-duotone',
         to: '/calendar',
         disable: false,
-        isVisible: window.$mode === 'ProcessGPT'
+        isVisible: window.$mode === 'ProcessGPT' && !window.$pal
     }
 ]);
 
 // 생명주기 훅 사용
 onBeforeMount(() => {
     if (window.$mode === 'ProcessGPT') {
-        // sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/calendar');
+        sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/admin');
     }
     window.addEventListener('scroll', handleScroll);
 });

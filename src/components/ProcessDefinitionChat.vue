@@ -10,8 +10,8 @@
                     <process-definition
                         class="process-definition-resize"
                         :bpmn="bpmn"
-                        :key="definitionChangeCount"
                         :isViewMode="true"
+                        :key="definitionChangeCount"
                         :isXmlMode="isXmlMode"
                         :definitionPath="fullPath"
                         :definitionChat="this"
@@ -54,12 +54,12 @@
                     :isXmlMode="isXmlMode"
                     :definitionPath="fullPath"
                     :definitionChat="this"
-                    :validationList="validationList"
                     :isAdmin="isAdmin"
                     :generateFormTask="generateFormTask"
                     @update="updateDefinition"
-                    @change="changeElement"
                     @changeBpmn="changeBpmn"
+                    @changeElement="changeElement"
+                    @onLoaded="onLoadBpmn()"
                 ></process-definition>
                 <process-definition-version-dialog
                     :process="processDefinition"
@@ -153,7 +153,7 @@
             <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="fullPath" 
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
-                <test-process v-if="isSimulate == 'true'" :definitionId="fullPath" @close="executeDialog = false" />
+                <test-process v-if="isSimulate == 'true'" :executeDialog="executeDialog" :definitionId="fullPath" @close="executeDialog = false" />
                 <dry-run-process v-else :is-simulate="isSimulate" :definitionId="fullPath" @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>
@@ -246,7 +246,6 @@ export default {
         deleteDialog: false,
         isDeleted: false,
         externalSystems: [],
-        validationList: {},
         executeDialog: false,
         isSimulate: 'false',
         waitForCustomer: false,
@@ -301,7 +300,6 @@ export default {
                 if (this.fullPath && this.fullPath != '') {
                     this.chatRoomId = this.fullPath;
                 }
-                this.validate();
             }
         });
     },
@@ -513,23 +511,15 @@ export default {
             me.definitionChangeCount++;
             me.toggleVerMangerDialog(false);
         },
-        async changeElement() {
-            await this.validate();
-        },
-        async validate() {
-            this.$nextTick(async () => {
-                const store = useBpmnStore();
-                const modeler = store.getModeler;
-                const xmlObj = await modeler.saveXML({ format: true, preamble: true });
-                this.validationList = await backend.validate(xmlObj.xml);
-            });
-        },
         loadBPMN(bpmn) {
             this.bpmn = bpmn;
             this.definitionChangeCount++;
         },
         changeBpmn(newVal) {
             this.loadBPMN(newVal);
+        },
+        changeElement(newVal) {
+            this.bpmn = newVal;
         },
         removePositionKey(obj) {
             // 배열인 경우, 각 요소에 대해 재귀적으로 함수를 호출
@@ -580,14 +570,9 @@ export default {
                 let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
                 if (fullPath && lastPath != 'chat') {
                     let bpmn = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
-                    const store = useBpmnStore();
-                    let modeler = store.getModeler;
-                    let definitions;
-                    if (bpmn) {
-                        me.bpmn = bpmn;            
-                        definitions = modeler.getDefinitions();   
-                        me.definitionChangeCount++;
-                    }
+                    me.bpmn = bpmn;             
+                    me.definitionChangeCount++;
+
                     if (me.useLock) {
                         const value = await backend.getRawDefinition(fullPath);
                         if (value) {
@@ -597,12 +582,8 @@ export default {
                             me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
                         }
                         me.checkedLock(lastPath);
-                    } else {
-                        me.processDefinition = await me.convertXMLToJSON(me.bpmn);
-                        me.processDefinition.processDefinitionId = fullPath;
-                        me.processDefinition.processDefinitionName = fullPath;
-                        me.projectName = definitions.name ? definitions.name : me.processDefinition.processDefinitionName;
                     }
+
                 } else if (lastPath == 'chat') {
                     // me.processDefinition = null;
                     me.projectName = null;
@@ -611,10 +592,10 @@ export default {
 
                     if (me.$route.query && me.$route.query.id) {
                         me.processDefinition = {
-                            processDefinitionId: me.$route.query.id
+                            processDefinitionId: me.$route.query.id.replace('.bpmn', '')
                         };
                         if (me.$route.query.name) {
-                            me.projectName = me.$route.query.name;
+                            me.projectName = me.$route.query.name.replace('.bpmn', '');
                             me.processDefinition.processDefinitionName = me.projectName;
                         }
                     }
@@ -635,7 +616,29 @@ export default {
                 alert(e);
             }
         },
-
+        async onLoadBpmn() {
+            const store = useBpmnStore();
+            let modeler = store.getModeler;
+            let me = this;
+            let definitions;
+            let xmlObj = await modeler.saveXML({ format: true, preamble: true });
+            me.bpmn = xmlObj.xml;
+            let fullPath = me.$route.params.pathMatch.join('/');
+            if (fullPath.startsWith('/')) {
+                fullPath = fullPath.substring(1);
+            }
+            let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
+            if(fullPath == 'chat' && lastPath == 'chat') return;
+            definitions = modeler.getDefinitions();  
+            if(definitions) {
+                if (!me.useLock) {
+                    me.processDefinition = await me.convertXMLToJSON(me.bpmn);
+                    me.processDefinition.processDefinitionId = fullPath;
+                    me.processDefinition.processDefinitionName = fullPath;
+                    me.projectName = definitions.name ? definitions.name : me.processDefinition.processDefinitionName;
+                }
+            }
+        },
         beforeSendMessage(newMessage) {
             this.waitForCustomer = false
             if(!this.isConsultingMode){

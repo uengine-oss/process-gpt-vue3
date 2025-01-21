@@ -1,7 +1,9 @@
 <script setup>
-import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
+import { ref, onMounted, computed, onUnmounted, watch, getCurrentInstance } from 'vue';
 import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns';
 import { last } from 'lodash';
+
+const { proxy } = getCurrentInstance();
 
 const props = defineProps({
     chatRoomList: Array,
@@ -97,12 +99,12 @@ const editMode = ref(false);
 
 // 이름 입력 필드에 대한 검증 규칙
 const nameRules = [
-    v => !!v || '채팅방 이름을 입력해주세요.',
+    v => !!v || proxy.$t('chatListing.enterChatRoomName'),
 ];
 
 // 참여자 선택 필드에 대한 검증 규칙
 const participantsRules = [
-    v => (v && v.length > 0) || '참여자를 하나 이상 선택해주세요.',
+    v => (v && v.length > 0) || proxy.$t('chatListing.selectAtLeastOneParticipant'),
 ];
 
 const confirmDialog = () => {
@@ -170,14 +172,22 @@ const deleteChatRoom = () => {
         </div>
     </v-sheet>
     <v-dialog v-model="dialog" persistent max-width="600px">
-        <v-card>
-            <v-card-title>
-                채팅방 설정
-            </v-card-title>
-            <v-card-text>
-                <v-text-field label="채팅방 이름" v-model="inputObj.name" :rules="nameRules"></v-text-field>
+        <v-card class="ma-0 pa-4">
+            <v-row class="ma-0 pa-0">
+                <v-card-title class="pa-0">
+                    {{ $t('chatListing.title') }}
+                </v-card-title>
+                <v-spacer></v-spacer>
+                <v-btn @click="dialog = false" icon variant="text" density="comfortable"
+                    style="margin-top:-8px;"
+                >
+                    <Icons :icon="'close'" :size="16" />
+                </v-btn>
+            </v-row>
+            <v-card-text class="ma-0 pa-0 pb-2 pt-4">
+                <v-text-field :label="$t('chatListing.chatRoomName')" v-model="inputObj.name" :rules="nameRules"></v-text-field>
                 <v-autocomplete v-model="inputObj.participants" :items="userList" chips closable-chips
-                    color="blue-grey-lighten-2" item-title="username" :item-value="item => item" multiple label="참여자 선택"
+                    color="blue-grey-lighten-2" item-title="username" :item-value="item => item" multiple :label="$t('chatListing.selectParticipants')"
                     small-chips :item-avatar="'image'" :rules="participantsRules">
                     <template v-slot:chip="{ props, item }">
                         <v-chip v-if="item.raw.profile" v-bind="props" :prepend-avatar="item.raw.profile" :text="item.raw.username ? item.raw.username:item.raw.email"></v-chip>
@@ -198,26 +208,33 @@ const deleteChatRoom = () => {
                     </template>
                 </v-autocomplete>
             </v-card-text>
-            <v-card-actions>
+            <v-row class="ma-0 pa-0">
                 <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="dialog = false">취소</v-btn>
-                <v-btn color="primary" text @click="confirmDialog">{{ editMode ? '저장' : '생성' }}</v-btn>
-            </v-card-actions>
+                <v-btn color="primary" class="ma-0 pa-0" rounded @click="confirmDialog">{{ editMode ? $t('chatListing.save') : $t('chatListing.create') }}</v-btn>
+            </v-row>
         </v-card>
     </v-dialog>
     <v-dialog v-model="deleteDialog" persistent max-width="600px">
-        <v-card>
-            <v-card-title>
-                채팅방 삭제
-            </v-card-title>
-            <v-card-text>
-                "{{ inputObj.name }}" 채팅방을 삭제하시겠습니까 ?
-            </v-card-text>
-            <v-card-actions>
+        <v-card class="pa-4">
+            <v-row class="ma-0 pa-0">
+                <v-card-title class="ma-0 pa-0">
+                    {{ $t('chatListing.deleteChatRoom') }}
+                </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn color="blue darken-1" text @click="deleteDialog = false">취소</v-btn>
-                <v-btn color="error" text @click="deleteChatRoom">삭제</v-btn>
-            </v-card-actions>
+                <v-btn @click="deleteDialog = false"
+                    icon variant="text" density="comfortable"
+                    size="24"
+                >
+                    <Icons :icon="'close'" :size="16"/>
+                </v-btn>
+            </v-row>
+            <v-card-text class="ma-0 pa-0 pt-4 pb-4">
+                "{{ inputObj.name }}" {{ $t('chatListing.confirmDeleteChatRoom') }}
+            </v-card-text>
+            <v-row class="ma-0 pa-0">
+                <v-spacer></v-spacer>
+                <v-btn color="primary" rounded @click="deleteChatRoom">{{ $t('chatListing.delete') }}</v-btn>
+            </v-row>
         </v-card>
     </v-dialog>
     <perfect-scrollbar class="lgScroll">
@@ -283,10 +300,10 @@ const deleteChatRoom = () => {
                                 </template>
                                 <v-list style="width: 70px; text-align-last: center;">
                                     <v-list-item @click="openEditDialog(chat)">
-                                        <v-list-item-title>설정</v-list-item-title>
+                                        <v-list-item-title>{{ $t('chatListing.setting') }}</v-list-item-title>
                                     </v-list-item>
                                     <v-list-item @click="openDeleteDialog(chat)">
-                                        <v-list-item-title style="color: red;">삭제</v-list-item-title>
+                                        <v-list-item-title style="color: red;">{{ $t('chatListing.delete') }}</v-list-item-title>
                                     </v-list-item>
                                 </v-list>
                             </v-menu>

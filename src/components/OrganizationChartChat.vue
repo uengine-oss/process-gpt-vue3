@@ -1,74 +1,76 @@
 <template>
-    <AppBaseCard>
-        <template v-slot:leftpart>
-            <Chat :name="$t(chatInfo.title)"
-                :messages="messages"
-                :chatInfo="chatInfo"
-                :userInfo="userInfo" 
-                :disableChat="disableChat"
-                @sendMessage="beforeSendMessage"
-                @sendEditedMessage="sendEditedMessage"
-                @stopMessage="stopMessage"
-            ></Chat>
+    <v-card elevation="10">
+        <AppBaseCard>
+            <template v-slot:leftpart>
+                <Chat :name="$t(chatInfo.title)"
+                    :messages="messages"
+                    :chatInfo="chatInfo"
+                    :userInfo="userInfo" 
+                    :disableChat="disableChat"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                ></Chat>
 
-            <v-dialog v-model="userDialog" max-width="500">
-                <v-card>
-                    <v-card-title>신규 입사자 가입</v-card-title>
-                    <v-card-text class="overflow-y-auto">
-                        <div v-for="(user, index) in newUserList" :key="index" class="py-2">
-                            <v-text-field v-model="user.name" label="이름"></v-text-field>
-                            <v-text-field v-model="user.email" label="이메일"></v-text-field>
-                            <v-divider></v-divider>
-                        </div>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-spacer></v-spacer>
-                        <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
-                        <v-btn color="error" @click="userDialog = false">닫기</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-        </template>
+                <v-dialog v-model="userDialog" max-width="500">
+                    <v-card>
+                        <v-card-title>신규 입사자 가입</v-card-title>
+                        <v-card-text class="overflow-y-auto">
+                            <div v-for="(user, index) in newUserList" :key="index" class="py-2">
+                                <v-text-field v-model="user.name" label="이름"></v-text-field>
+                                <v-text-field v-model="user.email" label="이메일"></v-text-field>
+                                <v-divider></v-divider>
+                            </div>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
+                            <v-btn color="error" @click="userDialog = false">닫기</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </template>
 
-        <template v-slot:rightpart>
-            <OrganizationChart
-                    :node="organizationChart"
-                    :key="organizationChart.id"
-                    :userList="userList"
-                    @updateNode="updateNode"
-            ></OrganizationChart>
-        </template>
+            <template v-slot:rightpart>
+                <OrganizationChart
+                        :node="organizationChart"
+                        :key="organizationChart.id"
+                        :userList="userList"
+                        @updateNode="updateNode"
+                ></OrganizationChart>
+            </template>
 
-        <template v-slot:mobileLeftContent>
-            <Chat :name="$t(chatInfo.title)"
-                :messages="messages"
-                :chatInfo="chatInfo"
-                :userInfo="userInfo" 
-                :disableChat="disableChat"
-                @sendMessage="beforeSendMessage"
-                @sendEditedMessage="sendEditedMessage"
-                @stopMessage="stopMessage"
-            ></Chat>
+            <template v-slot:mobileLeftContent>
+                <Chat :name="$t(chatInfo.title)"
+                    :messages="messages"
+                    :chatInfo="chatInfo"
+                    :userInfo="userInfo" 
+                    :disableChat="disableChat"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                ></Chat>
 
-            <v-dialog v-model="userDialog" max-width="500">
-                <v-card>
-                    <v-card-title>신규 입사자 가입</v-card-title>
-                    <v-card-text>
-                        <div v-for="(user, index) in newUserList" :key="index" class="py-2">
-                            <v-text-field v-model="user.name" label="이름"></v-text-field>
-                            <v-text-field v-model="user.email" label="이메일"></v-text-field>
-                            <v-divider></v-divider>
-                        </div>
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-spacer></v-spacer>
-                        <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
-                        <v-btn color="error" @click="userDialog = false">닫기</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-        </template>
-    </AppBaseCard>
+                <v-dialog v-model="userDialog" max-width="500">
+                    <v-card>
+                        <v-card-title>신규 입사자 가입</v-card-title>
+                        <v-card-text>
+                            <div v-for="(user, index) in newUserList" :key="index" class="py-2">
+                                <v-text-field v-model="user.name" label="이름"></v-text-field>
+                                <v-text-field v-model="user.email" label="이메일"></v-text-field>
+                                <v-divider></v-divider>
+                            </div>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
+                            <v-btn color="error" @click="userDialog = false">닫기</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </template>
+        </AppBaseCard>
+    </v-card>
 </template>
 
 <script>
@@ -98,6 +100,7 @@ export default {
         },
         userDialog: false,
         newUserList: [],
+        organizationChartId: null,
     }),
     async created() {
         await this.init();
@@ -131,8 +134,9 @@ export default {
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
         async loadData(path) {
-            const data = await this.getData(`configuration/organization`, {key: 'key'});
+            const data = await this.getData(`configuration`, { match: { key: 'organization' } });
             if (data && data.value) {
+                this.organizationChartId = data.uuid;
                 if (data.value.chart) {
                     this.organizationChart = data.value.chart;
                     if (!this.organizationChart) {
@@ -212,19 +216,22 @@ export default {
                 } else if (unknown && unknown.deleteUsers) {
                     this.deleteUser(unknown.deleteUsers);
                 } else {
-                    const putObj =  {
+                    var putObj =  {
                         key: 'organization',
                         value: {
                             chart: this.organizationChart,
-                        }
+                        },
                     };
                     this.drawChart(this.organizationChart);
-                    this.putObject("configuration", putObj);
+                    if (this.organizationChartId) {
+                        putObj.uuid = this.organizationChartId;
+                    }
+                    await this.putObject("configuration", putObj);
                 }
             }
 
             const newMessage = this.messages[this.messages.length - 1];
-            const putObj =  {
+            var putObj =  {
                 id: 'organization_chart_chat',
                 uuid: this.uuid(),
                 messages: newMessage,
@@ -278,12 +285,15 @@ export default {
             }
         },
         async updateNode() {
-            const putObj =  {
+            var putObj =  {
                 key: 'organization',
                 value: {
                     chart: this.organizationChart,
                 }
             };
+            if (this.organizationChartId) {
+                putObj.uuid = this.organizationChartId;
+            }
             await this.putObject("configuration", putObj);
         },
     }

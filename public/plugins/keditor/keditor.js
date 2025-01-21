@@ -576,6 +576,9 @@
             
             var self = this;
             var body = self.body;
+
+            // 최초에 사이드바를 열린 상태로 설정
+            body.addClass('opened-keditor-sidebar');
             
             body.find('#keditor-sidebar-toggler').on('click', function (e) {
                 e.preventDefault();

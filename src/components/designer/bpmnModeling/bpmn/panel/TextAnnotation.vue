@@ -8,8 +8,6 @@
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
-const storage = StorageBaseFactory.getStorage();
 import _ from 'lodash';
 export default {
     name: 'text-annotation-panel',

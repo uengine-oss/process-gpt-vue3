@@ -11,13 +11,14 @@
                 </div> -->
 
                 <v-card-title class="pa-0">{{ $t('EventSynchronizationForm.eventAttributes') }}</v-card-title>
-                <draggable v-model="attributes" :options="dragOptions" class="mb-6" style="max-height:200px; overflow:auto;">
+                <draggable v-model="attributes" :options="dragOptions" class="mb-6 pt-2" style="max-height:200px; overflow:auto;">
                     <div v-for="(attribute, idx) in attributes" :key="idx">
                         <div v-if="attribute.isEdit" style="display: flex; align-items: center; height: 10%;">
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props"
-                                        icon variant="text" 
+                                        icon variant="text"
+                                        density="comfortable"
                                         type="file"
                                         class="text-medium-emphasis"
                                         @click="setPrimaryKey(attribute)"
@@ -30,7 +31,8 @@
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props"
-                                        icon variant="text" 
+                                        icon variant="text"
+                                        density="comfortable"
                                         type="file"
                                         class="text-medium-emphasis"
                                         @click="setCorrKey(attribute)"
@@ -40,7 +42,7 @@
                                 </template>
                                 <span>{{ $t('EventSynchronizationForm.correlationKey') }}</span>
                             </v-tooltip>
-                            <v-select class="delete-input-details"
+                            <v-select class="delete-input-details pr-4"
                                     style="width: 30px" 
                                     v-model="attribute.className" 
                                     :items="entityTypeList"
@@ -57,7 +59,7 @@
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props"
                                         icon variant="text" 
-                                        size="small"
+                                        class="text-medium-emphasis"
                                         @click="saveAttribute(attribute)"
                                     >
                                         <v-icon>mdi-content-save</v-icon>
@@ -78,8 +80,20 @@
                             <div style="display: flex; align-items: center; width: 20%;">
                                 <div style="width: 30px; height: 30px; place-content: center; text-align: center;"><v-icon v-if="attribute.isKey" disabled large style="color: #0085db;">mdi-key</v-icon></div>
                                 <div style="width: 30px; height: 30px; place-content: center; text-align: center;"><v-icon v-if="attribute.isCorrKey" disabled large style="color: #0085db;">mdi-link-variant</v-icon></div>
-                                <v-btn variant="text" density="comfortable" size="small" icon="mdi-lead-pencil" @click="editAttribute(attribute)"></v-btn>
-                                <v-btn variant="text" density="comfortable" size="small" icon="mdi-delete" @click="deleteAttribute(attribute)"></v-btn>
+                                <v-tooltip :text="$t('EventSynchronizationForm.edit')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn density="compact" icon flat @click="editAttribute(attribute)" v-bind="props" style="margin-right:5px;">
+                                            <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-tooltip :text="$t('EventSynchronizationForm.delete')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn density="compact" icon flat @click="deleteAttribute(attribute)" v-bind="props">
+                                            <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
                             </div>
                         </v-row>
                     </div>
@@ -115,7 +129,7 @@
                             </template>
                             <span>{{$t('EventSynchronizationForm.correlationKey')}}</span>
                         </v-tooltip>
-                        <v-select class="delete-input-details" 
+                        <v-select class="delete-input-details pr-4" 
                                 style="width: 30px" 
                                 v-model="newAttribute.className" 
                                 :items="entityTypeList"
@@ -272,6 +286,13 @@ export default {
                 me.value.eventSynchronization.attributes = newVal.map(({ isEdit, ...rest }) => rest);
             },
             deep: true
+        },
+        "modelValue": {
+            handler: function(newVal, oldVal) {
+                var me = this
+                me.init();
+            },
+            deep: true
         }
     },
     methods:{
@@ -281,9 +302,6 @@ export default {
             me.bpmnModeler = useBpmnStore().getModeler;
             me.value = JSON.parse(JSON.stringify(me.modelValue));
             me.attributes = me.value.eventSynchronization.attributes.map(attribute => ({ ...attribute, isEdit: false }))
-            if(me.attributes && me.attributes.length == 0){
-                // me.attributes.push({name: 'id', className: 'Long', isKey: false, isCorrKey: true}) //init value.
-            }
             me.isLoading = false;
         },
         openMapperDialog(){

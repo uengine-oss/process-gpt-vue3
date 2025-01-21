@@ -7,7 +7,7 @@
                     <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
                         style="margin-left: 5px;"></v-progress-circular>
                     <div v-if="currentVersionMessage" class="text-body-1 mt-1">
-                        {{ currentVersionMessage }}
+                        설명: {{ currentVersionMessage }}
                     </div>
                 </div>
                 <v-btn icon class="ml-auto" variant="text" @click="close" density="compact">
@@ -50,9 +50,15 @@
                         <pre><code class="xml">{{ currentXML }}</code></pre>
                     </div>
                 </div>
-                <div v-else style="height: 100%;">
-                    <process-definition class="process-definition-resize" :bpmn="currentXML" :isViewMode="true"
-                        :key="key"></process-definition>
+                <div v-else style="height: 100%; border-bottom: 1px solid #E0E0E0;">
+                    <BpmnUengine
+                        ref="bpmnVue"
+                        :key="key"
+                        :bpmn="currentXML"
+                        :options="options"
+                        :isViewMode="false"
+                        style="height: 100%;"
+                    ></BpmnUengine>
                 </div>
             </v-card-text>
             <v-card-actions>
@@ -67,16 +73,19 @@
 <script>
 import { Icon } from '@iconify/vue';
 
-import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import customBpmnModule from '@/components/customBpmn';
 const backend = BackendFactory.createBackend();
+import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
 
 // import 'vue-diff/dist/index.css';
 export default {
     name: 'ProcessDefinitionVersionManager',
+    mixins: [ProcessDefinitionModule],
     components: {
         Icon,
-        ProcessDefinition,
+        BpmnUengine,
     },
     props: {
         open: Boolean,
@@ -94,6 +103,13 @@ export default {
         currentIndex: 0,
         lists: [],
         loading: false,
+        currentInfo: null,
+        options: {
+            additionalModules: [customBpmnModule]
+        },
+        currentVersionName: null,
+        currentVersion: null,
+        currentVersionMessage: null,
     }),
     computed: {
         beforeXML() {
@@ -105,24 +121,6 @@ export default {
         currentXML() {
             if (this.lists.length > 0 && this.lists[this.currentIndex]) {
                 return this.lists[this.currentIndex].xml
-            }
-            return null;
-        },
-        currentVersionName() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
-                return this.lists[this.currentIndex].name
-            }
-            return null;
-        },
-        currentVersion() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
-                return this.lists[this.currentIndex].version
-            }
-            return null;
-        },
-        currentVersionMessage() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
-                return this.lists[this.currentIndex].message
             }
             return null;
         },
@@ -149,16 +147,21 @@ export default {
                 orderBy: 'timeStamp',
                 type: me.type
             });
-            me.lists = result.map(item => ({ ...item, xml: null }));
-            me.lists[0].xml = await me.loadXMLOfVer(me.lists[0].version)
-            me.isOpen = true
-            me.loading = false
+            if(result){
+                me.lists = result.map(item => ({ ...item, xml: null }));
+                me.currentIndex = me.lists.length - 1;
+                me.lists[me.currentIndex].xml = await me.loadXMLOfVer(me.lists[me.currentIndex].version);
+                await me.setCurrentInfo(me.lists[me.currentIndex].xml);
+            }
+            me.isOpen = true;
+            me.loading = false;
         },
         async handleBeforeChange(index) {
             var me = this
             me.loading = true
             if (!me.lists[index]) return;
             if (!me.lists[index].xml) me.lists[index].xml = await me.loadXMLOfVer(me.lists[index].version)
+            await me.setCurrentInfo(me.lists[index].xml);
             me.loading = false
             me.key++
         },
@@ -179,6 +182,13 @@ export default {
                 alert('선택된 버전의 XML 데이터가 없습니다.');
             }
         },
+        async setCurrentInfo(xml) {
+            let me = this;
+            const currentInfo = await me.convertXMLToJSON(xml);
+            me.currentVersionName = currentInfo.processDefinitionName;
+            me.currentVersion = currentInfo.version;
+            me.currentVersionMessage = currentInfo.shortDescription.text;
+        },
         async loadXMLOfVer(version) {
             var me = this
             let result =  await backend.getDefinitionVersions(me.process.processDefinitionId, {
@@ -188,10 +198,12 @@ export default {
                 type: me.type,
                 match: { 'version': version }
             });
-            if (result[0]) {
-                return result[0].snapshot
+            let xml = null;
+            if(result){
+                xml = result[0].snapshot
+                me.currentInfo = await me.convertXMLToJSON(xml);
             }
-            return null
+            return xml;
         },
         copyToClipboard(text) {
             if (navigator.clipboard) { // 최신 브라우저 API 지원 여부 확인
