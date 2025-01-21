@@ -1951,6 +1951,7 @@ export default {
                                     const oldActivity = me.processDefinition.activities.find(oldActivity => oldActivity.id === activity.id);
                                     if (oldActivity) {
                                         activity.instruction = oldActivity.instruction;
+                                        activity.description = oldActivity.description;
                                         activity.checkpoints = oldActivity.checkpoints;
                                         activity.duration = oldActivity.duration;
                                         activity.attachments = oldActivity.attachments;
