@@ -11,13 +11,12 @@
                 <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
             </v-btn>
         </v-row>
-        <v-card-text class="delete-input-details pa-4 pt-0" style="overflow: auto; width: 700px; height:calc(100% - 60px);">
+        <v-card-text class="delete-input-details pa-4 pt-0" style="overflow: auto; width: 700px; height:calc(100% - 80px);">
             <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="mt-4">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
                 <div class="mb-3">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
             </div>
             <component
-                style="height: 100%"
                 :is="panelName"
                 :isViewMode="isViewMode"
                 :isPreviewMode="isPreviewMode"
