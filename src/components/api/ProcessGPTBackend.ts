@@ -1008,7 +1008,7 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
-    async dryRun(defPath: string) {
+    async dryRun(isSimulate: string, command: object) {
         try {
             return null;
         } catch (error) {
