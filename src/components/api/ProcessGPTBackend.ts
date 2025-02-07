@@ -175,15 +175,12 @@ class ProcessGPTBackend implements Backend {
                 await storage.putObject('proc_def_arcv', procDefArcv);
             }
 
-            try {
-                const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
-                if (isLocked) {
-                    await storage.delete(`lock/${defId}`, { key: 'id' });
-                }
-            } catch(error) {
-                //@ts-ignore
-                throw new Error("Error when to unlock: " + (error && error.detail ? error.detail : error));
+            const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+            if (isLocked) {
+                await storage.delete(`lock/${defId}`, { key: 'id' });
             }
+            
+            this.updateVectorStore('process_definitions', xml); 
 
         } catch (e) {
             
@@ -241,6 +238,7 @@ class ProcessGPTBackend implements Backend {
 
     async start(input: any) {
         try {
+            var me = this;
             if (window.$jms) return;
 
             let defId = input.process_definition_id || input.processDefinitionId;
@@ -261,18 +259,37 @@ class ProcessGPTBackend implements Backend {
             }
             input['process_definition_id'] = defId.toLowerCase();
             if (!input.chat_room_id) {
-                input['chat_room_id'] = `${input.process_definition_id}.${this.uuid()}`;
+                input['chat_room_id'] = `${input.process_definition_id}.${me.uuid()}`;
             }
 
-            var result: any = null;
+            return await me.executeInstance(input);
+
+        } catch (error) {
+            //@ts-ignore
+            return error;
+        }
+    }
+
+    async executeInstance(input: any) {
+        try {
+            var me = this;
+            
             var url = `/execution/complete`;
             if (input.answer && input.answer.image != null) {
                 url = `/execution/vision-complete`;
             }
+            
             var req = {
                 input: input
             };
+            
             const token = localStorage.getItem('accessToken');
+            if (!token) {
+                throw new Error('No access token');
+            }
+
+            var result: any = null;
+            console.log('### executeInstance ###');
             await axios.post(url, req, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -285,10 +302,8 @@ class ProcessGPTBackend implements Backend {
                         result = data;
                         if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
                             result.errors = result.cannotProceedErrors;
-                            // const dataNotExist = result.cannotProceedErrors.find((item: any) => item.type === 'DATA_FIELD_NOT_EXIST');
-                            // if (!dataNotExist) {
-                            //     throw new Error(result.cannotProceedErrors.map((item: any) => item.reason).join('\n'));
-                            // }
+                        } else {
+                            me.updateVectorStore('process_instances', JSON.stringify(data));
                         }
                     }
                 }
@@ -809,9 +824,9 @@ class ProcessGPTBackend implements Backend {
 
     async putWorkItemComplete(taskId: string, inputData: any) {
         try {
+            var me = this;
             if (window.$jms) return;
 
-            let result: any = null;
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
 
             if (inputData.parameterValues && inputData.parameterValues["user_input_text"]) {
@@ -823,7 +838,7 @@ class ProcessGPTBackend implements Backend {
                     "content": inputData.parameterValues["user_input_text"],
                     "timeStamp": new Date().toISOString()
                 }
-                this.updateInstanceChat(workItem.proc_inst_id, newMessage);
+                me.updateInstanceChat(workItem.proc_inst_id, newMessage);
             }
 
             const input = {
@@ -833,32 +848,8 @@ class ProcessGPTBackend implements Backend {
                 activity_id: workItem.activity_id,
                 chat_room_id: workItem.proc_inst_id
             };
-            const req = {
-                input: input
-            };
-            const token = localStorage.getItem('accessToken');
-            let url = `/execution/complete`;
-            if (input.answer && input.answer.image != null) {
-                url = `/execution/vision-complete`;
-            }
-            await axios.post(url, req, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            }).then(res => {
-                if (res.data) {
-                    const data = JSON.parse(res.data);
-                    if (data) {
-                        result = data;
-                    }
-                }
-            })
-            .catch(error => {
-                result = error;
-            });
-    
-            return result;
+
+            return await me.executeInstance(input);
 
         } catch (error) {
             return error;
@@ -1425,6 +1416,23 @@ class ProcessGPTBackend implements Backend {
     async getFileUrl(path: string) {
         try {
             return await storage.getFileUrl(path);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async updateVectorStore(collection_name: string, content: string) {
+        try {
+            await axios.post("/execution/update-vs", {
+                collection_name: collection_name,
+                content: content
+            }).then(res => {
+                console.log(res)
+            })
+            .catch(error => {
+                return error;
+            });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
