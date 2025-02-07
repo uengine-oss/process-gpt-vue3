@@ -1,5 +1,20 @@
 <template>
-    <div>compensate-event-definition-panel</div>
+<v-row class="ma-0 pa-0">
+    <v-col cols="12" class="pa-0">
+        <v-autocomplete
+            :label="$t('CompensateEventDefinitionPanel.selectTask')"
+            :items="formattedTaskList"
+            theme="light"
+            density="comfortable"
+            variant="outlined"
+            item-props
+            :item-value="item"
+            :item-title="(item) => item.name"
+            return-object
+            v-model="copyUengineProperties.compensateTask"
+        ></v-autocomplete>
+    </v-col>
+</v-row>
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
@@ -20,17 +35,9 @@ export default {
             this.eventType = this.element.eventDefinitions[0].$type;
         }
         this.copyUengineProperties = this.uengineProperties;
-        Object.keys(this.requiredKeyLists).forEach((key) => {
-            this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
-        });
     },
     data() {
         return {
-            requiredKeyLists: {
-                parameters: [],
-                checkpoints: [],
-                dataInput: { name: '' }
-            },
             methodList: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
             copyUengineProperties: null,
             name: '',
@@ -48,7 +55,9 @@ export default {
             editParam: false,
             paramKey: '',
             paramValue: '',
-            eventType: null
+            eventType: null,
+            activities: [],
+            formattedTaskList: []
         };
     },
     async mounted() {
@@ -56,9 +65,11 @@ export default {
 
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-        // Object.keys(this.requiredKeyLists).forEach((key) => {
-        //     this.ensureKeyExists(this.uengineProperties, key, this.requiredKeyLists[key]);
-        // });
+        
+        let def = this.bpmnModeler.getDefinitions();
+        this.processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
+        this.initActivityData();
+        this.formatTaskList(this.activities);
     },
     computed: {
         panelName() {
@@ -129,10 +140,36 @@ export default {
             // this.paramKey = ""
             // this.paramValue = ""
         },
-        
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        },
+        async initActivityData () {
+            var me = this;
+            me.activities = [];
+            if (me.processElement) {
+                me.processElement.forEach((process) => {
+                    me.findTasks(process.flowElements);
+                });
+            }
+        },
+        findTasks(elements) {
+            var me = this;
+            elements.forEach((element) => {
+                if (element.$type.toLowerCase().indexOf('task') !== -1) {
+                    me.activities.push(element);
+                }
+                if (element.flowElements && element.flowElements.length > 0) {
+                    me.findTasks(element.flowElements);
+                }
+            });
+        },
+        formatTaskList(activities) {
+            var me = this;
+            me.formattedTaskList = activities.map((activity) => ({
+                name: activity.name,
+                tracingTag: activity.id
+            }));
         }
     }
 };

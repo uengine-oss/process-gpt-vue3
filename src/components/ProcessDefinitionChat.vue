@@ -403,7 +403,8 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    await backend.deleteDefinition(me.fullPath);
+                    const path = window.$mode == 'ProcessGPT' ? me.fullPath : me.fullPath + ".bpmn";
+                    await backend.deleteDefinition(path);
                     me.deleteDialog = false;
                     me.isDeleted = true;
                     me.EventBus.emit('definitions-updated');

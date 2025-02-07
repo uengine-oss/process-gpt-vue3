@@ -35,11 +35,39 @@ class UEngineBackend implements Backend {
     async setNotifications(value: any) {
         // Placeholder implementation
     }
-
     async search(keyword: string) {
-        // Placeholder implementation
-        return [];
+        let url = '/definition';
+        let result = [];
+    
+        // 데이터 요청
+        const response = await axiosInstance.get(url);
+        const definitions = response.data?._embedded?.definitions;
+    
+        // 데이터 변환
+        const formattedData = {
+            type: "definition",
+            header: "프로세스 정의",
+            list: definitions
+                .map((definition: any) => ({
+                    title: definition.name,
+                    href: `/definitions/${encodeURIComponent(definition.path)}`,
+                    matches: [
+                        definition.name,
+                        definition.path,
+                        definition._links?.raw?.href || ""
+                    ].filter(Boolean), // 유효한 값만 포함
+                }))
+                .filter((item: any) => 
+                    item.title.includes(keyword) || 
+                    item.href.includes(keyword) || 
+                    item.matches.some((match: string) => match.includes(keyword))
+                ) // keyword가 title, href, matches 셋 중 아무거나 포함되면 필터링
+        };
+    
+        result.push(formattedData);
+        return result;
     }
+    
     // Process Definition Service Impl API
     async listDefinition(basePath: string) {
         let url = '/definition';
@@ -539,21 +567,34 @@ class UEngineBackend implements Backend {
         }));
     }
 
-    async getInstanceListByRole(roles: string) {
-        if(!roles) {
+    async getInstanceListByRole(roles: string, names: string) {
+        if(!roles && !names) {
             return this.getInstanceList();
         }
-        
-        let pattern = roles
-        .split(',')
-        .map(item => {
-            const trimmedItem = item.trim();
-            return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
-        })
-        .join('|');
-    
+        let patternText = '';
+        if(roles) {
+            let pattern = roles
+            .split(',')
+            .map(item => {
+                const trimmedItem = item.trim();
+                return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+            })
+            .join('|');
+            patternText += `rolePattern=${encodeURIComponent(pattern)}`;
+        }
 
-        const response = await axiosInstance.get(`/instances/search/findFilterICanSee?status=Running&rolePattern=${encodeURIComponent(pattern)}`);
+        if(names) {
+            let namePattern = names
+            .split(',')
+            .map(item => {
+                const trimmedItem = item.trim();
+                return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+            })
+            .join('|');
+            patternText += `namePattern=${encodeURIComponent(namePattern)}`;
+        }
+        
+        const response = await axiosInstance.get(`/instances/search/findFilterICanSee?${patternText}`);
         if (!response.data) return null;
         if (!response.data._embedded) return null;
         return response.data._embedded.instances.map((inst: any) => ({
@@ -606,7 +647,7 @@ class UEngineBackend implements Backend {
         if (!response.data._embedded) return null;
         return {
             instances: response.data._embedded.instances.map((inst: any) => ({
-                instId: inst.rootInstId,
+                instId: inst._links.self.href.split('/').pop(),
                 instName: inst.name,
                 status: inst.status,
                 startedDate: inst.startedDate,
@@ -648,19 +689,21 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async dryRun(defPath: String, isSimulate: string) {
+    async dryRun(isSimulate: string, command: object) {
+        // command를 object json으로 변경
         let config = {
             headers: {
                 isSimulate: isSimulate ? isSimulate : 'false'
             }
         };
-        const response = await axiosInstance.get(`/dry-run/${defPath}`, config);
+        const response = await axiosInstance.post(`/dry-run`, command, config);
         // const response = await axiosInstance.get(encodeURI(`/dry-run/${defPath}`));
         // const response = await axiosInstance.get(encodeURI(`/dry-run/${encodeURIComponent(defPath.toString())}`));
 
         if (!response.data) return null;
         return response.data;
     }
+    
 
     async startAndComplete(command: object, isSimulate: string) {
         let config = {

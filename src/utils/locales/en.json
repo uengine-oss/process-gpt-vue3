@@ -547,7 +547,9 @@
         "return": "Variable to store the return value",
         "methodTypeDescriptionTitle": "Set the method (GET, POST, PUT, PATCH) to use when sending an API request and the server's endpoint URL to process the request.",
         "methodTypeDescriptionSubTitle1": "1.GET: A request to retrieve data from the server \n2.POST: A request to create and send new data to the server \n3.PUT: A request to update or replace existing data entirely \n4.PATCH: A request to partially modify existing data \n5.API URL: The endpoint URL of the server where the request will be sent",
-        "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list."
+        "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list.",
+        "message": "Send Email",
+        "send": "Send Rest API"
     },
     "ScriptTaskPanel" : {
         "return": "Variable to store the return value",
@@ -645,7 +647,8 @@
         "laneToTheRight": "Add Lane to the Right",
         "laneDivideTwo": "Divide into Two Lanes",
         "laneDivideThree": "Divide into Three Lanes",
-        "connectionMulti": "Connect using Message Flow"
+        "connectionMulti": "Connect using Message Flow",
+        "phase": "Add Phase"
     },
     "CustomReplaceElement": {
         "replace-with-call-activity": "Replace with call activity",
@@ -768,6 +771,9 @@
     },
     "DryRunProcess": {
         "notFound": "Work item not found."
+    },
+    "CompensateEventDefinitionPanel": {
+        "selectTask": "Select Task to Compensate"
     },
     "PALUserTaskPanel": {
         "insertDescription": "Please enter the task description"

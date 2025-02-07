@@ -40,10 +40,18 @@ export default {
     data: () => ({
         backend: null,
         dryRunWorkItem: undefined,
+        userName: '',
+        roleMappings: []
     }),
     created() {
         let me = this;
         me.backend = BackendFactory.createBackend();
+        me.userName = localStorage.getItem("userName");
+        me.roleMappings.push({
+            name: me.userName,
+            endpoints: [],
+            resourceNames: []
+        });
         me.dryRun();
     },
     methods: {
@@ -53,7 +61,11 @@ export default {
                 context: me,
                 action: async () => {
                     console.log(me.isSimulate)
-                    me.dryRunWorkItem = await me.backend.dryRun(me.definitionId, me.isSimulate);
+                    const command = {
+                        processDefinitionId: me.definitionId,
+                        roleMappings: me.roleMappings
+                    }
+                    me.dryRunWorkItem = await me.backend.dryRun(me.isSimulate, command);
                 },
             });
         },

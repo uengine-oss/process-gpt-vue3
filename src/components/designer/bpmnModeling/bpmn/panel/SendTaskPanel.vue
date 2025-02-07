@@ -1,65 +1,99 @@
 <template>
     <div>
-        <div class="mb-1 mt-4">
-            <v-row class="ma-0 pa-0">
-                <v-col cols="3" class="pa-0 pr-2">
+        <v-radio-group v-model="copyUengineProperties.sendType" inline class="delete-input-details">
+            <v-radio :label="$t('SendTaskPanel.message')" value="message"></v-radio>
+            <v-radio :label="$t('SendTaskPanel.send')" value="rest_api"></v-radio>
+        </v-radio-group>
+        <div v-if="copyUengineProperties.sendType == 'message'">
+            
+        </div>
+        <div v-if="copyUengineProperties.sendType == 'rest_api'">
+            <div class="mb-1 mt-4">
+                <v-col class="pa-0 pr-2" style="margin-bottom: 10px">
+                    <div>Headers</div>
+                    <v-row v-for="(header, idx) in copyUengineProperties.headers" :key="idx" style="margin-left: 13px; margin-top: 10px;">
+                        <v-row style="align-self: center;">
+                            <div style="font-size: 15px; width: 50%;"> {{ header.name }}</div>
+                            <div style="font-size: 15px; width: 40%;"> {{ header.value }}</div>
+                        </v-row>
+                        <v-btn variant="text" density="comfortable" size="x-small" icon="mdi-delete" @click="removeHeader(header)" style="margin-right: 7px;"></v-btn>
+                    </v-row>
+                    <v-row style="margin-left: 0px; margin-top: 20px; margin-bottom: 20px;">
+                        <v-text-field class="delete-input-details"
+                            v-model="newHeader.name"
+                            label="Key"
+                            required
+                            hide-details
+                        ></v-text-field>
+                        <v-text-field class="delete-input-details"
+                            v-model="newHeader.value"
+                            label="value"
+                            required
+                            hide-details
+                        ></v-text-field>
+                        <v-btn variant="text" density="comfortable" icon="mdi-plus" @click="addHeader()"></v-btn>
+                    </v-row>
+                </v-col>   
+                <v-row class="ma-0 pa-0">
+                    <v-col cols="3" class="pa-0 pr-2">
+                        <v-autocomplete
+                            :label="$t('BpmnPropertyPanel.methodTypeUrl')"
+                            :items="methodList"
+                            theme="light"
+                            density="comfortable"
+                            variant="outlined"
+                            v-model="copyUengineProperties.method"
+                        ></v-autocomplete>
+                    </v-col>
+                    <v-col cols="9" class="pa-0">
+                        <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.API"></v-text-field>
+                    </v-col>
+                </v-row>
+                <DetailComponent
+                    :title="$t('MessageEventDefinitionPanel.methodTypeDescriptionTitle')"
+                    :details="methodTypeDescription"
+                    :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
+                />
+            </div>
+            <div style="height: 70vh">
+                <v-row class="ma-0 pa-0" style="height: 100%">
+                    <vue-monaco-editor
+                        v-model:value="copyUengineProperties.inputPayloadTemplate"
+                        theme="vs-dark"
+                        language="json"
+                        :options="MONACO_EDITOR_OPTIONS"
+                        @mount="handleMount"
+                    />
+                </v-row>
+            </div>
+            <div align="right" @click="generateAPI">
+                <v-btn prepend-icon rounded color="primary">
+                    <template v-slot:prepend>
+                        <Icons :icon="'magic'"  />
+                    </template>
+                    {{ $t('SendTaskPanel.generation') }}
+                </v-btn>
+            </div>
+            <div class="mt-4">
+                <v-row class="ma-0 pa-0">
                     <v-autocomplete
-                        :label="$t('BpmnPropertyPanel.methodTypeUrl')"
-                        :items="methodList"
-                        theme="light"
+                        :label="$t('SendTaskPanel.return')"
+                        :items="processVariables"
+                        item-props
+                        :item-value="item"
+                        :item-title="(item) => item.name"
+                        v-model="copyUengineProperties.selectedOut"
                         density="comfortable"
                         variant="outlined"
-                        v-model="copyUengineProperties.httpMethods"
                     ></v-autocomplete>
-                </v-col>
-                <v-col cols="9" class="pa-0">
-                    <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.API"></v-text-field>
-                </v-col>
-            </v-row>
+                    <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
+                </v-row>
+            </div>
             <DetailComponent
-                :title="$t('MessageEventDefinitionPanel.methodTypeDescriptionTitle')"
-                :details="methodTypeDescription"
-                :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
+                style="padding-bottom:20px;"
+                :title="$t('SendTaskPanel.returnTitle')"
             />
         </div>
-        <div style="height: 70%">
-            <v-row class="ma-0 pa-0" style="height: 100%">
-                <vue-monaco-editor
-                    v-model:value="copyUengineProperties.payload"
-                    theme="vs-dark"
-                    language="json"
-                    :options="MONACO_EDITOR_OPTIONS"
-                    @mount="handleMount"
-                />
-            </v-row>
-        </div>
-        <div align="right" @click="generateAPI">
-            <v-btn prepend-icon rounded color="primary">
-                <template v-slot:prepend>
-                    <Icons :icon="'magic'"  />
-                </template>
-                {{ $t('SendTaskPanel.generation') }}
-            </v-btn>
-        </div>
-        <div class="mt-4">
-            <v-row class="ma-0 pa-0">
-                <v-autocomplete
-                    :label="$t('SendTaskPanel.return')"
-                    :items="processVariables"
-                    item-props
-                    :item-value="item"
-                    :item-title="(item) => item.name"
-                    v-model="copyUengineProperties.selectedOut"
-                    density="comfortable"
-                    variant="outlined"
-                ></v-autocomplete>
-                <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
-            </v-row>
-        </div>
-        <DetailComponent
-            style="padding-bottom:20px;"
-            :title="$t('SendTaskPanel.returnTitle')"
-        />
     </div>
 </template>
 <script>
@@ -85,6 +119,7 @@ export default {
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
+        if(!this.copyUengineProperties.headers) this.copyUengineProperties.headers = [{"name": "Content-Type", "value":"application/json"}]
     },
     data() {
         return {
@@ -93,7 +128,7 @@ export default {
                 formatOnType: true,
                 formatOnPaste: true
             },
-            requiredKeyLists: { payload: '' },
+            requiredKeyLists: { inputPayloadTemplate: '' },
             methodList: ['GET', 'POST', 'PUT', 'PATCH'],
             copyUengineProperties: null,
             name: '',
@@ -102,6 +137,10 @@ export default {
             checkpointMessage: {
                 $type: 'uengine:Checkpoint',
                 checkpoint: ''
+            },
+            newHeader:{
+                name: '',
+                value: ''
             },
             code: '',
             description: '',
@@ -112,7 +151,7 @@ export default {
             paramValue: '',
             generator: null,
             openAI: null,
-            httpMethods: null,
+            method: null,
             copyDefinition: this.definition,
             processVariables: [],
             apiServiceURL: '',
@@ -120,7 +159,8 @@ export default {
                 {
                     title: 'SendTaskPanel.methodTypeDescriptionSubTitle1',
                 },
-            ]
+            ],
+            selectedActivity: 'Message'
         };
     },
     async mounted() {
@@ -195,8 +235,8 @@ export default {
                 action: async () => {
                     // Changed to arrow function
                     this.copyUengineProperties.API = response.API;
-                    this.copyUengineProperties.payload = JSON.stringify(response.payloadJSON);
-                    this.copyUengineProperties.httpMethods = response.httpMethods;
+                    this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(response.inputPayloadTemplateJSON);
+                    this.copyUengineProperties.method = response.method;
                 }
             });
         },
@@ -244,7 +284,18 @@ export default {
 
             // 매치된 결과가 없으면 null 반환
             return null;
-        }
+        },
+        addHeader(){
+            this.copyUengineProperties.headers.push(this.newHeader);
+            this.newHeader = {
+                name: '',
+                value: ''
+            };
+        },
+        removeHeader(header){
+            if(!header) return;
+            this.copyUengineProperties.headers.splice(this.copyUengineProperties.headers.indexOf(header), 1);
+        },
     }
 };
 </script>
