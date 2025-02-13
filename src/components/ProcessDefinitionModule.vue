@@ -2080,7 +2080,7 @@ export default {
                                 : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
                             ).map((varData) => ({
                                 name: varData.name,
-                                description: varData.name + ' description',
+                                description: varData.description ? varData.description : varData.name + ' description',
                                 type: varData.type
                             }))
                             : [];

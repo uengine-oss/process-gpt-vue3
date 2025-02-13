@@ -188,7 +188,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "componentType" :"Activity",
                   "id": "String-based unique id of the activity not including space",//id는 영어로 써야됨
                   "name": "activity name",
-                  "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
+                  "type": "UserActivity" | "EmailActivity" | "ScriptActivity",
                   "source": "components id", 반드시 존재해야함
                   "description": "description of activity",
                   "instruction": "instruction to user",
@@ -265,7 +265,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "componentType" :"Activity",
                   "id": "String-based unique id of the activity not including space",//id는 영어로 써야됨
                   "name": "activity name",
-                  "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
+                  "type": "UserActivity" | "EmailActivity" | "ScriptActivity",
                   "source": "components id", 반드시 존재해야함
                   "description": "description of activity",
                   "instruction": "instruction to user",
