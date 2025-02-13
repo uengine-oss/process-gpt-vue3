@@ -180,7 +180,7 @@ class ProcessGPTBackend implements Backend {
                 await storage.delete(`lock/${defId}`, { key: 'id' });
             }
             
-            this.updateVectorStore('process_definitions', xml); 
+            this.updateVectorStore(JSON.stringify(options.definition)); 
 
         } catch (e) {
             
@@ -289,7 +289,6 @@ class ProcessGPTBackend implements Backend {
             }
 
             var result: any = null;
-            console.log('### executeInstance ###');
             await axios.post(url, req, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -302,9 +301,7 @@ class ProcessGPTBackend implements Backend {
                         result = data;
                         if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
                             result.errors = result.cannotProceedErrors;
-                        } else {
-                            me.updateVectorStore('process_instances', JSON.stringify(data));
-                        }
+                        }   
                     }
                 }
             })
@@ -1422,10 +1419,9 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async updateVectorStore(collection_name: string, content: string) {
+    async updateVectorStore(content: string) {
         try {
             await axios.post("/execution/update-vs", {
-                collection_name: collection_name,
                 content: content
             }).then(res => {
                 console.log(res)
