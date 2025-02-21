@@ -12,6 +12,7 @@ const backend = BackendFactory.createBackend();
 export default {
     mixins: [FormDefinitionModule],
     data: () => ({
+        processVariables: [],
         processDefinition: null,
         bpmn: null,
         definitionChangeCount: 0,
@@ -1936,6 +1937,7 @@ export default {
                         } else {
                             newProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
                         }
+                        newProcessDefinition.data = me.processVariables;
 
                         if (!me.processDefinition) {
                             me.processDefinition = newProcessDefinition

@@ -16,6 +16,7 @@
                         :definitionPath="fullPath"
                         :definitionChat="this"
                         @update="updateDefinition"
+                        @update:processVariables="(val) => (processVariables = val)"
                     ></process-definition>
                 </div>
                 <div style="position: relative;">
@@ -60,6 +61,7 @@
                     @changeBpmn="changeBpmn"
                     @changeElement="changeElement"
                     @onLoaded="onLoadBpmn()"
+                    @update:processVariables="(val) => (processVariables = val)"
                 ></process-definition>
                 <process-definition-version-dialog
                     :process="processDefinition"
@@ -574,7 +576,7 @@ export default {
                     me.bpmn = bpmn;             
                     me.definitionChangeCount++;
 
-                    if (me.useLock) {
+                    if (me.useLock) { // ProcessGPT 모드
                         const value = await backend.getRawDefinition(fullPath);
                         if (value) {
                             me.processDefinition = value.definition;

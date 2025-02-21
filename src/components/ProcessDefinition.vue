@@ -387,6 +387,15 @@ export default {
         }
     },
     watch: {
+        processDefinition: {
+            deep: true,
+            handler(newVal) {
+                if (newVal && newVal.data) {
+                    this.processVariables = newVal.data;
+                    this.$emit('update:processVariables', this.processVariables);
+                }
+            }
+        },
         isSimulate(newVal) {
             console.log(newVal)
         },
@@ -480,8 +489,9 @@ export default {
     mounted() {
         // Initial Data
         var me = this;
-        if (this.processDefinition) this.copyProcessDefinition = this.processDefinition;
-        else
+        if (this.processDefinition) {
+            this.copyProcessDefinition = this.processDefinition;
+        } else {
             this.copyProcessDefinition = {
                 megaProcessId: '',
                 majorProcessId: '',
@@ -496,6 +506,7 @@ export default {
                 activities: [],
                 sequences: []
             };
+        }
         const store = useBpmnStore();
         store.setProcessDefinition(this);
         this.bpmnModeler = store.getModeler;
@@ -709,7 +720,8 @@ export default {
             // 생성된 uengine:variable 요소를 uengine:properties 요소에 추가합니다.
             uengineProperties.get('variables').push(newVariable);
             this.processVariables.push(val);
-            // console.log(this.processVariables)
+
+            this.$emit('update:processVariables', this.processVariables);
         },
         openSubProcess(e) {
             this.$emit('openSubProcess', e);
@@ -886,6 +898,7 @@ export default {
             uengineProperties.get('variables')[this.editedIndex].json = JSON.stringify(val);
 
             this.editDialog = false;
+            this.$emit('update:processVariables', this.processVariables);
         },
         openProcessVariables() {
             this.isViewProcessVariables = !this.isViewProcessVariables;
