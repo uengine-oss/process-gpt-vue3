@@ -139,8 +139,10 @@ export default {
             if(type.indexOf('task') > -1 && this.isPALMode) {
                 type = 'pal-user-task';
             }
-            if (type == 'user-task' && this.isGPTMode) {
-                type = 'gpt-user-task';
+            if (this.isGPTMode) {
+                if(type == 'user-task' || type == 'script-task') {
+                    type = 'gpt-' + type;
+                }
             }
             if(type.indexOf('gateway') > -1) {
                 type = 'gateway';

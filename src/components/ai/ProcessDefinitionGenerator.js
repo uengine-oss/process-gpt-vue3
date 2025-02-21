@@ -196,7 +196,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "inputData": ["name of data for input"],
                   "outputData": ["name of data for output"],
                   "checkpoints":["checkpoint 1", "checkpoint 2"],
-                  "duration": "5"
+                  "duration": "5",
+                  "pythonCode": "python code" // 스크립트 업무의 경우 스크립트 코드를 리턴
                  },
                  {
                   "componentType" :"Event",

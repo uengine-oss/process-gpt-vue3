@@ -306,7 +306,7 @@ class ProcessGPTBackend implements Backend {
                 }
             })
             .catch(error => {
-                return error;
+                result.error = error;
             });
 
             return result;
@@ -405,7 +405,9 @@ class ProcessGPTBackend implements Backend {
                     parameters: parameters || [],
                     variableForHtmlFormContext: variableForHtmlFormContext || {},
                     instruction: activityInfo && activityInfo.instruction ? activityInfo.instruction : "",
-                    checkpoints: activityInfo && activityInfo.checkpoints ? activityInfo.checkpoints : []
+                    checkpoints: activityInfo && activityInfo.checkpoints ? activityInfo.checkpoints : [],
+                    pythonCode: activityInfo && activityInfo.pythonCode ? activityInfo.pythonCode : "",
+                    type: activityInfo && activityInfo.type ? activityInfo.type : ""
                 },
                 parameterValues: parameterValues || {}
             }
@@ -673,7 +675,21 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getVariable(instId: string, varName: string) {
-        throw new Error("Method not implemented.");
+        try {
+            let varData: any = null;
+            const instance: any = await this.getInstance(instId);
+            if (instance && instance.variables_data && instance.variables_data.length > 0) {
+                instance.variables_data.forEach((item: any) => {
+                    if (item.key === varName || item.name === varName) {
+                        varData = item.value;
+                    }
+                })
+            }
+            return varData;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
     }
 
     extractFields(html: string) {
@@ -717,6 +733,14 @@ class ProcessGPTBackend implements Backend {
 
     async getVariableWithTaskId(instId: string, taskId: string, varName: string) {
         try {
+            let varData: any = {};
+            const instance: any = await this.getInstance(instId);
+            if (instance && instance.variables_data && instance.variables_data.length > 0) {
+                instance.variables_data.forEach((item: any) => {
+                    varData[item.key] = item.value;
+                })
+            }
+
             var fields: any = [];
             const formObject: any = await storage.getObject(`form_def/${varName}`, { key: 'id' });
             if (formObject) {
@@ -725,19 +749,20 @@ class ProcessGPTBackend implements Backend {
                 const html = await storage.getString(`form_def/${varName}`, { key: 'id', column: 'html' });
                 fields = this.extractFields(html);
             }
-            const instance: any = await this.getInstance(instId);
-            let varData: any = {};
             if (instance && fields.length > 0) {
                 fields.forEach((field: any) => {
-                    let fieldName = field.text.toLowerCase().replace(/ /g, '_') || field.text;
-                    let fieldValue = instance.variables_data[fieldName];
-                    if (!fieldValue) {
-                        fieldValue = instance.variables_data[field.key];
-                    }
+                    let fieldValue: any = null;
+                    instance.variables_data.forEach((item: any) => {
+                        if (item.key === field.key || item.key === field.text || item.name === field.key || item.name === field.text) {
+                            fieldValue = item.value;
+                        }
+                    })
                     if (field.type === 'boolean') {
                         fieldValue = fieldValue === 'true' ? true : false;
                     }
-                    varData[field.key] = fieldValue;
+                    if (!varData[field.key]) {
+                        varData[field.key] = fieldValue;
+                    }
                 });
             }
             const result = {

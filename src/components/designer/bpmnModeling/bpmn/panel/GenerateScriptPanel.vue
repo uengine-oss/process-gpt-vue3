@@ -39,13 +39,18 @@
 <script>
 import ChatModule from '@/components/ChatModule.vue'
 import ChatGenerator from '@/components/ai/ScriptGenerator.js'
+import GPTScriptGenerator from '@/components/ai/GPTScriptGenerator.js'
 
 export default {
     mixins: [ChatModule],
     name: 'generate-script-panel',
     props: {
         modelValue: String,
-        language: String
+        language: String,
+        processDefinition: {
+            type: Object,
+            default: () => ({})
+        }
     },
     emits: ['update:modelValue', 'onGenerateStarted', 'onGenerateFinished'],
 
@@ -77,10 +82,18 @@ export default {
     },
 
     async created() {
-        this.generator = new ChatGenerator(this, {
-            isStream: true,
-            preferredLanguage: 'Korean'
-        });
+        if (window.$mode === 'ProcessGPT') {
+            this.generator = new GPTScriptGenerator(this, {
+                isStream: true,
+                preferredLanguage: 'Korean'
+            });
+        }
+        else {
+            this.generator = new ChatGenerator(this, {
+                isStream: true,
+                preferredLanguage: 'Korean'
+            });
+        }
         await this.init();
     },
 
@@ -93,7 +106,12 @@ export default {
             //#endregion
             this.$emit('onGenerateStarted');
 
-            this.generator.generateScript(this.promptInput.prompt, this.language, this.localModelValue);
+            if (window.$mode === 'ProcessGPT') {
+                this.generator.generateScript(this.promptInput.prompt, this.language, this.localModelValue);
+            }
+            else {
+                this.generator.generateScript(this.promptInput.prompt, this.language, this.localModelValue);
+            }
         },
 
         afterModelCreated(response) {

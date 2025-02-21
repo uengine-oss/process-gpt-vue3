@@ -30,7 +30,10 @@ export default {
     methods: {
         async checkedFormData() {
             if (this.processDefinition && this.processDefinition.components) {
-                const activities = this.processDefinition.components.filter(component => component.componentType === 'Activity');
+                const activities = this.processDefinition.components.filter(component => 
+                    component.componentType === 'Activity' && 
+                    component.type === 'UserActivity'
+                );
                 this.generateFormTask = {};
                 for (const activity of activities) {
                     let inputs = null;
@@ -1955,6 +1958,7 @@ export default {
                                         activity.checkpoints = oldActivity.checkpoints;
                                         activity.duration = oldActivity.duration;
                                         activity.attachments = oldActivity.attachments;
+                                        activity.pythonCode = oldActivity.pythonCode;
                                     }
                                     return activity;
                                 });
