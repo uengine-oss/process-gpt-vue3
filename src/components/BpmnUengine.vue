@@ -1,5 +1,13 @@
 <template>
-    <div ref="container" class="vue-bpmn-diagram-container"></div>
+    <div ref="container" class="vue-bpmn-diagram-container">
+        <div style="position: absolute; top: 50px; right: 20px; pointer-events: auto; z-index: 10;">
+            <div class="pa-1" style="display: flex; flex-direction: column; align-items: center; border: gray 1px solid; background-color: white;">
+                <button @click="saveSVG">Save SVG</button>
+                <button @click="saveAndPreviewSVG">Save and Preview SVG</button>
+            </div>
+            <div id="svgPreviews" style="margin-top: 0px; display: flex; flex-wrap: wrap;"></div>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -12,6 +20,11 @@ import BpmnModdle from 'bpmn-moddle';
 import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
 import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
 import BackendFactory from '@/components/api/BackendFactory';
+import phaseModdle from '@/assets/bpmn/phase-moddle.json';
+import jsPDF from "jspdf";
+import { svg2pdf } from "svg2pdf.js";
+import html2canvas from "html2canvas-pro";
+
 
 const backend = BackendFactory.createBackend();
 
@@ -294,7 +307,8 @@ export default {
                         bindTo: window
                     },
                     moddleExtensions: {
-                        uengine: uEngineModdleDescriptor
+                        uengine: uEngineModdleDescriptor,
+                        phase: phaseModdle
                     }
                 },
                 self.options
@@ -307,7 +321,10 @@ export default {
                         ...(Array.isArray(_options.additionalModules) ? _options.additionalModules : []),
                         ZoomScroll,
                         MoveCanvas
-                    ]
+                    ],
+                    moddleExtensions: {
+                        phase: phaseModdle
+                    }
                 };
 
                 self.bpmnViewer = new BpmnViewer(viewerOptions);
@@ -503,6 +520,260 @@ export default {
                 rootElements: convertedRootElements,
                 diagrams: convertedDiagrams
             });
+        },
+        saveSVG() {
+            // `bpmnViewer`를 통해 다이어그램을 SVG로 저장
+            this.bpmnViewer.saveSVG()
+                .then(({ svg }) => {
+                    // Blob 객체를 생성하여 SVG 데이터를 파일 형태로 준비
+                    const blob = new Blob([svg], { type: 'image/svg+xml' });
+
+                    // Blob을 이용해 다운로드를 트리거
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'diagram.svg'; // 다운로드 파일명 설정
+                    document.body.appendChild(link); // 링크를 문서에 추가
+                    link.click(); // 다운로드 트리거
+                    document.body.removeChild(link); // 링크 삭제
+                })
+                .catch((error) => {
+                    console.error('SVG 내보내기 실패:', error);
+                    alert('SVG 파일을 저장하는 데 실패했습니다. 콘솔을 확인하세요.');
+                });
+        },
+        saveAndPreviewSVG() {
+            this.bpmnViewer.saveSVG()
+                .then(({ svg }) => {
+                    // 1. SVG 파싱
+                    const parser = new DOMParser();
+                    const svgDoc = parser.parseFromString(svg, "image/svg+xml");
+                    const svgElement = svgDoc.documentElement;
+
+                    // 2. SVG 크기와 viewBox 가져오기
+                    const width = parseFloat(svgElement.getAttribute("width"));
+                    const height = parseFloat(svgElement.getAttribute("height"));
+                    const [viewBoxX, viewBoxY, viewBoxWidth, viewBoxHeight] = svgElement
+                        .getAttribute("viewBox")
+                        .split(" ")
+                        .map(parseFloat);
+
+                    // 3. 프리뷰용 계산 (화면 표시 기준)
+                    const previewCols = 3;
+                    const previewRows = 2;
+                    const previewPartWidth = width / previewCols;
+                    const previewPartHeight = height / previewRows;
+
+                    // 4. 다운로드용 계산 (원본 viewBox 기준)
+                    const downloadCols = 3;
+                    const downloadRows = 2;
+                    const downloadPartWidth = viewBoxWidth / downloadCols;
+                    const downloadPartHeight = viewBoxHeight / downloadRows;
+
+                    // 5. 미리보기: 합쳐진 SVG 생성
+                    const previewsContainer = document.getElementById("svgPreviews");
+
+                    const namespace = "http://www.w3.org/2000/svg";
+                    const combinedSvg = document.createElementNS(namespace, "svg");
+
+                    // 프리뷰 SVG 크기 및 viewBox 설정
+                    combinedSvg.setAttribute("width", "100%");
+                    combinedSvg.setAttribute("height", "100%");
+                    combinedSvg.setAttribute("viewBox", `${0} ${0} ${width} ${height}`);
+                    combinedSvg.style.border = "1px solid #ccc";
+                    combinedSvg.style.overflow = "hidden";
+
+                    const serializer = new XMLSerializer();
+
+                    // 기존 SVG 콘텐츠 추가
+                    const originalContent = svgElement.cloneNode(true);
+                    combinedSvg.appendChild(originalContent);
+
+                    // 6. 프리뷰용 분할 영역 라인 표시
+                    for (let row = 0; row < previewRows; row++) {
+                        for (let col = 0; col < previewCols; col++) {
+                            const x = col * previewPartWidth;
+                            const y = row * previewPartHeight;
+
+                            const rect = document.createElementNS(namespace, "rect");
+                            rect.setAttribute("x", x);
+                            rect.setAttribute("y", y);
+                            rect.setAttribute("width", previewPartWidth);
+                            rect.setAttribute("height", previewPartHeight);
+                            rect.setAttribute("fill", "none");
+                            rect.setAttribute("stroke", "red");
+                            rect.setAttribute("stroke-width", "2");
+                            combinedSvg.appendChild(rect);
+                        }
+                    }
+
+                    // 미리보기 렌더링
+                    previewsContainer.appendChild(combinedSvg);
+
+                    // 7. 다운로드용 분할된 SVG 생성
+                    const blobs = [];
+                    const splitSvgs = [];
+
+                    for (let row = 0; row < downloadRows; row++) {
+                        for (let col = 0; col < downloadCols; col++) {
+                            const x = viewBoxX + col * downloadPartWidth;
+                            const y = viewBoxY + row * downloadPartHeight;
+
+                            // 분할된 SVG 생성
+                            const splitSvg = document.createElementNS(namespace, "svg");
+                            splitSvg.setAttribute("xmlns", namespace);
+                            splitSvg.setAttribute("width", downloadPartWidth);
+                            splitSvg.setAttribute("height", downloadPartHeight);
+                            splitSvg.setAttribute("viewBox", `${x} ${y} ${downloadPartWidth} ${downloadPartHeight}`);
+
+                            // 기존 콘텐츠 복사 및 추가
+                            const clonedContent = svgElement.cloneNode(true);
+                            while (clonedContent.firstChild) {
+                                splitSvg.appendChild(clonedContent.firstChild);
+                            }
+
+                            const splitSvgString = serializer.serializeToString(splitSvg);
+                            const blob = new Blob([splitSvgString], { type: "image/svg+xml" });
+                            blobs.push(blob);
+                            splitSvgs.push(splitSvg); // PDF 삽입용 SVG 저장
+                        }
+                    }
+
+                    // 8. "모든 분할된 파일 다운로드" 버튼 추가
+                    const downloadButton = document.createElement("button");
+                    downloadButton.textContent = "SVG 다운로드";
+                    downloadButton.style.display = "block";
+                    downloadButton.style.marginTop = "20px";
+                    downloadButton.onclick = () => {
+                        blobs.forEach((blob, index) => {
+                            const link = document.createElement("a");
+                            link.href = URL.createObjectURL(blob);
+                            link.download = `diagram_part_${Math.floor(index / downloadCols)}_${index % downloadCols}.svg`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        });
+                    };
+
+                    previewsContainer.appendChild(downloadButton);
+
+                    // 9. PDF 저장 버튼 추가
+                    // const pdfButton = document.createElement("button");
+                    // pdfButton.textContent = "PDF 다운로드";
+                    // pdfButton.style.display = "block";
+                    // pdfButton.style.marginTop = "20px";
+                    // pdfButton.onclick = async () => {
+                    //     const pdf = new jsPDF({
+                    //         orientation: "landscape",
+                    //         unit: "pt",
+                    //         format: [viewBoxWidth, viewBoxHeight],
+                    //     });
+
+                    //     pdf.setFont("bpmn");
+
+                    //     for (const splitSvg of splitSvgs) {
+                    //         pdf.addPage([downloadPartWidth, downloadPartHeight]);
+                    //         await svg2pdf(splitSvg, pdf, {
+                    //             x: 0,
+                    //             y: 0,
+                    //             width: downloadPartWidth,
+                    //             height: downloadPartHeight,
+                    //         });
+                    //     }
+
+                    //     pdf.deletePage(1); // 첫 빈 페이지 제거
+                    //     pdf.save("split_diagram.pdf");
+                    // };
+
+
+                    // 📌 PDF 다운로드 버튼 추가
+                    const pdfButton = document.createElement("button");
+                    pdfButton.textContent = "PDF 다운로드";
+                    pdfButton.style.display = "block";
+                    pdfButton.style.marginTop = "20px";
+                    document.body.appendChild(pdfButton);
+
+                    // 📌 PDF 변환 로직
+                    pdfButton.onclick = async () => {
+                        console.log("📄 PDF 변환 시작...");
+
+                        const pdf = new jsPDF({
+                            orientation: "landscape",
+                            unit: "pt",
+                            format: [downloadPartWidth, downloadPartHeight],
+                        });
+
+                        pdf.setFont("bpmn");
+
+                        let imagePromises = splitSvgs.map((splitSvg, index) => {
+                            return new Promise((resolve, reject) => {
+                                // 🌟 SVG → Blob 변환
+                                const serializer = new XMLSerializer();
+                                const svgString = serializer.serializeToString(splitSvg);
+                                const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+                                const url = URL.createObjectURL(blob);
+
+                                // 🌟 Blob → Image 변환
+                                const img = new Image();
+                                img.onload = () => {
+                                    // 🌟 Canvas 생성 후 이미지 변환
+                                    const canvas = document.createElement("canvas");
+                                    canvas.width = downloadPartWidth;
+                                    canvas.height = downloadPartHeight;
+                                    const ctx = canvas.getContext("2d");
+
+                                    ctx.drawImage(img, 0, 0, downloadPartWidth, downloadPartHeight);
+                                    const imgData = canvas.toDataURL("image/png");
+
+                                    if (index !== 0) {
+                                        pdf.addPage([downloadPartWidth, downloadPartHeight]);
+                                    }
+
+                                    pdf.addImage(imgData, "PNG", 0, 0, downloadPartWidth, downloadPartHeight);
+
+                                    // ✅ 메모리 해제
+                                    URL.revokeObjectURL(url);
+                                    resolve();
+                                };
+
+                                img.onerror = (error) => {
+                                    console.error("❌ SVG → Image 변환 실패:", error);
+                                    reject(error);
+                                };
+
+                                img.src = url;
+                            });
+                        });
+
+                        // 📌 모든 이미지 변환 완료 후 PDF 저장
+                        Promise.all(imagePromises).then(() => {
+                            pdf.save("split_diagram.pdf");
+                            console.log("✅ PDF 저장 완료!");
+                        }).catch(error => {
+                            console.error("❌ PDF 변환 전체 과정 중 오류 발생:", error);
+                        });
+                    };
+
+
+                    // 10. 프리뷰 접기 버튼 추가
+                    const collapseButton = document.createElement("button");
+                    collapseButton.textContent = "프리뷰 접기";
+                    collapseButton.style.display = "block";
+                    collapseButton.style.marginTop = "20px";
+                    collapseButton.onclick = () => {
+                        while (previewsContainer.firstChild) {
+                            previewsContainer.removeChild(previewsContainer.firstChild);
+                        }
+                        collapseButton.textContent = "프리뷰 접기";
+                    };
+
+
+                    previewsContainer.appendChild(pdfButton);
+                    previewsContainer.appendChild(collapseButton);
+                })
+                .catch((error) => {
+                    console.error("SVG 내보내기 중 오류 발생:", error);
+                    alert("SVG 분할 및 다운로드에 실패했습니다.");
+                });
         },
         fetchDiagram(url) {
             var self = this;

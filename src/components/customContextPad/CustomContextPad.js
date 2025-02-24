@@ -99,6 +99,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
   }
 
 
+
   function insertLanes(num) {
     modeling.splitLane(element, num);
   }
@@ -111,6 +112,131 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
     modeling.splitLane(element, 3);
   }
 
+  function getDi(element) {
+    if (!element) return null;
+    return element.di || (element.businessObject && element.businessObject.$parent && element.businessObject.$parent.di);
+  }
+  
+  function splitPhaseContainer(phaseContainer, numPhases) {
+    const laneSet = phaseContainer.businessObject.laneSets[0];
+    if (!laneSet) {
+        console.error("🚨 LaneSet을 찾을 수 없습니다.");
+        return;
+    }
+
+    for (let i = 0; i < numPhases; i++) {
+        // ✅ Phase 생성 (Lane 대신 Phase 사용)
+        const phase = elementFactory._moddle.create('phase:Phase', {
+            id: `Phase_${Math.random().toString(36).substr(2, 9)}`,
+            name: `Phase ${i + 1}`
+        });
+
+        laneSet.lanes.push(phase);
+    }
+
+    // ✅ LaneSet 업데이트
+    modeling.updateProperties(phaseContainer, {
+        laneSets: [laneSet]
+    });
+
+    console.log(`✅ ${numPhases}개의 Phase 추가 완료.`);
+  }
+
+
+  function addPhaseContainer(participantElement) {
+
+
+    const processBo = elementFactory._moddle.create('bpmn:Process', {
+      id: `Process_${Math.random().toString(36).substr(2, 9)}`,
+      isExecutable: false,
+      laneSets: []
+    })
+
+    // ✅ Participant의 부모 요소 가져오기
+    const parentElement = participantElement.parent;
+    if (!parentElement) {
+        console.error("🚨 Participant의 부모 요소를 찾을 수 없습니다.", participantElement);
+        return;
+    }
+
+    // ✅ DI 정보 가져오기
+    const participantDi = getDi(participantElement);
+    if (!participantDi) {
+        console.error("🚨 Participant의 DI 정보가 없습니다.", participantElement);
+        return;
+    }
+
+    // ✅ BusinessObject 생성
+    const phaseContainerBO = elementFactory._moddle.create('phase:PhaseContainer', {
+        id: `PhaseContainer_${Math.random().toString(36).substr(2, 9)}`,
+        numPhases: 0,
+        processRef: processBo,
+        isHorizontal: false
+    });
+
+    // ✅ LaneSet 추가 (splitLane()을 위해 필요)
+    const laneSet = elementFactory._moddle.create('bpmn:LaneSet', {
+      id: `LaneSet_${Math.random().toString(36).substr(2, 9)}`,
+      lanes: []
+    });
+    processBo.laneSets = [laneSet];  // ✅ LaneSet 추가
+
+    // ✅ DI 정보 생성
+    const phaseContainerDI = elementFactory._moddle.create('bpmndi:BPMNShape', {
+        id: `DI_${phaseContainerBO.id}`,
+        bpmnElement: phaseContainerBO,
+        isHorizontal: false,
+        bounds: {
+            x: participantElement.x + participantElement.width / 2,
+            y: participantElement.y - 30, // ✅ Participant 위쪽에 배치
+            width: participantElement.width,
+            height: 90
+        }
+    });
+    
+    phaseContainerDI.isHorizontal = false
+
+    // ✅ 반드시 $parent를 설정
+    phaseContainerDI.$parent = participantDi.$parent;
+
+    // ✅ 부모-자식 관계 초기화
+    const parentBO = parentElement.businessObject;
+
+    if (!Array.isArray(parentBO.children)) {
+        parentBO.children = [];
+    }
+    parentBO.children.push(phaseContainerBO);
+
+    // ✅ planeElement 배열이 맞는지 확인 후 push
+    let planeElement = participantDi.$parent.get('planeElement');
+    if (!Array.isArray(planeElement)) {
+        planeElement = [planeElement];
+        participantDi.$parent.set('planeElement', planeElement);
+    }
+    planeElement.push(phaseContainerDI);
+
+    // ✅ PhaseContainer 생성
+    const phaseContainer = elementFactory.createShape({
+        type: 'phase:PhaseContainer',
+        businessObject: phaseContainerBO,
+        width: participantElement.width,
+        height: 90,
+        isHorizontal: false
+    });
+
+
+    // ✅ PhaseContainer의 위치 설정
+    const position = {
+        x: participantElement.x + participantElement.width / 2,
+        y: participantElement.y - 45
+    };
+
+    // ✅ PhaseContainer를 `Participant`의 부모에 추가
+    modeling.createShape(phaseContainer, position, parentElement);
+
+    console.log("✅ PhaseContainer 생성 완료:", phaseContainer);
+    return phaseContainer;
+  }
   
   function changeParticipantOrientation(event, element) {
     if (element.type !== 'bpmn:Participant') {
@@ -160,7 +286,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
 
   const actions =  this._originalGetContextPadEntries(element);
 
-  if (element.type === 'bpmn:Participant' || element.type === 'bpmn:Lane') {
+  if (element.type === 'bpmn:Participant' || element.type === 'bpmn:Lane' || element.type === 'phase:PhaseContainer') {
     const isHorizontal = element.di.isHorizontal
     assign(actions, {
       'lane-insert-above': {
@@ -218,22 +344,40 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
           click: startConnect,
           dragstart: startConnect
         }
-      },
+      }
     });
 
-    // Participant에만 적용되는 액션
-    // if (element.type === 'bpmn:Participant') {
-    //   assign(actions, {
-    //     'participant-orientation': {
-    //       group: 'lane',
-    //       className: isHorizontal ? 'bpmn-icon-participant icon-rotate-90' : 'bpmn-icon-participant',
-    //       title: translate(isHorizontal ? 'Change to Vertical Pool' : 'Change to Horizontal Pool'),
-    //       action: {
-    //         click: changeParticipantOrientation
-    //       }
-    //     }
-    //   });
-    // }
+    if (element.type === 'bpmn:Participant') {
+      assign(actions, {
+        'append.phase.container': {
+            group: 'model',
+            className: 'mdi mdi-label-outline',
+            title: i18n.global.t('customContextPad.phase'),
+            action: {
+                click: function(event, element) {
+                  const phaseContainer = addPhaseContainer(element);
+                  
+                  modeling.splitLane(phaseContainer, 3);
+                }
+            }
+        }
+      });
+    }
+
+    if (element.type === 'phase:PhaseContainer') {
+      assign(actions, {
+          'append.phase': {
+              group: 'model',
+              className: 'bpmn-icon-phase',
+              title: i18n.global.t('customContextPad.phase'),
+              action: {
+                  click: function(event, element) {
+                      splitPhaseContainer(element, 3); // 기본 2개로 나누기
+                  }
+              }
+          }
+      });
+    }
   }
     
   if(actions['append.end-event']) {

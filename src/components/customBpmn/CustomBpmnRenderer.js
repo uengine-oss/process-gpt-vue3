@@ -56,12 +56,33 @@ export default class CustomBpmnRenderer extends BaseRenderer {
 
   canRender(element) {
     // only render tasks and events (ignore labels)
-    return isAny(element, ['bpmn:Task', "bpmn:Lane", "bpmn:Participant", "bpmn:SequenceFlow", "bpmn:StartEvent", "bpmn:EndEvent", "bpmn2:outgoing", "label", "bpmn:Gateway", "bpmn:SubProcess", "bpmn:CallActivity"]) && !element.labelTarget;
+    return isAny(element, ['bpmn:Task', "bpmn:Lane", "bpmn:Participant", "bpmn:SequenceFlow", "bpmn:StartEvent", "bpmn:EndEvent", "bpmn2:outgoing", "label", "bpmn:Gateway", "bpmn:SubProcess", "bpmn:CallActivity", "phase:Phase"]) && !element.labelTarget;
   }
 
+  registerCustomHandlers() {
+    if (!this.bpmnRenderer.handlers) {
+      console.warn("BpmnRenderer에 handlers 속성이 존재하지 않음");
+      return;
+    }
+
+    const originalDrawLane = this.bpmnRenderer.handlers["bpmn:Lane"];
+
+    this.bpmnRenderer.handlers["phase:Phase"] = (parentNode, element) => {
+      return originalDrawLane(parentNode, element);
+    };
+
+    this.bpmnRenderer.handlers["phase:PhaseContainer"] = (parentNode, element) => {
+      return originalDrawLane(parentNode, element);
+    };
+
+    // this.bpmnRenderer.handlers["phase:Phase"] = (parentNode, element) => {
+    //   return this.drawCustomPhase(parentNode, element);
+    // };
+  }
 
   drawShape(parentNode, element) {
     // console.log('Rendering a Task:', parentNode, element);
+    this.registerCustomHandlers();
     const shape = this.bpmnRenderer.drawShape(parentNode, element);
     // 각 요소별로 분리한 함수를 호출합니다.
 
@@ -76,6 +97,10 @@ export default class CustomBpmnRenderer extends BaseRenderer {
       this.drawCustomStartEvent(parentNode, shape, element);
     } else if (is(element, 'bpmn:EndEvent')) {
       this.drawCustomEndEvent(parentNode, shape, element);
+    } else if (is(element, 'phase:PhaseContainer')) {
+      this.drawCustomPhaseContainer(parentNode, shape, element);
+    } else if (is(element, 'phase:Phase')) {
+      this.drawCustomPhase(parentNode, shape, element);
     } else if (is(element, 'bpmn:Lane')) {
       this.drawCustomLane(parentNode, shape, element);
     } else if (is(element, 'bpmn:Participant')) {
@@ -89,6 +114,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     } else if (is(element, 'bpmn:SubProcess') || is(element, 'bpmn:CallActivity')) {
       this.drawCustomSubProcess(parentNode, shape, element);
     }
+
     return shape;
   }
 
@@ -107,6 +133,30 @@ export default class CustomBpmnRenderer extends BaseRenderer {
       fill: "#f4f8fc"
     });
   }
+
+
+  drawCustomPhase(parentNode, shape, element) {
+    console.log("🔹 Custom Phase 렌더링 시작:", element);
+
+    // ✅ 기존 shape의 크기 가져오기
+    const existingWidth = shape.width.baseVal.value;
+    const existingHeight = shape.height.baseVal.value;
+
+    // ✅ 기본 스타일 설정
+    const fillColor = element.businessObject.fillColor || '#f4f8fc'; // 연한 청록색
+    const strokeColor = element.businessObject.strokeColor || '#4e72be'; // 빨간색 테두리
+
+    // ✅ Notched Tag (Phase 형태) 그리기
+    const phaseVisual = drawNotchTag(parentNode, existingWidth, existingHeight, fillColor, strokeColor);
+    prependTo(phaseVisual, parentNode);
+
+    // ✅ 기존 shape 제거
+    svgRemove(shape);
+  }
+
+  drawCustomPhaseContainer(parentNode, shape, element) {
+    svgRemove(shape);
+  } 
 
   // bpmn:UserTask 관련
   drawCustomTask(parentNode, shape, element) {
@@ -293,10 +343,44 @@ function drawRect(parentNode, width, height, borderRadius, strokeColor, fillColo
   return rect;
 }
 
-function drawBorderRect(parentNode, width, height, borderRadius, strokeColor) {
+function drawNotchTag(parentNode, width, height, fillColor, strokeColor, x = 0, y = 0) {
+  console.log(`🟡 Notched Tag 렌더링 시작 | 위치: (X=${x}, Y=${y})`);
+
+  const notchSize = -30; // 왼쪽에 파인 부분 크기
+  const tipSize = 30; // 오른쪽 뾰족한 부분 크기
+
+  const pathData = `
+      M ${notchSize},0 
+      L ${width - tipSize},0 
+      L ${width},${height / 2} 
+      L ${width - tipSize},${height} 
+      L ${notchSize},${height} 
+      L 0,${height / 2} 
+      Z
+  `;
+
+  // ✅ SVG Path 생성
+  const path = svgCreate('path');
+  svgAttr(path, {
+      d: pathData,
+      fill: fillColor,
+      stroke: strokeColor,
+      strokeWidth: 2,
+      transform: `translate(${x + 30}, ${y})` // ✅ 위치 조정
+  });
+
+  svgAppend(parentNode, path);
+  return path;
+}
+
+
+
+
+
+function drawBorderRect(parentNode, width, height, borderRadius, strokeColor, strokeWidth) {
   const borderRect = svgCreate('rect');
   
-  if (strokeColor !== '#000000') {
+  if (strokeColor !== '#000000' && strokeColor !== '#4e72be') {
     svgAttr(borderRect, {
       'stroke-dasharray': '10, 10'
     });
@@ -307,7 +391,7 @@ function drawBorderRect(parentNode, width, height, borderRadius, strokeColor) {
     rx: borderRadius,
     ry: borderRadius,
     stroke: strokeColor == '#000000'? 'none' : strokeColor,
-    strokeWidth: 5,
+    strokeWidth: strokeWidth ? strokeWidth : 5,
     fill: 'none'
   });
   svgAppend(parentNode, borderRect);
@@ -329,6 +413,26 @@ function drawPolygon(parentNode, points) {
   svgAppend(parentNode, polygon);
 
   return polygon;
+}
+
+function updateTextPosition(element, phaseVisual) {
+  let textElement = phaseVisual.querySelector("text");
+  if (!textElement) {
+      textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      textElement.setAttribute("text-anchor", "middle");
+      textElement.setAttribute("alignment-baseline", "middle");
+      textElement.style.fill = "#333"; // 텍스트 색상
+      textElement.style.fontSize = "14px"; // 폰트 크기
+      phaseVisual.appendChild(textElement);
+  }
+
+  // ✅ 텍스트 내용 설정
+  textElement.textContent = element.businessObject.name || "Phase";
+
+  // ✅ 위치 조정
+  const bbox = phaseVisual.getBBox();
+  textElement.setAttribute("x", bbox.x + bbox.width / 2); // 중앙 정렬
+  textElement.setAttribute("y", bbox.y + bbox.height / 2 + 5); // 중앙 + 약간 아래
 }
 
 function copyAttributes(source, target) {

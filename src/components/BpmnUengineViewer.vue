@@ -8,16 +8,23 @@
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
             </div>
         </div>
-        <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 20px; left: 20px; pointer-events: auto; z-index: 10;">
-            <div class="pa-1" style="display: flex; flex-direction: row; align-items: center; border: gray 1px solid; background-color: white;">
-                <span v-for="(previewer, index) in previewersXMLLists" :key="index" style="display: flex; align-items: center;">
-                    <span @click="goToPreviewer(index)" style="color: #444; cursor: pointer; text-decoration: underline;">{{ previewer.name }}</span>
-                    <span v-if="index < previewersXMLLists.length - 1" class="mx-1" style="color: #444;">→</span>
-                </span>
-                <span style="margin-left: auto; display: flex; align-items: center;">
-                    <span style="color: #444;">→ {{ bpmnViewer._definitions.name.slice(bpmnViewer._definitions.name.indexOf('/') + 1) }}</span>
-                </span>
-            </div>
+        <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 0px; left: 20px; pointer-events: auto; z-index: 10;">
+            <v-row class="ma-0 pa-0">
+                <div v-for="(previewer, index) in previewersXMLLists" :key="index">
+                    <h6 @click="goToPreviewer(index)" 
+                        class="text-h6 cursor-pointer"
+                        style="color: #444;"
+                    >{{ previewer.name }}</h6>
+                    <v-icon v-if="index < previewersXMLLists.length - 1"
+                    >mdi-chevron-right
+                    </v-icon>
+                </div>
+                <div class="ma-0 pa-0 d-flex">
+                    <v-icon>mdi-chevron-right</v-icon>
+                    <h6 class="text-h6 font-weight-semibold"
+                    >{{ bpmnViewer._definitions.name.slice(bpmnViewer._definitions.name.indexOf('/') + 1) }}</h6>
+                </div>
+            </v-row>
         </div>
     </div>
     <!-- </div> -->
@@ -216,10 +223,10 @@ export default {
                 Object.keys(self.subProcessInstances).forEach((key) => {
                     const element = elementRegistry.get(key);
                     if (element) {
-                        let dropdownHtml = `<select class="v-select v-select--block v-select--elevated v-theme--light v-select--variant-elevated" style="border: 1px solid #ccc; border-radius: 10px; text-align: center;">`;
-                        dropdownHtml += `<option value="" disabled selected hidden style="text-align: center;">인스턴스 선택</option>\n`; // 기본값으로 아무것도 선택되지 않음
+                        let dropdownHtml = `<select class="instance-select-box">`;
+                            dropdownHtml += `<option value=""hidden style="text-align: center;">인스턴스 선택 ▼</option>\n`; // 기본값으로 아무것도 선택되지 않음
                         self.subProcessInstances[key].forEach((subProcessId, idx) => {
-                            dropdownHtml += `<option value="${subProcessId}">${subProcessId}</option>\n`;
+                            dropdownHtml += `<option class="instance-select-list" value="${subProcessId}">${subProcessId}</option>\n`;
                         });
                         dropdownHtml += `</select>`;
                         let overlayHtml = $(`<div>${dropdownHtml}</div>`);
@@ -232,8 +239,8 @@ export default {
                         });
                         overlays.add(key, 'note', {
                             position: {
-                                bottom: 80,
-                                right: 100
+                                bottom: 79,
+                                right: 98
                             },
                             html: overlayHtml
                         });
@@ -241,12 +248,12 @@ export default {
                 });
             }
             eventBus.on('element.dblclick', async function (e) {
-                // if (e.element.type.includes('CallActivity')) {
-                //     self.$emit('openDefinition', e.element.businessObject);
-                // } 
                 if (e.element.type.includes('CallActivity')) {
-                    self.openCallActivity(e.element);
-                }
+                    self.$emit('openDefinition', e.element.businessObject);
+                } 
+                // if (e.element.type.includes('CallActivity')) {
+                //     self.openCallActivity(e.element);
+                // }
             });
             
             if(!self.activityStatus) {
@@ -309,7 +316,7 @@ export default {
             if(callJsonText) {
                 const callJson = JSON.parse(callJsonText);
                 const callId = callJson.definitionId;
-                const callDefinition = await backend.getRawDefinition(callId.replace('.bpmn', ''), { type: 'bpmn' });
+                const callDefinition = await backend.getRawDefinition(callId.replace('.bpmn', ''), { type: 'bpmn', version: callJson.version });
                 const previewerXML = await self.bpmnViewer.saveXML({ format: true, preamble: true });
                 
                 
