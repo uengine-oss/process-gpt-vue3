@@ -1,9 +1,10 @@
 <template>
     <div ref="container" class="vue-bpmn-diagram-container">
         <div style="position: absolute; top: 50px; right: 20px; pointer-events: auto; z-index: 10;">
-            <div class="pa-1" style="display: flex; flex-direction: column; align-items: center; border: gray 1px solid; background-color: white;">
-                <button @click="saveSVG">Save SVG</button>
-                <button @click="saveAndPreviewSVG">Save and Preview SVG</button>
+            <div class="" style="display: flex; flex-direction: column; align-items: flex-end;">
+                <v-btn @click="saveAndPreviewSVG" icon>
+                    <v-icon>mdi-content-save</v-icon>
+                </v-btn>
             </div>
             <div id="svgPreviews" style="margin-top: 0px; display: flex; flex-wrap: wrap;"></div>
         </div>
@@ -542,6 +543,7 @@ export default {
                 });
         },
         saveAndPreviewSVG() {
+            let self = this;
             this.bpmnViewer.saveSVG()
                 .then(({ svg }) => {
                     // 1. SVG 파싱
@@ -637,8 +639,18 @@ export default {
                             splitSvgs.push(splitSvg); // PDF 삽입용 SVG 저장
                         }
                     }
-
                     // 8. "모든 분할된 파일 다운로드" 버튼 추가
+                    const downloadSvgButton = document.createElement("button");
+                    downloadSvgButton.textContent = "SVG를 한 파일로 다운로드 ";
+                    downloadSvgButton.style.display = "block";
+                    downloadSvgButton.style.marginTop = "20px";
+                    downloadSvgButton.onclick = () => {
+                        self.saveSVG();
+                    };
+
+                    previewsContainer.appendChild(downloadSvgButton);
+
+                    // 9. "모든 분할된 파일 다운로드" 버튼 추가
                     const downloadButton = document.createElement("button");
                     downloadButton.textContent = "SVG 다운로드";
                     downloadButton.style.display = "block";
@@ -655,35 +667,6 @@ export default {
                     };
 
                     previewsContainer.appendChild(downloadButton);
-
-                    // 9. PDF 저장 버튼 추가
-                    // const pdfButton = document.createElement("button");
-                    // pdfButton.textContent = "PDF 다운로드";
-                    // pdfButton.style.display = "block";
-                    // pdfButton.style.marginTop = "20px";
-                    // pdfButton.onclick = async () => {
-                    //     const pdf = new jsPDF({
-                    //         orientation: "landscape",
-                    //         unit: "pt",
-                    //         format: [viewBoxWidth, viewBoxHeight],
-                    //     });
-
-                    //     pdf.setFont("bpmn");
-
-                    //     for (const splitSvg of splitSvgs) {
-                    //         pdf.addPage([downloadPartWidth, downloadPartHeight]);
-                    //         await svg2pdf(splitSvg, pdf, {
-                    //             x: 0,
-                    //             y: 0,
-                    //             width: downloadPartWidth,
-                    //             height: downloadPartHeight,
-                    //         });
-                    //     }
-
-                    //     pdf.deletePage(1); // 첫 빈 페이지 제거
-                    //     pdf.save("split_diagram.pdf");
-                    // };
-
 
                     // 📌 PDF 다운로드 버튼 추가
                     const pdfButton = document.createElement("button");
