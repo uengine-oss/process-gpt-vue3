@@ -123,7 +123,10 @@
         "yamljs": "^0.3.0",
         "yup": "^0.32.11",
         "@vue-js-cron/core": "^5.3.1",
-        "@vueup/vue-quill": "^1.2.0"
+        "@vueup/vue-quill": "^1.2.0",
+        "jspdf": "^2.5.1",
+        "svg2pdf.js": "^2.0.0",
+        "html2canvas-pro": "^1.5.8"
     },
     "devDependencies": {
         "@4tw/cypress-drag-drop": "^2.2.5",
@@ -179,7 +182,10 @@
         "vue3-treeview": "^0.4.2",
         "vuetify": "3.4.10",
         "@vue-js-cron/core": "^5.3.1",
-        "@vueup/vue-quill": "^1.2.0"
+        "@vueup/vue-quill": "^1.2.0",
+        "jspdf": "^2.5.1",
+        "svg2pdf.js": "^2.0.0",
+        "html2canvas-pro": "^1.5.8"
     },
     "packageManager": "yarn@1.22.18",
     "resolutions": {
