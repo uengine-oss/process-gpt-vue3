@@ -12,7 +12,7 @@
             ></quill-editor>
         </div>
         <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4" :isViewMode="isViewMode"></Checkpoints>
-        <div class="pb-10">
+        <div class="pb-10 attachment-container">
             <v-row class="ma-0 pa-0 align-center">
                 <h6 class="text-body-1">첨부파일</h6>
                 <v-spacer></v-spacer>
