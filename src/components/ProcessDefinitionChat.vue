@@ -57,6 +57,8 @@
                     :definitionChat="this"
                     :isAdmin="isAdmin"
                     :generateFormTask="generateFormTask"
+                    :isPreviewPDFDialog="isPreviewPDFDialog"
+                    @closePDFDialog="isPreviewPDFDialog = false"
                     @update="updateDefinition"
                     @changeBpmn="changeBpmn"
                     @changeElement="changeElement"
@@ -120,7 +122,8 @@
                                 :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete" />
+                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
+                                @savePDF="savePDF" />
                         </template>
                     </Chat>
                 </div>
@@ -252,6 +255,7 @@ export default {
         isSimulate: 'false',
         waitForCustomer: false,
         isConsultingMode: false,
+        isPreviewPDFDialog: false,
     }),
     async created() {
         $try(async () => {
@@ -927,6 +931,10 @@ export default {
                 }
             });
             return componentByName;
+        },
+        savePDF() {
+            this.isPreviewPDFDialog = false;
+            this.isPreviewPDFDialog = true;
         }
     }
 };

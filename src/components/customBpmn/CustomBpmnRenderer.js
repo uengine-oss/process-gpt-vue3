@@ -148,8 +148,22 @@ export default class CustomBpmnRenderer extends BaseRenderer {
 
     // ✅ Notched Tag (Phase 형태) 그리기
     const phaseVisual = drawNotchTag(parentNode, existingWidth, existingHeight, fillColor, strokeColor);
-    prependTo(phaseVisual, parentNode);
+    
 
+    const text = parentNode.children[1];
+    svgAttr(text, {
+        x: existingWidth / 2,
+        y: existingHeight - 30, // 하단에 배치
+        'text-anchor': 'middle',
+        'alignment-baseline': 'middle',
+        'font-size': '20px',
+        'font-family': 'Arial, sans-serif',
+        'fill': '#333',
+        'font-weight': 'bold'
+    });
+    text.textContent = element.businessObject.name;
+
+    prependTo(phaseVisual, parentNode);
     // ✅ 기존 shape 제거
     svgRemove(shape);
   }

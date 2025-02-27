@@ -43,7 +43,7 @@
                 <v-card>
                     <v-card-title class="headline">{{ $t('BpmnPropertyPanel.pdfPreview') }}</v-card-title>
                     <v-card-text >
-                        <PDFPreviewer :element="html" @closeDialog="printDialog = false" />
+                        <PDFPreviewer :element="html" @closeDialog="printDialog = false" :name="name" />
                     </v-card-text>
                 </v-card>
             </v-dialog>

@@ -235,7 +235,8 @@
         "cancel": "취소",
         "simulate": "시뮬레이션",
         "preview": "미리보기",
-        "capture": "프로세스 이미지 다운로드"
+        "capture": "프로세스 이미지 다운로드",
+        "savePDF": "PDF 저장"
     },
     "ProcessVariable": {
         "name": "이름",
@@ -380,8 +381,11 @@
         "pdfPreview": "PDF 미리보기"
     },
     "PDFPreviewer": {
-        "saveDocument": "저장",
-        "close": "닫기"
+        "saveDocument": "PDF 저장",
+        "close": "닫기",
+        "title": "PDF 저장 미리보기",
+        "splitBPMN": "분할",
+        "savingPDF": "PDF 저장중..."
     },
     "EscalationEventDefinitionPanel": {
         "expression": "이벤트 키"

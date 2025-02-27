@@ -126,7 +126,9 @@
         "@vueup/vue-quill": "^1.2.0",
         "jspdf": "^2.5.1",
         "svg2pdf.js": "^2.0.0",
-        "html2canvas-pro": "^1.5.8"
+        "html2canvas-pro": "^1.5.8",
+        "html2pdf.js": "^0.10.3",
+        "html-to-image": "^1.11.13"
     },
     "devDependencies": {
         "@4tw/cypress-drag-drop": "^2.2.5",
@@ -185,7 +187,7 @@
         "@vueup/vue-quill": "^1.2.0",
         "jspdf": "^2.5.1",
         "svg2pdf.js": "^2.0.0",
-        "html2canvas-pro": "^1.5.8"
+        "html-to-image": "^1.11.13"
     },
     "packageManager": "yarn@1.22.18",
     "resolutions": {

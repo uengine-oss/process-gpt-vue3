@@ -235,7 +235,8 @@
         "cancel": "Cancel",
         "simulate": "Simulate",
         "preview": "Preview",
-        "capture": "Download process image"
+        "capture": "Download process image",
+        "savePDF": "Save PDF"
     },
     "ProcessVariable": {
         "name": "Name",
@@ -380,8 +381,11 @@
         "pdfPreview": "PDF Preview"
     },
     "PDFPreviewer": {
-        "saveDocument": "Save",
-        "close": "Close"
+        "saveDocument": "Save PDF",
+        "close": "Close",
+        "title": "PDF Save Preview",
+        "splitBPMN": "Split BPMN",
+        "savingPDF": "Saving PDF..."
     },
     "EscalationEventDefinitionPanel": {
         "expression": "Event Key"

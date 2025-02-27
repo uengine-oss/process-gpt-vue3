@@ -6,11 +6,24 @@
     <v-btn color="primary" text @click="saveDocument()">{{ $t('PDFPreviewer.saveDocument') }}</v-btn>
     <v-btn color="error" text @click="closeDialog()">{{ $t('PDFPreviewer.close') }}</v-btn>
   </v-card-actions>
+  <div v-if="loading" class="overlay" style="background-color: rgba(0, 0, 0, 0.5); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;">
+    <div style="background-color: white; padding: 20px; border-radius: 10px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <v-icon color="primary" size="48">mdi-file-pdf-box</v-icon>
+        <p>{{ $t('PDFPreviewer.savingPDF') }}</p>
+      </div>
+      <v-progress-linear
+        :model-value="progress"
+        color="primary"
+        style="width: 100%;"
+      ></v-progress-linear>
+    </div>
+  </div>
 </template>
 
 <script>
 import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas-pro";
+import { toPng, toJpeg } from 'html-to-image';
 
 export default {
   name: 'PDFPreviewer',
@@ -18,11 +31,17 @@ export default {
     element: {
       type: Object,
       required: true
+    },
+    name: {
+      type: String,
+      required: true
     }
   },
   data() {
     return {
-        formattedHtml: ''
+        formattedHtml: '',
+        loading: false,
+        progress: 0
     };
   },
   created() {
@@ -61,26 +80,35 @@ export default {
         this.formattedHtml = html;
         console.log(this.formattedHtml);
     },
-    saveDocument() {
-        if (!this.formattedHtml) {
-            console.error("🚨 formattedHtml 값이 없습니다.");
-            return;
-        }
+    async saveDocument() {
+      this.loading = true;
+      this.progress = 0;
+        try {
+            if (!this.formattedHtml) {
+                console.error("🚨 formattedHtml 값이 없습니다.");
+                return;
+            }
 
-        // 1. 임시 컨테이너 생성
-        const tempContainer = document.createElement("div");
-        tempContainer.style.position = "absolute";
-        tempContainer.style.left = "-9999px"; // 화면에서 숨기기
-        tempContainer.innerHTML = this.formattedHtml; // formattedHtml 삽입
-        document.body.appendChild(tempContainer);
+            const tempContainer = document.getElementsByClassName("pdf-previewer")[0];
+            const containerWidth = tempContainer.offsetWidth || 800;
+            const containerHeight = tempContainer.offsetHeight || 1120;
 
-        // 2. html2canvas로 캡처
-        html2canvas(tempContainer, {
-            scale: 2, // 해상도 향상
-            // useCORS: true, // CORS 이미지 로드 허용
-            allowTaint: true // 외부 리소스 허용
-        }).then(canvas => {
-            const imgData = canvas.toDataURL("image/png");
+            console.log(`📏 변환 영역 크기: ${containerWidth}px x ${containerHeight}px`);
+
+
+            const dataUrl = await toPng(tempContainer, {
+                quality: 1.0, // 🔥 품질 최적화
+                cacheBust: true, // 캐시 문제 방지
+                backgroundColor: "white",
+            });
+
+
+            if (!dataUrl) {
+                console.error("❌ 이미지 변환 실패: dataUrl이 비어 있음.");
+                this.loading = false;
+                this.progress = 0;
+                return;
+            }
 
             const pdf = new jsPDF({
                 orientation: "portrait",
@@ -88,31 +116,42 @@ export default {
                 format: "a4",
             });
 
-            const imgWidth = 210; // A4 Width (mm)
-            const pageHeight = 297; // A4 Height (mm)
-            const imgHeight = (canvas.height * imgWidth) / canvas.width; // 비율 유지
+            const imgWidth = 210; // A4 너비 (mm)
+            const pageHeight = 297; // A4 높이 (mm)
+            const imgHeight = (containerHeight * imgWidth) / containerWidth; // 비율 유지
+
+            if (isNaN(imgHeight) || imgHeight <= 0) {
+                console.error("❌ 잘못된 이미지 높이 계산:", imgHeight);
+                this.loading = false;
+                this.progress = 0;
+                return;
+            }
+
             let heightLeft = imgHeight;
             let position = 0;
 
-            pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+            // 🖼️ 첫 페이지 추가
+            pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight);
             heightLeft -= pageHeight;
 
+            // 📄 여러 페이지 지원
             while (heightLeft > 0) {
                 position -= pageHeight;
                 pdf.addPage();
-                pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+                pdf.addImage(dataUrl, "JPEG", 0, position, imgWidth, imgHeight);
                 heightLeft -= pageHeight;
+                this.progress = Math.round((1 - (heightLeft / imgHeight)) * 100);
             }
 
-            pdf.save("exported-document.pdf");
-
-            console.log("📄 PDF 저장 완료 (formattedHtml 기반 변환)");
-
-            // 3. 임시 DOM 삭제
-            document.body.removeChild(tempContainer);
-        }).catch(error => {
+            // 💾 PDF 저장
+            pdf.save(`${this.name || "document"}.pdf`);
+            this.loading = false;
+            this.progress = 0;
+        } catch (error) {
             console.error("❌ PDF 변환 중 오류 발생:", error);
-        });
+            this.loading = false;
+            this.progress = 0;
+        }
     },
     closeDialog() {
         this.$emit('closeDialog');
