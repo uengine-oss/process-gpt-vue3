@@ -1,5 +1,11 @@
 <template>
     <div ref="container" class="vue-bpmn-diagram-container"></div>
+    <v-dialog v-model="isPreviewPDFDialog" max-width="850px">
+        <v-card >
+            <v-card-title class="headline">{{ $t('PDFPreviewer.title') }}</v-card-title>
+            <PDFPreviewer  :bpmnViewer="bpmnViewer" @closeDialog="closePDFDialog"/>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
@@ -12,6 +18,9 @@ import BpmnModdle from 'bpmn-moddle';
 import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
 import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
 import BackendFactory from '@/components/api/BackendFactory';
+import phaseModdle from '@/assets/bpmn/phase-moddle.json';
+import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
+
 
 const backend = BackendFactory.createBackend();
 
@@ -49,6 +58,12 @@ export default {
         generateFormTask: {
             type: Object
         },
+        isPreviewPDFDialog: {
+            type: Boolean
+        }
+    },
+    components: {
+        PDFPreviewer
     },
     data: function () {
         return {
@@ -121,6 +136,11 @@ export default {
         diagramXML(val) {
             if (this.mode == 'ProcessGPT') {
                 this.bpmnViewer.importXML(val);
+            }
+        },
+        isPreviewPDFDialog(val) {
+            if(!val) {
+                this.$emit('closePDFDialog');
             }
         }
     },
@@ -294,7 +314,8 @@ export default {
                         bindTo: window
                     },
                     moddleExtensions: {
-                        uengine: uEngineModdleDescriptor
+                        uengine: uEngineModdleDescriptor,
+                        phase: phaseModdle
                     }
                 },
                 self.options
@@ -307,7 +328,10 @@ export default {
                         ...(Array.isArray(_options.additionalModules) ? _options.additionalModules : []),
                         ZoomScroll,
                         MoveCanvas
-                    ]
+                    ],
+                    moddleExtensions: {
+                        phase: phaseModdle
+                    }
                 };
 
                 self.bpmnViewer = new BpmnViewer(viewerOptions);
@@ -504,6 +528,26 @@ export default {
                 diagrams: convertedDiagrams
             });
         },
+        saveSVG() {
+            // `bpmnViewer`를 통해 다이어그램을 SVG로 저장
+            this.bpmnViewer.saveSVG()
+                .then(({ svg }) => {
+                    // Blob 객체를 생성하여 SVG 데이터를 파일 형태로 준비
+                    const blob = new Blob([svg], { type: 'image/svg+xml' });
+
+                    // Blob을 이용해 다운로드를 트리거
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'diagram.svg'; // 다운로드 파일명 설정
+                    document.body.appendChild(link); // 링크를 문서에 추가
+                    link.click(); // 다운로드 트리거
+                    document.body.removeChild(link); // 링크 삭제
+                })
+                .catch((error) => {
+                    console.error('SVG 내보내기 실패:', error);
+                    alert('SVG 파일을 저장하는 데 실패했습니다. 콘솔을 확인하세요.');
+                });
+        },
         fetchDiagram(url) {
             var self = this;
 
@@ -517,6 +561,9 @@ export default {
                 .catch((err) => {
                     self.$emit('error', err);
                 });
+        },
+        closePDFDialog() {
+            this.$emit('closePDFDialog');
         }
     }
 };

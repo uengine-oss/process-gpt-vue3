@@ -43,7 +43,9 @@ export default {
         readonly: String,
         itemValue: {
             type: String,
-            default: "id"
+            default() {
+                return window.$mode === 'ProcessGPT' ? 'email' : 'id';
+            }
         }
     },
 

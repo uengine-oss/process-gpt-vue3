@@ -12,6 +12,7 @@ const backend = BackendFactory.createBackend();
 export default {
     mixins: [FormDefinitionModule],
     data: () => ({
+        processVariables: [],
         processDefinition: null,
         bpmn: null,
         definitionChangeCount: 0,
@@ -30,7 +31,10 @@ export default {
     methods: {
         async checkedFormData() {
             if (this.processDefinition && this.processDefinition.components) {
-                const activities = this.processDefinition.components.filter(component => component.componentType === 'Activity');
+                const activities = this.processDefinition.components.filter(component => 
+                    component.componentType === 'Activity' && 
+                    component.type === 'UserActivity'
+                );
                 this.generateFormTask = {};
                 for (const activity of activities) {
                     let inputs = null;
@@ -1933,6 +1937,7 @@ export default {
                         } else {
                             newProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
                         }
+                        newProcessDefinition.data = me.processVariables;
 
                         if (!me.processDefinition) {
                             me.processDefinition = newProcessDefinition
@@ -1951,9 +1956,11 @@ export default {
                                     const oldActivity = me.processDefinition.activities.find(oldActivity => oldActivity.id === activity.id);
                                     if (oldActivity) {
                                         activity.instruction = oldActivity.instruction;
+                                        activity.description = oldActivity.description;
                                         activity.checkpoints = oldActivity.checkpoints;
                                         activity.duration = oldActivity.duration;
                                         activity.attachments = oldActivity.attachments;
+                                        activity.pythonCode = oldActivity.pythonCode;
                                     }
                                     return activity;
                                 });
@@ -2079,7 +2086,7 @@ export default {
                                 : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
                             ).map((varData) => ({
                                 name: varData.name,
-                                description: varData.name + ' description',
+                                description: varData.description ? varData.description : varData.name + ' description',
                                 type: varData.type
                             }))
                             : [];

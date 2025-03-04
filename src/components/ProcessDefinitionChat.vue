@@ -16,6 +16,7 @@
                         :definitionPath="fullPath"
                         :definitionChat="this"
                         @update="updateDefinition"
+                        @update:processVariables="(val) => (processVariables = val)"
                     ></process-definition>
                 </div>
                 <div style="position: relative;">
@@ -56,10 +57,13 @@
                     :definitionChat="this"
                     :isAdmin="isAdmin"
                     :generateFormTask="generateFormTask"
+                    :isPreviewPDFDialog="isPreviewPDFDialog"
+                    @closePDFDialog="isPreviewPDFDialog = false"
                     @update="updateDefinition"
                     @changeBpmn="changeBpmn"
                     @changeElement="changeElement"
                     @onLoaded="onLoadBpmn()"
+                    @update:processVariables="(val) => (processVariables = val)"
                 ></process-definition>
                 <process-definition-version-dialog
                     :process="processDefinition"
@@ -118,7 +122,8 @@
                                 :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete" />
+                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
+                                @savePDF="savePDF" />
                         </template>
                     </Chat>
                 </div>
@@ -250,6 +255,7 @@ export default {
         isSimulate: 'false',
         waitForCustomer: false,
         isConsultingMode: false,
+        isPreviewPDFDialog: false,
     }),
     async created() {
         $try(async () => {
@@ -403,7 +409,8 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    await backend.deleteDefinition(me.fullPath);
+                    const path = window.$mode == 'ProcessGPT' ? me.fullPath : me.fullPath + ".bpmn";
+                    await backend.deleteDefinition(path);
                     me.deleteDialog = false;
                     me.isDeleted = true;
                     me.EventBus.emit('definitions-updated');
@@ -573,7 +580,7 @@ export default {
                     me.bpmn = bpmn;             
                     me.definitionChangeCount++;
 
-                    if (me.useLock) {
+                    if (me.useLock) { // ProcessGPT 모드
                         const value = await backend.getRawDefinition(fullPath);
                         if (value) {
                             me.processDefinition = value.definition;
@@ -924,6 +931,10 @@ export default {
                 }
             });
             return componentByName;
+        },
+        savePDF() {
+            this.isPreviewPDFDialog = false;
+            this.isPreviewPDFDialog = true;
         }
     }
 };

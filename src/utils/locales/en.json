@@ -235,7 +235,8 @@
         "cancel": "Cancel",
         "simulate": "Simulate",
         "preview": "Preview",
-        "capture": "Download process image"
+        "capture": "Download process image",
+        "savePDF": "Save PDF"
     },
     "ProcessVariable": {
         "name": "Name",
@@ -375,7 +376,16 @@
         "apiUrl": "API URL",
         "mapperDescriptionTitle": "Data mapping is a function that passes variables to the next task",
         "mapperDescriptionSubTitle1": "1. Variables: Values added to the variable section \n2. Roles: Roles (names) registered in the swimlane \n3. Instance: Stores the end date of the next task to be executed \n4. Activities: Roles (names) registered in the task \n5. Arguments: Names (values) registered in the attributes",
-        "mapperDescriptionSubTitle2": "How to use \n- Drag and drop while holding the mouse to connect\n- Click the line to delete"
+        "mapperDescriptionSubTitle2": "How to use \n- Drag and drop while holding the mouse to connect\n- Click the line to delete",
+        "printDocument": "Download PDF",
+        "pdfPreview": "PDF Preview"
+    },
+    "PDFPreviewer": {
+        "saveDocument": "Save PDF",
+        "close": "Close",
+        "title": "PDF Save Preview",
+        "splitBPMN": "Split BPMN",
+        "savingPDF": "Saving PDF..."
     },
     "EscalationEventDefinitionPanel": {
         "expression": "Event Key"
@@ -547,7 +557,9 @@
         "return": "Variable to store the return value",
         "methodTypeDescriptionTitle": "Set the method (GET, POST, PUT, PATCH) to use when sending an API request and the server's endpoint URL to process the request.",
         "methodTypeDescriptionSubTitle1": "1.GET: A request to retrieve data from the server \n2.POST: A request to create and send new data to the server \n3.PUT: A request to update or replace existing data entirely \n4.PATCH: A request to partially modify existing data \n5.API URL: The endpoint URL of the server where the request will be sent",
-        "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list."
+        "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list.",
+        "message": "Send Email",
+        "send": "Send Rest API"
     },
     "ScriptTaskPanel" : {
         "return": "Variable to store the return value",
@@ -645,7 +657,8 @@
         "laneToTheRight": "Add Lane to the Right",
         "laneDivideTwo": "Divide into Two Lanes",
         "laneDivideThree": "Divide into Three Lanes",
-        "connectionMulti": "Connect using Message Flow"
+        "connectionMulti": "Connect using Message Flow",
+        "phase": "Add Phase"
     },
     "CustomReplaceElement": {
         "replace-with-call-activity": "Replace with call activity",
@@ -709,7 +722,8 @@
         "replace-with-non-interrupting-signal-boundary": "Replace with non-interrupting signal boundary event",
         "replace-with-non-interrupting-timer-boundary": "Replace with non-interrupting timer boundary event",
         "replace-with-signal-boundary": "Replace with signal boundary event",
-        "replace-with-timer-boundary": "Replace with timer boundary event"
+        "replace-with-timer-boundary": "Replace with timer boundary event",
+        "replace-with-expanded-pool": "Replace with expanded pool"
     },
     "WorkItem": {
         "progress": "Progress",
@@ -768,6 +782,9 @@
     },
     "DryRunProcess": {
         "notFound": "Work item not found."
+    },
+    "CompensateEventDefinitionPanel": {
+        "selectTask": "Select Task to Compensate"
     },
     "PALUserTaskPanel": {
         "insertDescription": "Please enter the task description"

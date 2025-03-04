@@ -48,6 +48,7 @@
                         v-if="loaded"
                         ref="bpmnVue"
                         :bpmn="processDefinition"
+                        :instanceId="instanceId"
                         :options="options"
                         :isViewMode="true"
                         :adminMode="true"

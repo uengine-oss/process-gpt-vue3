@@ -38,6 +38,17 @@
                     <v-row class="ma-0 pa-0 pt-3"
                         :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : 'margin-top: 12px;'"
                     >
+                    
+                        <div class="mr-0 d-flex" v-if="Pal">
+                            <!-- PDF 저장 아이콘 -->
+                            <v-tooltip location="bottom" :text="$t('processDefinition.savePDF')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" @click="savePDF" icon variant="text" class="text-medium-emphasis" density="comfortable">
+                                        <v-icon>mdi-file-pdf-box</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </div>
                         <!-- 저장 관련 버튼  -->
                         <div class="mr-4 d-flex">
                             <!-- 파일업로드 아이콘 -->
@@ -206,6 +217,9 @@ export default {
         },
         showXmlMode() {
             this.$emit('showXmlMode');
+        },
+        savePDF() {
+            this.$emit('savePDF');
         }
     }
 };

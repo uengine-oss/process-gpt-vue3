@@ -12,37 +12,39 @@
             ></quill-editor>
         </div>
         <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4" :isViewMode="isViewMode"></Checkpoints>
-        <v-row class="ma-0 pa-0 align-center">
-            <h6 class="text-body-1">첨부파일</h6>
-            <v-spacer></v-spacer>
-            <v-btn v-if="!isViewMode" icon density="compact" variant="text">
-                <v-icon @click="$refs.fileInput.click()">mdi-plus</v-icon>
-            </v-btn>
-        </v-row>
-        <v-file-input
-            ref="fileInput"
-            type="file"
-            multiple
-            style="display: none"
-            @update:modelValue="onFileChange"
-        />
-        <div v-if="activity.attachments && activity.attachments.length > 0"
-            style="border: 1px solid lightgray; border-radius: 10px; padding: 8px;"
-        >
-            <div v-for="(attachment, index) in activity.attachments" :key="index">
-                <div class="d-flex pa-0 align-center">
-                    <div class="d-flex attached-file-text pa-2 cursor-pointer">
-                        <v-icon @click="openFile(attachment)">mdi-file-document-outline</v-icon>
-                        <div class="ml-2 mr-auto" @click="openFile(attachment)">{{ replaceText(attachment) }}</div>
+        <div class="pb-10 attachment-container">
+            <v-row class="ma-0 pa-0 align-center">
+                <h6 class="text-body-1">첨부파일</h6>
+                <v-spacer></v-spacer>
+                <v-btn v-if="!isViewMode" icon density="compact" variant="text">
+                    <v-icon @click="$refs.fileInput.click()">mdi-plus</v-icon>
+                </v-btn>
+            </v-row>
+            <v-file-input
+                ref="fileInput"
+                type="file"
+                multiple
+                style="display: none"
+                @update:modelValue="onFileChange"
+            />
+            <div v-if="activity.attachments && activity.attachments.length > 0"
+                style="border: 1px solid lightgray; border-radius: 10px; padding: 8px;"
+            >
+                <div v-for="(attachment, index) in activity.attachments" :key="index">
+                    <div class="d-flex pa-0 align-center">
+                        <div class="d-flex attached-file-text pa-2 cursor-pointer">
+                            <v-icon @click="openFile(attachment)">mdi-file-document-outline</v-icon>
+                            <div class="ml-2 mr-auto" @click="openFile(attachment)">{{ replaceText(attachment) }}</div>
+                        </div>
+                        <v-spacer></v-spacer>
+                        <v-btn v-if="!isViewMode"
+                            @click="activity.attachments = activity.attachments.filter(a => a !== attachment)"
+                            icon variant="text" type="file" class="text-medium-emphasis" 
+                            density="comfortable"
+                        >
+                            <TrashIcon size="16" style="color:#FB977D"/>
+                        </v-btn>
                     </div>
-                    <v-spacer></v-spacer>
-                    <v-btn v-if="!isViewMode"
-                        @click="activity.attachments = activity.attachments.filter(a => a !== attachment)"
-                        icon variant="text" type="file" class="text-medium-emphasis" 
-                        density="comfortable"
-                    >
-                        <TrashIcon size="16" style="color:#FB977D"/>
-                    </v-btn>
                 </div>
             </div>
         </div>

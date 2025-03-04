@@ -175,15 +175,12 @@ class ProcessGPTBackend implements Backend {
                 await storage.putObject('proc_def_arcv', procDefArcv);
             }
 
-            try {
-                const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
-                if (isLocked) {
-                    await storage.delete(`lock/${defId}`, { key: 'id' });
-                }
-            } catch(error) {
-                //@ts-ignore
-                throw new Error("Error when to unlock: " + (error && error.detail ? error.detail : error));
+            const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
+            if (isLocked) {
+                await storage.delete(`lock/${defId}`, { key: 'id' });
             }
+            
+            this.updateVectorStore(JSON.stringify(options.definition)); 
 
         } catch (e) {
             
@@ -241,6 +238,7 @@ class ProcessGPTBackend implements Backend {
 
     async start(input: any) {
         try {
+            var me = this;
             if (window.$jms) return;
 
             let defId = input.process_definition_id || input.processDefinitionId;
@@ -261,18 +259,36 @@ class ProcessGPTBackend implements Backend {
             }
             input['process_definition_id'] = defId.toLowerCase();
             if (!input.chat_room_id) {
-                input['chat_room_id'] = `${input.process_definition_id}.${this.uuid()}`;
+                input['chat_room_id'] = `${input.process_definition_id}.${me.uuid()}`;
             }
 
-            var result: any = null;
+            return await me.executeInstance(input);
+
+        } catch (error) {
+            //@ts-ignore
+            return error;
+        }
+    }
+
+    async executeInstance(input: any) {
+        try {
+            var me = this;
+            
             var url = `/execution/complete`;
             if (input.answer && input.answer.image != null) {
                 url = `/execution/vision-complete`;
             }
+            
             var req = {
                 input: input
             };
+            
             const token = localStorage.getItem('accessToken');
+            if (!token) {
+                throw new Error('No access token');
+            }
+
+            var result: any = null;
             await axios.post(url, req, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -285,16 +301,12 @@ class ProcessGPTBackend implements Backend {
                         result = data;
                         if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
                             result.errors = result.cannotProceedErrors;
-                            // const dataNotExist = result.cannotProceedErrors.find((item: any) => item.type === 'DATA_FIELD_NOT_EXIST');
-                            // if (!dataNotExist) {
-                            //     throw new Error(result.cannotProceedErrors.map((item: any) => item.reason).join('\n'));
-                            // }
-                        }
+                        }   
                     }
                 }
             })
             .catch(error => {
-                return error;
+                result.error = error;
             });
 
             return result;
@@ -393,7 +405,9 @@ class ProcessGPTBackend implements Backend {
                     parameters: parameters || [],
                     variableForHtmlFormContext: variableForHtmlFormContext || {},
                     instruction: activityInfo && activityInfo.instruction ? activityInfo.instruction : "",
-                    checkpoints: activityInfo && activityInfo.checkpoints ? activityInfo.checkpoints : []
+                    checkpoints: activityInfo && activityInfo.checkpoints ? activityInfo.checkpoints : [],
+                    pythonCode: activityInfo && activityInfo.pythonCode ? activityInfo.pythonCode : "",
+                    type: activityInfo && activityInfo.type ? activityInfo.type : ""
                 },
                 parameterValues: parameterValues || {}
             }
@@ -661,7 +675,21 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getVariable(instId: string, varName: string) {
-        throw new Error("Method not implemented.");
+        try {
+            let varData: any = null;
+            const instance: any = await this.getInstance(instId);
+            if (instance && instance.variables_data && instance.variables_data.length > 0) {
+                instance.variables_data.forEach((item: any) => {
+                    if (item.key === varName || item.name === varName) {
+                        varData = item.value;
+                    }
+                })
+            }
+            return varData;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
     }
 
     extractFields(html: string) {
@@ -705,6 +733,14 @@ class ProcessGPTBackend implements Backend {
 
     async getVariableWithTaskId(instId: string, taskId: string, varName: string) {
         try {
+            let varData: any = {};
+            const instance: any = await this.getInstance(instId);
+            if (instance && instance.variables_data && instance.variables_data.length > 0) {
+                instance.variables_data.forEach((item: any) => {
+                    varData[item.key] = item.value;
+                })
+            }
+
             var fields: any = [];
             const formObject: any = await storage.getObject(`form_def/${varName}`, { key: 'id' });
             if (formObject) {
@@ -713,19 +749,20 @@ class ProcessGPTBackend implements Backend {
                 const html = await storage.getString(`form_def/${varName}`, { key: 'id', column: 'html' });
                 fields = this.extractFields(html);
             }
-            const instance: any = await this.getInstance(instId);
-            let varData: any = {};
             if (instance && fields.length > 0) {
                 fields.forEach((field: any) => {
-                    let fieldName = field.text.toLowerCase().replace(/ /g, '_') || field.text;
-                    let fieldValue = instance.variables_data[fieldName];
-                    if (!fieldValue) {
-                        fieldValue = instance.variables_data[field.key];
-                    }
+                    let fieldValue: any = null;
+                    instance.variables_data.forEach((item: any) => {
+                        if (item.key === field.key || item.key === field.text || item.name === field.key || item.name === field.text) {
+                            fieldValue = item.value;
+                        }
+                    })
                     if (field.type === 'boolean') {
                         fieldValue = fieldValue === 'true' ? true : false;
                     }
-                    varData[field.key] = fieldValue;
+                    if (!varData[field.key]) {
+                        varData[field.key] = fieldValue;
+                    }
                 });
             }
             const result = {
@@ -809,9 +846,9 @@ class ProcessGPTBackend implements Backend {
 
     async putWorkItemComplete(taskId: string, inputData: any) {
         try {
+            var me = this;
             if (window.$jms) return;
 
-            let result: any = null;
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
 
             if (inputData.parameterValues && inputData.parameterValues["user_input_text"]) {
@@ -823,7 +860,7 @@ class ProcessGPTBackend implements Backend {
                     "content": inputData.parameterValues["user_input_text"],
                     "timeStamp": new Date().toISOString()
                 }
-                this.updateInstanceChat(workItem.proc_inst_id, newMessage);
+                me.updateInstanceChat(workItem.proc_inst_id, newMessage);
             }
 
             const input = {
@@ -833,32 +870,8 @@ class ProcessGPTBackend implements Backend {
                 activity_id: workItem.activity_id,
                 chat_room_id: workItem.proc_inst_id
             };
-            const req = {
-                input: input
-            };
-            const token = localStorage.getItem('accessToken');
-            let url = `/execution/complete`;
-            if (input.answer && input.answer.image != null) {
-                url = `/execution/vision-complete`;
-            }
-            await axios.post(url, req, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            }).then(res => {
-                if (res.data) {
-                    const data = JSON.parse(res.data);
-                    if (data) {
-                        result = data;
-                    }
-                }
-            })
-            .catch(error => {
-                result = error;
-            });
-    
-            return result;
+
+            return await me.executeInstance(input);
 
         } catch (error) {
             return error;
@@ -1008,7 +1021,7 @@ class ProcessGPTBackend implements Backend {
         throw new Error("Method not implemented.");
     }
 
-    async dryRun(defPath: string) {
+    async dryRun(isSimulate: string, command: object) {
         try {
             return null;
         } catch (error) {
@@ -1425,6 +1438,22 @@ class ProcessGPTBackend implements Backend {
     async getFileUrl(path: string) {
         try {
             return await storage.getFileUrl(path);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async updateVectorStore(content: string) {
+        try {
+            await axios.post("/execution/update-vs", {
+                content: content
+            }).then(res => {
+                console.log(res)
+            })
+            .catch(error => {
+                return error;
+            });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

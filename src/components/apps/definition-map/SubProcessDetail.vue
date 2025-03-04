@@ -55,7 +55,16 @@
                             </v-btn>
                         </template>
                     </v-tooltip>
+
                     
+                    <v-tooltip v-if="Pal" location="bottom" :text="$t('processDefinition.savePDF')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" @click="savePDF" icon variant="text" class="text-medium-emphasis" density="comfortable">
+                                <v-icon>mdi-file-pdf-box</v-icon>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+
                     <v-tooltip :text="$t('processDefinition.capture')">
                         <template v-slot:activator="{ props }">
                             <v-btn icon variant="text" class="ml-3" :size="24" @click="capture"
@@ -87,6 +96,8 @@
         <v-card-text style="width:100%; height:95%; padding:10px;">
             <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinitionData" :isViewMode="isViewMode"
+                :isPreviewPDFDialog="isPreviewPDFDialog"
+                @closePDFDialog="isPreviewPDFDialog = false"
                 v-on:openSubProcess="ele => openSubProcess(ele)">
             </ProcessDefinition>
             <div v-else-if="onLoad && !bpmn" style="height: 90%; text-align: center">
@@ -143,6 +154,7 @@ export default {
         defCnt: 0,
         isViewMode: true,
         executeDialog: false,
+        isPreviewPDFDialog: false,
     }),
     computed: {
         mode() {
@@ -250,6 +262,10 @@ export default {
         },
         capture() {
             this.$emit('capture')
+        },
+        savePDF() {
+            this.isPreviewPDFDialog = false;
+            this.isPreviewPDFDialog = true;
         },
         executeProcess() {
             this.executeDialog = true

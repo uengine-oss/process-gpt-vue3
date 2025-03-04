@@ -235,7 +235,8 @@
         "cancel": "취소",
         "simulate": "시뮬레이션",
         "preview": "미리보기",
-        "capture": "프로세스 이미지 다운로드"
+        "capture": "프로세스 이미지 다운로드",
+        "savePDF": "PDF 저장"
     },
     "ProcessVariable": {
         "name": "이름",
@@ -375,7 +376,16 @@
         "apiUrl": "API URL",
         "mapperDescriptionTitle": "데이터 매핑이란 다음 작업으로 변수들을 전달하는 기능",
         "mapperDescriptionSubTitle1": "1. Variables : 변수항목에 추가한 값들 \n2. Roles : 스윔 레인에 등록한 역할(이름) \n3. Instance : 다음 실행될 task 작업의 종료일 등을 저장하는 곳 \n4. Activities : task에 등록한 역할(이름) \n5. Arguments : 속성에 등록한 이름(값)",
-        "mapperDescriptionSubTitle2": "사용 방법 \n- 마우스를 누른 상태로 연결할 곳에 끌어다 놓으면 연결\n- 선을 클릭하면 삭제"
+        "mapperDescriptionSubTitle2": "사용 방법 \n- 마우스를 누른 상태로 연결할 곳에 끌어다 놓으면 연결\n- 선을 클릭하면 삭제",
+        "printDocument": "PDF로 내려받기",
+        "pdfPreview": "PDF 미리보기"
+    },
+    "PDFPreviewer": {
+        "saveDocument": "PDF 저장",
+        "close": "닫기",
+        "title": "PDF 저장 미리보기",
+        "splitBPMN": "분할",
+        "savingPDF": "PDF 저장중..."
     },
     "EscalationEventDefinitionPanel": {
         "expression": "이벤트 키"
@@ -547,7 +557,9 @@
         "return": "Return 값을 저장 할 변수",
         "methodTypeDescriptionTitle": "API 요청을 보낼 때 사용할 메서드(GET, POST, PUT, PATCH)와 요청을 처리할 서버의 엔드포인트 URL을 설정",
         "methodTypeDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n",
-        "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n위 작성된 내용을 저장할 변수를 선택합니다."
+        "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n위 작성된 내용을 저장할 변수를 선택합니다.",
+        "message": "이메일 전송",
+        "send": "Rest API 전송"
     },
     "ScriptTaskPanel" : {
         "return": "Return 값을 저장 할 변수",
@@ -648,7 +660,8 @@
         "laneToTheRight": "오른쪽에 레인 추가",
         "laneDivideTwo": "두 개의 레인으로 나누기",
         "laneDivideThree": "세 개의 레인으로 나누기",
-        "connectionMulti": "메시지 연결"
+        "connectionMulti": "메시지 연결",
+        "phase": "페이즈 추가"
     },
     "CustomReplaceElement": {
         "replace-with-call-activity": "호출 활동으로 변경",
@@ -712,7 +725,8 @@
         "replace-with-non-interrupting-signal-boundary": "신호 경계 이벤트 (비중단)로 변경",
         "replace-with-non-interrupting-timer-boundary": "타이머 경계 이벤트 (비중단)로 변경",
         "replace-with-signal-boundary": "신호 경계 이벤트로 변경",
-        "replace-with-timer-boundary": "타이머 경계 이벤트로 변경"
+        "replace-with-timer-boundary": "타이머 경계 이벤트로 변경",
+        "replace-with-expanded-pool": "확장된 풀로 변경"
     },
     "WorkItem": {
         "progress": "진행 상황",
@@ -771,6 +785,9 @@
     },
     "DryRunProcess": {
         "notFound": "워크아이템을 찾을 수 없습니다."
+    },
+    "CompensateEventDefinitionPanel": {
+        "selectTask": "보상 작업 선택"
     },
     "PALUserTaskPanel": {
         "insertDescription": "태스크 설명을 넣어주세요"

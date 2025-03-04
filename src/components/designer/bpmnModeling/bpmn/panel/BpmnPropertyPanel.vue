@@ -1,5 +1,5 @@
 <template>
-    <div style="height: calc(100vh - 155px)">
+    <div id="property-panel" style="height: calc(100vh - 155px)">
         <v-row class="ma-0 pa-4 pb-0">
             <v-card-title v-if="isViewMode" class="pa-0">{{ name }}</v-card-title>
             <v-text-field v-else v-model="name" :label="$t('BpmnPropertyPanel.name')" 
@@ -11,13 +11,12 @@
                 <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
             </v-btn>
         </v-row>
-        <v-card-text class="delete-input-details pa-4 pt-0" style="overflow: auto; width: 700px; height:calc(100% - 60px);">
+        <v-card-text class="delete-input-details pa-4 pt-0" style="overflow: auto; width: 700px; height:calc(100% - 80px);">
             <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="mt-4">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
                 <div class="mb-3">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
             </div>
             <component
-                style="height: 100%"
                 :is="panelName"
                 :isViewMode="isViewMode"
                 :isPreviewMode="isPreviewMode"
@@ -35,12 +34,26 @@
                 :processDefinition="processDefinition"
                 @addUengineVariable="(val) => $emit('addUengineVariable', val)"
             ></component>
+            <v-dialog v-if="isViewMode" v-model="printDialog" max-width="800px">
+                <template v-slot:activator="{ on, attrs }">
+                    <v-btn block color="primary" class="panel-download-btn" v-bind="attrs" v-on="on" @click="printDocument">
+                        {{ $t('BpmnPropertyPanel.printDocument') }}
+                    </v-btn>
+                </template>
+                <v-card>
+                    <v-card-title class="headline">{{ $t('BpmnPropertyPanel.pdfPreview') }}</v-card-title>
+                    <v-card-text >
+                        <PDFPreviewer :element="html" @closeDialog="printDialog = false" :name="name" />
+                    </v-card-text>
+                </v-card>
+            </v-dialog>
         </v-card-text>
     </div>
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import ValidationField from '@/components/designer/bpmnModeling/bpmn/panel/ValidationField.vue';
+import PDFPreviewer from '@/components/PDFPreviewer.vue';
 
 export default {
     name: 'bpmn-property-panel',
@@ -83,7 +96,8 @@ export default {
         // })
     },
     components: {
-        ValidationField
+        ValidationField,
+        PDFPreviewer
     },
     data() {
         return {
@@ -114,7 +128,9 @@ export default {
             editParam: false,
             paramKey: '',
             paramValue: '',
-            role: {}
+            role: {},
+            printDialog: false,
+            html: ''
         };
     },
     async mounted() {
@@ -140,8 +156,10 @@ export default {
             if(type.indexOf('task') > -1 && this.isPALMode) {
                 type = 'pal-user-task';
             }
-            if (type == 'user-task' && this.isGPTMode) {
-                type = 'gpt-user-task';
+            if (this.isGPTMode) {
+                if(type == 'user-task' || type == 'script-task') {
+                    type = 'gpt-' + type;
+                }
             }
             if(type.indexOf('gateway') > -1) {
                 type = 'gateway';
@@ -169,6 +187,16 @@ export default {
     },
     watch: {},
     methods: {
+        printDocument() {
+            var me = this;
+            me.html = me.saveHTML();
+            me.printDialog = true;
+        },
+        saveHTML() {
+            const panelElement = document.querySelector("#property-panel");
+            
+            return panelElement;
+        },
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {
                 obj[key] = defaultValue;

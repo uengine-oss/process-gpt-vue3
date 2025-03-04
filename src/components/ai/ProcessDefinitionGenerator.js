@@ -188,7 +188,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "componentType" :"Activity",
                   "id": "String-based unique id of the activity not including space",//id는 영어로 써야됨
                   "name": "activity name",
-                  "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
+                  "type": "UserActivity" | "EmailActivity" | "ScriptActivity",
                   "source": "components id", 반드시 존재해야함
                   "description": "description of activity",
                   "instruction": "instruction to user",
@@ -196,7 +196,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "inputData": ["name of data for input"],
                   "outputData": ["name of data for output"],
                   "checkpoints":["checkpoint 1", "checkpoint 2"],
-                  "duration": "5"
+                  "duration": "5",
+                  "pythonCode": "python code" // 스크립트 업무의 경우 스크립트 코드를 리턴
                  },
                  {
                   "componentType" :"Event",
@@ -265,7 +266,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator{
                   "componentType" :"Activity",
                   "id": "String-based unique id of the activity not including space",//id는 영어로 써야됨
                   "name": "activity name",
-                  "type": "UserActivity" | "EMailActivity" | "ScriptActivity",
+                  "type": "UserActivity" | "EmailActivity" | "ScriptActivity",
                   "source": "components id", 반드시 존재해야함
                   "description": "description of activity",
                   "instruction": "instruction to user",

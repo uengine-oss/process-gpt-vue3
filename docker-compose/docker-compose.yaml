@@ -10,7 +10,7 @@ services:
       - VITE_SUPABASE_KEY=${SERVICE_ROLE_KEY}
     
   execution:
-    image: ghcr.io/uengine-oss/process-gpt-execution:v0.3.5
+    image: ghcr.io/uengine-oss/process-gpt-execution:v0.3.6
     ports:
       - "8000:8000"
     environment:

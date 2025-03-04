@@ -147,8 +147,10 @@ export default {
                                 parameters: parameters || [],
                                 variableForHtmlFormContext: variableForHtmlFormContext || {},
                                 tool: startActivity.tool || "",
+                                type: startActivity.type || "",
                                 instruction: startActivity.instruction ? startActivity.instruction : "",
-                                checkpoints: startActivity.checkpoints ? startActivity.checkpoints : []
+                                checkpoints: startActivity.checkpoints ? startActivity.checkpoints : [],
+                                pythonCode: startActivity.pythonCode ? startActivity.pythonCode : ""
                             },
                             parameterValues: parameterValues || {}
                         }
