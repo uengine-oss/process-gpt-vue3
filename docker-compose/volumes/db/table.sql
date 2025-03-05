@@ -1040,9 +1040,11 @@ declare
     v_proc_inst_name text;
 begin
     if (TG_OP = 'INSERT') then
-        select proc_inst_name into v_proc_inst_name from bpm_proc_inst where proc_inst_id = NEW.proc_inst_id;
+        select proc_inst_name, tenant_id into v_proc_inst_name 
+        from bpm_proc_inst 
+        where proc_inst_id = NEW.proc_inst_id;
         
-        insert into notifications (id, user_id, title, type, description, is_checked, time_stamp, url)
+        insert into notifications (id, user_id, title, type, description, is_checked, time_stamp, tenant_id, url)
         values (
             gen_random_uuid(),
             NEW.user_id,
@@ -1051,6 +1053,7 @@ begin
             coalesce(v_proc_inst_name, ''),
             case when NEW.status = 'DONE' then true else false end,
             now(),
+            NEW.tenant_id,
             '/todolist/' || NEW.id
         )
         on conflict (id) do update
@@ -1061,6 +1064,7 @@ begin
             description = EXCLUDED.description,
             is_checked = EXCLUDED.is_checked,
             time_stamp = EXCLUDED.time_stamp,
+            tenant_id = EXCLUDED.tenant_id,
             url = EXCLUDED.url;
     end if;
     return null;

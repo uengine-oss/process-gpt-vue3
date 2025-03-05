@@ -629,7 +629,7 @@ export default {
             if (this.loadFormId.startsWith('/')) {
                 this.loadFormId = this.loadFormId.substring(1);
             } 
-            this.isLoadedForm = (this.loadFormId && this.loadFormId != 'chat')
+            this.isLoadedForm = (this.loadFormId && this.loadFormId != 'chat' && this.loadFormId != 'definition-map')
 
             this.isAIUpdated = false;
             this.messages = [];
