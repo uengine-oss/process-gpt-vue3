@@ -133,11 +133,11 @@ export default {
             },
             deep: true
         },
-        diagramXML(val) {
-            if (this.mode == 'ProcessGPT') {
-                this.bpmnViewer.importXML(val);
-            }
-        },
+        // diagramXML(val) {
+        //     if (this.mode == 'ProcessGPT') {
+        //         this.bpmnViewer.importXML(val);
+        //     }
+        // },
         isPreviewPDFDialog(val) {
             if(!val) {
                 this.$emit('closePDFDialog');
@@ -183,7 +183,7 @@ export default {
                     }
                 });
             }
-            self.$emit('changeElement');
+            self.$emit('changeElement', self.bpmnXML);
         },
         setDiagramEvent() {
             var self = this;

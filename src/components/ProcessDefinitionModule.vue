@@ -24,7 +24,14 @@ export default {
         isChanged: false,
         generateFormTask: null,
     }),
-    computed: {},
+    computed: {
+        lastPath() {
+            if (this.$route.params && this.$route.params.pathMatch && this.$route.params.pathMatch.length > 0) {
+                return this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
+            }
+            return null;
+        }
+    },
     mounted() {},
     beforeUnmount() {},
     async created() {},
@@ -133,11 +140,14 @@ export default {
                 activity_id: activityId
             };
             const formId = `${options.proc_def_id}_${options.activity_id}_form`;
-            const lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
-            if (lastPath == 'chat') {
+            if (this.lastPath) {
+                if (this.lastPath == 'chat') {
+                    localStorage.setItem(formId, html);
+                } else {
+                    await backend.putRawDefinition(html, formId, options);
+                }
+            } else if (this.lastPath == '/definition-map') {
                 localStorage.setItem(formId, html);
-            } else {
-                await backend.putRawDefinition(html, formId, options);
             }
             return html;
         },
@@ -2045,7 +2055,28 @@ export default {
                         ? result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
                         : {};
                 let data = [];
-                for (let process of processes) {
+                
+
+                function processSubProcess(subProcessTmp, processId) {
+                    if (subProcessTmp instanceof Array) {
+                        return subProcessTmp.map((obj) => ({ ...obj, type: 'subProcess', process: processId }));
+                    } else {
+                        return [{ ...subProcessTmp, type: 'subProcess', process: processId }];
+                    }
+                }
+
+                function processBpmnProcess(process) {
+                    let events = [];
+                    let activities = [];
+                    let gateways = [];
+                    let lanes = [];
+                    let sequenceFlows = [];
+                    let data = [];
+                    let instanceNamePattern = null;
+                    let definitionName = null;
+                    let version = null;
+                    let shortDescription = null;
+
                     Object.keys(process).forEach((key) => {
                         if (key.includes('Event')) {
                             let eventTmp = process[key];
@@ -2054,7 +2085,7 @@ export default {
                             } else {
                                 eventTmp = { ...eventTmp, type: key.replace('bpmn:', ''), process: process.id };
                             }
-                            event = event.concat(eventTmp);
+                            events = events.concat(eventTmp);
                         } else if (key.includes('Task')) {
                             let activityTmp = process[key];
                             if (activityTmp instanceof Array) {
@@ -2071,26 +2102,46 @@ export default {
                                 gatewayTmp = { ...gatewayTmp, type: key.replace('bpmn:', ''), process: process.id };
                             }
                             gateways = gateways.concat(gatewayTmp);
+                        } else if (key.includes('subProcess')) {
+                            let subProcessTmp = process[key];
+                            const subProcesses = processSubProcess(subProcessTmp, process.id);
+                            subProcesses.forEach(subProcess => {
+                                const subProcessResult = processBpmnProcess(subProcess);
+                                events = events.concat(subProcessResult.events);
+                                activities = activities.concat(subProcessResult.activities);
+                                gateways = gateways.concat(subProcessResult.gateways);
+                                lanes = lanes.concat(subProcessResult.lanes);
+                                sequenceFlows = sequenceFlows.concat(subProcessResult.sequenceFlows);
+                                data = data.concat(subProcessResult.data);
+                            });
                         }
                     });
 
                     let lanesTmp = ensureArray(process['bpmn:laneSet'] ? process['bpmn:laneSet']['bpmn:lane'] : []);
                     lanesTmp = lanesTmp.map((obj) => ({ ...obj, process: process.id }));
                     lanes = lanes.concat(lanesTmp);
+
                     let sequenceFlowsTmp = ensureArray(process['bpmn:sequenceFlow'] || []);
                     sequenceFlows = sequenceFlows.concat(sequenceFlowsTmp);
-                    let dataTmp =
-                        process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
-                            ? (Array.isArray(process['bpmn:extensionElements']['uengine:properties']['uengine:variable'])
-                                ? process['bpmn:extensionElements']['uengine:properties']['uengine:variable']
-                                : [process['bpmn:extensionElements']['uengine:properties']['uengine:variable']]
-                            ).map((varData) => ({
-                                name: varData.name,
-                                description: varData.description ? varData.description : varData.name + ' description',
-                                type: varData.type
-                            }))
-                            : [];
+                    
+                    function extractVariables(process) {
+                        const properties = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'];
+                        if (!properties) return [];
+
+                        const variables = properties['uengine:variable'];
+                        if (!variables) return [];
+
+                        const variableArray = Array.isArray(variables) ? variables : [variables];
+                        return variableArray.map((varData) => ({
+                            name: varData.name,
+                            description: varData.description ? varData.description : varData.name + ' description',
+                            type: varData.type
+                        }));
+                    }
+
+                    let dataTmp = extractVariables(process);
                     data = data.concat(dataTmp);
+
                     let processJson = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? JSON.parse(process['bpmn:extensionElements']['uengine:properties']['uengine:json']) : null;
                     if(processJson){
                         instanceNamePattern = processJson.instanceNamePattern ? processJson.instanceNamePattern : null;
@@ -2098,6 +2149,29 @@ export default {
                         version = processJson.version ? processJson.version : null;
                         shortDescription = processJson.shortDescription ? processJson.shortDescription : null;         
                     }
+
+                    return {
+                        events,
+                        activities,
+                        gateways,
+                        lanes,
+                        sequenceFlows,
+                        data,
+                        instanceNamePattern,
+                        definitionName,
+                        version,
+                        shortDescription
+                    };
+                }
+
+                for (let process of processes) {
+                    const result = processBpmnProcess(process);
+                    event = event.concat(result.events);
+                    lanes = lanes.concat(result.lanes);
+                    activities = activities.concat(result.activities);
+                    sequenceFlows = sequenceFlows.concat(result.sequenceFlows);
+                    gateways = gateways.concat(result.gateways);
+                    data = data.concat(result.data);
                 }
 
                 const jsonData = {
@@ -2323,8 +2397,7 @@ export default {
                         if (!me.processDefinition.processDefinitionName) me.processDefinition.processDefinitionName = null;
 
                         // 최초 저장 시 폼 정보 저장
-                        const lastPath = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1];
-                        if (lastPath == 'chat') {
+                        if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
                             if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
                                 me.processDefinition.data = [];
                                 me.processDefinition.activities.forEach(async (activity) => {
