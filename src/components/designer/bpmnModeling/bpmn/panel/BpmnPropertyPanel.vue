@@ -1,5 +1,5 @@
 <template>
-    <div style="height: calc(100vh - 155px)">
+    <div id="property-panel" style="height: calc(100vh - 155px)">
         <v-row class="ma-0 pa-4 pb-0">
             <v-card-title v-if="isViewMode" class="pa-0">{{ name }}</v-card-title>
             <v-text-field v-else v-model="name" :label="$t('BpmnPropertyPanel.name')" 
@@ -34,12 +34,26 @@
                 :processDefinition="processDefinition"
                 @addUengineVariable="(val) => $emit('addUengineVariable', val)"
             ></component>
+            <v-dialog v-if="isViewMode" v-model="printDialog" max-width="800px">
+                <template v-slot:activator="{ on, attrs }">
+                    <v-btn block color="primary" class="panel-download-btn" v-bind="attrs" v-on="on" @click="printDocument">
+                        {{ $t('BpmnPropertyPanel.printDocument') }}
+                    </v-btn>
+                </template>
+                <v-card>
+                    <v-card-title class="headline">{{ $t('BpmnPropertyPanel.pdfPreview') }}</v-card-title>
+                    <v-card-text >
+                        <PDFPreviewer :element="html" @closeDialog="printDialog = false" :name="name" />
+                    </v-card-text>
+                </v-card>
+            </v-dialog>
         </v-card-text>
     </div>
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import ValidationField from '@/components/designer/bpmnModeling/bpmn/panel/ValidationField.vue';
+import PDFPreviewer from '@/components/PDFPreviewer.vue';
 
 export default {
     name: 'bpmn-property-panel',
@@ -82,7 +96,8 @@ export default {
         // })
     },
     components: {
-        ValidationField
+        ValidationField,
+        PDFPreviewer
     },
     data() {
         return {
@@ -113,7 +128,9 @@ export default {
             editParam: false,
             paramKey: '',
             paramValue: '',
-            role: {}
+            role: {},
+            printDialog: false,
+            html: ''
         };
     },
     async mounted() {
@@ -170,6 +187,16 @@ export default {
     },
     watch: {},
     methods: {
+        printDocument() {
+            var me = this;
+            me.html = me.saveHTML();
+            me.printDialog = true;
+        },
+        saveHTML() {
+            const panelElement = document.querySelector("#property-panel");
+            
+            return panelElement;
+        },
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {
                 obj[key] = defaultValue;

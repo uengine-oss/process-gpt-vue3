@@ -484,6 +484,21 @@ hr {
 .no-border .v-field__outline {
     display: none;
 }
+.instance-select-box {
+    border: none;
+    cursor: pointer;
+    color:white;
+    background-color: rgb(var(--v-theme-primary), 0.8) !important;
+    border-radius: 10px;
+    text-align: center;
+    padding: 4px;
+    font-size: 12px;
+    width: 96px;
+}
+
+.instance-select-box:focus {
+    background-color: #f5f5f5; /* 포커스 시 색상 */
+}
 
 @media only screen and (max-width:1450px) {
     .vue-bpmn-diagram-container .djs-palette {

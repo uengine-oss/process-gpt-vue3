@@ -4,6 +4,7 @@
             <div v-if="bpmn" style="height: 100%">
                 <BpmnUengine
                     ref="bpmnVue"
+                    :instanceId="$route.params.instId"
                     :key= "updatedDefKey"
                     :bpmn="bpmn"
                     :options="options"

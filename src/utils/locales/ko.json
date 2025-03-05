@@ -235,7 +235,8 @@
         "cancel": "취소",
         "simulate": "시뮬레이션",
         "preview": "미리보기",
-        "capture": "프로세스 이미지 다운로드"
+        "capture": "프로세스 이미지 다운로드",
+        "savePDF": "PDF 저장"
     },
     "ProcessVariable": {
         "name": "이름",
@@ -375,7 +376,16 @@
         "apiUrl": "API URL",
         "mapperDescriptionTitle": "데이터 매핑이란 다음 작업으로 변수들을 전달하는 기능",
         "mapperDescriptionSubTitle1": "1. Variables : 변수항목에 추가한 값들 \n2. Roles : 스윔 레인에 등록한 역할(이름) \n3. Instance : 다음 실행될 task 작업의 종료일 등을 저장하는 곳 \n4. Activities : task에 등록한 역할(이름) \n5. Arguments : 속성에 등록한 이름(값)",
-        "mapperDescriptionSubTitle2": "사용 방법 \n- 마우스를 누른 상태로 연결할 곳에 끌어다 놓으면 연결\n- 선을 클릭하면 삭제"
+        "mapperDescriptionSubTitle2": "사용 방법 \n- 마우스를 누른 상태로 연결할 곳에 끌어다 놓으면 연결\n- 선을 클릭하면 삭제",
+        "printDocument": "PDF로 내려받기",
+        "pdfPreview": "PDF 미리보기"
+    },
+    "PDFPreviewer": {
+        "saveDocument": "PDF 저장",
+        "close": "닫기",
+        "title": "PDF 저장 미리보기",
+        "splitBPMN": "분할",
+        "savingPDF": "PDF 저장중..."
     },
     "EscalationEventDefinitionPanel": {
         "expression": "이벤트 키"
@@ -715,7 +725,8 @@
         "replace-with-non-interrupting-signal-boundary": "신호 경계 이벤트 (비중단)로 변경",
         "replace-with-non-interrupting-timer-boundary": "타이머 경계 이벤트 (비중단)로 변경",
         "replace-with-signal-boundary": "신호 경계 이벤트로 변경",
-        "replace-with-timer-boundary": "타이머 경계 이벤트로 변경"
+        "replace-with-timer-boundary": "타이머 경계 이벤트로 변경",
+        "replace-with-expanded-pool": "확장된 풀로 변경"
     },
     "WorkItem": {
         "progress": "진행 상황",

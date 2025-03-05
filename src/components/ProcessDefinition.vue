@@ -59,6 +59,8 @@
                         :isPreviewMode="isPreviewMode"
                         :currentActivities="currentActivities"
                         :generateFormTask="generateFormTask"
+                        :isPreviewPDFDialog="isPreviewPDFDialog"
+                        @closePDFDialog="closePDFDialog"
                         v-on:error="handleError"
                         v-on:shown="handleShown"
                         v-on:openDefinition="(ele) => openSubProcess(ele)"
@@ -305,6 +307,7 @@ export default {
         isXmlMode: Boolean,
         isAdmin: Boolean,
         generateFormTask: Object,
+        isPreviewPDFDialog: Boolean,
     },
     data: () => ({
         panel: false,
@@ -1004,6 +1007,9 @@ export default {
             } else if (element.$type.includes('Lane')) {
                 // Role Parser
             }
+        },
+        closePDFDialog() {
+            this.$emit('closePDFDialog');
         }
     }
 };
