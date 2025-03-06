@@ -3,6 +3,17 @@
         <v-row class="ma-0 pa-0">
             <v-spacer></v-spacer>
             <div v-if="enableEdit" class="proc-menu-btn-box">
+                <v-tooltip text="권한 설정" v-if="isPal">
+                    <template v-slot:activator="{ props }">
+                        <v-btn @click.stop="setPermission"
+                            icon v-bind="props"
+                            density="compact"
+                            size="small"
+                        >
+                            <Icons :icon="'user-lock'" :width="14" :height="14"  />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
                 <v-tooltip v-if="type == 'sub'" text="프로세스 편집">
                     <template v-slot:activator="{ props }">
                         <v-btn @click.stop="editProcess"
@@ -72,6 +83,9 @@ export default {
                 return "sub";
             }
         },
+        isPal() {
+            return window.$pal;
+        },
     },
     watch: {
     },
@@ -86,6 +100,9 @@ export default {
         },
         editProcess() {
             this.$emit("modeling");
+        },
+        setPermission() {
+            this.$emit("setPermission");
         },
     },
 }
