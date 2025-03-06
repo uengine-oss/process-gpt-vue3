@@ -148,6 +148,7 @@ export default {
             await this.getChatList('organization_chart_chat');
 
             this.userList = await this.storage.list("users");
+            this.chatRoomId = 'organization_chart_chat';
         },
         beforeSendMessage(newMessage) {
             this.sendMessage(newMessage);
@@ -184,59 +185,63 @@ export default {
             }
         },
         async afterGenerationFinished(response) {
-            let messageWriting = this.messages[this.messages.length - 1];
-            if (messageWriting.jsonContent) {
-                let unknown;
-                try {
-                    unknown = JSON.parse(messageWriting.jsonContent)
-                } catch(e) {
+            try {
+                let messageWriting = this.messages[this.messages.length - 1];
+                if (messageWriting.jsonContent) {
+                    let unknown;
                     try {
-                        unknown = partialParse(messageWriting.jsonContent);
+                        unknown = JSON.parse(messageWriting.jsonContent)
                     } catch(e) {
-                        console.log(e)
-                        return;
-                    }
-                }
-
-                if (unknown && unknown.modifications) {
-                    unknown.modifications.forEach(modification => {
-                        if (modification.action == "replace") {
-                            this.jsonPathReplace(this, modification.targetJsonPath, modification.value)
-                        } else if (modification.action == "add") {
-                            this.jsonPathAdd(this, modification.targetJsonPath, modification.value)
-                        } else if (modification.action == "delete") {
-                            this.jsonPathDelete(this, modification.targetJsonPath)
+                        try {
+                            unknown = partialParse(messageWriting.jsonContent);
+                        } catch(e) {
+                            console.log(e)
+                            return;
                         }
-                    });
-                }
-
-                if (unknown && unknown.newUsers) {
-                    this.newUserList = unknown.newUsers;
-                    this.userDialog = true;
-                } else if (unknown && unknown.deleteUsers) {
-                    this.deleteUser(unknown.deleteUsers);
-                } else {
-                    var putObj =  {
-                        key: 'organization',
-                        value: {
-                            chart: this.organizationChart,
-                        },
-                    };
-                    this.drawChart(this.organizationChart);
-                    if (this.organizationChartId) {
-                        putObj.uuid = this.organizationChartId;
                     }
-                    await this.putObject("configuration", putObj);
-                }
-            }
 
-            const newMessage = this.messages[this.messages.length - 1];
-            var putObj =  {
-                id: 'organization_chart_chat',
-                uuid: this.uuid(),
-                messages: newMessage,
-            };
-            this.putObject("chats", putObj);
+                    if (unknown && unknown.modifications) {
+                        unknown.modifications.forEach(modification => {
+                            if (modification.action == "replace") {
+                                this.jsonPathReplace(this, modification.targetJsonPath, modification.value)
+                            } else if (modification.action == "add") {
+                                this.jsonPathAdd(this, modification.targetJsonPath, modification.value)
+                            } else if (modification.action == "delete") {
+                                this.jsonPathDelete(this, modification.targetJsonPath)
+                            }
+                        });
+                    }
+
+                    if (unknown && unknown.newUsers) {
+                        this.newUserList = unknown.newUsers;
+                        this.userDialog = true;
+                    } else if (unknown && unknown.deleteUsers) {
+                        this.deleteUser(unknown.deleteUsers);
+                    } else {
+                        var putObj =  {
+                            key: 'organization',
+                            value: {
+                                chart: this.organizationChart,
+                            },
+                        };
+                        this.drawChart(this.organizationChart);
+                        if (this.organizationChartId) {
+                            putObj.uuid = this.organizationChartId;
+                        }
+                        await this.putObject("configuration", putObj);
+                    }
+                }
+
+                const newMessage = this.messages[this.messages.length - 1];
+                var putObj =  {
+                    id: 'organization_chart_chat',
+                    uuid: this.uuid(),
+                    messages: newMessage,
+                };
+                this.putObject("chats", putObj);
+            } catch(e) {
+                console.log(e);
+            }
         },
         afterModelStopped(response) {
             const newMessage = this.messages[this.messages.length - 1];
