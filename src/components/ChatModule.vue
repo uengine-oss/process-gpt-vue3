@@ -697,24 +697,36 @@ export default {
             this.afterModelStopped(response);
         },
 
-        onError(error) {
+        async onError(error) {
             if (error.code === 'invalid_api_key') {
                 if (confirm('openAI API Key 입력이 필요합니다.\n\ngpt-4o 모델을 사용가능한 API key 를 입력해야합니다.\n\n확인을 클릭하시면 API key 를 확인할 수 있는 openAI 공식 홈페이지가 열립니다.')) {
                     window.open('https://platform.openai.com/settings/profile?tab=api-keys', '_blank');
-                } 
-                var apiKey = prompt('openAI API Key 를 입력하세요.\n\ngpt-4o 모델을 사용가능한 API key를 입력해야합니다.');
-                if(apiKey != '') {
-                    this.openaiToken = apiKey;
+                }
+
+                let apiKey = null;
+                do {
+                    apiKey = prompt('openAI API Key 를 입력하세요.\n\ngpt-4o 모델을 사용가능한 API key를 입력해야합니다.');
+                    if (apiKey === null) {
+                        // 사용자가 취소를 누른 경우
+                        return;
+                    }
+                } while (!apiKey || apiKey.trim() === '');
+
+                if (apiKey !== null && apiKey !== '') {
                     window.localStorage.setItem('openAIToken', apiKey);
-                    if(window.$mode == 'ProcessGPT') {
+                    if (window.$mode == 'ProcessGPT') {
                         let token = {
                             "key": 'openai_key',
                             "value": {
                                 "key": apiKey
                             }
-                        }
-                        this.putObject('configuration', token);
+                        };
+                        await this.putObject('configuration', token);
                     }
+                }
+
+                this.openaiToken = await this.getToken();
+                if (this.openaiToken && this.openaiToken != '' && this.openaiToken != null) {
                     this.startGenerate();
                 }
             } else {

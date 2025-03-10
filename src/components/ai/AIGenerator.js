@@ -153,6 +153,9 @@ export default class AIGenerator {
         if (this.returnCache(messages)) return;
 
         me.openaiToken = me.client.openaiToken;
+        if (!me.openaiToken) {
+            me.openaiToken = await me.client.getToken();
+        }
         let responseCnt = 0;
 
         me.gptResponseId = null;
