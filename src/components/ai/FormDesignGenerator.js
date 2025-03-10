@@ -165,7 +165,7 @@ export default class FormDesignGenerator extends AIGenerator{
     createMessages() {
       let messages = super.createMessages();
 
-      if(this.model.includes("vision"))
+      if(this._isIncludeImage(messages))
       {
         const textMessage = messages[messages.length - 1].content.filter((message) => message.type === "text")[0]
         if(textMessage.text.length <= 0) textMessage.text = "전달한 이미지를 활용해서 폼을 생성해주세요."
@@ -190,4 +190,9 @@ export default class FormDesignGenerator extends AIGenerator{
       }
     }
 
+    _isIncludeImage(messages) {
+      const lastMessage = messages[messages.length - 1]
+      if(typeof lastMessage.content === "string") return false
+      return lastMessage.content.filter((message) => message.type.includes("image")).length > 0
+    }
 }
