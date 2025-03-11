@@ -11,9 +11,16 @@ export default {
     },
     data: () => ({
         processDialogStatus: false,
+        permissionDialogStatus: false,
         hover: false,
     }),
     methods: {
+        closePermissionDialogStatus(newStatus) {
+            this.permissionDialogStatus = newStatus;
+        },
+        openSetPermissionDialog() {
+            this.permissionDialogStatus = true;
+        },
         editProcess(process) {
             this.value.id = process.id;
             this.value.label = process.label
@@ -47,6 +54,7 @@ export default {
                 this.$router.push(`/definition-map/${type}/${encodedPath}`)
             }
         },
+        
     },
 }
 </script>

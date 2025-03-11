@@ -328,11 +328,6 @@ class ProcessGPTBackend implements Backend {
                 instance.defId = instance.proc_def_id;
                 instance.instanceId = instanceId;
                 instance.name = instance.proc_inst_name;
-                if (instance.current_activity_ids && instance.current_activity_ids.length > 0) {
-                    instance.status = 'RUNNING'
-                } else {
-                    instance.status = 'COMPLETED'
-                }
             }
             return instance;
         } catch (e) {

@@ -5,18 +5,19 @@
         >
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
-                    <v-col :cols="enableEdit ? '8' : '12'" class="ma-0 pa-0 text-left">
+                    <v-col :cols="enableEdit ? '6' : '12'" class="ma-0 pa-0 text-left">
                         <div>{{ value.name }}</div>
                     </v-col>
-                    <v-col :cols="enableEdit ? '4' : ''" class="ma-0 pa-0">
+                    <v-col :cols="enableEdit ? '6' : ''" class="ma-0 pa-0">
                         <div class="ml-auto add-major-process">
                             <ProcessMenu
-                                :size="16"
+                                :size="14"
                                 :type="type"
                                 :process="value"
                                 :enableEdit="enableEdit"
                                 @delete="deleteProcess"
                                 @editProcessdialog="editProcessdialog"
+                                @setPermission="openSetPermissionDialog"
                             />
                         </div>
                     </v-col>

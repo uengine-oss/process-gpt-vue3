@@ -108,6 +108,12 @@ export default {
     computed: {
         isPal() {
             return window.$pal;
+        },
+        lastPath() {
+            if (this.$route.params && this.$route.params.pathMatch && this.$route.params.pathMatch.length > 0) {
+                return this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
+            }
+            return null;
         }
     },
     watch: {
@@ -143,11 +149,14 @@ export default {
                     activity_id: me.element.id
                 }
             }
-            const lastPath = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1];
-            if (lastPath == 'chat') {
+            if (me.lastPath) {
+                if (me.lastPath == 'chat') {
+                    me.tempFormHtml = localStorage.getItem(me.formId);
+                } else {
+                    me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
+                }
+            } else if (me.lastPath == '/definition-map') {
                 me.tempFormHtml = localStorage.getItem(me.formId);
-            } else {
-                me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
             }
             
             me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
@@ -177,11 +186,14 @@ export default {
 
             if (me.tempFormHtml && me.tempFormHtml != '') {
                 if (options && options.proc_def_id && options.activity_id) {
-                    const lastPath = me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1];
-                    if (lastPath == 'chat') {
+                    if (me.lastPath) {
+                        if (me.lastPath == 'chat') {
+                            localStorage.setItem(me.formId, me.tempFormHtml);
+                        } else {
+                            await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
+                        }
+                    } else if (me.lastPath == '/definition-map') {
                         localStorage.setItem(me.formId, me.tempFormHtml);
-                    } else {
-                        await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
                     }
                 }
             }

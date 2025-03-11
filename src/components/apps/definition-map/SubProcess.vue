@@ -19,6 +19,7 @@
                         @delete="deleteProcess"
                         @editProcessdialog="editProcessdialog"
                         @modeling="editProcessModel"
+                        @setPermission="openSetPermissionDialog"
                     />
                 </div>
                 </v-col>

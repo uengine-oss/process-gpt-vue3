@@ -17,6 +17,7 @@
                                 :enableEdit="enableEdit"
                                 @delete="deleteProcess"
                                 @editProcessdialog="editProcessdialog"
+                                @setPermission="openSetPermissionDialog"
                             />
                         </div>
                     </v-col>
@@ -77,6 +78,10 @@
             @closeProcessDialog="closeProcessDialog"
             style="margin-top:20px !important;"
         />
+        <set-permission-dialog
+            :permissionDialogStatus="permissionDialogStatus"
+            @close:permissionDialogStatus="closePermissionDialogStatus"
+        />
     </div>
 </template>
 
@@ -85,12 +90,14 @@ import ProcessMenu from './ProcessMenu.vue';
 import MajorProcess from './MajorProcess.vue';
 import ProcessDialog from './ProcessDialog.vue';
 import BaseProcess from './BaseProcess.vue'
+import setPermissionDialog from './setPermissionDialog.vue'
 
 export default {
     components: {
         ProcessMenu,
         MajorProcess,
-        ProcessDialog
+        ProcessDialog,
+        setPermissionDialog
     },
     mixins: [BaseProcess],
     props: {
