@@ -266,6 +266,7 @@ export default {
 
                     return null;
                 };
+                
 
                 me.replaceToExpandableNode = function (nodeKey) {
                     if (nodeKey.indexOf(`[${key}].`) != -1) {
