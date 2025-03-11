@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div :key="updateKey">
         <draggable class="list-group cursor-pointer" :list="condition" :animation="0" ghost-class="ghost-card" group="condition">
             <template v-for="(cond, idx) in filteredCondition" :key="idx">
                 <div v-if="checkCondition(cond)" class="d-flex condition-box mt-2">
@@ -34,7 +34,8 @@
                             density="comfortable"
                             class="ml-1"
                         >
-                            <DotsVerticalIcon />
+                            <v-icon>mdi-file-tree</v-icon>
+                            <!-- <DotsVerticalIcon /> -->
                             <v-menu activator="parent">
                                 <v-list>
                                     <v-list-item v-for="menu in menuList" :key="menu" @click="changeCondition(cond, menu)">
@@ -43,11 +44,11 @@
                                 </v-list>
                             </v-menu>
                         </v-btn>
-                        <v-btn v-if="idx == filteredCondition.length - 1 && filteredCondition.length == 1" icon variant="text" @click="addCondition(idx)"
+                        <v-btn v-if="showSubAddCondition()" icon variant="text" @click="addCondition(idx)"
                             density="comfortable"
                             class="ml-1"
                         >
-                            <v-icon>mdi-plus</v-icon>
+                            A <v-icon>mdi-plus</v-icon>
                         </v-btn>
                         <v-btn v-if="filteredCondition.length > 1" icon variant="text" @click="deleteCondition(cond, idx)"
                             density="comfortable"    
@@ -63,18 +64,18 @@
                             {{ getTypeShortName(cond._type) }}
                         </v-chip>
                        
-                        <v-btn icon variant="text" class="ml-auto" @click="addCondition(idx)"
+                        <v-btn v-if="showMainAddCondition(cond)" icon variant="text" class="ml-auto" @click="addCondition(idx)"
                                     density="comfortable"
                         >
-                            <v-icon>mdi-plus</v-icon>
+                            B <v-icon>mdi-plus</v-icon>
                         </v-btn>
-                        <v-btn icon variant="text" @click="deleteCondition(cond, idx)"
+                        <v-btn icon variant="text"  :class="showMainAddCondition(cond)? '': 'ml-auto'" @click="deleteCondition(cond, idx)"
                             density="comfortable"
                         >
                             <Icons :icon="'trash'" />
                         </v-btn>
                     </div>
-                    <ConditionField :value="cond.conditionsVt ? cond.conditionsVt : cond.condition" @update:value="(val) => updateChild(cond, val)" />
+                    <ConditionField :rootCond="cond" :value="cond.conditionsVt ? cond.conditionsVt : cond.condition" @update:value="(val) => updateChild(cond, val)" />
                 </div>
             </template>
         </draggable>
@@ -87,6 +88,7 @@ import { useBpmnStore } from '@/stores/bpmn';
 export default {
     name: 'ConditionField',
     props: {
+        rootCond: Object,
         value: Object
     },
     data() {
@@ -95,15 +97,17 @@ export default {
             varItems: [],
             conditionList: ['==', '!=', '>', '>=', '<', '<='],
             menuList: ['AND', 'OR', 'NOT'],
-            modeler: null
+            modeler: null,
+            updateKey: 0,
         };
     },
     watch: {
         condition: {
             deep: true,
             handler(val) {
-                // console.log(val);
+                // console.log('!!!', val);
                 this.$emit('update:value', val);
+                this.updateKey++; // update component
             }
         }
     },
@@ -145,6 +149,16 @@ export default {
         });
     },
     methods: {
+        showSubAddCondition(){
+            if(this.rootCond && this.rootCond._type.includes('Not')) return false;
+            if(!Array.isArray(this.condition) && this.condition._type.includes('Evaluate')) return true
+            return false
+        },
+        showMainAddCondition(conf){
+            if(conf._type == 'org.uengine.kernel.Not') return false;
+
+            return true;
+        },
         updateChild(item, val) {
             if(item._type == 'org.uengine.kernel.Not')
             item.condition = val
@@ -153,8 +167,27 @@ export default {
             if(item._type == 'org.uengine.kernel.And'){
                 item._type = 'org.uengine.kernel.Or';
             } else if(item._type == 'org.uengine.kernel.Or'){
-                item._type = 'org.uengine.kernel.Not';
+                // item._type = 'org.uengine.kernel.Not';
+                if(item.conditionsVt.length > 1) {
+                    // 조건이 여러개 일땐 NOT x -> AND 변경
+                    item._type = 'org.uengine.kernel.And'; 
+                } else {
+                    // 조건이 1개 일때만 
+                    item.condition = {
+                        _type: 'org.uengine.kernel.Evaluate',
+                        key: '',
+                        value: '',
+                        condition: ''
+                    }
+                    delete item.conditionsVt;
+                    item._type = 'org.uengine.kernel.Not';
+                }
             } else if(item._type == 'org.uengine.kernel.Not'){
+                if(!item.conditionsVt) {
+                    item.conditionsVt = [];
+                    item.conditionsVt.push(item.condition);
+                }
+                delete item.condition;
                 item._type = 'org.uengine.kernel.And';
             }
         },
@@ -169,8 +202,10 @@ export default {
             return 'grey';
         },
         changeCondition(item, type) {
+            if(!type) return;
+
             const child = JSON.parse(JSON.stringify(item));
-            if (type == 'AND') {
+            if ('AND'.toLowerCase() == type.toLowerCase()) {
                 item._type = 'org.uengine.kernel.And';
 
                 if(!item.conditionsVt) {
@@ -189,11 +224,14 @@ export default {
                 delete item.key;
                 delete item.value;
                 delete item.condition;
-            } else if (type == 'OR') {
+            } else if ('OR'.toLowerCase() == type.toLowerCase()) {
                 item._type = 'org.uengine.kernel.Or';
 
-                item.conditionsVt = [];
-                item.conditionsVt.push(child);
+                if(!item.conditionsVt) {
+                    item.conditionsVt = [];
+                    item.conditionsVt.push(child);
+                }
+
                 item.conditionsVt.push({
                     _type: 'org.uengine.kernel.Evaluate',
                     key: '',
@@ -203,7 +241,7 @@ export default {
                 delete item.key;
                 delete item.value;
                 delete item.condition;
-            } else if (type == 'NOT') {
+            } else if ('NOT'.toLowerCase() == type.toLowerCase()) {
                 item._type = 'org.uengine.kernel.Not';
                 delete item.key;
                 delete item.value;
@@ -246,7 +284,17 @@ export default {
                     this.condition.push(child);
                 }
             } else {
-                this.changeCondition(this.condition, 'AND');
+                let conf = this.getTypeShortName(this.condition._type)
+                conf = conf == 'Evaluate' ? 'AND' : conf;
+                this.changeCondition(this.condition, conf);
+
+                // if(this.condition && this.condition._type){
+                //     let conf = this.getTypeShortName(this.condition._type)
+                //     conf = conf == 'Evaluate' ? 'AND' : conf;
+                //     this.changeCondition(this.condition, conf);
+                // } else {
+                //     this.changeCondition(this.condition, 'AND');
+                // }
             }
         },
         checkCondition(item) {
