@@ -48,7 +48,7 @@
                             density="comfortable"
                             class="ml-1"
                         >
-                            A <v-icon>mdi-plus</v-icon>
+                            <v-icon>mdi-plus</v-icon>
                         </v-btn>
                         <v-btn v-if="filteredCondition.length > 1" icon variant="text" @click="deleteCondition(cond, idx)"
                             density="comfortable"    
@@ -67,7 +67,7 @@
                         <v-btn v-if="showMainAddCondition(cond)" icon variant="text" class="ml-auto" @click="addCondition(idx)"
                                     density="comfortable"
                         >
-                            B <v-icon>mdi-plus</v-icon>
+                            <v-icon>mdi-plus</v-icon>
                         </v-btn>
                         <v-btn icon variant="text"  :class="showMainAddCondition(cond)? '': 'ml-auto'" @click="deleteCondition(cond, idx)"
                             density="comfortable"
