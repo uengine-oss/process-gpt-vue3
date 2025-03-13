@@ -17,7 +17,7 @@
                                 :enableEdit="enableEdit"
                                 @delete="deleteProcess"
                                 @editProcessdialog="editProcessdialog"
-                                @setPermission="openSetPermissionDialog"
+                                @setPermission="openPermissionDialog(value)"
                             />
                         </div>
                     </v-col>

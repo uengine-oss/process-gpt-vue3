@@ -60,7 +60,7 @@ docker run -p 8080:8080 -e DB_URL=http://localhost:8000 -e DB_PW=eyJhbGciOiJIUzI
 - navigate to the supabase console:
 http://localhost:54323
 
-- find the configuration table and set the openai_key field as value set:
+- find the configuration table and set the OPENAI_API_KEY field as value set:
 ```
 {
   "key": "sk-..."

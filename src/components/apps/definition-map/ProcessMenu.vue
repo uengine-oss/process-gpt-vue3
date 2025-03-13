@@ -3,7 +3,7 @@
         <v-row class="ma-0 pa-0">
             <v-spacer></v-spacer>
             <div v-if="enableEdit" class="proc-menu-btn-box">
-                <v-tooltip text="권한 설정" v-if="isPal">
+                <v-tooltip text="권한 설정">
                     <template v-slot:activator="{ props }">
                         <v-btn @click.stop="setPermission"
                             icon v-bind="props"
@@ -102,7 +102,7 @@ export default {
             this.$emit("modeling");
         },
         setPermission() {
-            this.$emit("setPermission");
+            this.$emit("setPermission", this.process);
         },
     },
 }

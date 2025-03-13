@@ -818,7 +818,7 @@ class UEngineBackend implements Backend {
     }
 
     async getOpenAIToken(){
-        return window.localStorage.getItem('openAIToken') || null;
+        return window.localStorage.getItem('OPENAI_API_KEY') || null;
     }
 }
 

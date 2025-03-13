@@ -41,6 +41,13 @@
                 <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess"/>
             </v-col>
         </v-row>
+        <v-dialog v-model="permissionDialogStatus" max-width="500" persistent>
+            <permission-dialog
+                :processMap="value"
+                :procDef="permissionProcess"
+                @close:permissionDialog="closePermissionDialog"
+            />
+        </v-dialog>
     </div>
 </template>
 
@@ -48,13 +55,14 @@
 import MegaProcess from './MegaProcess.vue';
 import ProcessDialog from './ProcessDialog.vue';
 import BaseProcess from './BaseProcess.vue'
-
+import PermissionDialog from './PermissionDialog.vue'
 import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     components: {
         MegaProcess,
-        ProcessDialog
+        ProcessDialog,
+        PermissionDialog
     },
     mixins:[BaseProcess],
     props: {
@@ -67,6 +75,12 @@ export default {
     }),
     created() {
         this.classifyProcess();
+    },
+    mounted() {
+        this.EventBus.on('openPermissionDialog', (process) => {
+            this.permissionProcess = process;
+            this.permissionDialogStatus = true;
+        });
     },
     watch: {
         enableEdit(newVal, oldVal) {
@@ -146,7 +160,7 @@ export default {
         },
         clickProcess(id) {
             this.$emit('clickProcess', id);
-        }
+        },
     },
 }
 </script>

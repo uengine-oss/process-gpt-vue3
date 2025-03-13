@@ -39,54 +39,57 @@
                 </div>
             </div>
 
-            <div class="ml-auto d-flex">
-                <div v-if="onLoad && bpmn">
-                    <v-btn v-if="!JMS && !Pal" color="primary" rounded density="comfortable" class="ml-3" @click="executeProcess">
+            <div class="ml-auto">
+                <div v-if="onLoad && bpmn" class="d-flex align-center">
+                    <v-btn v-if="!JMS && !Pal" color="primary" rounded density="comfortable" class="mr-3" @click="executeProcess">
                         실행
                     </v-btn>
-                    <v-tooltip :text="$t('processDefinition.edit')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn :size="30"
-                                icon variant="text" class="ml-2"
-                                v-bind="props"
-                                @click="jumpToProcessDefintionChat()"
-                            >
-                                <v-icon>mdi-pencil</v-icon>
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
 
-                    
-                    <v-tooltip v-if="Pal" location="bottom" :text="$t('processDefinition.savePDF')">
+                    <v-tooltip location="bottom">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" @click="savePDF" icon variant="text" class="text-medium-emphasis" density="comfortable">
-                                <v-icon>mdi-file-pdf-box</v-icon>
-                            </v-btn>
+                            <div v-bind="props" class="mr-2">
+                                <v-btn :size="30" icon variant="text"
+                                    :disabled="!isEditable"
+                                    @click="jumpToProcessDefintionChat()"
+                                >
+                                    <v-icon>mdi-pencil</v-icon>
+                                </v-btn>
+                            </div>
+                        </template>
+                        <span v-if="!isEditable">
+                            권한이 없습니다.
+                        </span>
+                        <span v-else>{{ $t('processDefinition.edit') }}</span>
+                    </v-tooltip>
+                    
+                    <v-tooltip location="bottom" :text="$t('processDefinition.savePDF')">
+                        <template v-slot:activator="{ props }">
+                            <div v-bind="props" class="mr-2">
+                                <v-btn @click="savePDF" icon variant="text" class="text-medium-emphasis" density="comfortable">
+                                    <v-icon>mdi-file-pdf-box</v-icon>
+                                </v-btn>
+                            </div>
                         </template>
                     </v-tooltip>
 
                     <v-tooltip :text="$t('processDefinition.capture')">
                         <template v-slot:activator="{ props }">
-                            <v-btn icon variant="text" class="ml-3" :size="24" @click="capture"
-                                v-bind="props"
-                            >
-                                <Icons :icon="'image-download'"  />
-                            </v-btn>
+                            <div v-bind="props" class="mr-2">
+                                <v-btn icon variant="text" :size="24" @click="capture">
+                                    <Icons :icon="'image-download'"  />
+                                </v-btn>
+                            </div>
                         </template>
                     </v-tooltip>
+                    
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
-                            <v-btn :size="30"
-                                icon variant="text" class="ml-2"
-                                v-bind="props"
-                                @click="$globalState.methods.toggleZoom()"
-                            >
-                                <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
-                                <Icons
-                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                    
-                                />
-                            </v-btn>
+                            <div v-bind="props">
+                                <v-btn :size="30" icon variant="text" @click="$globalState.methods.toggleZoom()">
+                                    <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                                    <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"/>
+                                </v-btn>
+                            </div>
                         </template>
                     </v-tooltip>
                 </div>
@@ -155,6 +158,8 @@ export default {
         isViewMode: true,
         executeDialog: false,
         isPreviewPDFDialog: false,
+        //
+        isEditable: false
     }),
     computed: {
         mode() {
@@ -165,7 +170,7 @@ export default {
         },
         Pal() {
             return window.$pal;
-        }
+        },
     },
     watch: {
         '$route.params': {
@@ -180,6 +185,17 @@ export default {
         this.init(this.$route.params);
     },
     methods: {
+        async checkEditable() {
+            if (this.processDefinition && this.processDefinition.id) {
+                try {
+                    const result = await this.checkPermission(this.processDefinition.id);
+                    this.isEditable = result.writable;
+                } catch (error) {
+                    console.error("Error checking permissions:", error);
+                    this.isEditable = false;
+                }
+            }
+        },
         jumpToProcessDefintionChat(){
             this.$router.push(`/definitions/${this.processDefinition.id}`);
         },
@@ -251,6 +267,7 @@ export default {
                     if (value) {
                         me.processDefinitionData = value.definition;
                     }
+                    await this.checkEditable();
                     me.onLoad = true;
                 }
             });

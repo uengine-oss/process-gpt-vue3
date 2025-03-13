@@ -385,25 +385,77 @@ export default {
         },
         async getProcessMap() {
             let map = await backend.getProcessDefinitionMap();
-            if (map.mega_proc_list) {
-                map.mega_proc_list.forEach(megaProc => {
-                    if(megaProc.major_proc_list){
-                        megaProc.major_proc_list.forEach(majorProc => {
-                            if(majorProc.sub_proc_list){
-                                majorProc.sub_proc_list.forEach(subProc => {
-                                    if (subProc.new) {
-                                        subProc.new = false;
+
+            const role = localStorage.getItem('role');
+            if (this.isAdmin && role !== 'user') {
+                if (map.mega_proc_list) {
+                    map.mega_proc_list.forEach(megaProc => {
+                        if(megaProc.major_proc_list){
+                            megaProc.major_proc_list.forEach(majorProc => {
+                                if(majorProc.sub_proc_list){
+                                    majorProc.sub_proc_list.forEach(subProc => {
+                                        if (subProc.new) {
+                                            subProc.new = false;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                    this.value = map;
+                } else {
+                    this.value = {
+                        mega_proc_list: []
+                    };
+                }
+            } else {
+                const userId = localStorage.getItem("uid");
+                const permissions = await backend.getUserPermissions({ match: { user_id: userId } });
+                const processList = permissions.map(permission => permission.proc_def_ids);
+                
+                if (processList.length > 0) {
+                    function removeDuplicates(processList) {
+                        const uniqueByIdAndName = (array) => {
+                            const seen = new Map();
+                            return array.filter(item => {
+                                const key = `${item.id}-${item.name}`;
+                                if (seen.has(key)) {
+                                    // Compare lengths and keep the longer list
+                                    const existingItem = seen.get(key);
+                                    if (item.major_proc_list && existingItem.major_proc_list) {
+                                        existingItem.major_proc_list = item.major_proc_list.length > existingItem.major_proc_list.length ? item.major_proc_list : existingItem.major_proc_list;
                                     }
-                                });
-                            }
+                                    if (item.sub_proc_list && existingItem.sub_proc_list) {
+                                        existingItem.sub_proc_list = item.sub_proc_list.length > existingItem.sub_proc_list.length ? item.sub_proc_list : existingItem.sub_proc_list;
+                                    }
+                                    return false;
+                                }
+                                seen.set(key, item);
+                                return true;
+                            });
+                        };
+
+                        processList = uniqueByIdAndName(processList);
+
+                        return processList.map(megaProc => {
+                            megaProc.major_proc_list = uniqueByIdAndName(megaProc.major_proc_list.map(majorProc => {
+                                majorProc.sub_proc_list = uniqueByIdAndName(majorProc.sub_proc_list);
+                                return majorProc;
+                            }));
+                            return megaProc;
                         });
                     }
-                });
-                this.value = map;
-            } else {
-                this.value = {
-                    mega_proc_list: []
-                };
+
+                    const uniqueProcessList = removeDuplicates(processList);
+                    console.log(uniqueProcessList);
+                    this.value = {
+                        mega_proc_list: uniqueProcessList
+                    }
+                } else {
+                    this.value = {
+                        mega_proc_list: []
+                    }
+                }
             }
         },
         addProcess(newProcess) {

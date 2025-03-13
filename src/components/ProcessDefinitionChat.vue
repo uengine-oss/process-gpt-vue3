@@ -120,6 +120,7 @@
                         <template v-slot:custom-title>
                             <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                                 :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                                :isEditable="isEditable"
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
@@ -147,6 +148,7 @@
                     <template v-slot:custom-title>
                         <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                             :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                            :isEditable="isEditable"
                             @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                             @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                             @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete" />
@@ -232,6 +234,7 @@ export default {
         },
     },
     data: () => ({
+        isEditable: false,
         isXmlMode: false,
         prompt: '',
         changedXML: '',
@@ -588,7 +591,18 @@ export default {
                             me.processDefinition.processDefinitionName = value.name;
                             me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
                         }
-                        me.checkedLock(lastPath);
+
+                        // 수정 권한 체크
+                        const permissions = await me.checkPermission(lastPath);
+                        if (permissions && permissions.writable) {
+                            me.isEditable = true;
+                            me.checkedLock(lastPath);
+                        } else if (permissions && !permissions.writable) {
+                            me.isEditable = false;
+                            me.lock = true;
+                            me.disableChat = true;
+                            me.isViewMode = true;
+                        }
                     }
 
                 } else if (lastPath == 'chat') {
@@ -935,6 +949,15 @@ export default {
         savePDF() {
             this.isPreviewPDFDialog = false;
             this.isPreviewPDFDialog = true;
+        },
+        async checkPermission(id) {
+            const uid = localStorage.getItem('uid');
+            const options = {
+                proc_def_id: id,
+                user_id: uid
+            }
+            const permissions = await backend.checkProcessPermission(options);
+            return permissions;
         }
     }
 };

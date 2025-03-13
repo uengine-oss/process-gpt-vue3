@@ -193,7 +193,10 @@
         "checkOutDBError": "DB 연결이 끊어졌습니다. 관리자에게 문의해주세요.",
         "checkInMessage": "수정된 내용을 저장 혹은 잠금 하시겠습니까? \n취소 후 잠금을 진행하는 경우 수정된 내용은 저장되지 않습니다.",
         "checkOutMessage": "프로세스 정의 체계도를 수정하시겠습니까?",
-        "forcedCheckOutMessage": "현재 {name} 님께서 수정 중입니다. 편집을 진행하는 경우 {name}님이 수정한 내용은 손상되어 저장되지 않습니다. \n편집을 진행 하시겠습니까?"
+        "forcedCheckOutMessage": "현재 {name} 님께서 수정 중입니다. 편집을 진행하는 경우 {name}님이 수정한 내용은 손상되어 저장되지 않습니다. \n편집을 진행 하시겠습니까?",
+        "settingPermission": "권한 설정",
+        "isReadable": "열람",
+        "isWritable": "개정"
     },
     "uiDefinition": {
         "title": "화면 정의",
@@ -288,7 +291,7 @@
         "phone": "전화번호",
         "address": "주소",
         "save": "저장",
-        "manageAccess": "권한 관리"
+        "manageAccess": "역할 관리"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",

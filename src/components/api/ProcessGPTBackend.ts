@@ -1392,11 +1392,11 @@ class ProcessGPTBackend implements Backend {
         try {
             let option = {
                 match: {
-                    key: 'openai_key'
+                    key: 'OPENAI_API_KEY'
                 }
             };
             const res = await storage.getObject('configuration', option);
-            return res?.value?.key || window.localStorage.getItem('openAIToken') || null;
+            return res?.value?.key || window.localStorage.getItem('OPENAI_API_KEY') || null;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1449,6 +1449,57 @@ class ProcessGPTBackend implements Backend {
             .catch(error => {
                 return error;
             });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getUserPermissions(options: any) {
+        try {
+            return await storage.list('user_permissions', options);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
+    async putUserPermission(permission: any) {
+        try {
+            await storage.putObject('user_permissions', permission);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteUserPermission(options: any) {
+        try {
+            await storage.delete('user_permissions', options);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    /**
+     * 프로세스 권한 체크
+     * @param options 
+     *  proc_def_id: 프로세스 정의 ID
+     *  user_id: 사용자 ID
+     * @returns 
+     */
+    async checkProcessPermission(options: any) {
+        try {
+            const result = await storage.callProcedure('check_process_permission', {
+                p_user_id: options.user_id,
+                p_proc_def_id: options.proc_def_id
+            });
+            if (result && result.length > 0) {
+                return result[0];
+            } else {
+                return null;
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

@@ -19,7 +19,7 @@
                         @delete="deleteProcess"
                         @editProcessdialog="editProcessdialog"
                         @modeling="editProcessModel"
-                        @setPermission="openSetPermissionDialog"
+                        @setPermission="openPermissionDialog(value)"
                     />
                 </div>
                 </v-col>
@@ -46,7 +46,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 export default {
     components: {
         ProcessMenu,
-        ProcessDialog
+        ProcessDialog,
     },
     mixins: [BaseProcess],
     props: {
@@ -72,16 +72,12 @@ export default {
             this.parent.sub_proc_list = this.parent.sub_proc_list.filter(item => item.id != this.value.id);
         },
         async editProcessModel() {
-            const backend = BackendFactory.createBackend();
             const id = this.value.id.replace(/ /g, '_')
-            const defId = id.substr(0, id.indexOf('.'));
-            const options = {
-                type: id.substr(id.indexOf('.') + 1)
-            }
-            this.definition = await backend.getRawDefinition(defId, options);
+            const backend = BackendFactory.createBackend();
+            const value = await backend.getRawDefinition(id);
             let url;
-            if (this.definition && this.definition.id) {
-                url = `/definitions/${this.definition.id}?modeling=true`;
+            if (value && value.id) {
+                url = `/definitions/${value.id}?modeling=true`;
             } else {
                 url = `/definitions/chat?id=${id}&name=${this.value.name}&modeling=true`;
             }

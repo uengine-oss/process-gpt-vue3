@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   frontend:
-    image: ghcr.io/uengine-oss/process-gpt:v2.6.8
+    image: ghcr.io/uengine-oss/process-gpt:v2.6.9
     ports:
       - "8080:8080"
     environment:
@@ -10,7 +10,7 @@ services:
       - VITE_SUPABASE_KEY=${SERVICE_ROLE_KEY}
     
   execution:
-    image: ghcr.io/uengine-oss/process-gpt-execution:v0.3.6
+    image: ghcr.io/uengine-oss/process-gpt-execution:v0.3.7
     ports:
       - "8000:8000"
     environment:

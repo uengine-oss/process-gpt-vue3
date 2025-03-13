@@ -17,7 +17,7 @@
                                 :enableEdit="enableEdit"
                                 @delete="deleteProcess"
                                 @editProcessdialog="editProcessdialog"
-                                @setPermission="openSetPermissionDialog"
+                                @setPermission="openPermissionDialog(value)"
                             />
                         </div>
                     </v-col>
@@ -78,10 +78,6 @@
             @closeProcessDialog="closeProcessDialog"
             style="margin-top:20px !important;"
         />
-        <set-permission-dialog
-            :permissionDialogStatus="permissionDialogStatus"
-            @close:permissionDialogStatus="closePermissionDialogStatus"
-        />
     </div>
 </template>
 
@@ -90,14 +86,12 @@ import ProcessMenu from './ProcessMenu.vue';
 import MajorProcess from './MajorProcess.vue';
 import ProcessDialog from './ProcessDialog.vue';
 import BaseProcess from './BaseProcess.vue'
-import setPermissionDialog from './setPermissionDialog.vue'
 
 export default {
     components: {
         ProcessMenu,
         MajorProcess,
         ProcessDialog,
-        setPermissionDialog
     },
     mixins: [BaseProcess],
     props: {
@@ -114,11 +108,12 @@ export default {
     methods:{
         addProcess(newProcess) {
             const id = newProcess.name.toLowerCase().replace(/[/.]/g, "_");
-            this.value.major_proc_list.push({
+            const process = {
                 id: id,
                 name: newProcess.name,
                 sub_proc_list: [],
-            });
+            }
+            this.value.major_proc_list.push(process);
         },
         deleteProcess() {
             this.parent.mega_proc_list = this.parent.mega_proc_list.filter(item => item.id != this.value.id);

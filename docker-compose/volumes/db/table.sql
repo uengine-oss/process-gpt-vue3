@@ -145,7 +145,13 @@ CREATE POLICY users_update_policy
     ON users
     FOR UPDATE
     TO public
-    USING ((auth.tenant_id() = current_tenant) OR (auth.uid() = id));
+    USING (
+        (auth.tenant_id() = current_tenant) 
+        OR 
+        (auth.uid() = id)
+        OR 
+        (EXISTS (SELECT 1 FROM users WHERE is_admin = true))
+    );
 
 CREATE POLICY users_delete_policy
     ON users
@@ -566,7 +572,33 @@ CREATE POLICY proc_def_select_policy
     ON proc_def
     FOR SELECT        
     TO authenticated
-    USING (tenant_id = auth.tenant_id());
+    USING (
+        tenant_id = auth.tenant_id() AND
+        (
+            EXISTS (
+                SELECT 1
+                FROM users
+                WHERE users.id = auth.uid()
+                    AND users.role = 'superAdmin'
+            )
+            OR
+            EXISTS (
+                SELECT 1
+                FROM user_permissions
+                WHERE user_permissions.user_id = auth.uid()
+                    AND (
+                        user_permissions.proc_def_id = proc_def.id OR
+                        EXISTS (
+                            SELECT 1
+                            FROM jsonb_array_elements(user_permissions.proc_def_ids->'major_proc_list') AS major_proc
+                            JOIN jsonb_array_elements(major_proc->'sub_proc_list') AS sub_proc
+                            ON sub_proc->>'id' = proc_def.id
+                        )
+                    )
+                    AND user_permissions.readable = true
+            )
+        )
+    );
 
 CREATE POLICY proc_def_update_policy
     ON proc_def
@@ -1379,4 +1411,105 @@ WITH CHECK (
   auth.role() = 'authenticated'
 );
 
+
+
+
+-- user_permissions 테이블: 테넌트별 사용자의 프로세스 접근 권한 관리
+create table if not exists public.user_permissions (
+    id text not null,
+    user_id uuid not null,
+    tenant_id text not null default auth.tenant_id(),
+    proc_def_id text not null,
+    proc_def_ids jsonb not null,
+    readable boolean not null default false,
+    writable boolean not null default false,
+    constraint user_permissions_pkey primary key (id),
+    constraint user_permissions_user_id_fkey foreign key (user_id) references users (id) on update cascade on delete cascade,
+    constraint user_permissions_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
+) tablespace pg_default;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_permissions' AND column_name='id') THEN
+        ALTER TABLE public.user_permissions ADD COLUMN id TEXT PRIMARY KEY;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_permissions' AND column_name='user_id') THEN
+        ALTER TABLE public.user_permissions ADD COLUMN user_id UUID PRIMARY KEY;
+    END IF;    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_permissions' AND column_name='proc_def_id') THEN
+        ALTER TABLE public.user_permissions ADD COLUMN proc_def_id TEXT NOT NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_permissions' AND column_name='proc_def_ids') THEN
+        ALTER TABLE public.user_permissions ADD COLUMN proc_def_ids JSONB NOT NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_permissions' AND column_name='readable') THEN
+        ALTER TABLE public.user_permissions ADD COLUMN readable BOOLEAN NOT NULL DEFAULT FALSE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_permissions' AND column_name='writable') THEN
+        ALTER TABLE public.user_permissions ADD COLUMN writable BOOLEAN NOT NULL DEFAULT FALSE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='user_permissions' AND column_name='tenant_id') THEN
+        ALTER TABLE public.user_permissions ADD COLUMN tenant_id TEXT NOT NULL DEFAULT auth.tenant_id();
+    END IF;
+END;
+$$;
+
+ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY user_permissions_insert_policy
+    ON user_permissions
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (tenant_id = auth.tenant_id());
+
+CREATE POLICY user_permissions_select_policy
+    ON user_permissions
+    FOR SELECT
+    TO authenticated
+    USING (tenant_id = auth.tenant_id());
+
+CREATE POLICY user_permissions_update_policy
+    ON user_permissions
+    FOR UPDATE
+    TO authenticated
+    USING (tenant_id = auth.tenant_id());
+
+CREATE POLICY user_permissions_delete_policy
+    ON user_permissions
+    FOR DELETE
+    TO authenticated
+    USING (tenant_id = auth.tenant_id());
+
+
+-- Create a function to set the id column
+CREATE OR REPLACE FUNCTION set_user_permissions_id()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.id := NEW.proc_def_id || '_' || NEW.user_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create a trigger to call the function before insert
+CREATE TRIGGER before_insert_user_permissions
+BEFORE INSERT ON public.user_permissions
+FOR EACH ROW EXECUTE FUNCTION set_user_permissions_id();
+
+-- 프로세스 권한 체크
+CREATE OR REPLACE FUNCTION check_process_permission(p_user_id UUID, p_proc_def_id TEXT)
+RETURNS SETOF user_permissions AS $$
+BEGIN
+    RETURN QUERY
+    SELECT up.*
+    FROM user_permissions up,
+         jsonb_array_elements(up.proc_def_ids->'major_proc_list') AS major_proc,
+         jsonb_array_elements(major_proc->'sub_proc_list') AS sub_proc
+    WHERE up.user_id = p_user_id
+    AND (
+        up.proc_def_ids->>'id' = p_proc_def_id OR
+        major_proc->>'id' = p_proc_def_id OR
+        sub_proc->>'id' = p_proc_def_id
+    );
+END;
+$$ LANGUAGE plpgsql;
 

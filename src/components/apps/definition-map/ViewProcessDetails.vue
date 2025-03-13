@@ -166,16 +166,11 @@ export default {
                 action: async () => {
                     me.onLoad = false;
                     me.processPath = obj.id;
-                    let processMap;
                     if (me.value && me.value.mega_proc_list && me.value.mega_proc_list.length > 0) {
-                        processMap = me.value;
-                    } else {
-                        const backend = BackendFactory.createBackend();
-                        processMap = await backend.getProcessDefinitionMap();
-                    }
-                    const process = processMap.mega_proc_list.find(process => process.name === me.processPath);
-                    if (process) {
-                        me.filteredProcess = process;
+                        const process = me.value.mega_proc_list.find(process => process.name === me.processPath);
+                        if (process) {
+                            me.filteredProcess = process;
+                        }
                     }
                     me.onLoad = true;
                 }

@@ -193,7 +193,10 @@
         "checkOutDBError": "DB connection is lost. Contact the administrator.",
         "checkInMessage": "Do you want to save the modified content or lock it?",
         "checkOutMessage": "Do you want to modify the process definition map?",
-        "forcedCheckOutMessage": "Currently, {name} is editing. If you proceed with editing, the content modified by {name} will be damaged and not saved. \nDo you want to proceed with editing?"
+        "forcedCheckOutMessage": "Currently, {name} is editing. If you proceed with editing, the content modified by {name} will be damaged and not saved. \nDo you want to proceed with editing?",
+        "settingPermission": "Setting Permission",
+        "isReadable": "Readable",
+        "isWritable": "Writable"
     },
     "uiDefinition": {
         "title": "Screen Definition",
