@@ -170,10 +170,9 @@ hr {
     height: 50px;
     left:5px; top:5px;
     border: none;
-    background-color: transparent;
-    /* border-radius: 10px; */
-    /* background-color: white; */
-    /* box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1); */
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.1);
 }
 
 .vue-bpmn-diagram-container .djs-context-pad .entry {

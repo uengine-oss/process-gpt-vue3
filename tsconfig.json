@@ -1,17 +1,20 @@
 {
-    "module": "esnext",
-    "target": "ESNext",
-    "moduleResolution": "Node",
+    // "module": "esnext",
+    // "target": "ESNext",
+    // "moduleResolution": "Node",
     "extends": "@vue/tsconfig/tsconfig.web.json",
     "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "public/plugins/keditor.js"],
     "compilerOptions": {
+        "module": "esnext",
         "baseUrl": ".",
         "paths": {
             "@/*": ["./src/*"]
         },
         "allowJs": true,
         "verbatimModuleSyntax": true, // 추가된 옵션
-        "ignoreDeprecations": "5.0"
+        "ignoreDeprecations": "5.0",
+        "target": "ESNext",
+        "moduleResolution": "Node",
     },
     "references": [
         {

@@ -705,7 +705,7 @@ export default {
                     this.isAIUpdated = true;
                 }
             } catch (error) {
-                console.log(error);
+                console.log("[*] 폼 생성 관련 AI 응답 처리 과정에서 오류 발생!", {response, error});
             }
         },
 
