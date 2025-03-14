@@ -1,54 +1,51 @@
 <template>
     <div>
-        <v-row class="ma-0 pa-0">
-            <v-spacer></v-spacer>
-            <div v-if="enableEdit" class="proc-menu-btn-box">
-                <v-tooltip text="권한 설정">
-                    <template v-slot:activator="{ props }">
-                        <v-btn @click.stop="setPermission"
-                            icon v-bind="props"
-                            density="compact"
-                            size="small"
-                        >
-                            <Icons :icon="'user-lock'" :width="14" :height="14"  />
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <v-tooltip v-if="type == 'sub'" text="프로세스 편집">
-                    <template v-slot:activator="{ props }">
-                        <v-btn @click.stop="editProcess"
-                            icon v-bind="props"
-                            density="compact"
-                            size="small"
-                        >
-                            <Icons :icon="'pencil-cog'" :width="12" :height="12"  />
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <v-tooltip v-if="type != 'map'" text="수정">
-                    <template v-slot:activator="{ props }">
-                        <v-btn @click.stop="openEditDialog('update')"
-                            icon v-bind="props"
-                            density="compact"
-                            size="small"
-                        >
-                            <Icons :icon="'pencil'" :width="12" :height="12" />
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <v-tooltip v-if="type != 'map'" text="삭제">
-                    <template v-slot:activator="{ props }">
-                        <v-btn @click.stop="deleteProcess"
-                            icon v-bind="props"
-                            density="compact"
-                            size="small"
-                        >
-                            <Icons :icon="'trash'" :width="12" :height="12" />
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-            </div>
-        </v-row>
+        <div v-if="enableEdit" class="proc-menu-btn-box">
+            <v-tooltip text="권한 설정">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click.stop="setPermission"
+                        icon v-bind="props"
+                        density="compact"
+                        size="small"
+                    >
+                        <Icons :icon="'user-lock'" :width="14" :height="14"  />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip v-if="type == 'sub'" text="프로세스 편집">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click.stop="editProcess"
+                        icon v-bind="props"
+                        density="compact"
+                        size="small"
+                    >
+                        <Icons :icon="'pencil-cog'" :width="12" :height="12"  />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip v-if="type != 'map'" text="수정">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click.stop="openEditDialog('update')"
+                        icon v-bind="props"
+                        density="compact"
+                        size="small"
+                    >
+                        <Icons :icon="'pencil'" :width="12" :height="12" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip v-if="type != 'map'" text="삭제">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click.stop="deleteProcess"
+                        icon v-bind="props"
+                        density="compact"
+                        size="small"
+                    >
+                        <Icons :icon="'trash'" :width="12" :height="12" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+        </div>
     </div>
 </template>
 

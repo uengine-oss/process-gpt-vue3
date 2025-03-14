@@ -189,7 +189,11 @@ export default {
             if (this.processDefinition && this.processDefinition.id) {
                 try {
                     const result = await this.checkPermission(this.processDefinition.id);
-                    this.isEditable = result.writable;
+                    if (result && result.length > 0) {
+                        this.isEditable = result[0].writable;
+                    } else {
+                        this.isEditable = false;
+                    }
                 } catch (error) {
                     console.error("Error checking permissions:", error);
                     this.isEditable = false;

@@ -538,7 +538,10 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    // proc_map
+    /**
+     * 프로세스 정의 체계도 조회
+     * @returns 
+     */
     async getProcessDefinitionMap() {
         try {
             const options = {
@@ -560,7 +563,13 @@ class ProcessGPTBackend implements Backend {
                     }
                 };
                 renameLabels(procMap.value);
-                return procMap.value;
+                const role = localStorage.getItem('role');
+                if (role == 'superAdmin') {
+                    return procMap.value;
+                } else {
+                    const filteredMap = await this.filterProcDefMap(procMap.value);
+                    return filteredMap;
+                }
             }
             return {};
         } catch (error) {
@@ -570,7 +579,7 @@ class ProcessGPTBackend implements Backend {
         } 
     }
 
-    async putProcessDefinitionMap(definitionMap: any) {
+    async putProcessDefinitionMap(editedMap: any) {
         try {
             const options = {
                 match: {
@@ -579,16 +588,141 @@ class ProcessGPTBackend implements Backend {
                 column: 'uuid'
             };
             const procMapId = await storage.getString('configuration', options);
+            if (!procMapId) {
+                throw new Error("Process map ID not found.");
+            }
+            let updatedProcMap: any = null;
+            const role = localStorage.getItem('role');
+            if (role !== 'superAdmin') {
+                const existingProcMap = await storage.getObject('configuration', options);
+                updatedProcMap = await this.mergeProcessMaps(existingProcMap.value, editedMap);
+                // console.log("병합한 프로세스 정의 체계도 ", updatedProcMap);
+            } else {
+                updatedProcMap = editedMap;
+            }
+
             const putObj = {
                 uuid: procMapId || this.uuid(),
                 key: 'proc_map',
-                value: definitionMap,
+                value: updatedProcMap,
             }
             await storage.putObject('configuration', putObj);
         } catch (error) {
-            
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    async filterProcDefMap(map: any) {
+        // 사용자 권한에 따라 필터링
+        const uid = localStorage.getItem('uid');
+        const permissions = await storage.list('user_permissions', { match: { user_id: uid } });
+        const processList = permissions.map((permission: any) => permission.proc_def_ids);
+        let filteredMap: any = {};
+                
+        if (processList.length > 0) {
+            function removeDuplicates(processList: any) {
+                const uniqueByIdAndName = (array: any) => {
+                    const seen = new Map();
+                    return array.filter((item: any) => {
+                        const key = `${item.id}-${item.name}`;
+                        if (seen.has(key)) {
+                            const existingItem = seen.get(key);
+                            if (item.major_proc_list && existingItem.major_proc_list) {
+                                existingItem.major_proc_list = item.major_proc_list.length > existingItem.major_proc_list.length ? item.major_proc_list : existingItem.major_proc_list;
+                            }
+                            if (item.sub_proc_list && existingItem.sub_proc_list) {
+                                existingItem.sub_proc_list = item.sub_proc_list.length > existingItem.sub_proc_list.length ? item.sub_proc_list : existingItem.sub_proc_list;
+                            }
+                            return false;
+                        }
+                        seen.set(key, item);
+                        return true;
+                    });
+                };
+
+                processList = uniqueByIdAndName(processList);
+
+                return processList.map((megaProc: any) => {
+                    megaProc.major_proc_list = uniqueByIdAndName(megaProc.major_proc_list.map((majorProc: any) => {
+                        majorProc.sub_proc_list = uniqueByIdAndName(majorProc.sub_proc_list);
+                        return majorProc;
+                    }));
+                    return megaProc;
+                });
+            }
+
+            const uniqueProcessList = removeDuplicates(processList);
+            filteredMap = {
+                mega_proc_list: uniqueProcessList
+            }
+        } else {
+            filteredMap = {
+                mega_proc_list: []
+            }
+        }
+        return filteredMap;
+    }
+
+    async mergeProcessMaps(oldValue: any, newValue: any) {
+        if (!oldValue || !oldValue.mega_proc_list) {
+            return newValue;
+        } else {
+            const existingMap = oldValue.mega_proc_list;
+            const changes = newValue.mega_proc_list;
+            const uid = localStorage.getItem('uid');
+
+            for (const item of existingMap) {
+                const change = changes.find((changeItem: any) => changeItem.id === item.id);
+                if (change) {
+                    const permission = await this.getUserPermissions({ user_id: uid, proc_def_id: item.id });
+                    if (permission && permission.writable) {
+                        // 개정 권한이 있는 경우 수정된 버전으로 권한 업데이트
+                        const putObj = {
+                            user_id: uid,
+                            proc_def_id: item.id,
+                            proc_def_ids: item
+                        }
+                        await this.putUserPermission(putObj);
+                        Object.assign(item, change);
+                    } else {
+                        // 권한이 없는 프로세스
+                    }
+
+                    Object.assign(item, change);
+                } else {
+                    const permission = await this.getUserPermissions({ user_id: uid, proc_def_id: item.id });
+                    if (permission && permission.writable) {
+                        const index = existingMap.indexOf(item);
+                        if (index > -1) {
+                            existingMap.splice(index, 1);
+                        }
+                    } else {
+                        // 권한이 없는 프로세스
+                    }
+                }
+            }
+
+            // 편집 내용 중 새로 추가된 프로세스
+            for (const item of changes) {
+                const newProc = existingMap.find((existingItem: any) => existingItem.id === item.id);
+                if (!newProc) {
+                    const permission = await this.getUserPermissions({ user_id: uid, proc_def_id: item.id });
+                    if (!permission) {
+                        const putObj = {
+                            user_id: uid,
+                            proc_def_id: item.id,
+                            proc_def_ids: item
+                        }
+                        await this.putUserPermission(putObj);
+                    }
+                    existingMap.push(item);
+                }
+            }
+            console.log("변경된 프로세스 정의 체계도", existingMap);
+            return {
+                mega_proc_list: existingMap
+            };
         }
     }
 
@@ -1455,15 +1589,6 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getUserPermissions(options: any) {
-        try {
-            return await storage.list('user_permissions', options);
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
-    
     async putUserPermission(permission: any) {
         try {
             await storage.putObject('user_permissions', permission);
@@ -1483,20 +1608,28 @@ class ProcessGPTBackend implements Backend {
     }
 
     /**
-     * 프로세스 권한 체크
+     * 사용자별 프로세스 권한 체크
      * @param options 
      *  proc_def_id: 프로세스 정의 ID
      *  user_id: 사용자 ID
      * @returns 
      */
-    async checkProcessPermission(options: any) {
+    async getUserPermissions(options: any) {
         try {
-            const result = await storage.callProcedure('check_process_permission', {
-                p_user_id: options.user_id,
-                p_proc_def_id: options.proc_def_id
-            });
+            let filter: any = {};
+            if (options.proc_def_id && options.user_id) {
+                filter = {
+                    p_user_id: options.user_id,
+                    p_proc_def_id: options.proc_def_id
+                }
+            } else if (options.proc_def_id && !options.user_id) {
+                filter = {
+                    p_proc_def_id: options.proc_def_id
+                }
+            }
+            const result = await storage.callProcedure('check_process_permission', filter);
             if (result && result.length > 0) {
-                return result[0];
+                return result;
             } else {
                 return null;
             }

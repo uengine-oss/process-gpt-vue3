@@ -135,7 +135,7 @@ export default {
     },
     methods: {
         async loadData() {
-            const permissions = await backend.getUserPermissions({match: { proc_def_id: this.procDef.id } });
+            const permissions = await backend.getUserPermissions({ proc_def_id: this.procDef.id });
             const userList = await backend.getUserList();
             
             if (userList.length > 0) {

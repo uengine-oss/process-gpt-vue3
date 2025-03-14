@@ -1496,7 +1496,7 @@ BEFORE INSERT ON public.user_permissions
 FOR EACH ROW EXECUTE FUNCTION set_user_permissions_id();
 
 -- 프로세스 권한 체크
-CREATE OR REPLACE FUNCTION check_process_permission(p_user_id UUID, p_proc_def_id TEXT)
+CREATE OR REPLACE FUNCTION check_process_permission(p_proc_def_id TEXT, p_user_id UUID DEFAULT NULL)
 RETURNS SETOF user_permissions AS $$
 BEGIN
     RETURN QUERY
@@ -1504,7 +1504,7 @@ BEGIN
     FROM user_permissions up,
          jsonb_array_elements(up.proc_def_ids->'major_proc_list') AS major_proc,
          jsonb_array_elements(major_proc->'sub_proc_list') AS sub_proc
-    WHERE up.user_id = p_user_id
+    WHERE (p_user_id IS NULL OR up.user_id = p_user_id)
     AND (
         up.proc_def_ids->>'id' = p_proc_def_id OR
         major_proc->>'id' = p_proc_def_id OR

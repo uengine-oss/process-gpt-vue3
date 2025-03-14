@@ -104,7 +104,7 @@ export default {
                 proc_def_id: id,
                 user_id: uid
             }
-            const permissions = await backend.checkProcessPermission(options);
+            const permissions = await backend.getUserPermissions(options);
             return permissions;
         }
     },

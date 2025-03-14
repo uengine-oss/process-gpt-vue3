@@ -143,6 +143,13 @@ import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
+import * as jsondiff from 'jsondiffpatch';
+var jsondiffpatch = jsondiff.create({
+    objectHash: function (obj, index) {
+        return '$$index:' + index;
+    }
+});
+
 export default {
     components: {
         ProcessMenu,
@@ -165,6 +172,7 @@ export default {
         value: {
             mega_proc_list: []
         },
+        copyValue: null,
         type: 'map',
         enableEdit: false,
         userName: null,
@@ -232,6 +240,13 @@ export default {
                     action: this.download
                 }
             ];
+        }
+    },
+    watch: {
+        enableEdit(newVal, oldVal) {
+            if(newVal && newVal !== oldVal) {
+                this.copyValue = JSON.parse(JSON.stringify(this.value));
+            }
         }
     },
     async created() {
@@ -384,79 +399,7 @@ export default {
             this.$router.push(`/definition-map`);
         },
         async getProcessMap() {
-            let map = await backend.getProcessDefinitionMap();
-
-            const role = localStorage.getItem('role');
-            if (this.isAdmin && role !== 'user') {
-                if (map.mega_proc_list) {
-                    map.mega_proc_list.forEach(megaProc => {
-                        if(megaProc.major_proc_list){
-                            megaProc.major_proc_list.forEach(majorProc => {
-                                if(majorProc.sub_proc_list){
-                                    majorProc.sub_proc_list.forEach(subProc => {
-                                        if (subProc.new) {
-                                            subProc.new = false;
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
-                    this.value = map;
-                } else {
-                    this.value = {
-                        mega_proc_list: []
-                    };
-                }
-            } else {
-                const userId = localStorage.getItem("uid");
-                const permissions = await backend.getUserPermissions({ match: { user_id: userId } });
-                const processList = permissions.map(permission => permission.proc_def_ids);
-                
-                if (processList.length > 0) {
-                    function removeDuplicates(processList) {
-                        const uniqueByIdAndName = (array) => {
-                            const seen = new Map();
-                            return array.filter(item => {
-                                const key = `${item.id}-${item.name}`;
-                                if (seen.has(key)) {
-                                    // Compare lengths and keep the longer list
-                                    const existingItem = seen.get(key);
-                                    if (item.major_proc_list && existingItem.major_proc_list) {
-                                        existingItem.major_proc_list = item.major_proc_list.length > existingItem.major_proc_list.length ? item.major_proc_list : existingItem.major_proc_list;
-                                    }
-                                    if (item.sub_proc_list && existingItem.sub_proc_list) {
-                                        existingItem.sub_proc_list = item.sub_proc_list.length > existingItem.sub_proc_list.length ? item.sub_proc_list : existingItem.sub_proc_list;
-                                    }
-                                    return false;
-                                }
-                                seen.set(key, item);
-                                return true;
-                            });
-                        };
-
-                        processList = uniqueByIdAndName(processList);
-
-                        return processList.map(megaProc => {
-                            megaProc.major_proc_list = uniqueByIdAndName(megaProc.major_proc_list.map(majorProc => {
-                                majorProc.sub_proc_list = uniqueByIdAndName(majorProc.sub_proc_list);
-                                return majorProc;
-                            }));
-                            return megaProc;
-                        });
-                    }
-
-                    const uniqueProcessList = removeDuplicates(processList);
-                    console.log(uniqueProcessList);
-                    this.value = {
-                        mega_proc_list: uniqueProcessList
-                    }
-                } else {
-                    this.value = {
-                        mega_proc_list: []
-                    }
-                }
-            }
+            this.value = await backend.getProcessDefinitionMap();
         },
         addProcess(newProcess) {
             this.value.mega_proc_list.push({
@@ -465,7 +408,76 @@ export default {
                 major_proc_list: [],
             });
         },
+        updatePermissionsFromDiff(diff) {
+            var me = this;
+            async function extractIds(obj, path = "") {
+                if (typeof obj === 'object' && !Array.isArray(obj)) {
+                    for (const key in obj) {
+                        if (key.startsWith("_")) {
+                            // 삭제된 요소
+                            if (Array.isArray(obj[key]) && obj[key].length > 0 && typeof obj[key][0] === 'object') {
+                                const process = obj[key][0];
+                                const permissions = await me.checkPermissions(process);
+                                if (permissions) {
+                                    const perUsers = permissions.map(permission => permission.user_id);
+                                    perUsers.forEach(async (user) => {
+                                        await me.deletePermissions(process, user);
+                                    });
+                                }
+                                // console.log(`삭제된 ID: ${process.id}`, process);
+                            }
+                        } else {
+                            // 추가되거나 수정된 요소
+                            if (Array.isArray(obj[key]) && obj[key].length > 0 && typeof obj[key][0] === 'object') {
+                                const process = obj[key][0];
+                                const permissions = await me.checkPermissions(process);
+                                if (permissions && permissions.length > 0) {
+                                    permissions.forEach(async (permission) => {
+                                        const perUsers = permission.user_id;
+                                        const processList = permission.proc_def_ids;
+                                        await me.putPermissions(process, perUsers, processList);
+                                    });
+                                    // console.log(`수정된 ID: ${process.id}`, process)
+                                } else {
+                                    const uid = localStorage.getItem('uid');
+                                    await me.putPermissions(process, uid, process);
+                                    // console.log(`추가된 ID: ${process.id}`, process);
+                                }
+                            }
+                            extractIds(obj[key], path + `/${key}`);
+                        }
+                    }
+                } else if (Array.isArray(obj)) {
+                    obj.forEach((item, index) => {
+                        extractIds(item, path + `/${index}`);
+                    });
+                }
+            }
+            extractIds(diff);
+        },
+        async checkPermissions(process) {
+            const permissions = await backend.getUserPermissions({ proc_def_id: process.id });
+            if (permissions && permissions.length > 0) {
+                return permissions;
+            }
+            return null;
+        },
+        async putPermissions(process, userId, processList) {
+            const permission = {
+                user_id: userId,
+                proc_def_id: process.id,
+                proc_def_ids: processList,
+                writable: true,
+                readable: true,
+            }
+            await backend.putUserPermission(permission);
+        },
+        async deletePermissions(process, userId) {
+            await backend.deleteUserPermission({ user_id: userId, proc_def_id: process.id });
+        },
         async saveProcess() {
+            const diff = jsondiffpatch.diff(this.copyValue, this.value);
+            this.updatePermissionsFromDiff(diff);
             await backend.putProcessDefinitionMap(this.value);
             await this.getProcessMap();
             this.closeAlertDialog();

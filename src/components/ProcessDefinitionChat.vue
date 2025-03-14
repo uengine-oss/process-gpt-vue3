@@ -593,11 +593,11 @@ export default {
                         }
 
                         // 수정 권한 체크
-                        const permissions = await me.checkPermission(lastPath);
-                        if (permissions && permissions.writable) {
+                        const permission = await me.checkPermission(lastPath);
+                        if (permission && permission.writable) {
                             me.isEditable = true;
                             me.checkedLock(lastPath);
-                        } else if (permissions && !permissions.writable) {
+                        } else if (permission && !permission.writable) {
                             me.isEditable = false;
                             me.lock = true;
                             me.disableChat = true;
@@ -956,8 +956,12 @@ export default {
                 proc_def_id: id,
                 user_id: uid
             }
-            const permissions = await backend.checkProcessPermission(options);
-            return permissions;
+            const permissions = await backend.getUserPermissions(options);
+            if (permissions && permissions.length > 0) {
+                return permissions[0];
+            } else {
+                return null;
+            }
         }
     }
 };
