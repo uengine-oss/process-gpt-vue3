@@ -40,6 +40,15 @@ class ProcessGPTBackend implements Backend {
         return false;
     }
 
+    async checkTenantId(tenantId: string) {
+        const tenant = await storage.getString(`tenants/${tenantId}`, { key: 'id' });
+        if (tenant) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     async listDefinition(path: string) {
         try {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
@@ -800,7 +809,22 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getProcessVariables(instanceId: string) {
-        throw new Error("Method not implemented.");
+        try {
+            let varData: any = {};
+            const instance: any = await this.getInstance(instanceId);
+            if (instance && instance.variables_data && instance.variables_data.length > 0) {
+                instance.variables_data.forEach((item: any) => {
+                    if (item.key) {
+                        varData[item.key] = item.value;
+                    }
+                })
+            }
+            return varData;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+        // throw new Error("Method not implemented.");
     }
 
     async getVariable(instId: string, varName: string) {
@@ -1475,6 +1499,7 @@ class ProcessGPTBackend implements Backend {
     async setTenant(tenantId: string) {
         try {
             await storage.setCurrentTenant(tenantId);
+            await this.checkDBConnection();
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

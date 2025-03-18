@@ -72,6 +72,7 @@ export interface Backend {
     getImageUrl(fileName: string): Promise<any>;
     uploadFile(fileName: string, file: File): Promise<any>;
     getFileUrl(path: string): Promise<any>;
+    checkTenantId(tenantId: string): Promise<any>;
 }
 
 // export type { Backend }

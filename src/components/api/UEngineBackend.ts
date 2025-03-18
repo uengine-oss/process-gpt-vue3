@@ -7,6 +7,10 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async checkTenantId(tenantId: string) {
+        return false;
+    }
+
     async uploadImage(fileName: string, image: File) {
         return null;
     }

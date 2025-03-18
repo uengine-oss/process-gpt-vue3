@@ -45,7 +45,6 @@ export const useAuthStore = defineStore({
                     if (result.error) {
                         alert(result.errorMsg);
                     } else {
-                        await storage?.writeUserData(result);
                         router.push(window.$isTenantServer ? '/tenant/manage' : '/definition-map')
                     }
                 }
@@ -70,7 +69,6 @@ export const useAuthStore = defineStore({
                             alert(result.errorMsg);
                         }
                     } else {
-                        await storage?.writeUserData(result, userInfo);
                         router.push(window.$isTenantServer ? '/tenant/manage' : '/definition-map');
                     }
                 }

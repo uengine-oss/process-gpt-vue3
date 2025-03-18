@@ -161,6 +161,30 @@ CREATE POLICY users_delete_policy
 
 
 
+-- 테넌트가 삭제될 때 users 테이블을 업데이트하는 함수
+CREATE OR REPLACE FUNCTION update_users_on_tenant_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- 삭제된 테넌트 ID를 tenants 배열에서 제거하고, current_tenant가 동일한 경우 null로 설정
+    UPDATE public.users
+    SET 
+        tenants = array_remove(tenants, OLD.id),
+        current_tenant = CASE WHEN current_tenant = OLD.id THEN NULL ELSE current_tenant END
+    WHERE OLD.id = ANY(tenants) OR current_tenant = OLD.id;
+    
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 테넌트가 삭제된 후 함수를 호출하는 트리거
+CREATE TRIGGER after_tenant_delete
+AFTER DELETE ON public.tenants
+FOR EACH ROW
+EXECUTE FUNCTION update_users_on_tenant_delete();
+
+
+
+
 create table if not exists public.configuration (
     key text not null,
     value jsonb null,

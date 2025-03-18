@@ -11,10 +11,15 @@ export default class StorageBaseSupabase {
 
     async isConnection() {
         try {
-            const accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token')).split('=')[1];
-            const refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token')).split('=')[1];
+            let accessToken = "";
+            let refreshToken = "";
+           
+            if (document.cookie && document.cookie.includes('; ')) {
+                accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token')).split('=')[1];
+                refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token')).split('=')[1];
+            }
 
-            if (accessToken && refreshToken) {
+            if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
                 window.localStorage.setItem('accessToken', accessToken);
                 const { error: sessionError } = await window.$supabase.auth.setSession({
                     access_token: accessToken,
@@ -25,6 +30,8 @@ export default class StorageBaseSupabase {
                     const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
                     if (refreshError) {
                         console.error('Error refreshing session:', refreshError);
+                        document.cookie = 'access_token=; domain=.process-gpt.io; path=/';
+                        document.cookie = 'refresh_token=; domain=.process-gpt.io; path=/';
                         return false;
                     }
                     if (window.location.host.includes('process-gpt.io')) {
@@ -36,8 +43,24 @@ export default class StorageBaseSupabase {
                     }
                     window.localStorage.setItem('accessToken', refreshData.session.access_token);
                 }
+            } else {
+                const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
+                if (refreshError) {
+                    console.error('Error refreshing session:', refreshError);
+                    return false;
+                } else {
+                    if (window.location.host.includes('process-gpt.io')) {
+                        document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    } else {
+                        document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
+                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
+                    }
+                    window.localStorage.setItem('accessToken', refreshData.session.access_token);
+                }
+                
             }
-
+            
             const { data, error } = await window.$supabase.auth.getUser();
             if (error) {
                 return false;
@@ -124,39 +147,27 @@ export default class StorageBaseSupabase {
             if ((window.$isTenantServer && !window.$tenantName) || 
                 (existUser && existUser.tenants && existUser.tenants.includes(window.$tenantName))
             ) {
-            const result = await window.$supabase.auth.signInWithPassword({
-                email: userInfo.email,
-                password: userInfo.password
-            });
+                const result = await window.$supabase.auth.signInWithPassword({
+                    email: userInfo.email,
+                    password: userInfo.password
+                });
 
-            if (!result.error) {
-                const { access_token, refresh_token } = result.data.session;
-                if (window.location.host.includes('process-gpt.io')) {
-                    document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                } else {
-                    document.cookie = `access_token=${access_token}; path=/; SameSite=Lax`;
-                    document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
-                }
-                
-                    if (!window.$isTenantServer && window.$tenantName) {
-                        await this.setCurrentTenant(window.$tenantName);
-                    }
-
+                if (!result.error) {
+                    await this.setCurrentTenant(window.$tenantName);
                     return result.data;
-            } else if (result.error && result.error.message.includes("Email not confirmed")){
-                result.errorMsg = "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요."
-                return result;
-            } else {
+                } else if (result.error && result.error.message.includes("Email not confirmed")){
+                    result.errorMsg = "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요."
+                    return result;
+                } else {
                     const users = await this.list('users');
                     if (users && users.length > 0) {
                         const checkedId = users.some((user) => user.email == userInfo.email);
                         if (checkedId) {
-                            result.errorMsg = '비밀번호가 틀렸습니다.';
+                                result.errorMsg = '비밀번호가 틀렸습니다.';
                         } else {
                             result.errorMsg = '아이디가 틀렸습니다.';
                         }
-                return result;
+                        return result;
                     } else {
                         throw new StorageBaseError(result.error);
                     }
@@ -227,16 +238,6 @@ export default class StorageBaseSupabase {
                             current_tenant: window.$tenantName
                         });
                     }
-                        
-                    const { access_token, refresh_token } = result.data.session;
-                    if (window.location.host.includes('process-gpt.io')) {
-                        document.cookie = `access_token=${access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    } else {
-                        document.cookie = `access_token=${access_token}; path=/; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
-                    }
-
                     await this.setCurrentTenant(window.$tenantName);
 
                     return result.data;
@@ -260,6 +261,7 @@ export default class StorageBaseSupabase {
             window.localStorage.removeItem('uid');
             window.localStorage.removeItem('isAdmin');
             window.localStorage.removeItem('execution');
+            window.localStorage.removeItem('role');
             
             document.cookie = 'access_token=; domain=.process-gpt.io; path=/';
             document.cookie = 'refresh_token=; domain=.process-gpt.io; path=/';
@@ -341,9 +343,9 @@ export default class StorageBaseSupabase {
         try {
             let url;
             if (window.location.host.includes('process-gpt.io')) {
-                url = '/auth/reset-password';
+                url = 'https://process-gpt.io/auth/reset-password';
             } else {
-                url = window.location.host + '/auth/reset-password';
+                url = window.location.origin + '/auth/reset-password';
             }
             const result = await window.$supabase.auth.resetPasswordForEmail(email, {
                 redirectTo: url,
@@ -774,6 +776,13 @@ export default class StorageBaseSupabase {
         try {
             if (value.session) {
                 window.localStorage.setItem('accessToken', value.session.access_token);
+                if (window.location.host.includes('process-gpt.io')) {
+                    document.cookie = `access_token=${value.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    document.cookie = `refresh_token=${value.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                } else {
+                    document.cookie = `access_token=${value.session.access_token}; path=/; SameSite=Lax`;
+                    document.cookie = `refresh_token=${value.session.refresh_token}; path=/; SameSite=Lax`;
+                }
             }
             if (value.user) {
                 window.localStorage.setItem('author', value.user.email);

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useCustomizerStore } from '@/stores/customizer';
 import { useAuthStore } from '@/stores/auth';
 
@@ -18,7 +18,13 @@ const appsdrawer = ref(false);
 const customizer = useCustomizerStore();
 const authStore: any = useAuthStore();
 
-const isLogin: boolean = localStorage.getItem("accessToken") ? true : false;
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
+const isLogin = ref(false);
+
+onMounted(async () => {
+  isLogin.value = await backend.checkDBConnection();
+});
 </script>
 <template>
     <div>

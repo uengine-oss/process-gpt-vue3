@@ -265,6 +265,7 @@ export default {
             // Issue: init Methods가 종료되기전에, ChatGenerator를 생성하면서 this로 넘겨주는 Client 정보가 누락되는 현상 발생.
             if(this.chatMode == 'consulting'){
                 this.isConsultingMode = true
+                this.isEditable = true;
             } 
             if(this.isConsultingMode){
                 this.userInfo = await this.storage.getUserInfo();

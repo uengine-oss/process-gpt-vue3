@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
+const isLogin = ref(false);
+
+onMounted(async () => {
+    isLogin.value = await backend.checkDBConnection();
+});
 
 const router = useRouter()
 const gotoDashboard = async () => {
     const checkIsLogin = async () => {
-        const isLogin = localStorage.getItem("accessToken") ? true : false
         if(!isLogin) {
             alert("로그인이 필요합니다.")
             await router.push('/auth/login')

@@ -51,13 +51,19 @@ export default {
         stopLoading(){
             this.isLoading = false;
         },
-        beforeCreateTenant() {
+        async beforeCreateTenant() {
             this.isLoading = true;
-            this.createTenant();
-        },
-        async createTenant() {
             await this.$refs.tenantInfoField.validCheck();
             this.tenantId = this.tenantInfo.id;
+            const isValidTenant = await backend.checkTenantId(this.tenantId);
+            if (isValidTenant) {
+                await this.createTenant();
+            } else {
+                alert("이미 존재하는 회사 아이디입니다.");
+                this.isLoading = false;
+            }
+        },
+        async createTenant() {
             await backend.putTenant(this.tenantId);
             await this.$router.push('/tenant/manage');
         }

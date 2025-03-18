@@ -326,24 +326,34 @@ export default {
                 return;
             }
 
-            let megaProc = this.value.mega_proc_list.find(megaProc => megaProc.id === res.megaProcessId);
-            if (!megaProc) {
+            if (!this.value || !this.value.mega_proc_list) {
+                this.value = {
+                    mega_proc_list: []
+                };
+            }
+
+            let megaProc = null
+            if (this.value.mega_proc_list.length == 0) {
                 megaProc = {
                     id: res.megaProcessId,
                     name: this.$t('processDefinitionMap.uncategorized'),
                     major_proc_list: []
                 };
                 this.value.mega_proc_list.push(megaProc);
+            } else {
+                megaProc = this.value.mega_proc_list.find(megaProc => megaProc.id === res.megaProcessId);
             }
 
-            let majorProc = megaProc.major_proc_list.find(majorProc => majorProc.id === res.majorProcessId);
-            if (!majorProc) {
+            let majorProc = null;
+            if (megaProc.major_proc_list.length == 0) {
                 majorProc = {
                     id: res.majorProcessId,
                     name: this.$t('processDefinitionMap.uncategorized'),
                     sub_proc_list: []
                 };
                 megaProc.major_proc_list.push(majorProc);
+            } else {
+                majorProc = megaProc.major_proc_list.find(majorProc => majorProc.id === res.majorProcessId);
             }
 
             addSubProcess(majorProc);
