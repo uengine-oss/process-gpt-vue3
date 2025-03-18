@@ -101,6 +101,25 @@
                         </v-row>
                     </v-card>
                 </v-dialog>
+                <v-dialog v-model="restoreDialog" max-width="500">
+                    <v-card class="pa-4">
+                        <v-row class="ma-0 pa-0 mb-8">
+                            <v-card-text class="ma-0 pa-0" style="font-size:24px;">
+                                {{ $t('processDefinition.restoreProcessMessage') }}
+                            </v-card-text>
+                            <v-spacer></v-spacer>
+                            <v-btn @click="restoreDialog = false" icon variant="text" density="comfortable"
+                                style="margin-top:-8px;"
+                            >
+                                <Icons :icon="'close'" :size="16" />
+                            </v-btn>
+                        </v-row>
+                        <v-row class="ma-0 pa-0">
+                            <v-spacer></v-spacer>
+                            <v-btn color="error" rounded variant="flat" @click="restoreProcess">{{ $t('processDefinition.restore') }}</v-btn>
+                        </v-row>
+                    </v-card>
+                </v-dialog>
             </template>
             <template v-slot:rightpart>
                 <div v-if="isAdmin" class="no-scrollbar">
@@ -121,9 +140,11 @@
                             <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                                 :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                                 :isEditable="isEditable"
+                                :isDeleted="isDefinitionDeleted"
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
+                                @beforeRestore="beforeRestore"
                                 @savePDF="savePDF" />
                         </template>
                     </Chat>
@@ -157,7 +178,7 @@
             </template>
         </AppBaseCard>
         <v-dialog v-model="executeDialog" max-width="80%">
-            <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="fullPath" 
+            <process-gpt-execute v-if="!pal && mode === 'ProcessGPT'" :definitionId="fullPath" 
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
                 <test-process v-if="isSimulate == 'true'" :executeDialog="executeDialog" :definitionId="fullPath" @close="executeDialog = false" />
@@ -252,7 +273,9 @@ export default {
         verMangerDialog: false,
         // delete
         deleteDialog: false,
+        restoreDialog: false,
         isDeleted: false,
+        isDefinitionDeleted: false,
         externalSystems: [],
         executeDialog: false,
         isSimulate: 'false',
@@ -345,6 +368,9 @@ export default {
         },
         mode(){
             return window.$mode;
+        },
+        pal(){
+            return window.$pal;
         }
     },
     async beforeRouteLeave(to, from, next) {
@@ -407,6 +433,11 @@ export default {
                 this.deleteDialog = true;
             }
         },
+        beforeRestore() {
+            if (this.bpmn) {
+                this.restoreDialog = true;
+            }
+        },
         async deleteProcess() {
             var me = this;
             me.$try({
@@ -415,9 +446,24 @@ export default {
                     const path = window.$mode == 'ProcessGPT' ? me.fullPath : me.fullPath + ".bpmn";
                     await backend.deleteDefinition(path);
                     me.deleteDialog = false;
-                    me.isDeleted = true;
+                    // me.isDeleted = true;
                     me.EventBus.emit('definitions-updated');
                     me.EventBus.emit('instances-updated');
+                    me.$router.go(0);
+                }
+            });
+        },
+        async restoreProcess() {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    const path = window.$mode == 'ProcessGPT' ? me.fullPath : me.fullPath + ".bpmn";
+                    await backend.restoreDefinition(path);
+                    me.restoreDialog = false;
+                    me.EventBus.emit('definitions-updated');
+                    me.EventBus.emit('instances-updated');
+                    me.$router.go(0);
                 }
             });
         },
@@ -582,7 +628,8 @@ export default {
                     let bpmn = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
                     me.bpmn = bpmn;             
                     me.definitionChangeCount++;
-
+                    let isDeleted = await backend.getRawDefinition(fullPath, { type: 'deleted' }); 
+                    me.isDefinitionDeleted = isDeleted;
                     if (me.useLock) { // ProcessGPT 모드
                         const value = await backend.getRawDefinition(fullPath);
                         if (value) {
@@ -592,6 +639,7 @@ export default {
                             me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
                         }
 
+                        me.checkedLock(lastPath);
                         // 수정 권한 체크
                         const permission = await me.checkPermission(lastPath);
                         if (permission && permission.writable) {

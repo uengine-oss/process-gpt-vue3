@@ -11,6 +11,7 @@ export interface Backend {
     renameOrMove(definition: any, requestPath: string): Promise<any>;
     createFolder(newResource: any, requestPath: string): Promise<any>;
     deleteDefinition(requestPath: string, options: any): Promise<any>;
+    restoreDefinition(defId: string, options: any): Promise<boolean | undefined>;
     getRawDefinition(defId: string, options: any): Promise<any>;
     putRawDefinition(definition: any, requestPath: string, options: any): Promise<any>;
     start(command: any): Promise<any>;

@@ -1,9 +1,13 @@
 import UEngineBackend from './UEngineBackend';
 import ProcessGPTBackend from './ProcessGPTBackend';
+import PalModeBackend from './PalModeBackend';
 
 class BackendFactory extends Window {
     static createBackend() {
         console.log((window as any).$mode);
+        if((window as any).$pal == true) {
+            return new PalModeBackend();
+        }
         switch ((window as any).$mode) {
             case 'uEngine':
                 return new UEngineBackend();

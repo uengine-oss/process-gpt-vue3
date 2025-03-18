@@ -126,6 +126,11 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.delete('/definition/' + requestPath);
         return response.data;
     }
+
+    async restoreDefinition(defId: string, options: any): Promise<boolean | undefined> {
+        return false;
+    }
+
     async deleteInstance(instanceId: string) {
         const response = await axiosInstance.delete(`/instance/${instanceId}`);
         return response.data;
@@ -158,6 +163,7 @@ class UEngineBackend implements Backend {
     }
     // @ts-ignore
     async getRawDefinition(defPath: string, options) {
+        if(options.type == 'deleted') return null;
         let path = `/definition/raw/${defPath}.${options.type}`;
         if(options.version) {
             path = path + `/version/${options.version}`

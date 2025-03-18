@@ -1,5 +1,8 @@
 <template>
     <div>
+        <v-btn v-if="isViewMode && isPal" @click="navigateToTask" color="primary" class="mb-4">
+            {{ $t('PALUserTaskPanel.moveToTask') }}
+        </v-btn>
         <div :class="isViewMode ? 'quill-editor-view-mode' : 'quill-editor-edit-mode'">
             <quill-editor
                 :content="activity.description"
@@ -12,6 +15,17 @@
             ></quill-editor>
         </div>
         <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4" :isViewMode="isViewMode"></Checkpoints>
+        <div v-if="isPal && !isViewMode" class="link-save-container mb-4">
+            <v-text-field
+                v-model="activity.taskLink"
+                :label="$t('PALUserTaskPanel.taskLink')"
+                placeholder="https://example.com"
+                class="mb-2"
+            ></v-text-field>
+            <div v-if="link" class="saved-link mt-2">
+                <a :href="link" target="_blank">{{ link }}</a>
+            </div>
+        </div>
         <div class="pb-10 attachment-container">
             <v-row class="ma-0 pa-0 align-center">
                 <h6 class="text-body-1">첨부파일</h6>
@@ -172,6 +186,9 @@ export default {
                 return text.replace('uploads/', '');
             }
             return text;
+        },
+        navigateToTask() {
+            window.open(this.activity.taskLink, '_blank');
         }
     }
 };
