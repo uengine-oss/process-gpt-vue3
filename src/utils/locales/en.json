@@ -239,7 +239,10 @@
         "simulate": "Simulate",
         "preview": "Preview",
         "capture": "Download process image",
-        "savePDF": "Save PDF"
+        "savePDF": "Save PDF",
+        "restoreProcess": "Restore",
+        "restore": "Restore",
+        "restoreProcessMessage": "Do you want to restore the process?"
     },
     "ProcessVariable": {
         "name": "Name",
@@ -467,10 +470,14 @@
         "content": "Content",
         "to": "To",
         "from": "From",
+        "toRole": "To Role",
+        "fromRole": "From Role",
         "descriptionTitle": "Write Title",
         "descriptionContent": "Write Content",
         "descriptionTo": "Write To",
         "descriptionFrom": "Write From",
+        "descriptionToRole": "Write To Role",
+        "descriptionFromRole": "Write From Role",
         "emailActivity": "Email Activity"
     },
     "ServiceTaskPanel": {
@@ -501,7 +508,15 @@
         "yes": "Yes",
         "no": "No",
         "radioSelectDescriptionTitle": "Select data processing method: Basic data processing, Custom screen creation, External system integration.",
-        "radioSelectDescriptionSubTitle1": "1. Basic: Use basic data \n2. Form: Screen created in screen definition \n3. External Application: Generates a field for entering a business screen URL"
+        "radioSelectDescriptionSubTitle1": "1. Basic: Use basic data \n2. Form: Screen created in screen definition \n3. External Application: Generates a field for entering a business screen URL",
+        "assignmentType": "Assignment Type",
+        "defaultAssignment": "Default Assignment",
+        "competitionAssignment": "Competition Assignment",
+        "directAssignment": "Direct Assignment",
+        "automaticAssignment": "Automatic Assignment",
+        "taskType": "Task Type",
+        "descriptionTo": "Assignment Target",
+        "descriptionToTitle": "Assignment Target Input"
     },
     "Mapper": {
         "mapper": "Mapper"
@@ -763,7 +778,8 @@
         "instanceMyGroup": "My Group Instance",
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Definition Export",
-        "save": "Save"
+        "save": "Save",
+        "trash": "휴지통"
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "Process Execution Performance",
@@ -790,6 +806,8 @@
         "selectTask": "Select Task to Compensate"
     },
     "PALUserTaskPanel": {
-        "insertDescription": "Please enter the task description"
+        "insertDescription": "Please enter the task description",
+        "taskLink": "Task Link",
+        "moveToTask": "Move to Task"
     }
 }

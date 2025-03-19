@@ -1971,6 +1971,7 @@ export default {
                                         activity.duration = oldActivity.duration;
                                         activity.attachments = oldActivity.attachments;
                                         activity.pythonCode = oldActivity.pythonCode;
+                                        activity.taskLink = oldActivity.taskLink;
                                     }
                                     return activity;
                                 });

@@ -239,7 +239,10 @@
         "simulate": "시뮬레이션",
         "preview": "미리보기",
         "capture": "프로세스 이미지 다운로드",
-        "savePDF": "PDF 저장"
+        "savePDF": "PDF 저장",
+        "restoreProcess": "복구",
+        "restore": "복구",
+        "restoreProcessMessage": "프로세스를 복구하시겠습니까?"
     },
     "ProcessVariable": {
         "name": "이름",
@@ -467,10 +470,14 @@
         "content": "내용",
         "to": "받는 사람",
         "from": "보낸 사람",
+        "toRole": "받는 역할",
+        "fromRole": "보낸 역할",
         "descriptionTitle": "제목 입력",
         "descriptionContent": "내용 입력",
         "descriptionTo": "받는 사람 입력",
         "descriptionFrom": "보낸 사람 입력",
+        "descriptionToRole": "받는 역할 입력",
+        "descriptionFromRole": "보낸 역할 입력",
         "emailActivity": "이메일 형식"
     },
     "ServiceTaskPanel": {
@@ -501,7 +508,15 @@
         "yes" : "예",
         "no" : "아니오",
         "radioSelectDescriptionTitle": "데이터 처리 방식 선택: 기본 데이터 처리, 커스텀 화면 생성, 외부 시스템 연동.",
-        "radioSelectDescriptionSubTitle1": "1. 기본 : 기본적인 데이터 사용 \n2. 폼 : 화면 정의에서 생성한 화면 \n3. 외부 어플리케이션 : 업무 화면 URL 입력 필드 생성"
+        "radioSelectDescriptionSubTitle1": "1. 기본 : 기본적인 데이터 사용 \n2. 폼 : 화면 정의에서 생성한 화면 \n3. 외부 어플리케이션 : 업무 화면 URL 입력 필드 생성",
+        "assignmentType": "할당 유형",
+        "defaultAssignment": "기본 할당",
+        "competitionAssignment": "경쟁 할당",
+        "directAssignment": "직접 할당",
+        "automaticAssignment": "자동 할당",
+        "taskType": "작업 유형",
+        "descriptionTo": "할당 대상",
+        "descriptionToTitle": "할당 대상 입력"
     },
     "Mapper" : {
         "mapper" : "매퍼"
@@ -766,7 +781,8 @@
         "instanceMyGroup": "내 그룹 인스턴스",
         "saveFileName": "저장될 파일명",
         "downloadDefinitionList": "정의 내보내기",
-        "save": "저장"
+        "save": "저장",
+        "trash": "휴지통"
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "프로세스 실행실적",
@@ -793,6 +809,8 @@
         "selectTask": "보상 작업 선택"
     },
     "PALUserTaskPanel": {
-        "insertDescription": "태스크 설명을 넣어주세요"
+        "insertDescription": "태스크 설명을 넣어주세요",
+        "taskLink": "업무 링크",
+        "moveToTask": "업무 화면으로 이동"
     }
 }

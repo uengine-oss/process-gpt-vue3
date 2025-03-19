@@ -1,5 +1,7 @@
 <template>
-    <div ref="container" class="vue-bpmn-diagram-container"></div>
+    <div ref="container" class="vue-bpmn-diagram-container">
+        <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
+    </div>
     <v-dialog v-model="isPreviewPDFDialog" max-width="850px">
         <v-card >
             <v-card-title class="headline">{{ $t('PDFPreviewer.title') }}</v-card-title>
@@ -153,6 +155,9 @@ export default {
                     func.apply(this, args);
                 }, timeout);
             };
+        },
+        downloadSvg() {
+            this.saveSVG();
         },
         async validate() {
             let self = this;

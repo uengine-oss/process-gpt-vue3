@@ -1,13 +1,38 @@
 <template>
     <div>
-        <v-radio-group v-model="copyUengineProperties.sendType" inline class="delete-input-details">
-            <v-radio :label="$t('SendTaskPanel.message')" value="message"></v-radio>
+        <v-radio-group v-model="sendType" inline class="delete-input-details">
+            <v-radio :label="$t('SendTaskPanel.message')" value="email"></v-radio>
             <v-radio :label="$t('SendTaskPanel.send')" value="rest_api"></v-radio>
         </v-radio-group>
-        <div v-if="copyUengineProperties.sendType == 'message'">
+        <div v-if="sendType == 'email'">
+            <div>{{ $t('ReceiveTaskPanel.title') }}</div>
+            <v-row class="ma-0 pa-0 mb-2 mb-4">
+                <v-text-field v-model="copyUengineProperties.title" :label="$t('ReceiveTaskPanel.descriptionTitle')"></v-text-field>
+            </v-row>
+            <div>{{ $t('ReceiveTaskPanel.content') }}</div>
+            <v-row class="ma-0 pa-0 mb-4">
+                <v-textarea v-model="copyUengineProperties.contents" :label="$t('ReceiveTaskPanel.descriptionContent')"></v-textarea>
+            </v-row>
+            <div>{{ $t('ReceiveTaskPanel.to') }}</div>
+            <v-row class="ma-0 pa-0 mb-4">
+                <v-text-field v-model="copyUengineProperties.to" :label="$t('ReceiveTaskPanel.descriptionTo')"></v-text-field>
+            </v-row>
+            <div>{{ $t('ReceiveTaskPanel.from') }}</div>
+            <v-row class="ma-0 pa-0 mb-4">
+                <v-text-field v-model="copyUengineProperties.from" :label="$t('ReceiveTaskPanel.descriptionFrom')"></v-text-field>
+            </v-row>
             
+            <div>{{ $t('ReceiveTaskPanel.toRole') }}</div>
+            <v-row class="ma-0 pa-0 mb-4">
+                <v-text-field v-model="copyUengineProperties.toRole" :label="$t('ReceiveTaskPanel.descriptionToRole')"></v-text-field>
+            </v-row>
+            <div>{{ $t('ReceiveTaskPanel.fromRole') }}</div>
+            <v-row class="ma-0 pa-0 mb-4">
+                <v-text-field v-model="copyUengineProperties.fromRole" :label="$t('ReceiveTaskPanel.descriptionFromRole')"></v-text-field>
+            </v-row>
+            <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>
         </div>
-        <div v-if="copyUengineProperties.sendType == 'rest_api'">
+        <div v-if="sendType == 'rest_api'">
             <div class="mb-1 mt-4">
                 <v-col class="pa-0 pr-2" style="margin-bottom: 10px">
                     <div>Headers</div>
@@ -155,6 +180,7 @@ export default {
             copyDefinition: this.definition,
             processVariables: [],
             apiServiceURL: '',
+            sendType: 'email',
             methodTypeDescription: [
                 {
                     title: 'SendTaskPanel.methodTypeDescriptionSubTitle1',
@@ -174,13 +200,41 @@ export default {
             }));
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
+        if(this.copyUengineProperties._type == 'org.uengine.kernel.LocalEMailActivity') {
+            this.selectedActivity = 'email';
+        } else {
+            this.selectedActivity = 'rest_api';
+        }
     },
     computed: {},
-    watch: {},
+    watch: {
+        'sendType'(newType) {
+            if (newType === 'email') {
+                this.copyUengineProperties._type = 'org.uengine.kernel.LocalEMailActivity';
+            } else {
+                this.copyUengineProperties._type = 'org.uengine.kernel.bpmn.SendTask';
+            }
+        }
+    },
     methods: {
         async getToken() {
             const backend = BackendFactory.createBackend();
             return await backend.getOpenAIToken();
+        },
+        beforeSave() {
+            if(this.sendType == 'email') {
+                delete this.copyUengineProperties.inputPayloadTemplate;
+                delete this.copyUengineProperties.method;
+                delete this.copyUengineProperties.headers;
+                delete this.copyUengineProperties.API;
+            } else {
+                delete this.copyUengineProperties._type;
+                delete this.copyUengineProperties.contents;
+                delete this.copyUengineProperties.to;
+                delete this.copyUengineProperties.from;
+                delete this.copyUengineProperties.toRole;
+                delete this.copyUengineProperties.fromRole;
+            }
         },
         generateAPI() {
             this.$try({
@@ -234,9 +288,11 @@ export default {
                 context: this,
                 action: async () => {
                     // Changed to arrow function
-                    this.copyUengineProperties.API = response.API;
-                    this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(response.inputPayloadTemplateJSON);
-                    this.copyUengineProperties.method = response.method;
+                    if(this.sendType != 'email') {
+                        this.copyUengineProperties.API = response.API;
+                        this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(response.inputPayloadTemplateJSON);
+                        this.copyUengineProperties.method = response.method;
+                    }
                 }
             });
         },

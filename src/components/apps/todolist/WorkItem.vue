@@ -221,6 +221,9 @@ export default {
         mode() {
             return window.$mode;
         },
+        pal() {
+            return window.$pal;
+        },
         currentTaskId() {
             return this.taskId ? this.taskId : this.$route.params.taskId
         },
@@ -306,7 +309,7 @@ export default {
                         me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
                     }
 
-                    if (me.mode == 'ProcessGPT') {
+                    if (me.mode == 'ProcessGPT' && !me.pal) {
                         me.currentComponent = 'FormWorkItem';
                     } else {
                         me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');

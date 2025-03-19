@@ -121,6 +121,18 @@ const customizer = useCustomizerStore();
                         />
                     </template>
                 </v-col>
+                <v-col class="pa-0" style="flex: 1 1; overflow: auto;">
+                    <div class="text-medium-emphasis cp-menu mt-3 ml-2">{{ $t('VerticalSidebar.trash') }}</div>
+                        <template v-if="deletedDefinitionList">
+                            <NavCollapse v-for="(deletedDefinition, i) in deletedDefinitionList.children" :key="i"
+                                :item="deletedDefinition" 
+                                class="leftPadding"
+                                @update:item="(deletedDefinitionList[i] = $event)" 
+                                :level="0" 
+                                :type="'definition-list'" 
+                            />
+                        </template>
+                </v-col>
             </v-list>
         </div>
 
@@ -167,7 +179,8 @@ export default {
         definitionList: null,
         logoPadding: '',
         instanceList: [],
-        isOpen: false
+        isOpen: false,
+        deletedDefinitionList: []
     }),
     computed: {
         JMS() {
@@ -314,52 +327,98 @@ export default {
             const list = await backend.listDefinition();
             if (list && list.length > 0) {
                 var menu = {
-                    
+                    children: []
+                };
+                var deletedMenu = {
                     children: []
                 };
                 list.forEach((item) => {
-                    if (item.directory) {
-                        if (item.name != 'instances'  || item.name != 'archive') {
-                            var obj = {
-                                title: item.name,
-                                icon: 'outline-folder',
-                                // to: `/definitions/${item.definition.processDefinitionId}`,
-                                directory: true,
-                                BgColor: 'primary',
-                                path: item.path
-                            };
-                            me.getChild(obj)
-                            menu.children.push(obj);
+                    if(!item.isDeleted){
+                        if (item.directory) {
+                            if (item.name != 'instances'  || item.name != 'archive') {
+                                var obj = {
+                                    title: item.name,
+                                    icon: 'outline-folder',
+                                    // to: `/definitions/${item.definition.processDefinitionId}`,
+                                    directory: true,
+                                    BgColor: 'primary',
+                                    path: item.path
+                                };
+                                me.getChild(obj)
+                                menu.children.push(obj);
+                            }
+                        } else if (item) {
+                            var obj = {};
+                            if (item.path && item.path.includes('.bpmn')) {
+                                obj = {
+                                    title: item.name,
+                                    to: `/definitions/${item.path.split('.')[0]}`,
+                                    BgColor: 'primary',
+                                    type: 'bpmn'
+                                };
+                                menu.children.push(obj);
+                            } else if (item.path && item.path.includes('.form')) {
+                                obj = {
+                                    title: item.name,
+                                    to: `/ui-definitions/${item.path.split('.')[0]}`,
+                                    BgColor: 'primary',
+                                    type: 'form'
+                                };
+                                menu.children.push(obj);
+                            } else if (item.definition) {
+                                obj = {
+                                    title: item.definition.processDefinitionName,
+                                    to: `/definitions/${item.definition.processDefinitionId}`,
+                                    BgColor: 'primary'
+                                };
+                                menu.children.push(obj);
+                            }
                         }
-                    } else if (item) {
-                        var obj = {};
-                        if (item.path && item.path.includes('.bpmn')) {
-                            obj = {
-                                title: item.name,
-                                to: `/definitions/${item.path.split('.')[0]}`,
-                                BgColor: 'primary',
-                                type: 'bpmn'
-                            };
-                            menu.children.push(obj);
-                        } else if (item.path && item.path.includes('.form')) {
-                            obj = {
-                                title: item.name,
-                                to: `/ui-definitions/${item.path.split('.')[0]}`,
-                                BgColor: 'primary',
-                                type: 'form'
-                            };
-                            menu.children.push(obj);
-                        } else if (item.definition) {
-                            obj = {
-                                title: item.definition.processDefinitionName,
-                                to: `/definitions/${item.definition.processDefinitionId}`,
-                                BgColor: 'primary'
-                            };
-                            menu.children.push(obj);
+                    } else {
+                        if (item.directory) {
+                            if (item.name != 'instances'  || item.name != 'archive') {
+                                var obj = {
+                                    title: item.name,
+                                    icon: 'outline-folder',
+                                    // to: `/definitions/${item.definition.processDefinitionId}`,
+                                    directory: true,
+                                    BgColor: 'primary',
+                                    path: item.path
+                                };
+                                me.getChild(obj)
+                                menu.children.push(obj);
+                            }
+                        } else if (item) {
+                            var obj = {};
+                            if (item.path && item.path.includes('.bpmn')) {
+                                obj = {
+                                    title: item.name,
+                                    to: `/definitions/${item.path.split('.')[0]}`,
+                                    BgColor: 'primary',
+                                    type: 'bpmn'
+                                };
+                                deletedMenu.children.push(obj);
+                            } else if (item.path && item.path.includes('.form')) {
+                                obj = {
+                                    title: item.name,
+                                    to: `/ui-definitions/${item.path.split('.')[0]}`,
+                                    BgColor: 'primary',
+                                    type: 'form'
+                                };
+                                deletedMenu.children.push(obj);
+                            } else if (item.definition) {
+                                obj = {
+                                    title: item.definition.processDefinitionName,
+                                    to: `/definitions/${item.definition.processDefinitionId}`,
+                                    BgColor: 'primary'
+                                };
+                                deletedMenu.children.push(obj);
+                            }
                         }
                     }
                 });
                 this.definitionList = menu;
+                this.deletedDefinitionList = deletedMenu;
             }
         },
         navigateTo(path) {

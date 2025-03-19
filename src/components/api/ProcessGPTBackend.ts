@@ -112,6 +112,11 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    
+    async restoreDefinition(defId: string, options: any): Promise<boolean | undefined> {
+        return false;
+    }
+    
     async putRawDefinition(xml: any, defId: string, options: any) {
         try {
             defId = defId.toLowerCase();

@@ -22,7 +22,17 @@
                     <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
                     <v-spacer></v-spacer>
                     <!-- 삭제 아이콘 -->
-                    <v-tooltip location="bottom">
+                    <v-tooltip v-if="isDeleted" location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                density="comfortable" @click="beforeRestore"
+                            >   
+                            <div class="mdi mdi-refresh" style="font-size: 24px;"></div>
+                            </v-btn>
+                        </template>
+                        <span>{{ $t('processDefinition.restoreProcess') }}</span>
+                    </v-tooltip>
+                    <v-tooltip v-else location="bottom">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
                                 density="comfortable" @click="beforeDelete"
@@ -124,9 +134,9 @@
                         </div>
                         
                         <!-- 실행 관련 버튼  -->
-                        <div class="mr-4 d-flex" v-if="!Pal">
+                        <div class="mr-4 d-flex">
                             <!-- 시뮬레이션 아이콘 -->
-                            <v-tooltip location="bottom" :text="$t('processDefinition.simulate')">
+                            <v-tooltip v-if="!Pal" location="bottom" :text="$t('processDefinition.simulate')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" @click="executeSimulate" icon variant="text" class="text-medium-emphasis" density="comfortable"
                                     >
@@ -164,7 +174,8 @@ export default {
         editUser: String,
         userInfo: Object,
         isXmlMode: Boolean,
-        isEditable: Boolean
+        isEditable: Boolean,
+        isDeleted: Boolean
     },
     data() {
         return {
@@ -220,6 +231,9 @@ export default {
         },
         beforeDelete() {
             this.$emit('beforeDelete');
+        },
+        beforeRestore() {
+            this.$emit('beforeRestore');
         },
         showXmlMode() {
             this.$emit('showXmlMode');

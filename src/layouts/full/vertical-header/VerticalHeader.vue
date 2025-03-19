@@ -44,14 +44,14 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'chat-round-unread-line-duotone',
         to: '/chats',
         disable: false,
-        isVisible: window.$mode === 'ProcessGPT'
+        isVisible: window.$mode === 'ProcessGPT' && !window.$pal
     },
     {
         title: 'headerMenu.todoList',
         icon: 'overview',
         to: '/todolist',
         disable: false,
-        isVisible: !window.$pal
+        isVisible: true
     },
     {
         title: 'headerMenu.admin',
