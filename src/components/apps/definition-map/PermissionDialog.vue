@@ -144,7 +144,7 @@ export default {
                     value: user.id,
                 }));
 
-                if (permissions.length > 0) {
+                if (permissions && permissions.length > 0) {
                     this.permissionList = permissions;
                     this.editPermissionList = [];
                     permissions.forEach(permission => {
@@ -161,6 +161,9 @@ export default {
                             });
                         }
                     });
+                } else {
+                    this.permissionList = [];
+                    this.editPermissionList = [];
                 }
             }
         },
@@ -225,7 +228,37 @@ export default {
                 title: `${permission.name}`,
                 value: permission.value,
             });
-        }
+        },
+        findMatchingProcess(procDef, processMap) {
+            function searchInList(list, targetId) {
+                for (const item of list) {
+                    if (item.id === targetId) {
+                        return item;
+                    }
+                    if (item.major_proc_list) {
+                        const found = searchInList(item.major_proc_list, targetId);
+                        if (found) {
+                            return { ...item, major_proc_list: [found] };
+                        }
+                    }
+                    if (item.sub_proc_list) {
+                        const found = searchInList(item.sub_proc_list, targetId);
+                        if (found) {
+                            return { ...item, sub_proc_list: [found] };
+                        }
+                    }
+                }
+                return null;
+            }
+            const targetId = procDef.sub_proc_list ? procDef.id : procDef.id;
+            return searchInList(processMap.mega_proc_list, targetId);
+        },
+        getMatchingProcessMap(procDef, processMap) {
+            const matchingProcess = this.findMatchingProcess(procDef, processMap);
+            console.log(matchingProcess);
+            return matchingProcess;
+        },
+        
     },
 };
 </script>

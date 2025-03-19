@@ -7,7 +7,14 @@ const backend = BackendFactory.createBackend();
 const isLogin = ref(false);
 
 onMounted(async () => {
-    isLogin.value = await backend.checkDBConnection();
+    if (window.$isTenantServer) {
+        const tenantId = window.$tenantName;
+        if (tenantId) {
+            isLogin.value = await backend.setTenant(tenantId) ?? false;
+        }
+    } else {
+        isLogin.value = await backend.checkDBConnection();
+    }
 });
 
 const router = useRouter()

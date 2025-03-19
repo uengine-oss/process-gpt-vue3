@@ -12,7 +12,9 @@
             <PlusIcon size="24" stroke-width="2" />
         </v-btn>
 
-        <TodoDialog v-if="dialog" :isOpen="dialog" :todolist="todolist" :instId="id" :defId="defId" @close="closeDialog" />
+        <v-dialog v-model="dialog" max-width="500">
+            <TodoDialog :todolist="todolist" :instId="id" :defId="defId" @close="closeDialog" />
+        </v-dialog>
     </v-card>
 </template>
 

@@ -234,7 +234,7 @@ export default {
         },
     },
     data: () => ({
-        isEditable: false,
+        isEditable: true,
         isXmlMode: false,
         prompt: '',
         changedXML: '',
@@ -349,16 +349,20 @@ export default {
         }
     },
     async beforeRouteLeave(to, from, next) {
-        const store = useBpmnStore();
-        const modeler = store.getModeler;
-        const xmlObj = await modeler.saveXML({ format: true, preamble: true });
+        if (this.bpmn && this.bpmn.length > 0) {
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            const xmlObj = await modeler.saveXML({ format: true, preamble: true });
 
-        if (from.path === '/definitions/chat' && xmlObj && xmlObj.xml && !this.isViewMode) {
-        const answer = window.confirm(this.$t('changePath'));
-            if (answer) {
-                next();
+            if (from.path === '/definitions/chat' && xmlObj && xmlObj.xml && !this.isViewMode) {
+            const answer = window.confirm(this.$t('changePath'));
+                if (answer) {
+                    next();
+                } else {
+                    next(false);
+                }
             } else {
-                next(false);
+                next();
             }
         } else {
             next();
@@ -593,16 +597,22 @@ export default {
                             me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
                         }
 
-                        // 수정 권한 체크
-                        const permission = await me.checkPermission(lastPath);
-                        if (permission && permission.writable) {
+                        const role = localStorage.getItem('role');
+                        if (role !== 'superAdmin') {
+                            // 수정 권한 체크
+                            const permission = await me.checkPermission(lastPath);
+                            if (permission && permission.writable) {
+                                me.isEditable = true;
+                                me.checkedLock(lastPath);
+                            } else if (permission && !permission.writable) {
+                                me.isEditable = false;
+                                me.lock = true;
+                                me.disableChat = true;
+                                me.isViewMode = true;
+                            }
+                        } else {
                             me.isEditable = true;
                             me.checkedLock(lastPath);
-                        } else if (permission && !permission.writable) {
-                            me.isEditable = false;
-                            me.lock = true;
-                            me.disableChat = true;
-                            me.isViewMode = true;
                         }
                     }
 

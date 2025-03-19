@@ -27,7 +27,7 @@ CREATE POLICY tenants_select_policy
     ON tenants
     FOR SELECT
     TO authenticated
-    USING (auth.uid() = owner);
+    USING (true);
 
 CREATE POLICY tenants_update_policy
     ON tenants
@@ -1105,8 +1105,11 @@ begin
             gen_random_uuid(),
             NEW.user_id,
             NEW.activity_name,
-            'workitem',
-            coalesce(v_proc_inst_name, ''),
+            CASE 
+                WHEN NEW.proc_inst_id IS NOT NULL THEN 'workitem_bpm'
+                ELSE 'workitem'
+            END,
+            coalesce(v_proc_inst_name, NEW.activity_name),
             case when NEW.status = 'DONE' then true else false end,
             now(),
             NEW.tenant_id,

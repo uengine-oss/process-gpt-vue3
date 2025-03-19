@@ -102,6 +102,10 @@ export default {
         async classifyProcess() {
             let subProcList = [];
             let unclassifiedIdx = -1;
+            if (!this.value.mega_proc_list || this.value.mega_proc_list.length == 0) {
+                this.value.mega_proc_list = [];
+                return;
+            }
             this.value.mega_proc_list.forEach((mega, index) => {
                 if (mega.id == "unclassified") {
                     unclassifiedIdx = index;

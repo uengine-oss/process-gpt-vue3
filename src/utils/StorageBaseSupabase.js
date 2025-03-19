@@ -66,7 +66,6 @@ export default class StorageBaseSupabase {
                 return false;
             }
             if (data) {
-                console.log('Supabase is connected.');
                 this.writeUserData(data);
                 return true;
             }
@@ -263,8 +262,13 @@ export default class StorageBaseSupabase {
             window.localStorage.removeItem('execution');
             window.localStorage.removeItem('role');
             
-            document.cookie = 'access_token=; domain=.process-gpt.io; path=/';
-            document.cookie = 'refresh_token=; domain=.process-gpt.io; path=/';
+            if (window.location.host.includes('process-gpt.io')) {
+                document.cookie = 'access_token=; domain=.process-gpt.io; path=/';
+                document.cookie = 'refresh_token=; domain=.process-gpt.io; path=/';
+            } else {
+                document.cookie = 'access_token=; path=/';
+                document.cookie = 'refresh_token=; path=/';
+            }
 
             return await window.$supabase.auth.signOut();
         } catch(e) {

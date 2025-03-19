@@ -55,7 +55,7 @@ export default {
             this.isLoading = true;
             await this.$refs.tenantInfoField.validCheck();
             this.tenantId = this.tenantInfo.id;
-            const isValidTenant = await backend.checkTenantId(this.tenantId);
+            const isValidTenant = await backend.getTenant(this.tenantId);
             if (isValidTenant) {
                 await this.createTenant();
             } else {

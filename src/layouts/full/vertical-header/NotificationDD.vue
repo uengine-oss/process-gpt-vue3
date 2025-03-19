@@ -75,7 +75,11 @@ export default {
             this.notifications = await backend.getNotifications();
         },
         async checkNotification(value) {
-            this.$router.push(value.url);
+            if (value.type == 'workitem') {
+                this.$router.push('/todolist');
+            } else {
+                this.$router.push(value.url);
+            }
             await backend.setNotifications(value);
             await this.getNotifications();
         }

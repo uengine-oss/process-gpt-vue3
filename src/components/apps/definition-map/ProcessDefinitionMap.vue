@@ -466,9 +466,18 @@ export default {
             extractIds(diff);
         },
         async checkPermissions(process) {
-            const permissions = await backend.getUserPermissions({ proc_def_id: process.id });
-            if (permissions && permissions.length > 0) {
-                return permissions;
+            if (Array.isArray(process)) {
+                process.forEach(async (item) => {
+                    const permissions = await backend.getUserPermissions({ proc_def_id: item.id });
+                    if (permissions && permissions.length > 0) {
+                        return permissions;
+                    }
+                });
+            } else {
+                const permissions = await backend.getUserPermissions({ proc_def_id: process.id });
+                if (permissions && permissions.length > 0) {
+                    return permissions;
+                }
             }
             return null;
         },

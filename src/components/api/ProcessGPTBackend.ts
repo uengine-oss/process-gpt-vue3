@@ -40,15 +40,6 @@ class ProcessGPTBackend implements Backend {
         return false;
     }
 
-    async checkTenantId(tenantId: string) {
-        const tenant = await storage.getString(`tenants/${tenantId}`, { key: 'id' });
-        if (tenant) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     async listDefinition(path: string) {
         try {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
@@ -597,9 +588,6 @@ class ProcessGPTBackend implements Backend {
                 column: 'uuid'
             };
             const procMapId = await storage.getString('configuration', options);
-            if (!procMapId) {
-                throw new Error("Process map ID not found.");
-            }
             let updatedProcMap: any = null;
             const role = localStorage.getItem('role');
             if (role !== 'superAdmin') {
@@ -1473,7 +1461,12 @@ class ProcessGPTBackend implements Backend {
 
     async getTenants() {
         try {
-            const tenants = await storage.list('tenants');
+            const uid: string = localStorage.getItem('uid') || '';
+            const tenants = await storage.list('tenants', {
+                match: {
+                    owner: uid
+                }
+            });
             return tenants;
         } catch (error) {
             //@ts-ignore
@@ -1500,6 +1493,12 @@ class ProcessGPTBackend implements Backend {
         try {
             await storage.setCurrentTenant(tenantId);
             await this.checkDBConnection();
+            const user: any = await this.getUserInfo();
+            if (tenantId == user.current_tenant) {
+                return true;
+            } else {
+                return false;
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

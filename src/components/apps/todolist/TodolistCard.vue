@@ -19,7 +19,9 @@
             </v-row>
         </div>
 
-        <TodoDialog v-if="dialog" :isOpen="dialog" :todolist="todolist" @close="closeDialog" />
+        <v-dialog v-model="dialog" max-width="500">
+            <TodoDialog :todolist="todolist" @close="closeDialog" />
+        </v-dialog>
     </v-card>
 </template>
 

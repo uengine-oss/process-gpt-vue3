@@ -1,5 +1,5 @@
 <template>
-    <v-dialog v-model="isOpen" max-width="500">
+    <div>
         <v-card v-if="type == 'view'">
             <v-card-title class="d-flex align-center justify-space-between pt-3 pl-5">
                 <h4 class="text-h4">할 일</h4>
@@ -18,8 +18,8 @@
                     <span class="text-h6">{{ task.startDate }}</span>
                 </div>
                 <div class="mb-3">
-                    <span class="text-h6 font-weight-semibold">종료일: </span>
-                    <span class="text-h6">{{ task.endDate }}</span>
+                    <span class="text-h6 font-weight-semibold">마감일: </span>
+                    <span class="text-h6">{{ task.dueDate }}</span>
                 </div>
                 <div class="mb-3">
                     <span class="text-h6 font-weight-semibold">상태: </span>
@@ -61,7 +61,7 @@
                 <v-btn color="error" variant="flat" @click="close">닫기</v-btn>
             </v-card-actions>
         </v-card>
-    </v-dialog>
+    </div>
 </template>
 
 <script>

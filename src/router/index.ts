@@ -43,7 +43,7 @@ router.beforeEach(async (to, from, next) => {
                 configurable: false
             });
         } else {
-            const isValidTenant = await backend.checkTenantId(subdomain);
+            const isValidTenant = await backend.getTenant(subdomain);
             if (!isValidTenant) {
                 alert("존재하지 않는 경로입니다.");
                 window.location.href = 'https://www.process-gpt.io/tenant/manage';
@@ -66,7 +66,12 @@ router.beforeEach(async (to, from, next) => {
     // redirect to login page if not logged in and trying to access a restricted page
     const publicPages = ['/'];
     const authRequired = !publicPages.includes(to.path);
-    const isLogin = await backend.checkDBConnection();
+    let isLogin = false;
+    if (window.$isTenantServer) {
+        isLogin = await backend.checkDBConnection();
+    } else {
+        isLogin = await backend.setTenant(window.$tenantName) ?? false;
+    }
 
     if (to.matched.some((record) => record.meta.requiresAuth)) {
         if (authRequired && !isLogin) {
