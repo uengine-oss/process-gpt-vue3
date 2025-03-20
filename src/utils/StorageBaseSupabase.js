@@ -330,8 +330,10 @@ export default class StorageBaseSupabase {
                     }
                 }
             } else {
-                alert('로그인이 필요합니다');
-                window.location.href = '/auth/login';
+                if (window.location.pathname != '/auth/login') {
+                    alert('로그인이 필요합니다.');
+                    window.location.href = '/auth/login';
+                }
             }
         } catch (e) {
             if (e instanceof StorageBaseError && e.cause) {

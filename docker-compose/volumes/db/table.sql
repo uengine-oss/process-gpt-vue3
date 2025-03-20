@@ -1107,7 +1107,7 @@ begin
             NEW.user_id,
             NEW.activity_name,
             CASE 
-                WHEN NEW.proc_inst_id IS NOT NULL THEN 'workitem_bpm'
+                WHEN NEW.proc_inst_id IS NOT NULL AND NEW.proc_inst_id <> '' THEN 'workitem_bpm'
                 ELSE 'workitem'
             END,
             coalesce(v_proc_inst_name, NEW.activity_name),

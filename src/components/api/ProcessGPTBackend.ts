@@ -1499,7 +1499,7 @@ class ProcessGPTBackend implements Backend {
             await storage.setCurrentTenant(tenantId);
             await this.checkDBConnection();
             const user: any = await this.getUserInfo();
-            if (tenantId == user.current_tenant) {
+            if (user && user.current_tenant && user.current_tenant == tenantId) {
                 return true;
             } else {
                 return false;

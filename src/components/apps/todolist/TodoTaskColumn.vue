@@ -27,7 +27,7 @@ import TodoTaskItemCard from './TodoTaskItemCard.vue';
 import WorkItemDialog from './WorkItemDialog.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";
-const back = BackendFactory.createBackend();
+const backend = BackendFactory.createBackend();
 
 export default {
     components: {
@@ -49,7 +49,7 @@ export default {
         originColumnId: null,
     }),
     async mounted() {
-        this.workItem = await back.getWorkItem(this.taskId);
+        this.workItem = await backend.getWorkItem(this.taskId);
         if(this.$refs.section) this.$refs.section.addEventListener('scroll', this.checkScrollBottom);
     },
     methods: {
@@ -84,12 +84,12 @@ export default {
             var me = this;
             me.$try({
                 action: async () => {
-                    const result = await back.putWorklist(task.taskId, task);
+                    const result = await backend.putWorklist(task.taskId, task);
                     // Process-GPT
                     if (window.$mode == 'ProcessGPT') {
                         if (result && result.errors && result.errors.length > 0) {
                             me.taskId = task.taskId;
-                            me.workItem = await back.getWorkItem(me.taskId);
+                            me.workItem = await backend.getWorkItem(me.taskId);
                             me.dialog = true;
                         } else if (result && result.completedActivities && result.completedActivities.length > 0) {
                             const status = result.completedActivities.find(
@@ -121,7 +121,7 @@ export default {
          * TODO:: UEngineBackend.ts 에서 workitem 삭제 사용시 Backend.ts 로 삭제 함수 공통화
          */
         async deleteTask(task) {
-            await back.deleteWorkItem(task.taskId);
+            await backend.deleteWorkItem(task.taskId);
             this.column.tasks = this.column.tasks.filter((item) => item.taskId !== task.taskId);
         },
         executeTask(task) {
