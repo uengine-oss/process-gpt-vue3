@@ -2142,7 +2142,7 @@ export default {
                         }));
                     }
 
-                    let dataTmp = extractVariables(process);
+                    let dataTmp = window.$mode == 'ProcessGPT'? extractVariables(process) : properties['uengine:variable'];
                     data = data.concat(dataTmp);
 
                     let processJson = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? JSON.parse(process['bpmn:extensionElements']['uengine:properties']['uengine:json']) : null;
