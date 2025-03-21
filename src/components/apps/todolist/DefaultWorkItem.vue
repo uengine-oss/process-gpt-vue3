@@ -18,10 +18,6 @@
             </div>
             <div v-if="!isCompleted">
                 <DefaultForm v-if="inputItems && inputItems.length > 0" :inputItems="inputItems" />
-                <div v-if="mode == 'ProcessGPT'">
-                    <AudioTextarea v-model="newMessage" :workItem="workItem" />
-                    <Checkpoints ref="checkpoints" :workItem="workItem" />
-                </div>
             </div>
         </div>
     </div>
@@ -31,8 +27,6 @@
 import DefaultForm from '@/components/designer/DefaultForm.vue';
 
 import Instruction from '@/components/ui/Instruction.vue';
-import AudioTextarea from '@/components/ui/AudioTextarea.vue';
-import Checkpoints from '@/components/ui/Checkpoints.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -41,8 +35,6 @@ export default {
     components: {
         DefaultForm,
         Instruction,
-        AudioTextarea,
-        Checkpoints
     },
     props: {
         definitionId: String,
@@ -170,13 +162,6 @@ export default {
             });
         },
         executeProcess() {
-            if (this.mode == 'ProcessGPT') {
-                if (!this.$refs.checkpoints.allChecked) {
-                    this.$refs.checkpoints.snackbar = true;
-                    return;
-                }
-            }
-
             let value = { parameterValues: {} };
             let parameterValues = this.inputItems.reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {});
             if (parameterValues) value.parameterValues = parameterValues;
