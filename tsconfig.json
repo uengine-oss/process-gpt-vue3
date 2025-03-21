@@ -2,7 +2,6 @@
     // "module": "esnext",
     // "target": "ESNext",
     // "moduleResolution": "Node",
-    "extends": "@vue/tsconfig/tsconfig.web.json",
     "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "public/plugins/keditor.js"],
     "compilerOptions": {
         "module": "esnext",
@@ -15,10 +14,8 @@
         "ignoreDeprecations": "5.0",
         "target": "ESNext",
         "moduleResolution": "Node",
-    },
-    "references": [
-        {
-            "path": "./tsconfig.vite-config.json"
-        }
-    ]
+        "skipLibCheck": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true
+    }
 }
