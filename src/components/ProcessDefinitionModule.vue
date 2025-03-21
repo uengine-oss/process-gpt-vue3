@@ -26,7 +26,9 @@ export default {
     }),
     computed: {
         lastPath() {
-            if (this.$route.params && this.$route.params.pathMatch && this.$route.params.pathMatch.length > 0) {
+            if (this.$route.path == '/definition-map') {
+                return 'definition-map';
+            } else if (this.$route.params && this.$route.params.pathMatch && this.$route.params.pathMatch.length > 0) {
                 return this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
             }
             return null;
@@ -141,12 +143,12 @@ export default {
             };
             const formId = `${options.proc_def_id}_${options.activity_id}_form`;
             if (this.lastPath) {
-                if (this.lastPath == 'chat') {
+                if (this.lastPath == 'chat' || this.lastPath == 'definition-map') {
                     localStorage.setItem(formId, html);
                 } else {
                     await backend.putRawDefinition(html, formId, options);
                 }
-            } else if (this.lastPath == '/definition-map') {
+            } else {
                 localStorage.setItem(formId, html);
             }
             return html;

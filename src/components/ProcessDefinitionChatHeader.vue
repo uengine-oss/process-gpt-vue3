@@ -62,7 +62,7 @@
                         <!-- 저장 관련 버튼  -->
                         <div class="mr-4 d-flex">
                             <!-- 파일업로드 아이콘 -->
-                            <v-tooltip location="bottom">
+                            <v-tooltip v-if="fullPath != 'definition-map'" location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
                                         density="comfortable" @click="triggerFileInput">
@@ -73,7 +73,7 @@
                             </v-tooltip>
                             <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold" style="display: none" />
                     
-                            <div v-if="bpmn || fullPath != 'chat'">
+                            <div v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map'">
                                 <!-- 자물쇠 아이콘 -->
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
@@ -112,7 +112,7 @@
                         <!-- 보기 관련 버튼  -->
                         <div class="mr-4 d-flex">
                             <!-- 히스토리 아이콘 -->
-                            <v-tooltip v-if="bpmn && fullPath != 'chat'" location="bottom">
+                            <v-tooltip v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map'" location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
                                         density="comfortable" @click="toggleVerMangerDialog">
@@ -136,7 +136,7 @@
                         <!-- 실행 관련 버튼  -->
                         <div class="mr-4 d-flex">
                             <!-- 시뮬레이션 아이콘 -->
-                            <v-tooltip v-if="!Pal" location="bottom" :text="$t('processDefinition.simulate')">
+                            <v-tooltip v-if="!Pal && fullPath != 'definition-map'" location="bottom" :text="$t('processDefinition.simulate')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" @click="executeSimulate" icon variant="text" class="text-medium-emphasis" density="comfortable"
                                     >
@@ -146,7 +146,7 @@
                             </v-tooltip>
 
                             <!-- 실행 아이콘 -->
-                            <v-tooltip location="bottom" :text="$t('processDefinition.execution')">
+                            <v-tooltip v-if="fullPath != 'definition-map'" location="bottom" :text="$t('processDefinition.execution')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" @click="executeProcess" icon variant="text" class="text-medium-emphasis" density="comfortable"
                                     >

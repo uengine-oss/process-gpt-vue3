@@ -255,7 +255,7 @@ export default {
         },
     },
     data: () => ({
-        isEditable: true,
+        isEditable: false,
         isXmlMode: false,
         prompt: '',
         changedXML: '',
@@ -358,8 +358,10 @@ export default {
                 if (path.startsWith('/')) {
                     path = fullPath.substring(1);
                 }
+            } else if (this.$route.params.id) {
+                path = this.$route.params.id;
             } else {
-                path = this.$route.params.id
+                path = this.$route.path.replace('/', '');
             }
             return path;
         },
