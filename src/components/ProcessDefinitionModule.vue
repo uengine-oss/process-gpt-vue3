@@ -2135,14 +2135,24 @@ export default {
                         if (!variables) return [];
 
                         const variableArray = Array.isArray(variables) ? variables : [variables];
-                        return variableArray.map((varData) => ({
-                            name: varData.name,
-                            description: varData.description ? varData.description : varData.name + ' description',
-                            type: varData.type
-                        }));
+                        
+                        if(window.$mode == 'ProcessGPT'){
+                            return variableArray.map((varData) => ({
+                                name: varData.name,
+                                description: varData.description ? varData.description : varData.name + ' description',
+                                type: varData.type
+                            }));
+                        } else {
+                            return variableArray.map((varData) => ({
+                                name: varData.name,
+                                description: varData.description ? varData.description : varData.name + ' description',
+                                type: varData.type,
+                                defaultValue: varData['uengine:json'] ? JSON.parse(varData['uengine:json']).defaultValue : null
+                            }));
+                        }
                     }
 
-                    let dataTmp = window.$mode == 'ProcessGPT'? extractVariables(process) : properties['uengine:variable'];
+                    let dataTmp = extractVariables(process);
                     data = data.concat(dataTmp);
 
                     let processJson = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? JSON.parse(process['bpmn:extensionElements']['uengine:properties']['uengine:json']) : null;
