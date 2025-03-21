@@ -24,6 +24,7 @@ export default defineConfig({
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
             'apextree': path.resolve(__dirname, 'node_modules/apextree/apextree.min.js'),
+            '@fullcalendar/core': path.resolve(__dirname, 'node_modules/@fullcalendar/core'),
             'vue': 'vue/dist/vue.esm-bundler.js'
         }
     },
@@ -33,6 +34,7 @@ export default defineConfig({
         }
     },
     optimizeDeps: {
+        include: ['@fullcalendar/core'],
         exclude: ['vuetify'],
         entries: ['./src/**/*.vue']
     },
