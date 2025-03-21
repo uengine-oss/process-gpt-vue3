@@ -27,7 +27,10 @@
         <!-- <FormMapper></FormMapper> -->
         <!-- <Instruction :workItem="workItem" /> -->
         <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form"></DynamicForm>
-        <AudioTextarea v-if="!isCompleted" v-model="newMessage" :workItem="workItem" @close="close" />
+        <div v-if="!isCompleted" class="mb-4">
+            <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
+            <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
+        </div>
         <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
     </div>
 </template>
@@ -81,6 +84,7 @@ export default {
         formDefId: null,
         formData: {},
         newMessage: '',
+        useTextAudio: false,
     }),
     computed: {
         simulate() {
@@ -122,6 +126,9 @@ export default {
                 }
             }
             me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
+            if(!me.html) {
+                me.useTextAudio = true;
+            }
             if(!me.isDryRun) {
                 me.loadForm()
             }

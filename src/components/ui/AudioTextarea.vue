@@ -1,12 +1,11 @@
 <template>
-    <div class="mb-4">
-        <v-checkbox v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
-        <v-textarea v-if="useTextAudio" v-model="newMessage" hide-details density="compact" rows="3" no-resize>
+    <div>
+        <v-textarea v-if="useTextAudio" v-model="newMessage" hide-details density="compact" rows="3" no-resize placeholder="결과 입력">
             <template v-slot:append-inner>
                 <div class="d-flex align-self-end cursor-pointer">
-                    <div @click="onChangeRecordingDialog" class="mr-1">
+                    <!-- <div @click="onChangeRecordingDialog" class="mr-1">
                         <Icons :icon="'round-headset'"  />
-                    </div>
+                    </div> -->
                     <div @click="onClickMic">
                         <Icons v-if="!isMicRecording && !isMicRecorderLoading" :icon="'sharp-mic'"  />
                         <Icons v-else-if="!isMicRecorderLoading" :icon="'stop'" :size="'20'"  />
@@ -37,11 +36,14 @@ export default {
         workItem: {
             type: Object,
             default: null
+        },
+        useTextAudio: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
         return {
-            useTextAudio: false,
             newMessage: '',
             // recording chat
             recordingDialog: false,

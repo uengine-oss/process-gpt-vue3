@@ -110,6 +110,9 @@ export default {
             return window.$pal;
         },
         lastPath() {
+            if (this.$route.path == '/definition-map') {
+                return 'definition-map';
+            }
             if (this.$route.params && this.$route.params.pathMatch && this.$route.params.pathMatch.length > 0) {
                 return this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
             }
@@ -150,12 +153,14 @@ export default {
                 }
             }
             if (me.lastPath) {
-                if (me.lastPath == 'chat') {
+                console.log('########### lastPath: ', me.lastPath);
+                console.log('########### formId: ', me.formId);
+                if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
                     me.tempFormHtml = localStorage.getItem(me.formId);
                 } else {
                     me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
                 }
-            } else if (me.lastPath == '/definition-map') {
+            } else {
                 me.tempFormHtml = localStorage.getItem(me.formId);
             }
             
@@ -187,12 +192,12 @@ export default {
             if (me.tempFormHtml && me.tempFormHtml != '') {
                 if (options && options.proc_def_id && options.activity_id) {
                     if (me.lastPath) {
-                        if (me.lastPath == 'chat') {
+                        if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
                             localStorage.setItem(me.formId, me.tempFormHtml);
                         } else {
                             await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
                         }
-                    } else if (me.lastPath == '/definition-map') {
+                    } else {
                         localStorage.setItem(me.formId, me.tempFormHtml);
                     }
                 }

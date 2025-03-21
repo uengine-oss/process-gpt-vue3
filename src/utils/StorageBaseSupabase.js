@@ -20,7 +20,6 @@ export default class StorageBaseSupabase {
             }
 
             if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
-                window.localStorage.setItem('accessToken', accessToken);
                 const { error: sessionError } = await window.$supabase.auth.setSession({
                     access_token: accessToken,
                     refresh_token: refreshToken
