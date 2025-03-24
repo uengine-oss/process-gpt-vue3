@@ -4,19 +4,19 @@ metadata:
   name: letsencrypt-prod
 spec:
   acme:
-    email: jaeh@uengine.org
+    email: ohsy818@uengine.org
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
     - dns01:
         route53:
-          accessKeyID: AKIA6H47RAWM6RPTE5VH
+          accessKeyID: AKIA6H47RAWMRDKWWEPK
           region: us-east-1
           role: arn:aws:iam::979050235289:role/cert-manager
           secretAccessKeySecretRef:
             key: secretAccessKey
-            name: tls-msastudy
+            name: route53-credentials
       selector:
         dnsZones:
         - process-gpt.io

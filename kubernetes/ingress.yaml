@@ -3,10 +3,20 @@ kind: Ingress
 metadata:
   name: process-gpt-ingress
   annotations:
-    cert-manager.io/cluster-issuer: issuer
+    kubernetes.io/ingress.class: "gce"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
-  ingressClassName: "nginx"
   rules:
+  - host: "process-gpt.io"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gateway
+            port:
+              number: 80
   - host: "*.process-gpt.io"
     http:
       paths:
@@ -19,5 +29,6 @@ spec:
               number: 80
   tls:
   - hosts:
-    - '*.process-gpt.io'
-    secretName: onprem-tls
+    - "process-gpt.io"
+    - "*.process-gpt.io"
+    secretName: process-gpt-tls
