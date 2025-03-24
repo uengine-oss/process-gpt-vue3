@@ -622,6 +622,9 @@ class ProcessGPTBackend implements Backend {
         // 사용자 권한에 따라 필터링
         const uid = localStorage.getItem('uid');
         const permissions = await storage.list('user_permissions', { match: { user_id: uid } });
+        if (!permissions || permissions.length === 0) {
+            return {};
+        }
         const processList = permissions.map((permission: any) => permission.proc_def_ids);
         let filteredMap: any = {};
                 
@@ -649,10 +652,12 @@ class ProcessGPTBackend implements Backend {
                 processList = uniqueByIdAndName(processList);
 
                 return processList.map((megaProc: any) => {
-                    megaProc.major_proc_list = uniqueByIdAndName(megaProc.major_proc_list.map((majorProc: any) => {
-                        majorProc.sub_proc_list = uniqueByIdAndName(majorProc.sub_proc_list);
-                        return majorProc;
-                    }));
+                    if (megaProc.major_proc_list) {
+                        megaProc.major_proc_list = uniqueByIdAndName(megaProc.major_proc_list.map((majorProc: any) => {
+                            majorProc.sub_proc_list = uniqueByIdAndName(majorProc.sub_proc_list);
+                            return majorProc;
+                        }));
+                    }
                     return megaProc;
                 });
             }
