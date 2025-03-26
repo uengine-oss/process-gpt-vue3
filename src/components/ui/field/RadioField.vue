@@ -55,6 +55,7 @@ export default {
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
                 commonSettingInfos["localDisabled"],
+                commonSettingInfos["localReadonly"],
                 ...commonSettingInfos["localItemsWithDynamicList"]
             ]
         };

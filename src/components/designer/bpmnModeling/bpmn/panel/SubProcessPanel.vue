@@ -6,91 +6,58 @@
                 item-title="name" color="primary" label="Definition" variant="outlined" hide-details></v-autocomplete>
         </div> -->
         <div>
-            <v-row class="ma-0 pa-0">
-                <div class="mb-1 mt-4">{{$t('SubProcessPanel.forEachRole')}}</div>
-            </v-row>
-            <v-row class="ma-0 pa-0">
-                <v-autocomplete
-                    :items="roles"
-                    v-model="selectedRole"
-                    color="primary"
-                    :label="$t('SubProcessPanel.role')"
-                    variant="outlined"
-                    hide-details
-                ></v-autocomplete>
-                <!-- <bpmn-parameter-contexts
-                    :for-sub-process="true"
-                    :definition-variables="definitionVariables"
-                    :is-view-mode="isViewMode"
-                    :parameter-contexts="copyUengineProperties.variableBindings"
-                ></bpmn-parameter-contexts> -->
-            </v-row>
-            <DetailComponent
-                :title="$t('SubProcessPanel.forEachRoleDescriptionTitle')"
-                :details="forEachRoleDescription"
-            />
-        </div>
-        <div>
-            <v-row class="ma-0 pa-0">
-                <div class="mb-1 mt-4">{{$t('SubProcessPanel.forEachVariable')}}</div>
-            </v-row>
-            <v-row class="ma-0 pa-0">
-                <v-autocomplete
-                    :items="processVariables"
-                    :item-props="true"
-                    item-value
-                    item-title="name"
-                    color="primary"
-                    v-model="selectedVariable"
-                    :label="$t('SubProcessPanel.variable')"
-                    variant="outlined"
-                ></v-autocomplete>
-                <!-- <bpmn-parameter-contexts
-                    :for-sub-process="true"
-                    :definition-variables="definitionVariables"
-                    :is-view-mode="isViewMode"
-                    :parameter-contexts="copyUengineProperties.variableBindings"
-                ></bpmn-parameter-contexts> -->
-            </v-row>
-            <DetailComponent
-                :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
-                :details="SubProcessDescription"
-                :detailUrl="'https://www.youtube.com/watch?v=nhQCDfYa6Gk'"
-            />
-            <!-- <div>
+            <v-radio-group v-model="isForEachRole" inline>
+                <v-radio :label="$t('SubProcessPanel.forEachRole')" :value="false"></v-radio>
+                <v-radio :label="$t('SubProcessPanel.forEachVariable')" :value="true"></v-radio>
+            </v-radio-group>
+            <div v-if="isForEachRole">
                 <v-row class="ma-0 pa-0">
-                    <div>Parameter Context</div>
-                    <v-spacer></v-spacer>
-                </v-row>
-                <v-row>
-                    <bpmn-parameter-contexts
+                    <v-autocomplete
+                        :items="roles"
+                        v-model="selectedRole"
+                        color="primary"
+                        :label="$t('SubProcessPanel.role')"
+                        variant="outlined"
+                        hide-details
+                    ></v-autocomplete>
+                    <!-- <bpmn-parameter-contexts
                         :for-sub-process="true"
                         :definition-variables="definitionVariables"
                         :is-view-mode="isViewMode"
                         :parameter-contexts="copyUengineProperties.variableBindings"
-                    ></bpmn-parameter-contexts>
+                    ></bpmn-parameter-contexts> -->
                 </v-row>
+                <DetailComponent
+                    :title="$t('SubProcessPanel.forEachRoleDescriptionTitle')"
+                    :details="forEachRoleDescription"
+                />
             </div>
-            <div>
+            <div v-else> 
                 <v-row class="ma-0 pa-0">
-                    <div>Extended Property</div>
-                </v-row>
-                <v-row>
-                    <bpmn-role-parameter-contexts
-                        :role-bindings="copyUengineProperties.roleBindings"
+                    <v-autocomplete
+                        :items="processVariables"
+                        :item-props="true"
+                        item-value
+                        item-title="name"
+                        color="primary"
+                        v-model="selectedVariable"
+                        :label="$t('SubProcessPanel.variable')"
+                        variant="outlined"
+                    ></v-autocomplete>
+                    <!-- <bpmn-parameter-contexts
+                        :for-sub-process="true"
+                        :definition-variables="definitionVariables"
                         :is-view-mode="isViewMode"
-                        :callee-definition-roles="calleeDefinitionRoles"
-                        :definition-roles="definitionRoles"
-                        :is-sub="true"
-                    ></bpmn-role-parameter-contexts>
+                        :parameter-contexts="copyUengineProperties.variableBindings"
+                    ></bpmn-parameter-contexts> -->
                 </v-row>
-            </div> -->
+                <DetailComponent
+                    :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
+                    :details="SubProcessDescription"
+                    :detailUrl="'https://www.youtube.com/watch?v=nhQCDfYa6Gk'"
+                />
+            </div>
         </div>
-        <!-- <div v-else>
-            <v-row>
-                Process Definition이 선택되지 않았습니다.
-            </v-row>
-        </div> -->
     </div>
 </template>
 
@@ -143,6 +110,7 @@ export default {
             paramKey: '',
             paramValue: '',
             definitionCnt: 0,
+            isForEachRole: false,
             selectedRole: null,
             selectedVariable: null,
             SubProcessDescription: [
@@ -186,9 +154,11 @@ export default {
 
         if (this.copyUengineProperties.forEachVariable) {
             this.selectedVariable = this.copyUengineProperties.forEachVariable.name;
+            this.isForEachRole = false;
         }
         if (this.copyUengineProperties.forEachRole) {
             this.selectedRole = this.copyUengineProperties.forEachRole.name;
+            this.isForEachRole = true;
         }
     },
     computed: {
