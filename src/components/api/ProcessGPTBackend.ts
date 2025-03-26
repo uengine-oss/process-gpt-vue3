@@ -311,6 +311,9 @@ class ProcessGPTBackend implements Backend {
                 }
             })
             .catch(error => {
+                if (error.detail && error.detail.status_code && error.detail.status_code == 401) {
+                    alert('토큰이 만료되었습니다. 다시 로그인 해주세요.');
+                }
                 result.error = error;
             });
 
@@ -619,6 +622,9 @@ class ProcessGPTBackend implements Backend {
         // 사용자 권한에 따라 필터링
         const uid = localStorage.getItem('uid');
         const permissions = await storage.list('user_permissions', { match: { user_id: uid } });
+        if (!permissions || permissions.length === 0) {
+            return {};
+        }
         const processList = permissions.map((permission: any) => permission.proc_def_ids);
         let filteredMap: any = {};
                 
@@ -646,10 +652,12 @@ class ProcessGPTBackend implements Backend {
                 processList = uniqueByIdAndName(processList);
 
                 return processList.map((megaProc: any) => {
-                    megaProc.major_proc_list = uniqueByIdAndName(megaProc.major_proc_list.map((majorProc: any) => {
-                        majorProc.sub_proc_list = uniqueByIdAndName(majorProc.sub_proc_list);
-                        return majorProc;
-                    }));
+                    if (megaProc.major_proc_list) {
+                        megaProc.major_proc_list = uniqueByIdAndName(megaProc.major_proc_list.map((majorProc: any) => {
+                            majorProc.sub_proc_list = uniqueByIdAndName(majorProc.sub_proc_list);
+                            return majorProc;
+                        }));
+                    }
                     return megaProc;
                 });
             }
@@ -1273,9 +1281,10 @@ class ProcessGPTBackend implements Backend {
                 }
             })
             .catch(error => {
-                console.log(error);
+                if (error.detail && error.detail.status_code && error.detail.status_code == 401) {
+                    alert('토큰이 만료되었습니다. 다시 로그인 해주세요.');
+                }
                 return null;
-                // throw new Error(error && error.detail ? error.detail : error);
             });
             return result;
         } catch (error) {

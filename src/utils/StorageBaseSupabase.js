@@ -15,12 +15,11 @@ export default class StorageBaseSupabase {
             let refreshToken = "";
            
             if (document.cookie && document.cookie.includes('; ')) {
-                accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token')).split('=')[1];
-                refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token')).split('=')[1];
+                accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token'))?.split('=')[1];
+                refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token'))?.split('=')[1];
             }
 
             if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
-                window.localStorage.setItem('accessToken', accessToken);
                 const { error: sessionError } = await window.$supabase.auth.setSession({
                     access_token: accessToken,
                     refresh_token: refreshToken

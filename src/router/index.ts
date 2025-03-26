@@ -62,24 +62,11 @@ router.beforeEach(async (to, from, next) => {
             }
         }
         // redirect to login page if not logged in and trying to access a restricted page
-        const publicPages = ['/'];
-        const authRequired = !publicPages.includes(to.path);
         let isLogin = false;
         if (window.$isTenantServer) {
             isLogin = await backend.checkDBConnection();
         } else {
             isLogin = await backend.setTenant(window.$tenantName) ?? false;
-        }
-
-        if (to.matched.some((record) => record.meta.requiresAuth)) {
-            if (authRequired && !isLogin) {
-                if(window.location.pathname == '/auth/register'){
-                    alert("계정 인증 메일을 전송해드렸습니다. 이메일 확인 후 다시 로그인하세요.");
-                } else {
-                    alert("로그인이 필요합니다.")
-                }
-                return next('/auth/login');
-            }
         }
 
         if (to.fullPath.includes('/auth')) {
@@ -99,7 +86,7 @@ router.beforeEach(async (to, from, next) => {
             }
         }
     }
-    
+
     next();
 });
 

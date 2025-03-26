@@ -102,6 +102,7 @@
                     <v-icon @click="closeConsultingDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
                 </v-row>
                 <ProcessDefinitionChat 
+                    ref="processDefinitionChat"
                     :chatMode="'consulting'"
                     @createdBPMN="createdBPMN"
                     @openProcessPreview="openProcessPreview" 
@@ -336,7 +337,7 @@ export default {
             if (this.value.mega_proc_list.length == 0) {
                 megaProc = {
                     id: res.megaProcessId,
-                    name: this.$t('processDefinitionMap.uncategorized'),
+                    name: res.megaProcessId,
                     major_proc_list: []
                 };
                 this.value.mega_proc_list.push(megaProc);
@@ -344,11 +345,20 @@ export default {
                 megaProc = this.value.mega_proc_list.find(megaProc => megaProc.id === res.megaProcessId);
             }
 
+            if (!megaProc && res.megaProcessId) {
+                megaProc = {
+                    id: res.megaProcessId,
+                    name: res.megaProcessId,
+                    major_proc_list: []
+                };
+                this.value.mega_proc_list.push(megaProc);
+            }
+
             let majorProc = null;
             if (megaProc.major_proc_list.length == 0) {
                 majorProc = {
-                    id: res.majorProcessId,
-                    name: this.$t('processDefinitionMap.uncategorized'),
+                    id: res.majorProcessId || generateUniqueMegaProcessId(),
+                    name: res.majorProcessId || this.$t('processDefinitionMap.uncategorized'),
                     sub_proc_list: []
                 };
                 megaProc.major_proc_list.push(majorProc);
@@ -358,17 +368,17 @@ export default {
 
             addSubProcess(majorProc);
         },
-        closeConsultingDialog(){
-            let answer
-            if(this.ProcessPreviewMode){
-                answer = window.confirm(this.$t('processDefinitionMap.closeConsultingInPreview'));
+        closeConsultingDialog() {
+            if (this.ProcessPreviewMode && this.$refs.processDefinitionChat && this.$refs.processDefinitionChat.lock) {
+                this.openConsultingDialog = false;
             } else {
-                answer = window.confirm(this.$t('processDefinitionMap.closeConsulting'));
+                const confirmMessage = this.ProcessPreviewMode ? this.$t('processDefinitionMap.closeConsultingInPreview') : this.$t('processDefinitionMap.closeConsulting');
+                const answer = window.confirm(confirmMessage);
+                if (answer) {
+                    this.ProcessPreviewMode = false
+                    this.openConsultingDialog = false
+                }
             }
-            if (answer) {
-                this.ProcessPreviewMode = false
-                this.openConsultingDialog = false
-            } 
         },
         async checkedLock() {
             if (this.isAdmin) {

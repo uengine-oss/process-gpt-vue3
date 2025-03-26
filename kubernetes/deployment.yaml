@@ -14,9 +14,25 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: gcr.io/process-gpt-419207/process-gpt:v2.6.1
+        image: ghcr.io/uengine-oss/process-gpt:latest
         ports:
         - containerPort: 8080
+        env:
+        - name: VITE_OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-secret
+              key: OPENAI_API_KEY
+        - name: VITE_SUPABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: my-config
+              key: SUPABASE_URL
+        - name: VITE_SUPABASE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: SERVICE_ROLE_KEY
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -34,7 +50,7 @@ spec:
     spec:
       containers:
       - name: execution
-        image: gcr.io/process-gpt-419207/process-gpt-execution:v0.3.2
+        image: ghcr.io/uengine-oss/process-gpt-execution:latest
         ports:
         - containerPort: 8000
         env:
@@ -43,6 +59,21 @@ spec:
             secretKeyRef:
               name: openai-secret
               key: OPENAI_API_KEY
+        - name: SUPABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: my-config
+              key: SUPABASE_URL
+        - name: SUPABASE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: SERVICE_ROLE_KEY
+        - name: SUPABASE_JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: JWT_SECRET
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -60,7 +91,7 @@ spec:
     spec:
       containers:
       - name: autonomous
-        image: gcr.io/process-gpt-419207/process-gpt-autonomous:v0.1.4
+        image: ghcr.io/uengine-oss/process-gpt-autonomous:latest
         ports:
         - containerPort: 6789
         env:
@@ -69,11 +100,11 @@ spec:
             secretKeyRef:
               name: openai-secret
               key: OPENAI_API_KEY
-        - name: SERPER_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: serper-api-key-secret
-              key: SERPER_API_KEY
+        # - name: SERPER_API_KEY
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: serper-api-key-secret
+        #       key: SERPER_API_KEY
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -91,7 +122,7 @@ spec:
     spec:
       containers:
       - name: memento
-        image: gcr.io/process-gpt-419207/process-gpt-memento:v0.0.5
+        image: ghcr.io/uengine-oss/process-gpt-memento:latest
         ports:
         - containerPort: 8005
         env:

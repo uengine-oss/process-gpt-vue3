@@ -221,10 +221,9 @@ export default {
     }),
     async created() {
         const reloadOnConnectionFailure = async () => {
-            if(!(await this.storage.isConnection()))
-            {
+            if(!(await this.backend.checkDBConnection())) {
                 const reloadOnConnectionSuccess = async () => {
-                    if(await this.storage.isConnection())
+                    if(await this.backend.checkDBConnection())
                         this.$router.go(0);
                     else
                         setTimeout(reloadOnConnectionSuccess, 500);
@@ -232,7 +231,9 @@ export default {
                 setTimeout(reloadOnConnectionSuccess, 500);
             }
         }
-        reloadOnConnectionFailure()
+        if (this.backend) {
+            reloadOnConnectionFailure()
+        }
 
         this.generator = new ChatGenerator(this, {
             isStream: true,
