@@ -66,6 +66,9 @@ export default {
 
     methods: {
         addItem() {
+            if(!this.localModelValue[this.name]) {
+                this.localModelValue[this.name] = []
+            }
             this.localModelValue[this.name].push({})
         },
 
