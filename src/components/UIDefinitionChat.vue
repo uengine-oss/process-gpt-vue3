@@ -506,7 +506,8 @@ export default {
                     newRow.setAttribute('class', 'row');
 
 
-                    Array.from(row.firstChild.children).forEach(child => {
+                    // Array.from(row.firstChild.children)
+                    Array.from(row.firstElementChild.children).forEach(child => {
                         newRow.appendChild(child);
                     });
 

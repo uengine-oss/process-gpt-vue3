@@ -132,10 +132,13 @@ export default {
                     
                     me.items = lists
                     me.loading = false
-                    const selectedItem = me.items.find(item => item.path === me.value.filePath);
-                    if(selectedItem) {
-                        me.value = selectedItem;
+                    if(me.value){
+                        const selectedItem = me.items.find(item => item.path === me.value.filePath);
+                        if(selectedItem) {
+                            me.value = selectedItem;
+                        }
                     }
+                   
                 }
             });
 

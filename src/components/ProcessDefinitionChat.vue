@@ -663,6 +663,9 @@ export default {
                             me.isEditable = true;
                             me.checkedLock(lastPath);
                         }
+                    } else {
+                        // uEngine 모드
+                        me.isEditable = true;
                     }
 
                 } else if (lastPath == 'chat') {

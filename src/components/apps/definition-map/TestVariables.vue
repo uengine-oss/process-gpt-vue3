@@ -39,7 +39,7 @@
             <v-btn color="primary" variant="flat" class="cp-process-save" @click="executeProcess">실행</v-btn>
             <v-btn color="error" variant="flat" @click="closeDialog()">닫기</v-btn>
         </v-card-actions> -->
-        <v-dialog v-model="workItemDialog" style="width: 30%">
+        <v-dialog v-model="workItemDialog" style="width: 50%">
             <v-card v-if="currentComponent" class="work-item-dialog-card">
                 <component 
                     :is="currentComponent" 
