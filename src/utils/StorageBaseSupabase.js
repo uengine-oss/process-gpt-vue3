@@ -29,10 +29,18 @@ export default class StorageBaseSupabase {
                     const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
                     if (refreshError) {
                         console.error('Error refreshing session:', refreshError);
-                        document.cookie = 'access_token=; domain=.process-gpt.io; path=/';
-                        document.cookie = 'refresh_token=; domain=.process-gpt.io; path=/';
+                        const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+                        if (window.location.host.includes('process-gpt.io')) {
+                            document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                            document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                        } else {
+                            document.cookie = `access_token=; ${cookieOptionsBase}`;
+                            document.cookie = `refresh_token=; ${cookieOptionsBase}`;
+                        }
+                        window.localStorage.removeItem('accessToken');
                         return false;
                     }
+
                     if (window.location.host.includes('process-gpt.io')) {
                         document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
                         document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
@@ -45,7 +53,16 @@ export default class StorageBaseSupabase {
             } else {
                 const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
                 if (refreshError) {
-                    console.error('Error refreshing session:', refreshError);
+                    console.error('Error refreshing session (no initial tokens):', refreshError);
+                    const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+                    if (window.location.host.includes('process-gpt.io')) {
+                        document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                        document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                    } else {
+                        document.cookie = `access_token=; ${cookieOptionsBase}`;
+                        document.cookie = `refresh_token=; ${cookieOptionsBase}`;
+                    }
+                    window.localStorage.removeItem('accessToken');
                     return false;
                 } else {
                     if (window.location.host.includes('process-gpt.io')) {
