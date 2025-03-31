@@ -29,7 +29,7 @@
                         <template v-slot:prepend>
                             <div class="mr-2">
                                 <v-chip color="primary" variant="tonal" size="x-small" label>
-                                    {{ item.type == 'workitem' ? 'To-Do' : 'Chat' }}
+                                    {{ item.type.includes('workitem') ? 'To-Do' : 'Chat' }}
                                 </v-chip>
                             </div>
                         </template>
@@ -69,6 +69,11 @@ export default {
     },
     async created() {
         await this.getNotifications();
+    },
+    mounted() {
+        this.intervalId = setInterval(() => {
+            this.getNotifications();
+        }, 3000);
     },
     methods: {
         async getNotifications() {

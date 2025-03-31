@@ -185,7 +185,8 @@ class ProcessGPTBackend implements Backend {
                 await storage.delete(`lock/${defId}`, { key: 'id' });
             }
             
-            this.updateVectorStore(JSON.stringify(options.definition)); 
+            const content = `${options.name}: ${JSON.stringify(options.definition)}`;
+            this.updateVectorStore(content, "process_definition"); 
 
         } catch (e) {
             
@@ -1562,13 +1563,14 @@ class ProcessGPTBackend implements Backend {
 
     async getOpenAIToken() {
         try {
-            let option = {
-                match: {
-                    key: 'OPENAI_API_KEY'
-                }
-            };
-            const res = await storage.getObject('configuration', option);
-            return res?.value?.key || window.localStorage.getItem('OPENAI_API_KEY') || null;
+            // let option = {
+            //     match: {
+            //         key: 'OPENAI_API_KEY'
+            //     }
+            // };
+            // const res = await storage.getObject('configuration', option);
+            // return res?.value?.key || window.localStorage.getItem('OPENAI_API_KEY') || null;
+            return window.localStorage.getItem('OPENAI_API_KEY') || null;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1595,7 +1597,12 @@ class ProcessGPTBackend implements Backend {
 
     async uploadFile(fileName: string, file: File) {
         try {
-            return await storage.uploadFile(fileName, file);
+            const res = await storage.uploadFile(fileName, file);
+            if (!res.error && res.fullPath) {
+                const indexRes = await this.indexFile(res.fullPath);
+                console.log(indexRes);
+            }
+            return res;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1611,15 +1618,47 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async updateVectorStore(content: string) {
+    async indexFile(filePath: string) {
         try {
-            await axios.post("/execution/update-vs", {
-                content: content
-            }).then(res => {
-                console.log(res)
-            })
-            .catch(error => {
-                return error;
+            const response = await axios.post('/memento/index', JSON.stringify({
+                path: filePath
+            }), {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getEmbedding(text: string) {
+        const token = await this.getOpenAIToken();
+        const response = await axios.post('https://api.openai.com/v1/embeddings', JSON.stringify({
+            input: text,
+            model: 'text-embedding-3-small',
+        }), {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            }
+        });
+        const data = response.data;
+        return data.data[0].embedding;
+    }
+
+    async updateVectorStore(content: string, type: string) {
+        try {
+            const embedding = await this.getEmbedding(content);
+            await storage.putObject('documents', {
+                content: content,
+                metadata: {
+                    tenant_id: window.$tenantName,
+                    type: type
+                },
+                embedding: embedding
             });
         } catch (error) {
             //@ts-ignore

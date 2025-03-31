@@ -211,7 +211,6 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
 import axios from 'axios';
 import partialParse from "partial-json-parser";
-import { VectorStorage } from "vector-storage";
 import { VDataTable } from 'vuetify/components/VDataTable';
 
 
@@ -698,21 +697,32 @@ export default {
                     });
                     if(responseObj.work == 'CompanyQuery'){
                         try{
-                            let responseMemento = await axios.post(`/memento/query`, { query: responseObj.content});
+                            let mementoRes = await axios.post(`/memento/query`, {
+                                query: responseObj.content,
+                                tenant_id: window.$tenantName
+                            });
+                            console.log(mementoRes)
                             obj.memento = {}
-                            obj.memento.response = responseMemento.data.response
-                            if (!responseMemento.data.metadata) return {};
+                            obj.memento.response = mementoRes.data.response
+                            if (!mementoRes.data.metadata) return {};
                             const unique = {};
-                            const sources = Object.values(responseMemento.data.metadata).filter(obj => {
+                            const sources = Object.values(mementoRes.data.metadata).filter(obj => {
                                 if (!unique[obj.file_path]) {
                                     unique[obj.file_path] = true;
                                     return true;
                                 }
                             });
                             obj.memento.sources = sources
-                            const responseTable = await axios.post(`/execution/process-data-query/invoke`, {
+                            const token = localStorage.getItem('accessToken');
+                            const responseTable = await axios.post(`/execution/process-data-query`, {
                                 input: {
-                                    var_name: responseObj.content
+                                    query: responseObj.content
+                                }
+                            },
+                            {
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
                                 }
                             });
                             obj.tableData = responseTable.data.output
@@ -726,26 +736,18 @@ export default {
                     this.putMessage(obj)
                 } else {
                     if(!this.ProcessGPTActive) this.ProcessGPTActive = true
-                    responseObj.expanded = false
+                    if (typeof responseObj == 'string') {
+                        responseObj = {
+                            messageForUser: responseObj
+                        }
+                    }
+                    if (!responseObj.expanded) {
+                        responseObj.expanded = false
+                    }
                     this.generatedWorkList.push(responseObj)
                 }
             }
         },
-
-        async queryFromVectorDB(messsage){
-            // const apiToken = this.generator.getToken();
-            const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
-
-            // Perform a similarity search
-            const results = await vectorStore.similaritySearch({
-                query: messsage
-            });
-
-            if (results.similarItems) {
-                return results.similarItems.map(item => item.text);
-            }
-        },
-
     }
 }
 </script>

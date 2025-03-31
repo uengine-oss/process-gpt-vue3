@@ -13,7 +13,7 @@
                 <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
                 <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
-                <div v-if="isPal">
+                <div>
                     <v-file-input
                         label="첨부파일"
                         multiple
@@ -106,9 +106,6 @@ export default {
         await me.init();
     },
     computed: {
-        isPal() {
-            return window.$pal;
-        },
         lastPath() {
             if (this.$route.path == '/definition-map') {
                 return 'definition-map';

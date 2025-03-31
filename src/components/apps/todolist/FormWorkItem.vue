@@ -221,62 +221,79 @@ export default {
         },
         async completeTask() {
             let me = this
-            // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
-            me.$try({
-                context: me,
-                action: async () => {
-                    let workItem = { parameterValues: {} };
-                    let variables = {}
+            let workItem = { parameterValues: {} };
+            let variables = {}
 
-                    if($mode=="uEngine")
-                        await me.saveForm(variables)
-                    
-                    if($mode=="ProcessGPT"){
-                        workItem.parameterValues = me.formData
-                    }
-
-                    ///////////////////////////////////
-
-
-                    //#region 폼 정의시에 검증 스크립트가 등록된 경우, 해당 스크립트를 실행시켜서 유효성을 검사
-                    const error = me.$refs.dynamicForm ? me.$refs.dynamicForm.validate() : null;
-                    if (error && error.length > 0) {
-                        alert("※ 폼에 정의된 유효성 검사에 실패했습니다 !\n> " + error)
-                        return;
-                    }
-                    //#endregion
-
-                    if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
-
-                    if(me.isDryRun){
-                        let processExecutionCommand = {
-                            processDefinitionId: me.definitionId,
-                            groups: window.localStorage.getItem('groups')
-                        }
-                                
-                        await backend.startAndComplete({
-                            processExecutionCommand: processExecutionCommand,
-                            workItem: workItem,
-                            variables: variables
-                        });
-                        me.close()
-                    } else {
-                        if (this.newMessage && this.newMessage.length > 0) {
-                            workItem['user_input_text'] = this.newMessage;
-                        }
-                        await backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
-                        
-                        let path = ''
-                        if ($mode == 'ProcessGPT') {
-                            path = btoa(me.workItem.worklist.instId)
-                            me.EventBus.emit('instances-updated');
-                        } else {
-                            path = me.workItem.worklist.instId
-                        }
-                        me.$router.push(`/instancelist/${path}`);
-                    }
+            if(window.$mode=="ProcessGPT"){
+                workItem.parameterValues = me.formData;
+                if (this.newMessage && this.newMessage.length > 0) {
+                    workItem['user_input_text'] = this.newMessage;
                 }
-            })
+                backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate)
+                    .then(() => {
+                        // 워크아이템 완료 처리
+                        me.EventBus.emit('workitem-completed');
+                        // 인스턴스 업데이트
+                        me.EventBus.emit('instances-updated');
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                    });
+
+                let path = btoa(me.workItem.worklist.instId);
+                me.$router.push({
+                    path: `/instancelist/${path}`, 
+                    query: {
+                        instId: me.workItem.worklist.instId,
+                        workitemRunning: true
+                    }
+                });
+            } else {
+                // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
+                me.$try({
+                    context: me,
+                    action: async () => {
+                        
+                        if($mode=="uEngine")
+                            await me.saveForm(variables)
+
+                        ///////////////////////////////////
+
+
+                        //#region 폼 정의시에 검증 스크립트가 등록된 경우, 해당 스크립트를 실행시켜서 유효성을 검사
+                        const error = me.$refs.dynamicForm ? me.$refs.dynamicForm.validate() : null;
+                        if (error && error.length > 0) {
+                            alert("※ 폼에 정의된 유효성 검사에 실패했습니다 !\n> " + error)
+                            return;
+                        }
+                        //#endregion
+
+                        if (me.workItem.execScope) workItem.execScope = me.workItem.execScope;
+
+                        if(me.isDryRun){
+                            let processExecutionCommand = {
+                                processDefinitionId: me.definitionId,
+                                groups: window.localStorage.getItem('groups')
+                            }
+                                    
+                            await backend.startAndComplete({
+                                processExecutionCommand: processExecutionCommand,
+                                workItem: workItem,
+                                variables: variables
+                            });
+                            me.close()
+                        } else {
+                            if (this.newMessage && this.newMessage.length > 0) {
+                                workItem['user_input_text'] = this.newMessage;
+                            }
+                            await backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
+                            
+                            let path = me.workItem.worklist.instId
+                            me.$router.push(`/instancelist/${path}`);
+                        }
+                    }
+                })
+            }
         },
         disableFormHTML(html) {
             const parser = new DOMParser();

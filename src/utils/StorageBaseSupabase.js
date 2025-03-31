@@ -1140,7 +1140,8 @@ export default class StorageBaseSupabase {
 
     async uploadFile(fileName, file) {
         try {
-            const { data, error } = await window.$supabase.storage.from('files').upload(fileName, file);
+            const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const { data, error } = await window.$supabase.storage.from('files').upload(sanitizedFileName, file);
 
             if (error) {
                 return error;

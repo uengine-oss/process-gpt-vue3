@@ -23,9 +23,6 @@ import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
-import axios from 'axios';
-import partialParse from "partial-json-parser";
-import { VectorStorage } from "vector-storage";
 import { VDataTable } from 'vuetify/components/VDataTable';
 
 

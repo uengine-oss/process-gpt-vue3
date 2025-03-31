@@ -1,5 +1,6 @@
 <template>
     <v-card elevation="10" v-if="instance" style="height: calc(100vh - 155px); ">
+        <v-progress-linear v-if="workitemRunning" indeterminate color="primary" />
         <div class="d-flex">
             <div class="px-3 py-3 pb-2 pl-4 align-center">
                 <div class="d-flex">
@@ -78,7 +79,8 @@ export default {
             { value: 'todo', label: 'InstanceCard.workItem', component: 'InstanceTodo' },
             { value: 'workhistory', label: 'InstanceCard.workHistory', component: 'InstanceWorkHistory' },
             { value: 'gantt', label: 'InstanceCard.ganttChart', component: 'InstanceGantt' }
-        ]
+        ],
+        workitemRunning: false
     }),
     watch: {
         $route: {
@@ -100,6 +102,24 @@ export default {
     },
     created() {
         this.init();
+    },
+    mounted() {
+        if (this.$route.query.workitemRunning === 'true' && this.id == this.$route.query.instId) {
+            this.workitemRunning = true;
+        }
+        
+        this.EventBus.on('workitem-running', (instId) => {
+            if (this.id == instId) {
+                this.workitemRunning = true;
+            }
+        });
+
+        this.EventBus.on('workitem-completed', () => {
+            this.workitemRunning = false;
+            if (Object.keys(this.$route.query).length > 0) {
+                this.$router.replace({ query: null });
+            }
+        });
     },
     computed: {
         id() {
@@ -159,7 +179,7 @@ export default {
                 },
                 successMsg: this.$t('successMsg.instanceDelete')
             });
-        }
+        },
     }
 };
 </script>

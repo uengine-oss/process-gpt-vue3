@@ -82,11 +82,9 @@ export default {
         },
         updateWorkItem(task) {
             var me = this;
-            me.$try({
-                action: async () => {
-                    const result = await backend.putWorklist(task.taskId, task);
-                    // Process-GPT
-                    if (window.$mode == 'ProcessGPT') {
+            if (window.$mode == 'ProcessGPT') {
+                backend.putWorklist(task.taskId, task)
+                    .then(async (result) => {
                         if (result && result.errors && result.errors.length > 0) {
                             me.taskId = task.taskId;
                             me.workItem = await backend.getWorkItem(me.taskId);
@@ -97,13 +95,23 @@ export default {
                             ).result;
                             this.$emit('updateStatus', this.taskId, status);
                         }
-                    }
-                },
-                onFail: (e) => {
-                    me.$emit('updateStatus', task.taskId, me.originColumnId);
-                },
-                successMsg: task.status == 'DONE' ? this.$t('successMsg.workCompleted') : null
-            });
+                        me.EventBus.emit('workitem-completed');
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                    });
+                me.EventBus.emit('workitem-running', task.instId);
+            } else {
+                me.$try({
+                    action: async () => {
+                        await backend.putWorklist(task.taskId, task);
+                    },
+                    onFail: (e) => {
+                        me.$emit('updateStatus', task.taskId, me.originColumnId);
+                    },
+                    successMsg: task.status == 'DONE' ? this.$t('successMsg.workCompleted') : null
+                });
+            }
         },
         closeDialog(isUpdated) {
             this.dialog = false;

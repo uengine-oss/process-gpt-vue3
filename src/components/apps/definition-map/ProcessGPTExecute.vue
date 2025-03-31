@@ -163,30 +163,38 @@ export default {
         },
         async executeProcess(value) {
             var me = this;
+            let input = {
+                process_definition_id: me.definitionId,
+                activity_id: me.workItem.activity.tracingTag,
+                role_mappings: me.roleMappings,
+                answer: value
+            };
+            me.roleMappings.forEach(role => {
+                if (me.workItem.worklist.role === role.name && role.endpoint) {
+                    me.workItem.worklist.endpoint = role.endpoint;
+                }
+            })
+            
+            backend.start(input).then((result) => {
+                me.$try({
+                    context: me,
+                    action: async () => {
+                        me.EventBus.emit('instances-updated');
+                    },
+                    successMsg: this.$t('successMsg.processExecutionCompleted')
+                })
+            })
+            .catch(error => {
+                console.log(error);
+            });
+            
             me.$try({
                 context: me,
                 action: async () => {
-                    let input = {
-                        process_definition_id: me.definitionId,
-                        activity_id: me.workItem.activity.tracingTag,
-                        role_mappings: me.roleMappings,
-                        answer: value
-                    };
-                    me.roleMappings.forEach(role => {
-                        if (me.workItem.worklist.role === role.name && role.endpoint) {
-                            me.workItem.worklist.endpoint = role.endpoint;
-                        }
-                    })
-                    const result = await backend.start(input);
-                    if (result && result.errors && result.errors.length > 0) {
-                    } else {
-                        me.closeDialog();
-                        me.EventBus.emit('instances-updated');
-                        me.$router.push(`/instancelist/${btoa(result.instanceId)}`);
-                    }
+                    me.closeDialog();
                 },
-                successMsg: this.$t('successMsg.processExecutionCompleted')
-            });
+                successMsg: this.$t('successMsg.runningTheProcess')
+            })
         },
         uuid() {
             function s4() {

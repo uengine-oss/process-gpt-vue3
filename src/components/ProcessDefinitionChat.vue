@@ -178,8 +178,9 @@
             </template>
         </AppBaseCard>
         <v-dialog v-model="executeDialog" max-width="80%">
-            <process-gpt-execute v-if="!pal && mode === 'ProcessGPT'" :definitionId="fullPath" 
-                @close="executeDialog = false"></process-gpt-execute>
+            <div v-if="!pal && mode === 'ProcessGPT'">
+                <process-gpt-execute :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
+            </div>
             <div v-else>
                 <test-process v-if="isSimulate == 'true'" :executeDialog="executeDialog" :definitionId="fullPath" @close="executeDialog = false" />
                 <dry-run-process v-else :is-simulate="isSimulate" :definitionId="fullPath" @close="executeDialog = false"></dry-run-process>
@@ -189,7 +190,6 @@
 </template>
 <script>
 import partialParse from 'partial-json-parser';
-import { VectorStorage } from 'vector-storage';
 import xml2js from 'xml2js';
 
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
@@ -973,17 +973,6 @@ export default {
                 }
             }
 
-        },
-        afterModelStopped(response) {},
-        async saveToVectorStore(definition) {
-            // Create an instance of VectorStorage
-            // const apiToken = this.generator.getToken();
-            const vectorStore = new VectorStorage({ openAIApiKey: this.openaiToken });
-
-            // Add a text document to the store
-            await vectorStore.addText(JSON.stringify(definition), {
-                category: definition.processDefinitionId
-            });
         },
         generateElement(name, x, y, width, height, id, canvas) {
             var me = this;

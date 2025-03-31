@@ -1136,6 +1136,39 @@ after insert on todolist
 for each row
 execute function handle_todolist_change();
 
+create or replace function update_notification_user_id()
+returns trigger as $$
+begin
+    update notifications
+    set user_id = NEW.user_id,
+        time_stamp = now()
+    where url = '/todolist/' || NEW.id;
+
+    return null;
+end;
+$$ language plpgsql;
+
+create or replace trigger update_user_id_trigger
+after update on todolist
+for each row
+when (OLD.user_id is distinct from NEW.user_id)
+execute function update_notification_user_id();
+
+create or replace function delete_notification_on_todolist_delete()
+returns trigger as $$
+begin
+    delete from notifications
+    where url = '/todolist/' || OLD.id;
+
+    return null;
+end;
+$$ language plpgsql;
+
+create or replace trigger delete_notification_trigger
+after delete on todolist
+for each row
+execute function delete_notification_on_todolist_delete();
+
 
 
 create table if not exists public.chat_rooms (
@@ -1541,3 +1574,38 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+
+-- vector store 구성
+-- Enable the pgvector extension to work with embedding vectors
+create extension vector;
+
+-- Create a table to store your documents
+create table documents (
+  id uuid primary key,
+  content text, -- corresponds to Document.pageContent
+  metadata jsonb, -- corresponds to Document.metadata
+  embedding vector(1536) -- 1536 works for OpenAI embeddings, change if needed
+);
+
+create or replace function match_documents(
+  filter jsonb,
+  query_embedding vector(1536)
+)
+returns table (
+  id uuid,
+  content text,
+  metadata jsonb,
+  similarity float
+)
+language sql
+as $$
+  select
+    id,
+    content,
+    metadata,
+    1 - (embedding <=> query_embedding) as similarity
+  from documents
+  where metadata @> filter
+  order by embedding <=> query_embedding;
+$$;
