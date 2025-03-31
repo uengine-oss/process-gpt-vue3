@@ -32,7 +32,29 @@ class UEngineBackend implements Backend {
     }
 
     async getUserList() {
-        return [];
+        return [
+            {
+                id: 1,
+                profile: null,
+                username: 'hong',
+                email: 'hong@uengine.io',
+                is_admin: true 
+            },
+            {
+                id: 2,
+                profile: null,
+                username: 'lee',
+                email: 'lee@uengine.io',
+                is_admin: true 
+            },
+            {
+                id: 3,
+                profile: null,
+                username: 'kim',
+                email: 'kim@uengine.io',
+                is_admin: true 
+            }
+        ];
     }
 
     async getNotifications() {

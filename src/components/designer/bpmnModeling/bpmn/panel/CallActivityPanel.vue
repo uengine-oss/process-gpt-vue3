@@ -1,7 +1,10 @@
 <template>
     <div>
         <div class="included" style="margin-bottom: 22px">
-            <div style="margin-bottom: 8px">{{ $t('CallActivityPanel.selectDefinition') }}</div>
+            <div style="margin-bottom: 8px">
+                {{ $t('CallActivityPanel.selectDefinition') }}
+                <v-btn @click="moveDefinition()">이동</v-btn>
+            </div>
             <ProcessDefinitionDisplay 
                 v-model="copyUengineProperties.definitionId" 
                 :disabled="isViewMode"
@@ -191,6 +194,10 @@ export default {
         }
     },
     methods: {
+        moveDefinition(){
+            if(!this.copyUengineProperties.definitionId) return;
+            window.open(`/definitions/${this.copyUengineProperties.definitionId.replace('.bpmn', '')}`, '_blank');
+        },
         async beforeSave() {
             const backend = BackendFactory.createBackend();
             if(this.copyUengineProperties.definitionId) {

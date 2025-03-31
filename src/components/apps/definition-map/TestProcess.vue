@@ -320,18 +320,20 @@ export default {
             console.log(recordProcess);
             for (const item of recordProcess) {
                 let taskId;
+                let currentTask;
                 let taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
                 me.taskList = taskInfo;
                 for (let task of me.taskList) {
                     if (task.trcTag === item.tracingTag) {
                         taskId = task.taskId;
+                        currentTask = task;
                         break;
                     }
                 }
 
                 let value;
                 if (this.tool == 'FormWorkItem') {
-                    me.saveForm(item.workItem, task);
+                    me.saveForm(item.workItem, currentTask);
                 }
                 if (item.workItem.parameterValues) value = item.workItem;
                 else value = { parameterValues: item.workItem };

@@ -6,6 +6,7 @@
             :disabled="localDisabled"
             item-title="username" 
             :item-value="itemValue" 
+            :return-object="returnObject"
             chips closable-chips multiple small-chips
             :readonly="localReadonly"
             :variant="localReadonly ? 'filled' : 'outlined'"
@@ -41,10 +42,23 @@ export default {
         alias: String,
         disabled: String,
         readonly: String,
+        isProcessGPT: {
+            type: Boolean,
+            default() {
+                return window.$mode === 'ProcessGPT' ? true : false;
+            }
+        },
         itemValue: {
             type: String,
             default() {
-                return window.$mode === 'ProcessGPT' ? 'email' : 'id';
+                // return window.$mode === 'ProcessGPT' ? 'email' : 'id';
+                return window.$mode === 'ProcessGPT' ? 'email' : undefined;
+            }
+        },
+        returnObject: {
+            type: Boolean,
+            default() {
+                return window.$mode !== 'ProcessGPT';
             }
         }
     },
@@ -73,7 +87,17 @@ export default {
         modelValue: {
             handler() {
                 if(JSON.stringify(this.localModelValue) === JSON.stringify(this.modelValue)) return
-                this.localModelValue = (this.modelValue && this.modelValue.length > 0) ? this.modelValue : []
+                if(this.isProcessGPT) {
+                    this.localModelValue = (this.modelValue && this.modelValue.length > 0) ? this.modelValue : []
+                } else {
+                    if(!this.modelValue) {
+                        this.localModelValue = []
+                    } else if(Object.keys(this.modelValue).includes('values')) {
+                        this.localModelValue = this.modelValue.values
+                    } else {
+                        this.localModelValue = Array.isArray(this.modelValue) ? this.modelValue : [this.modelValue]
+                    }
+                }
             },
             deep: true,
             immediate: true

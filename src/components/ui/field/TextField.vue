@@ -73,9 +73,13 @@ export default {
     },
 
     created() {
-        if(this.modelValue)
-            this.localModelValue = this.modelValue
-        else {
+        if(this.modelValue){
+            if(typeof this.modelValue === 'object' && this.modelValue.values && Array.isArray(this.modelValue.values)) {
+             this.localModelValue = this.modelValue.values.join(',')
+            } else {
+                this.localModelValue = this.modelValue
+            }
+        } else {
             // 각 타입에 맞게 적절한 디폴트값을 세탕하기 위해서
             let valueToSet = ""
             switch (this.type) {
