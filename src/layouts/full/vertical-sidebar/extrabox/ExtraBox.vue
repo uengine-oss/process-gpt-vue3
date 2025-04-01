@@ -5,7 +5,6 @@ import { Icon } from '@iconify/vue';
 const authStore = useAuthStore();
 
 const name = localStorage.getItem("userName");
-const defaultPicture = '/images/defaultUser.png';
 const picture = localStorage.getItem("picture");
 const isAdmin = localStorage.getItem("isAdmin");
 </script>
@@ -14,7 +13,7 @@ const isAdmin = localStorage.getItem("isAdmin");
     <v-sheet rounded="md" color="lightprimary" class="pa-4  ExtraBox hide-menu">
         <div class="d-flex align-center justify-space-between">
             <v-avatar size="50">
-                <v-img :src="picture || defaultPicture" width="50" />
+                <v-img :src="picture" width="50" />
             </v-avatar>
             <div>
                 <h6 class="text-h6 d-flex align-center font-weight-semibold">{{ name }}</h6>
