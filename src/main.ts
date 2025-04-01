@@ -229,7 +229,8 @@ async function initializeApp() {
                     localStorage.setItem('groups', `${keycloak.tokenParsed.groups}`);
                     localStorage.setItem('roles', `${keycloak.tokenParsed.realm_access?.roles}`);
                     localStorage.setItem('isAdmin', 'true');
-                    localStorage.setItem('picture', '');
+                    const defaultPicture = '/images/defaultUser.png';
+                    localStorage.setItem('picture', localStorage.getItem('picture') || defaultPicture);
                 }
             }
             // const response = await fetch('http://localhost:9090/api/users', {

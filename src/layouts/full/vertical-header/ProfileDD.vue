@@ -5,15 +5,7 @@ import { profileDD } from '@/_mockApis/headerData';
 import { useAuthStore } from '@/stores/auth';
 import { Icon } from '@iconify/vue';
 
-const defaultPicture = '/images/defaultUser.png'; // 기본 이미지 URL 설정
 let picture = localStorage.getItem("picture");
-
-onMounted(() => {
-  if (!picture || picture == "null") {
-    localStorage.setItem("picture", defaultPicture);
-    picture = defaultPicture;
-  }
-});
 
 const name = localStorage.getItem("userName");
 const isAdmin = localStorage.getItem("isAdmin");
