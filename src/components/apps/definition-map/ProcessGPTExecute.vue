@@ -185,7 +185,13 @@ export default {
                 })
             })
             .catch(error => {
-                console.log(error);
+                me.$try({
+                    context: me,
+                    action: async () => {
+                        console.log(error);
+                    },
+                    errorMsg: `${me.definition.processDefinitionName} 실행 중 오류가 발생했습니다: ${error}`
+                })
             });
             
             me.$try({

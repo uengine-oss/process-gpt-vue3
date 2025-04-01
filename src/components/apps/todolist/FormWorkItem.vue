@@ -236,8 +236,14 @@ export default {
                         // 인스턴스 업데이트
                         me.EventBus.emit('instances-updated');
                     })
-                    .catch((err) => {
-                        console.log(err);
+                    .catch((error) => {
+                        me.$try({
+                            context: me,
+                            action: async () => {
+                                console.log(error);
+                            },
+                            errorMsg: `${me.workItem.activity.name} 실행 중 오류가 발생했습니다: ${error}`
+                        })
                     });
 
                 let path = btoa(me.workItem.worklist.instId);

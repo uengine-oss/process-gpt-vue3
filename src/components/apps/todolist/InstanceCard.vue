@@ -88,6 +88,7 @@ export default {
             async handler(newVal, oldVal) {
                 if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
                     await this.init();
+                    
                 }
             }
         },
@@ -114,11 +115,12 @@ export default {
             }
         });
 
-        this.EventBus.on('workitem-completed', () => {
+        this.EventBus.on('workitem-completed', async () => {
             this.workitemRunning = false;
             if (Object.keys(this.$route.query).length > 0) {
-                this.$router.replace({ query: null });
+                this.$router.replace({ query: null });  
             }
+            await this.init();
         });
     },
     computed: {
@@ -152,6 +154,10 @@ export default {
                     me.instance = await backend.getInstance(me.id);
                     if (me.instance) {
                         me.eventList = await backend.getEventList(me.instance.instanceId);
+                    }
+                    const activeComponents = me.$refs[me.tab];
+                    if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
+                        await activeComponents[0].init();
                     }
                 }
             });

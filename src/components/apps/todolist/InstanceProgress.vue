@@ -93,6 +93,7 @@ export default {
                         } else {
                             me.currentActivities = me.workListByInstId.map((item) => item.tracingTag);
                         }
+                        await me.initStatus();
                         me.updatedDefKey++;
                     }
                 }
