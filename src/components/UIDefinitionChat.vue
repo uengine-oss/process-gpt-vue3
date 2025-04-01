@@ -160,6 +160,7 @@ import ChatModule from './ChatModule.vue';
 import ChatGenerator from './ai/FormDesignGenerator';
 import Chat from './ui/Chat.vue';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
+import FormDefinitionTestTerminal from './testTerminals/FormDefinitionTestTerminal.vue';
 
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
@@ -168,7 +169,10 @@ var jsondiffpatch = jsondiff.create({
 });
 
 export default {
-    mixins: [ChatModule],
+    mixins: [
+        ChatModule,
+        FormDefinitionTestTerminal
+    ],
     name: 'UIDefinitionChat',
     components: {
         Chat,

@@ -1,171 +1,315 @@
-// '/public/snippets/default/snippets.html'을 참조해서 AI 에게 생성시킬 컨테이너, 프롬프트 정보를 알려주기 위해서
+// Reference to '/public/snippets/default/snippets.html' to provide container layouts and component information for AI form generation
 const formDesignGeneratorPromptSnipptsData = {
-    // AI가 사용할 컨테이너 레이아웃 조합을 전달해주기 위해서 (col-sm-{숫자}의 조합)
+    // Container layout combinations that AI can use (col-sm-{number} combinations)
+    // The sum of numbers in each array must equal 12 to maintain proper grid layout
     containerSpaceSets: [
-        [12],
-        [6, 6],
-        [4, 8],
-        [8, 4],
-        [4, 4, 4],
-        [3, 6, 3],
-        [3, 3, 3, 3]
+        [12],           // Full width
+        [6, 6],         // Two equal columns
+        [4, 8],         // Left narrow, right wide
+        [8, 4],         // Left wide, right narrow
+        [4, 4, 4],      // Three equal columns
+        [3, 6, 3],      // Narrow, wide, narrow
+        [3, 3, 3, 3]    // Four equal columns
     ],
 
-    // AI가 사용할 컴포넌트들의 세부 정보를 전달하기 위해서 {tag: "태그", purpose: "목적", limit: "주의사항/제한사항"}
-    // * 태그의 속성에 관한 문법
-    // 1. 태그에 "<>"로 감싸서 설명을 해줄 경우, AI가 그 값을 적절하게 교채함
-    // 2. "<값1|값2>"와 같이 작성할 경우, AI는 그 중 하나의 값을 선택해서 사용함
-    // 3. 그냥 속성을 적어주면, 그것이 상수라고 생각하고 그대로 사용함
+    // Component details for AI to use when generating forms
+    // Tag attribute syntax rules:
+    // 1. Attributes in "<>" will be replaced by AI with appropriate values
+    // 2. Attributes in "<value1|value2>" format indicate AI should select one option
+    // 3. Attributes without "<>" are constants and must be used as written
     componentInfos: [
         {
-            tag: `<text-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' type='<text|number|email|url|date|datetime-local|month|week|time|password|tel|color>' disabled='<true|false>' readonly='<true|false>'></text-field>`,
-            purpose: "다양한 유형의 텍스트를 입력받기 위해서",
-            limit: "년도와 같이 선택해야 할 항목이 너무 많은 경우에는 text-field를 사용할 것"
+            tagName: "text-field",
+            tag: `<text-field name='<unique_identifier>' alias='<display_label>' type='<text|number|email|url|date|datetime-local|month|week|time|password|tel|color>' disabled='<true|false>' readonly='<true|false>'></text-field>`,
+            purpose: "To collect various types of text input",
+            limit: "For selections with many options (like years), use text-field instead of select-field"
         },
 
         {
-            tag: `<textarea-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' rows='<입력창의 행 크기>' disabled='<true|false>' readonly='<true|false>'></textarea-field>`,
-            purpose: "여러 행에 걸쳐서 텍스트를 입력받기 위해서",
+            tagName: "textarea-field",
+            tag: `<textarea-field name='<unique_identifier>' alias='<display_label>' rows='<number_of_rows>' disabled='<true|false>' readonly='<true|false>'></textarea-field>`,
+            purpose: "To collect multi-line text input",
             limit: ""
         },
 
         {
-            tag: `<boolean-field name='<이 입력창의 고유한 이름>' alias='<이 입력창의 별명>' disabled='<true|false>' readonly='<true|false>'></boolean-field>`,
-            purpose: `'true' 또는 'false' 중 하나를 선택하기 위해서`,
+            tagName: "boolean-field",
+            tag: `<boolean-field name='<unique_identifier>' alias='<display_label>' disabled='<true|false>' readonly='<true|false>'></boolean-field>`,
+            purpose: "To select either 'true' or 'false'",
             limit: ""
         },
 
         {
-            tag: `<select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' is_dynamic_load='<true|false>' ` + 
-                 `items='<is_dynamic_load가 false시에 선택 항목 리스트>' ` + 
-                 `dynamic_load_url='<is_dynamic_load가 true시에 JSON 데이터 로드 URL>' ` +
-                 `dynamic_load_key_json_path='<is_dynamic_load가 true시에 키 배열을 담을 JSON PATH>' ` + 
-                 `dynamic_load_value_json_path='<is_dynamic_load가 true시에 값 배열을 담을 JSON PATH>' ` +
+            tagName: "select-field",
+            tag: `<select-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<true|false>' ` + 
+                 `items='<options_list_when_is_dynamic_load_is_false>' ` + 
+                 `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_true>' ` +
+                 `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_true>' ` + 
+                 `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_true>' ` +
                  `disabled='<true|false>' readonly='<true|false>'></select-field>`,
-            purpose: "여러개의 옵션 중 하나를 선택하기 위해서",
-            limit: `is_dynamic_load가 false인 경우, 선택 항목 리스트를 만들기 위해서 items 필수 작성.` +
-                   `items는 '[{"key1": "label1"}, {"key2": "label2"}]'와 같이 작성되어야 함.` +
-                   `is_dynamic_load가 true인 경우, dynamic_load_url, dynamic_load_key_json_path, dynamic_load_value_json_path 필수 작성.`
+            purpose: "To select one option from multiple choices",
+            limit: `When is_dynamic_load is false, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +
+                   `When is_dynamic_load is true, dynamic_load_url, dynamic_load_key_json_path, and dynamic_load_value_json_path are all required.`
         },
 
         {
-            tag: `<checkbox-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' is_dynamic_load='<true|false>' ` + 
-                 `items='<is_dynamic_load가 false시에 선택 항목 리스트>' ` + 
-                 `dynamic_load_url='<is_dynamic_load가 true시에 JSON 데이터 로드 URL>' ` +
-                 `dynamic_load_key_json_path='<is_dynamic_load가 true시에 키 배열을 담을 JSON PATH>' ` + 
-                 `dynamic_load_value_json_path='<is_dynamic_load가 true시에 값 배열을 담을 JSON PATH>' ` +
+            tagName: "checkbox-field",
+            tag: `<checkbox-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<true|false>' ` + 
+                 `items='<options_list_when_is_dynamic_load_is_false>' ` + 
+                 `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_true>' ` +
+                 `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_true>' ` + 
+                 `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_true>' ` +
                  `disabled='<true|false>' readonly='<true|false>'></checkbox-field>`,
-            purpose: "여러개의 선택 사항들 중, 여러개를 선택하기 위해서",
-            limit: `is_dynamic_load가 false인 경우, 선택 항목 리스트를 만들기 위해서 items 필수 작성.` +
-                   `items는 '[{"key1": "label1"}, {"key2": "label2"}]'와 같이 작성되어야 함.` +
-                   `is_dynamic_load가 true인 경우, dynamic_load_url, dynamic_load_key_json_path, dynamic_load_value_json_path 필수 작성.`
+            purpose: "To select multiple options from a list of choices",
+            limit: `When is_dynamic_load is false, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +
+                   `When is_dynamic_load is true, dynamic_load_url, dynamic_load_key_json_path, and dynamic_load_value_json_path are all required.`
         },
 
         {
-            tag: `<radio-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' is_dynamic_load='<true|false>' ` + 
-                 `items='<is_dynamic_load가 false시에 선택 항목 리스트>' ` + 
-                 `dynamic_load_url='<is_dynamic_load가 true시에 JSON 데이터 로드 URL>' ` +
-                 `dynamic_load_key_json_path='<is_dynamic_load가 true시에 키 배열을 담을 JSON PATH>' ` + 
-                 `dynamic_load_value_json_path='<is_dynamic_load가 true시에 값 배열을 담을 JSON PATH>' ` +
+            tagName: "radio-field",
+            tag: `<radio-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<true|false>' ` + 
+                 `items='<options_list_when_is_dynamic_load_is_false>' ` + 
+                 `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_true>' ` +
+                 `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_true>' ` + 
+                 `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_true>' ` +
                  `disabled='<true|false>' readonly='<true|false>'></radio-field>`,
-            purpose: "나열된 여러개의 옵션 중 하나를 선택하기 위해서",
-            limit: `is_dynamic_load가 false인 경우, 선택 항목 리스트를 만들기 위해서 items 필수 작성.` +
-                   `items는 '[{"key1": "label1"}, {"key2": "label2"}]'와 같이 작성되어야 함.` +
-                   `is_dynamic_load가 true인 경우, dynamic_load_url, dynamic_load_key_json_path, dynamic_load_value_json_path 필수 작성.`
+            purpose: "To select one option from multiple listed choices (displayed as radio buttons)",
+            limit: `When is_dynamic_load is false, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +
+                   `When is_dynamic_load is true, dynamic_load_url, dynamic_load_key_json_path, and dynamic_load_value_json_path are all required.`
         },
 
         {
-            tag: `<user-select-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' disabled='<true|false>' readonly='<true|false>'></user-select-field>`,
-            purpose: "유저들을 선택하기 위해서",
+            tagName: "user-select-field",
+            tag: `<user-select-field name='<unique_identifier>' alias='<display_label>' disabled='<true|false>' readonly='<true|false>'></user-select-field>`,
+            purpose: "To select users from the system",
             limit: ""
         },
 
         {
-            tag: `<file-field name='<이 선택창의 고유한 이름>' alias='<이 선택창의 별명>' disabled='<true|false>' readonly='<true|false>'></file-field>`,
-            purpose: `파일을 입력받기 위해서`,
+            tagName: "file-field",
+            tag: `<file-field name='<unique_identifier>' alias='<display_label>' disabled='<true|false>' readonly='<true|false>'></file-field>`,
+            purpose: "To upload files",
             limit: ""
         },
 
         {
-            tag: `<label-field label='<입력시킬 라벨 값>'></label-field>`,
-            purpose: `특정 컴포넌트를 설명하기 위해서`,
-            limit: "name, alias가 있는 경우에는 이미 내부적으로 label이 설정되기 때문에 쓸 필요가 없음"
+            tagName: "label-field",
+            tag: `<label-field label='<label_text>'></label-field>`,
+            purpose: "To provide descriptive text for components",
+            limit: "Not needed for components that already have name and alias attributes (which automatically generate labels)"
         },
 
         {
-            tag: `<code-field name='<이 코드의 고유한 이름>' alias='<이 코드의 별명>' event_type='<click|initialize|validate|watch>' watch_name='<event_type이 watch인 경우, 감시할 name 속성>'>실행시킬 Javascript 코드</code-field>`,
-            purpose: `지정된 이벤트가 발생하면 코드를 실행하기 위해서`,
-            limit: `code-field 또한 반드시 'col-sm-*' 속성으로 선언된 div 안에 속해야 함.\n
-                    또한, code-field가 속한 row의 is_multidata_mode는 반드시 false여야 함.\n
-                    세부 메뉴얼은 다음과 같음.\n
-                   * event_type에 따라서 코드를 실행하는 방식이 달라짐\n` +
-                   `click인 경우, 버튼을 누를 경우, 주어진 코드가 실행됨\n` +
-                   `initialize인 경우, 맨 처음 폼이 표시될때 주어진 코드가 실행됨\n` +
-                   `validate인 경우, 폼을 제출할시에 주어진 코드가 실행됨\n` +
-                   `watch인 경우, watch_name 속성에 정의된 값이 변경될 경우, 주어진 코드가 실행됨\n` +
-                   `* 코드 작성 규칙은 다음과 같음\n` +
-                   `1. 각각의 코드 작성 줄이 끝나면 ';'를 붙여야 함\n` +
-                   `2. 주어진 코드가 실행되기 위해서는 반드시 자바스크립트 코드를 사용해야 함\n` +
-                   `3. 현재 유저가 입력한 값은 this.formValues[<name 속성>]에 저장되어 있음\n` +
-                   `4. event_type이 watch인 경우, this.oldFormValues[<name 속성>]에 이전 값이 저장되어 있음\n` +
-                   `5. event_type이 validate인 경우, 에러가 있을 경우, error 속성에 에러메시지를 저장하고, 없을 경우 아무것도 하지 않으면 됨`
+            tagName: "code-field",
+            tag: `<code-field name='<unique_identifier>' alias='<display_label>' event_type='<click|initialize|validate|watch>' watch_name='<name_attribute_to_watch_when_event_type_is_watch>'>JavaScript code to execute</code-field>`,
+            purpose: "To execute JavaScript code when specified events occur",
+            limit: `\
+code-field must be placed inside a div with 'col-sm-*' class. 
+The row containing code-field must have is_multidata_mode='false'. 
+Detailed guidelines: 
+* event_type determines when the code executes: 
+- click: code executes when a button is clicked 
+- initialize: code executes when the form first loads 
+- validate: code executes when the form is submitted 
+- watch: code executes when the value of the watched field (specified by watch_name) changes 
+* Code writing rules: 
+1. Each line of code must end with a semicolon (;) 
+2. Only JavaScript code is supported 
+3. Current form values are accessed via this.formValues[<name_attribute>] 
+4. For watch event_type, previous values are accessed via this.oldFormValues[<name_attribute>] 
+5. For validate event_type, set the error variable with an error message if validation fails
+6. When declaring a string, use single quotes like 'text'`
         }
     ],
 
-    // AI에게 참조할만한 예시를 안내해주기 위해서 {input: "유저 입력", output: "AI 결과"}
     examples: [
         {
-            input: "도서 정보 입력 폼을 생성해줘. 책 제목이 입력되었는지 제출시 검사하도록 만들어줘. 그리고, 책 표지 이미지를 입력받을때는 여러개를 입력받을 수 있도록 해줘.",
+            input: {
+                requestType: "Create",
+                request: "Create an employee registration form with personal, contact, and job information sections. Include fields for name, email, department, position, hire date, and emergency contact. Add salary field that calculates and displays annual amount when monthly salary is entered. Use different column layouts for each section."
+            },
             output: `
-            \`\`\`
-            {
-                "htmlOutput": 
-                "<section>
-                    <div class='row' name='book_info' alias='도서 정보' is_multidata_mode='false'>
-                        <div class='col-sm-12'>
-                            <text-field name='book_title' alias='책 제목'></text-field>
-                            <text-field name='book_author' alias='저자'></text-field>
-                            <text-field name='book_price' alias='가격' type='number'></text-field>
-                            <text-field name='book_publish_date' alias='발행날짜' type='date'></text-field>
-                            <select-field name='book_genre' alias='책 장르' is_dynamic_load='false' items='[{"novel": "소설"}, {"poem": "시"}, {"essay": "에세이"}, {"SF": "공상 과학"}]'></select-field>
-                                             
-                            <section>
-                                <div class='row' name='book_cover_images' alias='책 표지 이미지 목록' is_multidata_mode='true'>
-                                    <div class='col-sm-12'>
-                                        <file-field name='book_cover_image' alias='책 표지 이미지'></file-field>
-                                    </div>
-                                </div>
-                            </section>
-                        </div>
-                    </div>
-                </section>
-                <section>
-                    <div class='row' name='code' alias='코드' is_multidata_mode='false'>
-                        <div class='col-sm-12'>
-                            <code-field name="checkBookTitle" alias="책 제목 검사" event_type="validate">
-                            if(this.formValues["book_title"] === "") error = "책 제목은 반드시 입력해야 합니다."
-                            </code-field>  
-                        </div>
-                    </div>
-                </section>
-                "
+\`\`\`json
+{
+    "htmlOutput": "<section>
+    <div class='row' name='personal_info' alias='Personal Information' is_multidata_mode='false'>
+        <div class='col-sm-6'>
+            <text-field name='employee_name' alias='Full Name' type='text'></text-field>
+            <text-field name='employee_birth' alias='Date of Birth' type='date'></text-field>
+        </div>
+        <div class='col-sm-6'>
+            <text-field name='employee_email' alias='Email Address' type='email'></text-field>
+            <text-field name='employee_phone' alias='Phone Number' type='tel'></text-field>
+        </div>
+    </div>
+</section>
+<section>
+    <div class='row' name='job_details' alias='Job Details' is_multidata_mode='false'>
+        <div class='col-sm-4'>
+            <select-field name='employee_department' alias='Department' is_dynamic_load='false' items='[{"hr": "Human Resources"}, {"dev": "Development"}, {"sales": "Sales"}, {"marketing": "Marketing"}]'></select-field>
+        </div>
+        <div class='col-sm-4'>
+            <select-field name='employee_position' alias='Position' is_dynamic_load='false' items='[{"junior": "Junior"}, {"senior": "Senior"}, {"manager": "Manager"}, {"director": "Director"}]'></select-field>
+        </div>
+        <div class='col-sm-4'>
+            <text-field name='employee_hire_date' alias='Hire Date' type='date'></text-field>
+        </div>
+    </div>
+</section>
+<section>
+    <div class='row' name='compensation' alias='Compensation' is_multidata_mode='false'>
+        <div class='col-sm-8'>
+            <text-field name='monthly_salary' alias='Monthly Salary' type='number'></text-field>
+            <text-field name='annual_salary' alias='Annual Salary' type='number' readonly='true'></text-field>
+        </div>
+        <div class='col-sm-4'>
+            <boolean-field name='is_contractor' alias='Is Contractor'></boolean-field>
+        </div>
+    </div>
+</section>
+<section>
+    <div class='row' name='emergency_contacts' alias='Emergency Contacts' is_multidata_mode='true'>
+        <div class='col-sm-3'>
+            <text-field name='contact_name' alias='Contact Name'></text-field>
+        </div>
+        <div class='col-sm-3'>
+            <text-field name='contact_relationship' alias='Relationship'></text-field>
+        </div>
+        <div class='col-sm-3'>
+            <text-field name='contact_phone' alias='Phone' type='tel'></text-field>
+        </div>
+        <div class='col-sm-3'>
+            <text-field name='contact_email' alias='Email' type='email'></text-field>
+        </div>
+    </div>
+</section>
+<section>
+    <div class='row' name='employee_documents' alias='Documents' is_multidata_mode='true'>
+        <div class='col-sm-12'>
+            <file-field name='employee_document' alias='Upload Document'></file-field>
+        </div>
+    </div>
+</section>
+<section>
+    <div class='row' name='code_section' alias='Code Functions' is_multidata_mode='false'>
+        <div class='col-sm-12'>
+            <code-field name='validateEmployeeForm' alias='Employee Form Validation' event_type='validate'>
+            if(this.formValues['employee_name'] === '') error = 'Employee name is required.';
+            if(this.formValues['employee_email'] === '') error = 'Email address is required.';
+            if(this.formValues['employee_hire_date'] === '') error = 'Hire date is required.';
+            </code-field>
+            <code-field name='calculateAnnualSalary' alias='Calculate Annual Salary' event_type='watch' watch_name='monthly_salary'>
+            if(this.formValues['monthly_salary'] && !isNaN(this.formValues['monthly_salary'])) {
+                this.formValues['annual_salary'] = this.formValues['monthly_salary'] * 12;
+            } else {
+                this.formValues['annual_salary'] = 0;
             }
-            \`\`\``
+            </code-field>
+        </div>
+    </div>
+</section>"
+}
+\`\`\``
         },
         {
-            input: "도서 정보 입력 폼에서 책 장르에 '공상 과학' 항목을 추가해줘",
+            input: {
+                requestType: "Modify",
+                request: "Add a performance evaluation section to the employee form with fields for evaluation date, evaluator (user selection), performance rating (1-5), strengths, areas for improvement, and goals. Make the evaluation date required and validate it.",
+                existingForm: `\
+<section>
+    <div class='row' name='personal_info' alias='Personal Information' is_multidata_mode='false'>
+        <div class='col-sm-6'>
+            <text-field name='employee_name' alias='Full Name' type='text'></text-field>
+            <text-field name='employee_birth' alias='Date of Birth' type='date'></text-field>
+        </div>
+        <div class='col-sm-6'>
+            <text-field name='employee_email' alias='Email Address' type='email'></text-field>
+            <text-field name='employee_phone' alias='Phone Number' type='tel'></text-field>
+        </div>
+    </div>
+</section>
+<section>
+    <div class='row' name='job_details' alias='Job Details' is_multidata_mode='false'>
+        <div class='col-sm-4'>
+            <select-field name='employee_department' alias='Department' is_dynamic_load='false' items='[{"hr": "Human Resources"}, {"dev": "Development"}, {"sales": "Sales"}, {"marketing": "Marketing"}]'></select-field>
+        </div>
+        <div class='col-sm-4'>
+            <select-field name='employee_position' alias='Position' is_dynamic_load='false' items='[{"junior": "Junior"}, {"senior": "Senior"}, {"manager": "Manager"}, {"director": "Director"}]'></select-field>
+        </div>
+        <div class='col-sm-4'>
+            <text-field name='employee_hire_date' alias='Hire Date' type='date'></text-field>
+        </div>
+    </div>
+</section>
+<section>
+    <div class='row' name='code_section' alias='Code Functions' is_multidata_mode='false'>
+        <div class='col-sm-12'>
+            <code-field name='validateEmployeeForm' alias='Employee Form Validation' event_type='validate'>
+            if(this.formValues['employee_name'] === '') error = 'Employee name is required.';
+            if(this.formValues['employee_email'] === '') error = 'Email address is required.';
+            if(this.formValues['employee_hire_date'] === '') error = 'Hire date is required.';
+            </code-field>
+        </div>
+    </div>
+</section>`
+            },
             output: `
-            \`\`\`
-            {
-                "modifications":[
-                {
-                    "action": "replace",
-                    "targetCSSSelector": "select-field[name='book_genre']",
-                    "tagValue": "<select-field name='book_genre' alias='책 장르' is_dynamic_load='false' items='[{"novel": "소설"}, {"poem": "시"}, {"essay": "에세이"}, {"SF": "공상 과학"}]'></select-field>"
-                }
-                ]
-            }
-            \`\`\``
+\`\`\`json
+{
+    "modifications": [
+        {
+            "action": "addAfter",
+            "targetCSSSelector": "section:nth-child(2)",
+            "tagValue": "<section>
+    <div class='row' name='performance_evaluation' alias='Performance Evaluation' is_multidata_mode='false'>
+        <div class='col-sm-4'>
+            <text-field name='evaluation_date' alias='Evaluation Date' type='date'></text-field>
+            <user-select-field name='evaluator' alias='Evaluator'></user-select-field>
+        </div>
+        <div class='col-sm-8'>
+            <select-field name='performance_rating' alias='Performance Rating' is_dynamic_load='false' items='[{"1": "1 - Needs Improvement"}, {"2": "2 - Below Expectations"}, {"3": "3 - Meets Expectations"}, {"4": "4 - Exceeds Expectations"}, {"5": "5 - Outstanding"}]'></select-field>
+        </div>
+    </div>
+</section>"
+        },
+        {
+            "action": "addAfter",
+            "targetCSSSelector": "section:nth-child(3)",
+            "tagValue": "<section>
+    <div class='row' name='evaluation_details' alias='Evaluation Details' is_multidata_mode='false'>
+        <div class='col-sm-6'>
+            <textarea-field name='strengths' alias='Strengths' rows='4'></textarea-field>
+        </div>
+        <div class='col-sm-6'>
+            <textarea-field name='improvement_areas' alias='Areas for Improvement' rows='4'></textarea-field>
+        </div>
+    </div>
+</section>"
+        },
+        {
+            "action": "addAfter",
+            "targetCSSSelector": "section:nth-child(4)",
+            "tagValue": "<section>
+    <div class='row' name='goals' alias='Performance Goals' is_multidata_mode='true'>
+        <div class='col-sm-12'>
+            <textarea-field name='performance_goal' alias='Goal Description' rows='2'></textarea-field>
+        </div>
+    </div>
+</section>"
+        },
+        {
+            "action": "replace",
+            "targetCSSSelector": "code-field[name='validateEmployeeForm']",
+            "tagValue": "<code-field name='validateEmployeeForm' alias='Employee Form Validation' event_type='validate'>
+if(this.formValues['employee_name'] === '') error = 'Employee name is required.';
+if(this.formValues['employee_email'] === '') error = 'Email address is required.';
+if(this.formValues['employee_hire_date'] === '') error = 'Hire date is required.';
+if(this.formValues['evaluation_date'] === '') error = 'Evaluation date is required.';
+</code-field>"
+        }
+    ]
+}
+\`\`\``
         }
     ]
 }
