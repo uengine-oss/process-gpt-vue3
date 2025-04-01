@@ -243,7 +243,8 @@ SPECIAL INTERPRETATION GUIDELINES:
 2. For table headers containing such patterns, transform them into appropriate radio-button components rather than keeping them as plain text.
 3. For example, "○대상 ○비대상" should be converted to radio buttons with "대상" and "비대상" as options.
 4. Other special characters that might indicate form elements should be properly interpreted as their corresponding HTML components.
-${formHtml}
+${formHtml}${userInputs.request ? `\n\n# Additional User Request
+${userInputs.request}` : ""}
 `
         copiedPreviousMessageFormats.push({
           role: 'user',
