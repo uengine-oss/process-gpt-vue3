@@ -16,6 +16,12 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: gcr.io/process-gpt-419207/gateway:v0.0.1
+          image: ghcr.io/uengine-oss/process-gpt-gateway:v0.0.1
           ports:
             - containerPort: 8080
+          env:
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: my-secrets
+                  key: JWT_SECRET

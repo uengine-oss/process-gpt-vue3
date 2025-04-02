@@ -278,8 +278,9 @@ class ProcessGPTBackend implements Backend {
 
     async executeInstance(input: any) {
         try {
-            var me = this;
-            
+            const email = localStorage.getItem('email');
+            input.email = email;
+
             var url = `/execution/complete`;
             if (input.answer && input.answer.image != null) {
                 url = `/execution/vision-complete`;
@@ -289,18 +290,8 @@ class ProcessGPTBackend implements Backend {
                 input: input
             };
             
-            const token = localStorage.getItem('accessToken');
-            if (!token) {
-                throw new Error('No access token');
-            }
-
             var result: any = null;
-            await axios.post(url, req, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            }).then(res => {
+            await axios.post(url, req).then(res => {
                 if (res.data) {
                     const data = JSON.parse(res.data);
                     if (data) {
@@ -1264,15 +1255,10 @@ class ProcessGPTBackend implements Backend {
     async bindRole(roles: any) {
         try {
             let result: any = null;
-            const token = localStorage.getItem('accessToken');
             await axios.post(`/execution/role-binding`, {
                 "input": {
-                    "roles": roles
-                }
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    "roles": roles,
+                    "email": localStorage.getItem('email')
                 }
             })
             .then(res => {
