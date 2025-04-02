@@ -1270,7 +1270,7 @@ export default {
                         // 이미지 미리보기에 추가
                         var html = `<img src=${srcEncoded} width='100%' />`;
                         $('#imagePreview').append(html);
-                        me.attachedImg = srcEncoded;
+                        me.attachedImg = event.target.result;
                         me.delImgBtn = true;
                     };
                 };

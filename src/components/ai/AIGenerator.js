@@ -41,6 +41,14 @@ export default class AIGenerator {
         }
 
         this.cacheReplayDelay = this.options.cacheReplayDelay ? this.options.cacheReplayDelay : 3000;
+        
+        this.backendUrl = '/langchain-chat';
+        this.vendor = 'openai';
+        this.modelConfig = {
+            temperature: 1,
+            frequency_penalty: 0,
+            presence_penalty: 0
+        }
     }
 
     createPrompt() {
@@ -145,25 +153,69 @@ export default class AIGenerator {
         }
     }
 
+    async checkBackendConnection() {
+        try {
+            const response = await fetch(`${this.backendUrl}/sanity-check`);
+            if (!response.ok) {
+                throw new Error('Backend connection failed');
+            }
+            const data = await response.json();
+            return data.is_sanity_check === true;
+        } catch (error) {
+            console.error('Backend connection check failed:', error);
+            return false;
+        }
+    }
+
     async generate() {
         this.state = 'running';
         let me = this;
+
         let messages = this.createMessages();
+        let messagesToSend = await this.createMessagesAsync();
+        if(messagesToSend && messagesToSend.length > 0)
+            messages = messagesToSend;
 
         if (this.returnCache(messages)) return;
 
-        me.openaiToken = me.client.openaiToken;
-        if (!me.openaiToken) {
-            me.openaiToken = await me.client.getToken();
+        const isBackendConnected = await this.checkBackendConnection();
+        if (!isBackendConnected) {
+            const errorMessage = "Failed to connect to the backend server for AI communication. Please check if the backend is operational.";
+
+            console.error(errorMessage);
+            alert(errorMessage);
+            if (me.client.onError)
+                me.client.onError({ message: errorMessage });
+
+            me.state = 'error';
+            return;
         }
+
+
+        let apiToken = null
+        const localStorageTokenKey = `${this.vendor.toUpperCase()}_API_KEY`
+        const tokenKey = `${this.vendor.toLowerCase()}Token`
+        if(localStorage.getItem(localStorageTokenKey))
+            apiToken = localStorage.getItem(localStorageTokenKey)
+        else if(me.client[tokenKey])
+            apiToken = me.client[tokenKey]
+        else if(this.vendor == 'openai')
+            apiToken = await me.client.getToken();
+        else {
+            apiToken = prompt("Please enter your API key for " + this.vendor + ":");
+            localStorage.setItem(localStorageTokenKey, apiToken);
+        }
+        me[tokenKey] = apiToken
+
+
         let responseCnt = 0;
 
         me.gptResponseId = null;
-        const url = 'https://api.openai.com/v1/chat/completions';
+        const url = `${this.backendUrl}/messages`;
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url);
         xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('Authorization', 'Bearer ' + me.openaiToken);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + apiToken);
 
         xhr.onprogress = function (event) {
             var currentResId;
@@ -193,7 +245,8 @@ export default class AIGenerator {
                 if (parsed.choices[0].finish_reason == 'length') {
                     me.finish_reason = 'length';
                 }
-                return parsed.choices[0].delta.content || '';
+                
+                return parsed.choices[0]?.delta?.content || parsed.choices[0]?.message?.content || '';
             });
 
             const newUpdatesJoined = newUpdatesParsed.join('');
@@ -220,6 +273,41 @@ export default class AIGenerator {
             }
         };
 
+        xhr.onerror = function () {
+            console.error('XHR 요청 실패:', xhr);
+            me.state = 'error';
+            const errorMessage = "AI 서버와 통신 중 네트워크 오류가 발생했습니다.";
+            
+            if (me.client.onError) {
+                me.client.onError({ message: errorMessage });
+            }
+        };
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status !== 200) {
+                console.error('HTTP 응답 에러:', xhr.status, xhr.statusText);
+                me.state = 'error';
+                
+                let errorMessage = "AI 서버로부터 요청이 실패했습니다. ";
+                
+                if (xhr.status === 401 || xhr.status === 403) {
+                    errorMessage += "인증 오류가 발생했습니다. API 키를 확인해주세요.";
+                } else if (xhr.status === 404) {
+                    errorMessage += "요청한 리소스를 찾을 수 없습니다.";
+                } else if (xhr.status === 429) {
+                    errorMessage += "너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.";
+                } else if (xhr.status >= 500) {
+                    errorMessage += "서버 오류가 발생했습니다. (상태 코드: " + xhr.status + ")";
+                } else {
+                    errorMessage += "오류 코드: " + xhr.status;
+                }
+                
+                if (me.client.onError) {
+                    me.client.onError({ message: errorMessage });
+                }
+            }
+        };
+
         xhr.onloadend = function () {
             console.log('End to Success - onloadend', xhr);
             if (me.client) {
@@ -230,6 +318,7 @@ export default class AIGenerator {
 
                 me.state = 'end';
                 let model = me.createModel(me.modelJson);
+                console.log("[*][AIGenerator] 백엔드 서버에서 최종적인 응답 데이터 구축 완료", {modelJson: me.modelJson});
 
                 if (!me.stopSignaled) {
                     if(me.client.genType && me.client.genType == 'form'){
@@ -261,19 +350,22 @@ export default class AIGenerator {
         if (this.isContinued) messages[messages.length - 1].content = 'continue';
 
         const data = {
+            vendor: this.vendor,
             model: this.model,
             messages: messages,
-            temperature: 1,
-            frequency_penalty: 0,
-            presence_penalty: 0,
-            stream: this.options.isStream
+            stream: this.options.isStream,
+            modelConfig: this.modelConfig
         };
 
-        if (this.model.includes('vision')) data.max_tokens = 4096;
+        if (this.model.includes('vision')) {
+            data.modelConfig.max_tokens = 4096;
+        }
 
         if (me.stopSignaled) {
             me.stopSignaled = false;
         }
+
+        console.log("[*][AIGenerator] 백엔드 서버로 LLM 요청 데이터 전송", {requestData: data});
         xhr.send(JSON.stringify(data));
     }
 
@@ -296,6 +388,10 @@ export default class AIGenerator {
         }
 
         return me.previousMessages;
+    }
+
+    async createMessagesAsync() {
+        return []
     }
 
     continue() {
