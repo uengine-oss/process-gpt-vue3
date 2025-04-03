@@ -603,15 +603,22 @@ export default {
                     }
                     
                     responseObj.participants.forEach(function (email){
-                        let todoObj = JSON.parse(JSON.stringify(responseObj))
-                        delete todoObj.work
-                        delete todoObj.messageForUser
-                        delete todoObj.participants
-                        todoObj.proc_inst_id = null
-                        todoObj.proc_def_id = null
-                        todoObj.id = me.uuid()
-                        todoObj.user_id = email
-                        me.putObject('todolist', todoObj);
+                        const putObj =  {
+                            id: me.uuid(),
+                            user_id: email,
+                            proc_inst_id: null,
+                            proc_def_id: null,
+                            activity_id: responseObj.activity_id,
+                            activity_name: responseObj.activity_name ?? responseObj.activity_id,
+                            start_date: responseObj.start_date,
+                            end_date: responseObj.end_date,
+                            status: responseObj.status,
+                            description: responseObj.description,
+                            tool: null,
+                            due_date: responseObj.due_date ?? responseObj.end_date,
+                            tenant_id: null
+                        }
+                        me.putObject('todolist', putObj)
                     })
 
                 } else if(responseObj.work == 'ScheduleRegistration'){
@@ -675,7 +682,11 @@ export default {
                 }
 
                 systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
-                me.putMessage(me.createMessageObj(systemMsg, 'system'))
+
+                const systemMsgObj = me.createMessageObj(systemMsg, 'system')
+                this.messages.push(systemMsgObj)
+                me.putMessage(systemMsgObj)
+                
                 if(response.content){
                     me.deleteSystemMessage(response)
                 }
