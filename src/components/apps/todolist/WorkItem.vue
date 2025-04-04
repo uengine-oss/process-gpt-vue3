@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10" v-if="currentComponent" :key="updatedKey">
-        <div class="px-3 py-3 pb-4 align-center">
+        <div class="pa-4 pb-0 align-center">
             <div class="d-flex">
                 <h5 class="text-h5 font-weight-semibold">
                     {{ activityName }}
@@ -12,7 +12,7 @@
             </div>
         </div>
 
-        <v-row :class="isMobile ? 'ma-0 pa-2 mt-2' : 'ma-0 pa-2'">
+        <v-row :class="isMobile ? 'ma-0 pa-0 mt-2' : 'ma-0 pa-0'">
             <!-- Left -->
             <v-col
                 class="pa-0"
@@ -54,7 +54,7 @@
                 </div>
             </v-col>
             <!-- Right -->
-            <v-col class="pa-0" :cols="isMobile ? 12 : 8">
+            <v-col :class="isMobile ? 'pa-4' : 'pa-0'" :cols="isMobile ? 12 : 8">
                 <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
                         <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>

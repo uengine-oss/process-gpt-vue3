@@ -1,7 +1,10 @@
 <template>
     <div class="form-radio-field">
         <label class="form-radio-label">{{(localAlias && localAlias.length > 0) ? localAlias : localName}}</label>
-        <v-radio-group v-model="localModelValue">
+        <v-radio-group v-model="localModelValue" 
+            :hide-details="hideDetails" 
+            :density="density"
+        >
             <div v-for="(item, index) in controlItems" :key="index">
                 <div v-for="(value, key) in item" :key="key">
                     <v-radio :label="value" :value="key" :disabled="localDisabled" :readonly="localReadonly"></v-radio>
@@ -18,6 +21,16 @@ import jp from 'jsonpath';
 
 export default {
     props: {
+        // UI 관련 설정 props 시작 
+        hideDetails: {
+            type: Boolean,
+            default: false
+        },
+        density: {
+            type: String,
+            default: 'compact'
+        },
+        // UI 관련 설정 props 끝
         modelValue: String,
         vueRenderUUID: String,
         tagName: String,

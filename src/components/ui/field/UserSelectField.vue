@@ -10,6 +10,8 @@
             chips closable-chips multiple small-chips
             :readonly="localReadonly"
             :variant="localReadonly ? 'filled' : 'outlined'"
+            :hide-details="hideDetails"
+            :density="density"
         >
             <template v-slot:chip="{ props, item }">
                 <v-chip v-bind="props" :text="item.raw.username ?? item.raw.email"></v-chip>
@@ -34,6 +36,16 @@ export default {
     name: "UserSelectField",
 
     props: {
+        // UI 관련 설정 props 시작 
+        hideDetails: {
+            type: Boolean,
+            default: false
+        },
+        density: {
+            type: String,
+            default: 'compact'
+        },
+        // UI 관련 설정 props 끝
         modelValue: Array,
         vueRenderUUID: String,
         tagName: String,
