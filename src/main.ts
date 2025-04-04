@@ -90,8 +90,8 @@ Object.defineProperty(window, '$pal', {
 
 
 Object.defineProperty(window, '$mode', {
-    // value: 'uEngine',
-    value: 'ProcessGPT',
+    value: 'uEngine',
+    // value: 'ProcessGPT',
     writable: false,
     configurable: false
 });
@@ -204,15 +204,16 @@ async function initializeApp() {
     app.use(VueDiff, {
         componentName: 'vuediff'
     });
-    let initOptions = {
-        url: `http://localhost:9090/`,
-        realm: `uengine`,
-        clientId: `uengine`,
-        onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
-    };
+
     (async () => {
-        let keycloak = new Keycloak(initOptions);
         try {
+            let initOptions = {
+                url: window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || `http://localhost:9090/`,
+                realm: window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || `uengine`,
+                clientId: window._env_?.VITE_KEYCLOAK_CLIENT_ID || import.meta.env.VITE_KEYCLOAK_CLIENT_ID || `uengine`,
+                onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
+            };
+            const keycloak = new Keycloak(initOptions);
             const authenticated = await keycloak.init({
                 onLoad: initOptions.onLoad
             });
@@ -233,15 +234,9 @@ async function initializeApp() {
                     localStorage.setItem('picture', localStorage.getItem('picture') || defaultPicture);
                 }
             }
-            // const response = await fetch('http://localhost:9090/api/users', {
-            //     headers: {
-            //         accept: 'application/json',
-            //         authorization: `Bearer ${keycloak.token}`
-            //     }
-            // });
-            // console.log(response.json());
+       
         } catch (error) {
-            console.error('Failed to initialize adapter:', error);
+            console.error(`Failed to initialize adapter: ${error}`);
         }
     })();
 }
