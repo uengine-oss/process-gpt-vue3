@@ -854,7 +854,7 @@ class ProcessGPTBackend implements Backend {
 
                 let field: any = {
                     text: alias || '',
-                    key: match[1] || '',
+                    key: match ? (match[1] || '') : '',
                     type: tagName.replace('-field', '') || '',
                     disabled: disabled ? disabled : false,
                     readonly: readonly ? readonly : false
