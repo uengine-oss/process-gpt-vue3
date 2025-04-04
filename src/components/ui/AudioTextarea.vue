@@ -6,7 +6,7 @@
                     <!-- <div @click="onChangeRecordingDialog" class="mr-1">
                         <Icons :icon="'round-headset'"  />
                     </div> -->
-                    <div @click="onClickMic">
+                    <div @click="onClickMic" class="pb-4">
                         <Icons v-if="!isMicRecording && !isMicRecorderLoading" :icon="'sharp-mic'"  />
                         <Icons v-else-if="!isMicRecorderLoading" :icon="'stop'" :size="'20'"  />
                         <Icons v-else-if="isMicRecorderLoading" :icon="'bubble-loading'"  />

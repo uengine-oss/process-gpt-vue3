@@ -1,6 +1,14 @@
 <template>
     <div class="form-text-area">
-        <v-textarea v-model="localModelValue" :disabled="localDisabled" :readonly="localReadonly" :rows="rows" :variant="localReadonly ? 'filled' : 'outlined'">
+        <v-textarea 
+            v-model="localModelValue" 
+            :disabled="localDisabled" 
+            :readonly="localReadonly" 
+            :rows="rows" 
+            :variant="localReadonly ? 'filled' : 'outlined'" 
+            :hide-details="hideDetails" 
+            :density="density"
+        >
             <template v-slot:label>
                 <span style="color:black;">
                     {{(localAlias && localAlias.length > 0) ? localAlias : localName}}
@@ -17,6 +25,16 @@ export default {
     name: "TextareaField",
     
     props: {
+        // UI 관련 설정 props 시작 
+        hideDetails: {
+            type: Boolean,
+            default: false
+        },
+        density: {
+            type: String,
+            default: 'compact'
+        },
+        // UI 관련 설정 props 끝
         modelValue: String,
         vueRenderUUID: String,
         tagName: String,

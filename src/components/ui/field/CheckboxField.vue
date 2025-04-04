@@ -9,6 +9,8 @@
                     :value="key"
                     :disabled="localDisabled"
                     :readonly="localReadonly"
+                    :hide-details="hideDetails"
+                    :density="density"
                 ></v-checkbox>
             </div>
         </div>
@@ -22,6 +24,16 @@ import jp from 'jsonpath';
 
 export default {
     props: {
+        // UI 관련 설정 props 시작 
+        hideDetails: {
+            type: Boolean,
+            default: false
+        },
+        density: {
+            type: String,
+            default: 'compact'
+        },
+        // UI 관련 설정 props 끝
         modelValue: Array,
         vueRenderUUID: String,
         tagName: String,

@@ -1,5 +1,5 @@
 <template>
-    <v-row class="ma-0 pa-0 task-btn" style="right:50px; top:12px;">
+    <v-row class="ma-0 pa-0 task-btn">
         <v-spacer></v-spacer>
         <div class="from-work-item-pc" v-if="!isCompleted">
             <v-btn v-if="!isDryRun" @click="saveTask" color="primary" class="mr-2" rounded>중간 저장</v-btn>

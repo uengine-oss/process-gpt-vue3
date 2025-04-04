@@ -21,7 +21,10 @@ if [ -f /opt/www/index.html ]; then
   window._env_ = {\
     VITE_SUPABASE_URL: "'$VITE_SUPABASE_URL'",\
     VITE_SUPABASE_KEY: "'$VITE_SUPABASE_KEY'",\
-    VITE_OPENAI_API_KEY: "'$VITE_OPENAI_API_KEY'"\
+    VITE_OPENAI_API_KEY: "'$VITE_OPENAI_API_KEY'",\
+    VITE_KEYCLOAK_URL: "'$VITE_KEYCLOAK_URL'",\
+    VITE_KEYCLOAK_REALM: "'$VITE_KEYCLOAK_REALM'",\
+    VITE_KEYCLOAK_CLIENT_ID: "'$VITE_KEYCLOAK_CLIENT_ID'",\
   };\
   </script>' /opt/www/index.html
 else

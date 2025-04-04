@@ -1,18 +1,19 @@
 <template>
     <v-card flat class="w-100">
-        <div :class="{'d-flex': !isMobile}">
-            <div class="pa-4" style="min-width: 300px;">
+        <div :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">
+            <div :class="isMobile ? 'pa-4 pb-0' : 'pa-4'" style="min-width: 300px;">
                 <div style="font-size: 20px; font-weight: 500">Role Mapping</div>
                 <div class="mt-4">
                     <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
                         <user-select-field v-model="roleMapping.endpoint" 
                             :name="roleMapping.name"
                             :item-value="'email'"
+                            :hide-details="true"
                         ></user-select-field>
                     </div>
                 </div>
             </div>
-            <div class="w-100 pa-2">
+            <div class="w-100">
                 <div v-if="workItem != null">
                     <WorkItem 
                         :definitionId="definitionId" 
@@ -217,3 +218,10 @@ export default {
     }
 };
 </script>
+
+<style>
+.Process-gpt-execute-mobile-layout {
+    height: 90vh;
+    overflow: auto;
+}
+</style>
