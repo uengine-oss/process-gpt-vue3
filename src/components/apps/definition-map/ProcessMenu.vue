@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="enableEdit" class="proc-menu-btn-box">
+        <div v-if="enableEdit" class="proc-menu-btn-box text-right">
             <v-tooltip text="권한 설정">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="setPermission"

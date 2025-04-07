@@ -6,7 +6,9 @@
             <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
         </div>
         <div class="form-work-item-mobile" v-if="!isCompleted">
-            <v-tooltip text="중간 저장">
+            <v-tooltip v-if="isMobile"
+                text="중간 저장"
+            >
                 <template v-slot:activator="{ props }">
                     <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
                         <Icons :icon="'save'" :width="32" :height="32"/>
@@ -93,6 +95,9 @@ export default {
         isCompleted(){
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         },
+        isMobile() {
+            return this.windowWidth <= 700;
+        }
     },
     watch:  {
         html() {

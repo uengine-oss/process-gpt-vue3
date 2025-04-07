@@ -85,13 +85,33 @@
                 </div>
             </div>
 
-            <v-btn v-if="componentName == 'DefinitionMapList'"
+            <v-card
+                v-if="componentName == 'DefinitionMapList'"
                 @click="openConsultingDialog = true, ProcessPreviewMode = false"
-                style="margin-left: 20px;" color="primary" rounded
+                class="consulting-card ml-4 mb-4"
+                elevation="3"
+                rounded="lg"
             >
-                <Icons :icon="'magic'" :size="18"  style="margin-right: 10px;" />
-                {{ $t('processDefinitionMap.consultingButton') }}
-            </v-btn>
+                <v-card-item>
+                    <div class="d-flex align-center">
+                        <v-avatar
+                            color="primary"
+                            size="42"
+                            class="mr-4"
+                        >
+                            <Icons :icon="'magic'" :size="24" color="white" />
+                        </v-avatar>
+                        <div>
+                            <v-card-title class="text-primary font-weight-bold pb-1">
+                                프로세스 컨설팅 시작하기
+                            </v-card-title>
+                            <v-card-subtitle>
+                                AI와 함께 프로세스를 분석하고 개선해보세요
+                            </v-card-subtitle>
+                        </div>
+                    </div>
+                </v-card-item>
+            </v-card>
         </v-card>
         <v-dialog :style="ProcessPreviewMode ? '' : 'max-width: 1000px;'" v-model="openConsultingDialog" persistent>
             <v-card>
@@ -621,5 +641,15 @@ export default {
 <style scoped>
 .alert-message {
     white-space: pre-line;
+}
+.consulting-card {
+    cursor: pointer;
+    transition: transform 0.2s;
+    width: fit-content;
+}
+
+.consulting-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 </style>
