@@ -11,6 +11,9 @@
         "instanceDelete": "인스턴스가 삭제되었습니다.",
         "completed": "실행 완료"
     },
+    "errorMsg": {
+        "isBackendConnected" : "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요."
+    },
     "App": {
         "view": "자세히 보기"
     },
