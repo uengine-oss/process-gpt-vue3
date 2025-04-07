@@ -172,7 +172,12 @@ export default class AIGenerator {
         let me = this;
 
         let messages = this.createMessages();
-        let messagesToSend = await this.createMessagesAsync();
+        let messagesToSend
+        if(this.client.genType == 'form'){
+            messagesToSend = await this.createMessagesAsync(this.previousMessages);
+        } else {
+            messagesToSend = await this.createMessagesAsync();
+        }
         if(messagesToSend && messagesToSend.length > 0)
             messages = messagesToSend;
 
