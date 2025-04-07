@@ -11,6 +11,9 @@
         "instanceDelete": "The instance has been deleted.",
         "completed": "Completed"
     },
+    "errorMsg": {
+        "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational."
+    },
     "App": {
         "view": "Read more"
     },
