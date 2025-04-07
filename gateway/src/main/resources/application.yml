@@ -21,7 +21,7 @@ spring:
         - id: execution
           uri: http://localhost:8000
           predicates:
-            - Path=/complete/**, /vision-complete/**, 
+            - Path=/complete/**, /vision-complete/**, /langchain-chat/**
         - id: definition-servicce
           uri: http://localhost:9093
           predicates:
