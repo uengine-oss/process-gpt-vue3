@@ -762,8 +762,6 @@ export default {
                     }
                 });
             }
-
-
             if(jsonModel.components) {
 
                 var currentSource = "default";
@@ -797,11 +795,10 @@ export default {
                             }
                         } else {
                             componentX = source? source.x + (isHorizontal ? 150 : 0) : isHorizontal ? 150 : 0;
-                            componentY = source? source.y + (isHorizontal ? 0 : 100) : isHorizontal ? 0 : 150;
+                            componentY = source? source.y + (isHorizontal ? 0 : 150) : isHorizontal ? 0 : 150;
                             if(source) {
                                 if (source.role != component.role) {
                                     componentX += isHorizontal ? 0 : 150;
-                                    // componentY += isHorizontal ? 100 : 0;
                                     const roleInnerElements = jsonModel.components.filter(element => element.role == source.role);
                                     if (roleInnerElements.length > 0) {
                                         let maxY = componentY;
@@ -812,7 +809,7 @@ export default {
                                                 }
                                             }
                                         });
-                                        componentY = isHorizontal ? maxY + 100 : 0;
+                                        componentY = isHorizontal ? maxY + 100 : maxY + 0;
                                     } else {
                                         componentY += isHorizontal ? 100 : 0;
                                     }
@@ -822,7 +819,7 @@ export default {
                         }
                         currentSource = component.source;
                     }
-
+                    
 
                     const componentShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
                     if(component.componentType == "Event") {
@@ -845,27 +842,6 @@ export default {
                     } else if(component.componentType == "Event") {
                         width = 34;
                         height = 34;
-                    }
-
-                    if(isHorizontal) {
-                        if(component.componentType != 'Event') {
-                            if(componentX > 1100) {
-                                componentX = 100;
-                                componentY += 150;
-                            }
-                        } else if(component.type == 'EndEvent') {
-                            componentX = 1200;
-                            if(startY > componentY) {
-                                componentY = startY;
-                            }
-                        }
-                    } else {
-                        if(component.type == 'EndEvent') {
-                            componentY = 900;
-                            if(startX > componentX) {
-                                componentX = startX;
-                            }
-                        }
                     }
 
                     dcBoundsComponent.setAttribute('width', width);
@@ -1026,228 +1002,155 @@ export default {
                 bpmnPlane.appendChild(laneShape);
             });
 
-
-
-
              // 서로간의 선위치를 설정하는 부분
              if (jsonModel.sequences) {
                 jsonModel.sequences.forEach((sequence) => {
                     if (!offsetPos[sequence.source] || !offsetPos[sequence.target]) {
                         return false;
                     }
-
-                    const bpmnEdge = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNEdge');
+                    // === BPMNEdge 생성 ===
+                    const bpmnEdge = xmlDoc.createElementNS(
+                    'http://www.omg.org/spec/BPMN/20100524/DI',
+                    'bpmndi:BPMNEdge'
+                    );
                     bpmnEdge.setAttribute('id', `BPMNEdge_${sequence.source}_${sequence.target}`);
                     bpmnEdge.setAttribute('bpmnElement', 'SequenceFlow_' + sequence.source + '_' + sequence.target);
 
+                    // === 위치 정보 가져오기 ===
                     const sourcePos = offsetPos[sequence.source] || {};
                     const targetPos = offsetPos[sequence.target] || {};
+                    const sourceActivityPos = activityPos[sequence.source] || {};
+                    const targetActivityPos = activityPos[sequence.target] || {};
 
-                    let startX = (parseInt(sourcePos.x) || 0) + (parseInt(sourcePos.width) || 0);
-                    let startY = (parseInt(sourcePos.y) || 0) + (parseInt(sourcePos.height) || 0) / 2;
+                    const sourceX = parseInt(sourcePos.x) || 0;
+                    const sourceY = parseInt(sourcePos.y) || 0;
+                    const sourceW = parseInt(sourcePos.width) || 0;
+                    const sourceH = parseInt(sourcePos.height) || 0;
 
-                    let endX = parseInt(targetPos.x) || 0;
-                    let endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0) / 2;
+                    const targetX = parseInt(targetPos.x) || 0;
+                    const targetY = parseInt(targetPos.y) || 0;
+                    const targetW = parseInt(targetPos.width) || 0;
+                    const targetH = parseInt(targetPos.height) || 0;
 
-                    let distanceX = endX - startX;
-                    let distanceY = endY - startY;
+                    // === 방향별 포인트 계산 함수 ===
+                    function getPosition(pos, direction, sequence) {
+                        const x = parseInt(pos.x) || 0;
+                        const y = parseInt(pos.y) || 0;
+                        const w = parseInt(pos.width) || 0;
+                        const h = parseInt(pos.height) || 0;
 
-                    if(distanceY > distanceX) {
-                        startX = (parseInt(sourcePos.x) || 0) + (parseInt(sourcePos.width) || 0) / 2;
-                        startY = (parseInt(sourcePos.y) || 0) + (parseInt(sourcePos.height) || 0);
-
-                        endX = parseInt(targetPos.x) || 0;
-                        endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0) / 2;
-                    }
-
-                    if(startX > endX) {
-                        endX = parseInt(targetPos.x) || 0;
-                        endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0) / 2;
-                    }
-
-                    if(distanceY < 0) {
-                        endX = (parseInt(targetPos.x) || 0) + (parseInt(targetPos.width) || 0) / 2;
-                        endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0);
-                    }
-
-                    if(!isHorizontal) {
-                        startX = (parseInt(sourcePos.x) || 0) + (parseInt(sourcePos.width) || 0) / 2;
-                        startY = (parseInt(sourcePos.y) || 0) + (parseInt(sourcePos.height) || 0);
-
-                        endX = (parseInt(targetPos.x) || 0) + (parseInt(targetPos.width) || 0) / 2;
-                        endY = parseInt(targetPos.y) || 0;
-
-                        distanceX = endX - startX;
-                        distanceY = endY - startY;
-
-                        if(Math.abs(distanceX) > Math.abs(distanceY)) {
-                            startX = (parseInt(sourcePos.x) || 0) + (parseInt(sourcePos.width) || 0);
-                            startY = (parseInt(sourcePos.y) || 0) + (parseInt(sourcePos.height) || 0) / 2;
-
-                            endX = parseInt(targetPos.x) || 0;
-                            endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0) / 2;
-                        }
-
-                        if(startY > endY) {
-                            endX = (parseInt(targetPos.x) || 0) + (parseInt(targetPos.width) || 0) / 2;
-                            endY = (parseInt(targetPos.y) || 0) + (parseInt(targetPos.height) || 0);
-                        }
-
-                        if(distanceX < 0) {
-                            startX = parseInt(sourcePos.x) || 0;
-                            startY = (parseInt(sourcePos.y) || 0) + (parseInt(sourcePos.height) || 0) / 2;
+                        switch (direction) {
+                            case 'top':
+                                console.log('getPosition:top', x, y, w, h, sequence);
+                                return { x: x + w / 2, y: y, direction };
+                            case 'bottom':
+                                console.log('getPosition:bottom', x, y, w, h, sequence);
+                                return { x: x + w / 2, y: y + h, direction };
+                            case 'left':
+                                console.log('getPosition:left', x, y, w, h, sequence);
+                                return { x: x, y: y + h / 2, direction };
+                            case 'right':
+                                console.log('getPosition:right', x, y, w, h, sequence);
+                                return { x: x + w, y: y + h / 2, direction: 'right' };
+                            default:
+                                console.log('getPosition:default', x, y, w, h, sequence);
+                                return { x: x + w, y: y + h / 2, direction: 'right' };
                         }
                     }
 
-                    // 첫 번째 waypoint (시작점)
+                    // === 시작점과 끝점 방향 판단 ===
+                    let sourceDirection = 'right';
+                    let targetDirection = 'left';
+
+                    const directionX = (targetX + targetW / 2) - (sourceX + sourceW / 2);
+                    const directionY = (targetY + targetH / 2) - (sourceY + sourceH / 2);
+
+
                     if(isHorizontal) {
-                        const waypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypoint1.setAttribute('x', startX);
-                        waypoint1.setAttribute('y', startY);
-                        bpmnEdge.appendChild(waypoint1);
-
-                        if (startY === endY) {
-                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypoint2.setAttribute('x', endX);
-                            waypoint2.setAttribute('y', endY);
-                            bpmnEdge.appendChild(waypoint2);
-                        } else if(startX > endX) {
-                            const waypointMiddle1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle1.setAttribute('x', startX);
-                            waypointMiddle1.setAttribute('y', startY);
-                            bpmnEdge.appendChild(waypointMiddle1);
-
-                            const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle2.setAttribute('x', startX);
-                            waypointMiddle2.setAttribute('y', startY + (endY - startY)/2);
-                            bpmnEdge.appendChild(waypointMiddle2);
-
-                            const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle3.setAttribute('x', endX - 60);
-                            waypointMiddle3.setAttribute('y', endY - (endY - startY)/2);
-                            bpmnEdge.appendChild(waypointMiddle3);
-
-                            const waypointMiddle4 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle4.setAttribute('x', endX - 60);
-                            waypointMiddle4.setAttribute('y', endY);
-                            bpmnEdge.appendChild(waypointMiddle4);
-
-                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypoint2.setAttribute('x', endX);
-                            waypoint2.setAttribute('y', endY);
-                            bpmnEdge.appendChild(waypoint2);
+                        if(sourceActivityPos.y == targetActivityPos.y) {
+                            sourceDirection = 'right';
+                            targetDirection = 'left';
+                        } else if(targetActivityPos.y > sourceActivityPos.y) {
+                            sourceDirection = 'bottom';
+                            targetDirection = 'right';
                         } else {
-                            const waypointMiddle1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle1.setAttribute('x', startX);
-                            waypointMiddle1.setAttribute('y', startY);
-                            bpmnEdge.appendChild(waypointMiddle1);
-
-                            if(distanceY >= 0) {
-                                const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                                waypointMiddle2.setAttribute('x', startX);
-                                waypointMiddle2.setAttribute('y', endY);
-                                bpmnEdge.appendChild(waypointMiddle2);
-
-                                const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                                waypointMiddle3.setAttribute('x', endX);
-                                waypointMiddle3.setAttribute('y', endY);
-                                bpmnEdge.appendChild(waypointMiddle3);
-                            } else {
-                                const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                                waypointMiddle2.setAttribute('x', endX);
-                                waypointMiddle2.setAttribute('y', startY);
-                                bpmnEdge.appendChild(waypointMiddle2);
-
-                                const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                                waypointMiddle3.setAttribute('x', endX);
-                                waypointMiddle3.setAttribute('y', endY);
-                                bpmnEdge.appendChild(waypointMiddle3);
-                            }
-
-                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypoint2.setAttribute('x', endX);
-                            waypoint2.setAttribute('y', endY);
-                            bpmnEdge.appendChild(waypoint2);
+                            sourceDirection = 'right';
+                            targetDirection = 'top';
                         }
                     } else {
-                        const waypoint1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                        waypoint1.setAttribute('x', startX);
-                        waypoint1.setAttribute('y', startY);
-                        bpmnEdge.appendChild(waypoint1);
-
-                        if (startX === endX) {
-                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypoint2.setAttribute('x', endX);
-                            waypoint2.setAttribute('y', endY);
-                            bpmnEdge.appendChild(waypoint2);
-                        } else if(startY > endY) {
-                            const waypointMiddle1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle1.setAttribute('x', startX);
-                            waypointMiddle1.setAttribute('y', startY);
-                            bpmnEdge.appendChild(waypointMiddle1);
-
-                            const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle2.setAttribute('x', startX + (endX - startX)/2);
-                            waypointMiddle2.setAttribute('y', startY);
-                            bpmnEdge.appendChild(waypointMiddle2);
-
-                            const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle3.setAttribute('x', endX - (endX - startX)/2);
-                            waypointMiddle3.setAttribute('y', endY + 60);
-                            bpmnEdge.appendChild(waypointMiddle3);
-
-                            const waypointMiddle4 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle4.setAttribute('x', endX);
-                            waypointMiddle4.setAttribute('y', endY + 60);
-                            bpmnEdge.appendChild(waypointMiddle4);
-
-                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypoint2.setAttribute('x', endX);
-                            waypoint2.setAttribute('y', endY);
-                            bpmnEdge.appendChild(waypoint2);
+                        if(sourceActivityPos.x == targetActivityPos.x) {
+                            sourceDirection = 'bottom';
+                            targetDirection = 'top';
+                        } else if(targetActivityPos.x > sourceActivityPos.x) {
+                            sourceDirection = 'right';
+                            targetDirection = 'top';
                         } else {
-                            const waypointMiddle1 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypointMiddle1.setAttribute('x', startX);
-                            waypointMiddle1.setAttribute('y', startY);
-                            bpmnEdge.appendChild(waypointMiddle1);
-
-                            if(distanceX >= 0) {
-                                const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                                waypointMiddle2.setAttribute('x', endX);
-                                waypointMiddle2.setAttribute('y', startY);
-                                bpmnEdge.appendChild(waypointMiddle2);
-
-                                const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                                waypointMiddle3.setAttribute('x', endX);
-                                waypointMiddle3.setAttribute('y', endY);
-                                bpmnEdge.appendChild(waypointMiddle3);
-                            } else {
-                                const waypointMiddle2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                                waypointMiddle2.setAttribute('x', startX);
-                                waypointMiddle2.setAttribute('y', endY);
-                                bpmnEdge.appendChild(waypointMiddle2);
-
-                                const waypointMiddle3 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                                waypointMiddle3.setAttribute('x', endX);
-                                waypointMiddle3.setAttribute('y', endY);
-                                bpmnEdge.appendChild(waypointMiddle3);
-                            }
-
-                            const waypoint2 = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                            waypoint2.setAttribute('x', endX);
-                            waypoint2.setAttribute('y', endY);
-                            bpmnEdge.appendChild(waypoint2);
+                            sourceDirection = 'left';
+                            targetDirection = 'top';
                         }
                     }
 
+                    // === 최종 좌표 계산 ===
+                    const startPosition = getPosition(sourcePos, sourceDirection, sequence);
+                    const endPosition = getPosition(targetPos, targetDirection, sequence);
 
-                    // 게이트웨이에서 리턴되는 선의 경우 마지막 변곡점 추가
-                    // if (sequence.source.includes('gateway') && sequence.target.includes('leave')) {
-                    //     const extraWaypoint = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
-                    //     extraWaypoint.setAttribute('x', endX);
-                    //     extraWaypoint.setAttribute('y', endY + 20); // 원하는 위치로 조정
-                    //     bpmnEdge.appendChild(extraWaypoint);
-                    // }
+
+
+
+                    const createWaypoint = (x, y) => {
+                        const waypoint = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DI', 'di:waypoint');
+                        waypoint.setAttribute('x', x.toString());
+                        waypoint.setAttribute('y', y.toString());
+                        return waypoint;
+                    };
+
+                    // 첫 번째 waypoint (시작점)
+                    bpmnEdge.appendChild(createWaypoint(startPosition.x, startPosition.y));
+
+                    const dx = endPosition.x - startPosition.x;
+                    const dy = endPosition.y - startPosition.y;
+
+                    if (isHorizontal) {
+                    if (startPosition.y === endPosition.y) {
+                        bpmnEdge.appendChild(createWaypoint(endPosition.x, endPosition.y));
+                    } else if (startPosition.direction === 'right' && endPosition.direction === 'left') {
+                        const midY = startPosition.y + dy / 2;
+                        bpmnEdge.appendChild(createWaypoint(startPosition.x, midY));
+                        bpmnEdge.appendChild(createWaypoint(endPosition.x, midY));
+                        bpmnEdge.appendChild(createWaypoint(endPosition.x, endPosition.y));
+                        bpmnEdge.appendChild(createWaypoint(endPosition.x, endPosition.y));
+                    } else {
+                        bpmnEdge.appendChild(createWaypoint(startPosition.x, startPosition.y));
+
+                        if (dy >= 0) {
+                        bpmnEdge.appendChild(createWaypoint(startPosition.x, endPosition.y));
+                        bpmnEdge.appendChild(createWaypoint(endPosition.x, endPosition.y));
+                        } else {
+                        bpmnEdge.appendChild(createWaypoint(endPosition.x, startPosition.y));
+                        bpmnEdge.appendChild(createWaypoint(endPosition.x, endPosition.y));
+                        }
+                    }
+                    } else {
+                    if (startPosition.x === endPosition.x) {
+                        bpmnEdge.appendChild(createWaypoint(endPosition.x, endPosition.y));
+                    } else if (startPosition.direction === 'bottom' && endPosition.direction === 'top') {
+                        const midX = startPosition.x + dx / 2;
+                        bpmnEdge.appendChild(createWaypoint(midX, startPosition.y));
+                        bpmnEdge.appendChild(createWaypoint(midX, endPosition.y));
+                        bpmnEdge.appendChild(createWaypoint(endPosition.x, endPosition.y));
+                    } else {
+                        bpmnEdge.appendChild(createWaypoint(startPosition.x, startPosition.y));
+
+                        if (dx >= 0) {
+                            bpmnEdge.appendChild(createWaypoint(startPosition.x, startPosition.y));
+                            bpmnEdge.appendChild(createWaypoint(endPosition.x, startPosition.y));
+                            bpmnEdge.appendChild(createWaypoint(endPosition.x, endPosition.y));
+                            } else {
+                            bpmnEdge.appendChild(createWaypoint(startPosition.x, endPosition.y));
+                            bpmnEdge.appendChild(createWaypoint(endPosition.x, endPosition.y));
+                            }
+                        }
+                    }
 
                     bpmnPlane.appendChild(bpmnEdge);
                 });
