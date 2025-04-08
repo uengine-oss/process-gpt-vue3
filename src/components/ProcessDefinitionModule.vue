@@ -465,7 +465,8 @@ export default {
                 'application/xml'
             );
             const bpmnDefinitions = xmlDoc.documentElement;
-            var isHorizontal = jsonModel.isHorizontal;
+            // var isHorizontal = jsonModel.isHorizontal;
+            var isHorizontal = false; // 강제 세로
 
             bpmnDefinitions.setAttribute('id', 'Definitions_' + jsonModel.processDefinitionId);
             bpmnDefinitions.setAttribute('targetNamespace', 'http://bpmn.io/schema/bpmn');
