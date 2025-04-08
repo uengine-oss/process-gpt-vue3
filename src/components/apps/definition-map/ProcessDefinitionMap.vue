@@ -88,11 +88,11 @@
             <v-card
                 v-if="componentName == 'DefinitionMapList'"
                 @click="openConsultingDialog = true, ProcessPreviewMode = false"
-                class="consulting-card ml-4 mb-4"
+                class="consulting-card ma-4"
                 elevation="3"
                 rounded="lg"
             >
-                <v-card-item>
+                <v-card-item class="pa-5">
                     <div class="d-flex align-center">
                         <v-avatar
                             color="primary"

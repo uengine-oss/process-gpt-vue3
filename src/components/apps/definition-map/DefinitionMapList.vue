@@ -4,7 +4,9 @@
             ghost-class="ghost-card" group="megaProcess" :draggable="'.draggable-item'">
             <transition-group>
                 <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer draggable-item"
-                    cols="12" md="2" sm="6">
+                    cols="12" md="2" sm="6"
+                    :min-width="200"
+                >
                     <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess"/>
                 </v-col>
                 <!-- 실제 카드가 들어가야 할 위치 -->

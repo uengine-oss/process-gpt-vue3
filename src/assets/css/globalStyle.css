@@ -506,22 +506,23 @@ hr {
     }
 }
 
-@media only screen and (max-width:550px) {
-    .vue-bpmn-diagram-container .djs-palette {
-        width: 230px !important;
-        height:185px !important;
-    }
-}
-
 .is-sidebar-mobile {
     display: none;
 }
+
 @media only screen and (max-width:1279px) {
     .is-sidebar-pc {
         display: none;
     }
     .is-sidebar-mobile {
         display: block;
+    }
+}
+
+@media only screen and (max-width:550px) {
+    .vue-bpmn-diagram-container .djs-palette {
+        width: 230px !important;
+        height:185px !important;
     }
 }
 
