@@ -13,7 +13,10 @@
             </div>
 
             <v-row class="ma-0 pa-0">
-                <v-col v-for="column in todolist" :key="column.id" cols="12" md="3" sm="6">
+                <v-col v-for="column in todolist" :key="column.id"
+                    class="pa-2"
+                    cols="12" md="3" sm="6"
+                >
                     <TodoTaskColumn :column="column" :loading="loading" @executeTask="executeTask" @scrollBottom="handleScrollBottom" />
                 </v-col>
             </v-row>

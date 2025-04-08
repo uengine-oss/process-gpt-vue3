@@ -81,7 +81,7 @@
                                     class="text-medium-emphasis" 
                                     density="comfortable"
                                 >
-                                    <v-icon>mdi-file-pdf-box</v-icon>
+                                    <v-icon :size="26">mdi-file-pdf-box</v-icon>
                                 </v-btn>
                             </div>
                         </template>
