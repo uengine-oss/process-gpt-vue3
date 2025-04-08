@@ -812,5 +812,12 @@
         "insertDescription": "Please enter the task description",
         "taskLink": "Task Link",
         "moveToTask": "Move to Task"
+    },
+    "ProcessGPTExecute": {
+        "roleMapping": "Role Mapping",
+        "processStart": "Process Start"
+    },
+    "Checkpoints": {
+        "checkpoints": "Checkpoints"
     }
 }

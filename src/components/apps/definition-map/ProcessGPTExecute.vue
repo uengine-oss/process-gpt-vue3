@@ -1,16 +1,20 @@
 <template>
     <v-card flat class="w-100">
+        <v-row class="ma-0 pa-4 pb-0">
+            <h2>{{ $t('ProcessGPTExecute.processStart') }}</h2>
+            <v-spacer></v-spacer>
+            <div class="form-work-item-mobile ml-auto" v-if="!isCompleted">
+                <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
+            </div>
+        </v-row>
         <div :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">
             <div :class="isMobile ? 'pa-4 pb-0' : 'pa-4'" style="min-width: 300px;">
                 <v-row class="ma-0 pa-0">
-                    <div style="font-size: 20px; font-weight: 500">Role Mapping</div>
-                    <div class="form-work-item-mobile ml-auto" v-if="!isCompleted">
-                        <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
-                    </div>
+                    <div style="font-size: 20px; font-weight: 500">{{ $t('ProcessGPTExecute.roleMapping') }}</div>
                 </v-row>
                 <div class="mt-4">
                     <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
-                        <user-select-field v-model="roleMapping.endpoint" 
+                        <user-select-field v-model="roleMapping.endpoint"
                             :name="roleMapping.name"
                             :item-value="'email'"
                             :hide-details="true"

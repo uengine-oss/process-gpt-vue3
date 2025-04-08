@@ -815,5 +815,12 @@
         "insertDescription": "태스크 설명을 넣어주세요",
         "taskLink": "업무 링크",
         "moveToTask": "업무 화면으로 이동"
+    },
+    "ProcessGPTExecute": {
+        "roleMapping": "역할 지정",
+        "processStart": "프로세스 실행"
+    },
+    "Checkpoints": {
+        "checkpoints": "체크포인트"
     }
 }

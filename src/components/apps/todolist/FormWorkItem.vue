@@ -5,7 +5,7 @@
             <v-btn v-if="!isDryRun" @click="saveTask" color="primary" class="mr-2" rounded>중간 저장</v-btn>
             <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
         </div>
-        <div class="form-work-item-mobile" v-if="!isCompleted">
+        <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
             <v-tooltip v-if="isMobile"
                 text="중간 저장"
             >
@@ -23,7 +23,7 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-        </div>
+        </div> -->
     </v-row>
     <div class="pa-4">
         <!-- <FormMapper></FormMapper> -->
@@ -355,11 +355,8 @@ export default {
 .form-work-item-mobile {
     display: none;
 }
-.form-work-item-mobile button {
-    margin-right:10px;
-}
 
-@media only screen and (max-width:700px) {
+@media only screen and (max-width:1080px) {
     .from-work-item-pc {
         display: none;
     }
