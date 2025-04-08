@@ -193,7 +193,7 @@ Approved.`
       this.client.sendMessage(newMessage);
     }
 
-    async getMessageToSend(userInputs) {
+    async getMessageToSend(userInputs, messages) {
       const makeUserMessage = (requestType, request, existingForm, note) => {
         return `
 # Request Type
@@ -226,6 +226,10 @@ ${note}
             role: 'assistant',
             content: example.output
           })
+
+          if(!userInputs) {
+            break;
+          }
         }
       }
 
@@ -273,12 +277,14 @@ ${note}
             )
           })
         }
+      } else {
+        copiedPreviousMessageFormats.push(messages[0])
       }
 
       return copiedPreviousMessageFormats
     }
 
-    async createMessagesAsync() {
+    async createMessagesAsync(messages) {
       this.vendor = 'openai'
       this.model = 'chatgpt-4o-latest'
       this.modelConfig = {
@@ -288,7 +294,10 @@ ${note}
         presence_penalty: 0
       }
 
-      const messagesToSend = await this.getMessageToSend(this.userInputs)
+      if (messages) {
+        messages = messages.filter(message => message !== undefined);
+      }
+      const messagesToSend = await this.getMessageToSend(this.userInputs, messages)
       console.log("[*][FormDesignGenerator] 전달되는 시스템상 AI 메시지", {messagesToSend: messagesToSend})
       return messagesToSend
     }

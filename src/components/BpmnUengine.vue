@@ -94,9 +94,9 @@ export default {
         } else {
             this.diagramXML = '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <bpmn:extensionElements> <uengine:properties> </uengine:properties> </bpmn:extensionElements> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>';
         }
-        if (this.mode == 'uEngine') {
-            this.bpmnViewer.importXML(this.diagramXML);
-        }
+        // if (this.mode == 'uEngine') {
+        this.bpmnViewer.importXML(this.diagramXML);
+        // }
     },
     watch: {
         isViewMode(val) {
@@ -135,11 +135,6 @@ export default {
             },
             deep: true
         },
-        // diagramXML(val) {
-        //     if (this.mode == 'ProcessGPT') {
-        //         this.bpmnViewer.importXML(val);
-        //     }
-        // },
         isPreviewPDFDialog(val) {
             if(!val) {
                 this.$emit('closePDFDialog');
@@ -346,9 +341,6 @@ export default {
             
             self.bpmnStore = useBpmnStore();
             self.bpmnStore.setModeler(self.bpmnViewer);
-            if (self.mode == 'ProcessGPT' && self.bpmn) {
-                self.bpmnViewer.importXML(self.bpmn);
-            }
         },
         extendUEngineProperties(businessObject) {
             let self = this;
