@@ -595,9 +595,9 @@ export default {
                     variable.$parent = uengineProperties;
                 }
             });
-            if (this.mode == 'uEngine') {
+            // if (this.mode == 'uEngine') {
                 this.$emit('onLoaded');
-            }
+            // }
         },
 
         updateInstanceNamePattern(val) {
@@ -630,19 +630,13 @@ export default {
         },
         async changeElement(xml) {
             let me = this;
-            if (me.mode == 'ProcessGPT') {
-                me.$nextTick(async () => {
-                    this.$emit('changeElement', xml);
-                });
-            } else {
-                me.$nextTick(async () => {
-                    const store = useBpmnStore();
-                    let modeler = store.getModeler;
-                    let xmlObj = await modeler.saveXML({ format: true, preamble: true });
-                    me.validationList = await backend.validate(xmlObj.xml);
-                    this.$emit('changeElement', xmlObj.xml);
-                });
-            }
+            me.$nextTick(async () => {
+                const store = useBpmnStore();
+                let modeler = store.getModeler;
+                let xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                me.validationList = await backend.validate(xmlObj.xml);
+                this.$emit('changeElement', xmlObj.xml);
+            });
         },
         changeBpmn(newVal) {
             this.$emit('changeBpmn', newVal);
