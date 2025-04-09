@@ -2,16 +2,16 @@
     <v-card elevation="10"
         :style="$globalState.state.isZoomed ? 'height: 100vh' : 'height:calc(100vh - 155px);'"
     >
-        <div class="pa-0 pl-6 pt-4 pr-6 d-flex align-center flex-column flex-md-row">
+        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center flex-column flex-md-row">
             <div class="d-flex align-center">
                 <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer"
                     @click="goProcess()">
-                    <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.name }}</h6>
+                    <h6 class="text-h6 font-weight-semibold mega-text-ellipsis">{{ selectedProc.mega.name }}</h6>
                     <v-icon>mdi-chevron-right</v-icon>
                 </div>
                 <div v-if="selectedProc.major" class="d-flex align-center cursor-pointer"
                     @click="goProcess(selectedProc.mega.name, 'mega')">
-                    <h6 class="text-h6 font-weight-semibold">{{ selectedProc.major.name }}</h6>
+                    <h6 class="text-h6 font-weight-semibold major-text-ellipsis">{{ selectedProc.major.name }}</h6>
                     <div>
                         <v-icon class="cursor-pointer">mdi-chevron-right</v-icon>
                         <v-menu activator="parent">
@@ -27,7 +27,7 @@
                     </div>
                 </div>
                 <div v-if="processDefinition" class="d-flex align-center">
-                    <h6 class="text-h6 font-weight-semibold">
+                    <h6 class="text-h6 font-weight-semibold sub-process-text-ellipsis">
                         {{ processDefinition ? processDefinition.name : "" }}
                     </h6>
                 </div>
@@ -71,35 +71,43 @@
                         <span>{{ $t('processDefinition.edit') }}</span>
                     </v-tooltip>
                     
-                    <v-tooltip location="bottom" :text="$t('processDefinition.savePDF')">
-                        <template v-slot:activator="{ props }">
-                            <div v-bind="props" class="mr-2">
-                                <v-btn @click="savePDF"
-                                    :size="30"
-                                    icon 
-                                    variant="text" 
-                                    class="text-medium-emphasis" 
-                                    density="comfortable"
-                                >
-                                    <v-icon :size="26">mdi-file-pdf-box</v-icon>
-                                </v-btn>
-                            </div>
-                        </template>
-                    </v-tooltip>
+                    <div class="pdf-download-btn">
+                        <v-tooltip location="bottom" 
+                            :text="$t('processDefinition.savePDF')"
+                        >
+                            <template v-slot:activator="{ props }">
+                                <div v-bind="props" class="mr-2">
+                                    <v-btn @click="savePDF"
+                                        :size="30"
+                                        icon 
+                                        variant="text" 
+                                        class="text-medium-emphasis" 
+                                        density="comfortable"
+                                    >
+                                        <v-icon :size="26">mdi-file-pdf-box</v-icon>
+                                    </v-btn>
+                                </div>
+                            </template>
+                        </v-tooltip>
+                    </div>
 
-                    <v-tooltip location="bottom" :text="$t('processDefinition.capture')">
-                        <template v-slot:activator="{ props }">
-                            <div v-bind="props" class="mr-2">
-                                <v-btn @click="capture"
-                                    icon :size="30" 
-                                    variant="text"
-                                    density="comfortable"
-                                >
-                                    <Icons :icon="'image-download'"  />
-                                </v-btn>
-                            </div>
-                        </template>
-                    </v-tooltip>
+                    <div class="image-download-btn">
+                        <v-tooltip location="bottom" 
+                            :text="$t('processDefinition.capture')"
+                        >
+                            <template v-slot:activator="{ props }">
+                                <div v-bind="props" class="mr-2">
+                                    <v-btn @click="capture"
+                                        icon :size="30" 
+                                        variant="text"
+                                        density="comfortable"
+                                    >
+                                        <Icons :icon="'image-download'"  />
+                                    </v-btn>
+                                </div>
+                            </template>
+                        </v-tooltip>
+                    </div>
                     
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
@@ -336,10 +344,28 @@ export default {
 .sub-process-detail-btn-box {
     margin-left: auto;
 }
-
 @media only screen and (max-width: 959px) {
     .sub-process-detail-btn-box {
-        margin-left: 0;
+        margin: 0 auto;
+    }
+}
+
+@media only screen and (max-width: 700px) {
+    .pdf-download-btn,
+    .image-download-btn {
+        display: none !important;
+    }
+    .mega-text-ellipsis,
+    .major-text-ellipsis {
+        white-space: nowrap; /* ��스트를 한 줄로 표시 */
+        overflow: hidden;    /* 넘치는 ��스트를 숨김 */
+        text-overflow: ellipsis; /* 넘치는 부분을 ...으로 표시 */
+        max-width: 60px;   /* 원하는 최대 너비 설정 */
+        font-size: 11px !important;
+        color: #7a7a7a !important; /* 중간 회색 */
+    }
+    .sub-process-text-ellipsis {
+        font-size: 13px !important;
     }
 }
 </style>
