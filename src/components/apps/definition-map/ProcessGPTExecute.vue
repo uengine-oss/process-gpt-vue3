@@ -230,7 +230,7 @@ export default {
 
 <style>
 .Process-gpt-execute-mobile-layout {
-    height: 90vh;
+    height:85vh;
     overflow: auto;
 }
 </style>
