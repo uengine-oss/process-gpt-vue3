@@ -4,6 +4,9 @@ import { defineStore } from 'pinia';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
+
 export const useAuthStore = defineStore({
     id: 'auth',
     actions: {
@@ -45,6 +48,8 @@ export const useAuthStore = defineStore({
                     if (result.error) {
                         alert(result.errorMsg);
                     } else {
+                        const tenantId = window.$tenantName;
+                        await backend.setTenant(tenantId);
                         router.push(window.$isTenantServer ? '/tenant/manage' : '/definition-map')
                     }
                 }
@@ -69,7 +74,9 @@ export const useAuthStore = defineStore({
                             alert(result.errorMsg);
                         }
                     } else {
-                        if (window.$isTenantServer) {
+                        const tenantId = window.$tenantName;
+                        await backend.setTenant(tenantId);
+                        if (result["isNewUser"]) {
                             alert("계정 인증 메일을 전송해드렸습니다. 이메일 확인 후 다시 로그인하세요.");
                             router.push('/auth/login');
                         } else {
@@ -94,7 +101,7 @@ export const useAuthStore = defineStore({
         },
         async updatePassword(password: string) {
             try {
-                var result: any = await storage?.updateUser({ password: password });
+                var result: any = await backend?.updateUser({ password: password });
                 if (!result.error) {
                     alert('비밀번호가 변경되었습니다.');
                     router.push('/auth/login');

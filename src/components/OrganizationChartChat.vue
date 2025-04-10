@@ -260,7 +260,7 @@ export default {
                         email: user.email,
                         password: '000000',
                     }
-                    const result = await this.storage.createUser(userInfo);
+                    const result = await this.backend.createUser(userInfo);
                     if (result.user) {
                         userInfo = {
                             id: result.user.id,

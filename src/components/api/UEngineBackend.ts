@@ -7,6 +7,10 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async updateUser(userInfo: any) {
+        return null;
+    }
+
     async getTenant(tenantId: string) {
         return null;
     }

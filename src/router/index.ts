@@ -21,31 +21,31 @@ router.beforeEach(async (to, from, next) => {
     const backend = BackendFactory.createBackend();
 
     if (window.$mode !== 'uEngine') {
-        const subdomain = window.location.host.split('.')[0];
+        const subdomain = window.location.hostname.split('.')[0];
         if(subdomain == 'www' || subdomain == 'process-gpt') {
             Object.defineProperty(window, '$isTenantServer', {
                 value: true,
                 writable: false,
                 configurable: true
             });
-        } else if(window.location.host.includes('localhost') || 
-            window.location.host.includes('192.168') || 
-            window.location.host.includes('127.0.0.1')
-        ) {
-            Object.defineProperty(window, '$isTenantServer', {
-                value: false,
-                writable: false,
-                configurable: true
-            });
-            Object.defineProperty(window, '$tenantName', {
-                value: 'localhost',
-                writable: false,
-                configurable: false
-            });
+        // } else if(window.location.host.includes('localhost') || 
+        //     window.location.host.includes('192.168') || 
+        //     window.location.host.includes('127.0.0.1')
+        // ) {
+        //     Object.defineProperty(window, '$isTenantServer', {
+        //         value: false,
+        //         writable: false,
+        //         configurable: true
+        //     });
+        //     Object.defineProperty(window, '$tenantName', {
+        //         value: 'localhost',
+        //         writable: false,
+        //         configurable: false
+        //     });
         } else {
             const isValidTenant = await backend.getTenant(subdomain);
             if (!isValidTenant) {
-                alert("존재하지 않는 경로입니다.");
+                alert(subdomain + " 존재하지 않는 경로입니다.");
                 window.location.href = 'https://www.process-gpt.io/tenant/manage';
                 return;
             } else {
