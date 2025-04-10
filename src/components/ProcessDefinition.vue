@@ -30,7 +30,7 @@
                                 <v-btn @click="openProcessVariables" v-bind="props" class="cp-process-variables btn-variables"
                                     icon variant="text"
                                 >
-                                    <Icons :icon="'variable'" :width="32" :height="32" />
+                                    <Icons :icon="'variable'" :size="24" />
                                 </v-btn>
                             </template>
                         </v-tooltip>
@@ -40,7 +40,7 @@
                                 <v-btn v-bind="props" @click="$globalState.methods.toggleZoom()" class="btn-zoom"
                                     icon variant="text"
                                 >
-                                    <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="32" />
+                                    <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="24" />
                                 </v-btn>
                             </template>
                         </v-tooltip>
