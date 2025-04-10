@@ -1,7 +1,7 @@
 <template>
     <v-card elevation="10">
-        <div class="pa-5">
-            <div class="d-flex align-center justify-space-between ml-3">
+        <div class="pa-4 todolist-card-box">
+            <div class="d-flex align-center justify-space-between ml-2">
                 <h5 class="text-h5 font-weight-semibold">{{ ($t('todoList.title')) }}</h5>
 
                 <v-avatar v-if="mode === 'ProcessGPT'"
@@ -12,13 +12,36 @@
                 </v-avatar>
             </div>
 
-            <v-row class="ma-0 pa-0">
+            <v-row class="ma-0 pa-0 todo-task-column-box-pc">
                 <v-col v-for="column in todolist" :key="column.id"
                     class="pa-2"
-                    cols="12" md="3" sm="6"
+                    cols="12" md="3" sm="3"
                 >
-                    <TodoTaskColumn :column="column" :loading="loading" @executeTask="executeTask" @scrollBottom="handleScrollBottom" />
+                    
+                    <TodoTaskColumn :column="column"
+                        :loading="loading" 
+                        @executeTask="executeTask" 
+                        @scrollBottom="handleScrollBottom"
+                    />
                 </v-col>
+            </v-row>
+
+            <v-row class="ma-0 pa-0 todo-list-container todo-task-column-box-mobile">
+                <div class="todo-list-scroll">
+                    <v-col v-for="column in todolist" :key="column.id"
+                        class="pa-1 todo-list-scroll-v-col"
+                        :style="foldedColumns.includes(column.id) ? 'max-width: 40px !important;' : ''"
+                    >
+                        <TodoTaskColumn 
+                            :column="column" 
+                            :loading="loading" 
+                            @executeTask="executeTask" 
+                            @scrollBottom="handleScrollBottom"
+                            @todoTaskColumnFold="todoTaskColumnFold"
+                            @todoTaskColumnunfold="todoTaskColumnUnfold"
+                        />
+                    </v-col>
+                </div>
             </v-row>
         </div>
 
@@ -41,6 +64,7 @@ export default {
     },
     data: () => ({
         mode: window.$mode,
+        foldedColumns: [],
         todolist: [
             {
                 id: 'TODO',
@@ -83,6 +107,14 @@ export default {
         ]);
     },
     methods: {
+        todoTaskColumnFold(id) {
+            if (!this.foldedColumns.includes(id)) {
+                this.foldedColumns.push(id);
+            }
+        },
+        todoTaskColumnUnfold(id) {
+            this.foldedColumns = this.foldedColumns.filter(columnId => columnId !== id);
+        },
         executeTask(item) {
             var me = this
             me.$router.push(`/todolist/${item.taskId}`)
@@ -153,3 +185,61 @@ export default {
     },
 }
 </script>
+<style>
+.todo-task-column-box-mobile {
+    display: none;
+}
+/* 모바일 사이즈(md 미만)에서만 가로 스크롤 적용 */
+@media (max-width: 959px) {
+    .todo-task-column-box-pc {
+        display: none;
+    }
+    .todo-task-column-box-mobile {
+        display: block;
+    }
+    .todo-list-container {
+        position: relative;
+        width: 100%;
+    }
+
+    .todo-list-scroll {
+        display: block;
+        width: 100%;
+    }
+    .todo-list-scroll {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 12px;
+    }
+
+    .todo-list-scroll .todo-list-scroll-v-col {
+        flex: 0 25 auto;
+    }
+
+    .todolist-card-box {
+        padding: 4px !important;
+    }
+
+    /* 스크롤바 스타일링 */
+    .todo-list-scroll::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .todo-list-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .todo-list-scroll::-webkit-scrollbar-thumb {
+        background: #d1d1d1;
+        border-radius: 4px;
+    }
+}
+
+/* 모바일 사이즈(md 미만)에서만 가로 스크롤 적용 */
+@media (max-width: 700px) {
+    .todo-list-scroll .todo-list-scroll-v-col {
+        max-width: 250px;
+        flex: 0 0 auto;
+    }
+}
+</style>

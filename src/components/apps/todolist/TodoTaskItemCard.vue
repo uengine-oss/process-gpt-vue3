@@ -2,7 +2,7 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-    <v-card elevation="10" class="mb-2 cursor-pointer pa-2" @click="executeTask"
+    <v-card elevation="10" class="cursor-pointer pa-2" @click="executeTask"
         :class="{'border-primary': isDueTodayOrTomorrow, 'border-purple': isPastDue}"
     >
         <v-card-title class="ma-0 pa-0">
