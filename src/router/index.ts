@@ -28,20 +28,20 @@ router.beforeEach(async (to, from, next) => {
                 writable: false,
                 configurable: true
             });
-        // } else if(window.location.host.includes('localhost') || 
-        //     window.location.host.includes('192.168') || 
-        //     window.location.host.includes('127.0.0.1')
-        // ) {
-        //     Object.defineProperty(window, '$isTenantServer', {
-        //         value: false,
-        //         writable: false,
-        //         configurable: true
-        //     });
-        //     Object.defineProperty(window, '$tenantName', {
-        //         value: 'localhost',
-        //         writable: false,
-        //         configurable: false
-        //     });
+        } else if(window.location.host.includes('localhost') || 
+            window.location.host.includes('192.168') || 
+            window.location.host.includes('127.0.0.1')
+        ) {
+            Object.defineProperty(window, '$isTenantServer', {
+                value: false,
+                writable: false,
+                configurable: true
+            });
+            Object.defineProperty(window, '$tenantName', {
+                value: 'localhost',
+                writable: false,
+                configurable: false
+            });
         } else {
             const isValidTenant = await backend.getTenant(subdomain);
             if (!isValidTenant) {
@@ -61,17 +61,17 @@ router.beforeEach(async (to, from, next) => {
                 });
             }
         }
-        // redirect to login page if not logged in and trying to access a restricted page
-        let isLogin = false;
-        if (window.$isTenantServer) {
-            isLogin = await backend.checkDBConnection();
-        } else {
-            isLogin = await backend.setTenant(window.$tenantName) ?? false;
-        }
-
         if (to.fullPath.includes('/auth')) {
             next();
         } else {
+            // redirect to login page if not logged in and trying to access a restricted page
+            let isLogin = false;
+            if (window.$isTenantServer) {
+                isLogin = await backend.checkDBConnection();
+            } else {
+                isLogin = await backend.setTenant(window.$tenantName) ?? false;
+            }
+            
             if (window.$isTenantServer) {
                 if (!to.fullPath.includes('/tenant') && to.fullPath !== '/') {
                     return next('/tenant/manage');
