@@ -362,31 +362,7 @@ CREATE POLICY proc_def_select_policy
     FOR SELECT        
     TO authenticated
     USING (
-        tenant_id = auth.tenant_id() AND
-        (
-            EXISTS (
-                SELECT 1
-                FROM users
-                WHERE users.id = auth.uid()
-                    AND users.role = 'superAdmin'
-            )
-            OR
-            EXISTS (
-                SELECT 1
-                FROM user_permissions
-                WHERE user_permissions.user_id = auth.uid()
-                    AND (
-                        user_permissions.proc_def_id = proc_def.id OR
-                        EXISTS (
-                            SELECT 1
-                            FROM jsonb_array_elements(user_permissions.proc_def_ids->'major_proc_list') AS major_proc
-                            JOIN jsonb_array_elements(major_proc->'sub_proc_list') AS sub_proc
-                            ON sub_proc->>'id' = proc_def.id
-                        )
-                    )
-                    AND user_permissions.readable = true
-            )
-        )
+        tenant_id = auth.tenant_id()
     );
 
 CREATE POLICY proc_def_update_policy

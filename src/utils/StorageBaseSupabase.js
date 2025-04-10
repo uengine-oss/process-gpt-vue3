@@ -175,7 +175,7 @@ export default class StorageBaseSupabase {
                     id: existUser.id,
                     tenants: tenants,
                     current_tenant: tenantId
-                });
+                }, { onConflict: 'id' });
                 return await this.signIn(userInfo);
             } else {
                 const result = await window.$supabase.auth.signUp({
@@ -197,10 +197,14 @@ export default class StorageBaseSupabase {
                                 owner: result.data.user.id
                             });
                         }
-
+                        const role = existTenant ? 'user' : 'superAdmin';
+                        const isAdmin = existTenant ? false : true;
                         await this.putObject('users', {
                             id: result.data.user.id,
-                            username: result.data.user.user_metadata.name,
+                            username: userInfo.username,
+                            email: userInfo.email,
+                            role: role,
+                            is_admin: isAdmin,
                             tenants: [window.$tenantName],
                             current_tenant: window.$tenantName
                         });
