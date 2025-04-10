@@ -2,16 +2,16 @@
     <v-card elevation="10"
         :style="$globalState.state.isZoomed ? 'height: 100vh' : 'height:calc(100vh - 155px);'"
     >
-        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center flex-column flex-md-row">
-            <div class="d-flex align-center">
-                <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer"
+        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center">
+            <div class="d-flex">
+                <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer mega-text-ellipsis"
                     @click="goProcess()">
-                    <h6 class="text-h6 font-weight-semibold mega-text-ellipsis">{{ selectedProc.mega.name }}</h6>
+                    <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.name }}</h6>
                     <v-icon>mdi-chevron-right</v-icon>
                 </div>
-                <div v-if="selectedProc.major" class="d-flex align-center cursor-pointer"
+                <div v-if="selectedProc.major" class="d-flex align-center cursor-pointer major-text-ellipsis"
                     @click="goProcess(selectedProc.mega.name, 'mega')">
-                    <h6 class="text-h6 font-weight-semibold major-text-ellipsis">{{ selectedProc.major.name }}</h6>
+                    <h6 class="text-h6 font-weight-semibold">{{ selectedProc.major.name }}</h6>
                     <div>
                         <v-icon class="cursor-pointer">mdi-chevron-right</v-icon>
                         <v-menu activator="parent">
@@ -43,15 +43,16 @@
 
             <div class="sub-process-detail-btn-box">
                 <div v-if="onLoad && bpmn" class="d-flex align-center">
-                    <v-btn v-if="!JMS && !Pal"
-                        @click="executeProcess"
-                        color="primary"
-                        rounded
-                        density="comfortable"
-                        class="mr-2"
-                    >
-                        실행
-                    </v-btn>
+                    <div class="sub-process-start-btn">
+                        <v-btn v-if="!JMS && !Pal"
+                            @click="executeProcess"
+                            color="primary"
+                            rounded
+                            density="comfortable"
+                        >
+                            실행
+                        </v-btn>
+                    </div>
 
                     <v-tooltip v-if="isEditable" location="bottom">
                         <template v-slot:activator="{ props }">
@@ -109,16 +110,18 @@
                         </v-tooltip>
                     </div>
                     
-                    <v-tooltip :text="$t('processDefinition.zoom')">
-                        <template v-slot:activator="{ props }">
-                            <div v-bind="props">
-                                <v-btn :size="30" icon variant="text" @click="$globalState.methods.toggleZoom()">
-                                    <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
-                                    <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"/>
-                                </v-btn>
-                            </div>
-                        </template>
-                    </v-tooltip>
+                    <div class="zoom-btn">
+                        <v-tooltip :text="$t('processDefinition.zoom')">
+                            <template v-slot:activator="{ props }">
+                                <div v-bind="props">
+                                    <v-btn :size="30" icon variant="text" @click="$globalState.methods.toggleZoom()">
+                                        <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                                        <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"/>
+                                    </v-btn>
+                                </div>
+                            </template>
+                        </v-tooltip>
+                    </div>
                 </div>
             </div>
         </div>
@@ -344,28 +347,31 @@ export default {
 .sub-process-detail-btn-box {
     margin-left: auto;
 }
-@media only screen and (max-width: 959px) {
-    .sub-process-detail-btn-box {
-        margin: 0 auto;
-    }
+.is-mobile-sub-process-name {
+    display: none !important;
+}
+.sub-process-start-btn {
+    margin-right: 8px;
 }
 
-@media only screen and (max-width: 700px) {
+@media only screen and (max-width: 959px) {
     .pdf-download-btn,
-    .image-download-btn {
+    .image-download-btn,
+    .zoom-btn {
         display: none !important;
     }
     .mega-text-ellipsis,
     .major-text-ellipsis {
-        white-space: nowrap; /* ��스트를 한 줄로 표시 */
-        overflow: hidden;    /* 넘치는 ��스트를 숨김 */
-        text-overflow: ellipsis; /* 넘치는 부분을 ...으로 표시 */
-        max-width: 60px;   /* 원하는 최대 너비 설정 */
-        font-size: 11px !important;
-        color: #7a7a7a !important; /* 중간 회색 */
+        display: none !important;
     }
     .sub-process-text-ellipsis {
-        font-size: 13px !important;
+        font-size: 16px !important;
+    }
+    .is-mobile-sub-process-name {
+        display: block !important;
+    }
+    .sub-process-start-btn {
+        margin-right: 0px;
     }
 }
 </style>
