@@ -321,13 +321,13 @@
         "or": "또는 다음 계정으로 로그인",
         "normalRegister": "일반 가입",
         "tenantRegister": "테넌트 가입",
-        "confirmPassword": "비밀번호 확인",
+        "confirmPassword": "암호 확인",
         "enterPassword": "비밀번호를 입력하세요",
         "enterEmail": "이메일을 입력하세요",
         "invalidEmailFormat": "유효하지 않은 이메일 형식입니다",
         "enterName": "이름을 입력하세요",
-        "enterConfirmPassword": "비밀번호 확인을 입력하세요",
-        "passwordMismatch": "비밀번호가 일치하지 않습니다",
+        "enterConfirmPassword": "암호 확인을 입력하세요",
+        "passwordMismatch": "암호가 일치하지 않습니다",
         "signUp": "회원가입"
     },
     "createAdminAccount": {
