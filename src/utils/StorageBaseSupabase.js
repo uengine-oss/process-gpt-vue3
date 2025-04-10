@@ -173,6 +173,10 @@ export default class StorageBaseSupabase {
                 existUser.tenants = tenants;
                 await this.putObject('users', {
                     id: existUser.id,
+                    username: userInfo.username,
+                    email: userInfo.email,
+                    role: 'user',
+                    is_admin: false,
                     tenants: tenants,
                     current_tenant: tenantId
                 }, { onConflict: 'id' });

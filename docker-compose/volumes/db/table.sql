@@ -98,19 +98,6 @@ BEGIN
 END;
 $$;
 
-create or replace function public.handle_new_user() 
-returns trigger as $$
-begin
-    insert into public.users (id, email)
-    values (new.id, new.email);
-    return new;
-end;
-$$ language plpgsql security definer;
-
-create or replace trigger on_auth_user_created
-    after insert on auth.users
-    for each row execute procedure public.handle_new_user();
-
 create or replace function public.handle_delete_user() 
 returns trigger as $$
 begin
@@ -146,11 +133,16 @@ CREATE POLICY users_update_policy
     FOR UPDATE
     TO public
     USING (
-        (auth.tenant_id() = current_tenant) 
-        OR 
-        (auth.uid() = id)
-        OR 
-        (EXISTS (SELECT 1 FROM users WHERE is_admin = true))
+        EXISTS (
+            SELECT 1
+            FROM users u
+            WHERE u.is_admin = true
+        )
+        OR
+        auth.uid() = id
+    )
+    WITH CHECK (
+        true
     );
 
 CREATE POLICY users_delete_policy

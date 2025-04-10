@@ -1482,8 +1482,7 @@ class ProcessGPTBackend implements Backend {
                     id: tenantId 
                 },
                 column: 'id'
-            });
-            console.log(tenant);
+            });;
             return tenant;
         } catch (error) {
             //@ts-ignore
