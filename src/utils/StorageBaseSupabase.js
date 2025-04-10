@@ -82,6 +82,10 @@ export default class StorageBaseSupabase {
                 return false;
             }
             if (data) {
+                const tenantId = window.$tenantName;
+                if (data.user.app_metadata.tenant_id != tenantId) {
+                    await this.setCurrentTenant(tenantId);
+                }
                 this.writeUserData(data);
                 return true;
             }
@@ -108,6 +112,9 @@ export default class StorageBaseSupabase {
                 if (result.error && result.error != null) {
                     console.error('Error updating app metadata:', result.error);
                 } else {
+                    if (result.data.user.app_metadata.tenant_id == tenantId) {
+                        return;
+                    }
                     await this.writeUserData(result.data);
                     const isOwner = await this.checkTenantOwner(tenantId);
                     if (isOwner) {

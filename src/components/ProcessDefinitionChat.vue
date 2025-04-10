@@ -684,6 +684,7 @@ export default {
                         }
                     }
 
+                    me.isEditable = true;
                     me.lock = false;
                     me.disableChat = false;
                     me.isViewMode = false;
@@ -713,7 +714,7 @@ export default {
             }
             let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
             if(fullPath == 'chat' && lastPath == 'chat') return;
-            definitions = modeler.getDefinitions();  
+            definitions = modeler.getDefinitions();
             if(definitions) {
                 if (!me.useLock) {
                     me.processDefinition = await me.convertXMLToJSON(me.bpmn);
@@ -778,8 +779,11 @@ export default {
                         }
                     } else {
                         if (unknown.processDefinitionId) {
-                            this.processDefinition = unknown;
-                            this.bpmn = this.createBpmnXml(this.processDefinition);
+                            // this.processDefinition = unknown;
+                            // this.bpmn = this.createBpmnXml(this.processDefinition);
+                            this.bpmn = this.createBpmnXml(unknown);
+                            this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
+                            this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
                             this.definitionChangeCount++;
                         }
                     }
