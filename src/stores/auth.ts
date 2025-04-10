@@ -74,8 +74,6 @@ export const useAuthStore = defineStore({
                             alert(result.errorMsg);
                         }
                     } else {
-                        const tenantId = window.$tenantName;
-                        await backend.setTenant(tenantId);
                         if (result["isNewUser"]) {
                             alert("계정 인증 메일을 전송해드렸습니다. 이메일 확인 후 다시 로그인하세요.");
                             router.push('/auth/login');

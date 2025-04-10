@@ -53,10 +53,10 @@ export default {
         },
         async beforeCreateTenant() {
             this.isLoading = true;
-            await this.$refs.tenantInfoField.validCheck();
+            // await this.$refs.tenantInfoField.validCheck();
             this.tenantId = this.tenantInfo.id;
-            const isValidTenant = await backend.getTenant(this.tenantId);
-            if (isValidTenant) {
+            const isExistTenant = await backend.getTenant(this.tenantId);
+            if (!isExistTenant) {
                 await this.createTenant();
             } else {
                 alert("이미 존재하는 회사 아이디입니다.");
