@@ -98,19 +98,6 @@ BEGIN
 END;
 $$;
 
-create or replace function public.handle_new_user() 
-returns trigger as $$
-begin
-    insert into public.users (id, email)
-    values (new.id, new.email);
-    return new;
-end;
-$$ language plpgsql security definer;
-
-create or replace trigger on_auth_user_created
-    after insert on auth.users
-    for each row execute procedure public.handle_new_user();
-
 create or replace function public.handle_delete_user() 
 returns trigger as $$
 begin
@@ -146,11 +133,16 @@ CREATE POLICY users_update_policy
     FOR UPDATE
     TO public
     USING (
-        (auth.tenant_id() = current_tenant) 
-        OR 
-        (auth.uid() = id)
-        OR 
-        (EXISTS (SELECT 1 FROM users WHERE is_admin = true))
+        EXISTS (
+            SELECT 1
+            FROM users u
+            WHERE u.is_admin = true
+        )
+        OR
+        auth.uid() = id
+    )
+    WITH CHECK (
+        true
     );
 
 CREATE POLICY users_delete_policy
@@ -347,242 +339,6 @@ BEGIN
 END;
 $$;
 
-INSERT INTO "public"."proc_def" ("id", "name", "definition", "bpmn", "tenant_id") 
-VALUES (
-    'leave_request_process', 
-    '휴가 신청 프로세스', 
-    '{"data": [{"name": "vacation_start_date", "type": "text", "description": "시작일"}, {"name": "vacation_end_date", "type": "text", "description": "복귀일"}, {"name": "approval_status", "type": "boolean", "description": "승인 여부"}, {"name": "vacation_reason", "type": "textarea", "description": "휴가 신청 사유"}, {"name": "rejection_reason_input", "type": "textarea", "description": "반려 사유 입력"}, {"name": "vacation_message", "type": "textarea", "description": "휴가 신청 결과 메세지"}], "roles": [{"name": "직원", "process": "leave_request_process", "resolutionRule": "현재 로그인한 사용자가 직원 역할인 경우"}, {"name": "팀장", "process": "leave_request_process", "resolutionRule": "현재 로그인한 사용자가 팀장의 역할인 경우"}, {"name": "인사팀", "process": "leave_request_process", "resolutionRule": "인사팀 담당자의 역할인 경우"}], "events": [{"id": "end_event", "name": "프로세스 종료", "role": "직원", "type": "endEvent", "process": "leave_request_process", "properties": "{}", "description": "start event"}, {"id": "start_event", "name": "휴가 신청 시작", "role": "직원", "type": "startEvent", "process": "leave_request_process", "properties": "{}", "description": "start event"}], "version": null, "gateways": [{"id": "approval_gateway", "name": "검토 결과", "role": "팀장", "type": "exclusiveGateway", "process": "leave_request_process", "condition": "", "properties": "{}", "description": "검토 결과 description"}], "sequences": [{"id": "SequenceFlow_start_event_submit_leave_request", "source": "start_event", "target": "submit_leave_request", "condition": "", "properties": "{}"}, {"id": "SequenceFlow_submit_leave_request_review_leave_request", "source": "submit_leave_request", "target": "review_leave_request", "condition": "", "properties": "{}"}, {"id": "SequenceFlow_review_leave_request_approval_gateway", "source": "review_leave_request", "target": "approval_gateway", "condition": "", "properties": "{}"}, {"id": "SequenceFlow_approval_gateway_approve_leave", "source": "approval_gateway", "target": "approve_leave", "condition": "", "properties": "{}"}, {"id": "SequenceFlow_approval_gateway_reject_leave", "source": "approval_gateway", "target": "reject_leave", "condition": "", "properties": "{}"}, {"id": "SequenceFlow_approve_leave_notify_hr", "source": "approve_leave", "target": "notify_hr", "condition": "", "properties": "{}"}, {"id": "SequenceFlow_notify_hr_end_event", "source": "notify_hr", "target": "end_event", "condition": "", "properties": "{}"}], "activities": [{"id": "submit_leave_request", "name": "휴가 신청", "role": "직원", "tool": "formHandler:leave_request_process_submit_leave_request_form", "type": "userTask", "process": "leave_request_process", "duration": 5, "inputData": [], "outputData": [], "properties": "{\"_type\":{\"org.uengine.kernel.FormActivity\":{\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"leave_request_process_submit_leave_request_form\"}}}"}, {"id": "review_leave_request", "name": "휴가 검토 및 승인", "role": "팀장", "tool": "formHandler:leave_request_process_review_leave_request_form", "type": "userTask", "process": "leave_request_process", "duration": 5, "inputData": [], "outputData": [], "properties": "{\"_type\":{\"org.uengine.kernel.FormActivity\":{\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"leave_request_process_review_leave_request_form\"}}}"}, {"id": "approve_leave", "name": "휴가 승인", "role": "팀장", "tool": "formHandler:leave_request_process_approve_leave_form", "type": "userTask", "process": "leave_request_process", "duration": 5, "inputData": [], "outputData": [], "properties": "{\"_type\":{\"org.uengine.kernel.FormActivity\":{\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"leave_request_process_approve_leave_form\"}}}"}, {"id": "reject_leave", "name": "휴가 반려", "role": "팀장", "tool": "formHandler:leave_request_process_reject_leave_form", "type": "userTask", "process": "leave_request_process", "duration": 5, "inputData": [], "outputData": [], "properties": "{\"_type\":{\"org.uengine.kernel.FormActivity\":{\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"leave_request_process_reject_leave_form\"}}}"}, {"id": "notify_hr", "name": "인사팀 통지", "role": "인사팀", "tool": "formHandler:leave_request_process_notify_hr_form", "type": "userTask", "process": "leave_request_process", "duration": 5, "inputData": [], "outputData": [], "properties": "{\"_type\":{\"org.uengine.kernel.FormActivity\":{\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"leave_request_process_notify_hr_form\"}}}"}], "description": "process.description", "participants": {"id": "Participant", "name": "Participant", "processRef": "leave_request_process", "bpmn:extensionElements": {"uengine:properties": {"uengine:json": "{}"}}}, "shortDescription": {"text": null}, "instanceNamePattern": null, "processDefinitionId": "leave_request_process", "processDefinitionName": "휴가 신청 프로세스"}'::jsonb,
-    '<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_leave_request_process" name="휴가 신청 프로세스" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Custom BPMN Modeler" exporterVersion="1.0">
-  <bpmn:collaboration id="Collaboration_1">
-    <bpmn:participant id="Participant" name="Participant" processRef="leave_request_process">
-      <bpmn:extensionElements>
-        <uengine:properties>
-          <uengine:json>{}</uengine:json>
-        </uengine:properties>
-      </bpmn:extensionElements>
-    </bpmn:participant>
-  </bpmn:collaboration>
-  <bpmn:process id="leave_request_process" isExecutable="true">
-    <bpmn:extensionElements>
-      <uengine:properties>
-        <uengine:json>{"definitionName":"휴가 신청 프로세스","version":null,"shortDescription":{"text":null}}</uengine:json>
-        <uengine:variable name="휴가 신청 사유" type="Text">
-          <uengine:json>{"defaultValue":""}</uengine:json>
-        </uengine:variable>
-        <uengine:variable name="휴가 시작일" type="Date">
-          <uengine:json>{"defaultValue":""}</uengine:json>
-        </uengine:variable>
-        <uengine:variable name="복귀일" type="Date">
-          <uengine:json>{"defaultValue":""}</uengine:json>
-        </uengine:variable>
-      </uengine:properties>
-    </bpmn:extensionElements>
-    <bpmn:laneSet id="LaneSet_1">
-      <bpmn:lane id="Lane_0" name="직원">
-        <bpmn:extensionElements>
-          <uengine:properties>
-            <uengine:json>{}</uengine:json>
-          </uengine:properties>
-        </bpmn:extensionElements>
-        <bpmn:flowNodeRef>leave_application_submission</bpmn:flowNodeRef>
-      </bpmn:lane>
-      <bpmn:lane id="Lane_1" name="팀장">
-        <bpmn:extensionElements>
-          <uengine:properties>
-            <uengine:json>{}</uengine:json>
-          </uengine:properties>
-        </bpmn:extensionElements>
-        <bpmn:flowNodeRef>leave_review_approval</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>review_result_gateway</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>leave_approval</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>leave_rejected</bpmn:flowNodeRef>
-      </bpmn:lane>
-      <bpmn:lane id="Lane_2" name="인사팀">
-        <bpmn:extensionElements>
-          <uengine:properties>
-            <uengine:json>{}</uengine:json>
-          </uengine:properties>
-        </bpmn:extensionElements>
-        <bpmn:flowNodeRef>notify_hr</bpmn:flowNodeRef>
-      </bpmn:lane>
-    </bpmn:laneSet>
-    <bpmn:sequenceFlow id="SequenceFlow_start_event_leave_application_submission" name="" sourceRef="start_event" targetRef="leave_application_submission" />
-    <bpmn:sequenceFlow id="SequenceFlow_leave_application_submission_leave_review_approval" name="" sourceRef="leave_application_submission" targetRef="leave_review_approval" />
-    <bpmn:sequenceFlow id="SequenceFlow_leave_review_approval_review_result_gateway" name="" sourceRef="leave_review_approval" targetRef="review_result_gateway" />
-    <bpmn:sequenceFlow id="SequenceFlow_review_result_gateway_leave_approval" name="승인됨" sourceRef="review_result_gateway" targetRef="leave_approval">
-      <bpmn:extensionElements>
-        <uengine:properties>
-          <uengine:json>{}</uengine:json>
-        </uengine:properties>
-      </bpmn:extensionElements>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_review_result_gateway_leave_rejected" name="반려됨" sourceRef="review_result_gateway" targetRef="leave_rejected">
-      <bpmn:extensionElements>
-        <uengine:properties>
-          <uengine:json>{}</uengine:json>
-        </uengine:properties>
-      </bpmn:extensionElements>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_leave_approval_notify_hr" name="" sourceRef="leave_approval" targetRef="notify_hr" />
-    <bpmn:sequenceFlow id="SequenceFlow_notify_hr_end_event" name="" sourceRef="notify_hr" targetRef="end_event" />
-    <bpmn:startEvent id="start_event" name="휴가 신청 시작">
-      <bpmn:extensionElements>
-        <uengine:properties>
-          <uengine:json>{}</uengine:json>
-        </uengine:properties>
-      </bpmn:extensionElements>
-    </bpmn:startEvent>
-    <bpmn:userTask id="leave_application_submission" name="휴가 신청">
-      <bpmn:extensionElements>
-        <uengine:properties>
-          <uengine:json>{"_type":"org.uengine.kernel.FormActivity","role":{"name":""},"variableForHtmlFormContext":{"name":"leave_request_process_leave_application_submission_form"}}</uengine:json>
-        </uengine:properties>
-      </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_start_event_leave_application_submission</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_leave_application_submission_leave_review_approval</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:userTask id="leave_review_approval" name="휴가 검토 및 승인">
-      <bpmn:extensionElements>
-        <uengine:properties>
-          <uengine:json>{"_type":"org.uengine.kernel.FormActivity","role":{"name":""},"variableForHtmlFormContext":{"name":"leave_request_process_leave_review_approval_form"}}</uengine:json>
-        </uengine:properties>
-      </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_leave_application_submission_leave_review_approval</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_leave_review_approval_review_result_gateway</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:exclusiveGateway id="review_result_gateway" name="검토 결과">
-      <bpmn:extensionElements>
-        <uengine:properties>
-          <uengine:json>{}</uengine:json>
-        </uengine:properties>
-      </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_leave_review_approval_review_result_gateway</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_review_result_gateway_leave_rejected</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:userTask id="leave_approval" name="휴가 승인">
-      <bpmn:extensionElements>
-        <uengine:properties>
-          <uengine:json>{}</uengine:json>
-        </uengine:properties>
-      </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_review_result_gateway_leave_approval</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_leave_approval_notify_hr</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:userTask id="leave_rejected" name="휴가 반려">
-      <bpmn:extensionElements>
-        <uengine:properties>
-          <uengine:json>{}</uengine:json>
-        </uengine:properties>
-      </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_review_result_gateway_leave_rejected</bpmn:incoming>
-    </bpmn:userTask>
-    <bpmn:userTask id="notify_hr" name="인사팀 통지">
-      <bpmn:extensionElements>
-        <uengine:properties>
-          <uengine:json>{}</uengine:json>
-        </uengine:properties>
-      </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_leave_approval_notify_hr</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_notify_hr_end_event</bpmn:outgoing>
-    </bpmn:userTask>
-    <bpmn:endEvent id="end_event" name="휴가 신청 종료">
-      <bpmn:extensionElements>
-        <uengine:properties>
-          <uengine:json>{}</uengine:json>
-        </uengine:properties>
-      </bpmn:extensionElements>
-    </bpmn:endEvent>
-  </bpmn:process>
-  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
-      <bpmndi:BPMNShape id="Participant_1" bpmnElement="Participant" isHorizontal="true">
-        <dc:Bounds x="20" y="50" width="1200" height="400" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_2" bpmnElement="Lane_2" isHorizontal="true">
-        <dc:Bounds x="50" y="350" width="1170" height="100" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_1" bpmnElement="Lane_1" isHorizontal="true">
-        <dc:Bounds x="50" y="150" width="1170" height="200" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_0" bpmnElement="Lane_0" isHorizontal="true">
-        <dc:Bounds x="50" y="50" width="1170" height="100" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_start_event" bpmnElement="start_event">
-        <dc:Bounds x="83" y="83" width="34" height="34" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="68" y="123" width="64" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_leave_application_submission" bpmnElement="leave_application_submission">
-        <dc:Bounds x="200" y="60" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_leave_review_approval" bpmnElement="leave_review_approval">
-        <dc:Bounds x="350" y="160" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_review_result_gateway" bpmnElement="review_result_gateway" isMarkerVisible="true">
-        <dc:Bounds x="525" y="175" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_leave_approval" bpmnElement="leave_approval">
-        <dc:Bounds x="650" y="160" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_leave_rejected" bpmnElement="leave_rejected">
-        <dc:Bounds x="650" y="260" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_notify_hr" bpmnElement="notify_hr">
-        <dc:Bounds x="800" y="360" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_end_event" bpmnElement="end_event">
-        <dc:Bounds x="1183" y="383" width="34" height="34" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1168" y="423" width="64" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="BPMNEdge_start_event_leave_application_submission" bpmnElement="SequenceFlow_start_event_leave_application_submission">
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="117" y="100" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="200" y="100" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="BPMNEdge_leave_application_submission_leave_review_approval" bpmnElement="SequenceFlow_leave_application_submission_leave_review_approval">
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="250" y="140" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="250" y="140" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="250" y="200" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="350" y="200" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="350" y="200" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="BPMNEdge_leave_review_approval_review_result_gateway" bpmnElement="SequenceFlow_leave_review_approval_review_result_gateway">
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="450" y="200" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="525" y="200" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="BPMNEdge_review_result_gateway_leave_approval" bpmnElement="SequenceFlow_review_result_gateway_leave_approval">
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="575" y="200" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="650" y="200" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="BPMNEdge_review_result_gateway_leave_rejected" bpmnElement="SequenceFlow_review_result_gateway_leave_rejected">
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="550" y="225" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="550" y="225" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="550" y="300" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="650" y="300" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="650" y="300" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="BPMNEdge_leave_approval_notify_hr" bpmnElement="SequenceFlow_leave_approval_notify_hr">
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="700" y="240" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="700" y="240" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="700" y="400" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="800" y="400" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="800" y="400" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="BPMNEdge_notify_hr_end_event" bpmnElement="SequenceFlow_notify_hr_end_event">
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="900" y="400" />
-        <di:waypoint xmlns:di="http://www.omg.org/spec/DD/20100524/DI" x="1183" y="400" />
-      </bpmndi:BPMNEdge>
-    </bpmndi:BPMNPlane>
-  </bpmndi:BPMNDiagram>
-</bpmn:definitions>',
-    null
-);
-
 ALTER TABLE proc_def ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY proc_def_insert_policy
@@ -598,31 +354,7 @@ CREATE POLICY proc_def_select_policy
     FOR SELECT        
     TO authenticated
     USING (
-        tenant_id = auth.tenant_id() AND
-        (
-            EXISTS (
-                SELECT 1
-                FROM users
-                WHERE users.id = auth.uid()
-                    AND users.role = 'superAdmin'
-            )
-            OR
-            EXISTS (
-                SELECT 1
-                FROM user_permissions
-                WHERE user_permissions.user_id = auth.uid()
-                    AND (
-                        user_permissions.proc_def_id = proc_def.id OR
-                        EXISTS (
-                            SELECT 1
-                            FROM jsonb_array_elements(user_permissions.proc_def_ids->'major_proc_list') AS major_proc
-                            JOIN jsonb_array_elements(major_proc->'sub_proc_list') AS sub_proc
-                            ON sub_proc->>'id' = proc_def.id
-                        )
-                    )
-                    AND user_permissions.readable = true
-            )
-        )
+        tenant_id = auth.tenant_id()
     );
 
 CREATE POLICY proc_def_update_policy

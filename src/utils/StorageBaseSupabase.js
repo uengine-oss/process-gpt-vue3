@@ -91,55 +91,6 @@ export default class StorageBaseSupabase {
         }
     }
 
-    async setCurrentTenant(tenantId) {
-        try {
-            const { data, error } = await window.$supabase.auth.getUser();
-            if (error) {
-                console.error('Error fetching current user:', error.message);
-                throw new StorageBaseError('Error fetching current user', error, arguments);
-            } else if (error == null && data.user) {
-                const result = await window.$supabase.auth.admin.updateUserById(data.user.id,
-                    {
-                        app_metadata: {
-                            tenant_id: tenantId
-                        }
-                    }
-                )
-                if (result.error && result.error != null) {
-                    console.error('Error updating app metadata:', result.error);
-                } else {
-                    await this.writeUserData(result.data);
-                    const isOwner = await this.checkTenantOwner(tenantId);
-                    if (isOwner) {
-                        await this.putObject('users', {
-                            id: result.data.user.id,
-                            username: result.data.user.user_metadata.name,
-                            is_admin: true,
-                            role: 'superAdmin',
-                            current_tenant: tenantId
-                        });
-                    } else {
-                        await this.putObject('users', {
-                            id: result.data.user.id,
-                            username: result.data.user.user_metadata.name,
-                            role: 'user',
-                            current_tenant: tenantId
-                        });
-                    }
-                }
-            }
-
-            if (!data) {
-                console.log('No user is currently logged in');
-                return null;
-            }
-
-            // return user;
-        } catch (error) {
-            console.error('Unexpected error in setTenants:', error);
-        }
-    }
-
     async checkTenantOwner(tenantId) {
         try {
             const data = await this.getObject(`tenants/${tenantId}`, { key: 'id' });
@@ -168,7 +119,7 @@ export default class StorageBaseSupabase {
                 });
 
                 if (!result.error) {
-                    await this.setCurrentTenant(window.$tenantName);
+                    // 로그인 성공
                     return result.data;
                 } else if (result.error && result.error.message.includes("Email not confirmed")){
                     result.errorMsg = "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요."
@@ -212,18 +163,23 @@ export default class StorageBaseSupabase {
     }
     async signUp(userInfo) {
         try {
+            const tenantId = window.$tenantName || 'process-gpt';
             const existUser = await this.getObject('users', { match: { email: userInfo.email } });
             if (existUser && existUser.id) {
                 var tenants = existUser.tenants || [];
-                if (!tenants.includes(window.$tenantName)) {
-                    tenants.push(window.$tenantName);
+                if (!tenants.includes(tenantId)) {
+                    tenants.push(tenantId);
                 }
                 existUser.tenants = tenants;
                 await this.putObject('users', {
                     id: existUser.id,
+                    username: userInfo.username,
+                    email: userInfo.email,
+                    role: 'user',
+                    is_admin: false,
                     tenants: tenants,
-                    current_tenant: window.$tenantName
-                });
+                    current_tenant: tenantId
+                }, { onConflict: 'id' });
                 return await this.signIn(userInfo);
             } else {
                 const result = await window.$supabase.auth.signUp({
@@ -245,16 +201,19 @@ export default class StorageBaseSupabase {
                                 owner: result.data.user.id
                             });
                         }
-
+                        const role = existTenant ? 'user' : 'superAdmin';
+                        const isAdmin = existTenant ? false : true;
                         await this.putObject('users', {
                             id: result.data.user.id,
-                            username: result.data.user.user_metadata.name,
+                            username: userInfo.username,
+                            email: userInfo.email,
+                            role: role,
+                            is_admin: isAdmin,
                             tenants: [window.$tenantName],
                             current_tenant: window.$tenantName
                         });
                     }
-                    await this.setCurrentTenant(window.$tenantName);
-
+                    result.data["isNewUser"] = true;
                     return result.data;
                 } else {
                     result.errorMsg = result.error.message;
@@ -289,36 +248,6 @@ export default class StorageBaseSupabase {
             return await window.$supabase.auth.signOut();
         } catch (e) {
             throw new StorageBaseError('error in signOut', e, arguments);
-        }
-    }
-
-    async createUser(userInfo) {
-        try {
-            const { data, error } = await window.$supabase.auth.getUser();
-            if (error) {
-                throw new StorageBaseError('error in createUser', error, arguments);
-            }
-            const tenantId = data.user.app_metadata.tenant_id;
-            const result = await window.$supabase.auth.admin.createUser({
-                email: userInfo.email,
-                password: userInfo.password,
-                options: {
-                    data: {
-                        name: userInfo.username,
-                    },
-                    app_metadata: {
-                        tenant_id: tenantId
-                    }
-                }
-            });
-
-            if (!result.error) {
-                return result.data;
-            } else {
-                throw new StorageBaseError(result.error);
-            }
-        } catch (e) {
-            throw new StorageBaseError('error in createUser', e, arguments);
         }
     }
 
@@ -376,21 +305,6 @@ export default class StorageBaseSupabase {
         } catch (e) {
             throw new StorageBaseError('error in resetPassword', e, arguments);
         }
-    }
-
-    async updateUser(value) {
-        try {
-            const user = await this.getUserInfo();
-            if (user) {
-                const result = await window.$supabase.auth.admin.updateUserById(user.uid, value);
-                return result;
-            } else {
-                throw new StorageBaseError('error in updateUser', 'user not found', arguments);
-            }
-        } catch (e) {
-            throw new StorageBaseError('error in updateUser', e, arguments);
-        }
-
     }
 
     async getString(path, options) {

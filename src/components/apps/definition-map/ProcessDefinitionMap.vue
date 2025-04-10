@@ -86,13 +86,27 @@
             </div>
 
             <v-card
-                v-if="componentName == 'DefinitionMapList'"
-                @click="openConsultingDialog = true, ProcessPreviewMode = false"
-                class="consulting-card ml-4 mb-4"
+                v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
+                @click="addSampleProcess"
+                class="consulting-card ma-4"
                 elevation="3"
                 rounded="lg"
             >
-                <v-card-item>
+                <v-card-item class="pa-3">
+                    <v-card-title class="text-primary font-weight-bold pb-1">
+                        샘플 프로세스 추가
+                    </v-card-title>
+                </v-card-item>
+            </v-card>
+
+            <v-card
+                v-if="componentName == 'DefinitionMapList'"
+                @click="openConsultingDialog = true, ProcessPreviewMode = false"
+                class="consulting-card ma-4"
+                elevation="3"
+                rounded="lg"
+            >
+                <v-card-item class="pa-5">
                     <div class="d-flex align-center">
                         <v-avatar
                             color="primary"
@@ -261,6 +275,9 @@ export default {
                     action: this.download
                 }
             ];
+        },
+        mode() {
+            return window.$mode;
         }
     },
     watch: {
@@ -304,6 +321,13 @@ export default {
         }
     },
     methods: {
+        async addSampleProcess() {
+            if (this.mode == "ProcessGPT") {
+                await backend.addSampleProcess();
+                this.EventBus.emit('definitions-updated');
+                await this.getProcessMap();
+            }
+        },
         openProcessPreview(){
             this.ProcessPreviewMode = true
         },

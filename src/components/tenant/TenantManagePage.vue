@@ -9,8 +9,7 @@
         </v-row>
         <v-row no-gutters justify="center">
             <p class="font-weight-semibold text-grey100 text-h5" style="text-align: center;">
-                {{ $t('tenantManagePage.subTitle1') }}<br>
-                {{ $t('tenantManagePage.subTitle2') }}               
+                {{ $t('tenantManagePage.subTitle1') }}
             </p>
         </v-row>
 

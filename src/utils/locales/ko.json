@@ -314,13 +314,21 @@
         "title": "Welcome to Process-GPT",
         "already": "이미 계정이 있으신가요?",
         "login": "로그인",
-        "userName": "계정",
+        "userName": "이름",
         "password": "암호",
         "email": "이메일",
         "google": "구글 로그인",
         "or": "또는 다음 계정으로 로그인",
         "normalRegister": "일반 가입",
-        "tenantRegister": "테넌트 가입"
+        "tenantRegister": "테넌트 가입",
+        "confirmPassword": "암호 확인",
+        "enterPassword": "비밀번호를 입력하세요",
+        "enterEmail": "이메일을 입력하세요",
+        "invalidEmailFormat": "유효하지 않은 이메일 형식입니다",
+        "enterName": "이름을 입력하세요",
+        "enterConfirmPassword": "암호 확인을 입력하세요",
+        "passwordMismatch": "암호가 일치하지 않습니다",
+        "signUp": "회원가입"
     },
     "createAdminAccount": {
         "createAccountHeader": "어드민 정보",
@@ -815,5 +823,12 @@
         "insertDescription": "태스크 설명을 넣어주세요",
         "taskLink": "업무 링크",
         "moveToTask": "업무 화면으로 이동"
+    },
+    "ProcessGPTExecute": {
+        "roleMapping": "역할 지정",
+        "processStart": "프로세스 실행"
+    },
+    "Checkpoints": {
+        "checkpoints": "체크포인트"
     }
 }
