@@ -75,6 +75,7 @@ export interface Backend {
     getFileUrl(path: string): Promise<any>;
     getTenant(tenantId: string): Promise<any>;
     setTenant(tenantId: string): Promise<any>;
+    updateUser(userInfo: any): Promise<any>;
 }
 
 // export type { Backend }
