@@ -527,7 +527,8 @@ export default {
                     this.generator.setContexts(contexts);
                 }
                 
-                this.generator.setWorkList(this.generatedWorkList);
+                let instanceList = await this.storage.list(`bpm_proc_inst`); 
+                this.generator.setWorkList(instanceList);
                 newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
             }
