@@ -749,6 +749,10 @@ export default {
                 }, 1000);
             }
         });
+        
+        this.$nextTick(() => {
+            this.scrollToBottom();
+        });
     },
     watch: {
         prompt(newVal, oldVal) {
