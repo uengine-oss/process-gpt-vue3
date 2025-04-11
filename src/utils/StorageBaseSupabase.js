@@ -169,6 +169,11 @@ export default class StorageBaseSupabase {
                 var tenants = existUser.tenants || [];
                 if (!tenants.includes(tenantId)) {
                     tenants.push(tenantId);
+                } else if (tenants.includes(tenantId) && existUser.current_tenant == tenantId) {
+                    return {
+                        error: true,
+                        errorMsg: '이미 가입된 이메일입니다.'
+                    };
                 }
                 existUser.tenants = tenants;
                 await this.putObject('users', {

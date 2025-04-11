@@ -1042,12 +1042,13 @@ export default {
                 let activityId = '';
                 let externalFormId = '';
                 if (this.processDefinition.activities) {
-                    this.processDefinition.activities.forEach((activity) => {
-                        if(activity.type == 'userTask' && activity.role == roleName) {
+                    for (const activity of this.processDefinition.activities) {
+                        if (activity.type == 'userTask' && activity.role == roleName) {
                             activityId = activity.id;
                             externalFormId = activity.tool.replace('formHandler:', '');
+                            break;
                         }
-                    });
+                    }
                 }
 
                 if (externalFormId && externalFormId != '') {
