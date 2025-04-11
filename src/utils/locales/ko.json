@@ -304,7 +304,7 @@
         "google": "구글 로그인",
         "or": "또는 다음 계정으로 로그인",
         "userName": "이메일",
-        "password": "암호",
+        "password": "비밀번호",
         "remeber": "이 장치에 기억",
         "login": "로그인",
         "create": "계정 생성",
@@ -315,20 +315,22 @@
         "already": "이미 계정이 있으신가요?",
         "login": "로그인",
         "userName": "이름",
-        "password": "암호",
+        "password": "비밀번호",
         "email": "이메일",
         "google": "구글 로그인",
         "or": "또는 다음 계정으로 로그인",
         "normalRegister": "일반 가입",
         "tenantRegister": "테넌트 가입",
-        "confirmPassword": "암호 확인",
+        "confirmPassword": "비밀번호 확인",
         "enterPassword": "비밀번호를 입력하세요",
         "enterEmail": "이메일을 입력하세요",
         "invalidEmailFormat": "유효하지 않은 이메일 형식입니다",
         "enterName": "이름을 입력하세요",
-        "enterConfirmPassword": "암호 확인을 입력하세요",
-        "passwordMismatch": "암호가 일치하지 않습니다",
-        "signUp": "회원가입"
+        "enterConfirmPassword": "비밀번호 확인을 입력하세요",
+        "passwordMismatch": "비밀번호가 일치하지 않습니다",
+        "signUp": "회원가입",
+        "checkEmailMessage": "회원가입이 완료되었습니다. 이메일 함을 확인하여 계정을 활성화하세요.",
+        "registrationFailed": "회원가입 과정에서 오류가 발생했습니다. 입력 정보를 확인 후 다시 시도해주세요."
     },
     "createAdminAccount": {
         "createAccountHeader": "어드민 정보",
@@ -343,7 +345,7 @@
     },
     "tenantInfoField": {
         "step1": "STEP 1. 계정 만들기",
-        "step1-text": "( *암호는 대문자, 소문자, 숫자, 특수문자가 모두 포함돼야 합니다. )<br>1. <a href='https://supabase.com/dashboard/sign-up' target='_blank'>Supabase 회원가입 페이지</a>로 들어가서 계정을 생성합니다.",
+        "step1-text": "( *비밀번호는 대문자, 소문자, 숫자, 특수문자가 모두 포함돼야 합니다. )<br>1. <a href='https://supabase.com/dashboard/sign-up' target='_blank'>Supabase 회원가입 페이지</a>로 들어가서 계정을 생성합니다.",
         "step2-1": "STEP 2. 프로젝트 또는 조직 만들기",
         "step2-1-text": "1. 계정 생성 이후 화면에서 새 프로젝트(New Project) 또는 신규 조직(New organization)을 선택합니다.<br>2. 선택 후 New Project를 클릭합니다.",
         "step2-2": "STEP 2. 신규 조직(New organization) 생성",
@@ -830,5 +832,13 @@
     },
     "Checkpoints": {
         "checkpoints": "체크포인트"
+    },
+    "auth": {
+        "emailRateLimitExceeded": "연결된 Supabase 의 SMTP 설정을 변경하여 이메일 전송 한도를 변경하거나 잠시 뒤에 다시 시도해주세요.\n\nSMTP 설정은 Supabase 대시보드의 Project Settings > Authentication > SMTP Settings 섹션에서 확인하실 수 있습니다.",
+        "userAlreadyRegistered": "이미 가입한 이메일입니다.",
+        "verificationEmailSent": "계정 인증 메일을 전송해드렸습니다. 이메일 확인 후 다시 로그인하세요.",
+        "registrationSuccess": "회원가입에 성공했습니다.",
+        "emailSent": "메일이 발송되었습니다.",
+        "passwordUpdated": "비밀번호가 변경되었습니다."
     }
 }
