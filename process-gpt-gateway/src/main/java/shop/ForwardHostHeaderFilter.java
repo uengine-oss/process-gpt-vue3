@@ -45,7 +45,7 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
         String subdomain = extractSubdomain(originalHost);
 
         List<String> protectedPaths = Arrays.asList(
-            "/execution/(?!set-tenant).*",
+            "/execution/(?!set-tenant|complete|vision-complete).*",
             "/autonomous/.*",
             "/memento/.*"
         );

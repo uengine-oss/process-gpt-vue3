@@ -245,7 +245,8 @@
         "savePDF": "PDF 저장",
         "restoreProcess": "복구",
         "restore": "복구",
-        "restoreProcessMessage": "프로세스를 복구하시겠습니까?"
+        "restoreProcessMessage": "프로세스를 복구하시겠습니까?",
+        "webFormUrl": "웹 폼 URL"
     },
     "ProcessVariable": {
         "name": "이름",
@@ -551,6 +552,7 @@
         "resolutionRule": "역할 규칙",
         "scopeName" : "역할 명", 
         "userID": "유저 ID",
+        "externalCustomer": "외부 고객",
         "radioDescriptionTitle": "추가하고 싶은 역할을 선택합니다.",
         "radioDescriptionSubTitle": "없음 : 이 옵션을 선택하면 해당 작업에 대해 특정 역할이 할당되지 않습니다. 모든 사용자가 이 작업을 수행할 수 있습니다. \n\n역할명으로 역할 선택 : 이 옵션을 선택하면 미리 정의된 역할 목록에서 역할을 선택할 수 있습니다. 선택된 역할에 속한 사용자만 이 작업을 수행할 수 있습니다. \n\n직접 사용자 선택 : 이 옵션을 선택하면 특정 사용자를 직접 지정할 수 있습니다. 지정된 사용자만 이 작업을 수행할 수 있습니다."
     },

@@ -144,8 +144,8 @@
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                                @beforeRestore="beforeRestore"
-                                @savePDF="savePDF" />
+                                @beforeRestore="beforeRestore" @savePDF="savePDF"
+                                @createFormUrl="createFormUrl" />
                         </template>
                     </Chat>
                 </div>
@@ -172,7 +172,8 @@
                             :isEditable="isEditable"
                             @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                             @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                            @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete" />
+                            @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
+                            @createFormUrl="createFormUrl" />
                     </template>
                 </Chat>
             </template>
@@ -1018,7 +1019,44 @@ export default {
             } else {
                 return null;
             }
-        }
+        },
+
+        // 외부 고객용 폼 URL 생성
+        async createFormUrl() {
+            let hasExternalCustomerRole = false;
+            let roleName = '';
+
+            let processDefinition = await this.convertXMLToJSON(this.bpmn);
+            if (processDefinition.roles) {
+                processDefinition.roles.forEach((role) => {
+                    if(role.endpoint == 'external_customer'){
+                        hasExternalCustomerRole = true;
+                        roleName = role.name;
+                    }
+                });
+            }
+
+            let processDefinitionId = processDefinition.processDefinitionId;
+
+            if (hasExternalCustomerRole) {
+                let activityId = '';
+                let externalFormId = '';
+                if (this.processDefinition.activities) {
+                    this.processDefinition.activities.forEach((activity) => {
+                        if(activity.type == 'userTask' && activity.role == roleName) {
+                            activityId = activity.id;
+                            externalFormId = activity.tool.replace('formHandler:', '');
+                        }
+                    });
+                }
+
+                if (externalFormId && externalFormId != '') {
+                    const url = `/external-forms/${externalFormId}?process_definition_id=${processDefinitionId}&activity_id=${activityId}`;
+                    window.open(url, '_blank');
+                }
+            }
+
+        },
     }
 };
 </script>

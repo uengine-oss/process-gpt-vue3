@@ -99,7 +99,8 @@ export default {
                     me.roleMappings = me.definition.roles.map((role) => {
                         return {
                             name: role.name,
-                            endpoint: ""
+                            endpoint: "",
+                            resolutionRule: role.resolutionRule
                         };
                     });
 

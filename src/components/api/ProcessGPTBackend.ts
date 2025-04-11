@@ -563,13 +563,13 @@ class ProcessGPTBackend implements Backend {
                     }
                 };
                 renameLabels(procMap.value);
-                return procMap.value;
-                // const role = localStorage.getItem('role');
-                // if (role == 'superAdmin') {
-                // } else {
-                //     const filteredMap = await this.filterProcDefMap(procMap.value);
-                //     return filteredMap;
-                // }
+                const role = localStorage.getItem('role');
+                if (role == 'superAdmin') {
+                    return procMap.value;
+                } else {
+                    const filteredMap = await this.filterProcDefMap(procMap.value);
+                    return filteredMap;
+                }
             }
             return {};
         } catch (error) {
@@ -1374,6 +1374,25 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getGroupList() {
+        try {
+            const options = {
+                match: {
+                    key: 'organization'
+                }
+            }
+            const result = await storage.getObject('configuration', options);
+            const value = result.value;
+            if (value && value.chart && value.chart.children) {
+                return value.chart.children;
+            } else {
+                return [];
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
     async getUserInfo() {
         try {
             const user = await storage.getUserInfo();
@@ -1540,6 +1559,8 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('users', {
                 id: user.uid,
+                role: 'superAdmin',
+                is_admin: true,
                 tenants: tenantList,
                 current_tenant: tenantId
             });
