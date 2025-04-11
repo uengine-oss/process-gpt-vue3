@@ -82,10 +82,11 @@ export default {
             var me = this;
             me.abortController = new AbortController();
             const signal = me.abortController.signal;
-
+            var email = localStorage.getItem('email');
             var input = {
                 query: response,
-                chat_room_id: me.chatRoomId
+                chat_room_id: me.chatRoomId,
+                email: email
             }
             const token = localStorage.getItem('accessToken');
             fetch(`/execution/audio-stream`, {

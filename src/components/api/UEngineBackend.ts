@@ -61,6 +61,11 @@ class UEngineBackend implements Backend {
         ];
     }
 
+    async getGroupList() {
+        return [];
+    }
+    
+
     async getNotifications() {
         // Placeholder implementation
         return [];
