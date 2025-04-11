@@ -47,6 +47,7 @@
 <script>
 import { Form } from 'vee-validate';
 import { useAuthStore } from '@/stores/auth';
+import { getCurrentInstance } from 'vue';
 
 export default {
     name: 'TenantRegisterForm',
@@ -75,19 +76,19 @@ export default {
 
     methods: {
         async processTenantSignup() {
-            let me = this
+            const { proxy } = getCurrentInstance();
+            let me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    await me.authStore.signUp(me.accountInfo.username, me.accountInfo.email, me.accountInfo.password);
+                    await me.authStore.signUp(me.accountInfo.username, me.accountInfo.email, me.accountInfo.password, proxy);
                 }
             });
         }
     },
 
     created() {
-        this.authStore = useAuthStore()
-    },
+        this.authStore = useAuthStore();
+    }
 };
 </script>
-

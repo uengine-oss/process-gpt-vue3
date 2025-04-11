@@ -329,7 +329,9 @@
         "enterName": "Please enter your name",
         "enterConfirmPassword": "Please confirm your password",
         "passwordMismatch": "Passwords do not match",
-        "signUp": "Sign In"
+        "signUp": "Sign In",
+        "checkEmailMessage": "Your registration is complete. Please check your email to activate your account.",
+        "registrationFailed": "There was an error during the registration process. Please check your information and try again."
     },
     "createAdminAccount": {
         "createAccountHeader": "Admin Info",
@@ -599,6 +601,9 @@
     },
     "TimerEventDefinitionPanel": {
         "cron": "Time Input (Cron)",
+        "date": "Select Date",
+        "time": "Select Time",
+        "frequency": "Select Frequency",
         "cronDescriptionTitle": "You can use a Cron expression to precisely set the time at which the Timer Intermediate Catch Event will be triggered.",
         "cronDescriptionSubTitle": "Format: A Cron expression consists of five fields, each representing minutes, hours, day of the month, month, and day of the week. \nExamples: \n0 0 * * * : Triggers the event every day at midnight (00:00). \n15 10 * * * : Triggers the event every day at 10:15 AM. \n0 9 1 * * : Triggers the event on the 1st of every month at 9:00 AM. \n0 0 * * 1 : Triggers the event every Monday at midnight (00:00). \n*/10 * * * * : Triggers the event every 10 minutes."
     },
@@ -829,5 +834,13 @@
     },
     "Checkpoints": {
         "checkpoints": "Checkpoints"
+    },
+    "auth": {
+        "emailRateLimitExceeded": "Please change the SMTP settings of the connected Supabase to adjust the email sending limit or try again later.\n\nYou can find the SMTP settings in the Supabase dashboard under Project Settings > Authentication > SMTP Settings.",
+        "userAlreadyRegistered": "This email is already registered.",
+        "verificationEmailSent": "A verification email has been sent. Please check your email and log in again.",
+        "registrationSuccess": "Registration successful.",
+        "emailSent": "An email has been sent.",
+        "passwordUpdated": "Your password has been updated."
     }
 }
