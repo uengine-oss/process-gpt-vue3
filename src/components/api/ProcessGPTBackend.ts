@@ -1539,10 +1539,15 @@ class ProcessGPTBackend implements Backend {
                         return false;
                     }
                 }
+            } else {
+                console.log(response);
+                return false;
             }
         } catch (error) {
             //@ts-ignore
-            throw new Error(error.message);
+            // console.log(error);
+            return false;
+            // throw new Error(error.message);
         }
     }
 
