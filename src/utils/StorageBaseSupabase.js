@@ -81,7 +81,33 @@ export default class StorageBaseSupabase {
             if (error) {
                 return false;
             }
+
             if (data) {
+                const tenantId = window.$tenantName;
+                const actualTenantId = data.user?.app_metadata?.tenant_id;
+            
+                if (actualTenantId !== tenantId) {
+                    const { data: refreshed, error: refreshError } = await window.$supabase.auth.refreshSession();
+                    if (refreshError) {
+                        console.error('Error refreshing session after tenant mismatch:', refreshError);
+                        return false;
+                    }
+
+                    if (window.location.host.includes('process-gpt.io')) {
+                        document.cookie = `access_token=${refreshed.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                        document.cookie = `refresh_token=${refreshed.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    } else {
+                        document.cookie = `access_token=${refreshed.session.access_token}; path=/; SameSite=Lax`;
+                        document.cookie = `refresh_token=${refreshed.session.refresh_token}; path=/; SameSite=Lax`;
+                    }
+            
+                    window.localStorage.setItem('accessToken', refreshed.session.access_token);
+            
+                    const { data: newUser } = await window.$supabase.auth.getUser();
+                    if (newUser) this.writeUserData(newUser);
+                    return true;
+                }
+            
                 this.writeUserData(data);
                 return true;
             }
@@ -176,12 +202,15 @@ export default class StorageBaseSupabase {
                     };
                 }
                 existUser.tenants = tenants;
+                const isOwner = await this.checkTenantOwner(window.$tenantName);
+                const role = isOwner ? 'superAdmin' : 'user';
+                const isAdmin = existTenant ? true : false;
                 await this.putObject('users', {
                     id: existUser.id,
                     username: userInfo.username,
                     email: userInfo.email,
-                    role: 'user',
-                    is_admin: false,
+                    role: role,
+                    is_admin: isAdmin,
                     tenants: tenants,
                     current_tenant: tenantId
                 }, { onConflict: 'id' });
@@ -206,8 +235,9 @@ export default class StorageBaseSupabase {
                                 owner: result.data.user.id
                             });
                         }
-                        const role = existTenant ? 'user' : 'superAdmin';
-                        const isAdmin = existTenant ? false : true;
+                        const isOwner = await this.checkTenantOwner(window.$tenantName);
+                        const role = isOwner ? 'superAdmin' : 'user';
+                        const isAdmin = existTenant ? true : false;
                         await this.putObject('users', {
                             id: result.data.user.id,
                             username: userInfo.username,
