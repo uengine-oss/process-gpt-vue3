@@ -1531,14 +1531,7 @@ class ProcessGPTBackend implements Backend {
             }
             const response = await axios.post('/execution/set-tenant', request);
             if (response.status === 200) {
-                if (await this.checkDBConnection()) {
-                    const user: any = await this.getUserInfo();
-                    if (user && user.current_tenant && user.current_tenant == tenantId) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
+                await storage.refreshSession();
             } else {
                 console.log(response);
                 return false;
