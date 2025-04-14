@@ -15,7 +15,6 @@ const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) 
 const password = ref('');
 const passwordRules = ref([
     (v: string) => !!v || 'Password is required',
-    (v: string) => (v && v.length <= 10) || 'Password must be less than 10 characters'
 ]);
 
 
