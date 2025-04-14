@@ -1531,7 +1531,7 @@ class ProcessGPTBackend implements Backend {
             }
             const response = await axios.post('/execution/set-tenant', request);
             if (response.status === 200) {
-                const isOwner = await storage.checkTenantOwner();
+                const isOwner = await storage.checkTenantOwner(tenantId);
                 const role = isOwner ? 'superAdmin' : 'user';
                 const isAdmin = isOwner ? true : false;
                 await storage.putObject('users', {
