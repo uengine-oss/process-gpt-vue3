@@ -55,6 +55,7 @@
                         :generatedWorkList="generatedWorkList"
                         :ProcessGPTActive="ProcessGPTActive"
                         :chatRoomId="chatRoomId"
+                        :newMessageInfo="newMessageInfo"
                         @requestDraftAgent="requestDraftAgent"
                         @requestFile="requestFile"
                         @beforeReply="beforeReply"
@@ -395,15 +396,17 @@ export default {
             var me = this
             await me.storage.list(`chat_rooms`).then(function (chatRooms) {
                 if (chatRooms) {
+                    let myChatRoomIds = []
                     chatRooms.forEach(function (chatRoom) {
                         if(chatRoom.participants.find(x => x.email === me.userInfo.email)){
                             me.chatRoomList.push(chatRoom)
+                            myChatRoomIds.push(chatRoom.id)
                         }
                     });
                     if(me.chatRoomList.length > 0){
                         me.currentChatRoom = me.filteredChatRoomList[0];
                         me.chatRoomSelected(me.currentChatRoom)
-                        me.getChatList(me.filteredChatRoomList[0].id);
+                        me.setWatchChatList(myChatRoomIds);
                         me.setReadMessage(0);
                     } else {
                         let systemChatRoom = {
@@ -481,7 +484,7 @@ export default {
             } else {
                 this.ProcessGPTActive = false
             }
-            this.getChatList(chatRoomInfo.id);
+            this.getChatList(this.currentChatRoom.id);
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
         },
         async putMessage(msg){
@@ -737,7 +740,11 @@ export default {
                                     'Authorization': `Bearer ${token}`
                                 }
                             });
-                            obj.tableData = responseTable.data.output
+                            if(responseTable.data) {
+                                obj.tableData = responseTable.data.output
+                            } else {
+                                obj.tableData = null
+                            }
                         } catch(error){
                             alert(error);
                         }
