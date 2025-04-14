@@ -751,6 +751,7 @@ export default {
                     const lane = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:lane');
                     lane.setAttribute('id', 'Lane_' + idx);
                     lane.setAttribute('name', role.name);
+                    lane.setAttribute('resolutionRule', role.resolutionRule);
                     laneSet.appendChild(lane);
                     // Activity를 Lane에 할당
                     if (laneActivityMapping[role.name]) {
@@ -2098,11 +2099,22 @@ export default {
                     shortDescription: shortDescription,
                     description: 'process.description',
                     data: data,
-                    roles: lanes.map((lane) => ({
-                        name: lane.name,
-                        resolutionRule: lane.name === 'applicant' ? 'initiator' : 'system',
-                        process: lane.process
-                    })),
+                    roles: lanes.map((lane) => {
+                        let endpoint = '';
+                        if (lane['bpmn:extensionElements'] && lane['bpmn:extensionElements']['uengine:properties'] && lane['bpmn:extensionElements']['uengine:properties']['uengine:json']) {
+                            let laneJson = JSON.parse(lane['bpmn:extensionElements']['uengine:properties']['uengine:json']);
+                            if (laneJson.roleResolutionContext) {
+                                if (laneJson.roleResolutionContext.endpoint) {
+                                    endpoint = laneJson.roleResolutionContext.endpoint;
+                                }
+                            }
+                        }
+                        return {
+                            name: lane.name,
+                            endpoint: endpoint,
+                            resolutionRule: lane.resolutionRule
+                        }
+                    }),
                     events: [
                         ...event.map((event) => {
                             let isProperties = event['bpmn:extensionElements'] && event['bpmn:extensionElements']['uengine:properties'];

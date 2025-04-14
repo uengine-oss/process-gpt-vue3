@@ -141,7 +141,7 @@ export default class StorageBaseSupabase {
             } else {
                 return {
                     error: true,
-                    errorMsg: '회원가입이 필요합니다.'
+                    errorMsg: '가입된 이메일주소가 아닙니다.'
                 }
                 // throw new StorageBaseError('error in signIn', e, arguments);
             }
@@ -169,6 +169,11 @@ export default class StorageBaseSupabase {
                 var tenants = existUser.tenants || [];
                 if (!tenants.includes(tenantId)) {
                     tenants.push(tenantId);
+                } else if (tenants.includes(tenantId) && existUser.current_tenant == tenantId) {
+                    return {
+                        error: true,
+                        errorMsg: '이미 가입된 이메일입니다.'
+                    };
                 }
                 existUser.tenants = tenants;
                 await this.putObject('users', {

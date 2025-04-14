@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, getCurrentInstance } from 'vue';
 
 import { useAuthStore } from '@/stores/auth';
 const authStore = useAuthStore();
@@ -7,6 +7,7 @@ const authStore = useAuthStore();
 const props = defineProps({
   type: String
 });
+const { proxy } = getCurrentInstance();
 
 const email = ref('');
 const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid']);
@@ -14,15 +15,15 @@ const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) 
 const password = ref('');
 const passwordRules = ref([
     (v: string) => !!v || 'Password is required',
-    (v: string) => (v && v.length <= 10) || 'Password must be less than 10 characters'
 ]);
 
+
 function resetPassword() {
-    authStore.resetPassword(email.value);
+    authStore.resetPassword(email.value, proxy);
 }
 
 function updatePassword() {
-    authStore.updatePassword(password.value);
+    authStore.updatePassword(password.value, proxy);
 }
 </script>
 

@@ -123,6 +123,15 @@ export default {
                                     writable: false
                                 });
                             }
+                            const group = this.departmentOptions.find(group => group.value === change[0]);
+                            if (group) {
+                                this.editPermissionList.push({
+                                    name: group.title,
+                                    value: group.value,
+                                    readable: false,
+                                    writable: false
+                                });
+                            }
                         }
                     }
                 });
@@ -137,7 +146,15 @@ export default {
         async loadData() {
             const permissions = await backend.getUserPermissions({ proc_def_id: this.procDef.id });
             const userList = await backend.getUserList();
+            const groupList = await backend.getGroupList();
             
+            if (groupList.length > 0) {
+                this.departmentOptions = groupList.map(group => ({
+                    title: group.data.name,
+                    value: group.id,
+                }));
+            }
+
             if (userList.length > 0) {
                 this.emailOptions = userList.map(user => ({
                     title: `${user.username} (${user.email})`,
@@ -255,7 +272,7 @@ export default {
         },
         getMatchingProcessMap(procDef, processMap) {
             const matchingProcess = this.findMatchingProcess(procDef, processMap);
-            console.log(matchingProcess);
+            // console.log(matchingProcess);
             return matchingProcess;
         },
         

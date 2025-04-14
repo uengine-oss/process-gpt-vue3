@@ -25,6 +25,13 @@
                         :label="$t('LanePanel.DirecUser')"
                         style="margin-right: 8px !important; font-size: 15px"
                     ></v-radio>
+                    <v-radio
+                        id="roleResolution"
+                        name="roleResolution"
+                        value="org.uengine.kernel.ExternalCustomerRoleResolutionContext"
+                        :label="$t('LanePanel.externalCustomer')"
+                        style="margin-right: 8px !important; font-size: 15px"
+                    ></v-radio>
                 </v-radio-group>
                 <v-text-field
                     v-if="role && role.resolutionRule"
@@ -156,6 +163,10 @@ export default {
                 if (this.copyUengineProperties.roleResolutionContext) {
                     delete this.copyUengineProperties.roleResolutionContext;
                 }
+            } else if (after == 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
+                if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
+                this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.kernel.ExternalCustomerRoleResolutionContext';
+                if(!this.copyUengineProperties.roleResolutionContext.endpoint) this.copyUengineProperties.roleResolutionContext.endpoint = 'external_customer'
             }
         }
     },
@@ -165,9 +176,12 @@ export default {
                 this.type = 'None';
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.DirectRoleResolutionContext') {
                 this.type = 'org.uengine.kernel.DirectRoleResolutionContext';
-                this.scope = this.copyUengineProperties.roleResolutionContext.scope
+                this.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
                 this.type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
+                this.scope = this.copyUengineProperties.roleResolutionContext.scope
+            } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
+                this.type = 'org.uengine.kernel.ExternalCustomerRoleResolutionContext';
                 this.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint
             }
         },

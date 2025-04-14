@@ -10,19 +10,19 @@
         <v-snackbar
             v-model="snackbar"
             class="custom-snackbar"
-            :timeout="snackbarSuccessStatus ? 3000 : 15000"
+            :timeout="-1"
             :color="snackbarColor"
             elevation="24"
             location="top"
-            >{{ snackbarMessage }}
-            <v-btn v-if="snackbarColor == 'error'" variant="plain" @click="show = !show">
+        >{{ snackbarMessage }}
+            <v-btn v-if="snackbarMessageDetail" variant="plain" @click="show = !show">
                 {{ show ? $t('App.view') : $t('App.view') }}
             </v-btn>
             <v-expand-transition>
-                <div v-if="snackbarColor == 'error' && show" style="text-align: left;">{{ snackbarMessageDetail }}</div>
+                <div v-if="snackbarMessageDetail && show" style="text-align: left;">{{ snackbarMessageDetail }}</div>
             </v-expand-transition>
-            <template v-slot:actions v-if="!snackbarSuccessStatus">
-                <v-btn color="pink" variant="text" @click="snackbar = false">x </v-btn>
+            <template v-slot:actions>
+                <v-btn color="pink" variant="text" @click="snackbar = false">x</v-btn>
             </template>
         </v-snackbar>
         <!-- v-if="!loadScreen" -->

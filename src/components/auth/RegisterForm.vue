@@ -33,12 +33,35 @@ const confirmPasswordRules = ref([
 ]);
 
 function validate(values: any, { setErrors }: any) {
-    // 비밀번호 일치 여부 확인
-    if (password.value !== confirmPassword.value) {
-        setErrors({ confirmPassword: proxy.$t('createAccount.passwordMismatch') });
-        return;
+    // 필수 입력값 및 이메일 형식 검증
+    let hasError = false;
+    if (!username.value) {
+        setErrors({ username: proxy.$t('createAccount.enterName') });
+        hasError = true;
     }
-    return authStore.signUp(username.value, email.value, password.value);
+    if (!email.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+        setErrors({ email: proxy.$t('createAccount.invalidEmailFormat') });
+        hasError = true;
+    }
+    if (!password.value) {
+        setErrors({ password: proxy.$t('createAccount.enterPassword') });
+        hasError = true;
+    }
+    if (!confirmPassword.value || password.value !== confirmPassword.value) {
+        setErrors({ confirmPassword: proxy.$t('createAccount.passwordMismatch') });
+        hasError = true;
+    }
+
+    // 검증 결과에 따른 메시지 출력
+    return (window as any).$app_.try({
+        action: async () => {
+            if (hasError) {
+                throw new Error(); // 오류 발생 시 빈 오류 던지기
+            }
+            await authStore.signUp(username.value, email.value, password.value, proxy);
+        },
+        errorMsg: proxy.$t('createAccount.registrationFailed') // 실패 시 이 메시지 사용
+    });
 }
 </script>
 <template>

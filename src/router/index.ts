@@ -11,6 +11,12 @@ export const router = createRouter({
             path: '/:pathMatch(.*)*',
             component: () => import('@/views/authentication/Error.vue')
         },
+        // 외부 고객용 폼 URL
+        {
+            name: 'External Forms',
+            path: '/external-forms/:formId',
+            component: () => import('@/components/ui/ExternalForms.vue')
+        },
         MainRoutes,
         AuthRoutes,
         TenantRoutes
@@ -61,7 +67,7 @@ router.beforeEach(async (to, from, next) => {
                 });
             }
         }
-        if (to.fullPath.includes('/auth')) {
+        if (to.fullPath.includes('/auth') || to.fullPath.includes('/external-forms')) {
             next();
         } else {
             // redirect to login page if not logged in and trying to access a restricted page
@@ -71,7 +77,7 @@ router.beforeEach(async (to, from, next) => {
             } else {
                 isLogin = await backend.setTenant(window.$tenantName) ?? false;
             }
-            
+
             if (window.$isTenantServer) {
                 if (!to.fullPath.includes('/tenant') && to.fullPath !== '/') {
                     return next('/tenant/manage');

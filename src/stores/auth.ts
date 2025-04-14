@@ -57,7 +57,7 @@ export const useAuthStore = defineStore({
                 console.log(e);
             }
         },
-        async signUp(username: string, email: string, password: string) {
+        async signUp(username: string, email: string, password: string, proxy: any) {
             try {
                 if (username && email && password) {
                     const userInfo: any = {
@@ -66,18 +66,36 @@ export const useAuthStore = defineStore({
                         password: password
                     };
                     var result: any = await storage?.signUp(userInfo);
-
+        
                     if (result.error) {
                         if(result.errorMsg === 'Email rate limit exceeded'){
-                            alert(`${result.errorMsg}\n\n연결된 Supabase 의 SMTP 설정을 변경하여 이메일 전송 한도를 변경하거나 잠시 뒤에 다시 시도해주세요.\n\nSMTP 설정은 Supabase 대시보드의 Project Settings > Authentication > SMTP Settings 섹션에서 확인하실 수 있습니다.`);
+                            await (window as any).$app_.try({
+                                action: () => Promise.reject(new Error(proxy.$t('auth.emailRateLimitExceeded'))),
+                                errorMsg: proxy.$t('auth.emailRateLimitExceeded')
+                            });
+                        } else if (result.errorMsg === 'User already registered') {
+                            await (window as any).$app_.try({
+                                action: () => Promise.reject(new Error(proxy.$t('auth.userAlreadyRegistered'))),
+                                errorMsg: proxy.$t('auth.userAlreadyRegistered')
+                            });
                         } else {
-                            alert(result.errorMsg);
+                            await (window as any).$app_.try({
+                                action: () => Promise.reject(new Error(result.errorMsg)),
+                                errorMsg: result.errorMsg
+                            });
                         }
                     } else {
                         if (result["isNewUser"]) {
-                            alert("계정 인증 메일을 전송해드렸습니다. 이메일 확인 후 다시 로그인하세요.");
+                            await (window as any).$app_.try({
+                                action: () => Promise.resolve(),
+                                successMsg: proxy.$t('auth.verificationEmailSent')
+                            });
                             router.push('/auth/login');
                         } else {
+                            await (window as any).$app_.try({
+                                action: () => Promise.resolve(),
+                                successMsg: proxy.$t('auth.registrationSuccess')
+                            });
                             router.push('/definition-map');
                         }
                     }
@@ -86,22 +104,28 @@ export const useAuthStore = defineStore({
                 console.log(e);
             }
         },
-        async resetPassword(email: string) {
+        async resetPassword(email: string, proxy: any) {
             try {
                 var result: any = await storage?.resetPassword(email);
                 if (!result.error) {
-                    alert('메일이 발송되었습니다.');
+                    await (window as any).$app_.try({
+                        action: () => Promise.resolve(),
+                        successMsg: proxy.$t('auth.emailSent')
+                    });
                     router.push('/auth/login');
                 }
             } catch (e) {
                 console.log(e);
             }
         },
-        async updatePassword(password: string) {
+        async updatePassword(password: string, proxy: any) {
             try {
                 var result: any = await backend?.updateUser({ password: password });
                 if (!result.error) {
-                    alert('비밀번호가 변경되었습니다.');
+                    await (window as any).$app_.try({
+                        action: () => Promise.resolve(),
+                        successMsg: proxy.$t('auth.passwordUpdated')
+                    });
                     router.push('/auth/login');
                 }
             } catch (e) {

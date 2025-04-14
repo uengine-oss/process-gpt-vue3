@@ -7,7 +7,7 @@ services:
       - "8080:8080"
     environment:
       - VITE_SUPABASE_URL=${API_EXTERNAL_URL}
-      - VITE_SUPABASE_KEY=${SERVICE_ROLE_KEY}
+      - VITE_SUPABASE_KEY=${ANON_KEY}
     
   execution:
     image: ghcr.io/uengine-oss/process-gpt-execution:v0.3.7
