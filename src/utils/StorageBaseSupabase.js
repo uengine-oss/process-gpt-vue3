@@ -61,7 +61,6 @@ export default class StorageBaseSupabase {
                     document.cookie = `refresh_token=; ${cookieOptionsBase}`;
                 }
                 window.localStorage.removeItem('accessToken');
-                return false;
             } else {
                 if (window.location.host.includes('process-gpt.io')) {
                     document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
