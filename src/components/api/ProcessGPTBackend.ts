@@ -563,8 +563,10 @@ class ProcessGPTBackend implements Backend {
                     }
                 };
                 renameLabels(procMap.value);
+                const usePermissions = await this.checkUsePermissions();
+                console.log(usePermissions)
                 const role = localStorage.getItem('role');
-                if (role == 'superAdmin') {
+                if (role == 'superAdmin' || !usePermissions) {
                     return procMap.value;
                 } else {
                     const filteredMap = await this.filterProcDefMap(procMap.value);
@@ -1787,6 +1789,19 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    async checkUsePermissions() {
+        try {
+            const permissionCount = await storage.getCount('user_permissions')
+            if (permissionCount > 0) {
+                return true
+            } else {
+                return false
+            }
+        } catch (error) {
+            console.log(error)
         }
     }
 

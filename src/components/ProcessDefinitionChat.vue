@@ -379,6 +379,9 @@ export default {
     },
     async beforeRouteLeave(to, from, next) {
         if (this.bpmn && this.bpmn.length > 0) {
+            if (this.useLock && this.lock) {
+                next();
+            }
             const store = useBpmnStore();
             const modeler = store.getModeler;
             const xmlObj = await modeler.saveXML({ format: true, preamble: true });

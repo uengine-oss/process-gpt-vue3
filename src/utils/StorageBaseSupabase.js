@@ -187,16 +187,17 @@ export default class StorageBaseSupabase {
 
                 if (!result.error) {
                     if (!window.$isTenantServer && window.$tenantName) {
+                        let role = 'user';
+                        let isAdmin = false;
                         const existTenant = await this.getObject('tenants', { match: { id: window.$tenantName } });
                         if (!existTenant) {
                             await this.putObject('tenants', {
                                 id: window.$tenantName,
                                 owner: result.data.user.id
                             });
+                            role = 'superAdmin';
+                            isAdmin = true;
                         }
-                        const isOwner = await this.checkTenantOwner(window.$tenantName);
-                        const role = isOwner ? 'superAdmin' : 'user';
-                        const isAdmin = existTenant ? true : false;
                         await this.putObject('users', {
                             id: result.data.user.id,
                             username: userInfo.username,
