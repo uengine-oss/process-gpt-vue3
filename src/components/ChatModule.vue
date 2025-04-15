@@ -36,6 +36,7 @@ export default {
         currentChatRoom: null,
         // consulting
         isMentoMode: false,
+        newMessageInfo: null,
     }),
     computed: {
         useLock() {
@@ -169,12 +170,11 @@ export default {
             await this.loadData(this.getDataPath());
             // await this.loadMessages(this.getDataPath());
         },
-        async getChatList(chatRoomId) {
+        async setWatchChatList(chatRoomIds) {
             var me = this;
-            me.messages = []
             me.userInfo = await this.storage.getUserInfo();
            
-            await this.storage.watch(`db://chats/${chatRoomId}`, async (data) => {
+            await this.storage.watch(`db://chats/${chatRoomIds.join(',')}`, async (data) => {
                 if(data && data.new){
                     if(data.eventType == "DELETE"){
                         let messageIndex = me.messages.findIndex(msg => msg.uuid === data.old.uuid);
@@ -200,6 +200,7 @@ export default {
                                 } else {
                                     me.messages.push(data.new.messages)
                                 }
+                                me.newMessageInfo = data.new.messages
                             }
                             
                             let idx = me.chatRoomList.findIndex(x => x.id == data.new.id)
@@ -217,6 +218,10 @@ export default {
                     }
                 }
             });
+        },
+        async getChatList(chatRoomId) {
+            var me = this;
+            me.messages = []
 
             // `db://chats/${chatRoomId}`, options
             // let option = {

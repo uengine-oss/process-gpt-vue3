@@ -1,10 +1,10 @@
 <template>
     <!-- <div> -->
     <div style="height: 100%; position: relative;" ref="container" class="vue-bpmn-diagram-container">
-        <div style="position: absolute; top: 20px; right: 20px; pointer-events: auto; z-index: 10;">
-            <div class="pa-1" style="display: flex; flex-direction: column; align-items: center; border: gray 1px solid; background-color: white;">
-                <v-icon class="mb-1" @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
-                <v-icon class="mb-1" @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
+        <div :class="isMobile ? 'mobile-position' : 'desktop-position'">
+            <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
+                <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
+                <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
             </div>
         </div>
@@ -89,6 +89,9 @@ export default {
         async getXML() {
             let xml = await this.bpmnViewer.saveXML({ format: true, preamble: true });
             return xml.xml;
+        },
+        isMobile() {
+            return window.innerWidth <= 1080;
         }
     },
     mounted() {
@@ -506,4 +509,37 @@ export default {
 };
 </script>
 
-<style></style>
+<style>
+.mobile-position {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    pointer-events: auto;
+    z-index: 10;
+}
+.desktop-position {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    pointer-events: auto;
+    z-index: 10;
+}
+.mobile-style {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 카드 스타일 그림자 적용 */
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.6); /* 반투명 백그라운드 0.6 적용 */
+}
+.desktop-style {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 카드 스타일 그림자 적용 */
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.6); /* 반투명 백그라운드 0.6 적용 */
+}
+</style>

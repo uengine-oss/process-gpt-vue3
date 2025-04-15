@@ -193,7 +193,7 @@ Approved.`
       this.client.sendMessage(newMessage);
     }
 
-    async getMessageToSend(userInputs) {
+    async getMessageToSend(userInputs, messages) {
       const makeUserMessage = (requestType, request, existingForm, note) => {
         return `
 # Request Type
@@ -226,57 +226,65 @@ ${note}
             role: 'assistant',
             content: example.output
           })
+
+          if(!userInputs) {
+            break;
+          }
         }
       }
 
       const noteMessage =  `Please write values such as alias and label of the form being created in ${this.preferredLanguage}. However, make sure all name attributes are written in English only.`
-      if(userInputs.imageUrl) {
-          const formHtml = await FormHtmlCodeGenerator.getHtmlCodeFromImage(
-            userInputs.imageUrl, {preferredLanguage: this.preferredLanguage}
-          )
-          const userRequest = `\
-Please create an appropriate form based on the provided image and the HTML Form code reconstructed from that image. 
-IMPORTANT: Ensure ALL parts of the reconstructed HTML form code are fully incorporated in your form creation. Pay special attention to any components, attributes, or structures that might be overlooked, and make sure they are accurately reflected in the final form. Do not omit or simplify any elements from the reconstructed HTML.
-
-SPECIAL INTERPRETATION GUIDELINES:
-1. When you see text with "○" symbols followed by options (e.g., "○대상 ○비대상"), interpret this as radio buttons where the circle symbol indicates selectable options.
-2. For table headers containing such patterns, transform them into appropriate radio-button components rather than keeping them as plain text.
-3. For example, "○대상 ○비대상" should be converted to radio buttons with "대상" and "비대상" as options.
-4. Other special characters that might indicate form elements should be properly interpreted as their corresponding HTML components.
-${formHtml}${userInputs.request ? `\n\n# Additional User Request
-${userInputs.request}` : ""}
-`
-        copiedPreviousMessageFormats.push({
-          role: 'user',
-          content: [
-            {
-              "type": "image_url",
-              "image_url": {
-                "url": userInputs.imageUrl
+      if(userInputs){
+        if(userInputs.imageUrl) {
+            const formHtml = await FormHtmlCodeGenerator.getHtmlCodeFromImage(
+              userInputs.imageUrl, {preferredLanguage: this.preferredLanguage}
+            )
+            const userRequest = `\
+  Please create an appropriate form based on the provided image and the HTML Form code reconstructed from that image. 
+  IMPORTANT: Ensure ALL parts of the reconstructed HTML form code are fully incorporated in your form creation. Pay special attention to any components, attributes, or structures that might be overlooked, and make sure they are accurately reflected in the final form. Do not omit or simplify any elements from the reconstructed HTML.
+  
+  SPECIAL INTERPRETATION GUIDELINES:
+  1. When you see text with "○" symbols followed by options (e.g., "○대상 ○비대상"), interpret this as radio buttons where the circle symbol indicates selectable options.
+  2. For table headers containing such patterns, transform them into appropriate radio-button components rather than keeping them as plain text.
+  3. For example, "○대상 ○비대상" should be converted to radio buttons with "대상" and "비대상" as options.
+  4. Other special characters that might indicate form elements should be properly interpreted as their corresponding HTML components.
+  ${formHtml}${userInputs.request ? `\n\n# Additional User Request
+  ${userInputs.request}` : ""}
+  `
+          copiedPreviousMessageFormats.push({
+            role: 'user',
+            content: [
+              {
+                "type": "image_url",
+                "image_url": {
+                  "url": userInputs.imageUrl
+                }
+              },
+              {
+                "type": "text",
+                "text": makeUserMessage(
+                  userInputs.requestType, userRequest, userInputs.existingForm, noteMessage
+                )
               }
-            },
-            {
-              "type": "text",
-              "text": makeUserMessage(
-                userInputs.requestType, userRequest, userInputs.existingForm, noteMessage
-              )
-            }
-          ]
-        })
-      }
-      else {
-        copiedPreviousMessageFormats.push({
-          role: 'user',
-          content: makeUserMessage(
-            userInputs.requestType, userInputs.request, userInputs.existingForm, noteMessage
-          )
-        })
+            ]
+          })
+        }
+        else {
+          copiedPreviousMessageFormats.push({
+            role: 'user',
+            content: makeUserMessage(
+              userInputs.requestType, userInputs.request, userInputs.existingForm, noteMessage
+            )
+          })
+        }
+      } else {
+        copiedPreviousMessageFormats.push(messages[0])
       }
 
       return copiedPreviousMessageFormats
     }
 
-    async createMessagesAsync() {
+    async createMessagesAsync(messages) {
       this.vendor = 'openai'
       this.model = 'chatgpt-4o-latest'
       this.modelConfig = {
@@ -286,7 +294,10 @@ ${userInputs.request}` : ""}
         presence_penalty: 0
       }
 
-      const messagesToSend = await this.getMessageToSend(this.userInputs)
+      if (messages) {
+        messages = messages.filter(message => message !== undefined);
+      }
+      const messagesToSend = await this.getMessageToSend(this.userInputs, messages)
       console.log("[*][FormDesignGenerator] 전달되는 시스템상 AI 메시지", {messagesToSend: messagesToSend})
       return messagesToSend
     }

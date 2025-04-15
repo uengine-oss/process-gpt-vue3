@@ -1,10 +1,14 @@
 package shop;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpCookie;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -12,14 +16,9 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureException;
 
-import org.springframework.http.HttpCookie;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.server.reactive.ServerHttpResponse;
-import java.util.List;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Optional;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 @Component
 public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
@@ -29,22 +28,29 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
     private static final String SECRET_KEY = Optional.ofNullable(System.getenv("SECRET_KEY"))
         .orElse("super-secret-jwt-token-with-at-least-32-characters-long");
 
-
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        String originalHost = request.getHeaders().getHost().getHostName();
+        String requestPath = request.getURI().getPath();
+
+        if (requestPath.equals("/health")) {
+            ServerHttpResponse response = exchange.getResponse();
+            response.setStatusCode(HttpStatus.OK);
+            return response.setComplete();
+        }
+
+        InetSocketAddress host = request.getHeaders().getHost();
+        String originalHost = (host != null) ? host.getHostName() : "unknown";
 
         String subdomain = extractSubdomain(originalHost);
 
         List<String> protectedPaths = Arrays.asList(
-            "/execution/.*",
+            "/execution/(?!set-tenant|complete|vision-complete).*",
             "/autonomous/.*",
             "/memento/.*"
         );
 
         boolean requiresAuth = false;
-        String requestPath = request.getURI().getPath();
 
         for (String path : protectedPaths) {
             if (requestPath.matches(path)) {
@@ -54,7 +60,7 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
         }
 
         if (requiresAuth) {
-            List<HttpCookie> cookies = request.getCookies().getOrDefault("access_token", Arrays.asList());
+            List<HttpCookie> cookies = request.getCookies().getOrDefault("access_token", Collections.emptyList());
             if (cookies.isEmpty() || !isValidToken(cookies.get(0).getValue(), subdomain)) {
                 ServerHttpResponse response = exchange.getResponse();
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
@@ -62,7 +68,6 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
             }
         }
 
-        // 'X-Forwarded-Host' 헤더에 원래 호스트 추가
         ServerHttpRequest updatedRequest = request.mutate()
             .header("X-Forwarded-Host", originalHost)
             .build();
@@ -105,7 +110,6 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        // 필터 순서, 필요에 따라 조정
         return -1;
     }
 }

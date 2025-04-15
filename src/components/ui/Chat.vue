@@ -535,6 +535,26 @@
                     <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
                 </div> -->
             </div>
+            <div style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
+                <div class="message-info-box" v-if="isReply || (!isAtBottom && previewMessage)">
+                    <div class="message-info-content">
+                        <template v-if="isReply">
+                            <div class="message-info-header">
+                                <div>{{ replyUser.role == 'system' ? $t('chat.systemReply') : $t('chat.userReply', { name: replyUser.name }) }}</div>
+                                <v-icon @click="cancelReply()" size="small">mdi-close</v-icon>
+                            </div>
+                            <div class="message-info-text">{{ replyUser.content }}</div>
+                        </template>
+                        <template v-else>
+                            <div class="message-info-header">
+                                <div>{{ previewMessage.name }}</div>
+                                <v-icon @click="scrollToBottom()" color="primary" size="small">mdi-arrow-down-circle</v-icon>
+                            </div>
+                            <div class="message-info-text">{{ previewMessage.content }}</div>
+                        </template>
+                    </div>
+                </div>
+            </div>
             <v-divider />
 
             <!-- <div v-if="showNewMessageNoti"
@@ -545,15 +565,6 @@
                     </div>
                 </v-chip>
             </div> -->
-            <div class="text-body-1" v-if="isReply" style="margin-left: 10px">
-                <v-row class="ma-0 pa-0">
-                    <div v-if="replyUser.role == 'system'">{{ $t('chat.systemReply') }}</div>
-                    <div v-else>{{ $t('chat.userReply', { name: replyUser.name }) }}</div>
-                    <v-icon @click="cancelReply()" style="margin-top:3px;">mdi-close</v-icon>
-                </v-row>
-                <p>{{ replyUser.content }}</p>
-                <v-divider />
-            </div>
             <!-- camera capture -->
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
             <!-- image upload -->
@@ -671,7 +682,8 @@ export default {
         ProcessGPTActive: Boolean,
         isAgentMode: Boolean,
         chatRoomId: String,
-        isMobile: Boolean
+        isMobile: Boolean,
+        newMessageInfo: Object,
     },
     data() {
         return {
@@ -718,6 +730,9 @@ export default {
             checked: true,
             isOpenedChatMenu: false,
             isViewWork: null,
+
+            //preview-message
+            previewMessage: null,
         };
     },
     mounted() {
@@ -749,12 +764,26 @@ export default {
                 }, 1000);
             }
         });
+        
+        this.$nextTick(() => {
+            this.scrollToBottom();
+        });
     },
     watch: {
         prompt(newVal, oldVal) {
             if (newVal !== oldVal) {
                 this.newMessage = newVal
                 this.beforeSend()
+            }
+        },
+        newMessageInfo(newVal) {
+            if (newVal && !this.isAtBottom) {
+                this.previewMessage = newVal
+            }
+        },
+        isAtBottom(newVal) {
+            if (newVal) {
+                this.previewMessage = null;
             }
         }
     },
@@ -1423,5 +1452,39 @@ pre {
     align-items: center;
     margin-bottom: 10px;
     margin-left: 10px;
+}
+
+.message-info-box {
+    margin: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(5px);
+    border-radius: 4px 4px 0 0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-bottom: none;
+    width: 100%;
+}
+
+.message-info-content {
+    padding: 8px 16px;
+}
+
+.message-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    font-weight: 500;
+    color: rgb(var(--v-theme-primary));
+    font-size: 0.875rem;
+}
+
+.message-info-text {
+    color: rgba(0,0,0,0.87);
+    font-size: 0.875rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 </style>

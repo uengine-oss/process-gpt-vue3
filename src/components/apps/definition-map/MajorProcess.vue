@@ -1,14 +1,14 @@
 <template>
     <div class="mb-3 major-hover">
-        <v-card class="align-center pa-2 pr-3 pl-3 cp-major" elevation="10"
-            style="border-radius: 10px !important; margin-bottom:5px; border: 5px solid rgba(var(--v-theme-primary), 0.2);" @click="goProcess(parent.name, 'mega')"
+        <v-card class="align-center pa-2 pr-2 pl-2 cp-major" elevation="10"
+            style="border-radius: 10px !important; margin-bottom:5px; border: 4px solid rgba(var(--v-theme-primary), 0.2);" @click="goProcess(parent.name, 'mega')"
         >
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
-                    <v-col :cols="enableEdit ? '6' : '12'" class="ma-0 pa-0 text-left">
+                    <v-col :cols="enableEdit ? '7' : '12'" class="ma-0 pa-0 text-left">
                         <div>{{ value.name }}</div>
                     </v-col>
-                    <v-col :cols="enableEdit ? '6' : ''" class="ma-0 pa-0">
+                    <v-col :cols="enableEdit ? '5' : ''" class="ma-0 pa-0 text-right">
                         <div class="ml-auto add-major-process">
                             <ProcessMenu
                                 :size="14"

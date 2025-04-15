@@ -1,6 +1,9 @@
 <template>
     <div class="form-label-field">
-        <label class="form-label">{{localLabel}}</label>
+        <label class="form-label"
+            :hide-details="hideDetails"
+            :density="density"
+        >{{localLabel}}</label>
     </div>
 </template>
 

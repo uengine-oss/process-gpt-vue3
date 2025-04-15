@@ -563,8 +563,10 @@ class ProcessGPTBackend implements Backend {
                     }
                 };
                 renameLabels(procMap.value);
+                const usePermissions = await this.checkUsePermissions();
+                console.log(usePermissions)
                 const role = localStorage.getItem('role');
-                if (role == 'superAdmin') {
+                if (role == 'superAdmin' || !usePermissions) {
                     return procMap.value;
                 } else {
                     const filteredMap = await this.filterProcDefMap(procMap.value);
@@ -854,7 +856,7 @@ class ProcessGPTBackend implements Backend {
 
                 let field: any = {
                     text: alias || '',
-                    key: match[1] || '',
+                    key: match ? (match[1] || '') : '',
                     type: tagName.replace('-field', '') || '',
                     disabled: disabled ? disabled : false,
                     readonly: readonly ? readonly : false
@@ -1374,6 +1376,25 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getGroupList() {
+        try {
+            const options = {
+                match: {
+                    key: 'organization'
+                }
+            }
+            const result = await storage.getObject('configuration', options);
+            const value = result.value;
+            if (value && value.chart && value.chart.children) {
+                return value.chart.children;
+            } else {
+                return [];
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
     async getUserInfo() {
         try {
             const user = await storage.getUserInfo();
@@ -1397,7 +1418,7 @@ class ProcessGPTBackend implements Backend {
                             name: value.user.username
                         }
                     }
-                    await storage.updateUser(userInfo);
+                    await this.updateUser(userInfo);
                     await storage.writeUserData(value);
                 }
             } else if (value.type === 'delete') {
@@ -1482,7 +1503,7 @@ class ProcessGPTBackend implements Backend {
                     id: tenantId 
                 },
                 column: 'id'
-            });
+            });;
             return tenant;
         } catch (error) {
             //@ts-ignore
@@ -1492,17 +1513,47 @@ class ProcessGPTBackend implements Backend {
 
     async setTenant(tenantId: string) {
         try {
-            await storage.setCurrentTenant(tenantId);
-            await this.checkDBConnection();
+            if (!tenantId) {
+                return;
+            }
             const user: any = await this.getUserInfo();
-            if (user && user.current_tenant && user.current_tenant == tenantId) {
-                return true;
+            if (!user || !user.uid) {
+                return false;
+            }
+            const user_id = user.uid;
+            const request = {
+                input: {
+                    user_id: user_id,
+                    user_info: {
+                        app_metadata: {
+                            tenant_id: tenantId
+                        }
+                    }
+                }
+            }
+            const response = await axios.post('/execution/set-tenant', request);
+            if (response.status === 200) {
+                const isOwner = await storage.checkTenantOwner(tenantId);
+                const role = isOwner ? 'superAdmin' : 'user';
+                const isAdmin = isOwner ? true : false;
+                await storage.putObject('users', {
+                    id: user_id,
+                    role: role,
+                    is_admin: isAdmin,
+                    current_tenant: tenantId
+                }, { onConflict: 'id' });
+
+                await storage.refreshSession();
+                return await storage.isConnection();
             } else {
+                console.log(response);
                 return false;
             }
         } catch (error) {
             //@ts-ignore
-            throw new Error(error.message);
+            // console.log(error);
+            return false;
+            // throw new Error(error.message);
         }
     }
 
@@ -1519,6 +1570,8 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('users', {
                 id: user.uid,
+                role: 'superAdmin',
+                is_admin: true,
                 tenants: tenantList,
                 current_tenant: tenantId
             });
@@ -1531,6 +1584,43 @@ class ProcessGPTBackend implements Backend {
     async deleteTenant(tenantId: string) {
         try {
             await storage.delete('tenants', { match: { id: tenantId } });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async createUser(userInfo: any) {
+        try {
+            const request = {
+                input: userInfo
+            }
+            const response = await axios.post('/execution/create-user', request);
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data.message);
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async updateUser(userInfo: any) {
+        try {
+            const user: any = await this.getUserInfo();
+            if (user && user.uid) {
+                const user_id = user.uid;
+                const request = {
+                    input: {
+                        user_id: user_id,
+                        user_info: userInfo
+                    }
+                }
+                const response = await axios.post('/execution/update-user', request); 
+                return response.data;
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1696,6 +1786,29 @@ class ProcessGPTBackend implements Backend {
             } else {
                 return null;
             }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async checkUsePermissions() {
+        try {
+            const permissionCount = await storage.getCount('user_permissions')
+            if (permissionCount > 0) {
+                return true
+            } else {
+                return false
+            }
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    async addSampleProcess() {
+        try {
+            const response = await axios.post('/execution/insert-sample');
+            // console.log(response.data);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

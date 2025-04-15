@@ -11,10 +11,10 @@
                     <v-card-text>
                         <div class="event-details-header">
                             <h4 class="text-h4">{{ $t('calendar.evnet') }}</h4>
-                            <v-btn v-if="!editMode" icon @click="toggleEditMode" class="edit-button">
+                            <v-btn v-if="!editMode" icon @click="toggleEditMode">
                                 <v-icon>mdi-pencil</v-icon>
                             </v-btn>
-                            <v-btn v-else icon @click="toggleEditMode" class="edit-button">
+                            <v-btn v-else icon @click="toggleEditMode">
                                 <v-icon>mdi-arrow-left</v-icon>
                             </v-btn>
                         </div>
@@ -426,11 +426,6 @@ export default defineComponent({
 
 .event-value {
     margin-left: 5px;
-}
-
-.edit-button {
-    margin-top: 5px;
-    display: block; /* 버튼을 블록 요소로 만들어 아래로 내림 */
 }
 
 .event-details-header {

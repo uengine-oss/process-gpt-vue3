@@ -2,7 +2,7 @@
     <v-sheet v-if="checkpoints" class="mt-auto pa-3 border border-success rounded">
         <div class="text-success font-weight-semibold">
             <v-icon class="mr-2">$success</v-icon>
-            Checkpoints ({{ checkedCount }}/{{ checkpoints ? checkpoints.length : 0 }})
+            {{ $t('Checkpoints.checkpoints') }} ({{ checkedCount }}/{{ checkpoints ? checkpoints.length : 0 }})
         </div>
         <div v-for="(checkpoint, index) in checkpoints" :key="index" class="mt-2">
             <v-checkbox v-model="checkpoint.checked" hide-details density="compact" color="success" :disabled="readOnly">

@@ -155,6 +155,18 @@
                                 </template>
                             </v-tooltip>
                         </div>
+
+                        <!-- 외부 고객 아이콘 -->
+                        <div class="mr-4 d-flex" v-if="bpmn && hasExternalCustomerRole">
+                            <v-tooltip location="bottom" :text="$t('processDefinition.webFormUrl')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                        density="comfortable" @click="createFormUrl">
+                                        <Icons :icon="'document'" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </div>
                     </v-row>
                 </div>
             </div>
@@ -207,6 +219,9 @@ export default {
         isEditableTitle() {
             const checkGPT =  window.$mode === 'ProcessGPT' ? ( this.editUser != '' && this.editUser == this.userInfo.name) : true;
             return !this.lock && checkGPT;
+        },
+        hasExternalCustomerRole() {
+            return this.bpmn.includes('ExternalCustomer') || this.bpmn.includes('externalCustomer');
         }
     },
     methods: {
@@ -240,6 +255,9 @@ export default {
         },
         savePDF() {
             this.$emit('savePDF');
+        },
+        createFormUrl() {
+            this.$emit('createFormUrl');
         }
     }
 };

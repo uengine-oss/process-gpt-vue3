@@ -90,8 +90,8 @@ Object.defineProperty(window, '$pal', {
 
 
 Object.defineProperty(window, '$mode', {
-    value: 'uEngine',
-    // value: 'ProcessGPT',
+    // value: 'uEngine',
+    value: 'ProcessGPT',
     writable: false,
     configurable: false
 });

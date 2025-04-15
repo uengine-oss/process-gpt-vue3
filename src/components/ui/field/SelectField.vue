@@ -8,6 +8,8 @@
             :disabled="localDisabled"
             :readonly="localReadonly"
             :variant="localReadonly ? 'filled' : 'outlined'"
+            :hide-details="hideDetails"
+            :density="density"
         >
         <template v-slot:label>
             <span style="color:black;">
@@ -25,6 +27,16 @@ import jp from 'jsonpath';
 
 export default {
     props: {
+        // UI 관련 설정 props 시작 
+        hideDetails: {
+            type: Boolean,
+            default: false
+        },
+        density: {
+            type: String,
+            default: 'compact'
+        },
+        // UI 관련 설정 props 끝
         modelValue: String,
         vueRenderUUID: String,
         tagName: String,

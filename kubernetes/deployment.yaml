@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: ghcr.io/uengine-oss/process-gpt:latest
+        image: ghcr.io/uengine-oss/process-gpt:a8abc40
         ports:
         - containerPort: 8080
         env:
@@ -32,7 +32,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: my-secrets
-              key: SERVICE_ROLE_KEY
+              key: ANON_KEY
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -50,7 +50,7 @@ spec:
     spec:
       containers:
       - name: execution
-        image: ghcr.io/uengine-oss/process-gpt-execution:latest
+        image: ghcr.io/uengine-oss/process-gpt-execution:4e22fed
         ports:
         - containerPort: 8000
         env:
@@ -91,7 +91,7 @@ spec:
     spec:
       containers:
       - name: autonomous
-        image: ghcr.io/uengine-oss/process-gpt-autonomous:latest
+        image: ghcr.io/uengine-oss/process-gpt-autonomous:6778a3c
         ports:
         - containerPort: 6789
         env:
@@ -122,7 +122,7 @@ spec:
     spec:
       containers:
       - name: memento
-        image: ghcr.io/uengine-oss/process-gpt-memento:latest
+        image: ghcr.io/uengine-oss/process-gpt-memento:11f89e7
         ports:
         - containerPort: 8005
         env:

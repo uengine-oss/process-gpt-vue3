@@ -1,28 +1,67 @@
 <script setup lang="ts">
 import { Form } from 'vee-validate';
-import { ref } from 'vue';
+import { ref, getCurrentInstance } from 'vue';
 
 import { useAuthStore } from '@/stores/auth';
 const authStore = useAuthStore();
+const { proxy } = getCurrentInstance();
 
 /*Social icons*/
 //import google from '@/assets/images/svgs/google-icon.svg';
 
 const password = ref('');
+const confirmPassword = ref('');
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 const email = ref('');
 const passwordRules = ref([
-    (v: string) => !!v || 'Password is required',
-    (v: string) => (v && v.length <= 10) || 'Password must be less than 10 characters'
+    (v: string) => !!v || proxy.$t('createAccount.enterPassword'),
 ]);
-const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid']);
+const emailRules = ref([
+    (v: string) => !!v || proxy.$t('createAccount.enterEmail'), 
+    (v: string) => /.+@.+\..+/.test(v) || proxy.$t('createAccount.invalidEmailFormat')
+]);
 const username = ref('');
 const usernameRules = ref([
-    (v: string) => !!v || 'Name is required',
-    (v: string) => (v && v.length <= 10) || 'Name must be less than 10 characters'
+    (v: string) => !!v || proxy.$t('createAccount.enterName'),
+]);
+
+// 비밀번호 일치 여부 검증 함수
+const confirmPasswordRules = ref([
+    (v: string) => !!v || proxy.$t('createAccount.enterConfirmPassword'),
+    (v: string) => v === password.value || proxy.$t('createAccount.passwordMismatch')
 ]);
 
 function validate(values: any, { setErrors }: any) {
-    return authStore.signUp(username.value, email.value, password.value);
+    // 필수 입력값 및 이메일 형식 검증
+    let hasError = false;
+    if (!username.value) {
+        setErrors({ username: proxy.$t('createAccount.enterName') });
+        hasError = true;
+    }
+    if (!email.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+        setErrors({ email: proxy.$t('createAccount.invalidEmailFormat') });
+        hasError = true;
+    }
+    if (!password.value) {
+        setErrors({ password: proxy.$t('createAccount.enterPassword') });
+        hasError = true;
+    }
+    if (!confirmPassword.value || password.value !== confirmPassword.value) {
+        setErrors({ confirmPassword: proxy.$t('createAccount.passwordMismatch') });
+        hasError = true;
+    }
+
+    // 검증 결과에 따른 메시지 출력
+    return (window as any).$app_.try({
+        action: async () => {
+            if (hasError) {
+                throw new Error(); // 오류 발생 시 빈 오류 던지기
+            }
+            await authStore.signUp(username.value, email.value, password.value, proxy);
+        },
+        errorMsg: proxy.$t('createAccount.registrationFailed') // 실패 시 이 메시지 사용
+    });
 }
 </script>
 <template>
@@ -58,16 +97,33 @@ function validate(values: any, { setErrors }: any) {
             :rules="emailRules" 
             required 
         ></VTextField>
-        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.password') }}</v-label>
-        <VTextField
-            v-model="password"
-            :counter="10"
-            :rules="passwordRules"
-            required
-            variant="outlined"
-            type="password"
-            color="primary"
-        ></VTextField>
+        <!-- 암호 확인 부분 -->
+        <div>
+            <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.password') }}</v-label>
+            <VTextField
+                v-model="password"
+                :rules="passwordRules"
+                required
+                variant="outlined"
+                :type="showPassword ? 'text' : 'password'"
+                color="primary"
+                :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                @click:append-inner="showPassword = !showPassword"
+            ></VTextField>
+
+            <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.confirmPassword') }}</v-label>
+            <VTextField
+                v-model="confirmPassword"
+                :rules="confirmPasswordRules"
+                required
+                variant="outlined"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                color="primary"
+                :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                @click:append-inner="showConfirmPassword = !showConfirmPassword"
+            ></VTextField>
+        </div>
+        
         <v-btn 
             size="large" 
             class="mt-2" 
@@ -76,6 +132,6 @@ function validate(values: any, { setErrors }: any) {
             rounded="pill"
             :loading="isSubmitting"
             type="submit"
-        >Sign up</v-btn>
+        >{{ $t('createAccount.signUp') }}</v-btn>
     </Form>
 </template>

@@ -1,12 +1,14 @@
 <template>
-    <v-row class="ma-0 pa-0 task-btn" style="right:50px; top:12px;">
+    <v-row class="ma-0 pa-0 task-btn">
         <v-spacer></v-spacer>
         <div class="from-work-item-pc" v-if="!isCompleted">
             <v-btn v-if="!isDryRun" @click="saveTask" color="primary" class="mr-2" rounded>중간 저장</v-btn>
             <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
         </div>
-        <div class="form-work-item-mobile" v-if="!isCompleted">
-            <v-tooltip text="중간 저장">
+        <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
+            <v-tooltip v-if="isMobile"
+                text="중간 저장"
+            >
                 <template v-slot:activator="{ props }">
                     <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
                         <Icons :icon="'save'" :width="32" :height="32"/>
@@ -21,7 +23,7 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-        </div>
+        </div> -->
     </v-row>
 
     <v-card flat>
@@ -94,7 +96,9 @@ export default {
         isCompleted(){
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         },
-       
+        isMobile() {
+            return this.windowWidth <= 700;
+        }
     },
     watch:  {
         html() {
@@ -354,11 +358,8 @@ export default {
 .form-work-item-mobile {
     display: none;
 }
-.form-work-item-mobile button {
-    margin-right:10px;
-}
 
-@media only screen and (max-width:700px) {
+@media only screen and (max-width:1080px) {
     .from-work-item-pc {
         display: none;
     }

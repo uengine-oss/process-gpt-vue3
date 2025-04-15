@@ -60,6 +60,7 @@ export interface Backend {
     testRecordList(path: string): Promise<any>;
     findCurrentWorkItemByInstId(instId: string): Promise<any>;
     getUserList(): Promise<any>;
+    getGroupList(): Promise<any>;
     releaseVersion(releaseName: string) : Promise<any>;
     uploadDefinition(file: File, path: string): Promise<any>;
     getCompletedTaskId(instId: string): Promise<any>;
@@ -75,6 +76,7 @@ export interface Backend {
     getFileUrl(path: string): Promise<any>;
     getTenant(tenantId: string): Promise<any>;
     setTenant(tenantId: string): Promise<any>;
+    updateUser(userInfo: any): Promise<any>;
 }
 
 // export type { Backend }

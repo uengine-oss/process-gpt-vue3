@@ -144,8 +144,8 @@
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                                @beforeRestore="beforeRestore"
-                                @savePDF="savePDF" />
+                                @beforeRestore="beforeRestore" @savePDF="savePDF"
+                                @createFormUrl="createFormUrl" />
                         </template>
                     </Chat>
                 </div>
@@ -172,12 +172,15 @@
                             :isEditable="isEditable"
                             @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                             @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                            @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete" />
+                            @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
+                            @createFormUrl="createFormUrl" />
                     </template>
                 </Chat>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="executeDialog" max-width="80%">
+        <v-dialog v-model="executeDialog" max-width="80%"
+            :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
+        >
             <div v-if="!pal && mode === 'ProcessGPT'">
                 <process-gpt-execute :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
             </div>
@@ -378,6 +381,9 @@ export default {
     },
     async beforeRouteLeave(to, from, next) {
         if (this.bpmn && this.bpmn.length > 0) {
+            if (this.useLock && this.lock) {
+                next();
+            }
             const store = useBpmnStore();
             const modeler = store.getModeler;
             const xmlObj = await modeler.saveXML({ format: true, preamble: true });
@@ -684,6 +690,7 @@ export default {
                         }
                     }
 
+                    me.isEditable = true;
                     me.lock = false;
                     me.disableChat = false;
                     me.isViewMode = false;
@@ -713,7 +720,7 @@ export default {
             }
             let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
             if(fullPath == 'chat' && lastPath == 'chat') return;
-            definitions = modeler.getDefinitions();  
+            definitions = modeler.getDefinitions();
             if(definitions) {
                 if (!me.useLock) {
                     me.processDefinition = await me.convertXMLToJSON(me.bpmn);
@@ -778,8 +785,11 @@ export default {
                         }
                     } else {
                         if (unknown.processDefinitionId) {
-                            this.processDefinition = unknown;
-                            this.bpmn = this.createBpmnXml(this.processDefinition);
+                            // this.processDefinition = unknown;
+                            // this.bpmn = this.createBpmnXml(this.processDefinition);
+                            this.bpmn = this.createBpmnXml(unknown);
+                            this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
+                            this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
                             this.definitionChangeCount++;
                         }
                     }
@@ -1014,7 +1024,45 @@ export default {
             } else {
                 return null;
             }
-        }
+        },
+
+        // 외부 고객용 폼 URL 생성
+        async createFormUrl() {
+            let hasExternalCustomerRole = false;
+            let roleName = '';
+
+            let processDefinition = await this.convertXMLToJSON(this.bpmn);
+            if (processDefinition.roles) {
+                processDefinition.roles.forEach((role) => {
+                    if(role.endpoint == 'external_customer'){
+                        hasExternalCustomerRole = true;
+                        roleName = role.name;
+                    }
+                });
+            }
+
+            let processDefinitionId = processDefinition.processDefinitionId;
+
+            if (hasExternalCustomerRole) {
+                let activityId = '';
+                let externalFormId = '';
+                if (this.processDefinition.activities) {
+                    for (const activity of this.processDefinition.activities) {
+                        if (activity.type == 'userTask' && activity.role == roleName) {
+                            activityId = activity.id;
+                            externalFormId = activity.tool.replace('formHandler:', '');
+                            break;
+                        }
+                    }
+                }
+
+                if (externalFormId && externalFormId != '') {
+                    const url = `/external-forms/${externalFormId}?process_definition_id=${processDefinitionId}&activity_id=${activityId}`;
+                    window.open(url, '_blank');
+                }
+            }
+
+        },
     }
 };
 </script>

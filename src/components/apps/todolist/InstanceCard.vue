@@ -87,8 +87,8 @@ export default {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
+                    this.tab = "progress";
                     await this.init();
-                    
                 }
             }
         },

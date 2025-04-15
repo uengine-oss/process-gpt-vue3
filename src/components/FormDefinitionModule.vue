@@ -71,7 +71,14 @@ export default {
                     fragmentToParse = fragmentToParse.replace(/>\\n\\/g, '>');
                     fragmentToParse = fragmentToParse.replace(/>\\n/g, '>');
                     fragmentToParse = fragmentToParse.replace(/>\\/g, '>');
-                    fragmentToParse = fragmentToParse.replace(/\\/g, ``);
+                    
+                    // 문자열 내부의 제어 문자와 이스케이프 문자 처리 개선
+                    // 백슬래시를 모두 제거하는 대신 JSON 파싱을 위한 적절한 이스케이프 처리
+                    fragmentToParse = fragmentToParse.replace(/\\n/g, '\\\\n');
+                    fragmentToParse = fragmentToParse.replace(/\\'/g, '\\\\\'');
+                    
+                    // 파싱 가능한 형태로 추가 보정
+                    fragmentToParse = fragmentToParse.replace(/\\"/g, '\\\\"');
                 } catch (error) {
                     console.log('### 유효 문자열을 JSON에 적합한 문자열로 변환시키는 과정에서 오류 발생! ###');
                     console.log(error);
@@ -80,7 +87,27 @@ export default {
                 }
 
                 try {
-                    return JSON.parse(fragmentToParse);
+                    // 단계적 파싱 시도 함수 추가
+                    function partialParse(str) {
+                        try {
+                            // 정규식을 사용하여 JSON 구조의 문제를 해결
+                            const cleanedStr = str
+                                .replace(/\\\\n/g, '\\n')  // 이스케이프된 줄바꿈 정규화
+                                .replace(/\\\\\"/g, '\\"')  // 이스케이프된 따옴표 정규화
+                                .replace(/\\\\/g, '\\');   // 중복 백슬래시 정규화
+                            
+                            return JSON.parse(cleanedStr);
+                        } catch(e) {
+                            console.log('부분 파싱 시도 실패:', e);
+                            throw e;
+                        }
+                    }
+                    
+                    try {
+                        return JSON.parse(fragmentToParse);
+                    } catch (error) {
+                        return partialParse(fragmentToParse);
+                    }
                 } catch (error) {
                     console.log('### JSON 문자열을 최종 파싱하는 과정에서 오류 발생! ###');
                     console.log(error);

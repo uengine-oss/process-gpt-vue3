@@ -5,6 +5,8 @@
             v-model="localModelValue"
             :disabled="localDisabled"
             :readonly="localReadonly"
+            :hide-details="hideDetails"
+            :density="density"
         ></v-checkbox>
     </div>
 </template>
@@ -16,6 +18,16 @@ export default {
     name: "BooleanField",
     
     props: {
+        // UI 관련 설정 props 시작 
+        hideDetails: {
+            type: Boolean,
+            default: false
+        },
+        density: {
+            type: String,
+            default: 'compact'
+        },
+        // UI 관련 설정 props 끝
         modelValue: Boolean,
         vueRenderUUID: String,
         tagName: String,

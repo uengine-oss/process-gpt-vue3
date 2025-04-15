@@ -143,7 +143,7 @@ export default {
         
             if(this.formData && typeof this.formData == 'object'){
                 for (const key of Object.keys(this.formData)) {
-                    if(this.formData[key] && this.formData[key].includes("data:image/")){
+                    if(this.formData[key] && (typeof this.formData[key] == 'string' && this.formData[key].includes("data:image/"))){
                         this.imgKeyList.push(key)
                         this.isVisionMode = true
                         this.generator.previousMessages = []
@@ -228,10 +228,12 @@ export default {
                 "role": "user"
             })
             const organization = await this.getData(`configuration/organization`, {key: 'key'});
-            this.generator.previousMessages.push({
-                "content": "회사 조직도: " + JSON.stringify(organization.value),
-                "role": "user"
-            })
+            if(organization && organization.value){
+                this.generator.previousMessages.push({
+                    "content": "회사 조직도: " + JSON.stringify(organization.value),
+                    "role": "user"
+                })
+            }
 
             this.generator.generate()
         },

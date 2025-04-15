@@ -2,96 +2,126 @@
     <v-card elevation="10"
         :style="$globalState.state.isZoomed ? 'height: 100vh' : 'height:calc(100vh - 155px);'"
     >
-        <div class="pa-0 pl-6 pt-4 pr-6 d-flex align-center">
-            <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer"
-                @click="goProcess()">
-                <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.name }}</h6>
-                <v-icon>mdi-chevron-right</v-icon>
-            </div>
-            <div v-if="selectedProc.major" class="d-flex align-center cursor-pointer"
-                @click="goProcess(selectedProc.mega.name, 'mega')">
-                <h6 class="text-h6 font-weight-semibold">{{ selectedProc.major.name }}</h6>
-                <div>
-                    <v-icon class="cursor-pointer">mdi-chevron-right</v-icon>
-                    <v-menu activator="parent">
-                        <v-list v-if="selectedProc.major.sub_proc_list" density="compact" class="cursor-pointer">
-                            <v-list-item v-for="sub in selectedProc.major.sub_proc_list" :key="sub.id"
-                                @click="goProcess(sub.id, 'sub')">
-                                <v-list-item-title>
-                                    {{ sub.name }}
-                                </v-list-item-title>
-                            </v-list-item>
-                        </v-list>
-                    </v-menu>
-                </div>
-            </div>
-            <div v-if="processDefinition" class="d-flex align-center">
-                <h6 class="text-h6 font-weight-semibold">
-                    {{ processDefinition ? processDefinition.name : "" }}
-                </h6>
-            </div>
-            <div v-for="(subProcess, idx) in subProcessBreadCrumb" :key="idx">
-                <div class="d-flex align-center" @click="goHistory(idx)">
+        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center">
+            <div class="d-flex">
+                <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer mega-text-ellipsis"
+                    @click="goProcess()">
+                    <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.name }}</h6>
                     <v-icon>mdi-chevron-right</v-icon>
-                    <h6 class="text-h6 font-weight-semibold">
-                        {{ subProcess.processName }}
+                </div>
+                <div v-if="selectedProc.major" class="d-flex align-center cursor-pointer major-text-ellipsis"
+                    @click="goProcess(selectedProc.mega.name, 'mega')">
+                    <h6 class="text-h6 font-weight-semibold">{{ selectedProc.major.name }}</h6>
+                    <div>
+                        <v-icon class="cursor-pointer">mdi-chevron-right</v-icon>
+                        <v-menu activator="parent">
+                            <v-list v-if="selectedProc.major.sub_proc_list" density="compact" class="cursor-pointer">
+                                <v-list-item v-for="sub in selectedProc.major.sub_proc_list" :key="sub.id"
+                                    @click="goProcess(sub.id, 'sub')">
+                                    <v-list-item-title>
+                                        {{ sub.name }}
+                                    </v-list-item-title>
+                                </v-list-item>
+                            </v-list>
+                        </v-menu>
+                    </div>
+                </div>
+                <div v-if="processDefinition" class="d-flex align-center">
+                    <h6 class="text-h6 font-weight-semibold sub-process-text-ellipsis">
+                        {{ processDefinition ? processDefinition.name : "" }}
                     </h6>
                 </div>
+                <div v-for="(subProcess, idx) in subProcessBreadCrumb" :key="idx">
+                    <div class="d-flex align-center" @click="goHistory(idx)">
+                        <v-icon>mdi-chevron-right</v-icon>
+                        <h6 class="text-h6 font-weight-semibold">
+                            {{ subProcess.processName }}
+                        </h6>
+                    </div>
+                </div>
             </div>
 
-            <div class="ml-auto">
+            <div class="sub-process-detail-btn-box">
                 <div v-if="onLoad && bpmn" class="d-flex align-center">
-                    <v-btn v-if="!JMS && !Pal" color="primary" rounded density="comfortable" class="mr-3" @click="executeProcess">
-                        실행
-                    </v-btn>
+                    <div class="sub-process-start-btn">
+                        <v-btn v-if="!JMS && !Pal"
+                            @click="executeProcess"
+                            color="primary"
+                            rounded
+                            density="comfortable"
+                        >
+                            실행
+                        </v-btn>
+                    </div>
 
-                    <v-tooltip location="bottom">
+                    <v-tooltip v-if="isEditable" location="bottom">
                         <template v-slot:activator="{ props }">
                             <div v-bind="props" class="mr-2">
-                                <v-btn :size="30" icon variant="text"
-                                    :disabled="!isEditable"
-                                    @click="jumpToProcessDefintionChat()"
+                                <v-btn @click="jumpToProcessDefintionChat()"
+                                    :size="30"
+                                    density="comfortable"
+                                    variant="text"
                                 >
                                     <v-icon>mdi-pencil</v-icon>
                                 </v-btn>
                             </div>
                         </template>
-                        <span v-if="!isEditable">
+                        <!-- <span v-if="!isEditable">
                             권한이 없습니다.
-                        </span>
-                        <span v-else>{{ $t('processDefinition.edit') }}</span>
+                        </span> -->
+                        <span>{{ $t('processDefinition.edit') }}</span>
                     </v-tooltip>
                     
-                    <v-tooltip location="bottom" :text="$t('processDefinition.savePDF')">
-                        <template v-slot:activator="{ props }">
-                            <div v-bind="props" class="mr-2">
-                                <v-btn @click="savePDF" icon variant="text" class="text-medium-emphasis" density="comfortable">
-                                    <v-icon>mdi-file-pdf-box</v-icon>
-                                </v-btn>
-                            </div>
-                        </template>
-                    </v-tooltip>
+                    <div class="pdf-download-btn">
+                        <v-tooltip location="bottom" 
+                            :text="$t('processDefinition.savePDF')"
+                        >
+                            <template v-slot:activator="{ props }">
+                                <div v-bind="props" class="mr-2">
+                                    <v-btn @click="savePDF"
+                                        :size="30"
+                                        icon 
+                                        variant="text" 
+                                        class="text-medium-emphasis" 
+                                        density="comfortable"
+                                    >
+                                        <v-icon :size="26">mdi-file-pdf-box</v-icon>
+                                    </v-btn>
+                                </div>
+                            </template>
+                        </v-tooltip>
+                    </div>
 
-                    <v-tooltip :text="$t('processDefinition.capture')">
-                        <template v-slot:activator="{ props }">
-                            <div v-bind="props" class="mr-2">
-                                <v-btn icon variant="text" :size="24" @click="capture">
-                                    <Icons :icon="'image-download'"  />
-                                </v-btn>
-                            </div>
-                        </template>
-                    </v-tooltip>
+                    <div class="image-download-btn">
+                        <v-tooltip location="bottom" 
+                            :text="$t('processDefinition.capture')"
+                        >
+                            <template v-slot:activator="{ props }">
+                                <div v-bind="props" class="mr-2">
+                                    <v-btn @click="capture"
+                                        icon :size="30" 
+                                        variant="text"
+                                        density="comfortable"
+                                    >
+                                        <Icons :icon="'image-download'"  />
+                                    </v-btn>
+                                </div>
+                            </template>
+                        </v-tooltip>
+                    </div>
                     
-                    <v-tooltip :text="$t('processDefinition.zoom')">
-                        <template v-slot:activator="{ props }">
-                            <div v-bind="props">
-                                <v-btn :size="30" icon variant="text" @click="$globalState.methods.toggleZoom()">
-                                    <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
-                                    <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"/>
-                                </v-btn>
-                            </div>
-                        </template>
-                    </v-tooltip>
+                    <div class="zoom-btn">
+                        <v-tooltip :text="$t('processDefinition.zoom')">
+                            <template v-slot:activator="{ props }">
+                                <div v-bind="props">
+                                    <v-btn :size="30" icon variant="text" @click="$globalState.methods.toggleZoom()">
+                                        <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                                        <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"/>
+                                    </v-btn>
+                                </div>
+                            </template>
+                        </v-tooltip>
+                    </div>
                 </div>
             </div>
         </div>
@@ -313,3 +343,35 @@ export default {
     },
 }
 </script>
+<style>
+.sub-process-detail-btn-box {
+    margin-left: auto;
+}
+.is-mobile-sub-process-name {
+    display: none !important;
+}
+.sub-process-start-btn {
+    margin-right: 8px;
+}
+
+@media only screen and (max-width: 959px) {
+    .pdf-download-btn,
+    .image-download-btn,
+    .zoom-btn {
+        display: none !important;
+    }
+    .mega-text-ellipsis,
+    .major-text-ellipsis {
+        display: none !important;
+    }
+    .sub-process-text-ellipsis {
+        font-size: 16px !important;
+    }
+    .is-mobile-sub-process-name {
+        display: block !important;
+    }
+    .sub-process-start-btn {
+        margin-right: 0px;
+    }
+}
+</style>

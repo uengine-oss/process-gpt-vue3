@@ -1,13 +1,17 @@
 <template>
-    <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style pr-3 pl-3"
-    >
+    <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style pr-3 pl-3">
         <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
             <v-row class="ma-0 pa-0">
                 <v-col :cols="enableEdit ? '6' : '12'" class="ma-0 pa-0 text-left align-center" @click="handleClick">
-                    <div>
-                        {{ value.name }}
-                        <v-chip v-if="value.new" style="margin-left: 5px; margin-top: -4px; background-color: red; color: white;" size="x-small">New</v-chip>
-                    </div>
+                    <v-row class="ma-0 pa-0 align-center">
+                        <div>{{ value.name }}</div>
+                        <!-- v-if="value.new" -->
+                        <v-chip class="ml-auto"
+                            color="primary"
+                            variant="outlined"
+                            size="x-small"
+                        >New</v-chip>
+                    </v-row>
                 </v-col>
                 <v-col :cols="enableEdit ? '6' : ''" class="ma-0 pa-0">
                 <div class="ml-auto add-sub-process">
@@ -92,6 +96,7 @@ export default {
     background-color: transparent;
     padding:5px;
     border-radius:8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 연한 그림자 추가 */
 }
 .sub-process-hover:hover {
     background-color:#E7ECF0 !important;
