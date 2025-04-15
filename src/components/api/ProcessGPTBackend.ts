@@ -563,8 +563,10 @@ class ProcessGPTBackend implements Backend {
                     }
                 };
                 renameLabels(procMap.value);
+                const usePermissions = await this.checkUsePermissions();
+                console.log(usePermissions)
                 const role = localStorage.getItem('role');
-                if (role == 'superAdmin') {
+                if (role == 'superAdmin' || !usePermissions) {
                     return procMap.value;
                 } else {
                     const filteredMap = await this.filterProcDefMap(procMap.value);
@@ -1531,14 +1533,18 @@ class ProcessGPTBackend implements Backend {
             }
             const response = await axios.post('/execution/set-tenant', request);
             if (response.status === 200) {
-                if (await this.checkDBConnection()) {
-                    const user: any = await this.getUserInfo();
-                    if (user && user.current_tenant && user.current_tenant == tenantId) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
+                const isOwner = await storage.checkTenantOwner(tenantId);
+                const role = isOwner ? 'superAdmin' : 'user';
+                const isAdmin = isOwner ? true : false;
+                await storage.putObject('users', {
+                    id: user_id,
+                    role: role,
+                    is_admin: isAdmin,
+                    current_tenant: tenantId
+                }, { onConflict: 'id' });
+
+                await storage.refreshSession();
+                return await storage.isConnection();
             } else {
                 console.log(response);
                 return false;
@@ -1783,6 +1789,19 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    async checkUsePermissions() {
+        try {
+            const permissionCount = await storage.getCount('user_permissions')
+            if (permissionCount > 0) {
+                return true
+            } else {
+                return false
+            }
+        } catch (error) {
+            console.log(error)
         }
     }
 

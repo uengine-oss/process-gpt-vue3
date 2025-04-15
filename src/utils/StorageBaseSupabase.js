@@ -26,55 +26,10 @@ export default class StorageBaseSupabase {
                 });
 
                 if (sessionError) {
-                    const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
-                    if (refreshError) {
-                        console.error('Error refreshing session:', refreshError);
-                        const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-                        if (window.location.host.includes('process-gpt.io')) {
-                            document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
-                            document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
-                        } else {
-                            document.cookie = `access_token=; ${cookieOptionsBase}`;
-                            document.cookie = `refresh_token=; ${cookieOptionsBase}`;
-                        }
-                        window.localStorage.removeItem('accessToken');
-                        return false;
-                    }
-
-                    if (window.location.host.includes('process-gpt.io')) {
-                        document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    } else {
-                        document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
-                    }
-                    window.localStorage.setItem('accessToken', refreshData.session.access_token);
+                    await this.refreshSession();
                 }
             } else {
-                const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
-                if (refreshError) {
-                    console.error('Error refreshing session (no initial tokens):', refreshError);
-                    const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-                    if (window.location.host.includes('process-gpt.io')) {
-                        document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
-                        document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
-                    } else {
-                        document.cookie = `access_token=; ${cookieOptionsBase}`;
-                        document.cookie = `refresh_token=; ${cookieOptionsBase}`;
-                    }
-                    window.localStorage.removeItem('accessToken');
-                    return false;
-                } else {
-                    if (window.location.host.includes('process-gpt.io')) {
-                        document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    } else {
-                        document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
-                    }
-                    window.localStorage.setItem('accessToken', refreshData.session.access_token);
-                }
-                
+                await this.refreshSession();                
             }
             
             const { data, error } = await window.$supabase.auth.getUser();
@@ -83,37 +38,41 @@ export default class StorageBaseSupabase {
             }
 
             if (data) {
-                const tenantId = window.$tenantName;
-                const actualTenantId = data.user?.app_metadata?.tenant_id;
-            
-                if (actualTenantId !== tenantId) {
-                    const { data: refreshed, error: refreshError } = await window.$supabase.auth.refreshSession();
-                    if (refreshError) {
-                        console.error('Error refreshing session after tenant mismatch:', refreshError);
-                        return false;
-                    }
-
-                    if (window.location.host.includes('process-gpt.io')) {
-                        document.cookie = `access_token=${refreshed.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refreshed.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    } else {
-                        document.cookie = `access_token=${refreshed.session.access_token}; path=/; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refreshed.session.refresh_token}; path=/; SameSite=Lax`;
-                    }
-            
-                    window.localStorage.setItem('accessToken', refreshed.session.access_token);
-            
-                    const { data: newUser } = await window.$supabase.auth.getUser();
-                    if (newUser) this.writeUserData(newUser);
-                    return true;
-                }
-            
                 this.writeUserData(data);
                 return true;
             }
         } catch (error) {
             console.error('Error checking Supabase connection:', error);
             return false;
+        }
+    }
+
+    async refreshSession() {
+        try {
+            const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
+            if (refreshError) {
+                console.error('Error refreshing session (no initial tokens):', refreshError);
+                const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+                if (window.location.host.includes('process-gpt.io')) {
+                    document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                    document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                } else {
+                    document.cookie = `access_token=; ${cookieOptionsBase}`;
+                    document.cookie = `refresh_token=; ${cookieOptionsBase}`;
+                }
+                window.localStorage.removeItem('accessToken');
+            } else {
+                if (window.location.host.includes('process-gpt.io')) {
+                    document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                } else {
+                    document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
+                    document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
+                }
+                window.localStorage.setItem('accessToken', refreshData.session.access_token);
+            }
+        } catch (e) {
+            console.log(e)
         }
     }
 
@@ -228,16 +187,17 @@ export default class StorageBaseSupabase {
 
                 if (!result.error) {
                     if (!window.$isTenantServer && window.$tenantName) {
+                        let role = 'user';
+                        let isAdmin = false;
                         const existTenant = await this.getObject('tenants', { match: { id: window.$tenantName } });
                         if (!existTenant) {
                             await this.putObject('tenants', {
                                 id: window.$tenantName,
                                 owner: result.data.user.id
                             });
+                            role = 'superAdmin';
+                            isAdmin = true;
                         }
-                        const isOwner = await this.checkTenantOwner(window.$tenantName);
-                        const role = isOwner ? 'superAdmin' : 'user';
-                        const isAdmin = existTenant ? true : false;
                         await this.putObject('users', {
                             id: result.data.user.id,
                             username: userInfo.username,
