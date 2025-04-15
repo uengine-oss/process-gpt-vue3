@@ -380,6 +380,7 @@
     },
     "BpmnPropertyPanel": {
         "name": "Name",
+        "subProcessNamePattern": "Sub-Process Name Pattern",
         "condition": "Condition",
         "priority": "Priority",
         "description": "Description",
@@ -530,7 +531,12 @@
         "automaticAssignment": "Automatic Assignment",
         "taskType": "Task Type",
         "descriptionTo": "Assignment Target",
-        "descriptionToTitle": "Assignment Target Input"
+        "descriptionToTitle": "Assignment Target Input",
+        "direction": "Direction",
+        "inputForm": "Reference Form",
+        "outputForm": "Write Form",
+        "addFormParameter": "Add Form Parameter",
+        "removeFormParameter": "Remove Form Parameter"
     },
     "Mapper": {
         "mapper": "Mapper"

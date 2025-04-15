@@ -16,73 +16,15 @@
 
         <v-row :class="isMobile ? 'ma-0 pa-0 mt-2' : 'ma-0 pa-0'">
             <!-- Left -->
-            <v-col
-                class="pa-0"
-                :cols="$globalState.state.isZoomed ? 12 : (isMobile ? 12 : 4)"
-                :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 60px); overflow: auto' : 'height: calc(100vh - 215px); overflow: auto')"
-            >
-                <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
-                    <v-row class="ma-0 pa-0 pt-2 pb-2">
-                        <v-spacer></v-spacer>
-                        <v-tooltip v-if="currentComponent == 'FormWorkItem'" :text="$t('WorkItem.toggleInputFieldSize')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn
-                                    @click="$globalState.methods.toggleZoom()"
-                                    size="small"
-                                    icon
-                                    v-bind="props"
-                                >
-                                    <Icons
-                                        :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                        :width="24"
-                                        :height="24"
-                                    />
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-                    </v-row>
-                    <component 
-                        :is="currentComponent" 
-                        :definitionId="definitionId"
-                        :work-item="workItem" 
-                        :workItemStatus="workItemStatus" 
-                        :isDryRun="isDryRun" 
-                        :dryRunWorkItem="dryRunWorkItem"
-                        :currentActivities="currentActivities"
-                        @updateCurrentActivities="updateCurrentActivities"
-                        @close="close"
-                        @executeProcess="executeProcess"
-                        :is-simulate="isSimulate"
-                    ></component>
-                    <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
-                    <!-- <v-tooltip :text="$t('processDefinition.zoom')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn
-                                @click="$globalState.methods.toggleZoom()"
-                                size="small"
-                                icon
-                                v-bind="props"
-                                class="processVariables-zoom task-btn"
-                            >
-                                <Icons
-                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                    :width="32"
-                                    :height="32"
-                                />
-                            </v-btn>
-                        </template>
-                    </v-tooltip> -->
-                </div>
-            </v-col>
-            <!-- Right -->
-            <v-col :class="isMobile ? 'pa-4' : 'pa-0'" :cols="isMobile ? 12 : 8"
-                :style="$globalState.state.isZoomed ? 'display: none' : ''"
-            >
+            <v-col class="pa-0" :cols="isMobile ? 12 : 5">
                 <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
                         <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">{{ $t('WorkItem.history') }}</v-tab>
                         <v-tab v-if="messages" value="agent">{{ $t('WorkItem.agent') }}</v-tab>
+                        <v-tab v-if="inFormNameTabs && inFormNameTabs.length > 0" v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
+                            {{ inFormNameTab }}
+                        </v-tab>
                     </v-tabs>
                     <v-window v-model="selectedTab">
                         <v-window-item value="progress">
@@ -155,8 +97,57 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
+                        <v-window-item v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
+                           <DynamicForm 
+                                v-if="inFormValues[index]?.html" 
+                                ref="dynamicForm" 
+                                :formHTML="inFormValues[index]?.html" 
+                                v-model="inFormValues[index].formData" 
+                                class="dynamic-form">
+                            </DynamicForm>
+                        </v-window-item>     
                     </v-window>
                 </v-alert>
+            </v-col>
+            <!-- Right -->
+            <v-col
+                class="pa-0"
+                :cols="isMobile ? 12 : 7"
+                :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 215px); overflow: auto')"
+            >
+                <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
+                    <component 
+                        :is="currentComponent" 
+                        :definitionId="definitionId"
+                        :work-item="workItem" 
+                        :workItemStatus="workItemStatus" 
+                        :isDryRun="isDryRun" 
+                        :dryRunWorkItem="dryRunWorkItem"
+                        :currentActivities="currentActivities"
+                        @updateCurrentActivities="updateCurrentActivities"
+                        @close="close"
+                        @executeProcess="executeProcess"
+                        :is-simulate="isSimulate"
+                    ></component>
+                    <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                    <!-- <v-tooltip :text="$t('processDefinition.zoom')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn
+                                @click="$globalState.methods.toggleZoom()"
+                                size="small"
+                                icon
+                                v-bind="props"
+                                class="processVariables-zoom task-btn"
+                            >
+                                <Icons
+                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
+                                    :width="32"
+                                    :height="32"
+                                />
+                            </v-btn>
+                        </template>
+                    </v-tooltip> -->
+                </div>
             </v-col>
         </v-row>
     </v-card>
@@ -173,6 +164,7 @@ import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
 import customBpmnModule from '@/components/customBpmn';
+import DynamicForm from '@/components/designer/DynamicForm.vue';
 
 const backend = BackendFactory.createBackend();
 export default {
@@ -200,6 +192,7 @@ export default {
         'work-history-uEngine': WorkItemChat,
         'work-history-ProcessGPT': ProcessInstanceChat,
         BpmnUengine,
+        DynamicForm
     },
     data: () => ({    
         workItem: null,
@@ -223,6 +216,10 @@ export default {
         eventList: [],
         html: null,
         formData: null,
+
+        // Form data
+        inFormNameTabs: [],
+        inFormValues: [],
     }),
     created() {
         this.init();
@@ -234,6 +231,10 @@ export default {
         });
         this.EventBus.on('formData-updated', (newformData) => {
             this.formData = newformData
+        });
+        this.EventBus.on('form-data-loaded', (formData) => {
+            this.inFormNameTabs = formData.inFormNameTabs;
+            this.inFormValues = formData.inFormValues;
         });
         window.addEventListener('resize', this.handleResize);
     },
@@ -276,7 +277,7 @@ export default {
         },
         isMobile() {
             return this.windowWidth <= 700;
-        }
+        },
     },
     watch: {
         windowWidth(newWidth) {
@@ -310,25 +311,21 @@ export default {
                         me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn', version: me.workItem.worklist.defVerId });
                         if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
                         me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
-                        // 현재 실행 중인 Task만 표시
+                        
                         let tmp = {}
                         tmp[me.workItem?.activity?.tracingTag] = "Running"
                         me.taskStatus = tmp
                         
                         if (me.workItem.worklist.currentActivities) {
                             me.currentActivities = me.workItem.worklist.currentActivities;
-                        // me.bpmnKey++;
                         } else {
                             me.currentActivities = me.workListByInstId.map((item) => item.tracingTag);
-                            console.log(me.workListByInstId.map((item) => item.tracingTag))
-                            // me.currentActivities = me.workListByInstId.map((item) => {
-                            //     if(item.status != 'COMPLETED' && item.status != 'DONE') {
-                            //         return item.tracingTag;
-                            //     }
-                            // });
                         }
+
+                        // FormWorkItem 데이터 로드
+                        await me.loadRefForm();
                     }
-                    if(me.workItem.worklist) {//dry-run에서는 실제 실행상태가 아니라 안나옴
+                    if(me.workItem.worklist) {
                         me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
                     }
 
@@ -342,6 +339,37 @@ export default {
                 },
                 errorMsg: '워크아이템을 찾을 수 없습니다.'
             });
+        },
+        async loadRefForm() {
+            var me = this;
+            if(!me.workItem || !me.workItem.activity || !me.workItem.activity.inParameterContexts) return;
+
+            me.inFormNameTabs = [];
+            me.inFormValues = [];
+
+            const promises = me.workItem.activity.inParameterContexts.map(async inParameterContext => {
+                const formName = inParameterContext.variable.name; 
+                const variable = await backend.getVariableWithTaskId(
+                    me.workItem.worklist.instId, 
+                    me.$route.params.taskId, 
+                    formName
+                );
+                
+                if(Array.isArray(variable)) { 
+                    const itemPromises = variable.map(async (item, idx) => {
+                        const form = await backend.getRawDefinition(item.formDefId, { type: 'form' });
+                        me.inFormNameTabs.push(item.subProcessLabel || `${formName}-${idx + 1}`);
+                        me.inFormValues.push({'html': form, 'formData': item.valueMap});
+                    });
+                    await Promise.all(itemPromises);
+                } else if(variable) {
+                    const form = await backend.getRawDefinition(variable.formDefId, { type: 'form' });
+                    me.inFormNameTabs.push(variable.subProcessLabel || formName);
+                    me.inFormValues.push({'html': form, 'formData': variable.valueMap});
+                }
+            });
+            
+            await Promise.all(promises);
         },
         handleResize() {
             this.windowWidth = window.innerWidth;

@@ -25,16 +25,17 @@
             </v-tooltip>
         </div> -->
     </v-row>
-    <div class="pa-4">
-        <!-- <FormMapper></FormMapper> -->
-        <!-- <Instruction :workItem="workItem" /> -->
-        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form"></DynamicForm>
-        <div v-if="!isCompleted" class="mb-4">
-            <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
-            <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
-        </div>
-        <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
-    </div>
+
+    <v-card flat>
+        <v-card-text class="pa-4">
+            <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form"></DynamicForm>
+            <div v-if="!isCompleted" class="mb-4">
+                <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
+                <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
+            </div>
+            <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
+        </v-card-text>
+    </v-card>
 </template>
 
 <script>
@@ -110,7 +111,7 @@ export default {
             if(this.formData){
                 this.EventBus.emit('formData-updated', this.formData);
             }
-        }
+        },
     },
     mounted() {
         this.init();
@@ -149,16 +150,17 @@ export default {
         async loadForm(){
             var me = this;
 
-            if(!me.workItem || !me.workItem.activity || !me.workItem.activity.variableForHtmlFormContext) return;
+            if(!me.workItem || !me.workItem.activity || !me.workItem.activity.outParameterContext) return;
+           
+            let outFormName = me.workItem.activity.outParameterContext.variable.name || me.formDefId;
+            let outVariable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, outFormName);
 
-            let varName = me.workItem.activity.variableForHtmlFormContext.name || me.formDefId;
-            let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
-            if (variable && variable.valueMap) {
-                me.formData = variable.valueMap;
+            if (outVariable && outVariable.valueMap) {
+                me.formData = outVariable.valueMap;
             }
             
             if(me.workItem?.parameterValues){
-                const parameterValues = me.workItem.parameterValues[varName];
+                const parameterValues = me.workItem.parameterValues[outFormName];
                 if(parameterValues && parameterValues.valueMap){
                     me.formData = parameterValues.valueMap;
                 }
@@ -195,7 +197,8 @@ export default {
         async saveForm(variables){
             let me = this;
 
-            let varName = me.workItem.activity.variableForHtmlFormContext.name;
+            let varName = me.workItem.activity.outParameterContext.variable.name;
+            // let varName = me.workItem.activity.variableForHtmlFormContext.name;
             let variable = {};
             if(!me.isDryRun){
                 variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
