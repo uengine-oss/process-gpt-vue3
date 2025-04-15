@@ -29,6 +29,7 @@ export default {
         backend: null,
         lastSendMessage: null,
         ProcessGPTActive: false,
+        isSystemChat: false,
         lastFinishedTime: 0,
         processInstanceId: null,
         chatRoomId: '',
@@ -437,7 +438,7 @@ export default {
             }
         },
         async startGenerate() {
-            if(!this.ProcessGPTActive){
+            if(!this.ProcessGPTActive || this.isSystemChat){
                 this.messages.push({
                     role: 'system',
                     content: '...',

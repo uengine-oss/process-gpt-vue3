@@ -498,7 +498,7 @@
                                         outlined
                                         :disabled="disableChat"
                                     ></v-file-input>
-                                    <v-tooltip v-if="type == 'chats'" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
+                                    <v-tooltip v-if="type == 'chats' && !isSystemChat" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
                                         <template v-slot:activator="{ props }">
                                             <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); toggleProcessGPTActive()" v-bind="props"
                                                 style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
@@ -680,6 +680,7 @@ export default {
         lock: Boolean,
         generatedWorkList: Array,
         ProcessGPTActive: Boolean,
+        isSystemChat: Boolean,
         isAgentMode: Boolean,
         chatRoomId: String,
         isMobile: Boolean,
@@ -922,7 +923,7 @@ export default {
             if(!this.isRender) {
                 resultIndex = oldIndex;
             }
-            return type == 'chats' && resultIndex == index && this.ProcessGPTActive;
+            return type == 'chats' && resultIndex == index && this.ProcessGPTActive && !this.isSystemChat;
         },
         setRenderTime() {
                 this.isRender = false
