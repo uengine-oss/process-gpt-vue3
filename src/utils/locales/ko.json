@@ -843,5 +843,12 @@
         "registrationSuccess": "회원가입에 성공했습니다.",
         "emailSent": "메일이 발송되었습니다.",
         "passwordUpdated": "비밀번호가 변경되었습니다."
+    },
+    "StorageBaseSupabase": {
+        "emailNotConfirmed": "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요.",
+        "wrongPassword": "비밀번호가 틀렸습니다.",
+        "wrongId": "아이디가 틀렸습니다.",
+        "notRegisteredEmail": "가입된 이메일주소가 아닙니다.",
+        "loginRequired": "로그인이 필요합니다."
     }
 }

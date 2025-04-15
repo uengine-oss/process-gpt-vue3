@@ -64,6 +64,9 @@ const i18n = createI18n({
     fallbackLocale: 'en',
     messages
 });
+// 국가별언어를 전역으로 .js 파일에서도 사용 가능하게 추가 
+(window as any).$i18n = i18n;
+
 // EventBus
 import mitt from 'mitt';
 const emitter = mitt();
