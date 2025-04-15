@@ -178,7 +178,9 @@
                 </Chat>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="executeDialog" max-width="80%">
+        <v-dialog v-model="executeDialog" max-width="80%"
+            :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
+        >
             <div v-if="!pal && mode === 'ProcessGPT'">
                 <process-gpt-execute :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
             </div>
@@ -379,6 +381,9 @@ export default {
     },
     async beforeRouteLeave(to, from, next) {
         if (this.bpmn && this.bpmn.length > 0) {
+            if (this.useLock && this.lock) {
+                next();
+            }
             const store = useBpmnStore();
             const modeler = store.getModeler;
             const xmlObj = await modeler.saveXML({ format: true, preamble: true });

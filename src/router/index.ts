@@ -23,7 +23,7 @@ export const router = createRouter({
     ]
 });
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to: any, from: any, next: any) => {
     const backend = BackendFactory.createBackend();
 
     if (window.$mode !== 'uEngine') {
@@ -70,12 +70,15 @@ router.beforeEach(async (to, from, next) => {
         if (to.fullPath.includes('/auth') || to.fullPath.includes('/external-forms')) {
             next();
         } else {
-            // redirect to login page if not logged in and trying to access a restricted page
-            let isLogin = false;
-            if (window.$isTenantServer) {
-                isLogin = await backend.checkDBConnection();
-            } else {
-                isLogin = await backend.setTenant(window.$tenantName) ?? false;
+            const fromSubdomain = from?.hostname?.split('.')[0];
+            const toSubdomain = to?.hostname?.split('.')[0];
+            if (fromSubdomain !== toSubdomain) {
+                let isLogin = false;
+                if (window.$isTenantServer) {
+                    isLogin = await backend.checkDBConnection();
+                } else {
+                    isLogin = await backend.setTenant(window.$tenantName) ?? false;
+                }
             }
 
             if (window.$isTenantServer) {

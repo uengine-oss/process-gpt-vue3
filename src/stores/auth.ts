@@ -30,7 +30,10 @@ export const useAuthStore = defineStore({
                     if (!result.error) {
                         router.push('/definition-map');
                     } else {
-                        alert(result.errorMsg);
+                        await (window as any).$app_.try({
+                            action: () => Promise.reject(new Error()),
+                            errorMsg: result.errorMsg
+                        });
                     }
             } catch (e) {
                 console.log(e);
@@ -46,7 +49,10 @@ export const useAuthStore = defineStore({
                     var result: any = await storage?.signIn(userInfo);
                     
                     if (result.error) {
-                        alert(result.errorMsg);
+                        await (window as any).$app_.try({
+                            action: () => Promise.reject(new Error()),
+                            errorMsg: result.errorMsg
+                        });
                     } else {
                         const tenantId = window.$tenantName;
                         await backend.setTenant(tenantId);

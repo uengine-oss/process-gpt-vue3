@@ -380,6 +380,7 @@
     },
     "BpmnPropertyPanel": {
         "name": "Name",
+        "subProcessNamePattern": "Sub-Process Name Pattern",
         "condition": "Condition",
         "priority": "Priority",
         "description": "Description",
@@ -530,7 +531,12 @@
         "automaticAssignment": "Automatic Assignment",
         "taskType": "Task Type",
         "descriptionTo": "Assignment Target",
-        "descriptionToTitle": "Assignment Target Input"
+        "descriptionToTitle": "Assignment Target Input",
+        "direction": "Direction",
+        "inputForm": "Reference Form",
+        "outputForm": "Write Form",
+        "addFormParameter": "Add Form Parameter",
+        "removeFormParameter": "Remove Form Parameter"
     },
     "Mapper": {
         "mapper": "Mapper"
@@ -764,7 +770,8 @@
     "WorkItem": {
         "progress": "Progress",
         "history": "Work History",
-        "agent": "Create Agent Draft"
+        "agent": "Create Agent Draft",
+        "toggleInputFieldSize": "Toggle Input Field Size"
     },
     "TestProcess": {
         "title": "Testing Process",
@@ -842,5 +849,12 @@
         "registrationSuccess": "Registration successful.",
         "emailSent": "An email has been sent.",
         "passwordUpdated": "Your password has been updated."
+    },
+    "StorageBaseSupabase": {
+        "emailNotConfirmed": "Email verification is not complete. Please check your email and log in again.",
+        "wrongPassword": "The password is incorrect.",
+        "wrongId": "The ID is incorrect.",
+        "notRegisteredEmail": "This email address is not registered.",
+        "loginRequired": "Login is required."
     }
 }

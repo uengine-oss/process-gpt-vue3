@@ -81,6 +81,7 @@ export default {
             const roles = window.localStorage.getItem('roles');
             if(!roles) return;
             const roleList = await backend.getInstanceListByRole(roles);
+            if(!roleList) return;
             this.instanceList = roleList.map((item) => {
                 const route = window.$mode == 'ProcessGPT' ? btoa(item.instId) : item.instId;
                 const title = item.instName;

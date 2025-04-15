@@ -7,8 +7,8 @@
         </div> -->
         <div>
             <v-radio-group v-model="isForEachRole" inline>
-                <v-radio :label="$t('SubProcessPanel.forEachRole')" :value="false"></v-radio>
-                <v-radio :label="$t('SubProcessPanel.forEachVariable')" :value="true"></v-radio>
+                <v-radio :label="$t('SubProcessPanel.forEachRole')" :value="true"></v-radio>
+                <v-radio :label="$t('SubProcessPanel.forEachVariable')" :value="false"></v-radio>
             </v-radio-group>
             <div v-if="isForEachRole">
                 <v-row class="ma-0 pa-0">
@@ -56,6 +56,12 @@
                     :details="SubProcessDescription"
                     :detailUrl="'https://www.youtube.com/watch?v=nhQCDfYa6Gk'"
                 />
+            </div>
+
+            <div>
+                <v-row class="ma-0 pa-0">
+                    <v-text-field v-model="pattern" :label="$t('BpmnPropertyPanel.subProcessNamePattern')"></v-text-field>
+                </v-row>
             </div>
         </div>
     </div>
@@ -113,6 +119,7 @@ export default {
             isForEachRole: false,
             selectedRole: null,
             selectedVariable: null,
+            pattern: '',
             SubProcessDescription: [
                 {   
                     title: "SubProcessPanel.forEachVariableDescriptionSubTitle1",
@@ -160,6 +167,9 @@ export default {
             this.selectedRole = this.copyUengineProperties.forEachRole.name;
             this.isForEachRole = true;
         }
+        if (this.copyUengineProperties.subProcessNamePattern) {
+            this.pattern = this.copyUengineProperties.subProcessNamePattern;
+        }
     },
     computed: {
         // inputData() {
@@ -205,6 +215,13 @@ export default {
                 }
             } else {
                 delete this.copyUengineProperties.forEachVariable;
+            }
+        },
+        pattern(after, before) {
+            if (after) {
+                this.copyUengineProperties.subProcessNamePattern = after;
+            } else {
+                delete this.copyUengineProperties.subProcessNamePattern;
             }
         }
     },

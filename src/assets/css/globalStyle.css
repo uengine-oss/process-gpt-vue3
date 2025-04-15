@@ -175,6 +175,33 @@ hr {
     background-color: rgba(255, 255, 255, 0.7);
 }
 
+
+.dry-run-process-dialog {
+    max-width: 100vw !important; 
+    height: 100vh !important;
+}
+
+.dry-run-process-dialog .v-overlay__content {
+    margin: 0px !important; 
+    max-width: 100vw !important; 
+    height: 100vh !important;
+    width: 100vw !important; 
+    max-height: 100vh !important;
+}
+
+.dry-run-process-dialog .v-overlay__content .dry-run-process-card {
+    height: 100vh !important;
+    width: 100vw !important;
+}
+
+.dry-run-process-dialog .v-overlay__content .dry-run-process-card .dry-run-process-card-title {
+    display: none;
+}
+
+.dry-run-process-dialog .v-overlay__content .dry-run-process-card .dry-run-process-card-text {
+    padding: 0px !important;
+}
+
 .vue-bpmn-diagram-container .djs-context-pad .entry {
     width: 30px;
     height: 30px;

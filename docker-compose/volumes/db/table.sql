@@ -285,12 +285,12 @@ CREATE POLICY proc_map_history_delete_policy
     TO authenticated
     USING (tenant_id = auth.tenant_id());
 
-create or replace function public.save_previous_proc_map()
+CREATE OR REPLACE FUNCTION public.save_previous_proc_map()
 RETURNS TRIGGER AS $$
 BEGIN
     IF OLD.key = 'proc_map' THEN
-        INSERT INTO public.proc_map_history(value, created_at)
-        VALUES (OLD.value, now());
+        INSERT INTO public.proc_map_history(value, tenant_id, created_at)
+        VALUES (OLD.value, OLD.tenant_id, now());
     END IF;
     RETURN NEW;
 END;
@@ -1341,3 +1341,18 @@ as $$
   where metadata @> filter
   order by embedding <=> query_embedding;
 $$;
+
+
+
+-- proc_def 테이블
+CREATE UNIQUE INDEX IF NOT EXISTS unique_proc_def_id_per_tenant
+ON proc_def (id, tenant_id);
+
+-- form_def 테이블
+CREATE UNIQUE INDEX IF NOT EXISTS unique_form_def_id_per_tenant
+ON form_def (id, tenant_id);
+
+-- configuration 테이블
+CREATE UNIQUE INDEX IF NOT EXISTS unique_config_key_per_tenant
+ON configuration (key, tenant_id);
+

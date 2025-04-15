@@ -26,61 +26,17 @@ export default class StorageBaseSupabase {
                 });
 
                 if (sessionError) {
-                    const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
-                    if (refreshError) {
-                        console.error('Error refreshing session:', refreshError);
-                        const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-                        if (window.location.host.includes('process-gpt.io')) {
-                            document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
-                            document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
-                        } else {
-                            document.cookie = `access_token=; ${cookieOptionsBase}`;
-                            document.cookie = `refresh_token=; ${cookieOptionsBase}`;
-                        }
-                        window.localStorage.removeItem('accessToken');
-                        return false;
-                    }
-
-                    if (window.location.host.includes('process-gpt.io')) {
-                        document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    } else {
-                        document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
-                    }
-                    window.localStorage.setItem('accessToken', refreshData.session.access_token);
+                    await this.refreshSession();
                 }
             } else {
-                const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
-                if (refreshError) {
-                    console.error('Error refreshing session (no initial tokens):', refreshError);
-                    const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-                    if (window.location.host.includes('process-gpt.io')) {
-                        document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
-                        document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
-                    } else {
-                        document.cookie = `access_token=; ${cookieOptionsBase}`;
-                        document.cookie = `refresh_token=; ${cookieOptionsBase}`;
-                    }
-                    window.localStorage.removeItem('accessToken');
-                    return false;
-                } else {
-                    if (window.location.host.includes('process-gpt.io')) {
-                        document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    } else {
-                        document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
-                    }
-                    window.localStorage.setItem('accessToken', refreshData.session.access_token);
-                }
-                
+                await this.refreshSession();                
             }
             
             const { data, error } = await window.$supabase.auth.getUser();
             if (error) {
                 return false;
             }
+
             if (data) {
                 this.writeUserData(data);
                 return true;
@@ -88,6 +44,35 @@ export default class StorageBaseSupabase {
         } catch (error) {
             console.error('Error checking Supabase connection:', error);
             return false;
+        }
+    }
+
+    async refreshSession() {
+        try {
+            const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
+            if (refreshError) {
+                console.error('Error refreshing session (no initial tokens):', refreshError);
+                const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+                if (window.location.host.includes('process-gpt.io')) {
+                    document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                    document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                } else {
+                    document.cookie = `access_token=; ${cookieOptionsBase}`;
+                    document.cookie = `refresh_token=; ${cookieOptionsBase}`;
+                }
+                window.localStorage.removeItem('accessToken');
+            } else {
+                if (window.location.host.includes('process-gpt.io')) {
+                    document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                } else {
+                    document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
+                    document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
+                }
+                window.localStorage.setItem('accessToken', refreshData.session.access_token);
+            }
+        } catch (e) {
+            console.log(e)
         }
     }
 
@@ -108,8 +93,9 @@ export default class StorageBaseSupabase {
     }
 
     async signIn(userInfo) {
+        var me = this;
         try {
-            const existUser = await this.getObject('users', { match: { email: userInfo.email } });
+            const existUser = await me.getObject('users', { match: { email: userInfo.email } });
             if ((window.$isTenantServer && !window.$tenantName) ||
                 (existUser && existUser.tenants && existUser.tenants.includes(window.$tenantName))
             ) {
@@ -117,33 +103,48 @@ export default class StorageBaseSupabase {
                     email: userInfo.email,
                     password: userInfo.password
                 });
-
+        
                 if (!result.error) {
                     // 로그인 성공
                     return result.data;
                 } else if (result.error && result.error.message.includes("Email not confirmed")){
-                    result.errorMsg = "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요."
-                    return result;
+                    await window.$app_.try({
+                        action: () => Promise.reject(new Error()),
+                        errorMsg: window.$i18n.global.t('StorageBaseSupabase.emailNotConfirmed')
+                    });
+                    return {
+                        error: true
+                    };
                 } else {
-                    const users = await this.list('users');
+                    const users = await me.list('users');
                     if (users && users.length > 0) {
                         const checkedId = users.some((user) => user.email == userInfo.email);
                         if (checkedId) {
-                                result.errorMsg = '비밀번호가 틀렸습니다.';
+                            await window.$app_.try({
+                                action: () => Promise.reject(new Error()),
+                                errorMsg: window.$i18n.global.t('StorageBaseSupabase.wrongPassword')
+                            });
                         } else {
-                            result.errorMsg = '아이디가 틀렸습니다.';
+                            await window.$app_.try({
+                                action: () => Promise.reject(new Error()),
+                                errorMsg: window.$i18n.global.t('StorageBaseSupabase.wrongId')
+                            });
                         }
-                        return result;
+                        return {
+                            error: true
+                        };
                     } else {
                         throw new StorageBaseError(result.error);
                     }
                 }
             } else {
+                await window.$app_.try({
+                    action: () => Promise.reject(new Error()),
+                    errorMsg: window.$i18n.global.t('StorageBaseSupabase.notRegisteredEmail')
+                });
                 return {
-                    error: true,
-                    errorMsg: '가입된 이메일주소가 아닙니다.'
-                }
-                // throw new StorageBaseError('error in signIn', e, arguments);
+                    error: true
+                };
             }
         } catch (e) {
             throw new StorageBaseError('error in signIn', e, arguments);
@@ -176,12 +177,15 @@ export default class StorageBaseSupabase {
                     };
                 }
                 existUser.tenants = tenants;
+                const isOwner = await this.checkTenantOwner(window.$tenantName);
+                const role = isOwner ? 'superAdmin' : 'user';
+                const isAdmin = existTenant ? true : false;
                 await this.putObject('users', {
                     id: existUser.id,
                     username: userInfo.username,
                     email: userInfo.email,
-                    role: 'user',
-                    is_admin: false,
+                    role: role,
+                    is_admin: isAdmin,
                     tenants: tenants,
                     current_tenant: tenantId
                 }, { onConflict: 'id' });
@@ -199,15 +203,17 @@ export default class StorageBaseSupabase {
 
                 if (!result.error) {
                     if (!window.$isTenantServer && window.$tenantName) {
+                        let role = 'user';
+                        let isAdmin = false;
                         const existTenant = await this.getObject('tenants', { match: { id: window.$tenantName } });
                         if (!existTenant) {
                             await this.putObject('tenants', {
                                 id: window.$tenantName,
                                 owner: result.data.user.id
                             });
+                            role = 'superAdmin';
+                            isAdmin = true;
                         }
-                        const role = existTenant ? 'user' : 'superAdmin';
-                        const isAdmin = existTenant ? false : true;
                         await this.putObject('users', {
                             id: result.data.user.id,
                             username: userInfo.username,
@@ -257,6 +263,7 @@ export default class StorageBaseSupabase {
     }
 
     async getUserInfo() {
+        var me = this;
         try {
             if (await this.isConnection()) {
                 const userData = await window.$supabase.auth.getUser();
@@ -281,7 +288,10 @@ export default class StorageBaseSupabase {
                 }
             } else {
                 if (window.location.pathname != '/auth/login') {
-                    alert('로그인이 필요합니다.');
+                    await window.$app_.try({
+                        action: () => Promise.reject(new Error()),
+                        errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
+                    });
                     window.location.href = '/auth/login';
                 }
             }
