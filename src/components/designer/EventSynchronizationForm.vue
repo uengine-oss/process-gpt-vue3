@@ -10,8 +10,8 @@
                     <v-text-field v-model="value.eventSynchronization.eventType"></v-text-field>
                 </div> -->
 
-                <v-card-title class="pa-0">{{ $t('EventSynchronizationForm.eventAttributes') }}</v-card-title>
-                <draggable v-model="attributes" :options="dragOptions" class="mb-6 pt-2" style="max-height:200px; overflow:auto;">
+                <v-card-title v-if="showAttributes" class="pa-0">{{ $t('EventSynchronizationForm.eventAttributes') }}</v-card-title>
+                <draggable v-if="showAttributes" v-model="attributes" :options="dragOptions" class="mb-6 pt-2" style="max-height:200px; overflow:auto;">
                     <div v-for="(attribute, idx) in attributes" :key="idx">
                         <div v-if="attribute.isEdit" style="display: flex; align-items: center; height: 10%;">
                             <v-tooltip location="bottom">
@@ -99,7 +99,7 @@
                     </div>
                 </draggable>
 
-                <v-col class="mb-8 pa-0">
+                <v-col v-if="showAttributes" class="mb-8 pa-0">
                     <v-row justify="center" class="attribute-editor pa-0 ma-0">
                         <v-tooltip location="bottom">
                             <template v-slot:activator="{ props }">
@@ -162,8 +162,9 @@
                     />
                 </v-col>
 
-                <v-btn block text rounded color="primary" class="my-3" @click="openMapperDialog()">{{ $t('EventSynchronizationForm.dataMapping') }}</v-btn>
+                <v-btn v-if="showMapper" block text rounded color="primary" class="my-3" @click="openMapperDialog()">{{ $t('EventSynchronizationForm.dataMapping') }}</v-btn>
                 <DetailComponent
+                    v-if="showMapper"
                     :title="$t('BpmnPropertyPanel.mapperDescriptionTitle')"
                     :details="mapperDescription"
                     :detailUrl="'https://www.youtube.com/watch?v=1tCKnzck2-c'"
@@ -212,7 +213,15 @@ export default {
         roles: Array,
         taskName: String,
         definition: Object,
-        selectedActivity: String
+        selectedActivity: String,
+        showAttributes: {
+            type: Boolean,
+            default: true
+        },
+        showMapper: {
+            type: Boolean,
+            default: true
+        }
     },
     components:{
         Mapper,

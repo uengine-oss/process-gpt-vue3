@@ -366,6 +366,7 @@
     },
     "BpmnPropertyPanel": {
         "name": "이름",
+        "subProcessNamePattern": "서브프로세스명 패턴",
         "condition": "조건",
         "priority": "우선순위",
         "description": "설명",
@@ -516,7 +517,12 @@
         "automaticAssignment": "자동 할당",
         "taskType": "작업 유형",
         "descriptionTo": "할당 대상",
-        "descriptionToTitle": "할당 대상 입력"
+        "descriptionToTitle": "할당 대상 입력",
+        "direction": "연결 방향",
+        "inputForm": "참조 폼",
+        "outputForm": "작성 폼",
+        "addFormParameter": "폼 추가",
+        "removeFormParameter": "폼 삭제"
     },
     "Mapper" : {
         "mapper" : "매퍼"
