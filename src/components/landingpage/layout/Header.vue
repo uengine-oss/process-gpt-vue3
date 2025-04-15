@@ -23,19 +23,25 @@ const backend = BackendFactory.createBackend();
 const isLogin = ref(false);
 
 onMounted(async () => {
-    if (window.$isTenantServer) {
-        const tenantId = window.$tenantName;
-        if (tenantId) {
-            isLogin.value = await backend.setTenant(tenantId) ?? false;
+    const checkLoginStatus = async () => {
+        if (window.$isTenantServer) {
+            const tenantId = window.$tenantName;
+            if (tenantId) {
+                isLogin.value = await backend.setTenant(tenantId) ?? false;
+            }
+        } else {
+            isLogin.value = await backend.checkDBConnection();
         }
-    } else {
-        isLogin.value = await backend.checkDBConnection();
-    }
+    };
+
+    await checkLoginStatus();
+
+    setInterval(checkLoginStatus, 600000);
 });
 </script>
 <template>
     <div>
-    <div>
+        <div>
         <!-- -----------------------------------------------
                             Start Header
         ----------------------------------------------- -->

@@ -136,7 +136,7 @@
                         <!-- 실행 관련 버튼  -->
                         <div class="mr-4 d-flex">
                             <!-- 시뮬레이션 아이콘 -->
-                            <v-tooltip v-if="!Pal && fullPath != 'definition-map'" location="bottom" :text="$t('processDefinition.simulate')">
+                            <v-tooltip v-if="useSimulate" location="bottom" :text="$t('processDefinition.simulate')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" @click="executeSimulate" icon variant="text" class="text-medium-emphasis" density="comfortable"
                                     >
@@ -146,7 +146,7 @@
                             </v-tooltip>
 
                             <!-- 실행 아이콘 -->
-                            <v-tooltip v-if="fullPath != 'definition-map'" location="bottom" :text="$t('processDefinition.execution')">
+                            <v-tooltip v-if="useExecute" location="bottom" :text="$t('processDefinition.execution')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" @click="executeProcess" icon variant="text" class="text-medium-emphasis" density="comfortable"
                                     >
@@ -222,6 +222,20 @@ export default {
         },
         hasExternalCustomerRole() {
             return this.bpmn.includes('ExternalCustomer') || this.bpmn.includes('externalCustomer');
+        },
+        useSimulate() {
+            if (!this.Pal && this.fullPath != 'definition-map' && window.$mode != 'ProcessGPT') {
+                return true;
+            } else {
+                return false;
+            }
+        },
+        useExecute() {
+            if (!this.Pal && this.fullPath != 'definition-map' && (window.$mode == 'ProcessGPT' && this.fullPath != 'chat')) {
+                return true;
+            } else {
+                return false;
+            }
         }
     },
     methods: {
