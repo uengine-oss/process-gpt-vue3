@@ -28,19 +28,19 @@ export default {
                 <br><br>
                 <h3> 1. instance ID 이용한 패턴 작성.</h3>
                 <span>
-                <b> 예시: uEgnine_<%=instance.instanceId%></b><br>
-                결과: uEgnine_13
+                <b> 예시: uEngine_<%=instance.instanceId%></b><br>
+                결과: uEngine_13
                 </span>
                 <br><br>
                 <h3> 2. 해당 Role의 Scope정보 설정 </h3>
                 <span>
-                <b> 예시: uEgnine_<%=roles.사용자.endpoint%></b><br>
-                결과: uEgnine_manager
+                <b> 예시: uEngine_<%=roles.사용자.endpoint%></b><br>
+                결과: uEngine_manager
                 </span>
                 <br><br>
                 <h3> 3. 프로세스명 으로 설정 </h3>
-                <b> 예시: uEgnine_<%=definition.id%></b><br>
-                결과: uEgnine_TroubleCenter
+                <b> 예시: uEngine_<%=definition.id%></b><br>
+                결과: uEngine_TroubleCenter
             `
         }
     },

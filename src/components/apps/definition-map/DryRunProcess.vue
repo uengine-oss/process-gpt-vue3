@@ -1,7 +1,7 @@
 <template>
-    <v-card style="width: 100%; height: 100%">
-        <v-card-title> {{ $t('successMsg.runningTheProcess') }} </v-card-title>
-        <v-card-text>
+    <v-card class="dry-run-process-card" style="width: 100%; height: 100%">
+        <v-card-title class="dry-run-process-card-title"> {{ $t('successMsg.runningTheProcess') }} </v-card-title>
+        <v-card-text class="dry-run-process-card-text">
             <div v-if="dryRunWorkItem">
                 <WorkItem :definitionId="definitionId" :is-simulate="isSimulate" :isDryRun="true" :dryRunWorkItem="dryRunWorkItem" @close="closeDialog"></WorkItem>
             </div>

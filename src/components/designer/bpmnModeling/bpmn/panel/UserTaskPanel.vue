@@ -30,19 +30,52 @@
         <div v-else-if="!isLoading && selectedActivity == 'FormActivity'">
             <div>
                 <v-row class="ma-0 pa-0">
-                    <!-- <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
-                        <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.defaultValue') }}</v-label>
-                    </v-col> -->
                     <v-col class="pa-0 pb-2">
-                        <!-- <v-autocomplete 
-                            v-model="selectedForm"
-                            :items="definition.processVariables
-                                        .filter(item => item.type === 'Form' && item.defaultValue && item.defaultValue.name && item.defaultValue.alias)
-                                        .map(item => item.defaultValue.name + '_' + item.defaultValue.alias)" 
-                            color="primary" 
-                            variant="outlined"
-                            hide-details>
-                        </v-autocomplete> -->
+                        <v-row class="ma-0 pa-0 align-center">
+                            <v-col>
+                                <v-label class="font-weight-medium" for="hcpm">{{ $t('UserTaskPanel.inputForm') }}</v-label>
+                            </v-col>
+                            <v-col cols="auto" class="pa-0">
+                                <v-btn 
+                                    v-if="inParameters.length === 0"
+                                    color="primary" 
+                                    @click="addFormParameter"
+                                    prepend-icon="mdi-plus"
+                                    size="small"
+                                >
+                                    {{ $t('UserTaskPanel.addFormParameter')}}
+                                </v-btn>
+                            </v-col>
+                        </v-row>
+                        <div v-if="inParameters.length > 0">
+                            <div v-for="(parameter, index) in inParameters" :key="'input-'+index" class="mb-2">
+                                <v-row class="ma-0 pa-0">
+                                    <v-col class="pa-0 pr-2">
+                                        <v-autocomplete
+                                            v-model="parameter.variable.name"
+                                            :items="definition.processVariables.filter((item) => item.type === 'Form').map((item) => item.name)"
+                                            :label="$t('UserTaskPanel.form')" 
+                                            color="primary"
+                                            variant="outlined"
+                                            hide-details
+                                            density="compact"
+                                            class="align-center"
+                                        >
+                                        </v-autocomplete>
+                                    </v-col>
+                                    <v-col cols="1" class="pa-0 d-flex align-center">
+                                        <v-icon small @click="removeFormParameter(parameter)" :disabled="inParameters.length <= 1">mdi-delete</v-icon>
+                                        <v-icon v-if="index === inParameters.length - 1" small class="ml-1" @click="addFormParameter">mdi-plus</v-icon>
+                                    </v-col>
+                                </v-row>
+                            </div>
+                        </div>
+
+                        <v-row class="ma-0 pa-0 align-center">
+                            <v-col>
+                                <v-label class="font-weight-medium" for="hcpm">{{ $t('UserTaskPanel.outputForm') }}</v-label>
+                            </v-col>
+                        </v-row>
                         <v-autocomplete
                             :label="$t('UserTaskPanel.form')" 
                             v-model="selectedForm"
@@ -62,6 +95,7 @@
                 :taskName="name"
                 :definition="copyDefinition"
                 :selectedActivity="selectedActivity"
+                :showAttributes="false"
             ></EventSynchronizationForm>
             <div v-else>
                 <Instruction v-model="activity.instruction"></Instruction>
@@ -198,7 +232,7 @@ export default {
                 {
                     title: 'UserTaskPanel.radioSelectDescriptionSubTitle1'
                 },
-            ]
+            ],
         };
     },
     created() {
@@ -224,6 +258,18 @@ export default {
             } else {
                 return true;
             }
+        },
+        inParameters() {
+            if(!this.copyUengineProperties) return [];
+            if(!this.copyUengineProperties.parameters) return [];
+            if(this.copyUengineProperties.parameters.length === 0) return [];
+            return this.copyUengineProperties.parameters.filter((item) => item.direction === 'IN' || item.direction === 'IN-OUT');
+        },
+        outParameters() {
+            if(!this.copyUengineProperties) return [];
+            if(!this.copyUengineProperties.parameters) return [];
+            if(this.copyUengineProperties.parameters.length === 0) return [];
+            return this.copyUengineProperties.parameters.filter((item) => item.direction === 'OUT');
         }
         // inputData() {
         //     let params = this.copyUengineProperties.parameters;
@@ -257,14 +303,25 @@ export default {
                 // const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
                 let formVariable = me.copyDefinition.processVariables.find((item) => item.name === newVal);
                 let variableForHtmlFormContext = formVariable ? { name: formVariable.name } : {};
-                me.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext;
+                const existingOutParam = me.copyUengineProperties.parameters.find(param => param.direction === 'OUT');
+                if (existingOutParam) {
+                    // 기존 OUT 파라미터가 있으면 업데이트
+                    existingOutParam.variable = variableForHtmlFormContext;
+                } else {
+                    // 없으면 새로 추가
+                    me.copyUengineProperties.parameters.push({
+                        direction: 'OUT',
+                        variable: variableForHtmlFormContext,
+                    });
+                }
+                // me.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext;
 
                 if (me.useEvent) {
                     if (oldVal) me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] }; // CHECK!!!
                     me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
                 }
             } else {
-                me.copyUengineProperties.variableForHtmlFormContext = {};
+                // me.copyUengineProperties.variableForHtmlFormContext = {};
                 if (me.useEvent) {
                     me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
                 }
@@ -314,10 +371,23 @@ export default {
             me.selectedActivity = me.copyUengineProperties._type ? me.copyUengineProperties._type.split('.').pop() : 'HumanActivity';
             if (me.selectedActivity == 'FormActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-                if (!me.copyUengineProperties.variableForHtmlFormContext) {
-                    me.copyUengineProperties.variableForHtmlFormContext = {};
+
+                if(!me.copyUengineProperties.parameters) {
+                    me.copyUengineProperties.parameters = [{
+                        direction: 'OUT',
+                        variable: {'name': ''}
+                    }];
                 }
-                me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
+                // if (!me.copyUengineProperties.variableForHtmlFormContext) {
+                //     me.copyUengineProperties.variableForHtmlFormContext = {};
+                // }
+                // me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
+                me.selectedForm = null;
+                let outputForm = me.outParameters.find(p => p.direction === 'OUT');
+                if(outputForm){
+                    me.selectedForm = outputForm.variable ? outputForm.variable.name : null;
+                }
+
                 if (me.useEvent) {
                     me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
                 }
@@ -353,7 +423,8 @@ export default {
             me.isLoading = true;
             if (me.selectedActivity == 'FormActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-                if (!me.copyUengineProperties.variableForHtmlFormContext) me.copyUengineProperties.variableForHtmlFormContext = {};
+                // if (!me.copyUengineProperties.variableForHtmlFormContext) me.copyUengineProperties.variableForHtmlFormContext = {};
+                if (!me.copyUengineProperties.parameters) me.copyUengineProperties.parameters = [];
                 if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
                 if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
                 if (!me.copyUengineProperties.eventSynchronization.attributes)
@@ -361,7 +432,7 @@ export default {
                 if (!me.copyUengineProperties.eventSynchronization.mappingContext)
                     me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
 
-                me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
+                // me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
                 me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
 
                 if (!me.selectedForm) me.isOpenFormCreateDialog = true;
@@ -386,8 +457,21 @@ export default {
             // 필수 요소만 포함, 나머지 제거.
             if (me.useEvent) {
                 if (me.selectedActivity == 'FormActivity') {
-                    const { variableForHtmlFormContext, eventSynchronization, _type } = me.copyUengineProperties;
-                me.copyUengineProperties = { variableForHtmlFormContext, eventSynchronization, _type };
+                    // const { variableForHtmlFormContext, eventSynchronization, _type } = me.copyUengineProperties;
+                    // me.copyUengineProperties = { variableForHtmlFormContext, eventSynchronization, _type };
+                    const { parameters, eventSynchronization, _type } = me.copyUengineProperties;
+                    const outParameter = parameters.find(param => param.direction === 'OUT');
+                    if (outParameter) {
+                        parameters.filter(param => param.direction.includes('IN')).forEach(param => {
+                            if (param.variable.name === outParameter.variable.name) {
+                                param.direction = 'IN-OUT';
+                            } else {
+                                param.direction = 'IN';
+                            }
+                        });
+                    }
+
+                    me.copyUengineProperties = { parameters, eventSynchronization, _type };
                 } else if (me.selectedActivity == 'URLActivity') {
                     const { url, eventSynchronization, _type } = me.copyUengineProperties;
                     me.copyUengineProperties = { url, eventSynchronization, _type };
@@ -431,7 +515,35 @@ export default {
             // this.paramKey = ""
             // this.paramValue = ""
         },
-        
+        addFormParameter(){
+            if(!this.copyUengineProperties) this.copyUengineProperties = {}
+            if(!this.copyUengineProperties.parameters) this.copyUengineProperties.parameters = []
+            this.copyUengineProperties.parameters.push({
+                direction: 'IN',
+                variable: {'name': ''},
+            });
+        },
+        removeFormParameter(parameter){
+            const index = this.copyUengineProperties.parameters.findIndex(param => param === parameter);
+            if (index > -1) {
+                this.copyUengineProperties.parameters.splice(index, 1);
+            }
+        },
+        iconForDirection: function (direction) {
+            if (direction == "IN")
+                return "mdi-arrow-left";
+            else if (direction == "OUT" || direction == "OUT ")
+                return "mdi-arrow-right";
+            else
+                return "mdi-arrow-left-right";
+        },
+        directionChanged: function (parameterContext) {
+            if (parameterContext.direction == "OUT ") {
+                parameterContext.direction = "OUT";
+            } else {
+                parameterContext.transformerMapping = null;
+            }
+        },
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             // this.$emit('update:uEngineProperties', this.copyUengineProperties);
