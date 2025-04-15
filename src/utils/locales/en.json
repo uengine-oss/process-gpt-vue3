@@ -764,7 +764,8 @@
     "WorkItem": {
         "progress": "Progress",
         "history": "Work History",
-        "agent": "Create Agent Draft"
+        "agent": "Create Agent Draft",
+        "toggleInputFieldSize": "Toggle Input Field Size"
     },
     "TestProcess": {
         "title": "Testing Process",

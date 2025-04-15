@@ -1,6 +1,8 @@
 <template>
     <v-card elevation="10" v-if="currentComponent" :key="updatedKey">
-        <div class="pa-4 pb-0 align-center">
+        <div class="pa-4 pb-0 align-center"
+            style="height: 60px;"
+        >
             <div class="d-flex">
                 <h5 class="text-h5 font-weight-semibold">
                     {{ activityName }}
@@ -16,10 +18,29 @@
             <!-- Left -->
             <v-col
                 class="pa-0"
-                :cols="isMobile ? 12 : 4"
-                :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 215px); overflow: auto')"
+                :cols="$globalState.state.isZoomed ? 12 : (isMobile ? 12 : 4)"
+                :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 60px); overflow: auto' : 'height: calc(100vh - 215px); overflow: auto')"
             >
                 <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
+                    <v-row class="ma-0 pa-0 pt-2 pb-2">
+                        <v-spacer></v-spacer>
+                        <v-tooltip v-if="currentComponent == 'FormWorkItem'" :text="$t('WorkItem.toggleInputFieldSize')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn
+                                    @click="$globalState.methods.toggleZoom()"
+                                    size="small"
+                                    icon
+                                    v-bind="props"
+                                >
+                                    <Icons
+                                        :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
+                                        :width="24"
+                                        :height="24"
+                                    />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                    </v-row>
                     <component 
                         :is="currentComponent" 
                         :definitionId="definitionId"
@@ -54,7 +75,9 @@
                 </div>
             </v-col>
             <!-- Right -->
-            <v-col :class="isMobile ? 'pa-4' : 'pa-0'" :cols="isMobile ? 12 : 8">
+            <v-col :class="isMobile ? 'pa-4' : 'pa-0'" :cols="isMobile ? 12 : 8"
+                :style="$globalState.state.isZoomed ? 'display: none' : ''"
+            >
                 <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
                         <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>

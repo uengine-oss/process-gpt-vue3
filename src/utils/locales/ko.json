@@ -764,7 +764,8 @@
     "WorkItem": {
         "progress": "진행 상황",
         "history": "워크 히스토리",
-        "agent": "Agent 초안 생성"
+        "agent": "Agent 초안 생성",
+        "toggleInputFieldSize": "확대 / 축소"
     },
     "TestProcess": {
         "title": "테스트 프로세스",

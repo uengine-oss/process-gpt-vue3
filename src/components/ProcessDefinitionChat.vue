@@ -178,7 +178,9 @@
                 </Chat>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="executeDialog" max-width="80%">
+        <v-dialog v-model="executeDialog" max-width="80%"
+            :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
+        >
             <div v-if="!pal && mode === 'ProcessGPT'">
                 <process-gpt-execute :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
             </div>
