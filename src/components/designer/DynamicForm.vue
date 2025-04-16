@@ -34,6 +34,10 @@ export default {
       type: String,
       default: '',
     },
+    readonly: {
+      type: Boolean,
+      default: false
+    },
     modelValue: Object
   },
 
@@ -43,11 +47,18 @@ export default {
   ],
 
   watch: {
+    readonly: {
+      handler(newVal) {
+        this.updateFormHTML(this.formHTML, newVal)
+      },
+      immediate: true
+    },
+
     formHTML: {
-        handler(newHTML) {
-            this.updateFormHTML(newHTML);
-        },
-        immediate: true
+      handler(newHTML) {
+          this.updateFormHTML(newHTML, this.readonly);
+      },
+      immediate: true
     },
 
     modelValue: {
@@ -104,9 +115,27 @@ export default {
       return error
     },
 
-    updateFormHTML(newHTML) {
-      this.copyFormHTML = newHTML;
+    updateFormHTML(newHTML, readonly) {
+      this.copyFormHTML = (readonly) ? this._setReadOnlyToAllFields(newHTML) : newHTML;
       this.cachedHFunc = null;
+    },
+
+    _setReadOnlyToAllFields(targetHTML) {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(targetHTML, 'text/html');
+
+        const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field, boolean-field, textarea-field, user-select-field');
+
+        fields.forEach(field => {
+          field.setAttribute('readonly', 'true');
+        });
+
+        return doc.body.innerHTML;
+      } catch (error) {
+        console.error("Error processing form HTML for readonly state:", error);
+        return targetHTML;
+      }
     }
   },
 
