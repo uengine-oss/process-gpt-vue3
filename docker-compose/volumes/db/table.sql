@@ -530,6 +530,7 @@ create table if not exists public.notifications (
     time_stamp timestamp with time zone null default now(),
     user_id text null,
     url text null,
+    from_user_id text null,
     tenant_id text null default auth.tenant_id(),
     constraint notifications_pkey primary key (id),
     constraint notifications_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
@@ -563,6 +564,9 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='tenant_id') THEN
         ALTER TABLE public.notifications ADD COLUMN tenant_id text null default auth.tenant_id();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='from_user_id') THEN
+        ALTER TABLE public.notifications ADD COLUMN from_user_id text null;
     END IF;
 END;
 $$;
@@ -1034,7 +1038,7 @@ begin
         if chat_room_participant->>'username' != 'System' and chat_room_participant->>'email' != NEW.messages->>'email' then
             participant_email := chat_room_participant->>'email';
             
-            insert into notifications (id, user_id, title, type, description, is_checked, time_stamp, url)
+            insert into notifications (id, user_id, title, type, description, is_checked, time_stamp, url, from_user_id)
             values (
                 gen_random_uuid(),
                 participant_email,
@@ -1043,7 +1047,8 @@ begin
                 chat_room_name,  -- Use chat room name as description
                 false,
                 now(),
-                '/chats?id=' || NEW.id
+                '/chats?id=' || NEW.id,
+                NEW.messages->>'name'
             )
             on conflict (id) do update
             set
@@ -1051,7 +1056,8 @@ begin
                 title = EXCLUDED.title,
                 time_stamp = EXCLUDED.time_stamp,
                 is_checked = EXCLUDED.is_checked,
-                url = EXCLUDED.url;
+                url = EXCLUDED.url,
+                from_user_id = EXCLUDED.from_user_id;
         end if;
     end loop;
 

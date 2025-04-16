@@ -293,6 +293,9 @@ export default {
             this.chatRoomId = this.currentChatRoom.id;
         }
     },
+    beforeUnmount() {
+        this.EventBus.emit('chat-room-unselected');
+    },
     methods: {
         selectedUser(user){
             this.selectedUserInfo = user
@@ -493,6 +496,8 @@ export default {
             }
             this.getChatList(this.currentChatRoom.id);
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
+            
+            this.EventBus.emit('chat-room-selected', this.currentChatRoom.id);
         },
         async putMessage(msg){
             // this.addTextToVectorStore(msg)

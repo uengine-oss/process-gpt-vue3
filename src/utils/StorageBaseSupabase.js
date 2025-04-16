@@ -179,7 +179,7 @@ export default class StorageBaseSupabase {
                 existUser.tenants = tenants;
                 const isOwner = await this.checkTenantOwner(window.$tenantName);
                 const role = isOwner ? 'superAdmin' : 'user';
-                const isAdmin = existTenant ? true : false;
+                const isAdmin = isOwner ? true : false;
                 await this.putObject('users', {
                     id: existUser.id,
                     username: userInfo.username,
