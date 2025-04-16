@@ -1,9 +1,9 @@
 <template>
     <v-card elevation="10" v-if="currentComponent" :key="updatedKey">
-        <div class="pa-4 pb-0 align-center"
-            style="height: 60px;"
+        <div class="pa-2 pb-0 align-center"
+            style="height: 40px;"
         >
-            <div class="d-flex">
+            <div class="d-flex align-center">
                 <h5 class="text-h5 font-weight-semibold">
                     {{ activityName }}
                 </h5>
@@ -11,6 +11,21 @@
                     style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center">
                     {{ workItemStatus }}
                 </v-chip>
+                <v-tooltip :text="$t('processDefinition.zoom')">
+                    <template v-slot:activator="{ props }">
+                        <v-btn @click="$globalState.methods.toggleZoom()"
+                            class="ml-1"
+                            size="x-small"
+                            icon="$vuetify" variant="text"
+                            v-bind="props"
+                        >
+                            <Icons
+                                :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
+                                :size="20"
+                            />
+                        </v-btn>
+                    </template>
+                </v-tooltip>
             </div>
         </div>
 
@@ -130,23 +145,6 @@
                         :is-simulate="isSimulate"
                     ></component>
                     <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
-                    <!-- <v-tooltip :text="$t('processDefinition.zoom')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn
-                                @click="$globalState.methods.toggleZoom()"
-                                size="small"
-                                icon
-                                v-bind="props"
-                                class="processVariables-zoom task-btn"
-                            >
-                                <Icons
-                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                    :width="32"
-                                    :height="32"
-                                />
-                            </v-btn>
-                        </template>
-                    </v-tooltip> -->
                 </div>
             </v-col>
         </v-row>

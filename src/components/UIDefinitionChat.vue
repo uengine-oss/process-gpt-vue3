@@ -66,9 +66,11 @@
 
                     <v-window-item value="preview" class="fill-height mt-10 pa-5" style="overflow-y: auto">
                         <template v-if="isShowPreview">
-                            <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+                            <DynamicForm ref="dynamicForm" :readonly="isReadOnlyForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
 
                             <template v-if="dev.isDevMode">
+                                <!-- readonly 체크 변경 -->
+                                <v-checkbox v-model="isReadOnlyForm" label="readonly 체크"></v-checkbox>
                                 <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
                                 <v-btn color="primary" class="full-width my-5" @click="onClickPreviewApplyButton">적용</v-btn>
                             </template>
@@ -206,6 +208,7 @@ export default {
         previewHTML: '',
         previewFormValues: {},
         isShowPreview: false,
+        isReadOnlyForm: false,
 
         dev: {
             isDevMode: window.localStorage.getItem('isDevMode') === 'true',
