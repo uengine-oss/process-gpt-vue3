@@ -564,7 +564,6 @@ class ProcessGPTBackend implements Backend {
                 };
                 renameLabels(procMap.value);
                 const usePermissions = await this.checkUsePermissions();
-                console.log(usePermissions)
                 const role = localStorage.getItem('role');
                 if (role == 'superAdmin' || !usePermissions) {
                     return procMap.value;
@@ -594,7 +593,12 @@ class ProcessGPTBackend implements Backend {
             const role = localStorage.getItem('role');
             if (role !== 'superAdmin') {
                 const existingProcMap = await storage.getObject('configuration', options);
-                updatedProcMap = await this.mergeProcessMaps(existingProcMap.value, editedMap);
+                const usePermissions = await this.checkUsePermissions();
+                if (usePermissions) {
+                    updatedProcMap = await this.mergeProcessMaps(existingProcMap.value, editedMap);
+                } else {
+                    updatedProcMap = editedMap;
+                }
                 // console.log("병합한 프로세스 정의 체계도 ", updatedProcMap);
             } else {
                 updatedProcMap = editedMap;

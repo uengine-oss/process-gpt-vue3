@@ -785,7 +785,8 @@ export default {
                         }
                     } else {
                         if (unknown.processDefinitionId) {
-                            // this.processDefinition = unknown;
+                            this.processDefinition = unknown;
+                            if(!this.processDefinition) this.processDefinition = {};
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
                             this.bpmn = this.createBpmnXml(unknown);
                             this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;

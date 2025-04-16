@@ -54,6 +54,7 @@
                         :type="path"
                         :generatedWorkList="generatedWorkList"
                         :ProcessGPTActive="ProcessGPTActive"
+                        :isSystemChat="isSystemChat"
                         :chatRoomId="chatRoomId"
                         :newMessageInfo="newMessageInfo"
                         @requestDraftAgent="requestDraftAgent"
@@ -481,8 +482,14 @@ export default {
             this.currentChatRoom = chatRoomInfo
             if(chatRoomInfo.participants.find(p => p.id === "system_id")){
                 this.ProcessGPTActive = true
+                if(chatRoomInfo.participants.length == 2){
+                    this.isSystemChat = true
+                } else {
+                    this.isSystemChat = false
+                }
             } else {
                 this.ProcessGPTActive = false
+                this.isSystemChat = false
             }
             this.getChatList(this.currentChatRoom.id);
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
@@ -688,6 +695,9 @@ export default {
                 systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
 
                 const systemMsgObj = me.createMessageObj(systemMsg, 'system')
+                if(this.messages[this.messages.length - 1].content === '...' && this.messages[this.messages.length - 1].isLoading){
+                    this.messages.pop()
+                }
                 this.messages.push(systemMsgObj)
                 me.putMessage(systemMsgObj)
                 
@@ -700,16 +710,17 @@ export default {
         },
         async afterGenerationFinished(responseObj) {
             if(responseObj){
+                let startProcess = false;
                 let obj = this.createMessageObj(responseObj, 'system')
                 if(responseObj.messageForUser){
                     obj.messageForUser = responseObj.messageForUser
                 }
-                if(responseObj.work == 'CompanyQuery' || responseObj.work == 'ScheduleQuery'){
-                    this.messages.push({
-                        role: 'system',
-                        content: '...',
-                        isLoading: true
-                    });
+                if(responseObj.work == 'CompanyQuery' || responseObj.work == 'ScheduleQuery' || this.isSystemChat){
+                    // this.messages.push({
+                    //     role: 'system',
+                    //     content: '...',
+                    //     isLoading: true
+                    // });
                     if(responseObj.work == 'CompanyQuery'){
                         try{
                             let mementoRes = await axios.post(`/memento/query`, {
@@ -750,9 +761,15 @@ export default {
                         }
                     } else if(responseObj.work == 'ScheduleQuery'){
                         console.log(responseObj)
+                    } else {
+                        startProcess = true;
                     }
                     obj.uuid = this.uuid()
-                    this.putMessage(obj)
+                    if(startProcess){
+                        this.startProcess(obj)
+                    } else {
+                        this.putMessage(obj)
+                    }
                 } else {
                     if(!this.ProcessGPTActive) this.ProcessGPTActive = true
                     if (typeof responseObj == 'string') {
