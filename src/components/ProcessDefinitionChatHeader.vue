@@ -206,6 +206,9 @@ export default {
         }
     },
     computed: {
+        mode() {
+            return window.$mode;
+        },
         Pal() {
             return window.$pal;
         },
@@ -217,21 +220,23 @@ export default {
             }
         },
         isEditableTitle() {
-            const checkGPT =  window.$mode === 'ProcessGPT' ? ( this.editUser != '' && this.editUser == this.userInfo.name) : true;
+            const checkGPT =  this.mode === 'ProcessGPT' ? ( this.editUser != '' && this.editUser == this.userInfo.name) : true;
             return !this.lock && checkGPT;
         },
         hasExternalCustomerRole() {
             return this.bpmn.includes('ExternalCustomer') || this.bpmn.includes('externalCustomer');
         },
         useSimulate() {
-            if (!this.Pal && this.fullPath != 'definition-map' && window.$mode != 'ProcessGPT') {
+            if (!this.Pal && this.fullPath != 'definition-map' && this.mode != 'ProcessGPT') {
                 return true;
             } else {
                 return false;
             }
         },
         useExecute() {
-            if (!this.Pal && this.fullPath != 'definition-map' && (window.$mode == 'ProcessGPT' && this.fullPath != 'chat')) {
+            if (!this.Pal && this.fullPath != 'definition-map' && 
+                (this.mode !== 'ProcessGPT' || (this.mode == 'ProcessGPT' && this.fullPath != 'chat'))
+            ) {
                 return true;
             } else {
                 return false;
