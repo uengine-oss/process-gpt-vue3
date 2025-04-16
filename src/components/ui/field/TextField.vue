@@ -8,6 +8,8 @@
             :variant="localReadonly ? 'filled' : 'outlined'"
             :hide-details="hideDetails"
             :density="density"
+            @click="handleFieldClick"
+            ref="textField"
         >
             <template v-slot:label>
                 <span style="color:black;">
@@ -87,6 +89,25 @@ export default {
             },
             deep: true,
             immediate: true
+        }
+    },
+
+    computed: {
+        isDateType() {
+            return ['date', 'datetime-local', 'month', 'week', 'time'].includes(this.localType);
+        }
+    },
+
+    methods: {
+        handleFieldClick() {
+            // 날짜 타입인 경우에만 동작
+            if (this.isDateType) {
+                // 참조된 텍스트 필드 엘리먼트를 찾아 showPicker 메서드 호출
+                const inputElement = this.$refs.textField.$el.querySelector('input');
+                if (inputElement && typeof inputElement.showPicker === 'function') {
+                    inputElement.showPicker();
+                }
+            }
         }
     },
 

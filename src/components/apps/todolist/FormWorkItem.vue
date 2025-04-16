@@ -2,8 +2,8 @@
     <v-row class="ma-0 pa-0 task-btn">
         <v-spacer></v-spacer>
         <div class="from-work-item-pc" v-if="!isCompleted">
-            <v-btn v-if="!isDryRun" @click="saveTask" color="primary" class="mr-2" rounded>중간 저장</v-btn>
-            <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
+            <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded>중간 저장</v-btn>
+            <v-btn @click="executeProcess" color="primary" density="compact" rounded>제출 완료</v-btn>
         </div>
         <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
             <v-tooltip v-if="isMobile"
