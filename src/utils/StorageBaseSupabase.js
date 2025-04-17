@@ -570,6 +570,30 @@ export default class StorageBaseSupabase {
         }
     }
 
+    async watchNotifications(path, callback) {
+        try {
+            const channelId = `${path}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+            await window.$supabase
+                .channel(channelId)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: path
+                    },
+                    (payload) => {
+                        console.log('Change received!', payload);
+                        callback(payload);
+                    }
+                )
+                .subscribe();
+
+        } catch (error) {
+            throw new StorageBaseError('error in watch', error, arguments);
+        }
+    }
+
     async watch(path, callback) {
         try {
             let obj = this.formatDataPath(path);

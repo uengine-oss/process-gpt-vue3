@@ -44,8 +44,8 @@
 </template>
 
 <script>
-import { createClient } from '@supabase/supabase-js';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
+// import { createClient } from '@supabase/supabase-js';
+import BackendFactory from "@/components/api/BackendFactory";
 import { RouterView } from 'vue-router';
 
 export default {
@@ -65,6 +65,7 @@ export default {
         notificationsWatched: false,
         currentChatRoomId: null,
         notificationChannel: null,
+        backend: null,
     }),
     async created() {
         window.$app_ = this;
@@ -73,10 +74,9 @@ export default {
         });
     },
     async mounted() {
-        this.storage = StorageBaseFactory.getStorage();
-        this.userInfo = await this.storage.getUserInfo();
-
-        this.watchNotifications();
+        if(localStorage.getItem('email')) {
+            this.watchNotifications(localStorage.getItem('email'));
+        }
 
         this.EventBus.on('chat-room-selected', (chatRoomId) => {
             this.currentChatRoomId = chatRoomId;
@@ -90,6 +90,31 @@ export default {
         this.requestNotificationPermission();
     },
     methods: {
+        async watchNotifications(email){
+            this.backend = BackendFactory.createBackend();
+            await this.backend.watchNotifications((notification) => {
+                if (notification.type === 'chat' && notification.user_id === email) {
+                    if (!this.currentChatRoomId || (this.currentChatRoomId && !notification.url.includes(this.currentChatRoomId))) {
+                        if (Notification.permission === 'granted') {
+                            const senderName = notification.from_user_id || '알 수 없는 사용자';
+                            const messageContent = notification.title || '새 메시지';
+                            const chatRoomName = notification.description || '채팅방';
+                            
+                            new Notification(chatRoomName, {
+                                body: `${senderName}\n${messageContent}`,
+                                icon: '/process-gpt-favicon.png',
+                                badge: '/process-gpt-favicon.png',
+                                tag: `chat-${notification.id || Date.now()}`,
+                                data: { url: notification.url }
+                            }).onclick = function() {
+                                window.focus();
+                                window.location.href = notification.url;
+                            };
+                        }
+                    }
+                }
+            });
+        },
         // 알림 권한 요청 메서드
         requestNotificationPermission() {
             // 브라우저가 알림을 지원하는지 확인
@@ -102,65 +127,6 @@ export default {
             if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
                 // 브라우저 내장 알림 허용 UI가 표시됨
                 Notification.requestPermission();
-            }
-        },
-        async watchNotifications() {
-            var me = this
-            if (this.notificationsWatched) return;
-            
-            try {
-                // 고유한 채널 ID 생성
-                const channelId = `notifications_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-                
-                // 직접 Supabase 채널 구독
-                this.notificationChannel = window.$supabase
-                    .channel(channelId)
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: '*',
-                            schema: 'public',
-                            table: 'notifications'
-                        },
-                        (payload) => {
-                            if (payload && payload.new && payload.eventType === "INSERT") {
-                                const notification = payload.new;
-                                
-                                if (notification.type === 'chat' && notification.user_id === me.userInfo.email) {
-                                    if (!me.currentChatRoomId || (me.currentChatRoomId && !notification.url.includes(me.currentChatRoomId))) {
-                                        if (Notification.permission === 'granted') {
-                                            const senderName = notification.from_user_id || '알 수 없는 사용자';
-                                            const messageContent = notification.title || '새 메시지';
-                                            const chatRoomName = notification.description || '채팅방';
-                                            
-                                            // 알림 내용 구성
-                                            const notificationTitle = `${chatRoomName}`;
-                                            const notificationBody = `${senderName}\n${messageContent}`;
-                                            
-                                            // 알림 생성 및 표시
-                                            new Notification(notificationTitle, {
-                                                body: notificationBody,
-                                                icon: '/process-gpt-favicon.png',
-                                                badge: '/process-gpt-favicon.png',
-                                                tag: `chat-${notification.id || Date.now()}`,
-                                                // requireInteraction: true,
-                                                data: { url: notification.url }
-                                            }).onclick = function() {
-                                                window.focus();
-                                                window.location.href = notification.url
-                                            };
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    )
-                    .subscribe();
-                
-                this.notificationsWatched = true;
-            } catch (error) {
-                console.error('알림 감시 설정 실패:', error);
-                this.notificationsWatched = false;
             }
         },
         async try(options, parameters, options_) {
