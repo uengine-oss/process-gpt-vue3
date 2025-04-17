@@ -107,6 +107,7 @@ export default class StorageBaseSupabase {
                     // 로그인 성공
                     return result.data;
                 } else if (result.error && result.error.message.includes("Email not confirmed")){
+                    // 계정 인증이 완료 되지 않았습니다. 메시지 출력 부분
                     await window.$app_.try({
                         action: () => Promise.reject(new Error()),
                         errorMsg: window.$i18n.global.t('StorageBaseSupabase.emailNotConfirmed')
@@ -119,11 +120,13 @@ export default class StorageBaseSupabase {
                     if (users && users.length > 0) {
                         const checkedId = users.some((user) => user.email == userInfo.email);
                         if (checkedId) {
+                            // 비밀번호가 틀렸습니다 메시지 출력 부분
                             await window.$app_.try({
                                 action: () => Promise.reject(new Error()),
                                 errorMsg: window.$i18n.global.t('StorageBaseSupabase.wrongPassword')
                             });
                         } else {
+                            // 아이디가 틀렸습니다 메시지 출력 부분
                             await window.$app_.try({
                                 action: () => Promise.reject(new Error()),
                                 errorMsg: window.$i18n.global.t('StorageBaseSupabase.wrongId')
@@ -137,6 +140,7 @@ export default class StorageBaseSupabase {
                     }
                 }
             } else {
+                // 가입된 이메일이 아닐때 메시지 출력부분
                 await window.$app_.try({
                     action: () => Promise.reject(new Error()),
                     errorMsg: window.$i18n.global.t('StorageBaseSupabase.notRegisteredEmail')
