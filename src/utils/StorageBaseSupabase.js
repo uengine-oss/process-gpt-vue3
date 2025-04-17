@@ -93,9 +93,8 @@ export default class StorageBaseSupabase {
     }
 
     async signIn(userInfo) {
-        var me = this;
         try {
-            const existUser = await me.getObject('users', { match: { email: userInfo.email } });
+            const existUser = await this.getObject('users', { match: { email: userInfo.email } });
             if ((window.$isTenantServer && !window.$tenantName) ||
                 (existUser && existUser.tenants && existUser.tenants.includes(window.$tenantName))
             ) {
@@ -103,11 +102,12 @@ export default class StorageBaseSupabase {
                     email: userInfo.email,
                     password: userInfo.password
                 });
-        
+
                 if (!result.error) {
                     // 로그인 성공
                     return result.data;
                 } else if (result.error && result.error.message.includes("Email not confirmed")){
+                    // 계정 인증이 완료 되지 않았습니다. 메시지 출력 부분
                     await window.$app_.try({
                         action: () => Promise.reject(new Error()),
                         errorMsg: window.$i18n.global.t('StorageBaseSupabase.emailNotConfirmed')
@@ -116,15 +116,17 @@ export default class StorageBaseSupabase {
                         error: true
                     };
                 } else {
-                    const users = await me.list('users');
+                    const users = await this.list('users');
                     if (users && users.length > 0) {
                         const checkedId = users.some((user) => user.email == userInfo.email);
                         if (checkedId) {
+                            // 비밀번호가 틀렸습니다 메시지 출력 부분
                             await window.$app_.try({
                                 action: () => Promise.reject(new Error()),
                                 errorMsg: window.$i18n.global.t('StorageBaseSupabase.wrongPassword')
                             });
                         } else {
+                            // 아이디가 틀렸습니다 메시지 출력 부분
                             await window.$app_.try({
                                 action: () => Promise.reject(new Error()),
                                 errorMsg: window.$i18n.global.t('StorageBaseSupabase.wrongId')
@@ -138,6 +140,7 @@ export default class StorageBaseSupabase {
                     }
                 }
             } else {
+                // 가입된 이메일이 아닐때 메시지 출력부분
                 await window.$app_.try({
                     action: () => Promise.reject(new Error()),
                     errorMsg: window.$i18n.global.t('StorageBaseSupabase.notRegisteredEmail')
@@ -179,7 +182,7 @@ export default class StorageBaseSupabase {
                 existUser.tenants = tenants;
                 const isOwner = await this.checkTenantOwner(window.$tenantName);
                 const role = isOwner ? 'superAdmin' : 'user';
-                const isAdmin = existTenant ? true : false;
+                const isAdmin = isOwner ? true : false;
                 await this.putObject('users', {
                     id: existUser.id,
                     username: userInfo.username,
@@ -263,7 +266,6 @@ export default class StorageBaseSupabase {
     }
 
     async getUserInfo() {
-        var me = this;
         try {
             if (await this.isConnection()) {
                 const userData = await window.$supabase.auth.getUser();

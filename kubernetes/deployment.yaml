@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: ghcr.io/uengine-oss/process-gpt:a8abc40
+        image: ghcr.io/uengine-oss/process-gpt:cbce8d2
         ports:
         - containerPort: 8080
         env:
@@ -32,7 +32,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: my-secrets
-              key: ANON_KEY
+              key: SUPABASE_KEY
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -50,7 +50,7 @@ spec:
     spec:
       containers:
       - name: execution
-        image: ghcr.io/uengine-oss/process-gpt-execution:4e22fed
+        image: ghcr.io/uengine-oss/process-gpt-execution:e5cf7cc
         ports:
         - containerPort: 8000
         env:
@@ -74,6 +74,31 @@ spec:
             secretKeyRef:
               name: my-secrets
               key: JWT_SECRET
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: DB_PASSWORD
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: DB_PORT
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -131,3 +156,13 @@ spec:
             secretKeyRef:
               name: openai-secret
               key: OPENAI_API_KEY
+        - name: SUPABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: my-config
+              key: SUPABASE_URL
+        - name: SUPABASE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: SERVICE_ROLE_KEY

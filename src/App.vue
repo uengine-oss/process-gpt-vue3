@@ -44,8 +44,9 @@
 </template>
 
 <script>
-import { createClient } from '@supabase/supabase-js';
 import { RouterView } from 'vue-router';
+
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     components: {
@@ -59,8 +60,10 @@ export default {
         snackbarMessageDetail: null,
         snackbar: false,
         snackbarColor: null,
-        storage: null,
         loadScreen: false,
+        notificationsWatched: false,
+        currentChatRoomId: null,
+        notificationChannel: null,
     }),
     async created() {
         window.$app_ = this;
@@ -68,7 +71,99 @@ export default {
             this.loadScreen = true;
         });
     },
+    async mounted() {
+        if (window.$mode == 'ProcessGPT') {
+            const backend = BackendFactory.createBackend();
+            this.userInfo = await backend.getUserInfo();
+
+            this.watchNotifications();
+
+            this.EventBus.on('chat-room-selected', (chatRoomId) => {
+                this.currentChatRoomId = chatRoomId;
+            });
+
+            this.EventBus.on('chat-room-unselected', () => {
+                this.currentChatRoomId = null;
+            });
+            
+            // 페이지 로드 시 브라우저 알림 권한 요청
+            this.requestNotificationPermission();
+        }
+    },
     methods: {
+        // 알림 권한 요청 메서드
+        requestNotificationPermission() {
+            // 브라우저가 알림을 지원하는지 확인
+            if (!('Notification' in window)) {
+                console.log('이 브라우저는 알림을 지원하지 않습니다.');
+                return;
+            }
+
+            // 이미 권한이 결정되지 않은 경우에만 요청
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                // 브라우저 내장 알림 허용 UI가 표시됨
+                Notification.requestPermission();
+            }
+        },
+        async watchNotifications() {
+            var me = this
+            if (this.notificationsWatched) return;
+            
+            try {
+                // 고유한 채널 ID 생성
+                const channelId = `notifications_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+                
+                // 직접 Supabase 채널 구독
+                this.notificationChannel = window.$supabase
+                    .channel(channelId)
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: '*',
+                            schema: 'public',
+                            table: 'notifications'
+                        },
+                        (payload) => {
+                            if (payload && payload.new && payload.eventType === "INSERT") {
+                                const notification = payload.new;
+                                
+                                if (notification.type === 'chat' && notification.user_id === me.userInfo.email) {
+                                    if (!me.currentChatRoomId || (me.currentChatRoomId && !notification.url.includes(me.currentChatRoomId))) {
+                                        if (Notification.permission === 'granted') {
+                                            const senderName = notification.from_user_id || '알 수 없는 사용자';
+                                            const messageContent = notification.title || '새 메시지';
+                                            const chatRoomName = notification.description || '채팅방';
+                                            
+                                            // 알림 내용 구성
+                                            const notificationTitle = `${chatRoomName}`;
+                                            const notificationBody = `${senderName}\n${messageContent}`;
+                                            
+                                            // 알림 생성 및 표시
+                                            new Notification(notificationTitle, {
+                                                body: notificationBody,
+                                                icon: '/process-gpt-favicon.png',
+                                                badge: '/process-gpt-favicon.png',
+                                                tag: `chat-${notification.id || Date.now()}`,
+                                                // requireInteraction: true,
+                                                data: { url: notification.url }
+                                            }).onclick = function() {
+                                                window.focus();
+                                                window.location.href = notification.url
+                                            };
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    )
+                    .subscribe();
+                
+                this.notificationsWatched = true;
+            } catch (error) {
+                console.error('알림 감시 설정 실패:', error);
+                this.notificationsWatched = false;
+            }
+        },
         async try(options, parameters, options_) {
             if (options && !options.action) {
                 options = {
@@ -117,6 +212,14 @@ export default {
                 console.log(e);
             } finally {
                 window.$app_.loading = false;
+            }
+        }
+    },
+    beforeUnmount() {
+        if (window.$mode == 'ProcessGPT') {
+            // 구독 정리
+            if (this.notificationChannel) {
+                this.notificationChannel.unsubscribe();
             }
         }
     }
