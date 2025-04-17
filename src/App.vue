@@ -44,9 +44,9 @@
 </template>
 
 <script>
-import { createClient } from '@supabase/supabase-js';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { RouterView } from 'vue-router';
+
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     components: {
@@ -60,7 +60,6 @@ export default {
         snackbarMessageDetail: null,
         snackbar: false,
         snackbarColor: null,
-        storage: null,
         loadScreen: false,
         notificationsWatched: false,
         currentChatRoomId: null,
@@ -73,21 +72,23 @@ export default {
         });
     },
     async mounted() {
-        this.storage = StorageBaseFactory.getStorage();
-        this.userInfo = await this.storage.getUserInfo();
+        if (window.$mode == 'ProcessGPT') {
+            const backend = BackendFactory.createBackend();
+            this.userInfo = await backend.getUserInfo();
 
-        this.watchNotifications();
+            this.watchNotifications();
 
-        this.EventBus.on('chat-room-selected', (chatRoomId) => {
-            this.currentChatRoomId = chatRoomId;
-        });
+            this.EventBus.on('chat-room-selected', (chatRoomId) => {
+                this.currentChatRoomId = chatRoomId;
+            });
 
-        this.EventBus.on('chat-room-unselected', () => {
-            this.currentChatRoomId = null;
-        });
-        
-        // 페이지 로드 시 브라우저 알림 권한 요청
-        this.requestNotificationPermission();
+            this.EventBus.on('chat-room-unselected', () => {
+                this.currentChatRoomId = null;
+            });
+            
+            // 페이지 로드 시 브라우저 알림 권한 요청
+            this.requestNotificationPermission();
+        }
     },
     methods: {
         // 알림 권한 요청 메서드
@@ -215,9 +216,11 @@ export default {
         }
     },
     beforeUnmount() {
-        // 구독 정리
-        if (this.notificationChannel) {
-            this.notificationChannel.unsubscribe();
+        if (window.$mode == 'ProcessGPT') {
+            // 구독 정리
+            if (this.notificationChannel) {
+                this.notificationChannel.unsubscribe();
+            }
         }
     }
 };
