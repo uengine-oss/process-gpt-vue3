@@ -7,7 +7,7 @@
             item-title="username" 
             :item-value="itemValue" 
             :return-object="returnObject"
-            chips closable-chips multiple small-chips
+            chips multiple small-chips :closable-chips="!localReadonly"
             :readonly="localReadonly"
             :variant="localReadonly ? 'filled' : 'outlined'"
             :hide-details="hideDetails"
