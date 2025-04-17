@@ -3,6 +3,17 @@
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
+                    <v-row v-if="isViewMode"
+                        style="position: absolute;
+                        left: 24px;
+                        top:24px;
+                        font-size:11px;
+                        z-index: 1;
+                        background-color: white; opacity: 0.7;"
+                    >
+                        <v-icon>mdi-alert-circle</v-icon>
+                        <div class="ml-1">{{ $t('processDefinition.isReadOnlyMode') }}</div>
+                    </v-row>
                     <v-row class="ma-0 pa-0 button-container">
                         <!-- <v-tooltip :text="description">
                             <template v-slot:activator="{ props }">
@@ -83,7 +94,7 @@
                         v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
-            <div v-if="panel && !isViewMode " style="position: fixed; z-index: 999; right: 0; height: 100%">
+            <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
                 <v-card elevation="1">
                     <bpmn-property-panel
                         :element="element"

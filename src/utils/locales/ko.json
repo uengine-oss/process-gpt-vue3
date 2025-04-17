@@ -246,7 +246,8 @@
         "restoreProcess": "복구",
         "restore": "복구",
         "restoreProcessMessage": "프로세스를 복구하시겠습니까?",
-        "webFormUrl": "웹 폼 URL"
+        "webFormUrl": "웹 폼 URL",
+        "isReadOnlyMode": "읽기 모드입니다."
     },
     "ProcessVariable": {
         "name": "이름",
