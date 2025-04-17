@@ -83,7 +83,7 @@
                                                 </div>
 
                                                 <div v-else class="d-flex justify-end">
-                                                    <v-sheet class="bg-lightprimary rounded-md px-3 py-2 mb-1" style="position: relative;">
+                                                    <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-2 mb-1">
                                                         <div 
                                                             @mouseover="hoverIndex = index"
                                                             @mouseleave="hoverIndex = -1"
