@@ -93,9 +93,8 @@ export default class StorageBaseSupabase {
     }
 
     async signIn(userInfo) {
-        var me = this;
         try {
-            const existUser = await me.getObject('users', { match: { email: userInfo.email } });
+            const existUser = await this.getObject('users', { match: { email: userInfo.email } });
             if ((window.$isTenantServer && !window.$tenantName) ||
                 (existUser && existUser.tenants && existUser.tenants.includes(window.$tenantName))
             ) {
@@ -103,7 +102,7 @@ export default class StorageBaseSupabase {
                     email: userInfo.email,
                     password: userInfo.password
                 });
-        
+
                 if (!result.error) {
                     // 로그인 성공
                     return result.data;
@@ -116,7 +115,7 @@ export default class StorageBaseSupabase {
                         error: true
                     };
                 } else {
-                    const users = await me.list('users');
+                    const users = await this.list('users');
                     if (users && users.length > 0) {
                         const checkedId = users.some((user) => user.email == userInfo.email);
                         if (checkedId) {
@@ -263,7 +262,6 @@ export default class StorageBaseSupabase {
     }
 
     async getUserInfo() {
-        var me = this;
         try {
             if (await this.isConnection()) {
                 const userData = await window.$supabase.auth.getUser();
