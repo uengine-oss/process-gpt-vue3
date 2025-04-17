@@ -43,12 +43,21 @@ class ProcessGPTBackend implements Backend {
     async listDefinition(path: string) {
         try {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
-            let procDefs = await storage.list('proc_def', (path ? { like: `${path}%` } : undefined));
-            procDefs.map((item: any) => {
-                item.path = `${item.id}`
-                item.name = item.name || item.path 
-            });
-            return procDefs
+            if (path == 'form_def') {
+                let formDefs = await storage.list('form_def');
+                formDefs.map((item: any) => {
+                    item.path = `${item.id}`
+                    item.name = item.name || item.path 
+                });
+                return formDefs
+            } else {
+                let procDefs = await storage.list('proc_def', (path ? { like: `${path}%` } : undefined));
+                procDefs.map((item: any) => {
+                    item.path = `${item.id}`
+                    item.name = item.name || item.path 
+                });
+                return procDefs
+            }
         } catch (e) {
             
             //@ts-ignore
@@ -66,6 +75,8 @@ class ProcessGPTBackend implements Backend {
 
     async deleteDefinition(defId: string, options: any) {
         try {
+            if (defId.includes('.bpmn')) defId = defId.replace('.bpmn', '')
+
             if (options && options.type === "form") {
                 return await storage.delete(`form_def/${defId.replace(/\//g, "#")}`, { key: 'id' });
             } else {
@@ -114,6 +125,7 @@ class ProcessGPTBackend implements Backend {
 
     
     async restoreDefinition(defId: string, options: any): Promise<boolean | undefined> {
+        if (defId.includes('.bpmn')) defId = defId.replace('.bpmn', '')
         return false;
     }
     
@@ -355,7 +367,11 @@ class ProcessGPTBackend implements Backend {
             const inst = await this.getInstance(workitem.proc_inst_id);
 
             let parameters: any[] = [];
-            let variableForHtmlFormContext: any = {};
+            let outParameterContext: any = {
+                variable: {
+                    name: "",
+                }
+            };
             let activityInfo: any = null;
 
             if (defInfo && defInfo.definition) {
@@ -368,8 +384,8 @@ class ProcessGPTBackend implements Backend {
                             item.variable.defaultValue = inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || "";
                         })
                     }
-                    if (properties.variableForHtmlFormContext) {
-                        variableForHtmlFormContext = properties.variableForHtmlFormContext;
+                    if (properties.variableForHtmlFormContext && properties.variableForHtmlFormContext.name) {
+                        outParameterContext.variable.name = properties.variableForHtmlFormContext.name;
                     }
                 }
             }
@@ -398,7 +414,7 @@ class ProcessGPTBackend implements Backend {
                     name: workitem.activity_name,
                     tracingTag: workitem.activity_id || '',
                     parameters: parameters || [],
-                    variableForHtmlFormContext: variableForHtmlFormContext || {},
+                    outParameterContext: outParameterContext || {},
                     instruction: activityInfo && activityInfo.instruction ? activityInfo.instruction : "",
                     checkpoints: activityInfo && activityInfo.checkpoints ? activityInfo.checkpoints : [],
                     pythonCode: activityInfo && activityInfo.pythonCode ? activityInfo.pythonCode : "",
@@ -883,43 +899,40 @@ class ProcessGPTBackend implements Backend {
         return fields;
     }
 
-    async getVariableWithTaskId(instId: string, taskId: string, varName: string) {
+    async getVariableWithTaskId(instId: string, taskId: string, formDefId: string) {
         try {
-            let varData: any = {};
+            let varData: any = null;
             const instance: any = await this.getInstance(instId);
             if (instance && instance.variables_data && instance.variables_data.length > 0) {
                 instance.variables_data.forEach((item: any) => {
-                    varData[item.key] = item.value;
+                    if (item.key === formDefId) {
+                        varData = item.value;
+                    }
                 })
             }
 
-            var fields: any = [];
-            const formObject: any = await storage.getObject(`form_def/${varName}`, { key: 'id' });
-            if (formObject) {
-                fields = formObject.fields_json;
-            } else {
-                const html = await storage.getString(`form_def/${varName}`, { key: 'id', column: 'html' });
-                fields = this.extractFields(html);
-            }
-            if (instance && fields.length > 0) {
-                fields.forEach((field: any) => {
-                    let fieldValue: any = null;
-                    instance.variables_data.forEach((item: any) => {
-                        if (item.key === field.key || item.key === field.text || item.name === field.key || item.name === field.text) {
-                            fieldValue = item.value;
+            if (!varData) {
+                var fields: any = [];
+                const formObject: any = await storage.getObject(`form_def/${formDefId}`, { key: 'id' });
+                if (formObject) {
+                    fields = formObject.fields_json;
+                } else {
+                    const html = await storage.getString(`form_def/${formDefId}`, { key: 'id', column: 'html' });
+                    fields = this.extractFields(html);
+                }
+                if (fields && fields.length > 0) {
+                    fields.forEach((field: any) => {
+                        if (!varData[field.key]) {
+                            varData[field.key] = "";
                         }
-                    })
-                    if (field.type === 'boolean') {
-                        fieldValue = fieldValue === 'true' ? true : false;
-                    }
-                    if (!varData[field.key]) {
-                        varData[field.key] = fieldValue;
-                    }
-                });
+                    });
+                }
             }
+
             const result = {
                 valueMap: varData
             }
+
             return result;
         } catch (error) {
             //@ts-ignore
@@ -946,12 +959,36 @@ class ProcessGPTBackend implements Backend {
 
     async setVariableWithTaskId(instId: string, taskId: string, varName: string, varValue: any) {
         try {
+            if (!varName) {
+                console.log("varName is null");
+                return;
+            }
+
             const columnName: any = varName.toLowerCase().replace(/ /g, '_');
+            const instance: any = await this.getInstance(instId);
+            if (instance && instance.variables_data && instance.variables_data.length > 0) {
+                let existed = false;
+                instance.variables_data.forEach((item: any) => {
+                    if (item.key === columnName) {
+                        item.value = varValue.valueMap ? varValue.valueMap : varValue;
+                        existed = true;
+                    }
+                })
+                if (!existed) { 
+                    instance.variables_data.push({
+                        key: columnName,
+                        value: varValue.valueMap ? varValue.valueMap : varValue
+                    })
+                }
+            } else {
+                instance.variables_data = [{
+                    key: columnName,
+                    value: varValue.valueMap ? varValue.valueMap : varValue
+                }]
+            }
             const putObj: any = {
                 proc_inst_id: instId,
-                variables_data: {
-                    [columnName]: varValue.valueMap ? varValue.valueMap : varValue
-                }
+                variables_data: instance.variables_data
             }
             await storage.putObject('bpm_proc_inst', putObj);
         } catch (error) {

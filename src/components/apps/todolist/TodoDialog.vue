@@ -105,7 +105,7 @@ export default {
                 startDate: null,
                 endDate: null,
                 dueDate: null,
-                instId: this.instId,
+                instId: '',
                 defId: this.defId,
             };
         }

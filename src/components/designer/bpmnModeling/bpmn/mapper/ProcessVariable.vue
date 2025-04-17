@@ -10,6 +10,14 @@
                         id="hbnm" hide-details />
                 </v-col>
             </v-row>
+            <v-row v-if="isProcessGPT" class="align-center">
+                <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
+                    <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.key') }}</v-label>
+                </v-col>
+                <v-col cols="12" sm="9">
+                    <v-text-field v-model="processVariable.key" color="primary" variant="outlined" type="text" hide-details />
+                </v-col>
+            </v-row>
             <v-row class="align-center">
                 <v-col cols="12" sm="3" class="pb-sm-3 pb-0">
                     <v-label class=" font-weight-medium" for="hcpm">{{ $t('ProcessVariable.type') }}</v-label>
@@ -110,6 +118,7 @@ export default {
             types: ["Text", "Number", "Date", "Attachment", "Form"],
             forms: [],
             processVariable: {
+                key: "",
                 name: "",
                 type: "",
                 defaultValue: "",
@@ -161,6 +170,7 @@ export default {
             this.processVariable = {
                 name: "",
                 type: "",
+                key: "",
                 description: "",
                 datasource: {
                     type: "",
@@ -168,6 +178,11 @@ export default {
                 },
                 table: ""
             }
+        }
+    },
+    computed: {
+        isProcessGPT() {
+            return window.$mode == "ProcessGPT"
         }
     },
     watch: {
@@ -183,7 +198,11 @@ export default {
                         me.forms.push(form.name.replace(".form", ""))
                     }
                 })
-            }else {
+
+                if (me.isProcessGPT && me.processVariable.defaultValue && me.processVariable.defaultValue.formDefId) {
+                    me.processVariable.key = me.processVariable.defaultValue.formDefId
+                }
+            } else {
                 me.forms = []
             }
         }
@@ -200,6 +219,12 @@ export default {
                 }
             }
             this.processVariable = Object.assign({}, this.variable)
+        }
+
+        if (this.isProcessGPT) {
+            if (!this.processVariable['key']) {
+                this.processVariable['key'] = this.processVariable.name
+            }
         }
     }
 }

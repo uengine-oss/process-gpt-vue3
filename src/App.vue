@@ -48,6 +48,8 @@
 import BackendFactory from "@/components/api/BackendFactory";
 import { RouterView } from 'vue-router';
 
+import BackendFactory from '@/components/api/BackendFactory';
+
 export default {
     components: {
         RouterView
@@ -60,7 +62,6 @@ export default {
         snackbarMessageDetail: null,
         snackbar: false,
         snackbarColor: null,
-        storage: null,
         loadScreen: false,
         notificationsWatched: false,
         currentChatRoomId: null,
@@ -74,20 +75,20 @@ export default {
         });
     },
     async mounted() {
-        if(localStorage.getItem('email')) {
+        if (window.$mode == 'ProcessGPT' && localStorage.getItem('email')) {
             this.watchNotifications(localStorage.getItem('email'));
+
+            this.EventBus.on('chat-room-selected', (chatRoomId) => {
+                this.currentChatRoomId = chatRoomId;
+            });
+
+            this.EventBus.on('chat-room-unselected', () => {
+                this.currentChatRoomId = null;
+            });
+            
+            // 페이지 로드 시 브라우저 알림 권한 요청
+            this.requestNotificationPermission();
         }
-
-        this.EventBus.on('chat-room-selected', (chatRoomId) => {
-            this.currentChatRoomId = chatRoomId;
-        });
-
-        this.EventBus.on('chat-room-unselected', () => {
-            this.currentChatRoomId = null;
-        });
-        
-        // 페이지 로드 시 브라우저 알림 권한 요청
-        this.requestNotificationPermission();
     },
     methods: {
         async watchNotifications(email){
@@ -181,9 +182,11 @@ export default {
         }
     },
     beforeUnmount() {
-        // 구독 정리
-        if (this.notificationChannel) {
-            this.notificationChannel.unsubscribe();
+        if (window.$mode == 'ProcessGPT') {
+            // 구독 정리
+            if (this.notificationChannel) {
+                this.notificationChannel.unsubscribe();
+            }
         }
     }
 };
