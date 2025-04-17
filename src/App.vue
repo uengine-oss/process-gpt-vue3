@@ -45,10 +45,8 @@
 
 <script>
 // import { createClient } from '@supabase/supabase-js';
-import BackendFactory from "@/components/api/BackendFactory";
 import { RouterView } from 'vue-router';
-
-import BackendFactory from '@/components/api/BackendFactory';
+import BackendFactory from "@/components/api/BackendFactory";
 
 export default {
     components: {
