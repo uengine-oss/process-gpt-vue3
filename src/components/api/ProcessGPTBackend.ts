@@ -920,7 +920,7 @@ class ProcessGPTBackend implements Backend {
                     const html = await storage.getString(`form_def/${formDefId}`, { key: 'id', column: 'html' });
                     fields = this.extractFields(html);
                 }
-                if (fields.length > 0) {
+                if (fields && fields.length > 0) {
                     fields.forEach((field: any) => {
                         if (!varData[field.key]) {
                             varData[field.key] = "";
@@ -959,7 +959,6 @@ class ProcessGPTBackend implements Backend {
 
     async setVariableWithTaskId(instId: string, taskId: string, varName: string, varValue: any) {
         try {
-            console.log("setVariableWithTaskId", varName, varValue);
             if (!varName) {
                 console.log("varName is null");
                 return;

@@ -200,7 +200,8 @@ export default class StorageBaseSupabase {
                     options: {
                         data: {
                             name: userInfo.username
-                        }
+                        },
+                        emailRedirectTo: window.location.origin
                     }
                 });
 
