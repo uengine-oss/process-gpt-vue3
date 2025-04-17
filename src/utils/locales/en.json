@@ -246,7 +246,8 @@
         "restoreProcess": "Restore",
         "restore": "Restore",
         "restoreProcessMessage": "Do you want to restore the process?",
-        "webFormUrl": "Web Form URL"
+        "webFormUrl": "Web Form URL",
+        "isReadOnlyMode": "Read-only mode."
     },
     "ProcessVariable": {
         "name": "Name",
