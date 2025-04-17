@@ -251,6 +251,7 @@
     "ProcessVariable": {
         "name": "Name",
         "type": "Type",
+        "key": "Key",
         "defaultValue": "Form",
         "description": "Description",
         "dataSource": "DataSource",

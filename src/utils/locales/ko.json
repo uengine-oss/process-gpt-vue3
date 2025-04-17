@@ -251,6 +251,7 @@
     "ProcessVariable": {
         "name": "이름",
         "type": "타입",
+        "key": "키",
         "defaultValue": "폼",
         "description": "설명",
         "dataSource": "데이터소스",
