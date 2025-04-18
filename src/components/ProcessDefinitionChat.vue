@@ -456,7 +456,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    const path = window.$mode == 'ProcessGPT' ? me.fullPath : me.fullPath + ".bpmn";
+                    const path = me.fullPath + ".bpmn";
                     await backend.deleteDefinition(path);
                     me.deleteDialog = false;
                     // me.isDeleted = true;
@@ -471,7 +471,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    const path = window.$mode == 'ProcessGPT' ? me.fullPath : me.fullPath + ".bpmn";
+                    const path = me.fullPath + ".bpmn";
                     await backend.restoreDefinition(path);
                     me.restoreDialog = false;
                     me.EventBus.emit('definitions-updated');

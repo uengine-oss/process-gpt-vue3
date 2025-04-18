@@ -98,6 +98,9 @@ export default {
         },
         isMobile() {
             return this.windowWidth <= 700;
+        },
+        mode() {
+            return window.$mode;
         }
     },
     watch:  {
@@ -125,7 +128,7 @@ export default {
                 me.formDefId = me.workItem.worklist.tool.split(':')[1];
             }
             if(!me.formDefId) {
-                if ($mode == 'ProcessGPT') {
+                if (this.mode == 'ProcessGPT') {
                     me.formDefId = `${me.workItem.worklist.defId}_${me.workItem.activity.tracingTag}_form`
                 } else {
                     return;
@@ -232,7 +235,7 @@ export default {
             let workItem = { parameterValues: {} };
             let variables = {}
 
-            if(window.$mode=="ProcessGPT"){
+            if(this.mode == "ProcessGPT"){
                 workItem.parameterValues = me.formData;
                 if (this.newMessage && this.newMessage.length > 0) {
                     workItem['user_input_text'] = this.newMessage;
@@ -325,18 +328,16 @@ export default {
             this.$emit('fail', msg)
         },
         executeProcess() {
-            if($mode == 'ProcessGPT') {
-                if (!this.$refs.checkpoints.allChecked) {
-                    this.$refs.checkpoints.snackbar = true;
-                    return;
-                }
+            if (!this.$refs.checkpoints.allChecked) {
+                this.$refs.checkpoints.snackbar = true;
+                return;
             }
             let value = {};
             if (this.newMessage && this.newMessage.length > 0) {
                 value['user_input_text'] = this.newMessage;
             }
             
-            if(this.isDryRun && $mode == 'ProcessGPT' || this.simulate) {
+            if (this.simulate) {
                 const formColumn = this.formDefId.replace(/\s+/g, '_').toLowerCase();
                 value[formColumn] = this.formData;
                 this.$emit('executeProcess', value);
