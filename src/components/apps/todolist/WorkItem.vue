@@ -118,6 +118,7 @@
                                 ref="dynamicForm" 
                                 :formHTML="inFormValues[index]?.html" 
                                 v-model="inFormValues[index].formData" 
+                                :readonly="true"
                                 class="dynamic-form">
                             </DynamicForm>
                         </v-window-item>     
