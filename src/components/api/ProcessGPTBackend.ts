@@ -1039,21 +1039,30 @@ class ProcessGPTBackend implements Backend {
             if (window.$jms) return;
 
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            let answer = '';
 
-            if (inputData.parameterValues && inputData.parameterValues["user_input_text"]) {
+            if (inputData["user_input_text"] && inputData["user_input_text"] != '') {
+                answer = inputData["user_input_text"];
                 const newMessage = {
                     "name": localStorage.getItem('userName'),
                     "role": "user",
                     "email": localStorage.getItem('email'),
                     "image": "",
-                    "content": inputData.parameterValues["user_input_text"],
+                    "content": inputData["user_input_text"],
                     "timeStamp": new Date().toISOString()
                 }
                 me.updateInstanceChat(workItem.proc_inst_id, newMessage);
             }
 
+            const formId = workItem.tool.replace('formHandler:', '');
+            let formValues = {};
+            if (formId && inputData.parameterValues) {
+                formValues[formId] = inputData.parameterValues;
+            }
+
             const input = {
-                answer: inputData,
+                answer: answer,
+                form_values: formValues,
                 process_instance_id: workItem.proc_inst_id,
                 process_definition_id: workItem.proc_def_id,
                 activity_id: workItem.activity_id,

@@ -55,11 +55,11 @@ export default {
             }
         },
         isCompleted() {
-            if (this.instanceId) {
-                return true;
-            } else {
+            // if (this.instanceId) {
+            //     return true;
+            // } else {
                 return false;
-            }
+            // }
         },
         isMobile() {
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -89,25 +89,28 @@ export default {
                 resolutionRule: 'External Customer'
             }]
 
+            let formValues = {};
+            if (me.formId) {
+                formValues[me.formId] = me.formData;
+            }
+
             let input = {
                 process_definition_id: me.processDefinitionId,
-                process_instance_id: 'new',
+                process_instance_id: me.instanceId ? me.instanceId : 'new',
                 activity_id: me.activityId,
                 role_mappings: roleMappings,
-                answer: {}
+                answer: "",
+                form_values: formValues
             };
-
-            input.answer[me.formId] = me.formData;
 
             backend.start(input).then((result) => {
                 me.isSubmitting = false;
-                alert('제출되었습니다.');
             })
             .catch(error => {
                 console.log(error);
             });
-
             me.isSubmitting = true;
+            alert('제출되었습니다.');
         }
     }
 }

@@ -236,6 +236,7 @@ export default {
             let variables = {}
 
             if(this.mode == "ProcessGPT"){
+
                 workItem.parameterValues = me.formData;
                 if (this.newMessage && this.newMessage.length > 0) {
                     workItem['user_input_text'] = this.newMessage;
@@ -337,7 +338,7 @@ export default {
                 value['user_input_text'] = this.newMessage;
             }
             
-            if (this.simulate) {
+            if (this.isDryRun && this.mode == 'ProcessGPT' || this.simulate) {
                 const formColumn = this.formDefId.replace(/\s+/g, '_').toLowerCase();
                 value[formColumn] = this.formData;
                 this.$emit('executeProcess', value);

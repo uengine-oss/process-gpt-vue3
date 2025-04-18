@@ -40,6 +40,7 @@ export default {
             return this.checkpoints.filter((checkpoint) => checkpoint.checked).length;
         },
         allChecked() {
+            if (!this.checkpoints) return true;
             return this.checkpoints.every(checkpoint => checkpoint.checked);
         },
         readOnly() {
