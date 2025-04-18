@@ -497,6 +497,29 @@ class UEngineBackend implements Backend {
         return mappedResult;
     }
 
+    async getAllWorkListByInstId(instId: number) {
+        const response = await axiosInstance.get(`/instance/${instId}/worklists`);
+
+        if (!response.data) return null;
+        let mappedResult = response.data.map((task: any) => ({
+            defId: task.defId,
+            endpoint: task.endpoint,
+            instId: task.instId,
+            rootInstId: task.rootInstId,
+            taskId: task.taskId,
+            startDate: task.startDate,
+            dueDate: task.dueDate,
+            status: task.status,
+            title: task.title,
+            tool: task.tool,
+            tracingTag: task.trcTag,
+            description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            task: task
+        }));
+
+        return mappedResult;
+    }
+
     // get Completed WorkList API
     async getCompletedList(options?: any) {
         let basePath = '/worklist/search/findCompleted';

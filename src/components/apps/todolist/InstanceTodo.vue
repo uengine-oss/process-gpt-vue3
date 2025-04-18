@@ -112,13 +112,14 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
+                    // let worklist = await backend.getAllWorkListByInstId(me.id)
                     let worklist = await backend.getWorkList({ instId: me.id })
                     if(!worklist) worklist = []
                     worklist.forEach((item) => {
                         if (item.instId != me.id) return
-                        if (item.status == 'TODO' || item.status == 'NEW' || item.status == 'DRAFT') {
+                        if (item.status == 'TODO' || item.status == 'NEW' || item.status == 'DRAFT' || item.status == 'Ready' ) {
                             me.todolist.find(x => x.id == 'TODO').tasks.push(item);
-                        } else if (item.status == 'IN_PROGRESS') {
+                        } else if (item.status == 'IN_PROGRESS' || item.status == 'Running') {
                             me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(item);
                         } else if (item.status == 'PENDING') {
                             me.todolist.find(x => x.id == 'PENDING').tasks.push(item);
