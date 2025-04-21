@@ -105,8 +105,8 @@ export default {
                 startDate: null,
                 endDate: null,
                 dueDate: null,
-                instId: '',
-                defId: this.defId,
+                instId: this.instId || '',
+                defId: this.defId || '',
             };
         }
     },
