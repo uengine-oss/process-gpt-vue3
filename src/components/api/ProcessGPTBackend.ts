@@ -1033,6 +1033,10 @@ class ProcessGPTBackend implements Backend {
         return this.getWorkList(completedOptions);
     }
 
+    async getAllWorkListByInstId(instId: number) {
+        return this.getWorkListByInstId(instId);
+    }
+
     async putWorkItemComplete(taskId: string, inputData: any) {
         try {
             var me = this;
@@ -1882,6 +1886,35 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async createThreadId() {
+        try {
+            const response = await axios.post('/execution/create-thread-id');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getThreadId() {
+        try {
+            const response = await axios.post('/execution/get-thread-id');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async sendMessageWithThreadId(threadId: string, message: string) {
+        try {
+            const response = await axios.post('/execution/send-message', { threadId, message });
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+
 }
 
 export default ProcessGPTBackend;
