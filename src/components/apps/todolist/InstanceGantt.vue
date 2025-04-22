@@ -124,7 +124,7 @@ export default {
         
         const handleTaskAdded = async (newTask) => {
             try {
-                await backend.putWorklist(newTask.taskId, {
+                await backend.putWorklist(newTask.id, {
                     title: newTask.text,
                     startDate: newTask.startDate,
                     dueDate: newTask.endDate,
@@ -179,8 +179,6 @@ export default {
             handleTaskUpdate,
             handleTaskAdded,
             handleTaskClicked
-            
-            
         };
     }
 };
