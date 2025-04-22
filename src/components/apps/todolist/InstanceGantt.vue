@@ -50,6 +50,9 @@ export default {
         const router = useRouter();
         function formatGanttDate(date) {
             if(!date) return null;
+            if (typeof date === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(date)) {
+                return date;
+            }
             const d = new Date(date)
             const day = String(d.getDate()).padStart(2, '0')
             const month = String(d.getMonth() + 1).padStart(2, '0')
@@ -138,12 +141,16 @@ export default {
                     adhoc: newTask.adhoc || false
                 });
 
+                
                 // workItems 배열에만 추가 (Gantt는 이미 추가되어 있음)
                 const ganttTask = {
                     id: newTask.id,
                     text: newTask.text,
-                    start_date: formatGanttDate(newTask.startDate),
-                    duration: parseInt(newTask.duration),
+                    startDate: formatGanttDate(newTask.startDate),
+                    dueDate: formatGanttDate(newTask.endDate),
+                    // duration: parseInt(newTask.duration),
+                    activity_id: "",
+                    reference_ids: [],
                     progress: newTask.progress || 0,
                     parent: newTask.parent || null,
                     adhoc: newTask.adhoc || false,

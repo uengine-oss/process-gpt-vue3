@@ -237,42 +237,87 @@
                     return false;
                 }
 
-                // 새로운 작업인 경우에만 task-added 이벤트 발생
+                // 새로운 작업인 경우
                 if (is_new) {
                     const taskId = uuid();
-                    task.id = taskId; // 새로운 ID 할당
-                    
-                    emit('task-added', {
+                    const newTask = {
                         id: taskId,
-                        taskId: taskId,
                         text: task.text,
-                        startDate: formatDateForBackend(task.start_date),
-                        endDate: formatDateForBackend(task.end_date),
-                        duration: task.duration,
-                        progress: task.progress || 0,
-                        parent: task.parent || null,
+                        start_date: task.start_date,
+                        end_date: task.end_date,
+                        duration: task.duration || 1,
+                        progress: 0,
+                        parent: task.parent || 0,
                         assignees: task.assignees || [],
                         status: 'TODO',
-                        adhoc: true
-                    });
+                        adhoc: true,
+                        type: "task"  // 필수 속성
+                    };
+
+                    try {
+                        // 새 작업 추가
+                        gantt.addTask(newTask);
+                        
+                        // 부모 컴포넌트에 이벤트 발생
+                        emit('task-added', {
+                            id: taskId,
+                            text: task.text,
+                            startDate: formatDateForBackend(task.start_date),
+                            endDate: formatDateForBackend(task.end_date),
+                            duration: task.duration || 1,
+                            progress: 0,
+                            parent: task.parent || 0,
+                            assignees: task.assignees || [],
+                            status: 'TODO',
+                            adhoc: true
+                        });
+
+                        // 라이트박스 수동으로 닫기
+                        gantt.hideLightbox();
+                        
+                        // 차트 다시 그리기
+                        gantt.render();
+                        
+                        return false; // 기본 저장 동작 방지
+                    } catch (error) {
+                        console.error('작업 추가 중 오류 발생:', error);
+                        gantt.message({
+                            type: "error",
+                            text: "작업 추가 중 오류가 발생했습니다"
+                        });
+                        return false;
+                    }
                 }
 
                 return true;
             });
 
             // 작업 추가 전 이벤트
-            gantt.attachEvent("onBeforeTaskAdd", (id, item) => {
-                return true; // 기본 작업 추가 허용
+            gantt.attachEvent("onBeforeTaskAdd", (id, task) => {
+                if (!task.id || !task.text || !task.type) {
+                    return false;
+                }
+                return true;
             });
 
-            // 라이트박스 취소 시 임시 작업 삭제
-            gantt.attachEvent("onLightboxCancel", (id) => {
-                if (gantt.isTaskExists(id)) {
-                    const task = gantt.getTask(id);
-                    if (!task.text || task.text === "새 작업") {
-                        gantt.deleteTask(id);
-                    }
+            // 작업 추가 후 이벤트
+            gantt.attachEvent("onAfterTaskAdd", (id, task) => {
+                return true;
+            });
+
+            // 라이트박스가 열릴 때 이벤트
+            gantt.attachEvent("onLightbox", (taskId) => {
+                const task = gantt.getTask(taskId);
+                if (!task.type) {
+                    task.type = "task";
                 }
+                return true;
+            });
+
+            // 라이트박스가 닫힐 때 이벤트
+            gantt.attachEvent("onAfterLightbox", () => {
+                gantt.render();
+                return true;
             });
 
             gantt.attachEvent("onTaskClick", (id, e) => {
@@ -330,6 +375,9 @@
 
         function formatGanttDate(date) {
             if(!date) return null;
+            if (typeof date === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(date)) {
+                return date;
+            }
             const d = new Date(date)
             const day = String(d.getDate()).padStart(2, '0')
             const month = String(d.getMonth() + 1).padStart(2, '0')
@@ -379,9 +427,9 @@
                 text: task.text,
                 start_date: formatGanttDate(task.startDate),
                 end_date: formatGanttDate(task.dueDate),
-                    duration: task.duration || 5,
-                    progress: task.progress || 0,
-                    parent: task.parent || null,
+                duration: task.duration || 5,
+                progress: task.progress || 0,
+                parent: task.parent || null,
                 status: task.status,
                 assignees: task.assignees,
                 activity_id: task.activity_id,
