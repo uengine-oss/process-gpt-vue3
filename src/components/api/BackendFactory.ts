@@ -5,7 +5,7 @@ import PalModeBackend from './PalModeBackend';
 class BackendFactory extends Window {
     static createBackend() {
         try { 
-            console.log((window as any).$mode);
+            // console.log((window as any).$mode);
             if((window as any).$pal == true) {
                 return new PalModeBackend();
             }

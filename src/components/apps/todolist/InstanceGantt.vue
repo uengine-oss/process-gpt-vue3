@@ -19,12 +19,18 @@
             <g-gantt-row v-for="(item, index) in workItems" :key="index" :bars="[item]" />
         </g-gantt-chart> -->
 
-        <Gantt :tasks="workItems" :users="users" @task-updated="handleTaskUpdate" @task-added="handleTaskAdded"/>
+        <Gantt 
+        :tasks="workItems" 
+        :users="users" 
+        @task-updated="handleTaskUpdate" 
+        @task-added="handleTaskAdded"
+        @task-clicked="handleTaskClicked"/>
     </div>
 </template>
 
 <script>
 import { ref, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 // import { format } from 'date-fns';
 import BackendFactory from '@/components/api/BackendFactory';
 import Gantt from '@/components/Gantt.vue';
@@ -41,6 +47,7 @@ export default {
         const users = ref([]);
         const backend = BackendFactory.createBackend();
         const isLoading = ref(true);
+        const router = useRouter();
         function formatGanttDate(date) {
             if(!date) return null;
             const d = new Date(date)
@@ -111,55 +118,51 @@ export default {
                 await init() // 또는 다른 에러 처리 방법
             }
         }
-        const uuid = () => {
-            function s4() {
-                return Math.floor((1 + Math.random()) * 0x10000)
-                    .toString(16)
-                    .substring(1);
-            }
-
-            return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-        }
-
+        const handleTaskClicked = ({ id }) => {
+            router.push(`/todolist/${id}`);
+        };
+        
         const handleTaskAdded = async (newTask) => {
-            let taskId = uuid();
             try {
-                
-                await backend.putWorklist(taskId, {
+                // 이미 존재하는 작업인지 확인
+                if (workItems.value.some(item => item.id === newTask.id)) {
+                    return; // 이미 존재하는 작업이면 처리하지 않음
+                }
+
+                await backend.putWorklist(newTask.taskId, {
                     title: newTask.text,
                     startDate: newTask.startDate,
                     dueDate: newTask.endDate,
-                    status: 'TODO',
+                    status: newTask.status || 'TODO',
                     instId: props.instance.instanceId,
                     assignees: newTask.assignees,
                     progress: newTask.progress || 0,
                     parent: newTask.parent || null,
-                    duration: newTask.duration || 5,
+                    duration: parseInt(newTask.duration),
                     adhoc: newTask.adhoc || false
                 });
 
+                // 작업 목록에 추가
                 const ganttTask = {
-                    id: taskId,
+                    id: newTask.id,
                     text: newTask.text,
                     start_date: formatGanttDate(newTask.startDate),
-                    end_date: formatGanttDate(newTask.endDate),
-                    duration: newTask.duration,
+                    duration: parseInt(newTask.duration),
                     progress: newTask.progress || 0,
                     parent: newTask.parent || null,
                     adhoc: newTask.adhoc || false,
+                    status: newTask.status || 'TODO'
                 };
-                // workItems 배열에 추가
-                workItems.value.push(ganttTask);
 
-                // Gantt 차트에 작업 추가
-                gantt.addTask(ganttTask);
+                // workItems 배열에만 추가
+                workItems.value = [...workItems.value, ganttTask];
 
-                // 작업이 추가된 후 Gantt 차트 다시 그리기
-                gantt.render();
             } catch (error) {
                 console.error('Failed to add task:', error);
                 // 에러 발생 시 Gantt에서 작업 제거
-                gantt.deleteTask(taskId);
+                if (gantt.isTaskExists(newTask.id)) {
+                    gantt.deleteTask(newTask.id);
+                }
                 await init();
             }
         };
@@ -180,7 +183,8 @@ export default {
             users,
             isLoading,
             handleTaskUpdate,
-            handleTaskAdded
+            handleTaskAdded,
+            handleTaskClicked
             
             
         };

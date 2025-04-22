@@ -18,11 +18,12 @@
             required: true
         }
     },
-    emits: ['task-updated'], // 이벤트 정의
+    emits: ['task-updated', 'task-added'],
     setup(props, { emit }) {
-        const ganttContainer = ref(null)
+      const ganttContainer = ref(null)
+      const lastClickTime = ref(0)
 
-        onMounted(() => {
+      onMounted(() => {
             gantt.config.date_format = "%d-%m-%Y"
             
             // 한글 라벨 설정
@@ -63,6 +64,22 @@
                         weeks: "주",
                         months: "월",
                         years: "년",
+
+                        /* 버튼 텍스트 */
+                        save: "저장",
+                        cancel: "취소",
+                        delete_task: "삭제",
+                        confirm: "확인",
+
+                        /* 라이트박스 삭제 버튼 */
+                        buttons_left: ["dhx_delete_btn"],
+                        buttons_right: ["dhx_save_btn", "dhx_cancel_btn"],
+                        gantt_save_btn: "저장",
+                        gantt_delete_btn: "삭제",
+                        gantt_cancel_btn: "취소",
+
+                        /* 새 업무 기본값 */
+                        new_task_text: "새 업무"
                     }
                 }
             };
@@ -222,8 +239,12 @@
 
                 // 새로운 작업인 경우에만 task-added 이벤트 발생
                 if (is_new) {
+                    const taskId = uuid();
+                    task.id = taskId; // 새로운 ID 할당
+                    
                     emit('task-added', {
-                        adhoc: true,
+                        id: taskId,
+                        taskId: taskId,
                         text: task.text,
                         startDate: formatDateForBackend(task.start_date),
                         endDate: formatDateForBackend(task.end_date),
@@ -231,41 +252,17 @@
                         progress: task.progress || 0,
                         parent: task.parent || null,
                         assignees: task.assignees || [],
+                        status: 'TODO',
+                        adhoc: true
                     });
-                    gantt.addTask(task);
                 }
 
                 return true;
             });
 
-            // 업무 '+' 버튼 클릭 이벤트
-            // gantt.attachEvent("onTaskCreated", function(task) {});
-
-            // 관련 업무 '+' 버튼 클릭 이벤트 설정
-            // gantt.attachEvent("onTaskRowClick", function(id, e) {});
-            // 라이트박스 저장 이벤트
-            gantt.attachEvent("onLightboxSave", (id, task, is_new) => {
-                if (!task.text) {
-                    gantt.message({
-                        type: "error",
-                        text: "작업명을 입력해주세요"
-                    });
-                    return false;
-                }
-                
-                // 시작일과 종료일이 유효한지 확인
-                const startDate = new Date(task.start_date);
-                const endDate = new Date(task.end_date);
-                
-                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                    gantt.message({
-                        type: "error",
-                        text: "유효한 날짜를 입력해주세요"
-                    });
-                    return false;
-                }
-
-                return true;
+            // 작업 추가 전 이벤트
+            gantt.attachEvent("onBeforeTaskAdd", (id, item) => {
+                return true; // 기본 작업 추가 허용
             });
 
             // 라이트박스 취소 시 임시 작업 삭제
@@ -276,6 +273,17 @@
                         gantt.deleteTask(id);
                     }
                 }
+            });
+
+            gantt.attachEvent("onTaskClick", (id, e) => {
+                const currentTime = new Date().getTime();
+                if (currentTime - lastClickTime.value < 300) {
+                    // 더블 클릭은 무시 (라이트박스가 열림)
+                    return true;
+                }
+                lastClickTime.value = currentTime;
+                emit('task-clicked', { id });
+                return true;
             });
 
             // 드래그 이벤트 리스너 추가
@@ -355,6 +363,14 @@
             return links;
         };
 
+        const uuid = () => {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
         const loadGanttData = () => {
             gantt.clearAll()
 
@@ -363,9 +379,9 @@
                 text: task.text,
                 start_date: formatGanttDate(task.startDate),
                 end_date: formatGanttDate(task.dueDate),
-                duration: task.duration || 5,
-                progress: task.progress || 0,
-                parent: task.parent || null,
+                    duration: task.duration || 5,
+                    progress: task.progress || 0,
+                    parent: task.parent || null,
                 status: task.status,
                 assignees: task.assignees,
                 activity_id: task.activity_id,
@@ -384,12 +400,12 @@
         }, { deep: true })
 
 
-
-        return {
+  
+      return {
             ganttContainer,
             // getTaskStyle,
             // getProgressStyle
-        }
+      }
     }
   }
   </script>
@@ -569,5 +585,5 @@
 .gantt_task_content {
     color: #FFFFFF !important;
     font-weight: 500;
-}
-</style>
+  }
+  </style>

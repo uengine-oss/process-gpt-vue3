@@ -299,12 +299,20 @@ export default {
         },
         tabList() {
             if (this.mode == 'ProcessGPT') {
-                return [
+                if(this.bpmn){
+                    return [
                     { value: 'progress', label: this.$t('WorkItem.progress') },
                     // { value: 'history', label: this.$t('WorkItem.history') },
                     { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                     { value: 'agent', label: this.$t('WorkItem.agent') },
                 ]
+                } else {
+                    return [
+                    { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
+                    { value: 'agent', label: this.$t('WorkItem.agent') },
+                ]
+                }
+                
             } else {
                 const tabList = [
                     { value: 'progress', label: this.$t('WorkItem.progress') },
