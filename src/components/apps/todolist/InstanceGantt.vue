@@ -147,15 +147,18 @@ export default {
                     id: newTask.id,
                     text: newTask.text,
                     start_date: formatGanttDate(newTask.startDate),
-                    duration: parseInt(newTask.duration),
+                    duration: parseInt(newTask.duration) || 5,
                     progress: newTask.progress || 0,
                     parent: newTask.parent || null,
                     adhoc: newTask.adhoc || false,
                     status: newTask.status || 'TODO'
                 };
 
-                // workItems 배열에만 추가
-                workItems.value = [...workItems.value, ganttTask];
+                // workItems 배열에 추가
+                workItems.value.push(ganttTask);
+
+                // Gantt 데이터 다시 로드
+                loadGanttData();
 
             } catch (error) {
                 console.error('Failed to add task:', error);
@@ -165,6 +168,30 @@ export default {
                 }
                 await init();
             }
+        };
+
+        const loadGanttData = () => {
+            gantt.clearAll();
+
+            const formattedTasks = workItems.value.map(task => ({
+                id: task.id,
+                text: task.text,
+                start_date: formatGanttDate(task.startDate),
+                duration: parseInt(task.duration) || 3,
+                progress: task.progress || 0,
+                parent: task.parent || null,
+                status: task.status,
+                assignees: task.assignees,
+                activity_id: task.activity_id,
+                reference_ids: task.reference_ids
+            }));
+            
+            const formattedData = {
+                data: formattedTasks,
+                links: createLinksFromReferences(workItems.value)
+            };
+
+            gantt.parse(formattedData);
         };
 
         onMounted(init);
