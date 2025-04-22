@@ -65,7 +65,7 @@ export default {
             let result = await backend.getInstanceList();
             if (!result) result = [];
             this.instanceList = result.map((item) => {
-                const route = window.$mode == 'ProcessGPT' ? btoa(item.instId) : item.instId;
+                const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
                 const title = item.instName;
                 item = {
                     // icon: 'ph:cube',
@@ -83,7 +83,7 @@ export default {
             const roleList = await backend.getInstanceListByRole(roles);
             if(!roleList) return;
             this.instanceList = roleList.map((item) => {
-                const route = window.$mode == 'ProcessGPT' ? btoa(item.instId) : item.instId;
+                const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
                 const title = item.instName;
                 return {
                     title: title,
@@ -97,7 +97,7 @@ export default {
             if(!groups) return;
             const groupList = await backend.getInstanceListByGroup(groups);
             this.myGroupInstanceList = groupList.map((item) => {
-                const route = window.$mode == 'ProcessGPT' ? btoa(item.instId) : item.instId;
+                const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
                 const title = item.instName;
                 return {
                     title: title,

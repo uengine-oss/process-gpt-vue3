@@ -36,7 +36,7 @@ export default {
             return window.$mode;
         },
         id() {
-            return atob(this.$route.params.instId);
+            return decodeURIComponent(atob(this.$route.params.instId));
         },
         messages() {
             if (!this.workListByInstId) return [];

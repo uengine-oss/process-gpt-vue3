@@ -96,7 +96,7 @@ export default {
                     await me.uengine.start(command);
                     me.closeDialog();
                 },
-                successMsg: this.$t('successMsg.processExecutionCompleted')
+                successMsg: me.$t('successMsg.processExecutionCompleted')
             });
         },
         uuid() {

@@ -496,7 +496,8 @@ class ProcessGPTBackend implements Backend {
                     activity_id: workItem.tracingTag || workItem.title,
                     activity_name: workItem.title || workItem.title,
                     description: workItem.description || workItem.description,
-                    tool: workItem.tool || workItem.tool
+                    tool: workItem.tool || workItem.tool,
+                    adhoc: workItem.adhoc || workItem.adhoc
                 }
                 await storage.putObject('todolist', putObj);
 
@@ -1150,7 +1151,6 @@ class ProcessGPTBackend implements Backend {
             const worklist: any[] = list.map((item: any) => {
                 return {
                     defId: item.proc_def_id,
-                    endpoint: item.user_id,
                     instId: item.proc_inst_id,
                     rootInstId: item.proc_inst_id,
                     taskId: item.id,
@@ -1162,12 +1162,15 @@ class ProcessGPTBackend implements Backend {
                     tool: item.tool || '',
                     tracingTag: item.activity_id || '',
                     description: item.description || '',
+                    endpoint: item.user_id,
+                    assignees: item.assignees || [],
+                    adhoc: item.adhoc || false,
+                    reference_ids: item.reference_ids || [],
                     task: item
                 }
             })
             return worklist;
         } catch (e) {
-            
             //@ts-ignore
             throw new Error(error.message);
         }

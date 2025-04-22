@@ -337,7 +337,7 @@ export default {
                     }
                     me.EventBus.emit('instances-updated');
                 },
-                successMsg: this.$t('successMsg.processExecutionCompleted')
+                successMsg: me.$t('successMsg.processExecutionCompleted')
             })
         },
     },

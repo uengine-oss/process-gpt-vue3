@@ -288,7 +288,7 @@ export default {
                     this.chatRoomId = id;
                 }
             } else if (me.$route.params.instId) {
-                id = atob(me.$route.params.instId);
+                id = decodeURIComponent(atob(me.$route.params.instId));
                 this.chatRoomId = id;
             }
 
