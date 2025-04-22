@@ -124,17 +124,13 @@ export default {
         
         const handleTaskAdded = async (newTask) => {
             try {
-                // 이미 존재하는 작업인지 확인
-                if (workItems.value.some(item => item.id === newTask.id)) {
-                    return; // 이미 존재하는 작업이면 처리하지 않음
-                }
-
                 await backend.putWorklist(newTask.taskId, {
                     title: newTask.text,
                     startDate: newTask.startDate,
                     dueDate: newTask.endDate,
                     status: newTask.status || 'TODO',
                     instId: props.instance.instanceId,
+                    endpoint: newTask.endpoint,
                     assignees: newTask.assignees,
                     progress: newTask.progress || 0,
                     parent: newTask.parent || null,
@@ -142,23 +138,18 @@ export default {
                     adhoc: newTask.adhoc || false
                 });
 
-                // 작업 목록에 추가
+                // workItems 배열에만 추가 (Gantt는 이미 추가되어 있음)
                 const ganttTask = {
                     id: newTask.id,
                     text: newTask.text,
                     start_date: formatGanttDate(newTask.startDate),
-                    duration: parseInt(newTask.duration) || 5,
+                    duration: parseInt(newTask.duration),
                     progress: newTask.progress || 0,
                     parent: newTask.parent || null,
                     adhoc: newTask.adhoc || false,
                     status: newTask.status || 'TODO'
                 };
-
-                // workItems 배열에 추가
                 workItems.value.push(ganttTask);
-
-                // Gantt 데이터 다시 로드
-                loadGanttData();
 
             } catch (error) {
                 console.error('Failed to add task:', error);
@@ -168,30 +159,6 @@ export default {
                 }
                 await init();
             }
-        };
-
-        const loadGanttData = () => {
-            gantt.clearAll();
-
-            const formattedTasks = workItems.value.map(task => ({
-                id: task.id,
-                text: task.text,
-                start_date: formatGanttDate(task.startDate),
-                duration: parseInt(task.duration) || 3,
-                progress: task.progress || 0,
-                parent: task.parent || null,
-                status: task.status,
-                assignees: task.assignees,
-                activity_id: task.activity_id,
-                reference_ids: task.reference_ids
-            }));
-            
-            const formattedData = {
-                data: formattedTasks,
-                links: createLinksFromReferences(workItems.value)
-            };
-
-            gantt.parse(formattedData);
         };
 
         onMounted(init);
