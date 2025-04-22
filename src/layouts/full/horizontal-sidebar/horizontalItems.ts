@@ -41,8 +41,8 @@ const horizontalItems: menu[] = [
         to: '#',
         children: [
             {
-                title: "Dashboard 2",
-                to: "/dashboard2",
+                title: "Dashboard",
+                to: "/dashboard",
             },
         ]
     },

@@ -32,7 +32,7 @@ const gotoDashboard = async () => {
         let gotoUrl = ""
 
         if(window.$isTenantServer) gotoUrl = '/tenant/manage'
-        else gotoUrl = (window.$mode === 'ProcessGPT') ? '/definition-map' : '/dashboard2'
+        else gotoUrl = (window.$mode === 'ProcessGPT') ? '/definition-map' : '/dashboard'
 
         await router.push(gotoUrl)
     }
