@@ -5,6 +5,7 @@ const storage = StorageBaseFactory.getStorage();
 import type { Backend } from './Backend';
 
 import { formatDistanceToNowStrict } from 'date-fns';
+import messages from '@/utils/locales/messages';
 
 enum ErrorCode {
     TableNotFound = "42P01"
@@ -1080,12 +1081,13 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async updateInstanceChat(instanceId: string, newMessage: any) {
+    async updateInstanceChat(instanceId: string, newMessage: any, threadId: string = null) {
         try {
             const putObj = {
                 id: instanceId,
                 uuid: this.uuid(),
                 messages: newMessage,
+                thread_id: threadId || null
             }
             await storage.putObject('chats', putObj);
         } catch (e) {
@@ -1889,28 +1891,67 @@ class ProcessGPTBackend implements Backend {
 
     async createThreadId() {
         try {
-            const response = await axios.post('/execution/create-thread-id');
-            return response.data;
+            const serverUrl = "http://127.0.0.1:2024";
+            const threadRes = await axios.post(`${serverUrl}/threads`, JSON.stringify({}), {
+                headers: { "Content-Type": "application/json" },
+            });
+            const threadData = threadRes.data;
+            const currentThreadId = threadData.thread_id;
+            return currentThreadId;
         } catch (error) {
             throw new Error(error.message);
         }
     }
 
-    async getThreadId() {
+    async sendMessageWithThreadId(threadId: string, message: string, chatRoomId: string) {
         try {
-            const response = await axios.post('/execution/get-thread-id');
-            return response.data;
-        } catch (error) {
-            throw new Error(error.message);
-        }
-    }
+            const serverUrl = "http://127.0.0.1:2024";
+            const assistantId = "agent";
 
-    async sendMessageWithThreadId(threadId: string, message: string) {
-        try {
-            const response = await axios.post('/execution/send-message', { threadId, message });
-            return response.data;
+            const runRes = await axios.post(`${serverUrl}/threads/${threadId}/runs`, JSON.stringify({
+                    assistant_id: assistantId,
+                    input: {
+                        messages: [
+                            { role: "user", content: message }
+                        ]
+                    }
+                }),
+                {
+                    headers: { "Content-Type": "application/json" },
+                }
+            );
+            const runData = runRes.data;
+            const runId = runData.run_id;
+
+            let messages = [];
+            const streamRes = await axios.get(`${serverUrl}/threads/${threadId}/runs/${runId}/stream`, {
+                headers: { "Content-Type": "application/json" },
+            });
+            if (streamRes.status === 200) {
+                const result = streamRes.data;
+                const data = result.split('data: ').pop();
+                if (data) {
+                    const json = JSON.parse(data);
+                    if (json && json.messages) {
+                        messages = json.messages;
+                    }
+                }
+            }
+
+            const aiMessage = messages.filter((message: any) => message.type === "ai").pop();
+            const newMessage = {
+                "name": "system",
+                "role": "system",
+                "email": "system@uengine.org",
+                "image": "",
+                "content": aiMessage.content,
+                "timeStamp": new Date().toISOString()
+            }
+            await this.updateInstanceChat(chatRoomId, newMessage, threadId);
+
+            return newMessage;
         } catch (error) {
-            throw new Error(error.message);
+            console.error("Error:", error);
         }
     }
 

@@ -235,7 +235,11 @@ export default {
             }
             await this.storage.list(`chats`, options).then(function (messages) {
                 if (messages) {
-                    let allMessages = messages.map(message => message.messages);
+                    let allMessages = messages.map(message => {
+                        let newMessage = message.messages;
+                        newMessage.thread_id = message.thread_id || null;
+                        return newMessage;
+                    });
                     allMessages.sort((a, b) => {
                         return new Date(a.timeStamp) - new Date(b.timeStamp);
                     });

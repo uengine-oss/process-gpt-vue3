@@ -33,6 +33,7 @@ export default {
         isAgentMode: Boolean,
         html: String,
         formData: Object,
+        useThreadId: Boolean,
     },
     data: () => ({
         processDefinition: null,
@@ -48,6 +49,9 @@ export default {
         
         // temp
         isRunningId: null,
+
+        // mcp agent
+        threadId: '',
     }),
     computed: {
         chatName() {
@@ -287,6 +291,9 @@ export default {
                     id = workitem.worklist.instId;
                     this.chatRoomId = id;
                 }
+                if (me.useThreadId) {
+                    me.chatRoomId = taskId;
+                }
             } else if (me.$route.params.instId) {
                 id = atob(me.$route.params.instId);
                 this.chatRoomId = id;
@@ -302,9 +309,17 @@ export default {
                 if(this.isAgentMode){
                     me.processInstanceId = value.proc_inst_id
                 } else {
-                    await me.getChatList(id)
+                    await me.getChatList(me.chatRoomId)
                 }
-            } 
+            }
+
+            if (me.useThreadId) {
+                if (me.messages.length > 0) {
+                    me.threadId = me.messages[0].thread_id;
+                } else {
+                    me.threadId = await backend.createThreadId();
+                }
+            }
         },
         checkDisableChat() {
             if (this.isComplete || this.isAgentMode) {
@@ -322,13 +337,23 @@ export default {
         },
         async beforeSendMessage(newMessage) {
             if (newMessage) {
-                if (this.chatRoomId) {
-                    this.putMessage(this.createMessageObj(newMessage));
-                    await this.generator.beforeGenerate(newMessage, false);
+                if (this.useThreadId && this.threadId) {
+                    const message = this.createMessageObj(newMessage);
+                    this.putMessage(message);
+                    this.messages.push(message);
+                    const result = await backend.sendMessageWithThreadId(this.threadId, newMessage.text, this.chatRoomId);
+                    if (result) {
+                        this.messages.push(result);
+                    }
                 } else {
-                    await this.generator.beforeGenerate(newMessage, true);
+                    if (this.chatRoomId) {
+                        this.putMessage(this.createMessageObj(newMessage));
+                        await this.generator.beforeGenerate(newMessage, false);
+                    } else {
+                        await this.generator.beforeGenerate(newMessage, true);
+                    }
+                    this.sendMessage(newMessage);
                 }
-                this.sendMessage(newMessage);
             }
         },
         beforeSendEditedMessage(index) {
@@ -343,6 +368,7 @@ export default {
                 "messages": msg,
                 "id": this.chatRoomId,
                 "uuid": uuid,
+                "thread_id": this.threadId || null
             }
             this.putObject(`chats/${uuid}`, message);
         },
