@@ -5,6 +5,7 @@ const storage = StorageBaseFactory.getStorage();
 import type { Backend } from './Backend';
 
 import { formatDistanceToNowStrict } from 'date-fns';
+import messages from '@/utils/locales/messages';
 
 enum ErrorCode {
     TableNotFound = "42P01"
@@ -622,9 +623,10 @@ class ProcessGPTBackend implements Backend {
             }
 
             const putObj = {
-                uuid: procMapId || this.uuid(),
+                uuid: typeof procMapId === 'string' ? procMapId : this.uuid(),
                 key: 'proc_map',
                 value: updatedProcMap,
+                tenant_id: window.$tenantName
             }
             await storage.putObject('configuration', putObj);
         } catch (error) {
@@ -1081,12 +1083,13 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async updateInstanceChat(instanceId: string, newMessage: any) {
+    async updateInstanceChat(instanceId: string, newMessage: any, threadId: string = null) {
         try {
             const putObj = {
                 id: instanceId,
                 uuid: this.uuid(),
                 messages: newMessage,
+                thread_id: threadId || null
             }
             await storage.putObject('chats', putObj);
         } catch (e) {
@@ -1342,7 +1345,7 @@ class ProcessGPTBackend implements Backend {
     async watchNotifications(onNotification?: (notification: any) => void) {
         try {
             await storage.watchNotifications(`notifications`, (payload) => {
-                if (payload && payload.new && payload.eventType === "INSERT") {
+                if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
                     const notification = payload.new;
                     if (onNotification) {
                         onNotification(notification);
@@ -1714,14 +1717,31 @@ class ProcessGPTBackend implements Backend {
 
     async getOpenAIToken() {
         try {
-            // let option = {
-            //     match: {
-            //         key: 'OPENAI_API_KEY'
-            //     }
-            // };
-            // const res = await storage.getObject('configuration', option);
-            // return res?.value?.key || window.localStorage.getItem('OPENAI_API_KEY') || null;
-            return window.localStorage.getItem('OPENAI_API_KEY') || null;
+            let token = window.localStorage.getItem('OPENAI_API_KEY');
+            
+            if (!token) {
+                // if (confirm('openAI API Key 입력이 필요합니다.\n\ngpt-4o 모델을 사용가능한 API key 를 입력해야합니다.\n\n확인을 클릭하시면 API key 를 확인할 수 있는 openAI 공식 홈페이지가 열립니다.')) {
+                //     window.open('https://platform.openai.com/settings/profile?tab=api-keys', '_blank');
+                // }
+                
+                let apiKey = prompt('openAI API Key 를 입력하세요.\n\ngpt-4o 모델을 사용가능한 API key를 입력해야합니다.');
+                
+                if (apiKey === null) {
+                    // 사용자가 취소를 누른 경우
+                    return null;
+                }
+                
+                if (apiKey.trim() === '') {
+                    alert('API Key를 입력하지 않으면 특정 기능을 사용할 수 없습니다.');
+                    return null;
+                }
+                
+                // 입력된 API Key 저장
+                window.localStorage.setItem('OPENAI_API_KEY', apiKey);
+                token = apiKey;
+            }
+            
+            return token;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1804,6 +1824,7 @@ class ProcessGPTBackend implements Backend {
         try {
             const embedding = await this.getEmbedding(content);
             await storage.putObject('documents', {
+                id: this.uuid(),
                 content: content,
                 metadata: {
                     tenant_id: window.$tenantName,
@@ -1892,28 +1913,67 @@ class ProcessGPTBackend implements Backend {
 
     async createThreadId() {
         try {
-            const response = await axios.post('/execution/create-thread-id');
-            return response.data;
+            const serverUrl = "http://127.0.0.1:2024";
+            const threadRes = await axios.post(`${serverUrl}/threads`, JSON.stringify({}), {
+                headers: { "Content-Type": "application/json" },
+            });
+            const threadData = threadRes.data;
+            const currentThreadId = threadData.thread_id;
+            return currentThreadId;
         } catch (error) {
             throw new Error(error.message);
         }
     }
 
-    async getThreadId() {
+    async sendMessageWithThreadId(threadId: string, message: string, chatRoomId: string) {
         try {
-            const response = await axios.post('/execution/get-thread-id');
-            return response.data;
-        } catch (error) {
-            throw new Error(error.message);
-        }
-    }
+            const serverUrl = "http://127.0.0.1:2024";
+            const assistantId = "agent";
 
-    async sendMessageWithThreadId(threadId: string, message: string) {
-        try {
-            const response = await axios.post('/execution/send-message', { threadId, message });
-            return response.data;
+            const runRes = await axios.post(`${serverUrl}/threads/${threadId}/runs`, JSON.stringify({
+                    assistant_id: assistantId,
+                    input: {
+                        messages: [
+                            { role: "user", content: message }
+                        ]
+                    }
+                }),
+                {
+                    headers: { "Content-Type": "application/json" },
+                }
+            );
+            const runData = runRes.data;
+            const runId = runData.run_id;
+
+            let messages = [];
+            const streamRes = await axios.get(`${serverUrl}/threads/${threadId}/runs/${runId}/stream`, {
+                headers: { "Content-Type": "application/json" },
+            });
+            if (streamRes.status === 200) {
+                const result = streamRes.data;
+                const data = result.split('data: ').pop();
+                if (data) {
+                    const json = JSON.parse(data);
+                    if (json && json.messages) {
+                        messages = json.messages;
+                    }
+                }
+            }
+
+            const aiMessage = messages.filter((message: any) => message.type === "ai").pop();
+            const newMessage = {
+                "name": "system",
+                "role": "system",
+                "email": "system@uengine.org",
+                "image": "",
+                "content": aiMessage.content,
+                "timeStamp": new Date().toISOString()
+            }
+            await this.updateInstanceChat(chatRoomId, newMessage, threadId);
+
+            return newMessage;
         } catch (error) {
-            throw new Error(error.message);
+            console.error("Error:", error);
         }
     }
 

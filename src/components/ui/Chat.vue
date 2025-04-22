@@ -412,7 +412,6 @@
                     <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
-                                
                                 <v-tooltip :text="$t('chat.headset')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn @click="openChatMenu(); recordingModeChange()"
@@ -1462,7 +1461,8 @@ pre {
 }
 
 .chat-menu-background {
-    background-color: rgb(var(--v-theme-primary), 0.15) !important;
+    // background-color: rgb(var(--v-theme-primary), 0.15) !important;
+    background-color: aliceblue !important;
     border-radius: 10px;
     padding: 10px;
     display: flex;

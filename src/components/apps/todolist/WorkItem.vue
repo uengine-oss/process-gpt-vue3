@@ -34,12 +34,15 @@
             <v-col class="pa-0" :cols="isMobile ? 12 : 5">
                 <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
-                        <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>
+                        <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
+                            {{ tab.label }}
+                        </v-tab>
+                        <!-- <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">{{ $t('WorkItem.history') }}</v-tab>
                         <v-tab v-if="messages" value="agent">{{ $t('WorkItem.agent') }}</v-tab>
                         <v-tab v-if="inFormNameTabs && inFormNameTabs.length > 0" v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
                             {{ inFormNameTab }}
-                        </v-tab>
+                        </v-tab> -->
                     </v-tabs>
                     <v-window v-model="selectedTab">
                         <v-window-item value="progress">
@@ -97,6 +100,19 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
+                        <v-window-item value="chatbot" class="pa-2">
+                            <v-card elevation="10" class="pa-4">
+                                <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
+                                    <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
+                                        <component
+                                            :is="'work-history-' + mode"
+                                            :messages="[]"
+                                            :useThreadId="true"
+                                        />
+                                    </div>
+                                </perfect-scrollbar>
+                            </v-card>
+                        </v-window-item>
                         <v-window-item value="agent" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages" class="h-100" ref="scrollContainer" @scroll="handleScroll">
@@ -121,7 +137,7 @@
                                 :readonly="true"
                                 class="dynamic-form">
                             </DynamicForm>
-                        </v-window-item>     
+                        </v-window-item>
                     </v-window>
                 </v-alert>
             </v-col>
@@ -211,8 +227,12 @@ export default {
         // status variables
         updatedKey: 0,
         updatedDefKey: 0,
+
+        // WorkItem Tabs
         selectedTab: 'progress',
+        
         eventList: [],
+
         html: null,
         formData: null,
 
@@ -276,6 +296,30 @@ export default {
         },
         isMobile() {
             return this.windowWidth <= 700;
+        },
+        tabList() {
+            if (this.mode == 'ProcessGPT') {
+                return [
+                    { value: 'progress', label: this.$t('WorkItem.progress') },
+                    // { value: 'history', label: this.$t('WorkItem.history') },
+                    { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
+                    { value: 'agent', label: this.$t('WorkItem.agent') },
+                ]
+            } else {
+                const tabList = [
+                    { value: 'progress', label: this.$t('WorkItem.progress') },
+                    { value: 'history', label: this.$t('WorkItem.history') },
+                    { value: 'agent', label: this.$t('WorkItem.agent') },
+                ]
+
+                if(this.inFormNameTabs.length > 0) {
+                    this.inFormNameTabs.forEach((tab, index) => {
+                        tabList.push({ value: `form-${index}`, label: tab });
+                    });
+                }
+            }
+            
+            return tabList;
         },
     },
     watch: {

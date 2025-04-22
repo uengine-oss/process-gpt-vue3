@@ -32,7 +32,7 @@ const gotoDashboard = async () => {
         let gotoUrl = ""
 
         if(window.$isTenantServer) gotoUrl = '/tenant/manage'
-        else gotoUrl = (window.$mode === 'ProcessGPT') ? '/definition-map' : '/dashboard2'
+        else gotoUrl = (window.$mode === 'ProcessGPT') ? '/definition-map' : '/dashboard'
 
         await router.push(gotoUrl)
     }
@@ -56,9 +56,14 @@ const gotoDashboard = async () => {
                     <div class="mt-6 d-sm-flex gap-3 justify-center" data-aos="fade-up" data-aos-delay="800"
                         data-aos-duration="1000">
 
-                        <v-btn @click="gotoDashboard" color="primary" rounded="pill"
+                        <v-btn v-if="isLogin" @click="gotoDashboard" color="primary" rounded="pill"
                             class="mt-sm-0 mt-4 lp-btn-shadow m-btn-full btn-custom-lg mb-sm-0 mb-4 cp-start" size="large"
                         >{{ $t('mainPage.start') }}
+                        </v-btn>
+                        <v-btn v-else color="primary" rounded="pill" class="mt-sm-0 mt-4 lp-btn-shadow m-btn-full btn-custom-lg mb-sm-0 mb-4 cp-start" size="large"
+                            to="/auth/login"
+                        >
+                            <span class="text-white">{{ $t('mainPage.login') }}</span>
                         </v-btn>
                         <v-btn target="_blank" rounded="pill" variant="outlined" href="" color="primary" size="large"
                             class="m-btn-full btn-custom-lg"

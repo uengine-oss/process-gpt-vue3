@@ -271,8 +271,8 @@
         "import": "Import BPMN File",
         "addImage": "Add Image",
         "fileUpLoad": "File Up Load",
-        "isEnableProcessGPT": "Enable Process-GPT",
-        "isDisableProcessGPT": "Disable Process-GPT",
+        "isEnableProcessGPT": "Enable Process GPT",
+        "isDisableProcessGPT": "Disable Process GPT",
         "userReply": "Reply to {name}",
         "systemReply": "Reply to the system",
         "headset": "Speaking/Listening",
@@ -772,6 +772,7 @@
     "WorkItem": {
         "progress": "Progress",
         "history": "Work History",
+        "chatbot": "Chatbot",
         "agent": "Create Agent Draft",
         "toggleInputFieldSize": "Toggle Input Field Size"
     },

@@ -108,7 +108,7 @@ export default {
                     me.backend = BackendFactory.createBackend();
                     let lists = []
                     if (me.mode == 'ProcessGPT') {
-                        lists = await me.retrieveFolder('form_def')
+                        lists = await me.retrieveFolder()
                     } else {
                         lists = await me.retrieveFolder()
                     }                  
