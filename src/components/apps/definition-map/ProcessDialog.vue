@@ -224,6 +224,7 @@ export default {
                 if(this.addType === 'sub') {
                     this.closeDialog();
                 }
+                this.newProcess.name = '';
             }
         },
         updateProcess() {
