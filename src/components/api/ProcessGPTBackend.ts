@@ -1715,39 +1715,6 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getOpenAIToken() {
-        try {
-            let token = window.localStorage.getItem('OPENAI_API_KEY');
-            
-            if (!token) {
-                // if (confirm('openAI API Key 입력이 필요합니다.\n\ngpt-4o 모델을 사용가능한 API key 를 입력해야합니다.\n\n확인을 클릭하시면 API key 를 확인할 수 있는 openAI 공식 홈페이지가 열립니다.')) {
-                //     window.open('https://platform.openai.com/settings/profile?tab=api-keys', '_blank');
-                // }
-                
-                let apiKey = prompt('openAI API Key 를 입력하세요.\n\ngpt-4o 모델을 사용가능한 API key를 입력해야합니다.');
-                
-                if (apiKey === null) {
-                    // 사용자가 취소를 누른 경우
-                    return null;
-                }
-                
-                if (apiKey.trim() === '') {
-                    alert('API Key를 입력하지 않으면 특정 기능을 사용할 수 없습니다.');
-                    return null;
-                }
-                
-                // 입력된 API Key 저장
-                window.localStorage.setItem('OPENAI_API_KEY', apiKey);
-                token = apiKey;
-            }
-            
-            return token;
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
-
     async uploadImage(fileName: string, image: File) {
         try {
             return await storage.uploadImage(fileName, image);
@@ -1805,19 +1772,18 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getEmbedding(text: string) {
-        const token = await this.getOpenAIToken();
-        const response = await axios.post('https://api.openai.com/v1/embeddings', JSON.stringify({
-            input: text,
+    async getEmbedding(text) {
+        const response = await axios.post('/execution/langchain-chat/embeddings', JSON.stringify({
+            text: text,
             model: 'text-embedding-3-small',
+            vendor: 'openai'
         }), {
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
         });
         const data = response.data;
-        return data.data[0].embedding;
+        return data.embedding;
     }
 
     async updateVectorStore(content: string, type: string) {
