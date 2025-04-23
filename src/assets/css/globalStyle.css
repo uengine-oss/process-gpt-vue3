@@ -242,7 +242,7 @@ hr {
 .mainbox {
     position: relative;
     overflow: hidden;
-    height: calc(100vh - 155px);
+    height: calc(100vh - 143px);
 }
 
 .task-btn{

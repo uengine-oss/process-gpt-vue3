@@ -41,8 +41,8 @@ const isModelingTab = computed(() => {
             <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" /></div>
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
 
-            <v-main>
-                <div class="rtl-lyt  mb-3 hr-layout">
+            <v-main style="padding-top: 0px;">
+                <div class="rtl-lyt mb-3 hr-layout">
                 <v-container fluid class="page-wrapper bg-background px-sm-5 px-4  pt-12 rounded-xl">
                     <div class="">
                         <div :class="customizer.boxed ? 'maxWidth' : ''">
@@ -77,7 +77,7 @@ const isModelingTab = computed(() => {
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
 
             <v-main>
-                <div class=" mb-3 hr-layout">
+                <div class="hr-layout">
                 <v-container fluid class="page-wrapper bg-background px-sm-5 pt-12 px-4 rounded-xl">
                     <!-- 정의관련 maxWidth -->
                     <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize]">

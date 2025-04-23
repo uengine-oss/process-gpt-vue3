@@ -106,7 +106,8 @@
         "sortByCompleted": "Sort by Completed"
     },
     "runningInstance": {
-        "title": "Running Instance"
+        "title": "Running Instance",
+        "running": " Running..."
     },
     "admin": {
         "title": "Administrator Menu",

@@ -1,14 +1,3 @@
-<script setup lang="ts">
-import { useAuthStore } from '@/stores/auth';
-import { Icon } from '@iconify/vue';
-
-const authStore = useAuthStore();
-
-const name = localStorage.getItem("userName");
-const picture = localStorage.getItem("picture");
-const isAdmin = localStorage.getItem("isAdmin");
-</script>
-
 <template>
     <v-sheet rounded="md" color="lightprimary" class="pa-4  ExtraBox hide-menu">
         <div class="d-flex align-center justify-space-between">
@@ -18,14 +7,14 @@ const isAdmin = localStorage.getItem("isAdmin");
             <div>
                 <h6 class="text-h6 d-flex align-center font-weight-semibold">{{ name }}</h6>
                 <span class="text-subtitle-2 font-weight-medium text-grey100">
-                    {{ isAdmin == 'true' ? 'Admin' : '' }}
+                    {{ userRole }}
                 </span>
             </div>
             <div>
                 <v-tooltip :text="$t('ExtraBox.logOut')">
                     <template v-slot:activator="{ props }">
-                        <v-btn icon class="bg-lightprimary" flat  size="small" @click="authStore.logout()" v-bind="props">
-                            <Icons :icon="'logout-outline'" class="text-primary" stroke-width="3" />
+                        <v-btn icon class="bg-lightprimary" flat  size="small" @click="logout()" v-bind="props">
+                            <Icon icon="mdi-logout-variant" class="text-primary" width="20" height="20" />
                         </v-btn>
                     </template>
                 </v-tooltip>
@@ -33,6 +22,43 @@ const isAdmin = localStorage.getItem("isAdmin");
         </div>
     </v-sheet>
 </template>
+
+<script>
+import { defineComponent } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import { Icon } from '@iconify/vue';
+
+export default defineComponent({
+    name: 'ExtraBox',
+    components: {
+        Icon
+    },
+    data() {
+        return {
+            name: '',
+            picture: '',
+            isAdmin: false,
+            authStore: useAuthStore()
+        };
+    },
+    computed: {
+        userRole() {
+            return this.isAdmin ? 'Admin' : '';
+        }
+    },
+    created() {
+        this.name = localStorage.getItem("userName") || '';
+        this.picture = localStorage.getItem("picture") || '';
+        this.isAdmin = localStorage.getItem("isAdmin") === 'true';
+    },
+    methods: {
+        logout() {
+            this.authStore.logout();
+        }
+    }
+});
+</script>
+
 <style lang="scss">
 .ExtraBox {
     position: relative;
