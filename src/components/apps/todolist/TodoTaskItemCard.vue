@@ -144,7 +144,7 @@ export default {
             return dateString;
         },
         category() {
-            if (!this.task.instId) {
+            if (!this.task.instId || this.task.adhoc) {
                 return null
             } else {
                 return { name: 'BPM', color: 'primary' };

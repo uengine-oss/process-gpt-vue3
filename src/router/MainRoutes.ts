@@ -101,8 +101,8 @@ const MainRoutes = {
             props: { componentName: 'SubProcessDetail' }
         },
         {
-            name: 'dashboard 2',
-            path: '/dashboard2',
+            name: 'dashboard',
+            path: '/dashboard',
             component: () => import('@/views/dashboard/dashboard2.vue')
         },
         {

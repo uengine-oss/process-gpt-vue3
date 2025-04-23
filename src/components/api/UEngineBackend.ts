@@ -450,6 +450,7 @@ class UEngineBackend implements Backend {
         return result;
     }
     // WorkListRepository API
+    // 자신의 역할에 맞는 업무 모두 가져오기 
     async getWorkList() {
         const response = await axiosInstance.get(`/worklist/search/findToDo`);
 
@@ -473,6 +474,7 @@ class UEngineBackend implements Backend {
         return mappedResult;
     }
 
+    // 해당 인스턴스의 할당된 업무
     async getWorkListByInstId(instId: number) {
         const response = await axiosInstance.get(`/worklist/search/findWorkListByInstId`, { params: { instId: instId } });
 
@@ -484,6 +486,30 @@ class UEngineBackend implements Backend {
             instId: task.instId,
             rootInstId: task.rootInstId,
             taskId: parseInt(task._links.self.href.split('/').pop()),
+            startDate: task.startDate,
+            dueDate: task.dueDate,
+            status: task.status,
+            title: task.title,
+            tool: task.tool,
+            tracingTag: task.trcTag,
+            description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            task: task
+        }));
+
+        return mappedResult;
+    }
+
+    // 해당 인스턴스의 모든 업무 가져오기
+    async getAllWorkListByInstId(instId: number) {
+        const response = await axiosInstance.get(`/instance/${instId}/worklists`);
+
+        if (!response.data) return null;
+        let mappedResult = response.data.map((task: any) => ({
+            defId: task.defId,
+            endpoint: task.endpoint,
+            instId: task.instId,
+            rootInstId: task.rootInstId,
+            taskId: task.taskId,
             startDate: task.startDate,
             dueDate: task.dueDate,
             status: task.status,

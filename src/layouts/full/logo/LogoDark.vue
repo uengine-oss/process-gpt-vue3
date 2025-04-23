@@ -1,6 +1,6 @@
 <template>
     <div class="logo">
-        <RouterLink to="/dashboard2">
+        <RouterLink to="/dashboard">
             <img v-if="mode == 'ProcessGPT'" :src="logo" alt="home" 
               style="width:160px;"
             />

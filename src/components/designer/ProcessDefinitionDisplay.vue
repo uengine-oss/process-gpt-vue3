@@ -106,8 +106,12 @@ export default {
                 async action() {
                     me.loading = true
                     me.backend = BackendFactory.createBackend();
-                    let lists = await me.retrieveFolder()
-                  
+                    let lists = []
+                    if (me.mode == 'ProcessGPT') {
+                        lists = await me.retrieveFolder()
+                    } else {
+                        lists = await me.retrieveFolder()
+                    }                  
                     lists = lists.filter(item => !item.directory)
 
                     if(me.fileExtensions.length > 0 && me.mode !== 'ProcessGPT') {

@@ -48,10 +48,7 @@
                                             <div v-if="message.email == userInfo.email && message.role != 'system'">
                                                 <v-row class="ma-0 pa-0">
                                                     <v-spacer></v-spacer>
-                                                    <small class="text-medium-emphasis text-subtitle-2 mr-2" v-if="message.timeStamp">
-                                                        {{ formatTime(message.timeStamp) }}
-                                                    </small>
-
+                                                    
                                                     <v-sheet v-if="message.image" class="mb-1">
                                                         <img :src="message.image" class="rounded-md" alt="pro" width="250" />
                                                     </v-sheet>
@@ -85,48 +82,54 @@
                                                     </v-row>
                                                 </div>
 
-                                                <div v-else class="d-flex justify-end"
-                                                    @mouseover="hoverIndex = index"
-                                                    @mouseleave="hoverIndex = -1"
-                                                >
-                                                    <v-sheet class="bg-lightprimary rounded-md px-3 py-2 mb-1">
-                                                        <pre class="text-body-1"
-                                                            v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                                        <pre class="text-body-1"
-                                                            v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                                        <v-divider v-if="message.replyContent"></v-divider>
+                                                <div v-else class="d-flex justify-end">
+                                                    <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-2 mb-1">
+                                                        <div 
+                                                            @mouseover="hoverIndex = index"
+                                                            @mouseleave="hoverIndex = -1"
+                                                        >
+                                                            <pre class="text-body-1"
+                                                                v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                                            <pre class="text-body-1"
+                                                                v-if="message.replyContent">{{ message.replyContent }}</pre>
+                                                            <v-divider v-if="message.replyContent"></v-divider>
+    
+                                                            <pre v-if="message.content" class="text-body-1" v-html="linkify(message.content)"></pre>
 
-                                                        <pre v-if="message.content" class="text-body-1" v-html="linkify(message.content)"></pre>
-
-                                                        <pre v-if="message.jsonContent"
-                                                            class="text-body-1">{{ message.jsonContent }}</pre>
-                                                        <v-row class="ma-0 pa-0">
-                                                            <v-spacer></v-spacer>
-                                                            <v-btn v-if="hoverIndex === index && !disableChat"
-                                                                @click="editMessage(index)" icon variant="text" size="x-small"
-                                                                class="float-left edit-btn"
-                                                                style="background-color:white;"
-                                                            >
-                                                                <icons :icon="'pencil'" :size="20"  />
-                                                            </v-btn>
-
-                                                        <!-- <transition name="slide-fade"> -->
-                                                            <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
-                                                                :key="isRender"
-                                                            >
-                                                            <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
-                                                                <div @click="showGeneratedWorkList = !showGeneratedWorkList"
-                                                                    class="find-message"
-                                                                    :key="generatedWorkList"
-                                                                    :class="generatedWorkList.length > 0 ? 'find-message-on' : 'find-message-off'"
-                                                                >
-                                                                    <img src="@/assets/images/chat/chat-icon.png"
-                                                                        style="height:30px;"
-                                                                    />
-                                                                </div>
+                                                            <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp my-timestamp">
+                                                                {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
                                                             </div>
-                                                        <!-- </transition> -->
-                                                        </v-row>
+    
+                                                            <pre v-if="message.jsonContent"
+                                                                class="text-body-1">{{ message.jsonContent }}</pre>
+                                                            <v-row class="ma-0 pa-0">
+                                                                <v-spacer></v-spacer>
+                                                                <v-btn v-if="hoverIndex === index && !disableChat"
+                                                                    @click="editMessage(index)" icon variant="text" size="x-small"
+                                                                    class="float-left edit-btn action-btn"
+                                                                    style="background-color:white;"
+                                                                >
+                                                                    <icons :icon="'pencil'" :size="20"  />
+                                                                </v-btn>
+    
+                                                            <!-- <transition name="slide-fade"> -->
+                                                                <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
+                                                                    :key="isRender"
+                                                                >
+                                                                <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
+                                                                    <div @click="showGeneratedWorkList = !showGeneratedWorkList"
+                                                                        class="find-message"
+                                                                        :key="generatedWorkList"
+                                                                        :class="generatedWorkList.length > 0 ? 'find-message-on' : 'find-message-off'"
+                                                                    >
+                                                                        <img src="@/assets/images/chat/chat-icon.png"
+                                                                            style="height:30px;"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            <!-- </transition> -->
+                                                            </v-row>
+                                                        </div>
                                                     </v-sheet>
                                                 </div>
 
@@ -203,17 +206,16 @@
                                                 <v-row v-if="shouldDisplayUserInfo(message, index)"
                                                     class="ma-0 pa-0"
                                                 >
-                                                    <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
-                                                        <v-avatar style="margin-right:10px;">
+                                                    <v-row class="ma-0 pa-0 d-flex align-center mb-2">
+                                                        <v-avatar size="40" style="margin-right:10px;">
                                                             <img v-if="message.role == 'system'"
-                                                                src="@/assets/images/chat/chat-icon.png" height="48"
-                                                                width="48" />
+                                                                src="@/assets/images/chat/chat-icon.png" height="40"
+                                                                width="40" />
                                                             <v-img v-else :src="getProfile(message.email)" :alt="message.name"
-                                                                height="48" width="48" />
+                                                                height="40" width="40" />
                                                         </v-avatar>
-                                                        <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
-                                                            {{ message.role == 'system' ? 'System,' : message.name + ',' }}
-                                                            {{ formatTime(message.timeStamp) }}
+                                                        <div class="user-name">
+                                                            {{ message.role == 'system' ? 'System' : message.name }}
                                                         </div>
                                                     </v-row>
                                                 </v-row>
@@ -222,22 +224,20 @@
                                                     <DynamicForm ref="dynamicForm" :formHTML="message.htmlContent" v-model="message.jsonContent"></DynamicForm>
                                                 </div>
 
-                                                <div v-else class="w-100 pb-5">
+                                                <div v-else class="w-100 pb-3">
                                                     <v-sheet v-if="message.image" class="mb-1">
                                                         <img :src="message.image" class="rounded-md" alt="pro" width="250" />
                                                     </v-sheet>
 
-                                                    <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }" 
-                                                        :style="getUserMessageStyle(message)"
-                                                    >
+                                                    <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }" >
                                                         <template
                                                             v-if="message.role == 'system' && filteredMessages.length - 1 == index">
                                                             <div class="progress-border-span"
                                                                 :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5"
                                                                 :key="n"></div>
                                                         </template>
-                                                        <v-sheet v-if="message.content" class="rounded-md px-3 py-2"
-                                                            :style="getOtherUserMessageColor(message)"
+                                                        <v-sheet v-if="message.content" class="chat-message-bubble rounded-md px-3 py-2"
+                                                            :class="'other-message'"
                                                             @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
                                                             <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
                                                             <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
@@ -245,32 +245,29 @@
 
                                                             <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
                                                             <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
-                                                            <!-- <pre class="text-body-1">{{ message.content }}</pre> -->
 
-                                                            <!-- <p style="margin-top: 5px" v-if="shouldDisplayButtons(message, index)">
-                                                                <v-btn style="margin-right: 5px" size="small"
-                                                                    @click="startProcess(message)">y</v-btn>
-                                                                <v-btn size="small" @click="cancelProcess(message)">n</v-btn>
-                                                            </p> -->
-                                                            <v-row class="pa-0 ma-0">
-                                                                <v-spacer></v-spacer>
-                                                                <div v-if="isMobile || replyIndex === index" >
+                                                            <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp other-timestamp">
+                                                                {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
+                                                            </div>
+
+                                                            <v-row class="pa-0 ma-0 message-actions">
+                                                                <div v-if="isMobile || replyIndex === index" class="d-flex">
                                                                     <v-btn v-if="type != 'AssistantChats' && message.specific" 
                                                                         @click="viewWork(index)"
                                                                         variant="text" size="x-small" icon
-                                                                        style="background-color:white; margin-right:5px;"
+                                                                        class="action-btn"
                                                                     >
                                                                         <Icons :icon="'document'" :size="20" />
                                                                     </v-btn>
                                                                     <v-btn @click="beforeReply(message)"
                                                                         variant="text" size="x-small" icon
-                                                                        style="background-color:white; margin-right:5px;"
+                                                                        class="action-btn"
                                                                     >
                                                                         <Icons :icon="'reply'" :size="20" />
                                                                     </v-btn>
                                                                     <v-btn @click="viewJSON(index)"
                                                                         variant="text" size="x-small" icon
-                                                                        style="background-color:white;"
+                                                                        class="action-btn"
                                                                     >
                                                                         <Icons v-if="message.jsonContent && isviewJSONStatus"
                                                                             :icon="'arrow-up-2'" :size="20"
@@ -415,7 +412,6 @@
                     <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
-                                
                                 <v-tooltip :text="$t('chat.headset')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn @click="openChatMenu(); recordingModeChange()"
@@ -525,114 +521,114 @@
             </div>
             <v-divider />
 
-        <!-- <div v-if="showNewMessageNoti"
-            style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
-            <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
-                <div @click="clickToScroll">
-                    <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
-                </div>
-                <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
-                    <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
-                </div> -->
-            </div>
-            <div style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
-                <div class="message-info-box" v-if="isReply || (!isAtBottom && previewMessage)">
-                    <div class="message-info-content">
-                        <template v-if="isReply">
-                            <div class="message-info-header">
-                                <div>{{ replyUser.role == 'system' ? $t('chat.systemReply') : $t('chat.userReply', { name: replyUser.name }) }}</div>
-                                <v-icon @click="cancelReply()" size="small">mdi-close</v-icon>
-                            </div>
-                            <div class="message-info-text">{{ replyUser.content }}</div>
-                        </template>
-                        <template v-else>
-                            <div class="message-info-header">
-                                <div>{{ previewMessage.name }}</div>
-                                <v-icon @click="scrollToBottom()" color="primary" size="small">mdi-arrow-down-circle</v-icon>
-                            </div>
-                            <div class="message-info-text">{{ previewMessage.content }}</div>
-                        </template>
-                    </div>
-                </div>
-            </div>
-            <v-divider />
-
             <!-- <div v-if="showNewMessageNoti"
                 style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
                 <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
                     <div @click="clickToScroll">
                         <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
                     </div>
-                </v-chip>
-            </div> -->
-            <!-- camera capture -->
-            <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
-            <!-- image upload -->
-            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-            <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex align-center pa-0">
-                <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                    class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
-                    auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
-                    style="font-size:20px !important; height:77px;" @input="handleTextareaInput"
-                >
-                    <template v-slot:prepend-inner>
-                        <v-btn @click="openChatMenu()"
-                            density="comfortable"
-                            icon
-                            variant="text"
-                        >
-                            <v-icon v-if="!isOpenedChatMenu">mdi-plus</v-icon>
-                            <v-icon v-else>mdi-close</v-icon>
-                        </v-btn>
-                        <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
-                            density="comfortable"
-                            icon
-                            variant="text"
-                        >
-                            <Icons :icon="'sharp-mic'" />
-                        </v-btn>
-                        <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
-                            density="comfortable"
-                            icon
-                            variant="text"
-                        >
-                            <Icons :icon="'stop'" :size="'20'" />
-                        </v-btn>
-                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
-                    </template>
-                    <template v-slot:append-inner>
-                        <div style="height: -webkit-fill-available; margin:5px 5px 0px 0px;">
-                            <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
-                                style="width:30px; height:30px;" :disabled="disableBtn">
-                                <icons :icon="'send-outline'" :size="20" />
-                            </v-btn>
-                            <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
-                                style="width:30px; height:30px;">
-                                <Icons :icon="'outline-stop-circle'" :size="20" />
-                            </v-btn>
-                            <!-- <v-btn icon variant="text" class="text-medium-emphasis">
-                                <PaperclipIcon size="20" />
-                            </v-btn> -->
-                        </div>
-                    </template>
-                </v-textarea>
-                <div v-if="showUserList" class="user-list"
-                    style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
-                    <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
-                        style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
-                        <img :src="user.profile" alt="profile"
-                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
-                        <div>
-                            <div>{{ user.username }}</div>
-                            <div style="font-size: 0.8em; color: #666;">{{ user.email }}</div>
+                    <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+                        <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
+                    </div> -->
+                </div>
+                <div style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
+                    <div class="message-info-box" v-if="isReply || (!isAtBottom && previewMessage)">
+                        <div class="message-info-content">
+                            <template v-if="isReply">
+                                <div class="message-info-header">
+                                    <div>{{ replyUser.role == 'system' ? $t('chat.systemReply') : $t('chat.userReply', { name: replyUser.name }) }}</div>
+                                    <v-icon @click="cancelReply()" size="small">mdi-close</v-icon>
+                                </div>
+                                <div class="message-info-text">{{ replyUser.content }}</div>
+                            </template>
+                            <template v-else>
+                                <div class="message-info-header">
+                                    <div>{{ previewMessage.name }}</div>
+                                    <v-icon @click="scrollToBottom()" color="primary" size="small">mdi-arrow-down-circle</v-icon>
+                                </div>
+                                <div class="message-info-text">{{ previewMessage.content }}</div>
+                            </template>
                         </div>
                     </div>
                 </div>
-            </form>
+                <v-divider />
+
+                <!-- <div v-if="showNewMessageNoti"
+                    style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
+                    <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
+                        <div @click="clickToScroll">
+                            <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
+                        </div>
+                    </v-chip>
+                </div> -->
+                <!-- camera capture -->
+                <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
+                <!-- image upload -->
+                <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+                <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex align-center pa-0">
+                    <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
+                        class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
+                        auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
+                        style="font-size:20px !important; height:77px;" @input="handleTextareaInput"
+                    >
+                        <template v-slot:prepend-inner>
+                            <v-btn @click="openChatMenu()"
+                                density="comfortable"
+                                icon
+                                variant="text"
+                            >
+                                <v-icon v-if="!isOpenedChatMenu">mdi-plus</v-icon>
+                                <v-icon v-else>mdi-close</v-icon>
+                            </v-btn>
+                            <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                                density="comfortable"
+                                icon
+                                variant="text"
+                            >
+                                <Icons :icon="'sharp-mic'" />
+                            </v-btn>
+                            <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                                density="comfortable"
+                                icon
+                                variant="text"
+                            >
+                                <Icons :icon="'stop'" :size="'20'" />
+                            </v-btn>
+                            <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
+                        </template>
+                        <template v-slot:append-inner>
+                            <div style="height: -webkit-fill-available; margin:5px 5px 0px 0px;">
+                                <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
+                                    style="width:30px; height:30px;" :disabled="disableBtn">
+                                    <icons :icon="'send-outline'" :size="20" />
+                                </v-btn>
+                                <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
+                                    style="width:30px; height:30px;">
+                                    <Icons :icon="'outline-stop-circle'" :size="20" />
+                                </v-btn>
+                                <!-- <v-btn icon variant="text" class="text-medium-emphasis">
+                                    <PaperclipIcon size="20" />
+                                </v-btn> -->
+                            </div>
+                        </template>
+                    </v-textarea>
+                    <div v-if="showUserList" class="user-list"
+                        style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
+                        <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
+                            style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
+                            <img :src="user.profile" alt="profile"
+                                style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
+                            <div>
+                                <div>{{ user.username }}</div>
+                                <div style="font-size: 0.8em; color: #666;">{{ user.email }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
+                :audioResponse="newMessage" :chatRoomId="chatRoomId" :recordingMode="recordingMode" />
         </div>
-        <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
-            :audioResponse="newMessage" :chatRoomId="chatRoomId" :recordingMode="recordingMode" />
-    </div>
 </template>
 
 <script>
@@ -882,27 +878,6 @@ export default {
         reGenerateAgentAI(){
             this.$emit('reGenerateAgentAI');
         },
-        getOtherUserMessageColor(message) {
-            if (message.role === 'user') {
-                return {
-                    backgroundColor: '#fff9c4'
-                };
-            } else {
-                return {
-                    backgroundColor: '#eeeeee'
-                };
-            }
-        },
-        getUserMessageStyle(message) {
-            if (message.role === 'user') {
-                return {
-                    display: 'flex',
-                    justifyContent: 'flex-start'
-                };
-            } else {
-                return {};
-            }
-        },
         recordingModeChange() {
             this.recordingMode = !this.recordingMode
             // this.$globalState.methods.toggleRightZoom();
@@ -1120,18 +1095,6 @@ export default {
         //     // 위의 조건들을 모두 통과했다면 버튼을 표시
         //     return true;
         // },
-        shouldDisplayUserInfo() {
-            return (message, index) => {
-                if(!message.disableMsg){
-                    if (index === 0) return true;
-                    const prevMessage = this.filteredMessages[index - 1];
-                    if (message.email !== prevMessage.email) return true;
-                    const timeDiff = new Date(message.timeStamp) - new Date(prevMessage.timeStamp);
-                    if (timeDiff > 60000) return true;
-                }
-                return false;
-            };
-        },
         requestDraftAgent() {
             this.$emit('requestDraftAgent', this.newMessage);
         },
@@ -1319,6 +1282,58 @@ export default {
             this.attachedImg = null;
             var imagePreview = document.querySelector("#imagePreview");
             imagePreview.innerHTML = '';
+        },
+        shouldDisplayUserInfo(message, index) {
+            if(!message.disableMsg){
+                if (index === 0) return true; // 첫 번째 메시지는 항상 유저 정보 표시
+                
+                const prevMessage = this.filteredMessages[index - 1];
+                
+                // 이전 메시지와 보낸 사람이 다르면 유저 정보 표시
+                if (message.email !== prevMessage.email) return true;
+                
+                // 같은 사람이 보낸 메시지라도 분 단위 시간이 다르면 유저 정보 표시
+                const currentTime = new Date(message.timeStamp);
+                const prevTime = new Date(prevMessage.timeStamp);
+                
+                // 분 단위로 비교 (년, 월, 일, 시, 분이 같은지 확인)
+                if (currentTime.getFullYear() !== prevTime.getFullYear() ||
+                    currentTime.getMonth() !== prevTime.getMonth() ||
+                    currentTime.getDate() !== prevTime.getDate() ||
+                    currentTime.getHours() !== prevTime.getHours() ||
+                    currentTime.getMinutes() !== prevTime.getMinutes()) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        shouldDisplayMessageTimestamp(message, index) {
+            
+            const prevMessage = this.filteredMessages[index - 1];
+            
+            // 이메일(보낸사람)이 다르면 true 반환
+            if (prevMessage && message.email !== prevMessage.email) return true;
+            
+            // 다음 메시지가 있는지 확인
+            const nextMessage = index < this.filteredMessages.length - 1 ? this.filteredMessages[index + 1] : null;
+            
+            // 다음 메시지가 없거나, 다음 메시지의 이메일이 현재 메시지와 다르면 true 반환
+            if (!nextMessage || message.email !== nextMessage.email) return true;
+            
+            // 다음 메시지와 현재 메시지의 시간이 분 단위까지 같은지 확인
+            const currentTime = new Date(message.timeStamp);
+            const nextTime = new Date(nextMessage.timeStamp);
+            
+            // 분 단위로 비교 (년, 월, 일, 시, 분이 같은지 확인)
+            if (currentTime.getFullYear() !== nextTime.getFullYear() ||
+                currentTime.getMonth() !== nextTime.getMonth() ||
+                currentTime.getDate() !== nextTime.getDate() ||
+                currentTime.getHours() !== nextTime.getHours() ||
+                currentTime.getMinutes() !== nextTime.getMinutes()) {
+                return true;
+            }
+            
+            return false;
         }
     }
 };
@@ -1446,7 +1461,8 @@ pre {
 }
 
 .chat-menu-background {
-    background-color: rgb(var(--v-theme-primary), 0.15) !important;
+    // background-color: rgb(var(--v-theme-primary), 0.15) !important;
+    background-color: aliceblue !important;
     border-radius: 10px;
     padding: 10px;
     display: flex;
@@ -1488,4 +1504,99 @@ pre {
     white-space: nowrap;
     max-width: 100%;
 }
+
+.user-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.chat-message-bubble {
+  position: relative;
+  max-width: 70%;
+  margin-bottom: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.my-message {
+  margin-left: auto;
+  background-color: rgb(var(--v-theme-primary), 0.15) !important;
+  border-radius: 15px 3px 15px 15px !important;
+}
+
+.other-message {
+  margin-right: auto;
+  background-color: #f1f1f1 !important;
+  border-radius: 3px 15px 15px 15px !important;
+}
+
+.message-timestamp {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.5);
+  margin-top: 4px;
+  display: inline-block;
+  position: absolute;
+  bottom: 5px;
+}
+
+.my-timestamp {
+    bottom: 1px;
+    left: -35px;
+}
+
+.other-timestamp {
+    right: -35px;
+    bottom: 1px;
+}
+
+.message-actions {
+  position: relative;
+  top: 17px;
+  transform: translateY(-50%);
+  display: none;
+}
+
+.chat-message-bubble:hover .message-actions {
+  display: flex;
+}
+
+.action-btn {
+  background-color: white !important;
+  margin: 0 2px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+// 스크롤바 스타일링
+.ps {
+  &:hover {
+    .ps__rail-y {
+      opacity: 0.6;
+    }
+  }
+}
+
+.ps__rail-y {
+  width: 8px !important;
+  opacity: 0.3;
+  background-color: transparent !important;
+  
+  .ps__thumb-y {
+    width: 6px !important;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+  }
+}
+
+// 수정된 메서드에 맞게 스타일 수정
+.progress-border {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  
+  &[style*="flex-end"] {
+    align-items: flex-end;
+  }
+}
+
+// 기존 스타일은 유지하며 추가적인 스타일만 더함
 </style>

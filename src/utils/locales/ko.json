@@ -252,6 +252,7 @@
     "ProcessVariable": {
         "name": "이름",
         "type": "타입",
+        "key": "키",
         "defaultValue": "폼",
         "description": "설명",
         "dataSource": "데이터소스",
@@ -270,8 +271,8 @@
         "import": "BPMN 파일 불러오기",
         "addImage": "이미지 추가",
         "fileUpLoad": "파일 업로드",
-        "isEnableProcessGPT": "Process-GPT 활성화",
-        "isDisableProcessGPT": "Process-GPT 비활성화",
+        "isEnableProcessGPT": "Process GPT 활성화",
+        "isDisableProcessGPT": "Process GPT 비활성화",
         "userReply": "{name}님에게 답장",
         "systemReply": "system에게 답장",
         "headset": "말하기/듣기",
@@ -771,6 +772,7 @@
     "WorkItem": {
         "progress": "진행 상황",
         "history": "워크 히스토리",
+        "chatbot": "어시스턴트",
         "agent": "Agent 초안 생성",
         "toggleInputFieldSize": "확대 / 축소"
     },

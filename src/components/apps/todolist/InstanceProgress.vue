@@ -36,7 +36,6 @@ export default {
     },
     data: () => ({
         bpmn: null,
-        currentActivities: [],
         updatedKey: 0,
         updatedDefKey: 0,
         taskStatus: null,
@@ -62,11 +61,8 @@ export default {
         });
     },
     computed: {
-        mode() {
-            return window.$mode;
-        },
         id() {
-            return atob(this.$route.params.instId);
+            return decodeURIComponent(atob(this.$route.params.instId));
         },
     },
     watch: {
@@ -87,12 +83,6 @@ export default {
                 action: async () => {
                     if (me.instance) {
                         me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn', version: this.instance.defVer });
-                        me.workListByInstId = await backend.getWorkListByInstId(me.instance.instanceId);
-                        if (me.mode == 'ProcessGPT') {
-                            me.currentActivities = me.instance.current_activity_ids;
-                        } else {
-                            me.currentActivities = me.workListByInstId.map((item) => item.tracingTag);
-                        }
                         await me.initStatus();
                         me.updatedDefKey++;
                     }

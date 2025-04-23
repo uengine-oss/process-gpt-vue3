@@ -174,11 +174,27 @@ export default {
         },
         async executeProcess(value) {
             var me = this;
+
+            let answer = '';
+            if (value.user_input_text) {
+                answer = value.user_input_text;
+            }
+
+            let formId = ''
+            if (me.workItem.activity.tool) formId = me.workItem.activity.tool.replace('formHandler:', '');
+            let formValues = {};
+            if (formId) {
+                const formatted = value;
+                delete formatted.user_input_text;
+                formValues[formId] = formatted;
+            }
+
             let input = {
                 process_definition_id: me.definitionId,
                 activity_id: me.workItem.activity.tracingTag,
                 role_mappings: me.roleMappings,
-                answer: value
+                answer: answer,
+                form_values: formValues
             };
             me.roleMappings.forEach(role => {
                 if (me.workItem.worklist.role === role.name && role.endpoint) {

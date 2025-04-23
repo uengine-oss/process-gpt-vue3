@@ -252,6 +252,7 @@
     "ProcessVariable": {
         "name": "Name",
         "type": "Type",
+        "key": "Key",
         "defaultValue": "Form",
         "description": "Description",
         "dataSource": "DataSource",
@@ -270,8 +271,8 @@
         "import": "Import BPMN File",
         "addImage": "Add Image",
         "fileUpLoad": "File Up Load",
-        "isEnableProcessGPT": "Enable Process-GPT",
-        "isDisableProcessGPT": "Disable Process-GPT",
+        "isEnableProcessGPT": "Enable Process GPT",
+        "isDisableProcessGPT": "Disable Process GPT",
         "userReply": "Reply to {name}",
         "systemReply": "Reply to the system",
         "headset": "Speaking/Listening",
@@ -771,6 +772,7 @@
     "WorkItem": {
         "progress": "Progress",
         "history": "Work History",
+        "chatbot": "Assistant",
         "agent": "Create Agent Draft",
         "toggleInputFieldSize": "Toggle Input Field Size"
     },

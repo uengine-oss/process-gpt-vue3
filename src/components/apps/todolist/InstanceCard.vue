@@ -126,7 +126,7 @@ export default {
     computed: {
         id() {
             if ($mode == "ProcessGPT") {
-                return atob(this.$route.params.instId)
+                return decodeURIComponent(atob(this.$route.params.instId))
             } else {
                 return this.$route.params.instId
             }

@@ -36,7 +36,7 @@ export default {
             return window.$mode;
         },
         id() {
-            return atob(this.$route.params.instId);
+            return decodeURIComponent(atob(this.$route.params.instId));
         },
         messages() {
             if (!this.workListByInstId) return [];
@@ -61,11 +61,6 @@ export default {
                 action: async () => {
                     if (me.instance) {
                         me.workListByInstId = await backend.getWorkListByInstId(me.instance.instanceId);
-                        if (me.mode == 'ProcessGPT') {
-                            me.currentActivities = me.instance.current_activity_ids;
-                        } else {
-                            me.currentActivities = me.workListByInstId.map((item) => item.tracingTag);
-                        }
                         me.updatedKey++;
                     }
                 }
