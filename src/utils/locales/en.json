@@ -772,7 +772,7 @@
     "WorkItem": {
         "progress": "Progress",
         "history": "Work History",
-        "chatbot": "Chatbot",
+        "chatbot": "Assistant",
         "agent": "Create Agent Draft",
         "toggleInputFieldSize": "Toggle Input Field Size"
     },
