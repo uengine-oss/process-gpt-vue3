@@ -1,4 +1,4 @@
-import axios from 'axios';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
 
 export default class AIGenerator {
     constructor(client, options) {
@@ -163,10 +163,18 @@ export default class AIGenerator {
 
     async checkBackendConnection() {
         try {
-            const response = await fetch(`${this.backendUrl}/sanity-check`);
+            let response = await fetch(`${this.backendUrl}/sanity-check`);
+            if(response.status == 401){
+                // access_token이 만료되어서 접속이 안되는 경우가 있기 때문에 이런 경우, 강재로 세션을 갱신 후, 재시도
+                const storage = StorageBaseFactory.getStorage();
+                await storage.refreshSession();
+                response = await fetch(`${this.backendUrl}/sanity-check`);
+            }
+
             if (!response.ok) {
                 throw new Error('Backend connection failed');
             }
+
             const data = await response.json();
             return data.is_sanity_check === true;
         } catch (error) {
