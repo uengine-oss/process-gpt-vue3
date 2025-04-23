@@ -41,7 +41,7 @@ export default class ProcessConsultingGenerator extends AIGenerator {
             고객에게 질문할때의 질문 형식:
             {
                 "content": "고객에게 하는 질문 내용",
-                "answerType": "consulting" // 고정
+                "answerType": "consulting" // 항상 고정
             }
 
             프로세스 정의 생성시에는 아래의 답변 형식으로 답변해야한다. 모두 고정 값이다.
