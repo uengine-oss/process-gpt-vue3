@@ -450,6 +450,7 @@ class UEngineBackend implements Backend {
         return result;
     }
     // WorkListRepository API
+    // 자신의 역할에 맞는 업무 모두 가져오기 
     async getWorkList() {
         const response = await axiosInstance.get(`/worklist/search/findToDo`);
 
@@ -473,6 +474,7 @@ class UEngineBackend implements Backend {
         return mappedResult;
     }
 
+    // 해당 인스턴스의 할당된 업무
     async getWorkListByInstId(instId: number) {
         const response = await axiosInstance.get(`/worklist/search/findWorkListByInstId`, { params: { instId: instId } });
 
@@ -497,6 +499,7 @@ class UEngineBackend implements Backend {
         return mappedResult;
     }
 
+    // 해당 인스턴스의 모든 업무 가져오기
     async getAllWorkListByInstId(instId: number) {
         const response = await axiosInstance.get(`/instance/${instId}/worklists`);
 
@@ -883,10 +886,6 @@ class UEngineBackend implements Backend {
 
     async checkDBConnection() {
         return true;
-    }
-
-    async getOpenAIToken(){
-        return window.localStorage.getItem('OPENAI_API_KEY') || null;
     }
 }
 

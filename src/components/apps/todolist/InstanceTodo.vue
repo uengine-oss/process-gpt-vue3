@@ -7,7 +7,7 @@
             </v-col>
         </v-row>
 
-        <v-btn v-if="mode === 'ProcessGPT'" icon color="primary" size="40" elevation="10" class="todo-add-btn" @click="openDialog">
+        <v-btn icon color="primary" size="40" elevation="10" class="todo-add-btn" @click="openDialog">
             <v-tooltip activator="parent" location="right">할 일 등록</v-tooltip>
             <PlusIcon size="24" stroke-width="2" />
         </v-btn>
@@ -77,7 +77,7 @@ export default {
             return window.$mode;
         },
         id() {
-            const route = this.mode == 'ProcessGPT' ? atob(this.$route.params.instId) : this.$route.params.instId;
+            const route = this.mode == 'ProcessGPT' ? decodeURIComponent(atob(this.$route.params.instId)) : this.$route.params.instId;
             return route;
         },        
     },
@@ -112,37 +112,41 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    // let worklist = await backend.getAllWorkListByInstId(me.id)
-                    let worklist = await backend.getWorkList({ instId: me.id })
+                    let worklist = await backend.getAllWorkListByInstId(me.id)
+                    // let worklist = await backend.getWorkList({ instId: me.id })
                     if(!worklist) worklist = []
                     worklist.forEach((item) => {
                         if (item.instId != me.id) return
-                        if (item.status == 'TODO' || item.status == 'NEW' || item.status == 'DRAFT' || item.status == 'Ready' ) {
+                        if (item.status == 'TODO' || item.status == 'DRAFT' || item.status == 'Ready' ) {
                             me.todolist.find(x => x.id == 'TODO').tasks.push(item);
-                        } else if (item.status == 'IN_PROGRESS' || item.status == 'Running') {
+                        } else if (item.status == 'IN_PROGRESS' || item.status == 'Running' || item.status == 'NEW') {
                             me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(item);
                         } else if (item.status == 'PENDING') {
                             me.todolist.find(x => x.id == 'PENDING').tasks.push(item);
-                        } 
-                    })
-                }
-            })
-        },
-        loadCompletedWorkList() {
-            var me = this
-            me.$try({
-                context: me,
-                action: async () => {
-                    let worklist = await backend.getCompletedList({page: me.currentPage, size: me.offset, instId: me.id});
-                    if(!worklist) worklist = []
-                    worklist.forEach(function(item) {
-                        if (item.instId != me.id) return
-                        if (item.status == 'DONE' || item.status == 'COMPLETED') {
+                        } else if (item.status == 'DONE' || item.status == 'COMPLETED') {
                             me.todolist.find(x => x.id == 'DONE').tasks.push(item);
                         }
                     })
                 }
             })
+        },
+        loadCompletedWorkList() {
+            // !!! REMOVE
+            return [];
+            // var me = this
+            // me.$try({
+            //     context: me,
+            //     action: async () => {
+            //         let worklist = await backend.getCompletedList({page: me.currentPage, size: me.offset, instId: me.id});
+            //         if(!worklist) worklist = []
+            //         worklist.forEach(function(item) {
+            //             if (item.instId != me.id) return
+            //             if (item.status == 'DONE' || item.status == 'COMPLETED') {
+            //                 me.todolist.find(x => x.id == 'DONE').tasks.push(item);
+            //             }
+            //         })
+            //     }
+            // })
         },
         handleScrollBottom() {
             var me = this

@@ -1,116 +1,173 @@
 <template>
-    <div class="overflow-y-auto" style="height: 100%;">
-        <g-gantt-chart :chart-start="chartStartDate" :chart-end="chartEndDate" precision="month" 
-            bar-start="startDate" bar-end="endDate" push-on-overlap color-scheme="sky" @dragend-bar="onDragEnd">
+    <div class="overflow-y-auto" style="height: 100%;" v-if="!isLoading">
+        <!-- <g-gantt-chart 
+            :chart-start="chartStartDate" 
+            :chart-end="chartEndDate" 
+            precision="day" 
+            bar-start="startDate" 
+            bar-end="endDate" 
+            push-on-overlap 
+            color-scheme="sky"
+            :display-dates="true"
+            :date-format-options="{
+                weekday: 'short',    // 요일 표시
+                month: 'numeric',    // 월 표시 방식
+                day: 'numeric'       // 일 표시 방식
+            }"
+            :row-height="40"
+            @dragend-bar="onDragEnd">
             <g-gantt-row v-for="(item, index) in workItems" :key="index" :bars="[item]" />
-        </g-gantt-chart>
+        </g-gantt-chart> -->
+
+        <Gantt 
+        :tasks="workItems" 
+        :users="users" 
+        @task-updated="handleTaskUpdate" 
+        @task-added="handleTaskAdded"
+        @task-clicked="handleTaskClicked"/>
     </div>
 </template>
 
 <script>
 import { ref, onMounted, watch } from 'vue';
-import { format } from 'date-fns';
+import { useRouter } from 'vue-router';
+// import { format } from 'date-fns';
 import BackendFactory from '@/components/api/BackendFactory';
+import Gantt from '@/components/Gantt.vue';
 
 export default {
+    components: {
+        Gantt
+    },
     props: {
         instance: Object,
     },
     setup(props) {
         const workItems = ref([]);
+        const users = ref([]);
         const backend = BackendFactory.createBackend();
-        const chartStartDate = ref('');
-        const chartEndDate = ref('');
-
-        const getRandomColor = () => {
-            const letters = '0123456789ABCDEF';
-            let color = '#';
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
+        const isLoading = ref(true);
+        const router = useRouter();
+        function formatGanttDate(date) {
+            if(!date) return null;
+            if (typeof date === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(date)) {
+                return date;
             }
-            return color;
-        };
-
-        const getContrastColor = (hexColor) => {
-            const r = parseInt(hexColor.slice(1, 3), 16);
-            const g = parseInt(hexColor.slice(3, 5), 16);
-            const b = parseInt(hexColor.slice(5, 7), 16);
-            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-            return luminance > 0.5 ? 'black' : 'white';
-        };
-
-        const init = async () => {
-            if (props.instance && props.instance.instanceId) {
-                var items = await backend.getWorkListByInstId(props.instance.instanceId);
-                if (items && items.length > 0) {
-                    items = items.filter(item => item.startDate && item.dueDate);
-                    let earliestStart = new Date(items[0].startDate);
-                    let latestEnd = new Date(items[0].dueDate || items[0].startDate);
-
-                    items.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-
-                    workItems.value = items.map(item => {
-                        const startDate = new Date(item.startDate);
-                        const endDate = new Date(item.dueDate);
-
-                        if (startDate < earliestStart) earliestStart = startDate;
-                        if (endDate > latestEnd) latestEnd = endDate;
-
-                        const backgroundColor = getRandomColor();
-                        const textColor = getContrastColor(backgroundColor);
-
-                        return {
-                            startDate: startDate,
-                            endDate: endDate,
-                            ganttBarConfig: {
-                                id: item.taskId,
-                                label: item.title,
-                                hasHandles: true,
-                                style: {
-                                    background: backgroundColor,
-                                    borderRadius: "20px",
-                                    color: textColor,
-                                    minWidth: "50px",
-                                    cursor: "pointer",
-                                }
-                            }                            
-                        };
-                    });
-
-                    const oneMonthInMs = 15 * 24 * 60 * 60 * 1000;
-                    earliestStart = new Date(earliestStart.getTime() - oneMonthInMs);
-                    latestEnd = new Date(latestEnd.getTime() + oneMonthInMs);
-                    chartStartDate.value = format(earliestStart, 'yyyy-MM-dd HH:mm');
-                    chartEndDate.value = format(latestEnd, 'yyyy-MM-dd HH:mm');
-                }
-            }
-        };
-
-        const onDragEnd = async (event) => {
-            const { bar } = event;
-            const { id } = bar.ganttBarConfig;
-            const { startDate, endDate } = bar;
-
-            const updatedItem = workItems.value.find(item => item.ganttBarConfig.id === id);
+            const d = new Date(date)
+            const day = String(d.getDate()).padStart(2, '0')
+            const month = String(d.getMonth() + 1).padStart(2, '0')
+            const year = d.getFullYear()
             
-            if (updatedItem) {
-                updatedItem.startDate = new Date(startDate);
-                updatedItem.endDate = new Date(endDate);
+            return `${day}-${month}-${year}`
+        }
+        const init = async () => {
+                isLoading.value = true;
 
-                try {
-                    const updatedTask = {
-                        id: id,
-                        title: updatedItem.ganttBarConfig.label,
-                        startDate: updatedItem.startDate,
-                        dueDate: updatedItem.endDate,
+                users.value = await backend.getUserList();
+
+                if (props.instance && props.instance.instanceId) {
+                    workItems.value = [];
+                    let items = await backend.getAllWorkListByInstId(props.instance.instanceId)
+                    if (items && items.length > 0) {
+                        // 시작시간 기준 정렬
+                        items.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+                        workItems.value = items.map(item => {
+                            return {
+                                id: item.taskId,
+                                startDate: item.startDate,
+                                endDate: item.endDate,
+                                dueDate: item.dueDate,
+                                status: item.status,
+                                text: item.title,
+                                endpoint: item.endpoint,
+                                assignees: item.assignees,
+                                parent: item.parent,
+                                adhoc: item.adhoc,
+                                activity_id: item.tracingTag,
+                                reference_ids: item.reference_ids,
+                            };
+                        });
+
                     }
-                    await backend.putWorklist(id, updatedTask);
-                } catch (error) {
-                    console.error('Failed to update work item dates:', error);
                 }
+                isLoading.value = false; // 초기화 완료 시 로딩 상태 false
+            
+        };
+
+        // 작업 업데이트
+        const handleTaskUpdate = async (updatedTask) => {
+            try {
+                // 백엔드에 업데이트된 작업 정보 전송
+                await backend.putWorklist(updatedTask.id, {
+                    id: updatedTask.id,
+                    startDate: updatedTask.startDate,
+                    dueDate: updatedTask.dueDate,
+                    duration: updatedTask.duration,
+                })
+
+                // 성공적으로 업데이트되면 로컬 상태도 업데이트
+                // const index = workItems.value.findIndex(item => item.id === updatedTask.id)
+                // if (index !== -1) {
+                //     workItems.value[index] = {
+                //         ...workItems.value[index],
+                //         startDate: updatedTask.startDate,
+                //         dueDate: updatedTask.endDate,
+                //         // 다른 필드들 업데이트
+                //     }
+                // }
+            } catch (error) {
+                console.error('Failed to update task:', error)
+                // 에러 처리 (필요한 경우 원래 상태로 되돌리기)
+                await init() // 또는 다른 에러 처리 방법
+            }
+        }
+        const handleTaskClicked = ({ id }) => {
+            router.push(`/todolist/${id}`);
+        };
+        
+        const handleTaskAdded = async (newTask) => {
+            try {
+                await backend.putWorklist(newTask.id, {
+                    title: newTask.text,
+                    startDate: newTask.startDate,
+                    dueDate: newTask.endDate,
+                    status: newTask.status || 'TODO',
+                    instId: props.instance.instanceId,
+                    endpoint: newTask.endpoint,
+                    assignees: newTask.assignees,
+                    progress: newTask.progress || 0,
+                    parent: newTask.parent || null,
+                    duration: parseInt(newTask.duration),
+                    adhoc: newTask.adhoc || false
+                });
+
+                
+                // workItems 배열에만 추가 (Gantt는 이미 추가되어 있음)
+                const ganttTask = {
+                    id: newTask.id,
+                    text: newTask.text,
+                    startDate: formatGanttDate(newTask.startDate),
+                    dueDate: formatGanttDate(newTask.endDate),
+                    // duration: parseInt(newTask.duration),
+                    activity_id: "",
+                    reference_ids: [],
+                    progress: newTask.progress || 0,
+                    parent: newTask.parent || null,
+                    adhoc: newTask.adhoc || false,
+                    status: newTask.status || 'TODO'
+                };
+                workItems.value.push(ganttTask);
+
+            } catch (error) {
+                console.error('Failed to add task:', error);
+                // 에러 발생 시 Gantt에서 작업 제거
+                if (gantt.isTaskExists(newTask.id)) {
+                    gantt.deleteTask(newTask.id);
+                }
+                await init();
             }
         };
-    
+
         onMounted(init);
     
         watch(() => props.instance.instanceId, async (newVal, oldVal) => {
@@ -120,10 +177,15 @@ export default {
         }, { deep: true });
     
         return {
+            // chartStartDate,
+            // chartEndDate,
+            // onDragEnd,
             workItems,
-            chartStartDate,
-            chartEndDate,
-            onDragEnd,
+            users,
+            isLoading,
+            handleTaskUpdate,
+            handleTaskAdded,
+            handleTaskClicked
         };
     }
 };
@@ -139,5 +201,6 @@ export default {
     font-size: 16px;
     font-weight: 500;
 }
+
 </style>
 

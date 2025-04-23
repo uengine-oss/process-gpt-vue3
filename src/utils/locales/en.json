@@ -106,7 +106,8 @@
         "sortByCompleted": "Sort by Completed"
     },
     "runningInstance": {
-        "title": "Running Instance"
+        "title": "Running Instance",
+        "running": " Running..."
     },
     "admin": {
         "title": "Administrator Menu",
@@ -772,6 +773,7 @@
     "WorkItem": {
         "progress": "Progress",
         "history": "Work History",
+        "chatbot": "Assistant",
         "agent": "Create Agent Draft",
         "toggleInputFieldSize": "Toggle Input Field Size"
     },

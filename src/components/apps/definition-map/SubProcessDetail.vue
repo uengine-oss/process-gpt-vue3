@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10"
-        :style="$globalState.state.isZoomed ? 'height: 100vh' : 'height:calc(100vh - 155px);'"
+        :style="$globalState.state.isZoomed ? 'height: 100vh' : 'height:calc(100vh - 143px);'"
     >
         <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center">
             <div class="d-flex">
@@ -337,7 +337,7 @@ export default {
                     }
                     me.EventBus.emit('instances-updated');
                 },
-                successMsg: this.$t('successMsg.processExecutionCompleted')
+                successMsg: me.$t('successMsg.processExecutionCompleted')
             })
         },
     },

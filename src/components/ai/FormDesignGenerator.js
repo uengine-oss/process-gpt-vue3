@@ -1,6 +1,5 @@
 import AIGenerator from "@/components/ai/AIGenerator";
 import promptSnippetData from "./FormDesignGeneratorPromptSnipptsData";
-import FormHtmlCodeGenerator from "./FormHtmlCodeGenerator";
 
 // '화면 정의' 메뉴에서 AI를 통한 폼 생성을 위한 생성기 클래스
 export default class FormDesignGenerator extends AIGenerator{
@@ -11,7 +10,7 @@ export default class FormDesignGenerator extends AIGenerator{
         this.avaliableComponentTagNames = promptSnippetData.componentInfos.map((componentInfo) => componentInfo.tag.match(/\<\/(.*)\>/)[1].toLowerCase())
         
         // 컨테이너 조합, 컴포넌트 정보, 예시를 프롬프트에 적용하기 위한 문자열을 생성하기 위해서
-        const containerSpaceSetsPromptStr = 
+        this.containerSpaceSetsPromptStr = 
           promptSnippetData.containerSpaceSets.map((containerSpaceSet) => "{" + containerSpaceSet.join(", ") + "}").join(", ")
 
         const componentInfosPromptStr = promptSnippetData.componentInfos.map(componentInfo => {
@@ -86,7 +85,7 @@ Layout examples:
 A section must contain exactly one div with class='row'.
 Inside a div with class='row', you must include divs with class='col-sm-{number}'.
 The sum of all {number} values in a row must equal 12.
-You must use one of these column combinations: [${containerSpaceSetsPromptStr}]
+You must use one of these column combinations: [${this.containerSpaceSetsPromptStr}]
 
 The div with class='row' can have the is_multidata_mode attribute.
 When is_multidata_mode='true', components within can be used to add rows like in a table.
@@ -236,19 +235,19 @@ ${note}
       const noteMessage =  `Please write values such as alias and label of the form being created in ${this.preferredLanguage}. However, make sure all name attributes are written in English only.`
       if(userInputs){
         if(userInputs.imageUrl) {
-            const formHtml = await FormHtmlCodeGenerator.getHtmlCodeFromImage(
-              userInputs.imageUrl, {preferredLanguage: this.preferredLanguage}
-            )
             const userRequest = `\
-  Please create an appropriate form based on the provided image and the HTML Form code reconstructed from that image. 
-  IMPORTANT: Ensure ALL parts of the reconstructed HTML form code are fully incorporated in your form creation. Pay special attention to any components, attributes, or structures that might be overlooked, and make sure they are accurately reflected in the final form. Do not omit or simplify any elements from the reconstructed HTML.
-  
-  SPECIAL INTERPRETATION GUIDELINES:
-  1. When you see text with "○" symbols followed by options (e.g., "○대상 ○비대상"), interpret this as radio buttons where the circle symbol indicates selectable options.
-  2. For table headers containing such patterns, transform them into appropriate radio-button components rather than keeping them as plain text.
-  3. For example, "○대상 ○비대상" should be converted to radio buttons with "대상" and "비대상" as options.
-  4. Other special characters that might indicate form elements should be properly interpreted as their corresponding HTML components.
-  ${formHtml}${userInputs.request ? `\n\n# Additional User Request
+  Please create an appropriate form based on the provided image. 
+
+  # Image Analysis Instructions
+- Analyze the visual layout: Identify sections, rows, and columns based on alignment and spacing to determine the grid structure (\`section\`, \`div.row\`, \`div.col-sm-*\`). Ensure the sum of column numbers in each row equals 12, using only the allowed combinations: [${this.containerSpaceSetsPromptStr}].
+- Identify components: Match visual elements (input boxes, dropdowns, checkboxes, radio buttons, etc.) to the allowed component tags provided in the documentation. Pay close attention to visual cues.
+- Extract labels: Accurately transcribe the text label associated with each identified component. Associate labels correctly with their corresponding form elements.
+- Detect placeholders/defaults: Note any placeholder text within input fields or pre-selected values (e.g., in dropdowns, radio buttons) and represent them using appropriate attributes like 'placeholder' or default 'value'.
+- Analyze grouping: Use layout elements (\`section\`, \`div.row\`) logically to group related fields based on proximity, visual dividers, or contextual clues in the image.
+- Infer attributes: Generate unique and meaningful English \`name\` attributes for all components and layouts. Generate descriptive \`alias\` attributes in ${this.preferredLanguage} based on the labels or purpose. Determine if \`is_multidata_mode='true'\` is appropriate for sections representing repeatable data rows. Ensure ALL name attributes are unique across the entire form.
+- Adhere strictly to specifications: Your primary goal is to translate the visual form from the image into a functional and valid HTML structure using ONLY the allowed components and layout elements. Follow all specified tag syntax, attribute requirements, and formatting rules precisely. Do not introduce any elements or attributes not explicitly defined.
+
+${userInputs.request ? `\n\n# Additional User Request
   ${userInputs.request}` : ""}
   `
           copiedPreviousMessageFormats.push({
@@ -285,15 +284,6 @@ ${note}
     }
 
     async createMessagesAsync(messages) {
-      this.vendor = 'openai'
-      this.model = 'chatgpt-4o-latest'
-      this.modelConfig = {
-        temperature: 1,
-        top_p: 0.9,
-        frequency_penalty: 0,
-        presence_penalty: 0
-      }
-
       if (messages) {
         messages = messages.filter(message => message !== undefined);
       }

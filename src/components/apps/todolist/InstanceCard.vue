@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="10" v-if="instance" style="height: calc(100vh - 155px); ">
+    <v-card elevation="10" v-if="instance" style="height: calc(100vh - 143px); ">
         <v-progress-linear v-if="workitemRunning" indeterminate color="primary" />
         <div class="d-flex">
             <div class="px-3 py-3 pb-2 pl-4 align-center">
@@ -126,7 +126,7 @@ export default {
     computed: {
         id() {
             if ($mode == "ProcessGPT") {
-                return atob(this.$route.params.instId)
+                return decodeURIComponent(atob(this.$route.params.instId))
             } else {
                 return this.$route.params.instId
             }

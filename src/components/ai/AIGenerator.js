@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export default class AIGenerator {
     constructor(client, options) {
         this.client = client;
@@ -5,10 +7,7 @@ export default class AIGenerator {
         this.modelJson = null;
         this.stopSignaled = false;
         this.gptResponseId = null;
-        this.openaiToken = null;
-        // this.model = "gpt-3.5-turbo-16k"
         this.model = 'gpt-4o';
-        //this.model = "gpt-4-vision-preview"
 
         if (this.model.includes('vision')) {
             this.vision = true;
@@ -46,6 +45,15 @@ export default class AIGenerator {
         this.vendor = 'openai';
         this.modelConfig = {
             temperature: 1,
+            frequency_penalty: 0,
+            presence_penalty: 0
+        }
+
+        this.forced_vendor = "openai";
+        this.forced_model = "gpt-4.1-2025-04-14";
+        this.forced_model_config = {
+            temperature: 1,
+            top_p: 0.9,
             frequency_penalty: 0,
             presence_penalty: 0
         }
@@ -183,6 +191,7 @@ export default class AIGenerator {
 
         if (this.returnCache(messages)) return;
 
+        
         const isBackendConnected = await this.checkBackendConnection();
         if (!isBackendConnected) {
             const errorMessage = "Failed to connect to the backend server for AI communication. Please check if the backend is operational.";
@@ -197,22 +206,6 @@ export default class AIGenerator {
         }
 
 
-        let apiToken = null
-        const localStorageTokenKey = `${this.vendor.toUpperCase()}_API_KEY`
-        const tokenKey = `${this.vendor.toLowerCase()}Token`
-        if(localStorage.getItem(localStorageTokenKey))
-            apiToken = localStorage.getItem(localStorageTokenKey)
-        else if(me.client[tokenKey])
-            apiToken = me.client[tokenKey]
-        else if(this.vendor == 'openai')
-            apiToken = await me.client.getToken();
-        else {
-            apiToken = prompt("Please enter your API key for " + this.vendor + ":");
-            localStorage.setItem(localStorageTokenKey, apiToken);
-        }
-        me[tokenKey] = apiToken
-
-
         let responseCnt = 0;
 
         me.gptResponseId = null;
@@ -220,7 +213,6 @@ export default class AIGenerator {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url);
         xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('Authorization', 'Bearer ' + apiToken);
 
         xhr.onprogress = function (event) {
             var currentResId;
@@ -354,12 +346,13 @@ export default class AIGenerator {
 
         if (this.isContinued) messages[messages.length - 1].content = 'continue';
 
+        this._addDetailHighToImageUrl(messages);
         const data = {
-            vendor: this.vendor,
-            model: this.model,
+            vendor: this.forced_vendor || this.vendor,
+            model: this.forced_model || this.model,
             messages: messages,
-            stream: this.options.isStream,
-            modelConfig: this.modelConfig
+            stream: this.options.isStream || true,
+            modelConfig: this.forced_model_config || this.modelConfig
         };
 
         if (this.model.includes('vision')) {
@@ -372,6 +365,17 @@ export default class AIGenerator {
 
         console.log("[*][AIGenerator] 백엔드 서버로 LLM 요청 데이터 전송", {requestData: data});
         xhr.send(JSON.stringify(data));
+    }
+
+    _addDetailHighToImageUrl(messages) {
+        messages.forEach(message => {
+            if(!message.content || typeof message.content !== 'object') return;
+            message.content.forEach(content => {
+                if (content.type === 'image_url' && content.image_url) {
+                    content.image_url.detail = 'high';
+                }
+            });
+        });
     }
 
     createMessages() {

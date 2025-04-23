@@ -64,7 +64,7 @@ body.highlighted-container-content .keditor-container-content:before {
   position: fixed;
   z-index: 100;
   top: 123px;
-  height:calc(100vh - 155px);
+  height:calc(100vh - 143px);
   right: -300px;
   bottom: 0;
   background: white;
