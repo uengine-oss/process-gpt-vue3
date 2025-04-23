@@ -4,9 +4,9 @@
     <!-- ---------------------------------------------- -->
     <v-menu :close-on-content-click="true" class="notification_popup">
         <template v-slot:activator="{ props }">
-            <v-btn icon flat v-bind="props" size="small">
+            <v-btn icon flat v-bind="props" size="small" @click="isConfirm = true">
                 <div class="position-realtive">
-                    <div class="notify" v-if="notiCount > 0">
+                    <div class="notify" v-if="!isConfirm && notiCount > 0">
                         <span class="heartbit"></span>
                         <span class="point"></span>
                     </div>
@@ -57,6 +57,7 @@ const backend = BackendFactory.createBackend();
 
 export default {
     data: () => ({
+        isConfirm: false,
         notifications: [],
     }),
     computed: {
@@ -66,6 +67,13 @@ export default {
             }
             return 0;
         },
+    },
+    watch: {
+        notiCount(newVal, oldVal) {
+            if (newVal > 0 && newVal !== oldVal) {
+                this.isConfirm = false;
+            }
+        }
     },
     async created() {
         await this.getNotifications();

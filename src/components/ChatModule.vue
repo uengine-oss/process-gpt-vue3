@@ -147,7 +147,7 @@ export default {
             })
         },
         async getToken() {
-            const openaiApiKey = window._env_?.VITE_OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY;
+            const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
             if (openaiApiKey) {
                 return openaiApiKey;
             } else if (window.$mode == 'ProcessGPT') {

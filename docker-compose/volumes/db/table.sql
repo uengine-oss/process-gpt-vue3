@@ -500,8 +500,8 @@ CREATE POLICY form_def_insert_policy
 CREATE POLICY form_def_select_policy
     ON form_def
     FOR SELECT
-    TO authenticated
-    USING (tenant_id = auth.tenant_id());
+    TO public
+    USING (true);
 
 CREATE POLICY form_def_update_policy
     ON form_def

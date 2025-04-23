@@ -106,7 +106,8 @@
         "sortByCompleted": "완료 순으로 정렬"
     },
     "runningInstance": {
-        "title": "실행 중인 인스턴스"
+        "title": "실행 중인 인스턴스",
+        "running": " 실행 중..."
     },
     "admin": {
         "title": "관리자 메뉴",
