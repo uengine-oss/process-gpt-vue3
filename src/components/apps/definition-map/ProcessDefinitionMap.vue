@@ -100,7 +100,7 @@
             </v-card>
 
             <v-card
-                v-if="componentName == 'DefinitionMapList'"
+                v-if="componentName == 'DefinitionMapList' && isAdmin"
                 @click="openConsultingDialog = true, ProcessPreviewMode = false"
                 class="consulting-card ma-4"
                 elevation="3"

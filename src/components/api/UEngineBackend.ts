@@ -887,10 +887,6 @@ class UEngineBackend implements Backend {
     async checkDBConnection() {
         return true;
     }
-
-    async getOpenAIToken(){
-        return window.localStorage.getItem('OPENAI_API_KEY') || null;
-    }
 }
 
 export default UEngineBackend;
