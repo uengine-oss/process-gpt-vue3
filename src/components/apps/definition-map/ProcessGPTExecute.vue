@@ -203,21 +203,23 @@ export default {
             })
             
             backend.start(input).then((result) => {
+                if (result.error) {
+                    me.handleError(result.error);
+                } else {
+                    const encodedInstanceId = btoa(encodeURIComponent(result.instanceId));
+                    const path = `/instancelist/${encodedInstanceId}`;
+                    me.$router.push(path);
+                }
                 me.EventBus.emit('instances-updated');
-                const encodedInstanceId = btoa(encodeURIComponent(result.instanceId));
-                const path = `/instancelist/${encodedInstanceId}`;
-                me.$router.push(path);
-            })
-            .catch(error => {
-                me.handleError(error);
             });
             
+            me.closeDialog();
             me.EventBus.emit('instances-running', me.definition.processDefinitionName);
 
             me.$try({
                 context: me,
                 action: async () => {
-                    me.closeDialog();
+                    me.$router.push('/instancelist/running');
                 },
                 successMsg: this.$t('successMsg.runningTheProcess')
             })
@@ -236,11 +238,7 @@ export default {
         },
         handleError(error) {
             var me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    console.log(error);
-                },
+            me.$try({}, null, {
                 errorMsg: `${me.definition.processDefinitionName} 실행 중 오류가 발생했습니다: ${error}`
             })
         }

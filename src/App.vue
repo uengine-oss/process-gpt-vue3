@@ -141,7 +141,7 @@ export default {
                     parameters: parameters,
                     action: options
                 };
-                Object.assign(options, options_);
+                options = Object.assign(options, options_);
             }
             try {
                 window.$app_.loading = true;

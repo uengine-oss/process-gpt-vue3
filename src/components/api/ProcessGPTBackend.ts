@@ -309,23 +309,23 @@ class ProcessGPTBackend implements Backend {
                     const data = JSON.parse(res.data);
                     if (data) {
                         result = data;
-                        if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
-                            result.errors = result.cannotProceedErrors;
-                        }   
                     }
                 }
             })
             .catch(error => {
+                result = {}
                 if (error.detail && error.detail.status_code && error.detail.status_code == 401) {
                     alert('토큰이 만료되었습니다. 다시 로그인 해주세요.');
+                } else if (error.detail) {
+                    result.error = error.detail;
+                } else {
+                    result.error = error;
                 }
-                result.error = error;
             });
 
             return result;
         } catch (error) {
-            //@ts-ignore
-            return error;
+            return { error: error };
         }
     }
 
