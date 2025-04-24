@@ -662,7 +662,9 @@
         "Participant": "참가자 생성",
         "expandedSubProcess": "확장된 하위 프로세스 생성",
         "dataStore": "데이터 저장소 생성",
-        "dataObject": "데이터 객체 생성"
+        "dataObject": "데이터 객체 생성",
+        "autoLayout": "자동 레이아웃",
+        "changeOrientation": "레이아웃 방향 전환"
     },
     "chatListing": {
         "title": "채팅방 설정",
