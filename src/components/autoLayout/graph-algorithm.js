@@ -287,7 +287,7 @@ class SugiyamaLayout {
     assignCoordinates() {
         const defaultNodeWidth = 100;
         const defaultNodeHeight = 40;
-        const layerHeight = 120;
+        const layerHeight = 150;
         const horizontalSpacing = 20;
         const minNodeMargin = 10; // 노드와 레인 경계 사이의 최소 여백
         
@@ -340,8 +340,6 @@ class SugiyamaLayout {
                 // 각 노드의 크기 확인 및 조정
                 groupNodes.forEach(node => {
                     const originalWidth = node.width;
-                    // 노드 너비를 기본 노드 크기로 통일
-                    node.width = defaultNodeWidth;
                     console.log(`[DEBUG_NODE_SIZE] 노드 크기 통일: ID=${node.id}, 원래 너비=${originalWidth || 'undefined'}, 새 너비=${node.width}`);
                 });
                 
@@ -375,7 +373,7 @@ class SugiyamaLayout {
                 console.log(`[DEBUG_NODE_PLACEMENT] 그룹=${groupId}, 레이어=${i}, 노드 배치 시작: ${groupNodes.length}개 노드`);
                 
                 groupNodes.forEach((node, idx) => {
-                    const width = node.width || defaultNodeWidth;
+                    const width = defaultNodeWidth;
                     const height = node.height || defaultNodeHeight;
                     
                     // 노드가 레인 경계를 벗어나지 않도록 조정
