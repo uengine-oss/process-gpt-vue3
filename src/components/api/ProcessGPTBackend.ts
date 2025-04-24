@@ -1489,7 +1489,11 @@ class ProcessGPTBackend implements Backend {
         try {
             const options = {
                 orderBy: 'username',
-                sort: 'asc'
+                sort: 'asc',
+                matchArray: {
+                    column: 'tenants',
+                    values: [window.$tenantName]
+                }
             }
             const users = await storage.list('users', options);
             return users

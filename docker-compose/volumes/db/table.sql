@@ -123,9 +123,7 @@ CREATE POLICY users_select_policy
     FOR SELECT
     TO public
     USING (
-        (auth.tenant_id() = ANY(tenants)) 
-        OR 
-        (auth.uid() = id)
+        true
     );
 
 CREATE POLICY users_update_policy
@@ -986,6 +984,7 @@ create table if not exists public.chats (
     id text not null,
     messages jsonb null,
     tenant_id text null default auth.tenant_id(),
+    thread_id text null,
     constraint chats_pkey primary key (uuid),
     constraint chats_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -1003,6 +1002,9 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chats' AND column_name='tenant_id') THEN
         ALTER TABLE public.chats ADD COLUMN tenant_id text null default auth.tenant_id();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chats' AND column_name='thread_id') THEN
+        ALTER TABLE public.chats ADD COLUMN thread_id text null;
     END IF;
 END;
 $$;

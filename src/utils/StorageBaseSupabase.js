@@ -743,6 +743,11 @@ export default class StorageBaseSupabase {
                 query = query.match(options.match);
             }
 
+            // Add match condition for text[] type column
+            if (options.matchArray) {
+                query = query.contains(options.matchArray.column, options.matchArray.values);
+            }
+
             // size 처리
             if (options.size) {
                 query = query.limit(options.size);
