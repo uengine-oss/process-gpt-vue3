@@ -33,6 +33,11 @@ const MainRoutes = {
             component: () => import('@/components/apps/todolist/InstanceCard.vue'),
         },
         {
+            name: 'InstanceRunning',
+            path: '/instancelist/running',
+            component: () => import('@/components/ProcessInstanceRunning.vue'),
+        },
+        {
             name: 'Chats',
             path: '/chats',
             component: () => import('@/views/apps/chat/Chats.vue')

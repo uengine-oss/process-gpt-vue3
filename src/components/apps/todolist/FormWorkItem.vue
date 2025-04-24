@@ -242,9 +242,22 @@ export default {
                     workItem['user_input_text'] = this.newMessage;
                 }
                 backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate)
-                    .then((result) => {
-                        if (result.error) {
-                            me.handleError(result.error);
+                    .then(async (response) => {
+                        if (response && response.error) {
+                            me.handleError(response.error);
+                        } else if (response) {
+                            let receivedText = "";
+                            const { reader, decoder } = response;
+
+                            while (true) {
+                                const { done, value } = await reader.read();
+                                if (done) break;                        
+                                const chunk = decoder.decode(value, { stream: true });
+                                receivedText += chunk;
+                                me.EventBus.emit('workitem-streaming', receivedText);
+                            }
+
+                            me.EventBus.emit('workitem-streaming', '');
                         }
                         // 워크아이템 완료 처리
                         me.EventBus.emit('workitem-completed');

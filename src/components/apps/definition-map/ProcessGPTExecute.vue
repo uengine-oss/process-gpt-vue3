@@ -202,24 +202,46 @@ export default {
                 }
             })
             
-            backend.start(input).then((result) => {
-                if (result.error) {
-                    me.handleError(result.error);
-                } else {
-                    const encodedInstanceId = btoa(encodeURIComponent(result.instanceId));
-                    const path = `/instancelist/${encodedInstanceId}`;
-                    me.$router.push(path);
+            backend.start(input).then(async (response) => {
+                if (response && response.error) {
+                    me.handleError(response.error);
+                } else if (response) {
+                    let receivedText = "";
+                    const { reader, decoder } = response;
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                
+                        const chunk = decoder.decode(value, { stream: true });
+                        receivedText += chunk;
+                        me.EventBus.emit('process-instance-streaming', receivedText);
+                    }
+
+                    let result = {};
+                    if (receivedText.includes("```json")) {
+                        const textArr = receivedText.replace(/```json/g, "").split(/```/g);
+                        const jsonText = textArr.shift();
+                        result = JSON.parse(jsonText);
+                    }
+
+                    if (result && result.instanceId) {
+                        const encodedInstanceId = btoa(encodeURIComponent(result.instanceId));
+                        const path = `/instancelist/${encodedInstanceId}`;
+                        me.$router.push(path);
+                    }
                 }
                 me.EventBus.emit('instances-updated');
             });
             
             me.closeDialog();
             me.EventBus.emit('instances-running', me.definition.processDefinitionName);
+            const path = `/instancelist/running?proc_def_id=${me.definition.processDefinitionId}`;
+            me.$router.push(path);
 
             me.$try({
                 context: me,
-                action: async () => {
-                    me.$router.push('/instancelist/running');
+                action: () => {
                 },
                 successMsg: this.$t('successMsg.runningTheProcess')
             })

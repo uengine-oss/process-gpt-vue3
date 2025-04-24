@@ -1,15 +1,15 @@
 import axios from '@/utils/axios';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
-
 import type { Backend } from './Backend';
 
 import { formatDistanceToNowStrict } from 'date-fns';
-import messages from '@/utils/locales/messages';
 
 enum ErrorCode {
     TableNotFound = "42P01"
 }
+
+let streamText: string = "";
 
 class ProcessGPTBackend implements Backend {
 
@@ -289,45 +289,90 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // async executeInstance(input: any) {
+    //     try {
+    //         const email = localStorage.getItem('email');
+    //         input.email = email;
+
+    //         var url = `/execution/complete`;
+    //         if (input.answer && input.answer.image != null) {
+    //             url = `/execution/vision-complete`;
+    //         }
+            
+    //         var req = {
+    //             input: input
+    //         };
+
+    //         var response: any = await axios.post(url, req, {
+    //             responseType: 'stream',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             }
+    //         })
+    //         // .then(res => {
+    //         //     if (res.data) {
+    //         //         console.log(res.data);
+    //         //         // const data = JSON.parse(res.data);
+    //         //         // if (data) {
+    //         //         //     result = data;
+    //         //         // }
+    //         //     }
+    //         // })
+    //         // .catch(error => {
+    //         //     result = {}
+    //         //     if (error.detail && error.detail.status_code && error.detail.status_code == 401) {
+    //         //         alert('토큰이 만료되었습니다. 다시 로그인 해주세요.');
+    //         //     } else if (error.detail) {
+    //         //         result.error = error.detail;
+    //         //     } else {
+    //         //         result.error = error;
+    //         //     }
+    //         // });
+
+    //         response.data.on('data', (chunk) => {
+    //             console.log('Stream chunk:', chunk.toString());
+    //         });
+              
+    //         response.data.on('end', () => {
+    //             console.log('Stream complete');
+    //         });              
+
+    //         // return response.data;
+    //     } catch (error) {
+    //         return { error: error };
+    //     }
+    // }
+
     async executeInstance(input: any) {
         try {
             const email = localStorage.getItem('email');
             input.email = email;
-
-            var url = `/execution/complete`;
+        
+            let url = `/execution/complete`;
             if (input.answer && input.answer.image != null) {
                 url = `/execution/vision-complete`;
             }
-            
-            var req = {
-                input: input
-            };
-            
-            var result: any = null;
-            await axios.post(url, req).then(res => {
-                if (res.data) {
-                    const data = JSON.parse(res.data);
-                    if (data) {
-                        result = data;
-                    }
-                }
-            })
-            .catch(error => {
-                result = {}
-                if (error.detail && error.detail.status_code && error.detail.status_code == 401) {
-                    alert('토큰이 만료되었습니다. 다시 로그인 해주세요.');
-                } else if (error.detail) {
-                    result.error = error.detail;
-                } else {
-                    result.error = error;
-                }
-            });
 
-            return result;
-        } catch (error) {
-            return { error: error };
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ input })
+            });
+        
+            if (!response.body) {
+                throw new Error("스트리밍 응답이 지원되지 않습니다.");
+            }
+        
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+
+            return { reader, decoder };
+        } catch (error: any) {
+            return { error: error.message || error };
         }
-    }
+    } 
 
     async getInstance(instanceId: string) {
         try {
