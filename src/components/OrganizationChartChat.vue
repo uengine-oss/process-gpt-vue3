@@ -147,7 +147,7 @@ export default {
 
             await this.getChatList('organization_chart_chat');
 
-            this.userList = await this.storage.list("users");
+            this.userList = await this.backend.getUserList();
             this.chatRoomId = 'organization_chart_chat';
         },
         beforeSendMessage(newMessage) {
@@ -270,7 +270,7 @@ export default {
                         await this.putObject('users', userInfo);
                     }
                 });
-                this.userList = await this.storage.list("users");
+                this.userList = await this.backend.getUserList();
             }
             this.newUserList = [];
             this.userDialog = false;
@@ -286,7 +286,7 @@ export default {
                     }
                     await this.storage.delete('users', options);
                 });
-                this.userList = await this.storage.list("users");
+                this.userList = await this.backend.getUserList();
             }
         },
         async updateNode() {
