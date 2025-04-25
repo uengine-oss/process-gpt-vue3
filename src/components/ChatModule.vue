@@ -671,6 +671,7 @@ export default {
                     if(jsonData['formValues']){
                         this.EventBus.emit('form-values-updated', jsonData['formValues']);
                         this.messages[this.messages.length - 1].content = '초안 생성을 완료하였습니다.'
+                        this.afterAgentGeneration(jsonData);
                     } else {
                         this.afterGenerationFinished(jsonData);
                     }

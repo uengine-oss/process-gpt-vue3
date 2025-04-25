@@ -123,6 +123,8 @@
                                             :html="html"
                                             :formData="formData"
                                             :isAgentMode="true"
+                                            :simulationInstances="simulationInstances"
+                                            @agentGenerationFinished="agentGenerationFinished"
                                         />
                                     </div>
                                 </perfect-scrollbar>
@@ -160,6 +162,8 @@
                         @close="close"
                         @executeProcess="executeProcess"
                         :is-simulate="isSimulate"
+                        :is-finished-agent-generation="isFinishedAgentGeneration"
+                        :processDefinition="processDefinition"
                     ></component>
                     <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
                 </div>
@@ -195,9 +199,11 @@ export default {
         },
         dryRunWorkItem: Object,
         isSimulate:  {
-            type: Boolean,
-            default: false
-        }
+            type: String,
+            default: 'false'
+        },
+        simulationInstances: Array,
+        processDefinition: Object
     },
     components: {
         // ProcessDefinition,
@@ -239,6 +245,8 @@ export default {
         // Form data
         inFormNameTabs: [],
         inFormValues: [],
+
+        isFinishedAgentGeneration: false
     }),
     created() {
         this.init();
@@ -256,6 +264,12 @@ export default {
             this.inFormValues = formData.inFormValues;
         });
         window.addEventListener('resize', this.handleResize);
+
+        if(this.isSimulate == 'true') {
+            setTimeout(() => {
+                this.selectedTab = 'agent';
+            }, 1500);
+        }
     },
     beforeDestroy() {
         window.removeEventListener('resize', this.handleResize);
@@ -348,15 +362,31 @@ export default {
         }
     },
     methods: {
+        agentGenerationFinished(value) {
+            if(this.isSimulate == 'true') {
+                // setTimeout(() => {
+                //     this.executeProcess();
+                // }, 2000);
+                this.$emit('agentGenerationFinished', value)
+                this.isFinishedAgentGeneration = true;
+                setTimeout(() => {
+                    this.selectedTab = 'progress';
+                }, 1500);
+            }
+        },
         init() {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
                     if (me.isDryRun) {
-                        me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
                         me.workItem = me.dryRunWorkItem
                         me.currentActivities = [me.workItem.activity.tracingTag];
+                        if(me.isSimulate == 'true') {
+                            me.bpmn = me.processDefinition.bpmn;
+                        } else {
+                            me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
+                        }
                     } else {
                         me.workItem = await backend.getWorkItem(me.currentTaskId);
                         me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn', version: me.workItem.worklist.defVerId });

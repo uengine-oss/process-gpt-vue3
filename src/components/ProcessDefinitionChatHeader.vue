@@ -227,11 +227,12 @@ export default {
             return this.bpmn.includes('ExternalCustomer') || this.bpmn.includes('externalCustomer');
         },
         useSimulate() {
-            if (!this.Pal && this.fullPath != 'definition-map' && this.mode != 'ProcessGPT') {
-                return true;
-            } else {
-                return false;
-            }
+            // if (!this.Pal && this.fullPath != 'definition-map' && this.mode != 'ProcessGPT') {
+            //     return true;
+            // } else {
+            //     return false;
+            // }
+            return true
         },
         useExecute() {
             if (!this.Pal && this.fullPath != 'definition-map' && 

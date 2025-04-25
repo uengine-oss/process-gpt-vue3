@@ -2,6 +2,7 @@
     "message": "en",
     "changePath": "You have unsaved changes. Are you sure you want to leave?",
     "successMsg": {
+        "simulatedProcess": "Simulated process completed",
         "runningTheProcess": "Running the process",
         "processExecutionCompleted": "Process execution completed",
         "workCompleted": "Completion of work",
@@ -841,7 +842,8 @@
     },
     "ProcessGPTExecute": {
         "roleMapping": "Role Mapping",
-        "processStart": "Process Start"
+        "processStart": "Process Start",
+        "processSimulate": "Process Simulation"
     },
     "Checkpoints": {
         "checkpoints": "Checkpoints"
