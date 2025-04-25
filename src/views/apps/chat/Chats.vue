@@ -277,7 +277,7 @@ export default {
             preferredLanguage: "Korean"
         });
 
-        this.userInfo = await this.storage.getUserInfo();
+        this.userInfo = await this.backend.getUserInfo();
         await this.getChatRoomList();
         await this.getUserList();
         await this.getCalendar();
@@ -381,7 +381,7 @@ export default {
         },
         async getUserList(){
             var me = this
-            await me.storage.list(`users`).then(function (users) {
+            await me.backend.getUserList().then(function (users) {
                 if (users) {
                     users = users.filter(user => user.email !== me.userInfo.email);
                     const systemUser = {
@@ -538,11 +538,11 @@ export default {
             if (newMessage && (newMessage.text != '' || newMessage.image != null)) {
                 this.putMessage(this.createMessageObj(newMessage))
                 if(!this.generator.contexts) {
-                    let contexts = await this.storage.list(`proc_def`);
+                    let contexts = await this.backend.listDefinition();
                     this.generator.setContexts(contexts);
                 }
                 
-                let instanceList = await this.storage.list(`bpm_proc_inst`); 
+                let instanceList = await this.backend.getAllInstanceList(); 
                 this.generator.setWorkList(instanceList);
                 newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
