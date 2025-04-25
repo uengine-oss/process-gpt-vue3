@@ -54,6 +54,8 @@ import loadbpmnComponents from './components/designer/bpmnModeling/bpmn';
 import loadOpengraphComponents from './opengraph';
 import DetailComponent from './components/ui-components/details/DetailComponent.vue'
 
+import BackendFactory from '@/components/api/BackendFactory';
+
 // vue-
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
@@ -129,8 +131,46 @@ async function setupSupabase() {
     });
 }
 
+async function setupTenant() {
+    const subdomain = window.location.hostname.split('.')[0];
+
+    if(subdomain == 'www' || subdomain == 'process-gpt') {
+        Object.defineProperty(window, '$isTenantServer', {
+            value: true,
+            writable: false,
+            configurable: true
+        });
+    } else if(window.location.host.includes('localhost') || 
+        window.location.host.includes('192.168') || 
+        window.location.host.includes('127.0.0.1')
+    ) {
+        Object.defineProperty(window, '$isTenantServer', {
+            value: false,
+            writable: false,
+            configurable: true
+        });
+        Object.defineProperty(window, '$tenantName', {
+            value: 'localhost',
+            writable: false,
+            configurable: false
+        });
+    } else {
+        Object.defineProperty(window, '$isTenantServer', {
+            value: false,
+            writable: false,
+            configurable: true
+        });
+        Object.defineProperty(window, '$tenantName', {
+            value: subdomain,
+            writable: false,
+            configurable: false
+        });
+    }
+}
+
 async function initializeApp() {
     await setupSupabase();
+    await setupTenant();
     const app = createApp(App);
     app.use(VueMonacoEditorPlugin, {
         paths: {
