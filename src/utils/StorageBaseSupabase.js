@@ -227,6 +227,16 @@ export default class StorageBaseSupabase {
                             tenants: [window.$tenantName],
                             current_tenant: window.$tenantName
                         });
+                    } else {
+                        await this.putObject('users', {
+                            id: result.data.user.id,
+                            username: userInfo.username,
+                            email: userInfo.email,
+                            role: 'user',
+                            is_admin: false,
+                            tenants: [],
+                            current_tenant: ''
+                        });
                     }
                     result.data["isNewUser"] = true;
                     return result.data;
