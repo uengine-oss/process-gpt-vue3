@@ -62,7 +62,7 @@
         "date-fns": "^2.29.3",
         "dayjs": "^1.11.12",
         "deep-diff": "^1.0.2",
-        "dhtmlx-gantt": "^9.0.9",
+        "dhtmlx-gantt": "^9.0.10",
         "diff-match-patch": "^1.0.5",
         "dom-to-image": "^2.6.0",
         "dotenv": "^16.4.5",

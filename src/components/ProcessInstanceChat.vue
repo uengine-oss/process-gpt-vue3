@@ -34,6 +34,7 @@ export default {
         html: String,
         formData: Object,
         useThreadId: Boolean,
+        simulationInstances: Array,
         streamingText: String,
     },
     data: () => ({
@@ -211,6 +212,11 @@ export default {
                 const instance = await backend.getInstance(this.processInstance.proc_inst_id);
                 this.generator.previousMessages.push({
                     "content": "이전 작업 내역 리스트: " + JSON.stringify(instance),
+                    "role": "user"
+                })
+            } else if(this.simulationInstances && this.simulationInstances.length > 0) {
+                this.generator.previousMessages.push({
+                    "content": "이전 작업 내역 리스트: " + JSON.stringify(this.simulationInstances),
                     "role": "user"
                 })
             } else {
@@ -405,6 +411,9 @@ export default {
             me.checkDisableChat();
             me.EventBus.emit('instances-updated');
             me.EventBus.emit('process-definition-updated');
+        },
+        afterAgentGeneration(response) {
+            this.$emit('agentGenerationFinished', response)
         },
         afterModelStopped(response) {
             let id;

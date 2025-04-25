@@ -182,7 +182,7 @@
             :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
         >
             <div v-if="!pal && mode === 'ProcessGPT'">
-                <process-gpt-execute :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
+                <process-gpt-execute :isSimulate="isSimulate" :processDefinition="processDefinition" :bpmn="bpmn" :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
             </div>
             <div v-else>
                 <test-process v-if="isSimulate == 'true'" :executeDialog="executeDialog" :definitionId="fullPath" @close="executeDialog = false" />

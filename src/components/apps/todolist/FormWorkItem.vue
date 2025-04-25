@@ -1,8 +1,15 @@
 <template>
     <v-row class="ma-0 pa-0 task-btn">
         <v-spacer></v-spacer>
-        <div class="from-work-item-pc" v-if="!isCompleted">
+        <div class="from-work-item-pc" style="margin-right: 10px;" v-if="!isCompleted">
             <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded>중간 저장</v-btn>
+            <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
+                class="bouncing-arrow-horizontal" 
+                color="primary" 
+                size="large"
+            >
+                mdi-arrow-right-bold
+            </v-icon>
             <v-btn @click="executeProcess" color="primary" density="compact" rounded>제출 완료</v-btn>
         </div>
         <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
@@ -81,6 +88,8 @@ export default {
             type: String,
             default: "false"
         },
+        isFinishedAgentGeneration: Boolean,
+        processDefinition: Object
     },
     data: () => ({
         html: null,
@@ -134,7 +143,12 @@ export default {
                     return;
                 }
             }
-            me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
+            if(me.isSimulate == 'true' && !window.location.pathname.includes('/definitions/')) {
+                const formId = `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag}_form`;
+                me.html = localStorage.getItem(formId);    
+            } else {
+                me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
+            }
             if(!me.html) {
                 me.useTextAudio = true;
             }
@@ -372,6 +386,17 @@ export default {
 
 .form-work-item-mobile {
     display: none;
+}
+
+@keyframes bounce-horizontal {
+    0%, 100% { transform: translateX(0); }
+    40% { transform: translateX(-5px); }
+    60% { transform: translateX(3px); }
+    80% { transform: translateX(-2px); }
+}
+
+.bouncing-arrow-horizontal {
+    animation: bounce-horizontal 1.5s infinite;
 }
 
 @media only screen and (max-width:1080px) {

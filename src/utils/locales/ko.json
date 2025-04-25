@@ -2,6 +2,7 @@
     "message": "ko",
     "changePath": "저장되지 않은 변경사항이 있습니다. 이동하시겠습니까?",
     "successMsg": {
+        "simulatedProcess": "Process 시뮬레이션 완료",
         "runningTheProcess": "Process 실행",
         "processExecutionCompleted": "프로세스 실행 완료",
         "workCompleted": "해당 업무 완료",
@@ -843,7 +844,8 @@
     },
     "ProcessGPTExecute": {
         "roleMapping": "역할 지정",
-        "processStart": "프로세스 실행"
+        "processStart": "프로세스 실행",
+        "processSimulate": "프로세스 시뮬레이션"
     },
     "Checkpoints": {
         "checkpoints": "체크포인트"
