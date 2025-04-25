@@ -65,7 +65,7 @@ export default {
             preferredLanguage: "Korean"
         });
 
-        this.userInfo = await this.storage.getUserInfo();
+        this.userInfo = await this.backend.getUserInfo();
         await this.getUserList();
 
         this.EventBus.on('messages-updated', () => {
