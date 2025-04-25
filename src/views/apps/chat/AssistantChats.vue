@@ -64,7 +64,8 @@ export default {
             isStream: true,
             preferredLanguage: "Korean"
         });
-
+    },
+    async mounted() {
         this.userInfo = await this.backend.getUserInfo();
         await this.getUserList();
 

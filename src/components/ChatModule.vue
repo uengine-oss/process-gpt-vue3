@@ -92,6 +92,7 @@ export default {
     },
     async created() {
         // var me = this;
+        this.backend = BackendFactory.createBackend();
         this.storage = StorageBaseFactory.getStorage();
         this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
@@ -149,8 +150,6 @@ export default {
             if (this.useLock) {
                 this.userInfo = await this.storage.getUserInfo();
             }
-            this.backend = BackendFactory.createBackend();
-
             await this.loadData(this.getDataPath());
             // await this.loadMessages(this.getDataPath());
         },
