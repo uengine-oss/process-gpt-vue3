@@ -78,7 +78,7 @@ export default {
         },
         async getUserList(){
             var me = this
-            await me.storage.list(`users`).then(function (users) {
+            await me.backend.getUserList().then(function (users) {
                 if (users) {
                     users = users.filter(user => user.email !== me.userInfo.email);
                     const systemUser = {
