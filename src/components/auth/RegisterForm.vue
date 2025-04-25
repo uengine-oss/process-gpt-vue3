@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form } from 'vee-validate';
-import { ref, getCurrentInstance } from 'vue';
+import { ref, getCurrentInstance, defineProps } from 'vue';
 
 import { useAuthStore } from '@/stores/auth';
 const authStore = useAuthStore();
@@ -8,6 +8,8 @@ const { proxy } = getCurrentInstance();
 
 /*Social icons*/
 //import google from '@/assets/images/svgs/google-icon.svg';
+
+const { isTenantRegister } = defineProps<{ isTenantRegister: boolean }>();
 
 const password = ref('');
 const confirmPassword = ref('');
@@ -64,6 +66,7 @@ function validate(values: any, { setErrors }: any) {
     });
 }
 </script>
+
 <template>
     <!-- Social -->
     <!-- <v-row class="d-flex mb-3">
@@ -81,7 +84,7 @@ function validate(values: any, { setErrors }: any) {
     </div> -->
     <Form @submit="validate" v-slot="{ errors, isSubmitting }" class="mt-5">
         <v-label class="text-subtitle-1 font-weight-medium pb-2">
-            {{ $t('createAccount.normalRegister') }}
+            {{ isTenantRegister ? $t('createAccount.tenantRegister') : $t('createAccount.normalRegister') }}
         </v-label>
         <v-divider class="mb-4" />
 

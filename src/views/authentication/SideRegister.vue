@@ -26,15 +26,9 @@ const { isTenantRegister } = defineProps<{ isTenantRegister: boolean }>();
                 <div class="mt-xl-0 mt-5 mw-100" >
                     <h2 class="text-h3 font-weight-semibold mb-4">{{ $t('createAccount.title') }}</h2>
 
-                    <!-- #region 마스터 DB 여부에 따라서 서로 다른 회원가입 폼 표시 -->
-                    <div v-if="isTenantRegister">
-                        <TenantRegisterForm/>
-                    </div>
-                    <div v-else>
-                        <RegisterForm/>
-                    </div>
-                    <!-- #endregion -->
-
+                    <!-- signup form -->
+                    <RegisterForm :isTenantRegister="isTenantRegister" />
+                    
                     <h6 class="text-subtitle-1  text-grey100 d-flex align-center mt-6">
                         {{ $t('createAccount.already') }}
                         <v-btn variant="plain" to="/auth/login" class="text-primary text-body-1 opacity-1 pl-2">{{ $t('createAccount.login') }}</v-btn>
