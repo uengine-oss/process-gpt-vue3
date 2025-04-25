@@ -69,7 +69,9 @@ export default {
     async created() {
         window.$app_ = this;
         window.addEventListener('load', () => {
-            this.loadScreen = true;
+            if (window.$mode !== 'ProcessGPT') {
+                this.loadScreen = true;
+            }
         });
     },
     async mounted() {
@@ -78,6 +80,7 @@ export default {
             this.backend = BackendFactory.createBackend();
             if (window.$isTenantServer) {
                 await this.backend.checkDBConnection();
+                this.loadScreen = true;
             } else {
                 const isValidTenant = await this.backend.getTenant(window.$tenantName);
                 if (!isValidTenant) {
@@ -90,9 +93,9 @@ export default {
                     return;
                 } else {
                     await this.backend.setTenant(window.$tenantName);
+                    this.loadScreen = true;
                 }
             }
-            this.loadScreen = true;
 
             if (localStorage.getItem('email')) {
                 this.watchNotifications(localStorage.getItem('email'));

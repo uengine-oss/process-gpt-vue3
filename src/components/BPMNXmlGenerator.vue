@@ -15,9 +15,7 @@ export default {
     // 필요한 props 정의
   },
   // 상수 정의
-  data() {
-    return {
-      // XML 네임스페이스 관련 상수
+  data: () => ({
       NAMESPACES: {
         BPMN: 'http://www.omg.org/spec/BPMN/20100524/MODEL',
         BPMNDI: 'http://www.omg.org/spec/BPMN/20100524/DI',
@@ -85,8 +83,7 @@ export default {
         FORM_ACTIVITY_TYPE: 'org.uengine.kernel.FormActivity',
         EVALUATE_TYPE: 'org.uengine.kernel.Evaluate'
       }
-    };
-  },
+  }),
   methods: {
     taskMapping(activity) {
       switch (activity) {
@@ -102,94 +99,192 @@ export default {
       console.log('원본 jsonModel:', jsonModel);
       
       const transformedModel = {
-        megaProcessId: jsonModel.megaProcessId || "미분류",
-        majorProcessId: jsonModel.majorProcessId || "미분류",
-        processDefinitionName: jsonModel.processDefinitionName || "Unknown",
+        megaProcessId: jsonModel.megaProcessId || this.DEFAULT_VALUES.MEGA_PROCESS_ID,
+        majorProcessId: jsonModel.majorProcessId || this.DEFAULT_VALUES.MAJOR_PROCESS_ID,
+        processDefinitionName: jsonModel.processDefinitionName || this.DEFAULT_VALUES.DEFAULT_PROCESS_NAME,
         processDefinitionId: jsonModel.processDefinitionId || "Unknown",
         description: jsonModel.description || "",
         isHorizontal: jsonModel.isHorizontal === true,
         roles: (jsonModel.roles || []).map(role => ({
           name: role.name,
-          resolutionRule: role.resolutionRule || "실제 " + role.name + "을(를) 매핑"
+          resolutionRule: role.resolutionRule || "실제 " + role.name + "을(를) 매핑",
+          boundary: role.boundary || null
         })),
-        elements: {},
+        elements: Array.isArray(jsonModel.elements) ? [] : {},
         data: jsonModel.data || [],
-        sequences: [],
-        participants: []
+        sequences: []
       };
 
       console.log('요소 변환 시작');
 
-      // 요소 ID 기반으로 객체 구조 생성
-      if (Array.isArray(jsonModel.elements)) {
-        jsonModel.elements.forEach((element, index) => {
-          if (element.elementType === "Event") {
-            transformedModel.elements[element.id] = {
-              elementType: "Event",
-              id: element.id,
-              name: element.name || "",
-              role: element.role || "",
-              source: element.source || "none",
-              type: element.type || (element.id.includes("start") ? "StartEvent" : "EndEvent"),
-              description: element.description || ""
-            };
-          } else if (element.elementType === "Activity") {
-            transformedModel.elements[element.id] = {
-              elementType: "Activity",
-              id: element.id,
-              name: element.name || "",
-              type: element.type || "UserActivity",
-              source: element.source || "",
-              description: element.description || "",
-              instruction: element.instruction || "",
-              role: element.role || "",
-              inputData: element.inputData || [],
-              outputData: element.outputData || [],
-              checkpoints: element.checkpoints || [],
-              properties: {
-                duration: element.duration || "5"
-              }
-            };
-          } else if (element.elementType === "Gateway") {
-            transformedModel.elements[element.id] = {
-              elementType: "Gateway",
-              id: element.id,
-              name: element.name || "",
-              role: element.role || "",
-              source: element.source || "",
-              gateWayType: element.type === "ExclusiveGateway" ? "bpmn:exclusiveGateway" : "bpmn:parallelGateway",
-              description: element.description || ""
-            };
-          } else if (element.elementType === "Sequence") {
-            // Sequence는 별도의 배열에 담지 않고 elements 객체에 직접 추가
-            const sequenceId = `seq_${element.source}_${element.target}`;
-            transformedModel.elements[sequenceId] = {
-              elementType: "Sequence",
-              id: sequenceId,
-              source: element.source,
-              target: element.target,
-              condition: element.condition || {}
-            };
-          }
-        });
+      // 요소 처리: elements가 배열인 경우와 객체인 경우 모두 처리
+      if (jsonModel.elements) {
+        if (Array.isArray(jsonModel.elements)) {
+          // 배열 형태의 elements 처리
+          jsonModel.elements.forEach((element, index) => {
+            if (element.elementType === "Event") {
+              transformedModel.elements.push({
+                elementType: "Event",
+                id: element.id,
+                name: element.name || "",
+                role: element.role || "",
+                source: element.source || "none",
+                type: element.type || (element.id.includes("start") ? "StartEvent" : "EndEvent"),
+                description: element.description || "",
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height
+              });
+            } else if (element.elementType === "Activity") {
+              transformedModel.elements.push({
+                elementType: "Activity",
+                id: element.id,
+                name: element.name || "",
+                type: element.type || "UserActivity",
+                source: element.source || "",
+                description: element.description || "",
+                instruction: element.instruction || "",
+                role: element.role || "",
+                inputData: element.inputData || [],
+                outputData: element.outputData || [],
+                checkpoints: element.checkpoints || [],
+                properties: {
+                  duration: element.duration || "5"
+                },
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height
+              });
+            } else if (element.elementType === "Gateway") {
+              transformedModel.elements.push({
+                elementType: "Gateway",
+                id: element.id,
+                name: element.name || "",
+                role: element.role || "",
+                source: element.source || "",
+                gateWayType: element.type === "ExclusiveGateway" ? "bpmn:exclusiveGateway" : "bpmn:parallelGateway",
+                description: element.description || "",
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height
+              });
+            } else if (element.elementType === "Sequence") {
+              transformedModel.elements.push({
+                elementType: "Sequence",
+                id: `seq_${element.source}_${element.target}`,
+                source: element.source,
+                target: element.target,
+                condition: element.condition || {},
+                waypoints: element.waypoints || []
+              });
+            }
+          });
+        } else {
+          // 객체 형태의 elements 처리
+          Object.keys(jsonModel.elements).forEach((key) => {
+            const element = jsonModel.elements[key];
+            if (element.elementType === "Event") {
+              transformedModel.elements[element.id] = {
+                elementType: "Event",
+                id: element.id,
+                name: element.name || "",
+                role: element.role || "",
+                source: element.source || "none",
+                type: element.type || (element.id.includes("start") ? "StartEvent" : "EndEvent"),
+                description: element.description || "",
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height
+              };
+            } else if (element.elementType === "Activity") {
+              transformedModel.elements[element.id] = {
+                elementType: "Activity",
+                id: element.id,
+                name: element.name || "",
+                type: element.type || "UserActivity",
+                source: element.source || "",
+                description: element.description || "",
+                instruction: element.instruction || "",
+                role: element.role || "",
+                inputData: element.inputData || [],
+                outputData: element.outputData || [],
+                checkpoints: element.checkpoints || [],
+                properties: {
+                  duration: element.duration || "5"
+                },
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height
+              };
+            } else if (element.elementType === "Gateway") {
+              transformedModel.elements[element.id] = {
+                elementType: "Gateway",
+                id: element.id,
+                name: element.name || "",
+                role: element.role || "",
+                source: element.source || "",
+                gateWayType: element.type === "ExclusiveGateway" ? "bpmn:exclusiveGateway" : "bpmn:parallelGateway",
+                description: element.description || "",
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height
+              };
+            } else if (element.elementType === "Sequence") {
+              const sequenceId = `seq_${element.source}_${element.target}`;
+              transformedModel.elements[sequenceId] = {
+                elementType: "Sequence",
+                id: sequenceId,
+                source: element.source,
+                target: element.target,
+                condition: element.condition || {},
+                waypoints: element.waypoints || []
+              };
+            }
+          });
+        }
       }
       
       // 이전 버전 호환성을 위해 sequences 배열이 있는 경우 처리
       if (jsonModel.sequences && Array.isArray(jsonModel.sequences)) {
-        console.log('이전 버전 sequences 배열 발견, elements에 통합');
-        jsonModel.sequences.forEach((sequence, index) => {
-          const sequenceId = `seq_${sequence.source}_${sequence.target}`;
-          transformedModel.elements[sequenceId] = {
-            elementType: "Sequence",
-            id: sequenceId,
-            source: sequence.source,
-            target: sequence.target,
-            condition: sequence.condition || {}
-          };
-        });
+        console.log('이전 버전 sequences 배열 발견');
+        
+        if (Array.isArray(transformedModel.elements)) {
+          // elements가 배열인 경우
+          jsonModel.sequences.forEach((sequence, index) => {
+            transformedModel.elements.push({
+              elementType: "Sequence",
+              id: `seq_${sequence.source}_${sequence.target}`,
+              source: sequence.source,
+              target: sequence.target,
+              condition: sequence.condition || {},
+              waypoints: sequence.waypoints || []
+            });
+          });
+        } else {
+          // elements가 객체인 경우
+          jsonModel.sequences.forEach((sequence, index) => {
+            const sequenceId = `seq_${sequence.source}_${sequence.target}`;
+            transformedModel.elements[sequenceId] = {
+              elementType: "Sequence",
+              id: sequenceId,
+              source: sequence.source,
+              target: sequence.target,
+              condition: sequence.condition || {},
+              waypoints: sequence.waypoints || []
+            };
+          });
+        }
       }
 
-      console.log('변환된 모델:', Object.keys(transformedModel.elements).length, '개의 요소');
+      console.log('변환된 모델:', Array.isArray(transformedModel.elements) ? 
+                  transformedModel.elements.length : 
+                  Object.keys(transformedModel.elements).length, '개의 요소');
       return transformedModel;
     },
     calculateLaneBounds(roleVector) {
@@ -353,12 +448,23 @@ export default {
       if (jsonModel.elements) {
         // 시퀀스가 아닌 요소만 처리
         const displayableElements = [];
-        Object.keys(jsonModel.elements).forEach(key => {
-          const element = jsonModel.elements[key];
-          if (element.elementType && element.elementType !== 'Sequence') {
-            displayableElements.push(element);
-          }
-        });
+        
+        if (Array.isArray(jsonModel.elements)) {
+          // 배열 형태의 elements 처리
+          jsonModel.elements.forEach(element => {
+            if (element.elementType && element.elementType !== 'Sequence') {
+              displayableElements.push(element);
+            }
+          });
+        } else {
+          // 객체 형태의 elements 처리
+          Object.keys(jsonModel.elements).forEach(key => {
+            const element = jsonModel.elements[key];
+            if (element.elementType && element.elementType !== 'Sequence') {
+              displayableElements.push(element);
+            }
+          });
+        }
         
         console.log('처리할 요소 수:', displayableElements.length);
         
@@ -455,12 +561,22 @@ export default {
             const displayableElements = [];
             
             // 시퀀스가 아닌 요소만 필터링 (액티비티, 게이트웨이, 이벤트)
-            Object.keys(jsonModel.elements).forEach((key) => {
-                const element = jsonModel.elements[key];
-                if (element.elementType && element.elementType !== 'Sequence') {
-                    displayableElements.push(element);
-                }
-            });
+            if (Array.isArray(jsonModel.elements)) {
+                // 배열 형태의 elements 처리
+                jsonModel.elements.forEach(element => {
+                    if (element.elementType && element.elementType !== 'Sequence') {
+                        displayableElements.push(element);
+                    }
+                });
+            } else {
+                // 객체 형태의 elements 처리
+                Object.keys(jsonModel.elements).forEach((key) => {
+                    const element = jsonModel.elements[key];
+                    if (element.elementType && element.elementType !== 'Sequence') {
+                        displayableElements.push(element);
+                    }
+                });
+            }
             
             console.log('모양 생성 대상 요소 수:', displayableElements.length);
             
@@ -835,12 +951,22 @@ export default {
         // elements에서 Sequence 유형을 찾아 처리
         const sequences = [];
         if (jsonModel.elements) {
-            Object.keys(jsonModel.elements).forEach(key => {
-                const element = jsonModel.elements[key];
-                if (element.elementType === 'Sequence') {
-                    sequences.push(element);
-                }
-            });
+            if (Array.isArray(jsonModel.elements)) {
+                // 배열 형태의 elements 처리
+                jsonModel.elements.forEach(element => {
+                    if (element.elementType === 'Sequence') {
+                        sequences.push(element);
+                    }
+                });
+            } else {
+                // 객체 형태의 elements 처리
+                Object.keys(jsonModel.elements).forEach(key => {
+                    const element = jsonModel.elements[key];
+                    if (element.elementType === 'Sequence') {
+                        sequences.push(element);
+                    }
+                });
+            }
         }
         
         console.log('시퀀스 엣지 처리 수:', sequences.length);
@@ -1070,49 +1196,39 @@ export default {
     
     createDataElements(xmlDoc, jsonModel, process) {
       if (jsonModel.data && jsonModel.data.length > 0) {
-        const extensionElements = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
-        const properties = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
-        
+        const extensionElements = xmlDoc.createElementNS(this.NAMESPACES.BPMN, 'bpmn:extensionElements');
+        const properties = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:properties');
+
         jsonModel.data.forEach(dataObj => {
           if (!dataObj || !dataObj.name) return;
-          
-          const variable = xmlDoc.createElementNS('http://uengine', 'uengine:variable');
+
+          const variable = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:variable');
           variable.setAttribute('name', dataObj.name);
-          
-          // 데이터 타입 설정
-          if (dataObj.type) {
-            variable.setAttribute('type', dataObj.type.toLowerCase());
-          } else {
-            variable.setAttribute('type', 'string');
-          }
-          
-          // JSON 값 설정
-          const jsonElement = xmlDoc.createElementNS('http://uengine', 'uengine:json');
+
+          // ✅ type은 구버전처럼 소문자로 강제
+          const type = (dataObj.type || 'string').toLowerCase();
+          variable.setAttribute('type', type);
+
+          // ✅ value 및 options 구조
+          const jsonElement = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:json');
           const jsonData = {
-            value: '',
+            value: dataObj.defaultValue || '',
             options: {}
           };
-          
-          // 기본값 설정
-          if (dataObj.defaultValue !== undefined) {
-            jsonData.value = dataObj.defaultValue;
-          }
-          
-          // 설명 설정
+
           if (dataObj.description) {
             jsonData.options.description = dataObj.description;
           }
-          
+
           jsonElement.textContent = JSON.stringify(jsonData);
           variable.appendChild(jsonElement);
           properties.appendChild(variable);
         });
-        
+
         extensionElements.appendChild(properties);
         process.appendChild(extensionElements);
       }
     },
-    
     createSequenceFlows(xmlDoc, jsonModel, process) {
       console.log('createSequenceFlows 시작');
       const inComing = {};
@@ -1133,12 +1249,12 @@ export default {
           });
         } else {
           // 객체 형태의 elements 처리 
-        Object.keys(jsonModel.elements).forEach(key => {
-          const element = jsonModel.elements[key];
-          if (element.elementType === 'Sequence') {
-            sequences.push(element);
-          }
-        });
+          Object.keys(jsonModel.elements).forEach(key => {
+            const element = jsonModel.elements[key];
+            if (element.elementType === 'Sequence') {
+              sequences.push(element);
+            }
+          });
         }
       }
       
@@ -1151,170 +1267,54 @@ export default {
             console.log('소스나 타겟이 없는 시퀀스 무시:', sequence.id || '미지정 ID');
             return;
           }
-          
-          console.log('시퀀스 처리:', sequence.source, '->', sequence.target);
-          
-          const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
+
           const sequenceId = 'SequenceFlow_' + sequence.source + '_' + sequence.target;
-          
+          console.log('시퀀스 처리:', sequenceId);
+
+          const sequenceFlow = xmlDoc.createElementNS(this.NAMESPACES.BPMN, 'bpmn:sequenceFlow');
           sequenceFlow.setAttribute('id', sequenceId);
           sequenceFlow.setAttribute('sourceRef', sequence.source);
           sequenceFlow.setAttribute('targetRef', sequence.target);
-          
-          
+
+          // 🔽 조건이 있을 경우 extensionElements 추가
+          if (sequence.condition) {
+            const ext = xmlDoc.createElementNS(this.NAMESPACES.BPMN, 'bpmn:extensionElements');
+            const prop = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:properties');
+            const json = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:json');
+
+            const conditionPayload = {
+              condition: {
+                _type: sequence.condition._type || 'org.uengine.kernel.Evaluate',
+                key: sequence.condition.key || '',
+                value: sequence.condition.value || '',
+                condition: sequence.condition.condition || '=='
+              }
+            };
+
+            json.textContent = JSON.stringify(conditionPayload);
+            prop.appendChild(json);
+            ext.appendChild(prop);
+            sequenceFlow.appendChild(ext);
+          }
+
           process.appendChild(sequenceFlow);
-          
-          // 매핑 정보 업데이트 - 여러 연결을 배열로 저장
-          if (!inComing[sequence.target]) {
-            inComing[sequence.target] = [];
-          }
+
+          // 🔁 in/out mapping
+          inComing[sequence.target] = (inComing[sequence.target] || []);
           inComing[sequence.target].push(sequenceId);
-          
-          if (!outGoing[sequence.source]) {
-            outGoing[sequence.source] = [];
-          }
+
+          outGoing[sequence.source] = (outGoing[sequence.source] || []);
           outGoing[sequence.source].push(sequenceId);
-          
+
           positionMapping[sequenceId] = { source: sequence.source, target: sequence.target };
         });
+
       }
       
       console.log('createSequenceFlows 완료', Object.keys(inComing).length, '개의 incoming,', 
                  Object.keys(outGoing).length, '개의 outgoing 생성');
                  
       return { inComing, outGoing, positionMapping };
-    },
-    createAutoLayout(jsonModel) {
-
-      const { Graph, SugiyamaLayout } = window.GraphAlgorithm;
-      const graph = new Graph();
-      const me = this;
-
-      if (!jsonModel || !jsonModel.elements) {
-        return graph;
-      }
-      
-      // 노드 추가 (Sequence가 아닌 요소)
-      jsonModel.elements.filter(element => element.elementType !== 'Sequence').forEach(element => {
-        const bpmnType = me.getBpmnType(element.type);
-        
-        graph.addNode(element.id, element.name);
-        const node = graph.getNode(element.id);
-        
-        node.width = 100;
-        node.height = 80;
-
-        if (element.elementType === "Gateway") {
-          node.width = 50;
-          node.height = 50;
-        } else if(element.elementType === "Activity"){
-          node.width = 100;
-          node.height = 80;
-        } else if(element.elementType === "Event") {
-          node.width = 34;
-          node.height = 34;
-        }
-        
-        node.nodeType = bpmnType;
-      });
-      
-      // 엣지 추가 (Sequence 요소)
-      jsonModel.elements.filter(element => element.elementType === 'Sequence').forEach(element => {
-        graph.addEdge(element.source, element.target);
-      });
-      
-      // 역할 그룹 추가
-      if (jsonModel.roles && Array.isArray(jsonModel.roles)) {
-        jsonModel.roles.forEach((role, index) => {
-          const roleNodeIds = jsonModel.elements
-            .filter(node => node.role === role.name && node.elementType !== 'Sequence')
-            .map(node => node.id);
-          
-          if (roleNodeIds.length > 0) {
-            graph.createGroup(role.name, roleNodeIds);
-          }
-        });
-      }
-      
-      // 레이아웃 알고리즘 실행
-      const EnhancedSugiyamaLayout = window.EnhancedSugiyamaLayout; 
-      const layout = new SugiyamaLayout(graph, jsonModel.isHorizontal);
-      layout.run();
-      
-      jsonModel = this.updateJsonModelWithGraphPositions(jsonModel, graph);
-      return jsonModel;
-    },
-    updateJsonModelWithGraphPositions(jsonModel, graph) {
-      // 1. 노드(요소) 위치 정보 업데이트
-      if (Array.isArray(jsonModel.elements)) {
-        // 배열 형태의 elements 처리
-      for (let i = 0; i < jsonModel.elements.length; i++) {
-        const element = jsonModel.elements[i];
-        
-        // Sequence가 아닌 요소만 처리
-        if (element.elementType !== 'Sequence') {
-          const node = graph.getNode(element.id);
-          if (node) {
-            // 노드 위치 및 크기 정보 추가
-            element.x = node.x;
-            element.y = node.y;
-            element.width = node.width || 100;
-            element.height = node.height || 80;
-            
-            // 계층 구조 정보 추가
-            if (node.layer !== undefined) element.layer = node.layer;
-            if (node.order !== undefined) element.order = node.order;
-            
-            // BPMN 타입 정보 추가
-            element.bpmnType = node.nodeType || this.getBpmnType(element.type);
-            }
-          } else if(element.elementType === 'Sequence'){
-            const graphSequence = graph.edges.find(edge => edge.source === element.source && edge.target === element.target);
-            element.waypoints = graphSequence.waypoints;
-          }
-        }
-      }
-      
-      graph.groups.forEach(group => {
-        const role = jsonModel.roles.find(role => role.name === group.id);
-        if (role) {
-          role.boundary = {
-            minX: group.minX,
-            maxX: group.maxX,
-            minY: group.minY,
-            maxY: group.maxY,
-            width: group.maxX - group.minX,
-            height: group.maxY - group.minY
-          };
-        }
-      });
-
-      return jsonModel;
-    },
-    getBpmnType(elementType) {
-      if (!elementType) return 'bpmn:Task';
-      
-      // 이미 bpmn: 접두사가 있으면 그대로 반환
-      if (elementType.startsWith('bpmn:')) {
-        return elementType;
-      }
-      
-      // 타입에 따른 매핑
-      const typeMapping = {
-        'StartEvent': 'bpmn:StartEvent',
-        'EndEvent': 'bpmn:EndEvent',
-        'UserActivity': 'bpmn:UserTask',
-        'ServiceActivity': 'bpmn:ServiceTask',
-        'ScriptActivity': 'bpmn:ScriptTask',
-        'EmailActivity': 'bpmn:SendTask',
-        'ExclusiveGateway': 'bpmn:ExclusiveGateway',
-        'ParallelGateway': 'bpmn:ParallelGateway',
-        'Event': 'bpmn:IntermediateThrowEvent',
-        'Activity': 'bpmn:Task',
-        'Gateway': 'bpmn:ExclusiveGateway'
-      };
-      
-      return typeMapping[elementType] || 'bpmn:Task';
     },
     createBpmnXml(jsonModel) {
         jsonModel = this.createAutoLayout(jsonModel);
@@ -1506,7 +1506,199 @@ export default {
         });
         
         console.log('오토레이아웃 모드에서 레인 모양 생성 완료');
-    }
+    },
+    createAutoLayout(jsonModel) {
+      const { Graph, SugiyamaLayout } = window.GraphAlgorithm;
+      const graph = new Graph();
+      const me = this;
+
+      if (!jsonModel || !jsonModel.elements) {
+        return jsonModel;
+      }
+      
+      // 배열 또는 객체 형태의 elements를 처리
+      const elements = [];
+      if (Array.isArray(jsonModel.elements)) {
+        // 이미 배열인 경우 그대로 사용
+        elements.push(...jsonModel.elements);
+      } else {
+        // 객체인 경우 배열로 변환
+        Object.keys(jsonModel.elements).forEach(key => {
+          elements.push(jsonModel.elements[key]);
+        });
+      }
+      
+      // 노드 추가 (Sequence가 아닌 요소)
+      elements.filter(element => element.elementType !== 'Sequence').forEach(element => {
+        const bpmnType = me.getBpmnType(element.type);
+        
+        graph.addNode(element.id, element.name);
+        const node = graph.getNode(element.id);
+        
+        node.width = 100;
+        node.height = 80;
+
+        if (element.elementType === "Gateway") {
+          node.width = 50;
+          node.height = 50;
+        } else if(element.elementType === "Activity"){
+          node.width = 100;
+          node.height = 80;
+        } else if(element.elementType === "Event") {
+          node.width = 34;
+          node.height = 34;
+        }
+        
+        node.nodeType = bpmnType;
+      });
+      
+      // 엣지 추가 (Sequence 요소)
+      elements.filter(element => element.elementType === 'Sequence').forEach(element => {
+        graph.addEdge(element.source, element.target);
+      });
+      
+      // 역할 그룹 추가
+      if (jsonModel.roles && Array.isArray(jsonModel.roles)) {
+        jsonModel.roles.forEach((role, index) => {
+          const roleNodeIds = elements
+            .filter(node => node.role === role.name && node.elementType !== 'Sequence')
+            .map(node => node.id);
+          
+          if (roleNodeIds.length > 0) {
+            graph.createGroup(role.name, roleNodeIds);
+          }
+        });
+      }
+      
+      // 레이아웃 알고리즘 실행
+      const EnhancedSugiyamaLayout = window.EnhancedSugiyamaLayout; 
+      const layout = new SugiyamaLayout(graph, jsonModel.isHorizontal);
+      layout.run();
+      
+      jsonModel = this.updateJsonModelWithGraphPositions(jsonModel, graph);
+      return jsonModel;
+    },
+    updateJsonModelWithGraphPositions(jsonModel, graph) {
+      // 원래 요소가 배열인지 객체인지 기억
+      const isArrayElements = Array.isArray(jsonModel.elements);
+      
+      // 임시 배열 생성
+      const updatedElements = isArrayElements ? [] : {};
+      
+      if (isArrayElements) {
+        // 배열 형태의 elements 처리
+        for (let i = 0; i < jsonModel.elements.length; i++) {
+          const element = jsonModel.elements[i];
+          const updatedElement = {...element}; // 복사본 생성
+          
+          // Sequence가 아닌 요소만 처리
+          if (element.elementType !== 'Sequence') {
+            const node = graph.getNode(element.id);
+            if (node) {
+              // 노드 위치 및 크기 정보 추가
+              updatedElement.x = node.x;
+              updatedElement.y = node.y;
+              updatedElement.width = node.width || 100;
+              updatedElement.height = node.height || 80;
+              
+              // 계층 구조 정보 추가
+              if (node.layer !== undefined) updatedElement.layer = node.layer;
+              if (node.order !== undefined) updatedElement.order = node.order;
+              
+              // BPMN 타입 정보 추가
+              updatedElement.bpmnType = node.nodeType || this.getBpmnType(element.type);
+            }
+          } else if(element.elementType === 'Sequence') {
+            const graphSequence = graph.edges.find(edge => 
+              edge.source === element.source && edge.target === element.target
+            );
+            if (graphSequence && graphSequence.waypoints) {
+              updatedElement.waypoints = graphSequence.waypoints;
+            }
+          }
+          
+          updatedElements.push(updatedElement);
+        }
+      } else {
+        // 객체 형태의 elements 처리
+        Object.keys(jsonModel.elements).forEach(key => {
+          const element = jsonModel.elements[key];
+          const updatedElement = {...element}; // 복사본 생성
+          
+          if (element.elementType !== 'Sequence') {
+            const node = graph.getNode(element.id);
+            if (node) {
+              // 노드 위치 및 크기 정보 추가
+              updatedElement.x = node.x;
+              updatedElement.y = node.y;
+              updatedElement.width = node.width || 100;
+              updatedElement.height = node.height || 80;
+              
+              // 계층 구조 정보 추가
+              if (node.layer !== undefined) updatedElement.layer = node.layer;
+              if (node.order !== undefined) updatedElement.order = node.order;
+              
+              // BPMN 타입 정보 추가
+              updatedElement.bpmnType = node.nodeType || this.getBpmnType(element.type);
+            }
+          } else if(element.elementType === 'Sequence') {
+            const graphSequence = graph.edges.find(edge => 
+              edge.source === element.source && edge.target === element.target
+            );
+            if (graphSequence && graphSequence.waypoints) {
+              updatedElement.waypoints = graphSequence.waypoints;
+            }
+          }
+          
+          updatedElements[key] = updatedElement;
+        });
+      }
+      
+      // 원래 모델에 업데이트된 요소 할당
+      jsonModel.elements = updatedElements;
+      
+      // 그룹(역할) 경계 정보 업데이트
+      graph.groups.forEach(group => {
+        const role = jsonModel.roles.find(role => role.name === group.id);
+        if (role) {
+          role.boundary = {
+            minX: group.minX,
+            maxX: group.maxX,
+            minY: group.minY,
+            maxY: group.maxY,
+            width: group.maxX - group.minX,
+            height: group.maxY - group.minY
+          };
+        }
+      });
+
+      return jsonModel;
+    },
+    getBpmnType(elementType) {
+      if (!elementType) return 'bpmn:Task';
+      
+      // 이미 bpmn: 접두사가 있으면 그대로 반환
+      if (elementType.startsWith('bpmn:')) {
+        return elementType;
+      }
+      
+      // 타입에 따른 매핑
+      const typeMapping = {
+        'StartEvent': 'bpmn:StartEvent',
+        'EndEvent': 'bpmn:EndEvent',
+        'UserActivity': 'bpmn:UserTask',
+        'ServiceActivity': 'bpmn:ServiceTask',
+        'ScriptActivity': 'bpmn:ScriptTask',
+        'EmailActivity': 'bpmn:SendTask',
+        'ExclusiveGateway': 'bpmn:ExclusiveGateway',
+        'ParallelGateway': 'bpmn:ParallelGateway',
+        'Event': 'bpmn:IntermediateThrowEvent',
+        'Activity': 'bpmn:Task',
+        'Gateway': 'bpmn:ExclusiveGateway'
+      };
+      
+      return typeMapping[elementType] || 'bpmn:Task';
+    },
   }
 };
 </script>

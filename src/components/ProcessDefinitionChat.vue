@@ -294,7 +294,7 @@ export default {
                 this.isEditable = true;
             } 
             if(this.isConsultingMode){
-                this.userInfo = await this.storage.getUserInfo();
+                this.userInfo = await this.backend.getUserInfo();
 
                 this.processDefinitionMap = await backend.getProcessDefinitionMap();
 
