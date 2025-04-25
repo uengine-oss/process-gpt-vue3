@@ -73,24 +73,46 @@ export default {
         });
     },
     async mounted() {
-        if (window.$mode == 'ProcessGPT' && localStorage.getItem('email')) {
-            this.watchNotifications(localStorage.getItem('email'));
+        if (window.$mode == 'ProcessGPT') {
+            this.loadScreen = false;
+            this.backend = BackendFactory.createBackend();
+            if (window.$isTenantServer) {
+                await this.backend.checkDBConnection();
+            } else {
+                const isValidTenant = await this.backend.getTenant(window.$tenantName);
+                if (!isValidTenant) {
+                    alert(window.$tenantName + " 존재하지 않는 경로입니다.");
+                    if (localStorage.getItem('email')) {
+                        window.location.href = 'https://www.process-gpt.io/tenant/manage';
+                    } else {
+                        window.location.href = 'https://www.process-gpt.io/auth/login';
+                    }
+                    return;
+                } else {
+                    await this.backend.setTenant(window.$tenantName);
+                }
+            }
+            this.loadScreen = true;
 
-            this.EventBus.on('chat-room-selected', (chatRoomId) => {
-                this.currentChatRoomId = chatRoomId;
-            });
+            if (localStorage.getItem('email')) {
+                this.watchNotifications(localStorage.getItem('email'));
 
-            this.EventBus.on('chat-room-unselected', () => {
-                this.currentChatRoomId = null;
-            });
-            
-            // 페이지 로드 시 브라우저 알림 권한 요청
-            this.requestNotificationPermission();
+                this.EventBus.on('chat-room-selected', (chatRoomId) => {
+                    this.currentChatRoomId = chatRoomId;
+                });
+
+                this.EventBus.on('chat-room-unselected', () => {
+                    this.currentChatRoomId = null;
+                });
+                
+                // 페이지 로드 시 브라우저 알림 권한 요청
+                this.requestNotificationPermission();
+            }
         }
     },
     methods: {
         async watchNotifications(email){
-            this.backend = BackendFactory.createBackend();
+            // this.backend = BackendFactory.createBackend();
             await this.backend.watchNotifications((notification) => {
                 if (notification.user_id === email && Notification.permission === 'granted') {
                     let notiHeader = null;
@@ -141,7 +163,7 @@ export default {
                     parameters: parameters,
                     action: options
                 };
-                Object.assign(options, options_);
+                options = Object.assign(options, options_);
             }
             try {
                 window.$app_.loading = true;

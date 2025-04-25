@@ -210,7 +210,7 @@ export default {
         },
         async executeProcess(value) {
             var me = this;
-            
+
             if(me.isSimulate == 'true') {
                 me.activityIndex++;
                 if(me.processDefinition.activities.length == me.activityIndex) {
@@ -228,11 +228,12 @@ export default {
                     me.init();
                 }
             } else {
+
                 let answer = '';
                 if (value.user_input_text) {
                     answer = value.user_input_text;
                 }
-    
+
                 let formId = ''
                 if (me.workItem.activity.tool) formId = me.workItem.activity.tool.replace('formHandler:', '');
                 let formValues = {};
@@ -241,7 +242,7 @@ export default {
                     delete formatted.user_input_text;
                     formValues[formId] = formatted;
                 }
-    
+
                 let input = {
                     process_definition_id: me.definitionId,
                     activity_id: me.workItem.activity.tracingTag,
@@ -255,22 +256,46 @@ export default {
                     }
                 })
                 
-                backend.start(input).then((result) => {
+                backend.start(input).then(async (response) => {
+                    if (response && response.error) {
+                        me.handleError(response.error);
+                    } else if (response) {
+                        let receivedText = "";
+                        const { reader, decoder } = response;
+
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                    
+                            const chunk = decoder.decode(value, { stream: true });
+                            receivedText += chunk;
+                            me.EventBus.emit('process-instance-streaming', receivedText);
+                        }
+
+                        let result = {};
+                        if (receivedText.includes("```json")) {
+                            const textArr = receivedText.replace(/```json/g, "").split(/```/g);
+                            const jsonText = textArr.shift();
+                            result = JSON.parse(jsonText);
+                        }
+
+                        if (result && result.instanceId) {
+                            const encodedInstanceId = btoa(encodeURIComponent(result.instanceId));
+                            const path = `/instancelist/${encodedInstanceId}`;
+                            me.$router.push(path);
+                        }
+                    }
                     me.EventBus.emit('instances-updated');
-                    const encodedInstanceId = btoa(encodeURIComponent(result.instanceId));
-                    const path = `/instancelist/${encodedInstanceId}`;
-                    me.$router.push(path);
-                })
-                .catch(error => {
-                    me.handleError(error);
                 });
                 
+                me.closeDialog();
                 me.EventBus.emit('instances-running', me.definition.processDefinitionName);
-    
+                const path = `/instancelist/running?proc_def_id=${me.definition.processDefinitionId}`;
+                me.$router.push(path);
+
                 me.$try({
                     context: me,
-                    action: async () => {
-                        me.closeDialog();
+                    action: () => {
                     },
                     successMsg: this.$t('successMsg.runningTheProcess')
                 })
@@ -290,11 +315,7 @@ export default {
         },
         handleError(error) {
             var me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    console.log(error);
-                },
+            me.$try({}, null, {
                 errorMsg: `${me.definition.processDefinitionName} 실행 중 오류가 발생했습니다: ${error}`
             })
         }

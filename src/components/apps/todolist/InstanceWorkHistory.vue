@@ -3,7 +3,7 @@
         <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
             <div class="d-flex w-100">
                 <component :is="'work-history-' + mode" :messages="messages" :isComplete="isComplete"
-                    @clickMessage="navigateToWorkItemByTaskId" />
+                    @clickMessage="navigateToWorkItemByTaskId" :streamingText="streamingText" />
             </div>
         </perfect-scrollbar>
     </div>
@@ -27,9 +27,17 @@ export default {
     data: () => ({
         workListByInstId: null,
         updatedKey: 0,
+        streamingText: '',
     }),
     created() {
         this.init();
+    },
+    mounted() {
+        this.EventBus.on('workitem-streaming', (text) => {
+            if (this.mode == "ProcessGPT") {
+                this.streamingText = text;
+            }
+        });
     },
     computed: {
         mode() {

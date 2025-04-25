@@ -239,6 +239,8 @@ export default {
                 (this.mode !== 'ProcessGPT' || (this.mode == 'ProcessGPT' && this.fullPath != 'chat'))
             ) {
                 return true;
+            } else if(!this.Pal && this.fullPath != 'definition-map' && (window.$mode == 'uEngine' && this.fullPath != 'chat')){
+                return true;
             } else {
                 return false;
             }

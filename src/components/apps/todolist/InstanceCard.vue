@@ -99,6 +99,11 @@ export default {
                     await activeComponents[0].init();
                 }
             }
+        },
+        workitemRunning(newVal, oldVal) {
+            if (newVal && newVal !== oldVal) {
+                this.tab = "workhistory";
+            }
         }
     },
     created() {
@@ -109,7 +114,7 @@ export default {
             this.workitemRunning = true;
         }
         
-        this.EventBus.on('workitem-running', (instId) => {
+        this.EventBus.on('workitem-running', async (instId) => {
             if (this.id == instId) {
                 this.workitemRunning = true;
             }

@@ -227,6 +227,16 @@ export default class StorageBaseSupabase {
                             tenants: [window.$tenantName],
                             current_tenant: window.$tenantName
                         });
+                    } else {
+                        await this.putObject('users', {
+                            id: result.data.user.id,
+                            username: userInfo.username,
+                            email: userInfo.email,
+                            role: 'user',
+                            is_admin: false,
+                            tenants: [],
+                            current_tenant: ''
+                        });
                     }
                     result.data["isNewUser"] = true;
                     return result.data;
@@ -741,6 +751,11 @@ export default class StorageBaseSupabase {
             // 일치 처리
             if (options.match) {
                 query = query.match(options.match);
+            }
+
+            // Add match condition for text[] type column
+            if (options.matchArray) {
+                query = query.contains(options.matchArray.column, options.matchArray.values);
             }
 
             // size 처리

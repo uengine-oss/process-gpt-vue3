@@ -663,7 +663,9 @@
         "Participant": "Create Participant",
         "expandedSubProcess": "Create expanded SubProcess",
         "dataStore": "Create Data Store",
-        "dataObject": "Create Data Object"
+        "dataObject": "Create Data Object",
+        "autoLayout": "Auto Layout",
+        "changeOrientation": "Change layout orientation"
     },
     "chatListing": {
         "title": "Chat Room Settings",

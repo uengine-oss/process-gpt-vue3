@@ -34,7 +34,8 @@ export default {
         html: String,
         formData: Object,
         useThreadId: Boolean,
-        simulationInstances: Array
+        simulationInstances: Array,
+        streamingText: String,
     },
     data: () => ({
         processDefinition: null,
@@ -103,6 +104,18 @@ export default {
                 }
             }
         },
+        streamingText(newVal, oldVal) {
+            if (newVal && newVal !== oldVal && oldVal == '') {
+                this.messages.push({
+                    role: 'system',
+                    content: this.streamingText,
+                });
+            } else if (newVal && newVal !== oldVal && oldVal != '') {
+                this.messages[this.messages.length - 1].content = newVal;
+            } else {
+                this.getChatList(this.chatRoomId);
+            }
+        }
     },
     methods: {
         async resizeBase64Image(base64Str, minWidth, minHeight) {
