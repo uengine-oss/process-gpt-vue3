@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Logo from '@/layouts/full/logo/Logo.vue';
-import TenantRegisterForm from '@/components/tenant/TenantRegisterForm.vue';
 import RegisterForm from '@/components/auth/RegisterForm.vue';
 import { defineProps, ref } from 'vue';
 

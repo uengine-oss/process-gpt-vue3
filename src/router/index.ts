@@ -49,17 +49,18 @@ router.beforeEach(async (to: any, from: any, next: any) => {
                 configurable: false
             });
         } else {
+            Object.defineProperty(window, '$isTenantServer', {
+                value: false,
+                writable: false,
+                configurable: true
+            });
+
             const isValidTenant = await backend.getTenant(subdomain);
             if (!isValidTenant) {
                 alert(subdomain + " 존재하지 않는 경로입니다.");
                 window.location.href = 'https://www.process-gpt.io/tenant/manage';
                 return;
             } else {
-                Object.defineProperty(window, '$isTenantServer', {
-                    value: false,
-                    writable: false,
-                    configurable: true
-                });
                 Object.defineProperty(window, '$tenantName', {
                     value: subdomain,
                     writable: false,
