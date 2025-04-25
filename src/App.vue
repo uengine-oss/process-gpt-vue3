@@ -74,6 +74,7 @@ export default {
     },
     async mounted() {
         if (window.$mode == 'ProcessGPT') {
+            this.loadScreen = false;
             this.backend = BackendFactory.createBackend();
             if (window.$isTenantServer) {
                 await this.backend.checkDBConnection();
@@ -91,6 +92,7 @@ export default {
                     await this.backend.setTenant(window.$tenantName);
                 }
             }
+            this.loadScreen = true;
 
             if (localStorage.getItem('email')) {
                 this.watchNotifications(localStorage.getItem('email'));
