@@ -40,10 +40,10 @@ export default {
     async created() {},
     methods: {
         async checkedFormData() {
-            if (this.processDefinition && this.processDefinition.components) {
-                const activities = this.processDefinition.components.filter(component => 
-                    component.componentType === 'Activity' && 
-                    component.type === 'UserActivity'
+            if (this.processDefinition && this.processDefinition.elements) {
+                const activities = this.processDefinition.elements.filter(element => 
+                    element.elementType === 'Activity' && 
+                    element.type === 'UserActivity'
                 );
                 this.generateFormTask = {};
                 for (const activity of activities) {
@@ -318,7 +318,7 @@ export default {
                                     (newProcessDefinition.data && newProcessDefinition.data.length > 0) ||
                                     (newProcessDefinition.roles && newProcessDefinition.roles.length > 0) ||
                                     (newProcessDefinition.events && newProcessDefinition.events.length > 0) ||
-                                    (newProcessDefinition.components && newProcessDefinition.components.length > 0) ||
+                                    (newProcessDefinition.elements && newProcessDefinition.elements.length > 0) ||
                                     (newProcessDefinition.gateways && newProcessDefinition.gateways.length > 0) ||
                                     (newProcessDefinition.sequences && newProcessDefinition.sequences.length > 0)
                                 )) {

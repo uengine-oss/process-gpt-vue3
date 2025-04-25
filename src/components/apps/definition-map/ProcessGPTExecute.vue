@@ -135,9 +135,9 @@ export default {
                     let startActivity = null;
                     if(me.isSimulate == 'true') {
                         if(!me.processDefinition.activities) {
-                            me.processDefinition.activities = me.processDefinition.components.filter(component => 
-                                component.componentType === 'Activity' && 
-                                component.type === 'UserActivity'
+                            me.processDefinition.activities = this.processDefinition.elements.filter(element => 
+                                element.elementType === 'Activity' && 
+                                element.type === 'UserActivity'
                             );
                         }
                         startActivity = me.processDefinition.activities[me.activityIndex];
