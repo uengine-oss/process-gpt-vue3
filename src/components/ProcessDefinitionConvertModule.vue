@@ -34,7 +34,7 @@ export default {
           result.data = [];
           result.roles = [];
           result.sequences = [];
-          result.components = [];
+          result.elements = [];
 
 
           me.parseData(json.processVariables[1], result);
@@ -44,9 +44,9 @@ export default {
               "resolutionRule": role.name
             });
           });
-          result.components.push(
+          result.elements.push(
           {
-            "componentType": "Event",
+            "elementType": "Event",
             "id": me.currentSource,
             "name": "Start Event",
             "role": "Initiator",
@@ -55,15 +55,15 @@ export default {
             "description": "프로세스 시작"
           });
 
-          me.parseComponents(json.childActivities[1], result);
-          const lastComponent = result.components[result.components.length - 1];
-          result.components.push(
+          me.parseElements(json.childActivities[1], result);
+          const lastElement = result.elements[result.elements.length - 1];
+          result.elements.push(
           {
-            "componentType": "Event",
+            "elementType": "Event",
             "id": "end_event",
             "name": "End Event",
             "role": "Initiator",
-            "source": lastComponent.id,
+            "source": lastElement.id,
             "type": "EndEvent",
             "description": "프로세스 종료"
           });
@@ -91,18 +91,18 @@ export default {
             });
           });
         },
-        getId(component) {
-          const activityType = component._type;
+        getId(element) {
+          const activityType = element._type;
           let id = ''
           if(activityType.indexOf("HumanActivity") != -1) {
-            id = 'activity_' + component.tracingTag;
+            id = 'activity_' + element.tracingTag;
           } else if("SwitchActivity") {
-            id = 'gateway_' + component.tracingTag;
+            id = 'gateway_' + element.tracingTag;
           }
 
           return id;
         },
-        parseComponents(activities, definition, loopId = null) {
+        parseElements(activities, definition, loopId = null) {
           const me = this;
           let id = '';
 
@@ -143,9 +143,9 @@ export default {
                 "target": id
               });
 
-              definition.components.push(
+              definition.elements.push(
               {
-                  "componentType" :"Activity",
+                  "elementType" :"Activity",
                   "id": id,
                   "name": name,
                   "type": "UserActivity",
@@ -185,9 +185,9 @@ export default {
                 "target": id
               });
 
-              definition.components.push(
+              definition.elements.push(
               {
-                "componentType" :"Gateway",
+                "elementType" :"Gateway",
                 "id": id,
                 "name": name,
                 "role": roleName, 
@@ -219,9 +219,9 @@ export default {
                 "target": id
               });
 
-              definition.components.push(
+              definition.elements.push(
               {
-                "componentType" :"Gateway",
+                "elementType" :"Gateway",
                 "id": id,
                 "name": name,
                 "role": roleName, 
@@ -240,7 +240,7 @@ export default {
               if(activityType.indexOf("LoopActivity") != -1) {
                 loopId = me.getId(activity);
               }
-              me.parseComponents(activity.childActivities[1], definition, loopId)
+              me.parseElements(activity.childActivities[1], definition, loopId)
             }
             
             
@@ -283,9 +283,9 @@ export default {
 
               
 
-              definition.components.push(
+              definition.elements.push(
               {
-                "componentType" :"Gateway",
+                "elementType" :"Gateway",
                 "id": id,
                 "name": name,
                 "role": roleName, 

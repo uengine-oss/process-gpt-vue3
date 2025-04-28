@@ -1,7 +1,11 @@
 <template>
     <div>
         <template v-for="item in instanceList" :key="item.title">
-            <NavItem v-if="!JMS" class="leftPadding pl-2" :item="item" :use-i18n="false" />
+            <div v-if="item.isNew" class="d-flex">
+                <v-progress-circular indeterminate class="mt-2" color="primary" :size="20"></v-progress-circular>
+                <NavItem v-if="!JMS" class="leftPadding pl-2" :item="item" :use-i18n="false" />
+            </div>
+            <NavItem v-else-if="!JMS && !item.isNew" class="leftPadding pl-2" :item="item" :use-i18n="false" />
         </template>
     </div>
     <div v-if="myGroupInstanceList.length > 0"
@@ -33,14 +37,29 @@ export default {
         },
         instanceList: [],
         myGroupInstanceList: [],
-        intervalId: null
+        intervalId: null,
     }),
     async created() {
         await this.init();
     },
     mounted() {
+        this.EventBus.on('instances-running', (processName) => {
+            clearInterval(this.intervalId);
+
+            this.instanceList.push({
+                title: processName + this.$t('runningInstance.running'),
+                to: '',
+                BgColor: 'grey',
+                isNew: true
+            });            
+        });
+
         this.EventBus.on('instances-updated', async () => {
             await this.init();
+            
+            this.intervalId = setInterval(() => {
+                this.init();
+            }, 10000);
         });
         
         this.intervalId = setInterval(() => {

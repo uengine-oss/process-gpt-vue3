@@ -229,16 +229,19 @@ export default {
             return this.bpmn.includes('ExternalCustomer') || this.bpmn.includes('externalCustomer');
         },
         useSimulate() {
-            if (!this.Pal && this.fullPath != 'definition-map' && this.mode != 'ProcessGPT') {
-                return true;
-            } else {
-                return false;
-            }
+            // if (!this.Pal && this.fullPath != 'definition-map' && this.mode != 'ProcessGPT') {
+            //     return true;
+            // } else {
+            //     return false;
+            // }
+            return true
         },
         useExecute() {
             if (!this.Pal && this.fullPath != 'definition-map' && 
                 (this.mode !== 'ProcessGPT' || (this.mode == 'ProcessGPT' && this.fullPath != 'chat'))
             ) {
+                return true;
+            } else if(!this.Pal && this.fullPath != 'definition-map' && (window.$mode == 'uEngine' && this.fullPath != 'chat')){
                 return true;
             } else {
                 return false;

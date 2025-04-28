@@ -8,7 +8,6 @@ if [ -f /opt/www/.env ]; then
   echo "Environment variables:"
   echo "VITE_SUPABASE_URL: $VITE_SUPABASE_URL"
   echo "VITE_SUPABASE_KEY: $VITE_SUPABASE_KEY"
-  echo "VITE_OPENAI_API_KEY: $VITE_OPENAI_API_KEY"
 else
   echo "Warning: .env file not found at /opt/www/.env"
 fi
@@ -21,7 +20,6 @@ if [ -f /opt/www/index.html ]; then
   window._env_ = {\
     VITE_SUPABASE_URL: "'$VITE_SUPABASE_URL'",\
     VITE_SUPABASE_KEY: "'$VITE_SUPABASE_KEY'",\
-    VITE_OPENAI_API_KEY: "'$VITE_OPENAI_API_KEY'",\
     VITE_KEYCLOAK_URL: "'$VITE_KEYCLOAK_URL'",\
     VITE_KEYCLOAK_REALM: "'$VITE_KEYCLOAK_REALM'",\
     VITE_KEYCLOAK_CLIENT_ID: "'$VITE_KEYCLOAK_CLIENT_ID'",\

@@ -20,7 +20,6 @@ export default {
         userInfo: {},
         disableChat: false,
         chatRoomList: [],
-        openaiToken: null,
         agentInfo: {
             draftPrompt: '',
             isRunning: false,
@@ -93,8 +92,8 @@ export default {
     },
     async created() {
         // var me = this;
+        this.backend = BackendFactory.createBackend();
         this.storage = StorageBaseFactory.getStorage();
-        this.openaiToken = await this.getToken();
         this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
@@ -146,28 +145,11 @@ export default {
                 }
             })
         },
-        async getToken() {
-            const openaiApiKey = window._env_?.VITE_OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY;
-            if (openaiApiKey) {
-                return openaiApiKey;
-            } else if (window.$mode == 'ProcessGPT') {
-                let option = {
-                    key: "key"
-                }
-                const res = await this.storage.getObject('configuration/OPENAI_API_KEY', option);
-                return res?.value?.key || window.localStorage.getItem('OPENAI_API_KEY') || null;
-            } else {
-                const token = window.localStorage.getItem('OPENAI_API_KEY');
-                return token || '';
-            }
-        },
         async init() {
             this.disableChat = false;
             if (this.useLock) {
                 this.userInfo = await this.storage.getUserInfo();
             }
-            this.backend = BackendFactory.createBackend();
-
             await this.loadData(this.getDataPath());
             // await this.loadMessages(this.getDataPath());
         },
@@ -475,7 +457,6 @@ export default {
                 validMessages.reverse();
                 this.generator.previousMessages = [essentialMessage, ...validMessages];
             }
-            this.openaiToken = await this.getToken();
             await this.generator.generate();
         },
         stopMessage() {
@@ -689,6 +670,7 @@ export default {
                     if(jsonData['formValues']){
                         this.EventBus.emit('form-values-updated', jsonData['formValues']);
                         this.messages[this.messages.length - 1].content = '초안 생성을 완료하였습니다.'
+                        this.afterAgentGeneration(jsonData);
                     } else {
                         this.afterGenerationFinished(jsonData);
                     }
@@ -712,55 +694,17 @@ export default {
         },
 
         async onError(error) {
-            if (error.code === 'invalid_api_key') {
-                if (this.openaiToken) {
-                    if (window.$mode == 'ProcessGPT') {
-                        await this.delete("configuration", { match: { key: "OPENAI_API_KEY" } });
-                    }
-                    localStorage.removeItem('OPENAI_API_KEY');
-                }
-                if (confirm('openAI API Key 입력이 필요합니다.\n\ngpt-4o 모델을 사용가능한 API key 를 입력해야합니다.\n\n확인을 클릭하시면 API key 를 확인할 수 있는 openAI 공식 홈페이지가 열립니다.')) {
-                    window.open('https://platform.openai.com/settings/profile?tab=api-keys', '_blank');
-                }
-
-                let apiKey = null;
-                do {
-                    apiKey = prompt('openAI API Key 를 입력하세요.\n\ngpt-4o 모델을 사용가능한 API key를 입력해야합니다.');
-                    if (apiKey === null) {
-                        // 사용자가 취소를 누른 경우
-                        return;
-                    }
-                } while (!apiKey || apiKey.trim() === '');
-
-                if (apiKey !== null && apiKey !== '') {
-                    window.localStorage.setItem('OPENAI_API_KEY', apiKey);
-                    if (window.$mode == 'ProcessGPT') {
-                        let token = {
-                            "key": 'OPENAI_API_KEY',
-                            "value": {
-                                "key": apiKey
-                            }
-                        };
-                        await this.putObject('configuration', token);
-                    }
-                    this.openaiToken = await this.getToken();
-                    if (this.openaiToken && this.openaiToken != '' && this.openaiToken != null) {
-                        this.startGenerate();
-                    }
-                }
-            } else {
-                console.log('error', error);
-                if (error.message)  {
-                    let messageWriting = this.messages[this.messages.length - 1];
-                    if (messageWriting.role == 'system' && messageWriting.isLoading) {
-                        delete messageWriting.isLoading;
-                        messageWriting.content = error.message;
-                    } else {
-                        this.messages.push({
-                            role: 'system',
-                            content: error.message
-                        });
-                    }
+            console.log('error', error);
+            if (error.message)  {
+                let messageWriting = this.messages[this.messages.length - 1];
+                if (messageWriting.role == 'system' && messageWriting.isLoading) {
+                    delete messageWriting.isLoading;
+                    messageWriting.content = error.message;
+                } else {
+                    this.messages.push({
+                        role: 'system',
+                        content: error.message
+                    });
                 }
             }
         },

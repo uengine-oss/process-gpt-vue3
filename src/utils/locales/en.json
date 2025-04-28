@@ -2,6 +2,7 @@
     "message": "en",
     "changePath": "You have unsaved changes. Are you sure you want to leave?",
     "successMsg": {
+        "simulatedProcess": "Simulated process completed",
         "runningTheProcess": "Running the process",
         "processExecutionCompleted": "Process execution completed",
         "workCompleted": "Completion of work",
@@ -106,7 +107,8 @@
         "sortByCompleted": "Sort by Completed"
     },
     "runningInstance": {
-        "title": "Running Instance"
+        "title": "Running Instance",
+        "running": " Running..."
     },
     "admin": {
         "title": "Administrator Menu",
@@ -661,7 +663,9 @@
         "Participant": "Create Participant",
         "expandedSubProcess": "Create expanded SubProcess",
         "dataStore": "Create Data Store",
-        "dataObject": "Create Data Object"
+        "dataObject": "Create Data Object",
+        "autoLayout": "Auto Layout",
+        "changeOrientation": "Change layout orientation"
     },
     "chatListing": {
         "title": "Chat Room Settings",
@@ -840,7 +844,8 @@
     },
     "ProcessGPTExecute": {
         "roleMapping": "Role Mapping",
-        "processStart": "Process Start"
+        "processStart": "Process Start",
+        "processSimulate": "Process Simulation"
     },
     "Checkpoints": {
         "checkpoints": "Checkpoints"

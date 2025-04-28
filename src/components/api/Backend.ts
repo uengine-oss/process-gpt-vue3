@@ -69,7 +69,6 @@ export interface Backend {
     deleteRecordTest(path: string, index: number): Promise<any>;
     checkDBConnection(): Promise<any>;
     getWorkListAll(): Promise<any>;
-    getOpenAIToken(): Promise<any>;
     uploadImage(fileName: string, image: File): Promise<any>;
     getImageUrl(fileName: string): Promise<any>;
     uploadFile(fileName: string, file: File): Promise<any>;

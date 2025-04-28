@@ -123,9 +123,7 @@ CREATE POLICY users_select_policy
     FOR SELECT
     TO public
     USING (
-        (auth.tenant_id() = ANY(tenants)) 
-        OR 
-        (auth.uid() = id)
+        true
     );
 
 CREATE POLICY users_update_policy
@@ -500,8 +498,8 @@ CREATE POLICY form_def_insert_policy
 CREATE POLICY form_def_select_policy
     ON form_def
     FOR SELECT
-    TO authenticated
-    USING (tenant_id = auth.tenant_id());
+    TO public
+    USING (true);
 
 CREATE POLICY form_def_update_policy
     ON form_def
@@ -753,6 +751,10 @@ create table if not exists public.todolist (
     tool text null,
     due_date timestamp without time zone null,
     tenant_id text null default auth.tenant_id(),
+    reference_ids text[] null,
+    adhoc boolean null default false,
+    assignees jsonb null,
+    duration integer null,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -797,6 +799,18 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='tenant_id') THEN
         ALTER TABLE public.todolist ADD COLUMN tenant_id text null default auth.tenant_id();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='reference_ids') THEN
+        ALTER TABLE public.todolist ADD COLUMN reference_ids text[] null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='adhoc') THEN
+        ALTER TABLE public.todolist ADD COLUMN adhoc boolean null default false;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='assignees') THEN
+        ALTER TABLE public.todolist ADD COLUMN assignees jsonb null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='duration') THEN
+        ALTER TABLE public.todolist ADD COLUMN duration integer null;
     END IF;
 END;
 $$;
@@ -970,6 +984,7 @@ create table if not exists public.chats (
     id text not null,
     messages jsonb null,
     tenant_id text null default auth.tenant_id(),
+    thread_id text null,
     constraint chats_pkey primary key (uuid),
     constraint chats_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -987,6 +1002,9 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chats' AND column_name='tenant_id') THEN
         ALTER TABLE public.chats ADD COLUMN tenant_id text null default auth.tenant_id();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chats' AND column_name='thread_id') THEN
+        ALTER TABLE public.chats ADD COLUMN thread_id text null;
     END IF;
 END;
 $$;

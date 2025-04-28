@@ -1,15 +1,15 @@
 import axios from '@/utils/axios';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
-
 import type { Backend } from './Backend';
 
 import { formatDistanceToNowStrict } from 'date-fns';
-import messages from '@/utils/locales/messages';
 
 enum ErrorCode {
     TableNotFound = "42P01"
 }
+
+let streamText: string = "";
 
 class ProcessGPTBackend implements Backend {
 
@@ -289,45 +289,90 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // async executeInstance(input: any) {
+    //     try {
+    //         const email = localStorage.getItem('email');
+    //         input.email = email;
+
+    //         var url = `/execution/complete`;
+    //         if (input.answer && input.answer.image != null) {
+    //             url = `/execution/vision-complete`;
+    //         }
+            
+    //         var req = {
+    //             input: input
+    //         };
+
+    //         var response: any = await axios.post(url, req, {
+    //             responseType: 'stream',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             }
+    //         })
+    //         // .then(res => {
+    //         //     if (res.data) {
+    //         //         console.log(res.data);
+    //         //         // const data = JSON.parse(res.data);
+    //         //         // if (data) {
+    //         //         //     result = data;
+    //         //         // }
+    //         //     }
+    //         // })
+    //         // .catch(error => {
+    //         //     result = {}
+    //         //     if (error.detail && error.detail.status_code && error.detail.status_code == 401) {
+    //         //         alert('토큰이 만료되었습니다. 다시 로그인 해주세요.');
+    //         //     } else if (error.detail) {
+    //         //         result.error = error.detail;
+    //         //     } else {
+    //         //         result.error = error;
+    //         //     }
+    //         // });
+
+    //         response.data.on('data', (chunk) => {
+    //             console.log('Stream chunk:', chunk.toString());
+    //         });
+              
+    //         response.data.on('end', () => {
+    //             console.log('Stream complete');
+    //         });              
+
+    //         // return response.data;
+    //     } catch (error) {
+    //         return { error: error };
+    //     }
+    // }
+
     async executeInstance(input: any) {
         try {
             const email = localStorage.getItem('email');
             input.email = email;
-
-            var url = `/execution/complete`;
+        
+            let url = `/execution/complete`;
             if (input.answer && input.answer.image != null) {
                 url = `/execution/vision-complete`;
             }
-            
-            var req = {
-                input: input
-            };
-            
-            var result: any = null;
-            await axios.post(url, req).then(res => {
-                if (res.data) {
-                    const data = JSON.parse(res.data);
-                    if (data) {
-                        result = data;
-                        if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
-                            result.errors = result.cannotProceedErrors;
-                        }   
-                    }
-                }
-            })
-            .catch(error => {
-                if (error.detail && error.detail.status_code && error.detail.status_code == 401) {
-                    alert('토큰이 만료되었습니다. 다시 로그인 해주세요.');
-                }
-                result.error = error;
-            });
 
-            return result;
-        } catch (error) {
-            //@ts-ignore
-            return error;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ input })
+            });
+        
+            if (!response.body) {
+                throw new Error("스트리밍 응답이 지원되지 않습니다.");
+            }
+        
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+
+            return { reader, decoder };
+        } catch (error: any) {
+            return { error: error.message || error };
         }
-    }
+    } 
 
     async getInstance(instanceId: string) {
         try {
@@ -1444,7 +1489,11 @@ class ProcessGPTBackend implements Backend {
         try {
             const options = {
                 orderBy: 'username',
-                sort: 'asc'
+                sort: 'asc',
+                matchArray: {
+                    column: 'tenants',
+                    values: [window.$tenantName]
+                }
             }
             const users = await storage.list('users', options);
             return users
@@ -1715,39 +1764,6 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getOpenAIToken() {
-        try {
-            let token = window.localStorage.getItem('OPENAI_API_KEY');
-            
-            if (!token) {
-                // if (confirm('openAI API Key 입력이 필요합니다.\n\ngpt-4o 모델을 사용가능한 API key 를 입력해야합니다.\n\n확인을 클릭하시면 API key 를 확인할 수 있는 openAI 공식 홈페이지가 열립니다.')) {
-                //     window.open('https://platform.openai.com/settings/profile?tab=api-keys', '_blank');
-                // }
-                
-                let apiKey = prompt('openAI API Key 를 입력하세요.\n\ngpt-4o 모델을 사용가능한 API key를 입력해야합니다.');
-                
-                if (apiKey === null) {
-                    // 사용자가 취소를 누른 경우
-                    return null;
-                }
-                
-                if (apiKey.trim() === '') {
-                    alert('API Key를 입력하지 않으면 특정 기능을 사용할 수 없습니다.');
-                    return null;
-                }
-                
-                // 입력된 API Key 저장
-                window.localStorage.setItem('OPENAI_API_KEY', apiKey);
-                token = apiKey;
-            }
-            
-            return token;
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
-
     async uploadImage(fileName: string, image: File) {
         try {
             return await storage.uploadImage(fileName, image);
@@ -1805,19 +1821,18 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getEmbedding(text: string) {
-        const token = await this.getOpenAIToken();
-        const response = await axios.post('https://api.openai.com/v1/embeddings', JSON.stringify({
-            input: text,
+    async getEmbedding(text) {
+        const response = await axios.post('/execution/langchain-chat/embeddings', JSON.stringify({
+            text: text,
             model: 'text-embedding-3-small',
+            vendor: 'openai'
         }), {
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
         });
         const data = response.data;
-        return data.data[0].embedding;
+        return data.embedding;
     }
 
     async updateVectorStore(content: string, type: string) {

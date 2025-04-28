@@ -148,7 +148,6 @@ export default {
        if(typeof this.copyUengineProperties.inputPayloadTemplate != 'string') {
             this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(this.copyUengineProperties.inputPayloadTemplate)
         }
-        this.openaiToken = await this.getToken();
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
@@ -305,10 +304,6 @@ export default {
             const { method, uriTemplate, headers, inputPayloadTemplate, outputMapping } = this.copyUengineProperties;
             this.copyUengineProperties = { method, uriTemplate, headers, inputPayloadTemplate, outputMapping };
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
-        },
-        async getToken() {
-            const backend = BackendFactory.createBackend();
-            return await backend.getOpenAIToken();
         },
         generateAPI() {
             this.$try({

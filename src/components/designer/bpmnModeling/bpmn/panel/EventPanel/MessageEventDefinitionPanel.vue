@@ -97,7 +97,6 @@ export default {
     },
     async created() {
         this.copyUengineProperties = this.uengineProperties;
-        this.openaiToken = await this.getToken();
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
@@ -176,10 +175,6 @@ export default {
     computed: {},
     watch: {},
     methods: {
-        async getToken() {
-            const backend = BackendFactory.createBackend();
-            return await backend.getOpenAIToken();
-        },
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {
                 obj[key] = defaultValue;
