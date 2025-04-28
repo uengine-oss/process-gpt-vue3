@@ -307,6 +307,13 @@ export default {
             },
         });
     },
+    mounted() {
+        window.addEventListener('localStorageChange', (event) => {
+            if (event.detail.key === 'isAdmin') {
+                this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
+            }
+        });
+    },
     beforeRouteLeave(to, from, next) {
         if (this.lock && this.enableEdit) {
             this.openAlertDialog().then((proceed) => {

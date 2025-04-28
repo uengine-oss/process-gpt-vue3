@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { CircleXIcon, MailIcon } from 'vue-tabler-icons';
-import { profileDD } from '@/_mockApis/headerData';
-import { useAuthStore } from '@/stores/auth';
-import { Icon } from '@iconify/vue';
+import { ref,onMounted } from 'vue';
 
-let picture = localStorage.getItem("picture");
+let picture = ref('');
+let name = ref('');
+let isAdmin = ref(false);
 
-const name = localStorage.getItem("userName");
-const isAdmin = localStorage.getItem("isAdmin");
+onMounted(() => {
+    isAdmin.value = localStorage.getItem("isAdmin") == 'true';
+    picture.value = localStorage.getItem("picture");
+    name.value = localStorage.getItem("userName");
+
+    window.addEventListener('localStorageChange', (event: any) => {
+        if (event.detail.key === 'isAdmin') {
+            isAdmin.value = event.detail.value === 'true' || event.detail.value === true;
+        }
+    });
+});
+
 </script>
 
 <template>
@@ -21,7 +29,7 @@ const isAdmin = localStorage.getItem("isAdmin");
             <div class="ml-md-4 d-md-block d-none">
                 <h6 class="text-h6 d-flex align-center text-black font-weight-semibold">{{ name }}</h6>
                 <span class="text-subtitle-2 font-weight-medium text-grey100">
-                    {{ isAdmin == 'true' ? 'Admin' : ''}}
+                    {{ isAdmin ? 'Admin' : ''}}
                 </span>
             </div>
         </div>
