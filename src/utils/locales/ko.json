@@ -863,6 +863,7 @@
         "wrongPassword": "비밀번호가 틀렸습니다.",
         "wrongId": "아이디가 틀렸습니다.",
         "notRegisteredEmail": "가입된 이메일주소가 아닙니다.",
-        "loginRequired": "로그인이 필요합니다."
+        "loginRequired": "로그인이 필요합니다.",
+        "unRegisteredTenant": "가입되지 않은 테넌트입니다."
     }
 }

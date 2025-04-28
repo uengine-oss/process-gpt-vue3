@@ -1647,6 +1647,9 @@ class ProcessGPTBackend implements Backend {
             if (!user || !user.uid) {
                 return false;
             }
+            if (user.tenants && !user.tenants.includes(tenantId)) {
+                return false;
+            }
             const user_id = user.uid;
             const request = {
                 input: {

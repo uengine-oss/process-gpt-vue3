@@ -91,6 +91,8 @@ export const useAuthStore = defineStore({
                             });
                         }
                     } else {
+                        const tenantId = window.$tenantName;
+                        await backend.setTenant(tenantId);
                         if (result["isNewUser"]) {
                             await (window as any).$app_.try({
                                 action: () => Promise.resolve(),
