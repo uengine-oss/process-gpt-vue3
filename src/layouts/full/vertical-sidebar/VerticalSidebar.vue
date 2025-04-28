@@ -213,6 +213,7 @@ export default {
                     this.loadSidebar();
                 } else {
                     this.definitionItem = [];
+                    this.deletedDefinitionList = [];
                 }
             }
         });
