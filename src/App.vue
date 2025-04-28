@@ -64,13 +64,16 @@ export default {
         notificationsWatched: false,
         currentChatRoomId: null,
         notificationChannel: null,
-        backend: null,
+        backend: null
     }),
     async created() {
         window.$app_ = this;
         window.addEventListener('load', () => {
             this.loadScreen = true;
         });
+        
+        // 클릭 이벤트로 스낵바 닫기
+        document.addEventListener('click', this.closeSnackbarOnEvent);
     },
     async mounted() {
         if (window.$mode == 'ProcessGPT' && localStorage.getItem('email')) {
@@ -89,6 +92,12 @@ export default {
         }
     },
     methods: {
+        closeSnackbarOnEvent() {
+            // 클릭 이벤트 발생 시 스낵바 닫기
+            if (this.snackbar) {
+                this.snackbar = false;
+            }
+        },
         async watchNotifications(email){
             this.backend = BackendFactory.createBackend();
             await this.backend.watchNotifications((notification) => {
@@ -187,6 +196,9 @@ export default {
         }
     },
     beforeUnmount() {
+        // 이벤트 리스너 정리
+        document.removeEventListener('click', this.closeSnackbarOnEvent);
+        
         if (window.$mode == 'ProcessGPT') {
             // 구독 정리
             if (this.notificationChannel) {

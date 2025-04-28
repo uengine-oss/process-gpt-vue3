@@ -4,7 +4,9 @@
             <div class="align-right gap-3 justify-space-between" 
                 :style="modelValueStyle ? 'padding: 12px 16px 2px 16px;' : 'padding: 9px 16px 9px 16px;'"
             >
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0"
+                    style="height: 48px;"
+                >
                     <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center"
                         style="max-width:80%;"
                     >
