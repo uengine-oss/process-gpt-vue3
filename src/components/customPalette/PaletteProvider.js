@@ -387,7 +387,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     });
   
     adjustParticipantBoundsByLanes(element, lanes, true);
-    
+
     // 💡 SequenceFlow 최종 waypoint 반영
     originalSequenceFlows.forEach(sequenceFlow => {
       sequenceFlow.waypoints = originalWaypoints[sequenceFlow.id];
@@ -559,7 +559,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'auto-layout': {
       group: 'collaboration',
       className: 'mdi mdi-auto-fix',
-      title: i18n.global.t('PaletteProvider.autoLayout') || '�ڵ� ���̾ƿ�',
+      title: i18n.global.t('PaletteProvider.autoLayout'),
       action: {
         click: function(event) {
           applyAutoLayout();
@@ -569,7 +569,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'change-orientation': {
       group: 'collaboration',
       className: 'mdi mdi-crop-rotate',
-      title: i18n.global.t('PaletteProvider.changeOrientation') || '���̾ƿ� ���� ��ȯ',
+      title: i18n.global.t('PaletteProvider.changeOrientation'),
       action: {
         click: function(event) {
           const bpmnJS = injector;
