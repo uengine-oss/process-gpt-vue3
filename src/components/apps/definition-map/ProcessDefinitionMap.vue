@@ -565,8 +565,6 @@ export default {
             await backend.deleteUserPermission({ user_id: userId, proc_def_id: process.id });
         },
         async saveProcess() {
-            const diff = jsondiffpatch.diff(this.copyValue, this.value);
-            this.updatePermissionsFromDiff(diff);
             await backend.putProcessDefinitionMap(this.value);
             await this.getProcessMap();
             this.closeAlertDialog();

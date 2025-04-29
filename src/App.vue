@@ -95,7 +95,13 @@ export default {
                     }
                     return;
                 } else {
-                    await this.backend.setTenant(window.$tenantName);
+                    const res = await this.backend.setTenant(window.$tenantName);
+                    if (!res) {
+                        this.$try({}, null, {
+                            errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
+                        })
+                        this.$router.push('/auth/login');
+                    }
                     this.loadScreen = true;
                 }
             }

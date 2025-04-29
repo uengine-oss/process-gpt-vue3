@@ -864,6 +864,7 @@
         "wrongPassword": "The password is incorrect.",
         "wrongId": "The ID is incorrect.",
         "notRegisteredEmail": "This email address is not registered.",
-        "loginRequired": "Login is required."
+        "loginRequired": "Login is required.",
+        "unRegisteredTenant": "This tenant is not registered."
     }
 }
