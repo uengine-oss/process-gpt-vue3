@@ -242,11 +242,11 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                 "name": "시퀀스명(한글)",
                 "source": "시작_컴포넌트_id",
                 "target": "도착_컴포넌트_id",
-                "condition": {
+                "condition": ${window.$mode !== 'ProcessGPT' ? `{
                   "key": "데이터변수명",
                   "condition": "==", // ==, !=, >, <, >=, <= 중 하나
                   "value": "비교값"
-                }
+                }` : '"조건문(한글)"'}
               }
           # 액티비티
               {
