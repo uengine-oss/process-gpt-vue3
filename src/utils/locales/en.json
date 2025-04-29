@@ -4,6 +4,7 @@
     "successMsg": {
         "simulatedProcess": "Simulated process completed",
         "runningTheProcess": "Running the process",
+        "formGenerationCompleted": "Form generation completed",
         "processExecutionCompleted": "Process execution completed",
         "workCompleted": "Completion of work",
         "save": "Saved successfully.",

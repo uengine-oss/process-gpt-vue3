@@ -351,6 +351,17 @@ export default {
                     }
                 }
             }
+        },
+        executeDialog(newVal) {
+            if(newVal == false){
+                if(this.isSimulate == 'true'){
+                    this.isSimulate = 'false'
+                    this.processDefinition.activities.forEach(activity => {
+                        activity.inputFormData = null
+                    })
+                    this.$emit('closeExecuteDialog')
+                }
+            }
         }
     },
     computed: {
@@ -411,6 +422,7 @@ export default {
             console.log("simulate")
             this.isSimulate = 'true'
             this.executeDialog = !this.executeDialog;
+            this.$emit('executeSimulate')
         },
         beforeStartGenerate(){
             let chatMsgs = [];

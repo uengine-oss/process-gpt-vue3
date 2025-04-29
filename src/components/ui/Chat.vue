@@ -1078,9 +1078,9 @@ export default {
             }
         },
         getProfile(email) {
-            if (!this.userList) return '';
+            if (!this.userList) return '/images/defaultUser.png';
             const user = this.userList.find(user => user.email === email);
-            return user ? user.profile : '';
+            return user ? (user.profile.includes('defaultUser.png') ? '/images/defaultUser.png' : user.profile) : '/images/defaultUser.png';
         },
         // shouldDisplayButtons(message, index) {
         //     if (message.role !== 'system') {

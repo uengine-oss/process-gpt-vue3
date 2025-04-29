@@ -127,7 +127,7 @@
                 </v-card-item>
             </v-card>
         </v-card>
-        <v-dialog :style="ProcessPreviewMode ? '' : 'max-width: 1000px;'" v-model="openConsultingDialog" persistent>
+        <v-dialog :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'" v-model="openConsultingDialog" :scrim="isSimulateMode ? false : true" persistent>
             <v-card>
                 <v-row class="ma-0 pa-3" style="background-color:rgb(var(--v-theme-primary), 0.2); height:50px;">
                     <v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>
@@ -140,6 +140,8 @@
                     :chatMode="'consulting'"
                     @createdBPMN="createdBPMN"
                     @openProcessPreview="openProcessPreview" 
+                    @executeSimulate="executeSimulate"
+                    @closeExecuteDialog="closeExecuteDialog"
                 />
             </v-card>
         </v-dialog>
@@ -220,6 +222,7 @@ export default {
         versionHistory: [],
         openConsultingDialog: false,
         ProcessPreviewMode: false,
+        isSimulateMode: false
     }),
     computed: {
         useLock() {
@@ -337,6 +340,12 @@ export default {
         },
         openProcessPreview(){
             this.ProcessPreviewMode = true
+        },
+        executeSimulate(){
+            this.isSimulateMode = true
+        },
+        closeExecuteDialog(){
+            this.isSimulateMode = false
         },
         createdBPMN(res){
             const generateUniqueMegaProcessId = () => {

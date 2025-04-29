@@ -46,6 +46,7 @@ export default {
                     element.type === 'UserActivity'
                 );
                 this.generateFormTask = {};
+                
                 for (const activity of activities) {
                     let inputs = null;
                     if (activity.outputData && activity.outputData.length > 0) {
@@ -75,6 +76,23 @@ export default {
                         });
                     }
                 }
+                
+                // 모든 폼 생성이 완료된 후 최종 메시지 추가
+                if (activities.length > 0) {
+                    this.messages.push({
+                        "role": "system",
+                        "content": `모든 활동에 대한 폼 생성을 완료했습니다.`,
+                        "timeStamp": Date.now()
+                    });
+
+                    this.$try({
+                        context: this,
+                        action: () => {
+                        },
+                        successMsg: this.$t('successMsg.formGenerationCompleted')
+                    })
+                }
+                
                 this.generateFormTask = {};
             }
         },
