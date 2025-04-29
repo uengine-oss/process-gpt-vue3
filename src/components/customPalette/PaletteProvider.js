@@ -67,8 +67,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
   function applyAutoLayout() {
     try {
         if (!window.BpmnAutoLayout) {
-            console.error('BpmnAutoLayout ¸ðµâÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù.');
-            alert('ÀÚµ¿ ·¹ÀÌ¾Æ¿ô ¸ðµâÀ» ºÒ·¯¿Ã ¼ö ¾ø½À´Ï´Ù.');
+            console.error('BpmnAutoLayout ì´ ì¡´ìž¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.');
             return;
         }
         
@@ -87,139 +86,246 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
                 
                 eventBus.fire('autoLayout.complete');
             } catch (error) {
-                console.error('ÀÚµ¿ ·¹ÀÌ¾Æ¿ô Àû¿ë Áß ¿À·ù°¡ ¹ß»ýÇß½À´Ï´Ù:', error);
+                console.error('ìžë™ë ˆì´ì•„ì›ƒì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.', error);
             }
         }, 50);
         
     } catch (error) {
-        console.error('ÀÚµ¿ ·¹ÀÌ¾Æ¿ô Àû¿ë Áß ¿À·ù°¡ ¹ß»ýÇß½À´Ï´Ù:', error);
-        alert('ÀÚµ¿ ·¹ÀÌ¾Æ¿ô Àû¿ë Áß ¿À·ù°¡ ¹ß»ýÇß½À´Ï´Ù. ÄÜ¼ÖÀ» È®ÀÎÇÏ¼¼¿ä.');
+        console.error('ìžë™ë ˆì´ì•„ì›ƒì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.', error);
     }
   }
-
+  
+  function adjustParticipantBoundsByLanes(participant, lanes, isHorizontal) {
+    if (!lanes.length) return;
+    const paddingX = isHorizontal ? 30 : 0;
+    const paddingY = isHorizontal ? 0 : 30;
+  
+    const minX = Math.min(...lanes.map(l => l.di.bounds.x));
+    const maxX = Math.max(...lanes.map(l => l.di.bounds.x + l.di.bounds.width));
+    const minY = Math.min(...lanes.map(l => l.di.bounds.y));
+    const maxY = Math.max(...lanes.map(l => l.di.bounds.y + l.di.bounds.height));
+  
+    const newWidth = maxX - minX;
+    const newHeight = maxY - minY;
+  
+    const currentBounds = participant.di.bounds;
+  
+    modeling.resizeShape(participant, {
+      x: currentBounds.x - paddingX,
+      y: currentBounds.y - paddingY,
+      width: newWidth + paddingX,
+      height: newHeight + paddingY
+    });
+  
+    modeling.updateProperties(participant, {
+      di: { isHorizontal }
+    });
+  }
+  
   function changeParticipantHorizontalToVertical(event, element) {
     const logPrefix = '[changeParticipantOrientation]';
-
+    const SCALE_FIX = 1 / 0.96;
+  
     if (element.type !== 'bpmn:Participant') {
-      console.warn(`${logPrefix} ´ë»óÀÌ Participant°¡ ¾Æ´Õ´Ï´Ù.`);
+      console.warn(`${logPrefix} participantê°€ ì•„ë‹™ë‹ˆë‹¤.`);
       return;
     }
-
-    const participantBounds = element.di.bounds;
+  
     const childElements = element.children || [];
-
-    const newParticipantBounds = {
-      x: participantBounds.x,
-      y: participantBounds.y,
-      width: participantBounds.height * 1.2,
-      height: participantBounds.width * 0.8
-    };
-
-    modeling.resizeShape(element, newParticipantBounds);
-    modeling.updateProperties(element, {
-      di: { isHorizontal: false }
-    });
-
-    const paddingX = 50;
-    const paddingY = 30;
-    const nodeSpacingX = 150;
-    let currentY = newParticipantBounds.y + paddingY;
-    let currentX = newParticipantBounds.x;
-
     const lanes = childElements.filter(el => el.type === 'bpmn:Lane');
-    const visited = new Set();
-
+  
+    // âœ… íšŒì „ ì „ì— lane ì „ì²´ë¥¼ ê°ì‹¸ëŠ” oldParticipantBounds ìƒì„±
+    const oldMinX = Math.min(...lanes.map(lane => lane.di.bounds.x));
+    const oldMaxX = Math.max(...lanes.map(lane => lane.di.bounds.x + lane.di.bounds.width));
+    const oldMinY = Math.min(...lanes.map(lane => lane.di.bounds.y));
+    const oldMaxY = Math.max(...lanes.map(lane => lane.di.bounds.y + lane.di.bounds.height));
+  
+    const oldParticipantBounds = {
+      x: oldMinX,
+      y: oldMinY,
+      width: oldMaxX - oldMinX,
+      height: oldMaxY - oldMinY
+    };
+  
+    // ðŸ’¡ lane íšŒì „ ì „ bounds ì €ìž¥ â†’ íšŒì „ í›„ bounds ê³„ì‚°ì— ì‚¬ìš©
+    const laneNewBoundsMap = new Map();
+    let currentX = oldParticipantBounds.x;
+    const currentY = oldParticipantBounds.y;
+  
     lanes.forEach(lane => {
-      const laneBounds = lane.di.bounds;
-      const laneWidth = laneBounds.width * 0.8;
-      const laneHeight = laneBounds.height * 1.2;
-
-      // ³ôÀÌ, ³Êºñ ¹Ù²Ù°í Y ÁÂÇ¥ ´©Àû ¹èÄ¡
+      const oldLaneBounds = lane.di.bounds;
+  
+      const laneWidth = oldLaneBounds.width * 0.8 * SCALE_FIX;
+      const laneHeight = oldLaneBounds.height * 1.2 * SCALE_FIX;
+  
       const newLaneBounds = {
         x: currentX,
         y: currentY,
         width: laneHeight,
         height: laneWidth
       };
-
-      currentX = currentX + laneHeight;
-
+  
+      currentX += laneHeight;
+  
       modeling.resizeShape(lane, newLaneBounds);
       modeling.updateProperties(lane, {
         di: { isHorizontal: false }
       });
+  
+      laneNewBoundsMap.set(lane.id, newLaneBounds);
     });
-
-    const originalSequenceFlows = element.children.filter(child => child.type === 'bpmn:SequenceFlow');
+  
+    // âœ… lane íšŒì „ ì´í›„ ê¸°ì¤€ìœ¼ë¡œ participant bounds ê³„ì‚°
+    const laneBoundsList = Array.from(laneNewBoundsMap.values());
+  
+    const minX = Math.min(...laneBoundsList.map(b => b.x));
+    const maxX = Math.max(...laneBoundsList.map(b => b.x + b.width));
+    const minY = Math.min(...laneBoundsList.map(b => b.y));
+    const maxY = Math.max(...laneBoundsList.map(b => b.y + b.height));
+  
+    const newParticipantBounds = {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY
+    };
+  
+    modeling.resizeShape(element, newParticipantBounds);
+    modeling.updateProperties(element, {
+      di: { isHorizontal: false }
+    });
+  
+    // ðŸ§­ SequenceFlow waypoint ë³´ì •
+    const originalSequenceFlows = childElements.filter(child => child.type === 'bpmn:SequenceFlow');
     const originalWaypoints = {};
+  
     originalSequenceFlows.forEach(sequenceFlow => {
       const waypoints = sequenceFlow.waypoints;
       const newWaypoints = [];
+  
       waypoints.forEach(waypoint => {
-        const waypointX = newParticipantBounds.y + (waypoint.x - participantBounds.x) * 0.8;
-        const waypointY = newParticipantBounds.x + (waypoint.y - participantBounds.y) * 1.2;
-        const newWaypoint = {x: waypointY, y: waypointX };
-        if(waypoint.original) {
-          const original = { x: waypoint.original.x, y: waypoint.original.y };
-          newWaypoint.original = original;
+        const waypointX = newParticipantBounds.y + (waypoint.x - oldParticipantBounds.x) * 0.8 * SCALE_FIX;
+        const waypointY = newParticipantBounds.x + (waypoint.y - oldParticipantBounds.y) * 1.2 * SCALE_FIX;
+  
+        const newWaypoint = { x: waypointY, y: waypointX };
+  
+        if (waypoint.original) {
+          newWaypoint.original = { x: waypoint.original.x, y: waypoint.original.y };
         }
+  
         newWaypoints.push(newWaypoint);
       });
+  
       originalWaypoints[sequenceFlow.id] = newWaypoints;
     });
-
-    element.children.forEach(child => {
-      if (child.type != 'bpmn:Lane' &&
-        child.type != 'bpmn:LaneSet' &&
-        child.type != 'bpmn:Participant') {
-        if (child.type != 'bpmn:SequenceFlow') {
-          let childOffsetX = 0;
-          let childOffsetY = 0;
-
-          const childX = newParticipantBounds.y + (child.di.bounds.x - participantBounds.x) * 0.8 - childOffsetX;
-          const childY = newParticipantBounds.x + (child.di.bounds.y - participantBounds.y) * 1.2 + childOffsetY;
-          const childWidth = child.di.bounds.width;
-          const childHeight = child.di.bounds.height;
+  
+    // ðŸ§­ ê¸°íƒ€ ë…¸ë“œ ìœ„ì¹˜ ë³´ì •
+    childElements.forEach(child => {
+      if (
+        child.type !== 'bpmn:Lane' &&
+        child.type !== 'bpmn:LaneSet' &&
+        child.type !== 'bpmn:Participant'
+      ) {
+        if (child.type !== 'bpmn:SequenceFlow') {
+          const originalCenterX = child.di.bounds.x + (child.di.bounds.width / 2);
+          const originalCenterY = child.di.bounds.y + (child.di.bounds.height / 2);
+  
+          const relativeX = originalCenterX - oldParticipantBounds.x;
+          const relativeY = originalCenterY - oldParticipantBounds.y;
+  
+          const rotatedX = relativeY * 1.2 * SCALE_FIX;
+          const rotatedY = relativeX * 0.8 * SCALE_FIX;
+  
           const newChildBounds = {
-            x: childY,
-            y: childX,
-            width: childWidth,
-            height: childHeight
+            x: newParticipantBounds.x + rotatedX - (child.di.bounds.width / 2),
+            y: newParticipantBounds.y + rotatedY - (child.di.bounds.height / 2),
+            width: child.di.bounds.width,
+            height: child.di.bounds.height
           };
-
+  
           modeling.resizeShape(child, newChildBounds);
         }
       }
     });
 
-    const changeSequenceFlows = element.children.filter(child => child.type === 'bpmn:SequenceFlow');
-    changeSequenceFlows.forEach(sequenceFlow => {
+    adjustParticipantBoundsByLanes(element, lanes, false);
+  
+    // ðŸ’¡ SequenceFlow ìµœì¢… waypoint ë°˜ì˜
+    originalSequenceFlows.forEach(sequenceFlow => {
       sequenceFlow.waypoints = originalWaypoints[sequenceFlow.id];
       modeling.updateProperties(sequenceFlow, {
         waypoints: originalWaypoints[sequenceFlow.id]
       });
     });
-
-    console.log(`${logPrefix} ? ¼öÆò È¸Àü ¹× Á¤·Ä ¿Ï·á`);
   }
+  
+  
 
   function changeParticipantVerticalToHorizontal(event, element) {
     const logPrefix = '[changeParticipantOrientation]';
-  
+    
     if (element.type !== 'bpmn:Participant') {
-      console.warn(`${logPrefix} ´ë»óÀÌ Participant°¡ ¾Æ´Õ´Ï´Ù.`);
+      console.warn(`${logPrefix} participantê°€ ì•„ë‹™ë‹ˆë‹¤.`);
       return;
     }
   
-    const participantBounds = element.di.bounds;
     const childElements = element.children || [];
+    const lanes = childElements.filter(el => el.type === 'bpmn:Lane');
   
-    // ¼¼·Î¿¡¼­ °¡·Î·Î È¸Àü (¹Ý´ë ¿¬»ê)
+    // âœ… íšŒì „ ì „ lane ê¸°ì¤€ìœ¼ë¡œ oldParticipantBounds ìƒì„±
+    const oldMinX = Math.min(...lanes.map(lane => lane.di.bounds.x));
+    const oldMaxX = Math.max(...lanes.map(lane => lane.di.bounds.x + lane.di.bounds.width));
+    const oldMinY = Math.min(...lanes.map(lane => lane.di.bounds.y));
+    const oldMaxY = Math.max(...lanes.map(lane => lane.di.bounds.y + lane.di.bounds.height));
+  
+    const oldParticipantBounds = {
+      x: oldMinX,
+      y: oldMinY,
+      width: oldMaxX - oldMinX,
+      height: oldMaxY - oldMinY
+    };
+  
+    // ðŸ’¡ lane íšŒì „ ì „ bounds ì €ìž¥ â†’ íšŒì „ í›„ bounds ê³„ì‚°ì— ì‚¬ìš©
+    const laneNewBoundsMap = new Map();
+    let currentY = oldParticipantBounds.y;
+    const currentX = oldParticipantBounds.x;
+  
+    lanes.forEach(lane => {
+      const oldLaneBounds = lane.di.bounds;
+  
+      const laneWidth = oldLaneBounds.width * 0.8;   // Scale Fix ì—†ìŒ
+      const laneHeight = oldLaneBounds.height * 1.2; // Scale Fix ì—†ìŒ
+  
+      const newLaneBounds = {
+        x: currentX,
+        y: currentY,
+        width: laneHeight,
+        height: laneWidth
+      };
+  
+      currentY += laneWidth;
+  
+      modeling.resizeShape(lane, newLaneBounds);
+      modeling.updateProperties(lane, {
+        di: { isHorizontal: true }
+      });
+  
+      laneNewBoundsMap.set(lane.id, newLaneBounds);
+    });
+  
+    // âœ… lane íšŒì „ ì´í›„ ê¸°ì¤€ìœ¼ë¡œ participant bounds ê³„ì‚°
+    const laneBoundsList = Array.from(laneNewBoundsMap.values());
+  
+    const minX = Math.min(...laneBoundsList.map(b => b.x));
+    const maxX = Math.max(...laneBoundsList.map(b => b.x + b.width));
+    const minY = Math.min(...laneBoundsList.map(b => b.y));
+    const maxY = Math.max(...laneBoundsList.map(b => b.y + b.height));
+  
     const newParticipantBounds = {
-      x: participantBounds.x,
-      y: participantBounds.y,
-      width: participantBounds.height * 1.2,
-      height: participantBounds.width * 0.8
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY
     };
   
     modeling.resizeShape(element, newParticipantBounds);
@@ -227,67 +333,50 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
       di: { isHorizontal: true }
     });
   
-    const paddingX = 30;
-    const paddingY = 50;
-    let currentY = newParticipantBounds.y;
-    let currentX = newParticipantBounds.x + paddingX;
-  
-    const lanes = childElements.filter(el => el.type === 'bpmn:Lane');
-  
-    lanes.forEach(lane => {
-      const laneBounds = lane.di.bounds;
-      const laneWidth = laneBounds.width * 0.8;
-      const laneHeight = laneBounds.height * 1.2;
-      const newLaneBounds = {
-        x: currentX,
-        y: currentY,
-        width: laneHeight,
-        height: laneWidth
-      };
-  
-      currentY = currentY + laneWidth;
-  
-      modeling.resizeShape(lane, newLaneBounds);
-      modeling.updateProperties(lane, {
-        di: { isHorizontal: true }
-      });
-    });
-  
-    const originalSequenceFlows = element.children.filter(child => child.type === 'bpmn:SequenceFlow');
+    // ðŸ§­ SequenceFlow waypoint ë³´ì •
+    const originalSequenceFlows = childElements.filter(child => child.type === 'bpmn:SequenceFlow');
     const originalWaypoints = {};
+  
     originalSequenceFlows.forEach(sequenceFlow => {
       const waypoints = sequenceFlow.waypoints;
       const newWaypoints = [];
+  
       waypoints.forEach(waypoint => {
-        const waypointX = newParticipantBounds.y + (waypoint.x - participantBounds.x) * 0.8;
-        const waypointY = newParticipantBounds.x + (waypoint.y - participantBounds.y) * 1.2;
-        const newWaypoint = {
-          x: waypointY,
-          y: waypointX
-        };
+        const waypointX = newParticipantBounds.y + (waypoint.x - oldParticipantBounds.x) * 0.8;
+        const waypointY = newParticipantBounds.x + (waypoint.y - oldParticipantBounds.y) * 1.2;
+  
+        const newWaypoint = { x: waypointY, y: waypointX };
+  
         if (waypoint.original) {
-          const original = { x: waypoint.original.x, y: waypoint.original.y };
-          newWaypoint.original = original;
+          newWaypoint.original = { x: waypoint.original.x, y: waypoint.original.y };
         }
+  
         newWaypoints.push(newWaypoint);
       });
+  
       originalWaypoints[sequenceFlow.id] = newWaypoints;
     });
   
-    element.children.forEach(child => {
-      if (child.type != 'bpmn:Lane' &&
-          child.type != 'bpmn:LaneSet' &&
-          child.type != 'bpmn:Participant') {
-        if (child.type != 'bpmn:SequenceFlow') {
-          let childOffsetX = 0;
-          let childOffsetY = 0;
-
-          const childX = newParticipantBounds.x + (child.di.bounds.y - participantBounds.y) * 1.2  - childOffsetY;
-          const childY = newParticipantBounds.y + (child.di.bounds.x - participantBounds.x) * 0.8 - childOffsetX;
-          
+    // ðŸ§­ ê¸°íƒ€ ë…¸ë“œ ë³´ì •
+    childElements.forEach(child => {
+      if (
+        child.type !== 'bpmn:Lane' &&
+        child.type !== 'bpmn:LaneSet' &&
+        child.type !== 'bpmn:Participant'
+      ) {
+        if (child.type !== 'bpmn:SequenceFlow') {
+          const originalCenterX = child.di.bounds.x + (child.di.bounds.width / 2);
+          const originalCenterY = child.di.bounds.y + (child.di.bounds.height / 2);
+  
+          const relativeX = originalCenterX - oldParticipantBounds.x;
+          const relativeY = originalCenterY - oldParticipantBounds.y;
+  
+          const rotatedX = relativeY * 1.2;
+          const rotatedY = relativeX * 0.8;
+  
           const newChildBounds = {
-            x: childX,
-            y: childY,
+            x: newParticipantBounds.x + rotatedX - (child.di.bounds.width / 2),
+            y: newParticipantBounds.y + rotatedY - (child.di.bounds.height / 2),
             width: child.di.bounds.width,
             height: child.di.bounds.height
           };
@@ -297,16 +386,18 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
       }
     });
   
-    const changeSequenceFlows = element.children.filter(child => child.type === 'bpmn:SequenceFlow');
-    changeSequenceFlows.forEach(sequenceFlow => {
+    adjustParticipantBoundsByLanes(element, lanes, true);
+    
+    // ðŸ’¡ SequenceFlow ìµœì¢… waypoint ë°˜ì˜
+    originalSequenceFlows.forEach(sequenceFlow => {
       sequenceFlow.waypoints = originalWaypoints[sequenceFlow.id];
       modeling.updateProperties(sequenceFlow, {
         waypoints: originalWaypoints[sequenceFlow.id]
       });
     });
-  
-    console.log(`${logPrefix} ? ¼¼·Î ¡æ °¡·Î È¸Àü ¹× Á¤·Ä ¿Ï·á`);
   }
+  
+  
   
 
   function createAction(type, group, className, title, options) {
@@ -468,7 +559,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'auto-layout': {
       group: 'collaboration',
       className: 'mdi mdi-auto-fix',
-      title: i18n.global.t('PaletteProvider.autoLayout') || 'ÀÚµ¿ ·¹ÀÌ¾Æ¿ô',
+      title: i18n.global.t('PaletteProvider.autoLayout') || 'ï¿½Úµï¿½ ï¿½ï¿½ï¿½Ì¾Æ¿ï¿½',
       action: {
         click: function(event) {
           applyAutoLayout();
@@ -478,7 +569,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'change-orientation': {
       group: 'collaboration',
       className: 'mdi mdi-crop-rotate',
-      title: i18n.global.t('PaletteProvider.changeOrientation') || '·¹ÀÌ¾Æ¿ô ¹æÇâ ÀüÈ¯',
+      title: i18n.global.t('PaletteProvider.changeOrientation') || 'ï¿½ï¿½ï¿½Ì¾Æ¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯',
       action: {
         click: function(event) {
           const bpmnJS = injector;
