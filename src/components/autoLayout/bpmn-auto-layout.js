@@ -129,6 +129,25 @@
         }
       });
 
+
+      function sortGroupsAndOrder(graph, elements) {
+        // 1. groupOrder 정렬
+        graph.groupOrder.sort((a, b) => {
+          const elA = elements.find(el => el.id === a);
+          const elB = elements.find(el => el.id === b);
+          if (!elA || !elB) return 0;
+          if (horizontal) {
+            return elA.y - elB.y;
+          } else {
+            return elA.x - elB.x;
+          }
+        });
+      
+        // 2. groups 배열도 groupOrder 순서에 맞게 재정렬
+        graph.groups = graph.groupOrder
+          .map(id => graph.groups.find(g => g.id === id))
+          .filter(Boolean); // 혹시 없는 id는 제거
+      }
       // 2. 그룹화 처리 진행
       elements.forEach(element => {
         if (element.businessObject && element.businessObject.$type) {
@@ -197,20 +216,22 @@
         }
       });
 
+      sortGroupsAndOrder(graph, elements);
+
       // Lane 내부 요소 확인 helper 함수
       function isElementInLane(element, lane) {
         // 요소나 레인에 경계가 없는 경우 처리
-        if (!element.bounds || !lane.bounds) return false;
+        if (!element || !lane) return false;
         
         // 요소의 중심점이 레인 내부에 있는지 확인
-        const elementMidX = element.bounds.x + element.bounds.width / 2;
-        const elementMidY = element.bounds.y + element.bounds.height / 2;
+        const elementMidX = element.x + element.width / 2;
+        const elementMidY = element.y + element.height / 2;
         
         return (
-          elementMidX >= lane.bounds.x &&
-          elementMidX <= lane.bounds.x + lane.bounds.width &&
-          elementMidY >= lane.bounds.y &&
-          elementMidY <= lane.bounds.y + lane.bounds.height
+          elementMidX >= lane.x &&
+          elementMidX <= lane.x + lane.width &&
+          elementMidY >= lane.y &&
+          elementMidY <= lane.y + lane.height
         );
       }
       

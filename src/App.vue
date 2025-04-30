@@ -86,7 +86,7 @@ export default {
                 this.loadScreen = true;
             } else {
                 const isValidTenant = await this.backend.getTenant(window.$tenantName);
-                if (!isValidTenant) {
+                if (!isValidTenant && window.$tenantName !== 'localhost') {
                     alert(window.$tenantName + " 존재하지 않는 경로입니다.");
                     if (localStorage.getItem('email')) {
                         window.location.href = 'https://www.process-gpt.io/tenant/manage';

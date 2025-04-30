@@ -32,9 +32,11 @@
                             :isDryRun="true"
                             :isSimulate="isSimulate"
                             :simulationInstances="simulationInstances"
+                            :activityIndex="activityIndex"
                             :processDefinition="processDefinition"
                             @close="closeDialog"
                             @executeProcess="executeProcess"
+                            @backToPrevStep="backToPrevStep"
                             @agentGenerationFinished="agentGenerationFinished"
                         ></WorkItem>
                     </div>
@@ -208,6 +210,10 @@ export default {
                 this.simulationInstances.push(this.processDefinition.activities[this.activityIndex])
             }
         },
+        backToPrevStep() {
+            this.activityIndex--;
+            this.init();
+        },
         async executeProcess(value) {
             var me = this;
 
@@ -222,7 +228,7 @@ export default {
                         successMsg: this.$t('successMsg.simulatedProcess')
                     })
                     // setTimeout(() => {
-                        me.closeDialog();
+                        // me.closeDialog();
                     // }, 3000);
                 } else {
                     me.init();
