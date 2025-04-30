@@ -127,7 +127,7 @@
                 </v-card-item>
             </v-card>
         </v-card>
-        <v-dialog :style="ProcessPreviewMode ? '' : 'max-width: 1000px;'" v-model="openConsultingDialog" persistent>
+        <v-dialog :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'" v-model="openConsultingDialog" :scrim="isSimulateMode ? false : true" persistent>
             <v-card>
                 <v-row class="ma-0 pa-3" style="background-color:rgb(var(--v-theme-primary), 0.2); height:50px;">
                     <v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>
@@ -140,6 +140,8 @@
                     :chatMode="'consulting'"
                     @createdBPMN="createdBPMN"
                     @openProcessPreview="openProcessPreview" 
+                    @executeSimulate="executeSimulate"
+                    @closeExecuteDialog="closeExecuteDialog"
                 />
             </v-card>
         </v-dialog>
@@ -220,6 +222,7 @@ export default {
         versionHistory: [],
         openConsultingDialog: false,
         ProcessPreviewMode: false,
+        isSimulateMode: false
     }),
     computed: {
         useLock() {
@@ -307,6 +310,13 @@ export default {
             },
         });
     },
+    mounted() {
+        window.addEventListener('localStorageChange', (event) => {
+            if (event.detail.key === 'isAdmin') {
+                this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
+            }
+        });
+    },
     beforeRouteLeave(to, from, next) {
         if (this.lock && this.enableEdit) {
             this.openAlertDialog().then((proceed) => {
@@ -330,6 +340,12 @@ export default {
         },
         openProcessPreview(){
             this.ProcessPreviewMode = true
+        },
+        executeSimulate(){
+            this.isSimulateMode = true
+        },
+        closeExecuteDialog(){
+            this.isSimulateMode = false
         },
         createdBPMN(res){
             const generateUniqueMegaProcessId = () => {
@@ -549,8 +565,6 @@ export default {
             await backend.deleteUserPermission({ user_id: userId, proc_def_id: process.id });
         },
         async saveProcess() {
-            const diff = jsondiffpatch.diff(this.copyValue, this.value);
-            this.updatePermissionsFromDiff(diff);
             await backend.putProcessDefinitionMap(this.value);
             await this.getProcessMap();
             this.closeAlertDialog();

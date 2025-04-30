@@ -4,6 +4,7 @@
     "successMsg": {
         "simulatedProcess": "Process 시뮬레이션 완료",
         "runningTheProcess": "Process 실행",
+        "formGenerationCompleted": "폼 생성 완료",
         "processExecutionCompleted": "프로세스 실행 완료",
         "workCompleted": "해당 업무 완료",
         "save": "저장되었습니다.",
@@ -863,6 +864,7 @@
         "wrongPassword": "비밀번호가 틀렸습니다.",
         "wrongId": "아이디가 틀렸습니다.",
         "notRegisteredEmail": "가입된 이메일주소가 아닙니다.",
-        "loginRequired": "로그인이 필요합니다."
+        "loginRequired": "로그인이 필요합니다.",
+        "unRegisteredTenant": "가입되지 않은 테넌트입니다."
     }
 }

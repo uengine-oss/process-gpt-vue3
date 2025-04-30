@@ -155,6 +155,13 @@ export default {
             if(!me.isDryRun) {
                 me.loadForm()
             }
+            
+            if(me.isSimulate == 'true' && me.processDefinition && me.processDefinition['activities']) {    
+                let currentActivity = me.processDefinition['activities'].find(x => x.id == me.workItem.activity.tracingTag)
+                if(currentActivity && currentActivity.inputFormData) {
+                    me.formData = currentActivity.inputFormData
+                }
+            }
 
             me.EventBus.on('form-values-updated', (formValues) => {
                 if(formValues){

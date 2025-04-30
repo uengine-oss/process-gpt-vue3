@@ -46,10 +46,16 @@ export default defineComponent({
             return this.isAdmin ? 'Admin' : '';
         }
     },
-    created() {
+    mounted() {
         this.name = localStorage.getItem("userName") || '';
         this.picture = localStorage.getItem("picture") || '';
         this.isAdmin = localStorage.getItem("isAdmin") === 'true';
+
+        window.addEventListener('localStorageChange', (event) => {
+            if (event.detail.key === 'isAdmin') {
+                this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
+            }
+        });
     },
     methods: {
         logout() {

@@ -26,6 +26,20 @@
                         </v-btn>
                     </template>
                 </v-tooltip>
+                <!-- <v-tooltip v-if="isSimulate == 'true'" text="이전 단계">
+                    <template v-slot:activator="{ props }">
+                        <v-btn @click="backToPrevStep"
+                            class="ml-1"
+                            size="x-small"
+                            icon="mdi-arrow-left"
+                            v-bind="props"
+                            :disabled="activityIndex == 0"
+                        >
+                            
+                        </v-btn>
+                    </template>
+                </v-tooltip> -->
+                <v-btn v-if="isSimulate == 'true'" :disabled="activityIndex == 0" @click="backToPrevStep" density="compact" rounded>이전 단계</v-btn>
             </div>
         </div>
 
@@ -203,7 +217,8 @@ export default {
             default: 'false'
         },
         simulationInstances: Array,
-        processDefinition: Object
+        processDefinition: Object,
+        activityIndex: Number
     },
     components: {
         // ProcessDefinition,
@@ -246,7 +261,7 @@ export default {
         inFormNameTabs: [],
         inFormValues: [],
 
-        isFinishedAgentGeneration: false
+        isFinishedAgentGeneration: false,
     }),
     created() {
         this.init();
@@ -266,9 +281,11 @@ export default {
         window.addEventListener('resize', this.handleResize);
 
         if(this.isSimulate == 'true') {
-            setTimeout(() => {
-                this.selectedTab = 'agent';
-            }, 1500);
+            if(this.simulationInstances && !this.simulationInstances[this.activityIndex]){
+                setTimeout(() => {
+                    this.selectedTab = 'agent';
+                }, 1500);
+            }
         }
     },
     beforeDestroy() {
@@ -479,6 +496,9 @@ export default {
         },
         executeProcess(value) {
             this.$emit('executeProcess', value)
+        },
+        backToPrevStep() {
+            this.$emit('backToPrevStep');
         }
     }
 };

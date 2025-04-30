@@ -1282,15 +1282,24 @@ export default {
             const prop = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:properties');
             const json = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:json');
 
-            const conditionPayload = {
-              condition: {
-                _type: sequence.condition._type || 'org.uengine.kernel.Evaluate',
-                key: sequence.condition.key || '',
-                value: sequence.condition.value || '',
-                condition: sequence.condition.condition || '=='
-              }
+            let conditionPayload = {
+              condition: null
             };
 
+            if (typeof sequence.condition === 'string') {
+              conditionPayload.condition = sequence.condition;
+              sequenceFlow.setAttribute('name', sequence.condition || '');
+            } else {
+              conditionPayload = {
+                condition: {
+                  _type: sequence.condition._type || 'org.uengine.kernel.Evaluate',
+                  key: sequence.condition.key || '',
+                  value: sequence.condition.value || '',
+                  condition: sequence.condition.condition || '=='
+                }
+              };
+            }
+            
             json.textContent = JSON.stringify(conditionPayload);
             prop.appendChild(json);
             ext.appendChild(prop);

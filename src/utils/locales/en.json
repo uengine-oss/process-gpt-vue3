@@ -4,6 +4,7 @@
     "successMsg": {
         "simulatedProcess": "Simulated process completed",
         "runningTheProcess": "Running the process",
+        "formGenerationCompleted": "Form generation completed",
         "processExecutionCompleted": "Process execution completed",
         "workCompleted": "Completion of work",
         "save": "Saved successfully.",
@@ -863,6 +864,7 @@
         "wrongPassword": "The password is incorrect.",
         "wrongId": "The ID is incorrect.",
         "notRegisteredEmail": "This email address is not registered.",
-        "loginRequired": "Login is required."
+        "loginRequired": "Login is required.",
+        "unRegisteredTenant": "This tenant is not registered."
     }
 }

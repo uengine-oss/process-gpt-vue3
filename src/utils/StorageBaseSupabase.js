@@ -805,6 +805,9 @@ export default class StorageBaseSupabase {
                     window.localStorage.setItem('userName', data.username);
                     window.localStorage.setItem('email', data.email);
                     window.localStorage.setItem('uid', data.id);
+
+                    const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: data.is_admin } });
+                    window.dispatchEvent(event);
                 }
             }
         } catch (e) {

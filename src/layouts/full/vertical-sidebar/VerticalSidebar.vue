@@ -193,9 +193,33 @@ export default {
             return window.$pal;
         }
     },
-    async created() {
+    created() {
         const isAdmin = localStorage.getItem('isAdmin');
         if (isAdmin == 'true') {
+            this.loadSidebar();
+        }
+    },
+    mounted() {
+        this.EventBus.on('definitions-updated', async () => {
+            await this.getDefinitionList();
+        });
+        if (window.$mode === 'uEngine') {
+            this.logoPadding = 'padding:6px'
+        }
+
+        window.addEventListener('localStorageChange', (event) => {
+            if (event.detail.key === 'isAdmin') {
+                if (event.detail.value === 'true' || event.detail.value === true) {
+                    this.loadSidebar();
+                } else {
+                    this.definitionItem = [];
+                    this.definitionList = [];
+                }
+            }
+        });
+    },
+    methods: {
+        loadSidebar() {
             this.definitionItem = [
                 {
                     header: 'definitionManagement.title',
@@ -260,28 +284,15 @@ export default {
                     item.title !== 'uiDefinition.title' && item.title !== 'systemDefinition.title');
             }
             this.getDefinitionList();
-        }
 
-        if (!this.JMS) {
-            this.definitionItem.forEach((item) => {
-                if (item.disable) {
-                    item.disable = false;
-                }
-            });
-        }
-    },
-    mounted() {
-        this.EventBus.on('definitions-updated', async () => {
-            await this.getDefinitionList();
-        });
-        if (window.$mode === 'uEngine') {
-            this.logoPadding = 'padding:6px'
-        }
-        // this.EventBus.on('instances-updated', async () => {
-        //     await this.loadInstances();
-        // });
-    },
-    methods: {
+            if (!this.JMS) {
+                this.definitionItem.forEach((item) => {
+                    if (item.disable) {
+                        item.disable = false;
+                    }
+                });
+            }
+        },
         openDialog() {
             this.isOpen = true;
         },
