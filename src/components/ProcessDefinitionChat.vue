@@ -145,7 +145,7 @@
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
                                 @beforeRestore="beforeRestore" @savePDF="savePDF"
-                                @createFormUrl="createFormUrl" />
+                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
                         </template>
                     </Chat>
                 </div>
@@ -173,7 +173,7 @@
                             @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                             @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                             @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                            @createFormUrl="createFormUrl" />
+                            @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
                     </template>
                 </Chat>
             </template>
@@ -188,6 +188,11 @@
                 <test-process v-if="isSimulate == 'true'" :executeDialog="executeDialog" :definitionId="fullPath" @close="executeDialog = false" />
                 <dry-run-process v-else :is-simulate="isSimulate" :definitionId="fullPath" @close="executeDialog = false"></dry-run-process>
             </div>
+        </v-dialog>
+
+        <v-dialog v-model="marketplaceDialog" max-width="400">
+            <process-definition-market-place-dialog :processDefinition="processDefinition" 
+                :bpmn="bpmn" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
         </v-dialog>
     </v-card>
 </template>
@@ -221,6 +226,8 @@ import BackendFactory from '@/components/api/BackendFactory';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
+import ProcessDefinitionMarketPlaceDialog from '@/components/ProcessDefinitionMarketPlaceDialog.vue';
+
 const backend = BackendFactory.createBackend();
 
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
@@ -249,7 +256,8 @@ export default {
         ProcessExecuteDialog,
         'process-gpt-execute': ProcessGPTExecute,
         DryRunProcess,
-        TestProcess
+        TestProcess,
+        ProcessDefinitionMarketPlaceDialog
     },
     props: {
         chatMode: {
@@ -285,6 +293,7 @@ export default {
         waitForCustomer: false,
         isConsultingMode: false,
         isPreviewPDFDialog: false,
+        marketplaceDialog: false,
     }),
     async created() {
         $try(async () => {
@@ -403,6 +412,9 @@ export default {
         }
     },
     methods: {
+        toggleMarketplaceDialog(value) {
+            this.marketplaceDialog = value;
+        },
         executeProcess() {
             this.isSimulate = 'false'
             this.executeDialog = !this.executeDialog;
@@ -462,7 +474,7 @@ export default {
                     // me.isDeleted = true;
                     me.EventBus.emit('definitions-updated');
                     me.EventBus.emit('instances-updated');
-                    me.$router.go(0);
+                    me.$router.push('/definitions/chat');
                 }
             });
         },

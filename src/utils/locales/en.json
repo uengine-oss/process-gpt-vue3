@@ -201,7 +201,8 @@
         "forcedCheckOutMessage": "Currently, {name} is editing. If you proceed with editing, the content modified by {name} will be damaged and not saved. \nDo you want to proceed with editing?",
         "settingPermission": "Setting Permission",
         "isReadable": "Readable",
-        "isWritable": "Writable"
+        "isWritable": "Writable",
+        "marketplace": "Marketplace"
     },
     "uiDefinition": {
         "title": "Screen Definition",

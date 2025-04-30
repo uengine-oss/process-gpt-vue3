@@ -496,6 +496,7 @@ export default class StorageBaseSupabase {
             if (status != 200 && error) {
                 throw new StorageBaseError('error in putObject:' + status + " " + statusText + " " + error.message, error, arguments);
             }
+            return result;
         } catch (error) {
             throw new StorageBaseError('error in putObject', error, arguments);
         }

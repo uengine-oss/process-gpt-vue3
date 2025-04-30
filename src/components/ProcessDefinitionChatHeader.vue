@@ -169,6 +169,18 @@
                                 </template>
                             </v-tooltip>
                         </div>
+
+                        <!-- 마켓플레이스 -->
+                        <div class="mr-4 d-flex" v-if="bpmn && useMarketplace">
+                            <v-tooltip location="bottom" :text="$t('processDefinitionMap.marketplace')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                        density="comfortable" @click="openMarketplaceDialog">
+                                        <v-icon>mdi-shopping-outline</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </div>
                     </v-row>
                 </div>
             </div>
@@ -244,6 +256,9 @@ export default {
             } else {
                 return false;
             }
+        },
+        useMarketplace() {
+            return this.mode == 'ProcessGPT';
         }
     },
     methods: {
@@ -280,6 +295,9 @@ export default {
         },
         createFormUrl() {
             this.$emit('createFormUrl');
+        },
+        openMarketplaceDialog() {
+            this.$emit('toggleMarketplaceDialog', true);
         }
     }
 };

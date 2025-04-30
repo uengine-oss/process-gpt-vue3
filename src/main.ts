@@ -248,40 +248,43 @@ async function initializeApp() {
         componentName: 'vuediff'
     });
 
-    (async () => {
-        try {
-            let initOptions = {
-                url: window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || `http://localhost:9090/`,
-                realm: window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || `uengine`,
-                clientId: window._env_?.VITE_KEYCLOAK_CLIENT_ID || import.meta.env.VITE_KEYCLOAK_CLIENT_ID || `uengine`,
-                onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
-            };
-            const keycloak = new Keycloak(initOptions);
-            const authenticated = await keycloak.init({
-                onLoad: initOptions.onLoad
-            });
-            console.log(`User is ${authenticated ? 'authenticated' : 'not authenticated'}`);
-            if (authenticated) {
-                localStorage.setItem('keycloak', `${keycloak.token}`);
-                console.log(keycloak.tokenParsed);
-                if (keycloak.token && keycloak.tokenParsed) {
-                    localStorage.setItem('accessToken', `${keycloak.token}`);
-                    localStorage.setItem('author', `${keycloak.tokenParsed.email}`);
-                    localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
-                    localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
-                    localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
-                    localStorage.setItem('groups', `${keycloak.tokenParsed.groups}`);
-                    localStorage.setItem('roles', `${keycloak.tokenParsed.realm_access?.roles}`);
-                    localStorage.setItem('isAdmin', 'true');
-                    const defaultPicture = '/images/defaultUser.png';
-                    localStorage.setItem('picture', localStorage.getItem('picture') || defaultPicture);
+
+    if (window.$mode == 'uEngine') {
+        (async () => {
+            try {
+                let initOptions = {
+                    url: window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || `http://localhost:9090/`,
+                    realm: window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || `uengine`,
+                    clientId: window._env_?.VITE_KEYCLOAK_CLIENT_ID || import.meta.env.VITE_KEYCLOAK_CLIENT_ID || `uengine`,
+                    onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
+                };
+                const keycloak = new Keycloak(initOptions);
+                const authenticated = await keycloak.init({
+                    onLoad: initOptions.onLoad
+                });
+                console.log(`User is ${authenticated ? 'authenticated' : 'not authenticated'}`);
+                if (authenticated) {
+                    localStorage.setItem('keycloak', `${keycloak.token}`);
+                    console.log(keycloak.tokenParsed);
+                    if (keycloak.token && keycloak.tokenParsed) {
+                        localStorage.setItem('accessToken', `${keycloak.token}`);
+                        localStorage.setItem('author', `${keycloak.tokenParsed.email}`);
+                        localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
+                        localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
+                        localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
+                        localStorage.setItem('groups', `${keycloak.tokenParsed.groups}`);
+                        localStorage.setItem('roles', `${keycloak.tokenParsed.realm_access?.roles}`);
+                        localStorage.setItem('isAdmin', 'true');
+                        const defaultPicture = '/images/defaultUser.png';
+                        localStorage.setItem('picture', localStorage.getItem('picture') || defaultPicture);
+                    }
                 }
+        
+            } catch (error) {
+                console.error(`Failed to initialize adapter: ${error}`);
             }
-       
-        } catch (error) {
-            console.error(`Failed to initialize adapter: ${error}`);
-        }
-    })();
+        })();
+    }
 }
 export { i18n };
 initializeApp();

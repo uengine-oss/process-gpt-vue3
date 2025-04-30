@@ -87,14 +87,14 @@
 
             <v-card
                 v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
-                @click="addSampleProcess"
+                @click="openMarketplaceDialog = true"
                 class="consulting-card ma-4"
                 elevation="3"
                 rounded="lg"
             >
                 <v-card-item class="pa-3">
                     <v-card-title class="text-primary font-weight-bold pb-1">
-                        샘플 프로세스 추가
+                        {{ $t('processDefinitionMap.marketplace') }}
                     </v-card-title>
                 </v-card-item>
             </v-card>
@@ -164,6 +164,10 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <v-dialog v-model="openMarketplaceDialog" max-width="1200">
+            <process-definition-market-place @closeMarketplaceDialog="closeMarketplaceDialog" />
+        </v-dialog>
     </div>
 </template>
 
@@ -174,6 +178,7 @@ import ProcessMenu from './ProcessMenu.vue';
 import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
+import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPlace.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -191,7 +196,8 @@ export default {
         ViewProcessDetails,
         SubProcessDetail,
         DefinitionMapList,
-        ProcessDefinitionChat
+        ProcessDefinitionChat,
+        ProcessDefinitionMarketPlace
     },
     props: {
         componentName: {
@@ -220,6 +226,7 @@ export default {
         versionHistory: [],
         openConsultingDialog: false,
         ProcessPreviewMode: false,
+        openMarketplaceDialog: false,
     }),
     computed: {
         useLock() {
@@ -328,6 +335,10 @@ export default {
         }
     },
     methods: {
+        async closeMarketplaceDialog() {
+            await this.getProcessMap();
+            this.openMarketplaceDialog = false;
+        },
         async addSampleProcess() {
             if (this.mode == "ProcessGPT") {
                 await backend.addSampleProcess();

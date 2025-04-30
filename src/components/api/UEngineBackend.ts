@@ -7,6 +7,10 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async listMarketplaceDefinition() {
+        return null;
+    }
+
     async updateUser(userInfo: any) {
         return null;
     }
