@@ -176,7 +176,8 @@ export default {
         isMyTask() {
             // localStorage의 email과 task의 endpoint가 일치하는지 확인
             const myEmail = localStorage.getItem('email');
-            return myEmail && this.task && this.task.endpoint === myEmail;
+            const isNotTodolistPath = this.$route.path !== '/todolist';
+            return myEmail && this.task && this.task.endpoint === myEmail && isNotTodolistPath;
         }
     },
     created() {
