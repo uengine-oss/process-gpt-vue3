@@ -46,7 +46,7 @@
         <v-row :class="isMobile ? 'ma-0 pa-0 mt-2' : 'ma-0 pa-0'">
             <!-- Left -->
             <v-col class="pa-0" :cols="isMobile ? 12 : 5">
-                <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
+                <v-alert class="pa-0 mt-4 ml-2 mb-2" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
                         <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
                             {{ tab.label }}
