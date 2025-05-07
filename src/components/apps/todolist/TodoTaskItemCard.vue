@@ -2,7 +2,7 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-     <div :class="{'border-animation': isMyTask}">
+     <div :class="{'border-animation': isMyTask && !isTodolistPath}">
         <v-card elevation="10" class="cursor-pointer pa-2" @click="executeTask"
             :class="{
                 'border-primary': isDueTodayOrTomorrow, 
@@ -36,16 +36,25 @@
                         </div>
                     </div>
                     <!-- 세로배치 -->
-                    <div v-if="mode == 'uEngine'" 
-                        class="pa-0"
-                        style="font-size:12px; margin-top: 5px;"
-                    >
-                        TaskId : {{ task.taskId }} / InstId: {{ task.instId }}
+                    <div class="mt-1">
+                        <div v-if="mode == 'uEngine'" 
+                            class="pa-0"
+                            style="font-size:12px; margin-top: 5px;"
+                        >
+                            TaskId : {{ task.taskId }} / InstId: {{ task.instId }}
+                        </div>
+                        <div v-else-if="isMyTask && isTodolistPath" colos="12" class="pa-0">
+                            <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
+                                {{ task.proc_inst_name }}
+                            </div>
+                        </div>
+                        <div v-else colos="12" class="pa-0">
+                            <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
+                                {{ task.instName }}
+                            </div>
+                        </div>
                     </div>
-                    <div v-else colos="12" class="pa-0">
-                        <div class="text-caption">{{ task.instName }}</div>
-                    </div>
-                    <div class="pa-0">
+                    <div class="pa-0 mt-1">
                         <div class="d-flex align-center">
                             <CalendarIcon size="16" />
                             <div class="body-text-1 text-dark pl-2">
@@ -61,10 +70,8 @@
                     <!-- 담당자 정보 표시 -->
                     <div class="pa-0 mt-1" v-if="userInfoForTask && !isMyTask">
                         <div class="d-flex align-center">
-                            <div class="body-text-1 text-dark"
-                                style="overflow: auto;"
-                            >
-                                담당자: {{ userInfoForTask.username || userInfoForTask.email }}
+                            <div class="body-text-1 text-dark">
+                            {{ $t('TodoTaskItemCard.assignee') }}: {{ userInfoForTask.username || userInfoForTask.email }}
                             </div>
                         </div>
                     </div>
@@ -85,6 +92,9 @@
 <script>
 import { format } from 'date-fns';
 import TodoDialog from './TodoDialog.vue'
+
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 /*
 task: {
     "defId": "sales/testProcess.xml",
@@ -115,6 +125,7 @@ export default {
         managed: false,
         dialog: false,
         dialogType: '',
+        instanceList: []
     }),
     computed: {
         mode() {
@@ -176,15 +187,36 @@ export default {
         isMyTask() {
             // localStorage의 email과 task의 endpoint가 일치하는지 확인
             const myEmail = localStorage.getItem('email');
-            const isNotTodolistPath = this.$route.path !== '/todolist';
-            return myEmail && this.task && this.task.endpoint === myEmail && isNotTodolistPath;
+            return myEmail && this.task && this.task.endpoint === myEmail;
+        },
+        isTodolistPath() {
+            // 현재 경로가 todolist를 포함하는지 확인
+            return this.$route.path.includes('/todolist');
         }
     },
-    created() {
+    async created() {
         if (!this.task.instId) {
             this.managed = true;
         } else {
             this.managed = false;
+        }
+        
+        try {
+            // 인스턴스 목록 가져오기
+            const result = await backend.getInstanceList();
+            if (!result) return;
+            
+            // 현재 task의 instId와 일치하는 인스턴스 찾기
+            if (this.task.instId) {
+                const matchingInstance = result.find(
+                    inst => inst.instId === this.task.instId
+                );
+                if (matchingInstance) {
+                    this.task.proc_inst_name = matchingInstance.instName;
+                }
+            }
+        } catch (error) {
+            console.error('인스턴스 목록을 가져오는 중 오류 발생:', error);
         }
     },
     methods: {

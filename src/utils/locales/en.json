@@ -867,5 +867,8 @@
         "notRegisteredEmail": "This email address is not registered.",
         "loginRequired": "Login is required.",
         "unRegisteredTenant": "This tenant is not registered."
+    },
+    "TodoTaskItemCard": {
+        "assignee": "Assignee"
     }
 }
