@@ -85,6 +85,7 @@
                 </div>
             </div>
 
+            <!-- @click="addSampleProcess" -->
             <v-card
                 v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
                 @click="openMarketplaceDialog = true"

@@ -2,69 +2,84 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-    <v-card elevation="10" class="cursor-pointer pa-2" @click="executeTask"
-        :class="{'border-primary': isDueTodayOrTomorrow, 'border-purple': isPastDue}"
-    >
-        <v-card-title class="ma-0 pa-0">
-            <div class="ma-0 pa-0 mt-1" style="line-height:100%;">
-                <!-- 가로배치 -->
-                <div class="pa-0">
-                    <div class="d-flex align-items-center" style="width: 100%;">
-                        <div style="font-size:16px; font-weight:500;">{{ task.title }}</div>
-                        <v-spacer></v-spacer>
-                        <v-chip v-if="category"
-                            :color="category.color"
-                            size="small" variant="outlined"
-                            density="comfortable"
-                            style="margin-left:5px;"
-                        >{{ category.name }}</v-chip>
-        
-                        <RouterLink v-if="managed" to="" class="px-0" color="black">
-                            <DotsVerticalIcon size="15" />
-                            <v-menu activator="parent">
-                                <v-list density="compact">
-                                    <v-list-item @click="deleteTask">
-                                        <v-list-item-title>삭제</v-list-item-title>
-                                    </v-list-item>
-                                </v-list>
-                            </v-menu>
-                        </RouterLink>
+     <div :class="{'border-animation': isMyTask}">
+        <v-card elevation="10" class="cursor-pointer pa-2" @click="executeTask"
+            :class="{
+                'border-primary': isDueTodayOrTomorrow, 
+                'border-purple': isPastDue,
+            }"
+        >
+            <v-card-title class="ma-0 pa-0">
+                <div class="ma-0 pa-0 mt-1" style="line-height:100%;">
+                    <!-- 가로배치 -->
+                    <div class="pa-0">
+                        <div class="d-flex align-items-center" style="width: 100%;">
+                            <div style="font-size:16px; font-weight:500;">{{ task.title }}</div>
+                            <v-spacer></v-spacer>
+                            <v-chip v-if="category"
+                                :color="category.color"
+                                size="small" variant="outlined"
+                                density="comfortable"
+                                style="margin-left:5px;"
+                            >{{ category.name }}</v-chip>
+            
+                            <RouterLink v-if="managed" to="" class="px-0" color="black">
+                                <DotsVerticalIcon size="15" />
+                                <v-menu activator="parent">
+                                    <v-list density="compact">
+                                        <v-list-item @click="deleteTask">
+                                            <v-list-item-title>삭제</v-list-item-title>
+                                        </v-list-item>
+                                    </v-list>
+                                </v-menu>
+                            </RouterLink>
+                        </div>
                     </div>
-                </div>
-                <!-- 세로배치 -->
-                <div v-if="mode == 'uEngine'" 
-                    class="pa-0"
-                    style="font-size:12px; margin-top: 5px;"
-                >
-                    TaskId : {{ task.taskId }} / InstId: {{ task.instId }}
-                </div>
-                <div v-else colos="12" class="pa-0">
-                    <div class="text-caption">{{ task.instName }}</div>
-                </div>
-                <div class="pa-0">
-                    <div class="d-flex align-center">
-                        <CalendarIcon size="16" />
-                        <div class="body-text-1 text-dark pl-2">
-                            {{ formattedDate }}
+                    <!-- 세로배치 -->
+                    <div v-if="mode == 'uEngine'" 
+                        class="pa-0"
+                        style="font-size:12px; margin-top: 5px;"
+                    >
+                        TaskId : {{ task.taskId }} / InstId: {{ task.instId }}
+                    </div>
+                    <div v-else colos="12" class="pa-0">
+                        <div class="text-caption">{{ task.instName }}</div>
+                    </div>
+                    <div class="pa-0">
+                        <div class="d-flex align-center">
+                            <CalendarIcon size="16" />
+                            <div class="body-text-1 text-dark pl-2">
+                                {{ formattedDate }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pa-0">
+                        <div class="text-subtitle-2">
+                            {{ task.description }}
+                        </div>
+                    </div>
+                    <!-- 담당자 정보 표시 -->
+                    <div class="pa-0 mt-1" v-if="userInfoForTask && !isMyTask">
+                        <div class="d-flex align-center">
+                            <div class="body-text-1 text-dark"
+                                style="overflow: auto;"
+                            >
+                                담당자: {{ userInfoForTask.username || userInfoForTask.email }}
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="pa-0">
-                    <div class="text-subtitle-2">
-                        {{ task.description }}
-                    </div>
-                </div>
-            </div>
-        </v-card-title>
+            </v-card-title>
 
-        <v-dialog v-model="dialog" max-width="500">
-            <TodoDialog 
-                :type="dialogType"
-                :task="task"
-                @close="closeDialog"
-            />
-        </v-dialog>
-    </v-card>
+            <v-dialog v-model="dialog" max-width="500">
+                <TodoDialog 
+                    :type="dialogType"
+                    :task="task"
+                    @close="closeDialog"
+                />
+            </v-dialog>
+        </v-card>
+    </div>
 </template>
 
 <script>
@@ -91,6 +106,10 @@ export default {
     },
     props: {
         task: Object,
+        userInfo: {
+            type: Array,
+            default: () => []
+        }
     },
     data: () => ({
         managed: false,
@@ -149,6 +168,15 @@ export default {
             } else {
                 return { name: 'BPM', color: 'primary' };
             }
+        },
+        userInfoForTask() {
+            if (!this.userInfo || !this.task || !this.task.endpoint) return null;
+            return this.userInfo.find(user => user.email === this.task.endpoint);
+        },
+        isMyTask() {
+            // localStorage의 email과 task의 endpoint가 일치하는지 확인
+            const myEmail = localStorage.getItem('email');
+            return myEmail && this.task && this.task.endpoint === myEmail;
         }
     },
     created() {
@@ -177,12 +205,3 @@ export default {
     },
 }
 </script>
-
-<style scoped>
-.border-primary {
-    border: solid 3px #1976D2; /* 예시 색상, 실제 프로젝트의 primary 색상을 사용하세요 */
-}
-.border-purple {
-    border: solid 3px #7B1FA2;
-}
-</style>
