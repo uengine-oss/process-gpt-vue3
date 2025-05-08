@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10" v-if="currentComponent" :key="updatedKey">
-        <div class="pa-2 pb-0 align-center"
+        <div class="pa-2 pb-0 pl-4 align-center"
             style="height: 40px;"
         >
             <div class="d-flex align-center">
@@ -46,7 +46,7 @@
         <v-row :class="isMobile ? 'ma-0 pa-0 mt-2' : 'ma-0 pa-0'">
             <!-- Left -->
             <v-col class="pa-0" :cols="isMobile ? 12 : 5">
-                <v-alert class="pa-0 mt-4 ml-2 mb-2" color="#2196F3" variant="outlined">
+                <v-alert class="pa-0 mt-3 ml-3 mb-3" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
                         <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
                             {{ tab.label }}
@@ -62,7 +62,7 @@
                         <v-window-item value="progress">
                             <div
                                 class="pa-2"
-                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px); color: black; overflow: auto'"
+                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 257px); color: black; overflow: auto'"
                             >
                                 <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">
@@ -161,7 +161,7 @@
             <v-col
                 class="pa-0"
                 :cols="isMobile ? 12 : 7"
-                :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 215px); overflow: auto')"
+                :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 190px); overflow: auto')"
             >
                 <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
                     <component 

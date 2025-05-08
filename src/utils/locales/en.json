@@ -869,6 +869,7 @@
         "unRegisteredTenant": "This tenant is not registered."
     },
     "TodoTaskItemCard": {
-        "assignee": "Assignee"
+        "assignee": "Assignee",
+        "myTask": "My task"
     }
 }

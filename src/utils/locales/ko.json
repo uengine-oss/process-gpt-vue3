@@ -869,6 +869,7 @@
         "unRegisteredTenant": "가입되지 않은 테넌트입니다."
     },
     "TodoTaskItemCard": {
-        "assignee": "담당자"
+        "assignee": "담당자",
+        "myTask": "내 업무"
     }
 }
