@@ -43,10 +43,12 @@
             </div>
         </div>
 
-        <v-row :class="isMobile ? 'ma-0 pa-0 mt-2' : 'ma-0 pa-0'">
+        <v-row :class="isMobile ? 'ma-0 pa-0' : 'ma-0 pa-0'">
             <!-- Left -->
-            <v-col class="pa-0" :cols="isMobile ? 12 : 5">
-                <v-alert class="pa-0 mt-3 ml-3 mb-3" color="#2196F3" variant="outlined">
+            <v-col :cols="isMobile ? 12 : 5"
+                :class="isMobile ? 'pa-4 pt-3' : 'pa-0 pt-3 pl-4 pb-4'"
+            >
+                <v-alert class="pa-0" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
                         <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
                             {{ tab.label }}
