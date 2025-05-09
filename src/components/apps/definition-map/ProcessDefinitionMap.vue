@@ -85,47 +85,73 @@
                 </div>
             </div>
 
-            <v-card
-                v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
-                @click="addSampleProcess"
-                class="consulting-card ma-4"
-                elevation="3"
-                rounded="lg"
-            >
-                <v-card-item class="pa-3">
-                    <v-card-title class="text-primary font-weight-bold pb-1">
-                        샘플 프로세스 추가
-                    </v-card-title>
-                </v-card-item>
-            </v-card>
 
-            <v-card
-                v-if="componentName == 'DefinitionMapList' && isAdmin"
-                @click="openConsultingDialog = true, ProcessPreviewMode = false"
-                class="consulting-card ma-4"
-                elevation="3"
-                rounded="lg"
-            >
-                <v-card-item class="pa-5">
-                    <div class="d-flex align-center">
-                        <v-avatar
-                            color="primary"
-                            size="42"
-                            class="mr-4"
-                        >
-                            <Icons :icon="'magic'" :size="24" color="white" />
-                        </v-avatar>
-                        <div>
-                            <v-card-title class="text-primary font-weight-bold pb-1">
-                                프로세스 컨설팅 시작하기
-                            </v-card-title>
-                            <v-card-subtitle>
-                                AI와 함께 프로세스를 분석하고 개선해보세요
-                            </v-card-subtitle>
-                        </div>
-                    </div>
-                </v-card-item>
-            </v-card>
+            <v-row class="ma-0 pa-0">
+                <v-col cols="12" lg="3" md="4" sm="6"
+                    class="pa-4"
+                >
+                    <v-card
+                        v-if="componentName == 'DefinitionMapList' && isAdmin"
+                        @click="openConsultingDialog = true, ProcessPreviewMode = false"
+                        class="consulting-card"
+                        elevation="3"
+                        rounded="lg"
+                    >
+                        <v-card-item class="pa-5">
+                            <div class="d-flex align-center">
+                                <v-avatar
+                                    color="primary"
+                                    size="42"
+                                    class="mr-4"
+                                >
+                                    <Icons :icon="'magic'" :size="24" color="white" />
+                                </v-avatar>
+                                <div>
+                                    <v-card-title class="text-primary font-weight-bold pb-1">
+                                        프로세스 컨설팅 시작하기
+                                    </v-card-title>
+                                    <div class="text-subtitle-2 text-grey-darken-1">
+                                        AI와 함께 프로세스를 분석하고 개선해보세요
+                                    </div>
+                                </div>
+                            </div>
+                        </v-card-item>
+                    </v-card>
+                </v-col>
+                <v-col cols="12" lg="3" md="4" sm="6"
+                    class="pa-4"
+                >
+                    <!-- @click="addSampleProcess" -->
+                    <v-card
+                        v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
+                        @click="openMarketplaceDialog = true"
+                        class="consulting-card"
+                        elevation="3"
+                        rounded="lg"
+                    >
+                        <v-card-item class="pa-5">
+                            <div class="d-flex align-center">
+                                <v-avatar
+                                    color="primary"
+                                    size="42"
+                                    class="mr-4"
+                                >
+                                    <Icons :icon="'market'" :size="24" color="white" />
+                                </v-avatar>
+                                <div>
+                                    <v-card-title class="text-primary font-weight-bold pb-1">
+                                        {{ $t('processDefinitionMap.marketplace') }}
+                                    </v-card-title>
+                                    <!-- div로 변경, Vuetify3의 서브타이틀 스타일 클래스 적용 (text-subtitle-2) -->
+                                    <div class="text-subtitle-2 text-grey-darken-1">
+                                        비즈니스 프로세스 템플릿을 찾아보세요
+                                    </div>
+                                </div>
+                            </div>
+                        </v-card-item>
+                    </v-card>
+                </v-col>
+            </v-row>
         </v-card>
         <v-dialog :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'" v-model="openConsultingDialog" :scrim="isSimulateMode ? false : true" persistent>
             <v-card>
@@ -166,6 +192,10 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <v-dialog v-model="openMarketplaceDialog" max-width="1200">
+            <process-definition-market-place @closeMarketplaceDialog="closeMarketplaceDialog" />
+        </v-dialog>
     </div>
 </template>
 
@@ -176,6 +206,7 @@ import ProcessMenu from './ProcessMenu.vue';
 import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
+import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPlace.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -193,7 +224,8 @@ export default {
         ViewProcessDetails,
         SubProcessDetail,
         DefinitionMapList,
-        ProcessDefinitionChat
+        ProcessDefinitionChat,
+        ProcessDefinitionMarketPlace
     },
     props: {
         componentName: {
@@ -222,6 +254,7 @@ export default {
         versionHistory: [],
         openConsultingDialog: false,
         ProcessPreviewMode: false,
+        openMarketplaceDialog: false,
         isSimulateMode: false
     }),
     computed: {
@@ -331,6 +364,10 @@ export default {
         }
     },
     methods: {
+        async closeMarketplaceDialog() {
+            await this.getProcessMap();
+            this.openMarketplaceDialog = false;
+        },
         async addSampleProcess() {
             if (this.mode == "ProcessGPT") {
                 await backend.addSampleProcess();
@@ -683,7 +720,6 @@ export default {
 .consulting-card {
     cursor: pointer;
     transition: transform 0.2s;
-    width: fit-content;
 }
 
 .consulting-card:hover {

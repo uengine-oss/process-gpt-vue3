@@ -1380,3 +1380,84 @@ ON form_def (id, tenant_id);
 CREATE UNIQUE INDEX IF NOT EXISTS unique_config_key_per_tenant
 ON configuration (key, tenant_id);
 
+
+
+-- proc_def_marketplace 테이블
+create table if not exists public.proc_def_marketplace (
+    uuid uuid not null default gen_random_uuid (),
+    id text not null,
+    name text null,
+    definition jsonb null,
+    bpmn text null,
+    description text null,
+    category text null,
+    tags text null,
+    author_name text null,
+    author_uid text null,
+    import_count integer not null default 0,
+    constraint proc_def_marketplace_pkey primary key (uuid)
+) tablespace pg_default;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='proc_def_marketplace' AND column_name='id') THEN
+        ALTER TABLE public.proc_def_marketplace ADD COLUMN id TEXT PRIMARY KEY;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='proc_def_marketplace' AND column_name='name') THEN
+        ALTER TABLE public.proc_def_marketplace ADD COLUMN name TEXT;
+    END IF;    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='proc_def_marketplace' AND column_name='definition') THEN
+        ALTER TABLE public.proc_def_marketplace ADD COLUMN definition JSONB;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='proc_def_marketplace' AND column_name='bpmn') THEN
+        ALTER TABLE public.proc_def_marketplace ADD COLUMN bpmn TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='proc_def_marketplace' AND column_name='description') THEN
+        ALTER TABLE public.proc_def_marketplace ADD COLUMN description TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='proc_def_marketplace' AND column_name='category') THEN
+        ALTER TABLE public.proc_def_marketplace ADD COLUMN category TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='proc_def_marketplace' AND column_name='tags') THEN
+        ALTER TABLE public.proc_def_marketplace ADD COLUMN tags TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='proc_def_marketplace' AND column_name='author_name') THEN
+        ALTER TABLE public.proc_def_marketplace ADD COLUMN author_name TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='proc_def_marketplace' AND column_name='author_uid') THEN
+        ALTER TABLE public.proc_def_marketplace ADD COLUMN author_uid TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='proc_def_marketplace' AND column_name='import_count') THEN
+        ALTER TABLE public.proc_def_marketplace ADD COLUMN import_count INTEGER NOT NULL DEFAULT 0;
+    END IF;
+END;
+$$;
+
+ALTER TABLE proc_def_marketplace ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY proc_def_marketplace_insert_policy
+    ON proc_def_marketplace
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (true);
+
+CREATE POLICY proc_def_marketplace_select_policy
+    ON proc_def_marketplace
+    FOR SELECT
+    TO public
+    USING (true);
+
+CREATE POLICY proc_def_marketplace_update_policy
+    ON proc_def_marketplace
+    FOR UPDATE
+    TO authenticated
+    USING (true);
+
+CREATE POLICY proc_def_marketplace_delete_policy
+    ON proc_def_marketplace
+    FOR DELETE
+    TO authenticated
+    USING (true);
+
+
+

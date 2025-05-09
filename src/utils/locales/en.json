@@ -203,7 +203,8 @@
         "forcedCheckOutMessage": "Currently, {name} is editing. If you proceed with editing, the content modified by {name} will be damaged and not saved. \nDo you want to proceed with editing?",
         "settingPermission": "Setting Permission",
         "isReadable": "Readable",
-        "isWritable": "Writable"
+        "isWritable": "Writable",
+        "marketplace": "Marketplace"
     },
     "uiDefinition": {
         "title": "Screen Definition",
@@ -867,5 +868,9 @@
         "notRegisteredEmail": "This email address is not registered.",
         "loginRequired": "Login is required.",
         "unRegisteredTenant": "This tenant is not registered."
+    },
+    "TodoTaskItemCard": {
+        "assignee": "Assignee",
+        "myTask": "My task"
     }
 }

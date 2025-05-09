@@ -18,14 +18,14 @@
                 style="text-align: center;"
             >{{ $t(column.title) }}</h6>
         </div>
-        <div v-if="!todoTaskColumnBtnStatus" ref="section" class="pa-3 todo-list-card-box" :style="{ height: isNotAll ? 'calc(100vh - 332px)' : 'calc(100vh - 251px)' }"
+        <div v-if="!todoTaskColumnBtnStatus" ref="section" class="pa-3 todo-list-card-box" :style="{ height: isNotAll ? 'calc(100vh - 315px)' : 'calc(100vh - 251px)' }"
             style="overflow:auto;">
             <draggable class="dragArea list-group cursor-move" :list="column.tasks"
                 :animation="200" ghost-class="ghost-card" group="tasks" @add="updateTask"
                 :component-data="getComponentData()" :move="checkDraggable">
                     <transition-group>
                         <div v-for="task in column.tasks" :key="task.taskId" class="cursor-move todo-task-item-card-style">
-                            <TodoTaskItemCard :task="task" @deleteTask="deleteTask" @executeTask="executeTask" />
+                            <TodoTaskItemCard :task="task" @deleteTask="deleteTask" @executeTask="executeTask" :userInfo="userInfo" />
                         </div>
                     </transition-group>
             </draggable>
@@ -56,6 +56,10 @@ export default {
             type: Boolean, 
             default: false
         },
+        userInfo: {
+            type: Array,
+            default: () => []
+        }
     },
     data: () => ({
         dialog: false,

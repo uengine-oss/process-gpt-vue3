@@ -77,6 +77,7 @@ export interface Backend {
     setTenant(tenantId: string): Promise<any>;
     updateUser(userInfo: any): Promise<any>;
     getAllWorkListByInstId(instId: number): Promise<any>;
+    listMarketplaceDefinition(): Promise<any>;
 }
 
 // export type { Backend }

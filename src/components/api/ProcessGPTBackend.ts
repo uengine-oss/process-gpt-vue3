@@ -791,7 +791,7 @@ class ProcessGPTBackend implements Backend {
                     existingMap.push(item);
                 }
             }
-            console.log("변경된 프로세스 정의 체계도", existingMap);
+            // console.log("변경된 프로세스 정의 체계도", existingMap);
             return {
                 mega_proc_list: existingMap
             };
@@ -1995,7 +1995,95 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async listMarketplaceDefinition() {
+        try {
+            const options = {
+                orderBy: 'import_count',
+                sort: 'desc',
+            }
+            const list = await storage.list('proc_def_marketplace', options);
+            return list;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
 
+    async putTemplateDefinition(definition: any) {
+        try {
+            const user = await this.getUserInfo();
+            if (user && user.uid) {
+                const putObj = {
+                    id: definition.id,
+                    name: definition.name,
+                    definition: definition.definition,
+                    bpmn: definition.bpmn,
+                    description: definition.description,
+                    category: definition.category,
+                    tags: definition.tags,
+                    author_name: user.name,
+                    author_uid: user.uid,
+                }
+                const response = await storage.putObject('proc_def_marketplace', putObj);
+                return response;
+            } else {
+                throw new Error('User not found');
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+    async duplicateDefinition(definition: any) {
+        try {
+            // 프로세스 정의 복사
+            const putObj = {
+                id: definition.id,
+                name: definition.name,
+                definition: definition.definition,
+                bpmn: definition.bpmn,
+            }
+            const response = await storage.putObject('proc_def', putObj);
+            
+            if (!response.error) {
+                // 프로세스 정의 체계도 업데이트
+                const megaId = definition.category.split('/')[0];
+                const majorId = definition.category.split('/')[1];
+                const newProcessMap = {
+                    mega_proc_list: [{
+                        id: megaId,
+                        name: megaId,
+                        major_proc_list: [{
+                            id: majorId,
+                            name: majorId,
+                            sub_proc_list: [{
+                                id: definition.id,
+                                name: definition.name,
+                            }]
+                        }]
+                    }]
+                }
+                const existed = await this.getProcessDefinitionMap();
+                const merged = await this.mergeProcessMaps(existed, newProcessMap);
+                await this.putProcessDefinitionMap(merged);
+
+                // 프로세스 템플릿 카운트 증가
+                await storage.putObject('proc_def_marketplace', {
+                    uuid: definition.uuid,
+                    id: definition.id,
+                    import_count: definition.import_count + 1
+                });
+
+                return response;
+            } else {
+                throw new Error(response.error.message);
+            }
+        } catch (error) {
+            if (error && error.cause && error.cause.message && error.cause.message.includes('409 Conflict')) {
+                throw new Error('이미 추가된 프로세스입니다.');
+            } else {
+                throw new Error(error.message);
+            }
+        }
+    }
 }
 
 export default ProcessGPTBackend;

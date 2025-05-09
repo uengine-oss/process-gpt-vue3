@@ -1,5 +1,5 @@
 <template>
-    <v-sheet v-if="checkpoints" class="mt-auto pa-3 border border-success rounded">
+    <v-sheet v-if="checkpoints" class="mt-3 pa-3 border border-success rounded">
         <div class="text-success font-weight-semibold">
             <v-icon class="mr-2">$success</v-icon>
             {{ $t('Checkpoints.checkpoints') }} ({{ checkedCount }}/{{ checkpoints ? checkpoints.length : 0 }})
