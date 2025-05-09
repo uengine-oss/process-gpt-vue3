@@ -24,26 +24,28 @@
                     <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
                     <v-spacer></v-spacer>
                     <!-- 삭제 아이콘 -->
-                    <v-tooltip v-if="isDeleted" location="bottom">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                density="comfortable" @click="beforeRestore"
-                            >   
-                            <div class="mdi mdi-refresh" style="font-size: 24px;"></div>
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinition.restoreProcess') }}</span>
-                    </v-tooltip>
-                    <v-tooltip v-else location="bottom">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                density="comfortable" @click="beforeDelete"
-                            >
-                                <TrashIcon size="24" style="color:#FB977D"/>
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinition.deleteProcess') }}</span>
-                    </v-tooltip>
+                    <div v-if="chatMode != 'consulting'">
+                        <v-tooltip v-if="isDeleted" location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                    density="comfortable" @click="beforeRestore"
+                                >   
+                                <div class="mdi mdi-refresh" style="font-size: 24px;"></div>
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('processDefinition.restoreProcess') }}</span>
+                        </v-tooltip>
+                        <v-tooltip v-else location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                    density="comfortable" @click="beforeDelete"
+                                >
+                                    <TrashIcon size="24" style="color:#FB977D"/>
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('processDefinition.deleteProcess') }}</span>
+                        </v-tooltip>
+                    </div>
                 </v-row>
                 
                 <div class="custom-tools">
@@ -201,7 +203,8 @@ export default {
         userInfo: Object,
         isXmlMode: Boolean,
         isEditable: Boolean,
-        isDeleted: Boolean
+        isDeleted: Boolean,
+        chatMode: String
     },
     data() {
         return {

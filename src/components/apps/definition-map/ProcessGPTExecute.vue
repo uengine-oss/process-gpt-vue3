@@ -169,7 +169,9 @@ export default {
                             })
                         }
 
-                        startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.definitionId + '_')
+                        if(startActivity.tool && startActivity.tool.includes("formHandler:definition-map_")){
+                            startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.definitionId + '_')
+                        }
 
                         me.workItem = {
                             worklist: {

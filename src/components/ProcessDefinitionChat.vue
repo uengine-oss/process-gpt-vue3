@@ -140,6 +140,7 @@
                             <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                                 :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                                 :isEditable="isEditable"
+                                :chatMode="chatMode"
                                 :isDeleted="isDefinitionDeleted"
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
@@ -170,6 +171,7 @@
                         <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                             :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                             :isEditable="isEditable"
+                            :chatMode="chatMode"
                             @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                             @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                             @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
@@ -917,6 +919,7 @@ export default {
                 } 
 
                 if(!this.isConsultingMode) {
+                    this.projectName = unknown.processDefinitionName ? unknown.processDefinitionName:''
                     if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
                         if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == unknown.megaProcessId)) {
                             this.processDefinitionMap.mega_proc_list.push({

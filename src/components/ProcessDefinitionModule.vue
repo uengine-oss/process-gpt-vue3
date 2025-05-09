@@ -402,6 +402,7 @@ export default {
 
                     me.loading = false;
                     await me.toggleVersionDialog(false);
+                    me.$emit('closeConsultingDialog', true)
                 },
                 onFail: (e) => {
                     console.log(e);
