@@ -46,10 +46,18 @@
         <v-row :class="isMobile ? 'ma-0 pa-0 mt-2' : 'ma-0 pa-0'">
             <!-- Left -->
             <v-col class="pa-0" :cols="isMobile ? 12 : 5">
-                <v-alert class="pa-0 mt-4" color="#2196F3" variant="outlined">
+                <v-alert style="margin: 10px;" class="pa-0 mt-4" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
                         <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
-                            {{ tab.label }}
+                            {{ tab.label }} 
+                            <v-icon
+                                v-if="tab.value == 'agent' && isAddedNewForm"
+                                class="bouncing-arrow-horizontal-left" 
+                                color="primary" 
+                                size="large"
+                            >
+                                mdi-arrow-left-bold
+                            </v-icon>
                         </v-tab>
                         <!-- <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">{{ $t('WorkItem.history') }}</v-tab>
@@ -62,7 +70,7 @@
                         <v-window-item value="progress">
                             <div
                                 class="pa-2"
-                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 280px); color: black; overflow: auto'"
+                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 210px); color: black; overflow: auto'"
                             >
                                 <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">
@@ -130,7 +138,7 @@
                         <v-window-item value="agent" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
+                                    <div :key="agentRenderKey" class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
                                         <component
                                             :is="'work-history-' + mode"
                                             :messages="[]"
@@ -179,7 +187,29 @@
                         :is-finished-agent-generation="isFinishedAgentGeneration"
                         :processDefinition="processDefinition"
                     ></component>
-                    <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                    
+                    <div class="feedback-container">
+                        <FormDefinition
+                            ref="formDefinition"
+                            type="simulation"
+                            :formId="formId"
+                            :simulation_data="simulation_data"
+                            @addedNewForm="addedNewForm"
+                            v-model="tempFormHtml"
+                            v-if="showFeedbackForm"
+                            class="feedback-form"
+                        />   
+                        <v-btn 
+                            class="feedback-btn" 
+                            fab 
+                            elevation="2" 
+                            color="primary" 
+                            @click="toggleFeedback"
+                        >
+                            <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
+                            <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
+                        </v-btn>
+                    </div>
                 </div>
             </v-col>
         </v-row>
@@ -187,6 +217,7 @@
 </template>
 
 <script>
+import FormDefinition from '@/components/FormDefinition.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 // import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import DefaultWorkItem from './DefaultWorkItem.vue';
@@ -228,7 +259,8 @@ export default {
         'work-history-uEngine': WorkItemChat,
         'work-history-ProcessGPT': ProcessInstanceChat,
         BpmnUengine,
-        DynamicForm
+        DynamicForm,
+        FormDefinition
     },
     data: () => ({    
         workItem: null,
@@ -262,6 +294,12 @@ export default {
         inFormValues: [],
 
         isFinishedAgentGeneration: false,
+        showFeedbackForm: false,
+        tempFormHtml: null,
+        formId: null,
+        simulation_data: {},
+        agentRenderKey: 0,
+        isAddedNewForm: false,
     }),
     created() {
         this.init();
@@ -376,9 +414,19 @@ export default {
                 }
             },
             deep: true
+        },
+        selectedTab(newVal) {
+            if(newVal == 'agent'){
+                this.agentRenderKey++;
+                this.isAddedNewForm = false
+            }
         }
     },
     methods: {
+        addedNewForm(){
+            this.isAddedNewForm = true
+            this.isFinishedAgentGeneration = false
+        },
         agentGenerationFinished(value) {
             if(this.isSimulate == 'true') {
                 // setTimeout(() => {
@@ -495,13 +543,57 @@ export default {
             return new Promise((resolve) => setTimeout(resolve, time));
         },
         executeProcess(value) {
+            this.showFeedbackForm = false
             this.$emit('executeProcess', value)
         },
         backToPrevStep() {
             this.$emit('backToPrevStep');
+        },
+        async toggleFeedback() {
+            this.showFeedbackForm = !this.showFeedbackForm;
+            if(this.showFeedbackForm){
+                this.formId = this.processDefinition.processDefinitionId + '_' + this.dryRunWorkItem.activity.tracingTag + '_form'
+                this.simulation_data = {
+                    proc_def_id: this.processDefinition.processDefinitionId,
+                    element_id: this.dryRunWorkItem.activity.tracingTag
+                }
+                if(window.location.pathname == '/definition-map'){
+                    this.tempFormHtml = localStorage.getItem(this.formId);
+                } else {
+                    this.tempFormHtml = await backend.getRawDefinition(this.formId, { type: 'form' })
+                }
+            }
         }
     }
 };
 </script>
 <style>
+.feedback-container {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    align-items: flex-end;
+    z-index: 100;
+}
+
+.feedback-btn {
+    display: flex;
+    align-items: center;
+    border-radius: 20px !important;
+    height: 40px !important;
+    min-width: 40px;
+    padding: 0 15px;
+}
+
+.feedback-form {
+    margin-right: 15px;
+    width: 500px;
+    max-height: 400px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: white;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
 </style>

@@ -817,6 +817,7 @@ export default {
                         // GPT
                         if (!me.processDefinition) me.processDefinition = {};
                         if (!me.processDefinition.processDefinitionId) me.processDefinition.processDefinitionId = null;
+                        if (me.processDefinition.processDefinitionId == 'definition-map') me.processDefinition.processDefinitionId = info.proc_def_id
                         if (!me.processDefinition.processDefinitionName) me.processDefinition.processDefinitionName = null;
 
                         // 최초 저장 시 폼 정보 저장
@@ -825,7 +826,8 @@ export default {
                                 me.processDefinition.data = [];
                                 me.processDefinition.activities.forEach(async (activity) => {
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
-                                        const formId = activity.tool.split(':')[1];
+                                        activity.tool.replace("formHandler:definition-map_", info.proc_def_id + '_')
+                                        const formId = info.proc_def_id + '_' + activity.id + '_form';
                                         if (formId) {
                                             const formHtml = localStorage.getItem(formId);
                                             if (formHtml) {
@@ -838,7 +840,7 @@ export default {
                                                 me.processDefinition.data = me.processDefinition.data.concat(fieldData);
                                                 const options = {
                                                     type: 'form',
-                                                    proc_def_id: me.processDefinition.processDefinitionId,
+                                                    proc_def_id: info.proc_def_id,
                                                     activity_id: activity.id
                                                 }
                                                 await backend.putRawDefinition(formHtml, formId, options);

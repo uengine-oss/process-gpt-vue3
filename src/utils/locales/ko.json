@@ -5,6 +5,7 @@
         "simulatedProcess": "Process 시뮬레이션 완료",
         "runningTheProcess": "Process 실행",
         "formGenerationCompleted": "폼 생성 완료",
+        "processGenerationCompleted": "프로세스 생성 완료",
         "processExecutionCompleted": "프로세스 실행 완료",
         "workCompleted": "해당 업무 완료",
         "save": "저장되었습니다.",
