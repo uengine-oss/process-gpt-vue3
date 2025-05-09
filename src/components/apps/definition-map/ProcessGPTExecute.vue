@@ -10,7 +10,7 @@
                 </div>
             </v-row>
             <div :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">
-                <div :class="isMobile ? 'pa-4 pb-0' : 'pa-4'" style="min-width: 300px;">
+                <div v-if="isSimulate == 'false'" :class="isMobile ? 'pa-4 pb-0' : 'pa-4'" style="min-width: 300px;">
                     <v-row class="ma-0 pa-0">
                         <div style="font-size: 20px; font-weight: 500">{{ $t('ProcessGPTExecute.roleMapping') }}</div>
                     </v-row>
@@ -54,7 +54,7 @@
                                 <v-skeleton-loader type="card"></v-skeleton-loader>
                             </v-col>
                         </v-row>
-                    </div>       
+                    </div>   
                 </div>
             </div>
         </v-card>
@@ -167,6 +167,10 @@ export default {
                             parameters.forEach((item) => {
                                 parameterValues[item.argument.text] = item.variable.defaultValue
                             })
+                        }
+
+                        if(startActivity.tool && startActivity.tool.includes("formHandler:definition-map_")){
+                            startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.definitionId + '_')
                         }
 
                         me.workItem = {

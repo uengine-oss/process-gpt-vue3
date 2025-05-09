@@ -5,6 +5,7 @@
         "simulatedProcess": "Simulated process completed",
         "runningTheProcess": "Running the process",
         "formGenerationCompleted": "Form generation completed",
+        "processGenerationCompleted": "Process generation completed",
         "processExecutionCompleted": "Process execution completed",
         "workCompleted": "Completion of work",
         "save": "Saved successfully.",
@@ -867,5 +868,9 @@
         "notRegisteredEmail": "This email address is not registered.",
         "loginRequired": "Login is required.",
         "unRegisteredTenant": "This tenant is not registered."
+    },
+    "TodoTaskItemCard": {
+        "assignee": "Assignee",
+        "myTask": "My task"
     }
 }

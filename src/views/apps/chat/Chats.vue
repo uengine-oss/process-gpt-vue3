@@ -253,6 +253,7 @@ export default {
         assistantRes: null,
         selectedUserInfo: null,
         timeBoundMenu: false,
+        myChatRoomIds: [],
     }),
     computed: {
         filteredChatRoomList() {
@@ -401,17 +402,17 @@ export default {
             var me = this
             await me.storage.list(`chat_rooms`).then(function (chatRooms) {
                 if (chatRooms) {
-                    let myChatRoomIds = []
+                    me.myChatRoomIds = []
                     chatRooms.forEach(function (chatRoom) {
                         if(chatRoom.participants.find(x => x.email === me.userInfo.email)){
                             me.chatRoomList.push(chatRoom)
-                            myChatRoomIds.push(chatRoom.id)
+                            me.myChatRoomIds.push(chatRoom.id)
                         }
                     });
                     if(me.chatRoomList.length > 0){
                         me.currentChatRoom = me.filteredChatRoomList[0];
                         me.chatRoomSelected(me.currentChatRoom)
-                        me.setWatchChatList(myChatRoomIds);
+                        me.setWatchChatList(me.myChatRoomIds);
                         me.setReadMessage(0);
                     } else {
                         let systemChatRoom = {
@@ -474,6 +475,8 @@ export default {
             
             this.putObject(`chat_rooms`, chatRoomInfo);
             this.chatRoomSelected(chatRoomInfo)
+            this.myChatRoomIds.push(chatRoomInfo.id);
+            this.setWatchChatList(this.myChatRoomIds);
         },
         setReadMessage(idx){
             let participant = this.chatRoomList[idx].participants.find(participant => participant.email === this.userInfo.email);

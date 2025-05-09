@@ -1,48 +1,50 @@
 <template>
-    <v-row class="ma-0 pa-0 task-btn">
-        <v-spacer></v-spacer>
-        <div class="from-work-item-pc" style="margin-right: 10px;" v-if="!isCompleted">
-            <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded>중간 저장</v-btn>
-            <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
-                class="bouncing-arrow-horizontal" 
-                color="primary" 
-                size="large"
-            >
-                mdi-arrow-right-bold
-            </v-icon>
-            <v-btn @click="executeProcess" color="primary" density="compact" rounded>제출 완료</v-btn>
-        </div>
-        <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
-            <v-tooltip v-if="isMobile"
-                text="중간 저장"
-            >
-                <template v-slot:activator="{ props }">
-                    <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
-                        <Icons :icon="'save'" :width="32" :height="32"/>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            <v-tooltip text="제출 완료">
-                <template v-slot:activator="{ props }">
-                    <v-btn @click="executeProcess" icon v-bind="props"
-                        density="comfortable">
-                        <Icons :icon="'submit-document'" :width="28" :height="28"/>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-        </div> -->
-    </v-row>
-
-    <v-card flat>
-        <v-card-text class="pa-4">
-            <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form"></DynamicForm>
-            <div v-if="!isCompleted" class="mb-4">
-                <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
-                <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
+    <div>
+        <v-row class="ma-0 pa-0 task-btn">
+            <v-spacer></v-spacer>
+            <div class="from-work-item-pc" style="margin-right: 10px;" v-if="!isCompleted">
+                <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded variant="flat">중간 저장</v-btn>
+                <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
+                    class="bouncing-arrow-horizontal" 
+                    color="primary" 
+                    size="large"
+                >
+                    mdi-arrow-right-bold
+                </v-icon>
+                <v-btn @click="executeProcess" color="primary" density="compact" rounded variant="flat">제출 완료</v-btn>
             </div>
-            <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
-        </v-card-text>
-    </v-card>
+            <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
+                <v-tooltip v-if="isMobile"
+                    text="중간 저장"
+                >
+                    <template v-slot:activator="{ props }">
+                        <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
+                            <Icons :icon="'save'" :width="32" :height="32"/>
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+                <v-tooltip text="제출 완료">
+                    <template v-slot:activator="{ props }">
+                        <v-btn @click="executeProcess" icon v-bind="props"
+                            density="comfortable">
+                            <Icons :icon="'submit-document'" :width="28" :height="28"/>
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+            </div> -->
+        </v-row>
+
+        <v-card flat>
+            <v-card-text class="pa-4 pt-3">
+                <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4"></DynamicForm>
+                <div v-if="!isCompleted" class="mb-4">
+                    <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
+                    <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
+                </div>
+                <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
+            </v-card-text>
+        </v-card>
+    </div>
 </template>
 
 <script>
@@ -373,8 +375,19 @@ export default {
     80% { transform: translateX(-2px); }
 }
 
+@keyframes bounce-horizontal-left {
+    0%, 100% { transform: translateX(0); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(2px); }
+}
+
 .bouncing-arrow-horizontal {
     animation: bounce-horizontal 1.5s infinite;
+}
+
+.bouncing-arrow-horizontal-left {
+    animation: bounce-horizontal-left 1.5s infinite;
 }
 
 @media only screen and (max-width:1080px) {
