@@ -75,18 +75,16 @@ export default {
             }
         }
     },
-    async created() {
-        await this.getNotifications();
-    },
-    mounted() {
-        this.intervalId = setInterval(() => {
-            this.getNotifications();
-        }, 3000);
+    async mounted() {
+        this.notifications = await backend.fetchNotifications();
+
+        backend.getNotifications(async (data) => {
+            if (data && data.new) {
+                this.notifications = await backend.fetchNotifications();
+            }
+        });
     },
     methods: {
-        async getNotifications() {
-            this.notifications = await backend.getNotifications();
-        },
         async checkNotification(value) {
             if (value.type == 'workitem') {
                 this.$router.push('/todolist');
@@ -94,7 +92,7 @@ export default {
                 this.$router.push(value.url);
             }
             await backend.setNotifications(value);
-            await this.getNotifications();
+            this.notifications = await backend.fetchNotifications();
         }
     }
 }

@@ -119,7 +119,7 @@ export default {
                         if (item.instId != me.id) return
                         if (item.status == 'TODO' || item.status == 'DRAFT' || item.status == 'Ready' ) {
                             me.todolist.find(x => x.id == 'TODO').tasks.push(item);
-                        } else if (item.status == 'IN_PROGRESS' || item.status == 'Running' || item.status == 'NEW') {
+                        } else if (item.status == 'IN_PROGRESS' || item.status == 'Running' || item.status == 'NEW' || item.status == 'SUBMITTED') {
                             me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(item);
                         } else if (item.status == 'PENDING') {
                             me.todolist.find(x => x.id == 'PENDING').tasks.push(item);

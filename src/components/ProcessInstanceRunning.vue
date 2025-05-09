@@ -46,38 +46,50 @@ import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
 
 export default {
-    props: {
-        instance: Object,
-    },
     data() {
         return {
+            workItem: null,
             processDefinition: null,
             title: '',
             streamingText: '...',
         }
     },
     computed: {
-        isNewInstance() {
-            if (this.$route.fullPath.includes('instancelist/running')) {
-                return true;
+        taskId() {
+            return this.$route.query.taskId;
+        }
+    },
+    watch: {
+    },
+    async mounted() {
+        console.log(this.taskId);
+        this.workItem = await backend.getWorkItem(this.taskId);
+        if (this.workItem && this.workItem.worklist) {
+            if (this.workItem.worklist.defId) {
+                this.processDefinition = await backend.getRawDefinition(this.workItem.worklist.defId);
+
+                if (this.workItem.worklist.instId == "new") {
+                    this.title = this.processDefinition.name + this.$t('runningInstance.running');
+                } else {
+                    this.title = this.workItem.activity.name + this.$t('runningInstance.running');
+                }
             }
-            return false;
-        },
-        procDefId() {
-            return this.$route.query.proc_def_id;
+
+            if (this.workItem.worklist.status == "COMPLETED") {
+                const instId = btoa(encodeURIComponent(this.workItem.worklist.instId));
+                this.$router.push(`/instancelist/${instId}`);
+            }
         }
-    },
-    async created() {
-        if (this.isNewInstance) {
-            this.processDefinition = await backend.getRawDefinition(this.procDefId);
-            this.title = this.processDefinition.name + this.$t('runningInstance.running');
-        } else {
-            this.title = this.instance.name;
-        }
-    },
-    mounted() {
-        this.EventBus.on('process-instance-streaming', (text) => {
-            this.streamingText = this.title + '\n' + text;
+
+        await backend.getTaskLog(this.taskId, (task) => {
+            this.streamingText = task.log;
+            if (task.status == "DONE") {
+                this.EventBus.emit('instances-updated');
+                if (task.proc_inst_id && task.proc_inst_id != "new") {
+                    const instId = btoa(encodeURIComponent(task.proc_inst_id));
+                    this.$router.push(`/instancelist/${instId}`);
+                }
+            }
         });
     }
 }

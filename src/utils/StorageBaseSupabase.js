@@ -608,24 +608,23 @@ export default class StorageBaseSupabase {
         }
     }
 
-    async watch(path, callback) {
+    async watch(path, channel, callback) {
         try {
             let obj = this.formatDataPath(path);
             if (obj.table === 'chats' && path.startsWith('db://chats/')) {
                 obj.chatRoomIds = path.split('/')[3];
             }
             await window.$supabase
-                .channel(obj.table)
+                .channel(channel)
                 .on(
                     'postgres_changes',
                     {
                         event: '*',
                         schema: 'public',
-                        table: obj.table,
-                        filter: obj.chatRoomIds ? `id=in.(${obj.chatRoomIds})` : null
+                        table: obj.table
                     },
                     (payload) => {
-                        console.log('Change received!', payload);
+                        // console.log('Change received!', payload);
                         callback(payload);
                     }
                 )

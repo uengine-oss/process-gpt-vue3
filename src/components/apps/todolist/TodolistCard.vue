@@ -129,7 +129,7 @@ export default {
                     worklist.forEach(function(item) {
                         if (item.status == 'TODO' || item.status == 'NEW' || item.status == 'DRAFT') {
                             me.todolist.find(x => x.id == 'TODO').tasks.push(item);
-                        } else if (item.status == 'IN_PROGRESS') {
+                        } else if (item.status == 'IN_PROGRESS' || item.status == 'SUBMITTED') {
                             me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(item);
                         } else if (item.status == 'PENDING') {
                             me.todolist.find(x => x.id == 'PENDING').tasks.push(item);

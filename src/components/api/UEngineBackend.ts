@@ -70,7 +70,7 @@ class UEngineBackend implements Backend {
     }
     
 
-    async getNotifications() {
+    async getNotifications(callback: (data: any) => void) {
         // Placeholder implementation
         return [];
     }

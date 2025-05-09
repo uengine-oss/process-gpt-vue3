@@ -262,38 +262,9 @@ export default {
                 if (this.newMessage && this.newMessage.length > 0) {
                     workItem['user_input_text'] = this.newMessage;
                 }
-                backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate)
-                    .then(async (response) => {
-                        if (response && response.error) {
-                            me.handleError(response.error);
-                        } else if (response) {
-                            let receivedText = "";
-                            const { reader, decoder } = response;
-
-                            while (true) {
-                                const { done, value } = await reader.read();
-                                if (done) break;                        
-                                const chunk = decoder.decode(value, { stream: true });
-                                receivedText += chunk;
-                                me.EventBus.emit('workitem-streaming', receivedText);
-                            }
-
-                            me.EventBus.emit('workitem-streaming', '');
-                        }
-                        // 워크아이템 완료 처리
-                        me.EventBus.emit('workitem-completed');
-                        // 인스턴스 업데이트
-                        me.EventBus.emit('instances-updated');
-                    })
-
-                let path = btoa(me.workItem.worklist.instId);
-                me.$router.push({
-                    path: `/instancelist/${path}`, 
-                    query: {
-                        instId: me.workItem.worklist.instId,
-                        workitemRunning: true
-                    }
-                });
+                
+                backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
+                me.$router.push(`/instancelist/running?taskId=${me.$route.params.taskId}`);
             } else {
                 // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
                 me.$try({

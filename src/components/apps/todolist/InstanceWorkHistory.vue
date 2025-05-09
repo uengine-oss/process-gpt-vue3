@@ -32,13 +32,6 @@ export default {
     created() {
         this.init();
     },
-    mounted() {
-        this.EventBus.on('workitem-streaming', (text) => {
-            if (this.mode == "ProcessGPT") {
-                this.streamingText = text;
-            }
-        });
-    },
     computed: {
         mode() {
             return window.$mode;

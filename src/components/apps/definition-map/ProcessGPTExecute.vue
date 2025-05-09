@@ -240,21 +240,12 @@ export default {
                     answer = value.user_input_text;
                 }
 
-                let formId = ''
-                if (me.workItem.activity.tool) formId = me.workItem.activity.tool.replace('formHandler:', '');
-                let formValues = {};
-                if (formId) {
-                    const formatted = value;
-                    delete formatted.user_input_text;
-                    formValues[formId] = formatted;
-                }
-
                 let input = {
                     process_definition_id: me.definitionId,
                     activity_id: me.workItem.activity.tracingTag,
                     role_mappings: me.roleMappings,
                     answer: answer,
-                    form_values: formValues
+                    form_values: value || {}
                 };
                 me.roleMappings.forEach(role => {
                     if (me.workItem.worklist.role === role.name && role.endpoint) {
@@ -266,45 +257,16 @@ export default {
                     if (response && response.error) {
                         me.handleError(response.error);
                     } else if (response) {
-                        let receivedText = "";
-                        const { reader, decoder } = response;
-
-                        while (true) {
-                            const { done, value } = await reader.read();
-                            if (done) break;
-                    
-                            const chunk = decoder.decode(value, { stream: true });
-                            receivedText += chunk;
-                            me.EventBus.emit('process-instance-streaming', receivedText);
-                        }
-
-                        let result = {};
-                        if (receivedText.includes("```json")) {
-                            const textArr = receivedText.replace(/```json/g, "").split(/```/g);
-                            const jsonText = textArr.shift();
-                            result = JSON.parse(jsonText);
-                        }
-
-                        if (result && result.instanceId) {
-                            const encodedInstanceId = btoa(encodeURIComponent(result.instanceId));
-                            const path = `/instancelist/${encodedInstanceId}`;
+                        if (response && response.id) {
+                            me.EventBus.emit('instances-running', me.definition.processDefinitionName);
+                            const taskId = response.id;
+                            const path = `/instancelist/running?taskId=${taskId}`;
                             me.$router.push(path);
                         }
                     }
-                    me.EventBus.emit('instances-updated');
                 });
                 
                 me.closeDialog();
-                me.EventBus.emit('instances-running', me.definition.processDefinitionName);
-                const path = `/instancelist/running?proc_def_id=${me.definition.processDefinitionId}`;
-                me.$router.push(path);
-
-                me.$try({
-                    context: me,
-                    action: () => {
-                    },
-                    successMsg: this.$t('successMsg.runningTheProcess')
-                })
             }
         },
         uuid() {
