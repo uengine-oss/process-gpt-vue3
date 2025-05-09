@@ -273,7 +273,7 @@ hr {
 .mainbox {
     position: relative;
     overflow: hidden;
-    height: calc(100vh - 143px);
+    height: calc(100vh - 131px);
 }
 
 .task-btn{
@@ -555,6 +555,12 @@ hr {
     padding: 4px;
     font-size: 12px;
     width: 96px;
+}
+
+/* 선택된 배경색을 나타내는 클래스 - 영어로 'choice'로 변경 */
+.choice-background-color {
+    background-color: rgb(var(--v-theme-primary)) !important;
+    color: white;
 }
 
 .instance-select-box:focus {

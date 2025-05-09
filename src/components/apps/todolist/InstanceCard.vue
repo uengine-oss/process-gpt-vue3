@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="10" v-if="instance" style="height: calc(100vh - 143px); ">
+    <v-card elevation="10" v-if="instance" style="height: calc(100vh - 131px); ">
         <v-progress-linear v-if="workitemRunning" indeterminate color="primary" />
         <div class="d-flex">
             <div class="px-3 py-3 pb-2 pl-4 align-center">

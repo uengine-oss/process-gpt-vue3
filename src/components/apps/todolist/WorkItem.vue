@@ -64,7 +64,7 @@
                         <v-window-item value="progress">
                             <div
                                 class="pa-2"
-                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 261px); color: black; overflow: auto'"
+                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 249px); color: black; overflow: auto'"
                             >
                                 <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">

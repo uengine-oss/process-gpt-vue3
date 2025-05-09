@@ -2,12 +2,13 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-     <div :class="{'border-animation': isMyTask && !isTodolistPath}">
-        <v-card elevation="10" class="cursor-pointer pa-2" @click="executeTask"
-            :class="{
-                'border-primary': isDueTodayOrTomorrow, 
-                'border-purple': isPastDue,
-            }"
+     <div>
+        <v-card elevation="10" class="cursor-pointer pa-2 pt-1" @click="executeTask"
+            :class="[
+                { 'border-primary': isDueTodayOrTomorrow },
+                { 'border-purple': isPastDue },
+                { 'choice-background-color': isMyTask && !isTodolistPath }
+            ]"
         >
             <div class="ma-0 pa-0 mt-1" style="line-height:100%;">
                 <!-- 가로배치 -->
@@ -21,7 +22,7 @@
                                 style="margin-top: 1px !important;"
                             >
                                 <v-chip v-if="category"
-                                    :color="category.color"
+                                    :color="isMyTask && !isTodolistPath ? 'white' : category.color"
                                     size="small" variant="outlined"
                                     density="comfortable"
                                 >{{ category.name }}</v-chip>
