@@ -140,6 +140,7 @@
                             <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                                 :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                                 :isEditable="isEditable"
+                                :chatMode="chatMode"
                                 :isDeleted="isDefinitionDeleted"
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
@@ -170,6 +171,7 @@
                         <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                             :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                             :isEditable="isEditable"
+                            :chatMode="chatMode"
                             @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                             @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                             @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
@@ -917,6 +919,7 @@ export default {
                 } 
 
                 if(!this.isConsultingMode) {
+                    this.projectName = unknown.processDefinitionName ? unknown.processDefinitionName:''
                     if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
                         if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == unknown.megaProcessId)) {
                             this.processDefinitionMap.mega_proc_list.push({
@@ -994,7 +997,43 @@ export default {
     
                         this.definitionChangeCount++;
                     }
-                    await this.checkedFormData();
+
+                    if(!jsonProcess.answerType){
+                        await this.checkedFormData();
+                        if(jsonProcess.modifications){
+                            this.messages.push({
+                                "role": "system",
+                                "content": `요청하신 내용에 따라 수정을 완료하였습니다.`,
+                                "timeStamp": Date.now()
+                            });
+                        } else {
+                            this.messages.push({
+                                "role": "system",
+                                "content": `요청하신 프로세스 생성을 모두 완료하였습니다. 🎉🎉`,
+                                "timeStamp": Date.now()
+                            });
+                            this.messages.push({
+                                "role": "system",
+                                "content": `생성된 프로세스의 실제 실행화면을 시뮬레이션 기능을 통해 확인 및 수정이 가능합니다.`,
+                                "timeStamp": Date.now()
+                            });
+        
+                            if(this.chatMode == 'consulting'){
+                                this.messages.push({
+                                    "role": "system",
+                                    "content": `생성된 프로세스 정의에 대하여 추가적인 요청사항이 있으시다면 말씀해주세요.`,
+                                    "timeStamp": Date.now()
+                                });
+                            }
+        
+                            this.$try({
+                                context: this,
+                                action: () => {
+                                },
+                                successMsg: this.$t('successMsg.processGenerationCompleted')
+                            })
+                        }
+                    }
         
                     this.isChanged = true;
                 }

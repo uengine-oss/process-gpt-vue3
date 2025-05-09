@@ -168,6 +168,7 @@
                     @openProcessPreview="openProcessPreview" 
                     @executeSimulate="executeSimulate"
                     @closeExecuteDialog="closeExecuteDialog"
+                    @closeConsultingDialog="closeConsultingDialog"
                 />
             </v-card>
         </v-dialog>
@@ -465,8 +466,8 @@ export default {
 
             addSubProcess(majorProc);
         },
-        closeConsultingDialog() {
-            if (this.ProcessPreviewMode && this.$refs.processDefinitionChat && this.$refs.processDefinitionChat.lock) {
+        closeConsultingDialog(option) {
+            if (option || (this.ProcessPreviewMode && this.$refs.processDefinitionChat && this.$refs.processDefinitionChat.lock)) {
                 this.openConsultingDialog = false;
             } else {
                 const confirmMessage = this.ProcessPreviewMode ? this.$t('processDefinitionMap.closeConsultingInPreview') : this.$t('processDefinitionMap.closeConsulting');

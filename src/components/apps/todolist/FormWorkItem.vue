@@ -404,8 +404,19 @@ export default {
     80% { transform: translateX(-2px); }
 }
 
+@keyframes bounce-horizontal-left {
+    0%, 100% { transform: translateX(0); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(2px); }
+}
+
 .bouncing-arrow-horizontal {
     animation: bounce-horizontal 1.5s infinite;
+}
+
+.bouncing-arrow-horizontal-left {
+    animation: bounce-horizontal-left 1.5s infinite;
 }
 
 @media only screen and (max-width:1080px) {

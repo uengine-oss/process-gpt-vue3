@@ -26,8 +26,8 @@
                         </div>
                     </slot>
 
-                    <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                        <div class="d-flex w-100 chat-view-box" :style="!$globalState.state.isRightZoomed ? chatHeight : 'height:100vh;'">
+                    <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll" :style="type == 'form_simulation' ? 'max-height: 300px;':''">
+                        <div class="d-flex w-100 chat-view-box" :style="!$globalState.state.isRightZoomed ? (type == 'form_simulation' ? 'height: 300px;':chatHeight) : 'height:100vh;'">
                             <v-col>
                                 <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                                     <template v-slot:title>
@@ -220,7 +220,7 @@
                                                     </v-row>
                                                 </v-row>
 
-                                                <div v-if="message.contentType && message.contentType == 'html'">
+                                                <div v-if="message.contentType && message.contentType == 'html'" style="margin-bottom: 15px;">
                                                     <DynamicForm ref="dynamicForm" :formHTML="message.htmlContent" v-model="message.jsonContent"></DynamicForm>
                                                 </div>
 
@@ -721,7 +721,7 @@ export default {
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
             isRender: false,
-            chatHeight: 'height:calc(100vh - 300px)',
+            chatHeight: 'height:calc(100vh - 337px)',
             
             // assistantChat
             checked: true,
@@ -1080,7 +1080,7 @@ export default {
         getProfile(email) {
             if (!this.userList) return '/images/defaultUser.png';
             const user = this.userList.find(user => user.email === email);
-            return user ? (user.profile.includes('defaultUser.png') ? '/images/defaultUser.png' : user.profile) : '/images/defaultUser.png';
+            return user && user.profile ? (user.profile.includes('defaultUser.png') ? '/images/defaultUser.png' : user.profile) : '/images/defaultUser.png';
         },
         // shouldDisplayButtons(message, index) {
         //     if (message.role !== 'system') {
