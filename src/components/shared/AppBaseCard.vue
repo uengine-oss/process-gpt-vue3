@@ -59,7 +59,7 @@ const slotName = computed(() => {
 
 <template>
     <!---/Left chat list -->
-    <div class="d-flex mainbox" :class="chatReSizeDisplay" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 143px)' : 'height:100vh;'">
+    <div class="d-flex mainbox" :class="chatReSizeDisplay" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 131px)' : 'height:100vh;'">
         <div class="left-part" v-if="lgAndUp" :style="canvasReSize">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>

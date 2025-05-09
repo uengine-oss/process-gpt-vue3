@@ -78,7 +78,7 @@ const isModelingTab = computed(() => {
 
             <v-main>
                 <div class="hr-layout">
-                <v-container fluid class="page-wrapper bg-background px-sm-5 pt-12 px-4 rounded-xl">
+                <v-container fluid class="page-wrapper bg-background px-sm-4 pt-9 px-4 rounded-xl">
                     <!-- 정의관련 maxWidth -->
                     <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize]">
                         <RouterView />
