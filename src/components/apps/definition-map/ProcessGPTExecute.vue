@@ -211,7 +211,18 @@ export default {
         agentGenerationFinished(value) {
             if(value) {
                 this.processDefinition.activities[this.activityIndex].inputFormData = value.formValues;
-                this.simulationInstances.push(this.processDefinition.activities[this.activityIndex])
+                // Check if activity with same ID already exists in simulationInstances
+                const existingIndex = this.simulationInstances.findIndex(
+                    instance => instance.id === this.processDefinition.activities[this.activityIndex].id
+                );
+                
+                if (existingIndex !== -1) {
+                    // If exists, update the existing instance
+                    this.simulationInstances[existingIndex] = this.processDefinition.activities[this.activityIndex];
+                } else {
+                    // If not exists, push as new instance
+                    this.simulationInstances.push(this.processDefinition.activities[this.activityIndex]);
+                }
             }
         },
         backToPrevStep() {

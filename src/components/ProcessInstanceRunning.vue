@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="10" style="height: calc(100vh - 143px);">
+    <v-card elevation="10" style="height: calc(100vh - 131px);">
         <div class="d-flex">
             <div class="px-3 py-3 pb-2 pl-4 align-center">
                 <div class="d-flex">

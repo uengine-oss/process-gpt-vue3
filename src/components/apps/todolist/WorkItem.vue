@@ -190,7 +190,7 @@
                         :processDefinition="processDefinition"
                     ></component>
                     
-                    <div class="feedback-container">
+                    <div v-if="isSimulate == 'true'" class="feedback-container">
                         <FormDefinition
                             ref="formDefinition"
                             type="simulation"
@@ -321,7 +321,9 @@ export default {
         window.addEventListener('resize', this.handleResize);
 
         if(this.isSimulate == 'true') {
-            if(this.simulationInstances && !this.simulationInstances[this.activityIndex]){
+            if(this.processDefinition && 
+            this.processDefinition['activities'] && 
+            this.processDefinition['activities'][this.activityIndex] && !this.processDefinition['activities'][this.activityIndex].inputFormData){
                 setTimeout(() => {
                     this.selectedTab = 'agent';
                 }, 1500);

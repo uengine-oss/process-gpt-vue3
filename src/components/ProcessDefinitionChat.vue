@@ -817,6 +817,7 @@ export default {
                             this.bpmn = this.createBpmnXml(unknown);
                             this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
                             this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
+                            this.projectName = unknown.processDefinitionName
                             this.definitionChangeCount++;
                         }
                     }
