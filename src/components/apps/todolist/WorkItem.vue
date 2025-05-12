@@ -190,7 +190,7 @@
                         :processDefinition="processDefinition"
                     ></component>
                     
-                    <div class="feedback-container">
+                    <div v-if="isSimulate == 'true'" class="feedback-container">
                         <FormDefinition
                             ref="formDefinition"
                             type="simulation"
