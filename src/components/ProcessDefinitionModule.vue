@@ -264,13 +264,36 @@ export default {
             if (modification.value) {
                 const modeling = modeler.get('modeling');
                 const elementRegistry = modeler.get('elementRegistry');
+                
                 console.log('********');
                 console.log(modification);
                 console.log('********');
-                // elementRegistry.get()
-                // let obj = this.extractPropertyNameAndIndex(modification.targetJsonPath);
-                var sequence = elementRegistry.get(modification.value.id);
-                modeling.removeElements([sequence]);
+                
+                // 첫 번째 시도: ID로 직접 찾기
+                let elementToRemove = elementRegistry.get(modification.value.id);
+                
+                // 두 번째 시도: beforeActivity가 있는 경우, 이 활동에서 시작하는 연결 찾기
+                if (!elementToRemove && modification.beforeActivity) {
+                    const allElements = elementRegistry.getAll();
+                    const sequenceFlows = allElements.filter(el => el.type === 'bpmn:SequenceFlow');
+                    
+                    // 시작 활동(beforeActivity)에서 나가는 시퀀스 플로우 찾기
+                    elementToRemove = sequenceFlows.find(flow => {
+                        // source가 businessObject.sourceRef.id에 있을 것으로 예상
+                        if (flow.businessObject && flow.businessObject.sourceRef) {
+                            return flow.businessObject.sourceRef.id === modification.beforeActivity;
+                        }
+                        return false;
+                    });
+                }
+                
+                // 요소를 찾았다면 삭제
+                if (elementToRemove) {
+                    modeling.removeElements([elementToRemove]);
+                    console.log('삭제된 요소:', elementToRemove.id);
+                } else {
+                    console.error('요소를 찾을 수 없습니다:', modification.value.id);
+                }
             }
         },
         toggleVersionDialog(open) {

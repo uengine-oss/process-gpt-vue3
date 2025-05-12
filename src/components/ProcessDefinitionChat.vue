@@ -920,7 +920,9 @@ export default {
                 } 
 
                 if(!this.isConsultingMode) {
-                    this.projectName = unknown.processDefinitionName ? unknown.processDefinitionName:''
+                    if(unknown.processDefinitionName){
+                        this.projectName = unknown.processDefinitionName
+                    }
                     if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
                         if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == unknown.megaProcessId)) {
                             this.processDefinitionMap.mega_proc_list.push({
@@ -995,7 +997,7 @@ export default {
                                 // this.bpmn = this.createBpmnXml(this.processDefinition);
                             }
                         }
-    
+                        
                         this.definitionChangeCount++;
                     }
 
