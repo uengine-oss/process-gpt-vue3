@@ -608,24 +608,23 @@ export default class StorageBaseSupabase {
         }
     }
 
-    async watch(path, callback) {
+    async watch(path, channel, callback) {
         try {
             let obj = this.formatDataPath(path);
             if (obj.table === 'chats' && path.startsWith('db://chats/')) {
                 obj.chatRoomIds = path.split('/')[3];
             }
             await window.$supabase
-                .channel(obj.table)
+                .channel(channel)
                 .on(
                     'postgres_changes',
                     {
                         event: '*',
                         schema: 'public',
-                        table: obj.table,
-                        filter: obj.chatRoomIds ? `id=in.(${obj.chatRoomIds})` : null
+                        table: obj.table
                     },
                     (payload) => {
-                        console.log('Change received!', payload);
+                        // console.log('Change received!', payload);
                         callback(payload);
                     }
                 )
@@ -969,6 +968,7 @@ export default class StorageBaseSupabase {
 
             if (formatData && formatData.length > 0) {
                 const list = formatData.map((item) => {
+                    if (!item.id) return null;
                     const matchingColumns = [];
                     for (var i = 0; i < keyword.length; i++) {
                         if(keyword.charAt(i) == ' '){
@@ -991,6 +991,7 @@ export default class StorageBaseSupabase {
                     };
                 });
                 if (list.length > 0) {
+                    list = list.filter(item => item !== null);
                     return {
                         type: 'definition',
                         header: '프로세스 정의',
