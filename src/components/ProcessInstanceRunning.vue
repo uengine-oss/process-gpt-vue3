@@ -81,10 +81,25 @@ export default {
             }
         }
 
-        await backend.getTaskLog(this.taskId, (task) => {
+        await backend.getTaskLog(this.taskId, async (task) => {
             this.streamingText = task.log;
             if (task.status == "DONE") {
                 this.EventBus.emit('instances-updated');
+
+                if (task.description && task.description.length > 0 && task.description.includes("WorkItem Error")) {
+                    const retry = window.confirm("워크아이템 실행 중 오류가 발생했습니다. 다시 시도하시겠습니까?");
+                    if (retry) {
+                        await backend.putWorkItemComplete(this.taskId, this.workItem);
+                    } else {
+                        if (task.proc_inst_id && task.proc_inst_id != "new") {
+                            const instId = btoa(encodeURIComponent(task.proc_inst_id));
+                            this.$router.push(`/instancelist/${instId}`);
+                        } else {
+                            this.$router.go(-1);
+                        }
+                    }
+                }
+
                 if (task.proc_inst_id && task.proc_inst_id != "new") {
                     const instId = btoa(encodeURIComponent(task.proc_inst_id));
                     this.$router.push(`/instancelist/${instId}`);

@@ -968,6 +968,7 @@ export default class StorageBaseSupabase {
 
             if (formatData && formatData.length > 0) {
                 const list = formatData.map((item) => {
+                    if (!item.id) return null;
                     const matchingColumns = [];
                     for (var i = 0; i < keyword.length; i++) {
                         if(keyword.charAt(i) == ' '){
@@ -990,6 +991,7 @@ export default class StorageBaseSupabase {
                     };
                 });
                 if (list.length > 0) {
+                    list = list.filter(item => item !== null);
                     return {
                         type: 'definition',
                         header: '프로세스 정의',

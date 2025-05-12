@@ -1432,17 +1432,82 @@ class ProcessGPTBackend implements Backend {
 
     async search(keyword: string) {
         try {
-            // 데이터베이스 검색
-            const dbResult = await storage.search(keyword);
+            let results: any[] = [];
 
-            const vectorResult = await axios.post('/execution/process-search', {
+            const dbPromise = storage.search(keyword);
+            const vectorPromise = this.searchVector(keyword);
+
+            const dbResult = await dbPromise;
+            results = [...dbResult];
+
+            results.push({
+                type: 'loading',
+                header: '유사한 결과 검색 중...',
+                list: []
+            });
+
+            vectorPromise.then(vectorResult => {
+                const loadingIndex = results.findIndex(item => item.type === 'loading');
+                if (loadingIndex !== -1) {
+                    results.splice(loadingIndex, 1);
+                }
+
+                const existedDef = results.find((item: any) => item.type === 'definition');
+                if (existedDef) {
+                    existedDef.list = [...existedDef.list, ...vectorResult];
+                    const uniqueList = existedDef.list.filter((item, index, self) =>
+                        index === self.findIndex((t) => (
+                            t.href === item.href
+                        ))
+                    );
+                    
+                    existedDef.list = uniqueList;
+                } else {
+                    results.push({
+                        type: 'definition',
+                        header: '프로세스 정의',
+                        list: vectorResult
+                    });
+                }
+            }).catch(error => {
+                console.error('Vector search error:', error);
+            });
+
+            return results;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async searchVector(keyword: string) {
+        try {
+            let list = [];
+            const response = await axios.post('/execution/process-search', {
                 query: keyword
             });
-            console.log(vectorResult);
+            const vectorResult = response.data;
+            if (vectorResult && vectorResult.length > 0) {
+                list = vectorResult.map((item: any) => {
+                    const matchingColumns = item.page_content.split(": ");
+                    const content = JSON.parse(matchingColumns[1]);
+                    return {
+                        title: content.processDefinitionName,
+                        href: `/definitions/${content.processDefinitionId}`,
+                        matches: [ item.page_content ]
+                    }
+                });
+            }
 
-            // const vectorArray = Array.isArray(vectorResult) ? vectorResult : [vectorResult];
-            // const result = [...dbResult, ...vectorArray];
-            return dbResult;
+            const uniqueList = list.filter((item, index, self) => {
+                if (item && item.href) {
+                    return index === self.findIndex((t) => (
+                        t.href === item.href
+                    ))
+                }
+            });
+            
+            return uniqueList;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
