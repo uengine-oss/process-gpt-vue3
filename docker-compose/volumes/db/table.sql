@@ -755,6 +755,10 @@ create table if not exists public.todolist (
     adhoc boolean null default false,
     assignees jsonb null,
     duration integer null,
+    output jsonb null,
+    retry integer null default 0,
+    consumer text null,
+    log text null,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -811,6 +815,18 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='duration') THEN
         ALTER TABLE public.todolist ADD COLUMN duration integer null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='output') THEN
+        ALTER TABLE public.todolist ADD COLUMN output jsonb null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='retry') THEN
+        ALTER TABLE public.todolist ADD COLUMN retry integer null default 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='consumer') THEN
+        ALTER TABLE public.todolist ADD COLUMN consumer text null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='log') THEN
+        ALTER TABLE public.todolist ADD COLUMN log text null;
     END IF;
 END;
 $$;
