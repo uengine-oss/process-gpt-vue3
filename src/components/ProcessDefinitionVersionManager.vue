@@ -28,7 +28,7 @@
                 </v-btn>
             </div>
 
-            <v-card-text style="height: 500px;">
+            <v-card-text style="height: 100vh;">
                 <div v-if="showXML" style="height: 100%; overflow-y: scroll;">
                     <div class="diff-titles">
                         <div class="diff-title" v-if="currentXML && beforeXML">Previous XML
@@ -50,14 +50,20 @@
                         <pre><code class="xml">{{ currentXML }}</code></pre>
                     </div>
                 </div>
-                <div v-else style="height: 100%; border-bottom: 1px solid #E0E0E0;">
+                <div v-else style="height: 100%; border-bottom: 1px solid #E0E0E0; display: flex;">
                     <BpmnUengine
-                        ref="bpmnVue"
-                        :key="key"
+                        :key="key + '_left'"
+                        :bpmn="currentSelectedXML"
+                        :options="options"
+                        :isViewMode="false"
+                        style="height: 100%; width: 50%;"
+                    ></BpmnUengine>
+                    <BpmnUengine
+                        :key="key + '_right'"
                         :bpmn="currentXML"
                         :options="options"
                         :isViewMode="false"
-                        style="height: 100%;"
+                        style="height: 100%; width: 50%;"
                     ></BpmnUengine>
                 </div>
             </v-card-text>
@@ -104,6 +110,7 @@ export default {
         lists: [],
         loading: false,
         currentInfo: null,
+        currentXML: null,
         options: {
             additionalModules: [customBpmnModule]
         },
@@ -118,9 +125,15 @@ export default {
             }
             return null;
         },
-        currentXML() {
+        currentSelectedXML() {
             if (this.lists.length > 0 && this.lists[this.currentIndex]) {
                 return this.lists[this.currentIndex].xml
+            }
+            return null;
+        },
+        currentXML() {
+            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
+                return this.lists[this.lists.length - 1].xml
             }
             return null;
         },
@@ -187,7 +200,10 @@ export default {
             const currentInfo = await me.convertXMLToJSON(xml);
             me.currentVersionName = currentInfo.processDefinitionName;
             me.currentVersion = currentInfo.version;
-            me.currentVersionMessage = currentInfo.shortDescription.text;
+            if(currentInfo.shortDescription){
+                me.currentVersionMessage = currentInfo.shortDescription.text;
+            }
+            me.currentInfo = currentInfo;
         },
         async loadXMLOfVer(version) {
             var me = this
