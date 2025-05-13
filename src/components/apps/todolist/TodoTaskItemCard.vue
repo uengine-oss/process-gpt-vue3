@@ -235,7 +235,6 @@ export default {
     },
     methods: {
         executeTask() {
-            console.log(this.managed)
             if (!this.managed) {
                 this.$emit('executeTask', this.task);
             } else {

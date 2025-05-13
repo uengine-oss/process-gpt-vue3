@@ -98,7 +98,6 @@ export default {
                         column.tasks = [];
                     });
                     this.loadToDo();
-                    this.loadCompletedWorkList();
                 }
             }
         },
@@ -109,20 +108,19 @@ export default {
                 column.tasks = [];
             });
             await this.loadToDo();
-            await this.loadCompletedWorkList();
             
             // 인스턴스 ID를 기반으로 작업 목록 가져오기
             try {
-                const worklist = await backend.getAllWorkListByInstId(this.id);
-                console.log('Work List:', worklist);
-                if (worklist && worklist.length > 0) {
-                    // 각 작업에 대해 getWorkItem 호출
-                    for (const item of worklist) {
-                        if (item.taskId) {
-                            await this.fetchNewWorkItem(item.taskId);
-                        }
-                    }
-                }
+                // const worklist = await backend.getAllWorkListByInstId(this.id);
+                // console.log('Work List:', worklist);
+                // if (worklist && worklist.length > 0) {
+                //     // 각 작업에 대해 getWorkItem 호출
+                //     for (const item of worklist) {
+                //         if (item.taskId) {
+                //             await this.fetchNewWorkItem(item.taskId);
+                //         }
+                //     }
+                // }
                 
                 // 모든 작업을 로드한 후 사용자 정보 가져오기
                 await this.loadUserInfo();
@@ -157,24 +155,6 @@ export default {
                 }
             })
         },
-        loadCompletedWorkList() {
-            // !!! REMOVE
-            return [];
-            // var me = this
-            // me.$try({
-            //     context: me,
-            //     action: async () => {
-            //         let worklist = await backend.getCompletedList({page: me.currentPage, size: me.offset, instId: me.id});
-            //         if(!worklist) worklist = []
-            //         worklist.forEach(function(item) {
-            //             if (item.instId != me.id) return
-            //             if (item.status == 'DONE' || item.status == 'COMPLETED') {
-            //                 me.todolist.find(x => x.id == 'DONE').tasks.push(item);
-            //             }
-            //         })
-            //     }
-            // })
-        },
         handleScrollBottom() {
             var me = this
             me.$try({
@@ -182,7 +162,6 @@ export default {
                 action: async () => {
                     me.loading = true
                     me.currentPage++
-                    await me.loadCompletedWorkList()
                     me.loading = false
                 }
             })
@@ -210,12 +189,10 @@ export default {
         async fetchNewWorkItem(taskId) {
             try {
                 const newWorkItem = await backend.getWorkItem(taskId);
-                console.log(newWorkItem);
                 // newWorkItem의 데이터를 활용하여 todolist 업데이트
                 if (newWorkItem) {
                     const { worklist, activity } = newWorkItem;
-                    const tasks = await backend.getActivitiesStatus(worklist.instId);
-                    console.log(tasks);
+                    // const tasks = await backend.getActivitiesStatus(worklist.instId);
                     const column = this.todolist.find(x => x.id === worklist.status);
                     if (column) {
                         column.tasks.push({
@@ -235,7 +212,6 @@ export default {
             try {
                 // 슈퍼베이스에서 사용자 목록 가져오기
                 const userList = await backend.getUserList();
-                console.log('User List:', userList);
                 
                 // 사용자 목록 저장
                 if (userList && userList.length > 0) {

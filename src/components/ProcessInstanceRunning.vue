@@ -62,7 +62,6 @@ export default {
     watch: {
     },
     async mounted() {
-        console.log(this.taskId);
         this.workItem = await backend.getWorkItem(this.taskId);
         if (this.workItem && this.workItem.worklist) {
             if (this.workItem.worklist.defId) {

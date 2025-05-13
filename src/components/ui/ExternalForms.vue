@@ -1,7 +1,7 @@
 <template>
     <div :style="{ 'max-width': isMobile ? '100%' : '800px' }" class="mx-auto my-4">
-        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form" :readonly="isCompleted"></DynamicForm>
-        <div v-if="!isCompleted" class="my-4">
+        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form" :readonly="isSubmitted"></DynamicForm>
+        <div v-if="!isSubmitted" class="my-4">
             <v-btn @click="sendFormData" color="primary" block :loading="isSubmitting">제출</v-btn>
         </div>
     </div>
@@ -22,7 +22,8 @@ export default {
         return {
             html: '',
             formData: {},
-            isSubmitting: false
+            isSubmitting: false,
+            isSubmitted: false
         }
     },
     computed: {
@@ -54,12 +55,12 @@ export default {
                 return null;
             }
         },
-        isCompleted() {
-            // if (this.instanceId) {
-            //     return true;
-            // } else {
-                return false;
-            // }
+        taskId() {
+            if (this.$route.query.task_id) {
+                return this.$route.query.task_id;
+            } else {
+                return null;
+            }
         },
         isMobile() {
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -74,9 +75,12 @@ export default {
 
         this.html = await backend.getRawDefinition(this.formId, { type: 'form' });
 
-        if (this.instanceId) {
-            const value = await backend.getVariableWithTaskId(this.instanceId, '', this.formId);
+        if (this.taskId) {
+            const value = await backend.getVariableWithTaskId(this.instanceId, this.taskId, this.formId);
             this.formData = value.valueMap;
+            if (value.valueMap) {
+                this.isSubmitted = true;
+            }
         }
     },
     methods: {
@@ -103,8 +107,13 @@ export default {
                 form_values: formValues
             };
 
-            backend.start(input).then((result) => {
+            backend.start(input).then((response) => {
                 me.isSubmitting = false;
+                me.isSubmitted = true;
+                if (response && response.id) {
+                    const taskId = response.id;
+                    this.$router.push({ query: { ...this.$route.query, task_id: taskId } });
+                }
             })
             .catch(error => {
                 console.log(error);
