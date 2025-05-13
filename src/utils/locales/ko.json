@@ -781,7 +781,9 @@
         "history": "워크 히스토리",
         "chatbot": "어시스턴트",
         "agent": "Agent 초안 생성",
-        "toggleInputFieldSize": "확대 / 축소"
+        "toggleInputFieldSize": "확대 / 축소",
+        "previous": "이전 단계",
+        "inputForm": "입력 내용"
     },
     "TestProcess": {
         "title": "테스트 프로세스",
@@ -872,5 +874,10 @@
     "TodoTaskItemCard": {
         "assignee": "담당자",
         "myTask": "내 업무"
+    },
+    "ExternalForms": {
+        "submit": "제출",
+        "submitted": "제출 완료",
+        "submittedMessage": "제출되었습니다."
     }
 }

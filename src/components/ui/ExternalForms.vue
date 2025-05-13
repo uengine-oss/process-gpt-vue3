@@ -1,8 +1,14 @@
 <template>
     <div :style="{ 'max-width': isMobile ? '100%' : '800px' }" class="mx-auto my-4">
         <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form" :readonly="isSubmitted"></DynamicForm>
-        <div v-if="!isSubmitted" class="my-4">
-            <v-btn @click="sendFormData" color="primary" block :loading="isSubmitting">제출</v-btn>
+        <div class="my-4">
+            <v-btn @click="sendFormData"
+                block
+                :color="isSubmitted ? '' : 'primary'"
+                :loading="isSubmitting"
+                :disabled="isSubmitted">
+                {{ isSubmitted ? $t('ExternalForms.submitted') : $t('ExternalForms.submit') }}
+            </v-btn>
         </div>
     </div>
 </template>
@@ -118,8 +124,13 @@ export default {
             .catch(error => {
                 console.log(error);
             });
-            me.isSubmitting = true;
-            alert('제출되었습니다.');
+
+            me.$try({
+                action: () => {
+                    me.isSubmitting = true;
+                },
+                successMsg: me.$t('ExternalForms.submittedMessage'),
+            });
         }
     }
 }

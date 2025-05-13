@@ -50,6 +50,9 @@
             >
                 <v-alert class="pa-0" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
+                        <v-tab v-if="inFormNameTabs && inFormNameTabs.length > 0" v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
+                            {{ inFormNameTab }}
+                        </v-tab>
                         <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
                             {{ tab.label }} 
                             <v-icon
@@ -64,9 +67,6 @@
                         <!-- <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">{{ $t('WorkItem.history') }}</v-tab>
                         <v-tab v-if="messages" value="agent">{{ $t('WorkItem.agent') }}</v-tab> -->
-                        <v-tab v-if="inFormNameTabs && inFormNameTabs.length > 0" v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
-                            {{ inFormNameTab }}
-                        </v-tab>
                     </v-tabs>
                     <v-window v-model="selectedTab">
                         <v-window-item value="progress">
@@ -500,8 +500,10 @@ export default {
             if (me.workItem && me.workItem.worklist && me.workItem.activity && !me.workItem.activity.inParameterContexts) {
                 const refForms = await backend.getRefForm(me.workItem.worklist.taskId);
                 refForms.forEach((refForm) => {
-                    me.inFormNameTabs.push(refForm.name);
+                    const tabName = `${me.$t('WorkItem.previous')} (${refForm.name}) ${me.$t('WorkItem.inputForm')}`;
+                    me.inFormNameTabs.push(tabName);
                     me.inFormValues.push({'html': refForm.html, 'formData': refForm.formData});
+                    me.selectedTab = `form-0`;
                 });
                 return;
             }
