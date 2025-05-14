@@ -175,8 +175,8 @@
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
-        "lock": "저장하려면 자물쇠를 눌러 자물쇠를 닫으십시오.",
-        "unlock": "편집하려면 자물쇠를 눌러 자물쇠를 여십시오",
+        "lock": "저장하려면 저장 아이콘을 누르십시오.",
+        "unlock": "편집하려면 연필 아이콘을 누르십시오.",
         "addMega": "Mega 프로세스",
         "addMajor": "Major 프로세스",
         "addSub": "Sub 프로세스",
@@ -269,8 +269,8 @@
     },
     "chat": {
         "inputMessage": "메시지 입력",
-        "lock": "체크인(저장)하려면 자물쇠를 눌러 자물쇠를 닫으십시오.",
-        "unlock": "체크아웃(편집)하려면 자물쇠를 눌러 자물쇠를 여십시오",
+        "lock": "저장하려면 저장 아이콘을 누르세요.",
+        "unlock": "편집하려면 연필 아이콘을 누르세요.",
         "processDefinitionSave": "저장",
         "history": "버전 히스토리",
         "import": "BPMN 파일 불러오기",
