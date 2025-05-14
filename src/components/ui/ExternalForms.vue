@@ -123,9 +123,8 @@ export default {
             }
         }
 
-        if (!await this.validateFormURL()) {
+        if (!this.processDefinitionId || !this.activityId || !this.formId) {
             alert('잘못된 접근입니다.');
-            console.log(this.taskId, this.instanceId, this.activityId, this.formId);
             this.isSubmitted = true;
         }
     },
@@ -176,7 +175,6 @@ export default {
             if (!this.processDefinitionId || !this.activityId || !this.formId) {
                 return false;
             } else {
-                console.log(this.taskId, this.instanceId);
                 if (this.taskId) {
                     const value = await backend.getWorkItem(this.taskId);
                     if (value && value.worklist) {
