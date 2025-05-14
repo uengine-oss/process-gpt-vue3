@@ -158,7 +158,7 @@ export default {
             var obj = {
                 username: name,
                 email: email,
-                profile_picture: imageUrl || '@/assets/images/profile/defaultUser.png',
+                profile_picture: imageUrl,
                 state: 'signIn',
                 loginDate: Date.now()
             };
@@ -166,7 +166,7 @@ export default {
             var eObj = {
                 uid: userId,
                 userName: name,
-                profile_picture: imageUrl || '@/assets/images/profile/defaultUser.png',
+                profile_picture: imageUrl,
                 email: email,
             };
 
