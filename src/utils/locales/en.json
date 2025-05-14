@@ -175,8 +175,8 @@
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
-        "lock": "Please press the lock to lock it in order to save.",
-        "unlock": "Please press the lock to unlock it in order to edit.",
+        "lock": "Click the save icon to save.",
+        "unlock": "Click the pencil icon to edit.",
         "addMega": "Mega Process",
         "addMajor": "Major Process",
         "addSub": "Sub Process",
@@ -269,8 +269,8 @@
     },
     "chat": {
         "inputMessage": "Type a Message",
-        "lock": "Please press the lock to lock it in order to check in (save).",
-        "unlock": "Please press the lock to unlock it in order to check out (edit).",
+        "lock": "Click the save icon to save.",
+        "unlock": "Click the pencil icon to edit.",
         "processDefinitionSave": "Save",
         "history": "history button",
         "import": "Import BPMN File",

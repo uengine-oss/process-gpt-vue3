@@ -721,7 +721,7 @@ export default {
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
             isRender: false,
-            chatHeight: 'height:calc(100vh - 337px)',
+            chatHeight: 'height:calc(100vh - 325px)',
             
             // assistantChat
             checked: true,
@@ -742,7 +742,7 @@ export default {
         });
         if (window.location.pathname && window.location.pathname.includes('/definitions/')) {
             if (!this.isMobile) {
-                this.chatHeight = 'height:calc(100vh - 337px)'
+                this.chatHeight = 'height:calc(100vh - 325px)'
             } else {
                 this.chatHeight = 'height:calc(100vh - 450px)'
             }

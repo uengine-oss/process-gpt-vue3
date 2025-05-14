@@ -60,7 +60,7 @@ $$;
 create table if not exists public.users (
     id uuid not null,
     username text null,
-    profile text null default '/src/assets/images/profile/defaultUser.png'::text,
+    profile text null default '/images/defaultUser.png'::text,
     email text null,
     is_admin boolean not null default false,
     role text null,
@@ -81,7 +81,7 @@ BEGIN
         ALTER TABLE public.users ADD COLUMN username text null;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='profile') THEN
-        ALTER TABLE public.users ADD COLUMN profile text null default '/src/assets/images/profile/defaultUser.png'::text;
+        ALTER TABLE public.users ADD COLUMN profile text null default '/images/defaultUser.png'::text;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='email') THEN
         ALTER TABLE public.users ADD COLUMN email text null;
