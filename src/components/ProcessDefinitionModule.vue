@@ -886,6 +886,22 @@ export default {
                             me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
                         }
 
+                        if (info.definition.data) {
+                            if (info.definition.data.length == 0) {
+                                info.definition.data = [{
+                                    "name": "customer_email",
+                                    "type": "text",
+                                    "description": "고객 이메일"
+                                }]
+                            } else {
+                                info.definition.data.push({
+                                    "name": "customer_email",
+                                    "type": "text",
+                                    "description": "고객 이메일"
+                                });
+                            }
+                        }
+
                         me.projectName = me.processDefinition.processDefinitionName;
                         if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                             throw new Error('processDefinitionId or processDefinitionName is missing');

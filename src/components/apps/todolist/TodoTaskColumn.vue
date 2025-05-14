@@ -110,36 +110,15 @@ export default {
         },
         updateWorkItem(task) {
             var me = this;
-            if (window.$mode == 'ProcessGPT') {
-                backend.putWorklist(task.taskId, task)
-                    .then(async (result) => {
-                        if (result && result.errors && result.errors.length > 0) {
-                            me.taskId = task.taskId;
-                            me.workItem = await backend.getWorkItem(me.taskId);
-                            me.dialog = true;
-                        } else if (result && result.completedActivities && result.completedActivities.length > 0) {
-                            const status = result.completedActivities.find(
-                                item => item.completedActivityId == task.tracingTag
-                            ).result;
-                            this.$emit('updateStatus', this.taskId, status);
-                        }
-                        me.EventBus.emit('workitem-completed');
-                    })
-                    .catch((err) => {
-                        console.log(err);
-                    });
-                me.EventBus.emit('workitem-running', task.instId);
-            } else {
-                me.$try({
-                    action: async () => {
-                        await backend.putWorklist(task.taskId, task);
-                    },
-                    onFail: (e) => {
-                        me.$emit('updateStatus', task.taskId, me.originColumnId);
-                    },
-                    successMsg: task.status == 'DONE' ? this.$t('successMsg.workCompleted') : null
-                });
-            }
+            me.$try({
+                action: async () => {
+                    await backend.putWorklist(task.taskId, task);
+                },
+                onFail: (e) => {
+                    me.$emit('updateStatus', task.taskId, me.originColumnId);
+                },
+                successMsg: task.status == 'DONE' ? this.$t('successMsg.workCompleted') : null
+            });
         },
         closeDialog(isUpdated) {
             this.dialog = false;

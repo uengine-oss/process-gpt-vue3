@@ -1,6 +1,26 @@
 <template>
     <div :style="{ 'max-width': isMobile ? '100%' : '800px' }" class="mx-auto my-4">
-        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form" :readonly="isSubmitted"></DynamicForm>
+        <!-- 참조 폼 목록 -->
+        <div v-if="refForms.length > 0">
+            <DynamicForm 
+                v-for="(refForm, index) in refForms" 
+                :key="'refForm-'+index"
+                :ref="'refForm-'+index" 
+                :formHTML="refForm.html" 
+                v-model="refForm.formData" 
+                class="dynamic-form" 
+                :readonly="true"
+            ></DynamicForm>
+        </div>
+        <!-- 현재 폼 -->
+        <DynamicForm v-if="html" 
+            ref="dynamicForm" 
+            :formHTML="html" 
+            v-model="formData" 
+            class="dynamic-form" 
+            :readonly="isSubmitted"
+        ></DynamicForm>
+        <!-- 제출 버튼 -->
         <div class="my-4">
             <v-btn @click="sendFormData"
                 block
@@ -29,7 +49,8 @@ export default {
             html: '',
             formData: {},
             isSubmitting: false,
-            isSubmitted: false
+            isSubmitted: false,
+            refForms: []
         }
     },
     computed: {
@@ -65,6 +86,8 @@ export default {
             if (this.$route.query.task_id) {
                 return this.$route.query.task_id;
             } else {
+                this.isSubmitted = false;
+                this.formData = {};
                 return null;
             }
         },
@@ -73,20 +96,37 @@ export default {
             return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
         }
     },
-    async created() {
-        if (!this.processDefinitionId || !this.activityId || !this.formId) {
-            alert('잘못된 접근입니다.');
-            this.$router.push('/');
-        }
-
+    async mounted() {
         this.html = await backend.getRawDefinition(this.formId, { type: 'form' });
 
         if (this.taskId) {
             const value = await backend.getVariableWithTaskId(this.instanceId, this.taskId, this.formId);
-            this.formData = value.valueMap;
+            this.formData = value.valueMap || {};
             if (value.valueMap) {
                 this.isSubmitted = true;
             }
+        }
+
+        if (this.instanceId && this.activityId) {
+            const worklist = await backend.getWorkListByInstId(this.instanceId);
+            if (worklist.length > 0) {
+                const currentTask = worklist.find(item => item.tracingTag === this.activityId);
+                if (currentTask) {
+                    const refForms = await backend.getRefForm(currentTask.taskId);
+                    this.refForms = refForms.map(item => {
+                        return {
+                            html: item.html,
+                            formData: item.formData || {}
+                        }
+                    });
+                }
+            }
+        }
+
+        if (!await this.validateFormURL()) {
+            alert('잘못된 접근입니다.');
+            console.log(this.taskId, this.instanceId, this.activityId, this.formId);
+            this.isSubmitted = true;
         }
     },
     methods: {
@@ -131,6 +171,32 @@ export default {
                 },
                 successMsg: me.$t('ExternalForms.submittedMessage'),
             });
+        },
+        async validateFormURL() {
+            if (!this.processDefinitionId || !this.activityId || !this.formId) {
+                return false;
+            } else {
+                console.log(this.taskId, this.instanceId);
+                if (this.taskId) {
+                    const value = await backend.getWorkItem(this.taskId);
+                    if (value && value.worklist) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else if (this.instanceId) {
+                    const value = await backend.getWorkListByInstId(this.instanceId);
+                    if (value && value.length > 0) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else if (!this.instanceId && !this.taskId) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
         }
     }
 }

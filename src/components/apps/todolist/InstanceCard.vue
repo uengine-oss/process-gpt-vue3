@@ -106,27 +106,8 @@ export default {
             }
         }
     },
-    created() {
-        this.init();
-    },
     mounted() {
-        if (this.$route.query.workitemRunning === 'true' && this.id == this.$route.query.instId) {
-            this.workitemRunning = true;
-        }
-        
-        this.EventBus.on('workitem-running', async (instId) => {
-            if (this.id == instId) {
-                this.workitemRunning = true;
-            }
-        });
-
-        this.EventBus.on('workitem-completed', async () => {
-            this.workitemRunning = false;
-            if (Object.keys(this.$route.query).length > 0) {
-                this.$router.replace({ query: null });  
-            }
-            await this.init();
-        });
+        this.init();
     },
     computed: {
         id() {
