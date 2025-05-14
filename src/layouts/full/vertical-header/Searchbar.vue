@@ -17,6 +17,7 @@ import { Icon } from '@iconify/vue';
                         <v-text-field v-model="searchKeyword" variant="plain" density="compact"
                             class="position-relative pt-0 ml-3 custom-placeholer-color" placeholder="검색"
                             single-line hide-details
+                            @keyup.enter="search"
                         ></v-text-field>
                     </div>
                 </div>
@@ -27,7 +28,7 @@ import { Icon } from '@iconify/vue';
         </template>
 
         <!-- Search Result -->
-        <v-sheet width="360" elevation="10" rounded="md">
+        <v-sheet v-if="searching" width="360" elevation="10" rounded="md">
             <h5 class="text-h5 mt-3 px-5 pb-3">검색 결과</h5>
             <perfect-scrollbar style="height: 380px">
                 <v-list class="pt-0 pb-5" lines="two">
@@ -53,27 +54,36 @@ const backend = BackendFactory.createBackend();
 export default {
     data: () => ({
         searchKeyword: "",
-        searchResult: []
+        searchResult: [],
+        searching: false
     }),
     watch: {
-        async searchKeyword(newVal) {
-            this.searchResult = []
-            if (newVal.length > 0) {
-                await this.search(newVal)
+        searchKeyword(newVal) {
+            if (newVal.length == 0) {
+                this.searchResult = [];
+                this.searching = false;
+            } else {
+                this.searching = true;
             }
         }
     },
     methods: {
-        async search(keyword) {
-            this.searchResult = await backend.search(keyword)
+        async search() {
+            this.searching = true;
+            this.searchResult = [];
+            const results = await backend.search(this.searchKeyword);
+            this.searchResult = results;
         },
         summarize(text) {
-            const startIndex = text.indexOf(this.searchKeyword);
-            if (startIndex !== -1) {
-                const endIndex = Math.min(startIndex + 40, text.length);
-                return text.substring(startIndex, endIndex) + (endIndex < text.length ? '...' : '');
+            if (text && text.length > 0) {
+                const startIndex = text.indexOf(this.searchKeyword);
+                if (startIndex !== -1) {
+                    const endIndex = Math.min(startIndex + 40, text.length);
+                    return text.substring(startIndex, endIndex) + (endIndex < text.length ? '...' : '');
+                }
+                return text.length > 40 ? text.substring(0, 40) + '...' : text;
             }
-            return text.length > 40 ? text.substring(0, 40) + '...' : text;
+            return '';
         }
     },
 }

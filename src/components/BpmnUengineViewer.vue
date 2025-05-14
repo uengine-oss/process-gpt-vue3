@@ -72,6 +72,10 @@ export default {
         },
         instanceId: {
             type: String
+        },
+        diffActivities: {
+            type: Object,
+            default: () => ({})
         }
     },
     data: function () {
@@ -221,6 +225,16 @@ export default {
                
             }
 
+            // 차이점 시각화 처리 추가
+            if (self.diffActivities && Object.keys(self.diffActivities).length > 0) {
+                Object.keys(self.diffActivities).forEach(activityId => {
+                    const changeType = self.diffActivities[activityId];
+                    if (activityId && changeType) {
+                        canvas.addMarker(activityId, changeType);
+                    }
+                });
+            }
+
             await self.setSubProcessInstance(self.currentInstanceId);
             if(self.subProcessInstances && Object.keys(self.subProcessInstances).length > 0) {
                 Object.keys(self.subProcessInstances).forEach((key) => {
@@ -306,6 +320,25 @@ export default {
         },
         async currentInstanceId(val) {
             this.setSubProcessInstance(val);
+        },
+        diffActivities(newVal) {
+            if (newVal && Object.keys(newVal).length > 0) {
+                const canvas = this.bpmnViewer.get('canvas');
+                // 이전 마커 제거 (선택 사항)
+                Object.keys(newVal).forEach(activityId => {
+                    canvas.removeMarker(activityId, 'added');
+                    canvas.removeMarker(activityId, 'deleted');
+                    canvas.removeMarker(activityId, 'modified');
+                });
+                
+                // 새 마커 추가
+                Object.keys(newVal).forEach(activityId => {
+                    const changeType = newVal[activityId];
+                    if (activityId && changeType) {
+                        canvas.addMarker(activityId, changeType);
+                    }
+                });
+            }
         }
     },
     methods: {
@@ -541,5 +574,22 @@ export default {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 카드 스타일 그림자 적용 */
     border-radius: 10px;
     background-color: rgba(255, 255, 255, 0.6); /* 반투명 백그라운드 0.6 적용 */
+}
+
+/* 변경점 표시를 위한 스타일 */
+.added .djs-visual > :nth-child(1) {
+    stroke: #2ecc71 !important; /* 초록색 - 추가된 항목 */
+    stroke-width: 3px !important;
+}
+
+.deleted .djs-visual > :nth-child(1) {
+    stroke: #e74c3c !important; /* 빨간색 - 삭제된 항목 */
+    stroke-width: 3px !important;
+}
+
+.modified .djs-visual > :nth-child(1) {
+    stroke: #2ecc71 !important; /* 초록색 - 추가된 항목 */
+    /* stroke: #3498db !important; 파란색 - 수정된 항목 */
+    stroke-width: 3px !important;
 }
 </style>

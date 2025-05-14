@@ -142,7 +142,7 @@
             <div v-else></div>
         </v-card-text>
         <v-dialog v-model="executeDialog">
-            <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="processDefinition.id" 
+            <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="processDefinition.id" is-simulate="false"
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
                 <!-- <process-execute-dialog :definitionId="processDefinition.id" @close="executeDialog = false"></process-execute-dialog> -->

@@ -46,38 +46,64 @@ import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
 
 export default {
-    props: {
-        instance: Object,
-    },
     data() {
         return {
+            workItem: null,
             processDefinition: null,
             title: '',
             streamingText: '...',
         }
     },
     computed: {
-        isNewInstance() {
-            if (this.$route.fullPath.includes('instancelist/running')) {
-                return true;
+        taskId() {
+            return this.$route.query.taskId;
+        }
+    },
+    watch: {
+    },
+    async mounted() {
+        this.workItem = await backend.getWorkItem(this.taskId);
+        if (this.workItem && this.workItem.worklist) {
+            if (this.workItem.worklist.defId) {
+                this.processDefinition = await backend.getRawDefinition(this.workItem.worklist.defId);
+
+                if (this.workItem.worklist.instId == "new") {
+                    this.title = this.processDefinition.name + this.$t('runningInstance.running');
+                } else {
+                    this.title = this.workItem.activity.name + this.$t('runningInstance.running');
+                }
             }
-            return false;
-        },
-        procDefId() {
-            return this.$route.query.proc_def_id;
+
+            if (this.workItem.worklist.status == "COMPLETED") {
+                const instId = btoa(encodeURIComponent(this.workItem.worklist.instId));
+                this.$router.push(`/instancelist/${instId}`);
+            }
         }
-    },
-    async created() {
-        if (this.isNewInstance) {
-            this.processDefinition = await backend.getRawDefinition(this.procDefId);
-            this.title = this.processDefinition.name + this.$t('runningInstance.running');
-        } else {
-            this.title = this.instance.name;
-        }
-    },
-    mounted() {
-        this.EventBus.on('process-instance-streaming', (text) => {
-            this.streamingText = this.title + '\n' + text;
+
+        await backend.getTaskLog(this.taskId, async (task) => {
+            this.streamingText = task.log;
+            if (task.status == "DONE") {
+                this.EventBus.emit('instances-updated');
+
+                if (task.description && task.description.length > 0 && task.description.includes("WorkItem Error")) {
+                    const retry = window.confirm("워크아이템 실행 중 오류가 발생했습니다. 다시 시도하시겠습니까?");
+                    if (retry) {
+                        await backend.putWorkItemComplete(this.taskId, this.workItem);
+                    } else {
+                        if (task.proc_inst_id && task.proc_inst_id != "new") {
+                            const instId = btoa(encodeURIComponent(task.proc_inst_id));
+                            this.$router.push(`/instancelist/${instId}`);
+                        } else {
+                            this.$router.go(-1);
+                        }
+                    }
+                }
+
+                if (task.proc_inst_id && task.proc_inst_id != "new") {
+                    const instId = btoa(encodeURIComponent(task.proc_inst_id));
+                    this.$router.push(`/instancelist/${instId}`);
+                }
+            }
         });
     }
 }

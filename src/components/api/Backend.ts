@@ -53,7 +53,7 @@ export interface Backend {
     getSystem(systemId: String): Promise<any>;
     getCurrentWorkItemByCorrKey(corrKey: number): Promise<any>;
     deleteInstance(instanceId: string): Promise<any>;
-    getNotifications(): Promise<any>;
+    getNotifications(callback: (data: any) => void): Promise<any>;
     setNotifications(value: any): Promise<any>;
     search(keyword: string): Promise<any>;
     testList(path: string): Promise<any>;
@@ -78,6 +78,7 @@ export interface Backend {
     updateUser(userInfo: any): Promise<any>;
     getAllWorkListByInstId(instId: number): Promise<any>;
     listMarketplaceDefinition(): Promise<any>;
+    getRefForm(taskId: string): Promise<any>;
 }
 
 // export type { Backend }

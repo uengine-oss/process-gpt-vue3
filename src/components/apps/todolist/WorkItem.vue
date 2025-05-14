@@ -50,6 +50,9 @@
             >
                 <v-alert class="pa-0" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
+                        <v-tab v-if="inFormNameTabs && inFormNameTabs.length > 0" v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
+                            {{ inFormNameTab }}
+                        </v-tab>
                         <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
                             {{ tab.label }} 
                             <v-icon
@@ -63,10 +66,7 @@
                         </v-tab>
                         <!-- <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">{{ $t('WorkItem.history') }}</v-tab>
-                        <v-tab v-if="messages" value="agent">{{ $t('WorkItem.agent') }}</v-tab>
-                        <v-tab v-if="inFormNameTabs && inFormNameTabs.length > 0" v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
-                            {{ inFormNameTab }}
-                        </v-tab> -->
+                        <v-tab v-if="messages" value="agent">{{ $t('WorkItem.agent') }}</v-tab> -->
                     </v-tabs>
                     <v-window v-model="selectedTab">
                         <v-window-item value="progress">
@@ -304,7 +304,7 @@ export default {
         isAddedNewForm: false,
     }),
     created() {
-        this.init();
+        // this.init();
         this.EventBus.on('process-definition-updated', async () => {
             this.updatedDefKey++;
         });
@@ -329,6 +329,9 @@ export default {
                 }, 1500);
             }
         }
+    },
+    async mounted() {
+        await this.init();
     },
     beforeDestroy() {
         window.removeEventListener('resize', this.handleResize);
@@ -372,35 +375,33 @@ export default {
         },
         tabList() {
             if (this.mode == 'ProcessGPT') {
-                if(this.bpmn){
+                if(this.bpmn) {
                     return [
-                    { value: 'progress', label: this.$t('WorkItem.progress') },
-                    // { value: 'history', label: this.$t('WorkItem.history') },
-                    { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
-                    { value: 'agent', label: this.$t('WorkItem.agent') },
-                ]
+                        { value: 'progress', label: this.$t('WorkItem.progress') },
+                        // { value: 'history', label: this.$t('WorkItem.history') },
+                        { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
+                        { value: 'agent', label: this.$t('WorkItem.agent') },
+                    ]
                 } else {
                     return [
-                    { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
-                    { value: 'agent', label: this.$t('WorkItem.agent') },
-                ]
+                        { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
+                        { value: 'agent', label: this.$t('WorkItem.agent') },
+                    ]
                 }
                 
             } else {
-                const tabList = [
+                return[
                     { value: 'progress', label: this.$t('WorkItem.progress') },
                     { value: 'history', label: this.$t('WorkItem.history') },
                     { value: 'agent', label: this.$t('WorkItem.agent') },
                 ]
 
-                if(this.inFormNameTabs.length > 0) {
-                    this.inFormNameTabs.forEach((tab, index) => {
-                        tabList.push({ value: `form-${index}`, label: tab });
-                    });
-                }
+                // if(this.inFormNameTabs.length > 0) {
+                //     this.inFormNameTabs.forEach((tab, index) => {
+                //         tabList.push({ value: `form-${index}`, label: tab });
+                //     });
+                // }
             }
-            
-            return tabList;
         },
     },
     watch: {
@@ -424,6 +425,9 @@ export default {
                 this.agentRenderKey++;
                 this.isAddedNewForm = false
             }
+        },
+        inFormNameTabs(newVal) {
+            console.log(newVal);
         }
     },
     methods: {
@@ -492,7 +496,17 @@ export default {
         },
         async loadRefForm() {
             var me = this;
-            if(!me.workItem || !me.workItem.activity || !me.workItem.activity.inParameterContexts) return;
+            if(!me.workItem || !me.workItem.activity) return;
+            if (me.workItem && me.workItem.worklist && me.workItem.activity && !me.workItem.activity.inParameterContexts) {
+                const refForms = await backend.getRefForm(me.workItem.worklist.taskId);
+                refForms.forEach((refForm) => {
+                    const tabName = `${me.$t('WorkItem.previous')} (${refForm.name}) ${me.$t('WorkItem.inputForm')}`;
+                    me.inFormNameTabs.push(tabName);
+                    me.inFormValues.push({'html': refForm.html, 'formData': refForm.formData});
+                    me.selectedTab = `form-0`;
+                });
+                return;
+            }
 
             me.inFormNameTabs = [];
             me.inFormValues = [];

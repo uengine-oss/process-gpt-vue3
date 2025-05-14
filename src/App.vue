@@ -79,30 +79,37 @@ export default {
     },
     async mounted() {
         if (window.$mode == 'ProcessGPT') {
-            this.loadScreen = false;
-            this.backend = BackendFactory.createBackend();
-            if (window.$isTenantServer) {
-                await this.backend.checkDBConnection();
+            if (window.location.pathname.includes('external-forms')) {
                 this.loadScreen = true;
-            } else {
-                const isValidTenant = await this.backend.getTenant(window.$tenantName);
-                if (!isValidTenant && window.$tenantName !== 'localhost') {
-                    alert(window.$tenantName + " 존재하지 않는 경로입니다.");
-                    if (localStorage.getItem('email')) {
-                        window.location.href = 'https://www.process-gpt.io/tenant/manage';
-                    } else {
-                        window.location.href = 'https://www.process-gpt.io/auth/login';
-                    }
-                    return;
-                } else {
-                    const res = await this.backend.setTenant(window.$tenantName);
-                    if (!res) {
-                        this.$try({}, null, {
-                            errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
-                        })
-                        this.$router.push('/auth/login');
-                    }
+                return;
+            }
+
+            if (!window.$pal) {
+                this.loadScreen = false;
+                this.backend = BackendFactory.createBackend();
+                if (window.$isTenantServer) {
+                    await this.backend.checkDBConnection();
                     this.loadScreen = true;
+                } else {
+                    const isValidTenant = await this.backend.getTenant(window.$tenantName);
+                    if (!isValidTenant && window.$tenantName !== 'localhost') {
+                        alert(window.$tenantName + " 존재하지 않는 경로입니다.");
+                        if (localStorage.getItem('email')) {
+                            window.location.href = 'https://www.process-gpt.io/tenant/manage';
+                        } else {
+                            window.location.href = 'https://www.process-gpt.io/auth/login';
+                        }
+                        return;
+                    } else {
+                        const res = await this.backend.setTenant(window.$tenantName);
+                        if (!res) {
+                            this.$try({}, null, {
+                                errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
+                            })
+                            this.$router.push('/auth/login');
+                        }
+                        this.loadScreen = true;
+                    }
                 }
             }
 
