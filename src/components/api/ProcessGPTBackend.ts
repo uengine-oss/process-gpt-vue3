@@ -50,7 +50,7 @@ class ProcessGPTBackend implements Backend {
                 });
                 return formDefs
             } else {
-                let procDefs = await storage.list('proc_def', (path ? { like: `${path}%` } : undefined));
+                let procDefs = await storage.list('proc_def', (path ? { like: `${path}%`, match: { isdeleted: false } } : { match: { isdeleted: false } }));
                 procDefs.map((item: any) => {
                     item.path = `${item.id}`
                     item.name = item.name || item.path 
@@ -101,19 +101,22 @@ class ProcessGPTBackend implements Backend {
                     await storage.delete(`lock/${defId}`, { key: 'id' });
                 }
 
-                // const instList = await storage.list(defId);
-                // if (instList && instList.length > 0) {
-                //     await Promise.all([
-                //         await storage.delete('todolist', { match: { proc_def_id: defId } }),
-                //         await storage.delete('proc_inst', { match: { proc_def_id: defId } }),
-                //     ]);
-                // }
                 await Promise.all([
                     await storage.delete('todolist', { match: { proc_def_id: defId } }),
                     await storage.delete('bpm_proc_inst', { match: { proc_def_id: defId } }),
                 ]);
                 
-                await storage.delete(`proc_def/${defId}`, { key: 'id' });
+                return await storage.delete(`proc_def/${defId}`, { key: 'id' });
+                
+                // var procDef: any = await storage.getObject('proc_def', {
+                //     match: {
+                //         id: defId,
+                //     }
+                // });
+                // if (procDef) {
+                //     procDef.isdeleted = true;
+                //     await storage.putObject('proc_def', procDef);
+                // }
             }
         } catch (e) {
             
@@ -123,9 +126,22 @@ class ProcessGPTBackend implements Backend {
     }
 
     
-    async restoreDefinition(defId: string, options: any): Promise<boolean | undefined> {
-        if (defId.includes('.bpmn')) defId = defId.replace('.bpmn', '')
-        return false;
+    async restoreDefinition(defId: string, options: any) {
+        try {
+            if (defId.includes('.bpmn')) defId = defId.replace('.bpmn', '');
+
+            var procDef: any = await storage.getObject('proc_def', {
+                match: {
+                    id: defId,
+                }
+            });
+            if (procDef) {
+                procDef.isdeleted = false;
+                return await storage.putObject('proc_def', procDef);
+            }
+        } catch (e) {
+            throw new Error(e.message);
+        }
     }
     
     async putRawDefinition(xml: any, defId: string, options: any) {
@@ -909,8 +925,7 @@ class ProcessGPTBackend implements Backend {
                     varData = workItem.output[formId];
                 }
             }
-
-            if (!varData) {
+            if (varData) {
                 var fields: any = [];
                 const formObject: any = await storage.getObject(`form_def/${formDefId}`, { key: 'id' });
                 if (formObject) {
@@ -1705,7 +1720,6 @@ class ProcessGPTBackend implements Backend {
                 await storage.refreshSession();
                 return await storage.isConnection();
             } else {
-                console.log(response);
                 return false;
             }
         } catch (error) {
@@ -2126,6 +2140,45 @@ class ProcessGPTBackend implements Backend {
             });
 
             return true;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getRefForm(taskId: string) {
+        try {
+            const refForms = [];
+            const workItem = await storage.getObject('todolist', { match: { id: taskId } });
+
+            if (workItem && workItem.proc_def_id && workItem.reference_ids && workItem.reference_ids.length > 0) {
+                const formPromises = workItem.reference_ids.map(async (referenceId: string) => {
+                    const prevWorkItem = await storage.getObject('todolist', {
+                        match: {
+                            proc_inst_id: workItem.proc_inst_id,
+                            activity_id: referenceId
+                        }
+                    });
+                    
+                    if (prevWorkItem && prevWorkItem.proc_inst_id && prevWorkItem.activity_id) {
+                        const formId = prevWorkItem.tool.split('formHandler:')[1];
+                        const [form, formData] = await Promise.all([
+                            this.getRawDefinition(formId, { type: 'form' }),
+                            this.getVariableWithTaskId(workItem.proc_inst_id, prevWorkItem.id, formId)
+                        ]);
+                        return {
+                            name: prevWorkItem.activity_name,
+                            html: form,
+                            formData: formData.valueMap
+                        };
+                    }
+                    return null;
+                });
+
+                const results = await Promise.all(formPromises);
+                refForms.push(...results.filter(result => result !== null));
+            }
+            
+            return refForms;
         } catch (error) {
             throw new Error(error.message);
         }

@@ -175,8 +175,8 @@
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
-        "lock": "Please press the lock to lock it in order to save.",
-        "unlock": "Please press the lock to unlock it in order to edit.",
+        "lock": "Click the save icon to save.",
+        "unlock": "Click the pencil icon to edit.",
         "addMega": "Mega Process",
         "addMajor": "Major Process",
         "addSub": "Sub Process",
@@ -269,8 +269,8 @@
     },
     "chat": {
         "inputMessage": "Type a Message",
-        "lock": "Please press the lock to lock it in order to check in (save).",
-        "unlock": "Please press the lock to unlock it in order to check out (edit).",
+        "lock": "Click the save icon to save.",
+        "unlock": "Click the pencil icon to edit.",
         "processDefinitionSave": "Save",
         "history": "history button",
         "import": "Import BPMN File",
@@ -781,7 +781,9 @@
         "history": "Work History",
         "chatbot": "Assistant",
         "agent": "Create Agent Draft",
-        "toggleInputFieldSize": "Toggle Input Field Size"
+        "toggleInputFieldSize": "Toggle Input Field Size",
+        "previous": "Previous Step",
+        "inputForm": "Input"
     },
     "TestProcess": {
         "title": "Testing Process",
@@ -872,5 +874,10 @@
     "TodoTaskItemCard": {
         "assignee": "Assignee",
         "myTask": "My task"
+    },
+    "ExternalForms": {
+        "submit": "Submit",
+        "submitted": "Submitted",
+        "submittedMessage": "Submitted successfully."
     }
 }

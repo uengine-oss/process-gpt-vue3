@@ -70,7 +70,8 @@ export default class OrganizationChartGenerator extends AIGenerator{
                 "newUsers": [
                     {
                         "name": "user name",   // 입력 받은 정보가 없으면 빈 값으로 리턴
-                        "email": "user email"   // 입력 받은 정보가 없으면 빈 값으로 리턴
+                        "email": "user email",   // 입력 받은 정보가 없으면 빈 값으로 리턴
+                        "role": "user role"   // 입력 받은 정보가 없으면 빈 값으로 리턴
                     }
                 ]
             }

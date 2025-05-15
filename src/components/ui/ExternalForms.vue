@@ -1,8 +1,34 @@
 <template>
     <div :style="{ 'max-width': isMobile ? '100%' : '800px' }" class="mx-auto my-4">
-        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form" :readonly="isCompleted"></DynamicForm>
-        <div v-if="!isCompleted" class="my-4">
-            <v-btn @click="sendFormData" color="primary" block :loading="isSubmitting">제출</v-btn>
+        <!-- 참조 폼 목록 -->
+        <div v-if="refForms.length > 0">
+            <DynamicForm 
+                v-for="(refForm, index) in refForms" 
+                :key="'refForm-'+index"
+                :ref="'refForm-'+index" 
+                :formHTML="refForm.html" 
+                v-model="refForm.formData" 
+                class="dynamic-form" 
+                :readonly="true"
+            ></DynamicForm>
+        </div>
+        <!-- 현재 폼 -->
+        <DynamicForm v-if="html" 
+            ref="dynamicForm" 
+            :formHTML="html" 
+            v-model="formData" 
+            class="dynamic-form" 
+            :readonly="isSubmitted"
+        ></DynamicForm>
+        <!-- 제출 버튼 -->
+        <div class="my-4">
+            <v-btn @click="sendFormData"
+                block
+                :color="isSubmitted ? '' : 'primary'"
+                :loading="isSubmitting"
+                :disabled="isSubmitted">
+                {{ isSubmitted ? $t('ExternalForms.submitted') : $t('ExternalForms.submit') }}
+            </v-btn>
         </div>
     </div>
 </template>
@@ -22,7 +48,9 @@ export default {
         return {
             html: '',
             formData: {},
-            isSubmitting: false
+            isSubmitting: false,
+            isSubmitted: false,
+            refForms: []
         }
     },
     computed: {
@@ -54,29 +82,50 @@ export default {
                 return null;
             }
         },
-        isCompleted() {
-            // if (this.instanceId) {
-            //     return true;
-            // } else {
-                return false;
-            // }
+        taskId() {
+            if (this.$route.query.task_id) {
+                return this.$route.query.task_id;
+            } else {
+                this.isSubmitted = false;
+                this.formData = {};
+                return null;
+            }
         },
         isMobile() {
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
             return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
         }
     },
-    async created() {
-        if (!this.processDefinitionId || !this.activityId || !this.formId) {
-            alert('잘못된 접근입니다.');
-            this.$router.push('/');
-        }
-
+    async mounted() {
         this.html = await backend.getRawDefinition(this.formId, { type: 'form' });
 
-        if (this.instanceId) {
-            const value = await backend.getVariableWithTaskId(this.instanceId, '', this.formId);
-            this.formData = value.valueMap;
+        if (this.taskId) {
+            const value = await backend.getVariableWithTaskId(this.instanceId, this.taskId, this.formId);
+            this.formData = value.valueMap || {};
+            if (value.valueMap) {
+                this.isSubmitted = true;
+            }
+        }
+
+        if (this.instanceId && this.activityId) {
+            const worklist = await backend.getWorkListByInstId(this.instanceId);
+            if (worklist.length > 0) {
+                const currentTask = worklist.find(item => item.tracingTag === this.activityId);
+                if (currentTask) {
+                    const refForms = await backend.getRefForm(currentTask.taskId);
+                    this.refForms = refForms.map(item => {
+                        return {
+                            html: item.html,
+                            formData: item.formData || {}
+                        }
+                    });
+                }
+            }
+        }
+
+        if (!this.processDefinitionId || !this.activityId || !this.formId) {
+            alert('잘못된 접근입니다.');
+            this.isSubmitted = true;
         }
     },
     methods: {
@@ -103,14 +152,49 @@ export default {
                 form_values: formValues
             };
 
-            backend.start(input).then((result) => {
+            backend.start(input).then((response) => {
                 me.isSubmitting = false;
+                me.isSubmitted = true;
+                if (response && response.id) {
+                    const taskId = response.id;
+                    this.$router.push({ query: { ...this.$route.query, task_id: taskId } });
+                }
             })
             .catch(error => {
                 console.log(error);
             });
-            me.isSubmitting = true;
-            alert('제출되었습니다.');
+
+            me.$try({
+                action: () => {
+                    me.isSubmitting = true;
+                },
+                successMsg: me.$t('ExternalForms.submittedMessage'),
+            });
+        },
+        async validateFormURL() {
+            if (!this.processDefinitionId || !this.activityId || !this.formId) {
+                return false;
+            } else {
+                if (this.taskId) {
+                    const value = await backend.getWorkItem(this.taskId);
+                    if (value && value.worklist) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else if (this.instanceId) {
+                    const value = await backend.getWorkListByInstId(this.instanceId);
+                    if (value && value.length > 0) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else if (!this.instanceId && !this.taskId) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
         }
     }
 }

@@ -78,6 +78,7 @@ export interface Backend {
     updateUser(userInfo: any): Promise<any>;
     getAllWorkListByInstId(instId: number): Promise<any>;
     listMarketplaceDefinition(): Promise<any>;
+    getRefForm(taskId: string): Promise<any>;
 }
 
 // export type { Backend }

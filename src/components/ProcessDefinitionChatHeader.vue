@@ -24,7 +24,7 @@
                     <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
                     <v-spacer></v-spacer>
                     <!-- 삭제 아이콘 -->
-                    <div v-if="chatMode != 'consulting'">
+                    <div v-if="chatMode != 'consulting' && fullPath != 'chat'">
                         <v-tooltip v-if="isDeleted" location="bottom">
                             <template v-slot:activator="{ props }">
                                 <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 

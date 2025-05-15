@@ -386,7 +386,7 @@ export default {
                 //     }
                 // }
 
-                if (!this.value.id || this.value.id === '') {
+                if (!this.value.id || this.value.id === '' || this.value.id.match(/^[a-zA-Z0-9]+$/) === null) {
                     try {
                         this.$refs.tenantId.focus();
                     } catch (e) {

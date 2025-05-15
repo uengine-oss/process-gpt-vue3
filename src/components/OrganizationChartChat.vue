@@ -14,17 +14,18 @@
 
                 <v-dialog v-model="userDialog" max-width="500">
                     <v-card>
-                        <v-card-title>신규 입사자 가입</v-card-title>
+                        <v-card-title>신규 사용자 추가</v-card-title>
                         <v-card-text class="overflow-y-auto">
                             <div v-for="(user, index) in newUserList" :key="index" class="py-2">
                                 <v-text-field v-model="user.name" label="이름"></v-text-field>
                                 <v-text-field v-model="user.email" label="이메일"></v-text-field>
+                                <v-text-field v-model="user.role" label="역할"></v-text-field>
                                 <v-divider></v-divider>
                             </div>
                         </v-card-text>
                         <v-card-actions>
                             <v-spacer></v-spacer>
-                            <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
+                            <v-btn color="primary" @click="createNewUser(newUserList)">추가</v-btn>
                             <v-btn color="error" @click="userDialog = false">닫기</v-btn>
                         </v-card-actions>
                     </v-card>
@@ -37,6 +38,8 @@
                         :key="organizationChart.id"
                         :userList="userList"
                         @updateNode="updateNode"
+                        @addUser="openUserDialog"
+                        ref="organizationChart"
                 ></OrganizationChart>
             </template>
 
@@ -53,17 +56,18 @@
 
                 <v-dialog v-model="userDialog" max-width="500">
                     <v-card>
-                        <v-card-title>신규 입사자 가입</v-card-title>
+                        <v-card-title>신규 사용자 추가</v-card-title>
                         <v-card-text>
                             <div v-for="(user, index) in newUserList" :key="index" class="py-2">
                                 <v-text-field v-model="user.name" label="이름"></v-text-field>
                                 <v-text-field v-model="user.email" label="이메일"></v-text-field>
+                                <v-text-field v-model="user.role" label="역할"></v-text-field>
                                 <v-divider></v-divider>
                             </div>
                         </v-card-text>
                         <v-card-actions>
                             <v-spacer></v-spacer>
-                            <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
+                            <v-btn color="primary" @click="createNewUser(newUserList)">추가</v-btn>
                             <v-btn color="error" @click="userDialog = false">닫기</v-btn>
                         </v-card-actions>
                     </v-card>
@@ -101,8 +105,9 @@ export default {
         userDialog: false,
         newUserList: [],
         organizationChartId: null,
+        editingTeam: null,
     }),
-    async created() {
+    async mounted() {
         await this.init();
         const defaultName = window.$tenantName || window.$mode;
 
@@ -258,16 +263,24 @@ export default {
                     let userInfo = {
                         username: user.name,
                         email: user.email,
-                        password: '000000',
+                        role: user.role
                     }
                     const result = await this.backend.createUser(userInfo);
                     if (result.user) {
-                        userInfo = {
+                        this.editingTeam.children.push({
                             id: result.user.id,
-                            username: user.name,
-                            email: user.email,
-                        }
-                        await this.putObject('users', userInfo);
+                            data: {
+                                id: result.user.id,
+                                img: "",
+                                name: user.name,
+                                email: user.email,
+                                role: user.role,
+                                pid: this.editingTeam.id,
+                            },
+                            name: user.name,
+                        });
+                        await this.updateNode();
+                        this.$refs.organizationChart.drawTree();
                     }
                 });
                 this.userList = await this.backend.getUserList();
@@ -301,6 +314,15 @@ export default {
             }
             await this.putObject("configuration", putObj);
         },
+        openUserDialog(value) {
+            this.editingTeam = value;
+            this.newUserList = [{
+                name: "",
+                email: "",
+                role: "",
+            }];
+            this.userDialog = true;
+        }
     }
 }
 </script>

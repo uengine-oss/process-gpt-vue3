@@ -7,7 +7,7 @@
             :class="[
                 { 'border-primary': isDueTodayOrTomorrow },
                 { 'border-purple': isPastDue },
-                { 'choice-background-color': isMyTask && !isTodolistPath }
+                { 'choice-background-color': isMyTask && !isTodolistPath &&  task.status !== 'DONE'}
             ]"
         >
             <div class="ma-0 pa-0 mt-1" style="line-height:100%;">
@@ -27,8 +27,10 @@
                                     density="comfortable"
                                 >{{ category.name }}</v-chip>
                 
-                                <RouterLink v-if="managed" to="" class="px-0 ml-1" color="black">
-                                    <DotsVerticalIcon size="15" />
+                                <RouterLink v-if="managed" to="" class="px-0 ml-1" >
+                                    <DotsVerticalIcon size="15"
+                                        :style="isMyTask && !isTodolistPath &&  task.status !== 'DONE' ? 'color: white;' : 'color: black;'"
+                                    />
                                     <v-menu activator="parent">
                                         <v-list density="compact">
                                             <v-list-item @click="deleteTask">
@@ -156,6 +158,7 @@ export default {
 
             return daysDiff >= 0 ? `${daysDiff} days remaining` : `Due date passed`;
         },
+        // 오늘 또는 내일까지가 기한인 업무이면서, 상태가 'DONE'이 아닐 때 true 반환
         isDueTodayOrTomorrow() {
             const today = new Date();
             today.setHours(0, 0, 0, 0); // 오늘 날짜의 자정
@@ -165,7 +168,8 @@ export default {
             const dueDate = new Date(this.task.dueDate);
             dueDate.setHours(0, 0, 0, 0); // 기한 날짜의 자정
 
-            return dueDate >= today && dueDate <= tomorrow;
+            // 'DONE'이 아닐 때만 true 반환
+            return dueDate >= today && dueDate <= tomorrow && this.task.status !== 'DONE';
         },
         isPastDue() {
             const today = new Date();
@@ -199,7 +203,7 @@ export default {
             return this.userInfo.find(user => user.email === this.task.endpoint);
         },
         isMyTask() {
-            // localStorage의 email과 task의 endpoint가 일치하는지 확인
+            // localStorage의 email과 task의 endpoint가 일치하고, task의 status가 'DONE'이 아닐 때 true 반환
             const myEmail = localStorage.getItem('email');
             return myEmail && this.task && this.task.endpoint === myEmail;
         },
@@ -235,7 +239,6 @@ export default {
     },
     methods: {
         executeTask() {
-            console.log(this.managed)
             if (!this.managed) {
                 this.$emit('executeTask', this.task);
             } else {

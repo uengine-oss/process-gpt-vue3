@@ -79,6 +79,11 @@ export default {
     },
     async mounted() {
         if (window.$mode == 'ProcessGPT') {
+            if (window.location.pathname.includes('external-forms')) {
+                this.loadScreen = true;
+                return;
+            }
+
             if (!window.$pal) {
                 this.loadScreen = false;
                 this.backend = BackendFactory.createBackend();
