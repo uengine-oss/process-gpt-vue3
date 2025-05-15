@@ -240,10 +240,15 @@ class ProcessGPTBackend implements Backend {
                     return data;
                 } else if(options.type === "bpmn") {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "_")
-                    const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
-                    if(!data) {
-                        return null;
-                    }
+                    let data = null;
+                    // ::TODO: 개정된 프로세스 실행에 대한 작업 완료 후 사용
+                    // if (options.version && options.version != '') {
+                    //     data = await storage.getString(`proc_def_arcv`, { column: 'snapshot', match: {
+                    //         proc_def_id: defId, arcv_id: options.version
+                    //     } });
+                    // } else {
+                        data = await storage.getString(`proc_def`, { column: 'bpmn', match: { id: defId } });
+                    // }
                     return data;
                 }
             } else {
@@ -343,6 +348,7 @@ class ProcessGPTBackend implements Backend {
                 instance.defId = instance.proc_def_id;
                 instance.instanceId = instanceId;
                 instance.name = instance.proc_inst_name;
+                instance.defVer = instance.proc_def_version;
             }
             return instance;
         } catch (e) {
@@ -422,7 +428,8 @@ class ProcessGPTBackend implements Backend {
                     description: workitem.description || "",
                     tool: workitem.tool || "",
                     currentActivities: instance && instance.current_activity_ids ? 
-                        instance.current_activity_ids : [ activityInfo.id ]
+                        instance.current_activity_ids : [ activityInfo.id ],
+                    defVerId: instance && instance.proc_def_version ? instance.proc_def_version : null
                 },
                 activity: {
                     name: workitem.activity_name,
