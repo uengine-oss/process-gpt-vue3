@@ -852,7 +852,159 @@ export default {
                 }
             })
         },
-
+        async convertOldFormatToElements(oldObj) {
+            oldObj.elements = []
+            // Type mapping to convert from old activity types to new element types
+            const typeMapping = {
+                'startEvent': 'StartEvent',
+                'endEvent': 'EndEvent',
+                'userTask': 'UserActivity',
+                'serviceTask': 'ServiceActivity',
+                'scriptTask': 'ScriptActivity',
+                'sendTask': 'EmailActivity',
+                'exclusiveGateway': 'ExclusiveGateway',
+                'parallelGateway': 'ParallelGateway',
+                'task': 'Activity'
+            };
+            
+            // Convert old activities to elements format
+            if (oldObj.activities && Array.isArray(oldObj.activities)) {
+                oldObj.activities.forEach(activity => {
+                const elementType = activity.type === 'userTask' ? 'Activity' : 'Activity';
+                const type = typeMapping[activity.type] || 'Activity';
+                
+                // Parse properties if they exist
+                let checkpoints = [];
+                let duration = activity.duration || "5";
+                try {
+                    if (activity.properties) {
+                    const props = JSON.parse(activity.properties);
+                    if (props.checkpoints) {
+                        checkpoints = props.checkpoints;
+                    }
+                    if (props.duration) {
+                        duration = props.duration;
+                    }
+                    }
+                } catch (e) {
+                    console.error("Error parsing properties:", e);
+                }
+                
+                const newElement = {
+                    elementType: elementType,
+                    id: activity.id,
+                    name: activity.name,
+                    type: type,
+                    source: "", // This will be filled from sequences
+                    description: activity.description || "",
+                    instruction: activity.instruction || "",
+                    role: activity.role || "",
+                    inputData: activity.inputData || [],
+                    outputData: activity.outputData || [],
+                    checkpoints: checkpoints,
+                    duration: duration
+                };
+                
+                oldObj.elements.push(newElement);
+                });
+            }
+            
+            // Convert old events to elements format
+            if (oldObj.events && Array.isArray(oldObj.events)) {
+                oldObj.events.forEach(event => {
+                const elementType = "Event";
+                const type = typeMapping[event.type] || event.type;
+                
+                const newElement = {
+                    elementType: elementType,
+                    id: event.id,
+                    name: event.name,
+                    role: event.role || "",
+                    source: "",
+                    type: type,
+                    description: event.description || "",
+                    trigger: event.type === "startEvent" ? "프로세스 시작" : "프로세스 종료"
+                };
+                
+                oldObj.elements.push(newElement);
+                });
+            }
+            
+            // Convert old gateways to elements format
+            if (oldObj.gateways && Array.isArray(oldObj.gateways)) {
+                oldObj.gateways.forEach(gateway => {
+                const elementType = "Gateway";
+                const type = typeMapping[gateway.type] || "ExclusiveGateway";
+                
+                const newElement = {
+                    elementType: elementType,
+                    id: gateway.id,
+                    name: gateway.name || "Gateway",
+                    role: gateway.role || "",
+                    source: "",
+                    type: type,
+                    description: gateway.description || "분기점"
+                };
+                
+                oldObj.elements.push(newElement);
+                });
+            }
+            
+            // Convert old sequences to elements format and set source properties
+            if (oldObj.sequences && Array.isArray(oldObj.sequences)) {
+                // First, create a mapping of target IDs to source IDs
+                const targetToSourceMap = {};
+                oldObj.sequences.forEach(sequence => {
+                if (!targetToSourceMap[sequence.target]) {
+                    targetToSourceMap[sequence.target] = [];
+                }
+                targetToSourceMap[sequence.target].push(sequence.source);
+                });
+                
+                // Update source properties in existing elements
+                oldObj.elements.forEach(element => {
+                if (targetToSourceMap[element.id] && targetToSourceMap[element.id].length > 0) {
+                    element.source = targetToSourceMap[element.id][0]; // Take the first source
+                }
+                });
+                
+                // Now convert sequences to elements
+                oldObj.sequences.forEach(sequence => {
+                let condition = null;
+                try {
+                    if (sequence.condition && sequence.condition !== "") {
+                    // Try to parse condition if it exists
+                    if (typeof sequence.condition === 'string' && sequence.condition.startsWith('{')) {
+                        const condObj = JSON.parse(sequence.condition);
+                        condition = {
+                        key: condObj.key || "",
+                        condition: condObj.operator || "==",
+                        value: condObj.value || ""
+                        };
+                    }
+                    }
+                } catch (e) {
+                    console.error("Error parsing condition:", e);
+                }
+                
+                const newElement = {
+                    elementType: "Sequence",
+                    id: sequence.id,
+                    name: sequence.id.replace("SequenceFlow_", "").replace(/_/g, " "),
+                    source: sequence.source,
+                    target: sequence.target
+                };
+                
+                if (condition) {
+                    newElement.condition = condition;
+                }
+                
+                oldObj.elements.push(newElement);
+                });
+            }
+            
+            return oldObj;
+        },
         async afterGenerationFinished(response) {
             let jsonProcess = null;
             if (typeof response === 'string') {
@@ -978,31 +1130,50 @@ export default {
                     const store = useBpmnStore();
                     const modeler = store.getModeler;
                     if (unknown.modifications) {
+                        if(!this.processDefinition['elements']) this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
                         // unknown.modifications.forEach(async (modification) => {
                         for (let modification of unknown.modifications) {
+                            let targetJsonPath = modification.targetJsonPath.includes('[') ? modification.targetJsonPath.split('[')[0].replace('$.', ''):modification.targetJsonPath.replace('$.', '')
                             if (modification.action == 'replace') {
-                                this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
-                                console.log(this.processDefinition);
-                                this.bpmn = this.createBpmnXml(this.processDefinition);
+                                if(this.processDefinition[targetJsonPath]) {
+                                    this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
+                                } else {
+                                    this.jsonPathReplace(this.processDefinition, modification.targetJsonPath.replace(targetJsonPath, 'elements'), modification.value);
+                                }
                             } else if (modification.action == 'add') {
-                                this.modificationAdd(modification);
-                                this.modificationElement(modification, modeler);
-                                let xml = await modeler.saveXML({ format: true, preamble: true });
-                                this.bpmn = xml.xml;
-                                console.log('done');
-                            } else if (modification.action == 'delete') {
-                                this.modificationRemove(modification, modeler);
-                                let xml = await modeler.saveXML({ format: true, preamble: true });
-                                this.bpmn = xml.xml;
+                                if(this.processDefinition[modification.targetJsonPath.replace('$.', '')]) {
+                                    this.processDefinition[modification.targetJsonPath.replace('$.', '')].push(modification.value);
+                                } else {
+                                    this.processDefinition['elements'].push(modification.value);
+                                }
+                                // this.modificationAdd(modification);
+                                // this.modificationElement(modification, modeler);
+                                // let xml = await modeler.saveXML({ format: true, preamble: true });
+                                // this.bpmn = xml.xml;
                                 // this.bpmn = this.createBpmnXml(this.processDefinition);
+                                // console.log('done');
+                            } else if (modification.action == 'delete') {
+                                if(this.processDefinition[targetJsonPath]) {
+                                    let deleteIdx = this.processDefinition[targetJsonPath].findIndex(x => x.id == modification.value.id)
+                                    if(deleteIdx != -1) this.processDefinition[targetJsonPath].splice(deleteIdx, 1)
+                                } else {
+                                    let deleteIdx = this.processDefinition['elements'].findIndex(x => x.id == modification.value.id)
+                                    if(deleteIdx != -1) this.processDefinition['elements'].splice(deleteIdx, 1)
+                                }
+                                // this.modificationRemove(modification, modeler);
+                                // let xml = await modeler.saveXML({ format: true, preamble: true });
+                                // this.bpmn = xml.xml;
                             }
+                            if(this.processDefinition['activities'] && this.processDefinition['sequences']) {
+                                this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
+                            }
+                            this.bpmn = this.createBpmnXml(this.processDefinition);
                         }
                         
                         this.definitionChangeCount++;
                     }
 
                     if(!jsonProcess.answerType){
-                        await this.checkedFormData();
                         if(jsonProcess.modifications){
                             this.messages.push({
                                 "role": "system",
@@ -1010,6 +1181,7 @@ export default {
                                 "timeStamp": Date.now()
                             });
                         } else {
+                            await this.checkedFormData();
                             this.messages.push({
                                 "role": "system",
                                 "content": `요청하신 프로세스 생성을 모두 완료하였습니다. 🎉🎉`,
