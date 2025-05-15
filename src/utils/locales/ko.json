@@ -171,7 +171,18 @@
         "from": "에서",
         "edit": "수정",
         "add": "추가",
-        "delete": "삭제"
+        "delete": "삭제",
+        "close": "닫기",
+        "addNewUser": "신규 사용자 추가",
+        "userName": "이름",
+        "userEmail": "이메일",
+        "nameRequired": "이름을 입력해주세요.",
+        "emailRequired": "이메일을 입력해주세요.",
+        "emailInvalid": "유효하지 않은 이메일 형식입니다.",
+        "emailAlreadyExists": "이미 존재하는 이메일입니다.",
+        "addUserSuccess": "사용자가 추가되었습니다.",
+        "addUserFailed": "사용자 추가에 실패했습니다.",
+        "addNewUserExplanation": "신규 사용자를 추가하려면 이름과 이메일을 입력해 주세요. 입력된 이메일 주소로 회원가입이 자동 처리되며, 초기 비밀번호는 000000으로 설정됩니다."
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",

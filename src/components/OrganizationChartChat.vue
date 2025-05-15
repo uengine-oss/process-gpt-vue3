@@ -11,25 +11,6 @@
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
                 ></Chat>
-
-                <v-dialog v-model="userDialog" max-width="500">
-                    <v-card>
-                        <v-card-title>신규 사용자 추가</v-card-title>
-                        <v-card-text class="overflow-y-auto">
-                            <div v-for="(user, index) in newUserList" :key="index" class="py-2">
-                                <v-text-field v-model="user.name" label="이름"></v-text-field>
-                                <v-text-field v-model="user.email" label="이메일"></v-text-field>
-                                <v-text-field v-model="user.role" label="역할"></v-text-field>
-                                <v-divider></v-divider>
-                            </div>
-                        </v-card-text>
-                        <v-card-actions>
-                            <v-spacer></v-spacer>
-                            <v-btn color="primary" @click="createNewUser(newUserList)">추가</v-btn>
-                            <v-btn color="error" @click="userDialog = false">닫기</v-btn>
-                        </v-card-actions>
-                    </v-card>
-                </v-dialog>
             </template>
 
             <template v-slot:rightpart>
@@ -53,27 +34,47 @@
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
                 ></Chat>
-
-                <v-dialog v-model="userDialog" max-width="500">
-                    <v-card>
-                        <v-card-title>신규 사용자 추가</v-card-title>
-                        <v-card-text>
-                            <div v-for="(user, index) in newUserList" :key="index" class="py-2">
-                                <v-text-field v-model="user.name" label="이름"></v-text-field>
-                                <v-text-field v-model="user.email" label="이메일"></v-text-field>
-                                <v-text-field v-model="user.role" label="역할"></v-text-field>
-                                <v-divider></v-divider>
-                            </div>
-                        </v-card-text>
-                        <v-card-actions>
-                            <v-spacer></v-spacer>
-                            <v-btn color="primary" @click="createNewUser(newUserList)">추가</v-btn>
-                            <v-btn color="error" @click="userDialog = false">닫기</v-btn>
-                        </v-card-actions>
-                    </v-card>
-                </v-dialog>
             </template>
         </AppBaseCard>
+        <v-dialog v-model="userDialog" max-width="500">
+            <v-card>
+                <v-card-title>{{ $t('organizationChartDefinition.addNewUser') }}</v-card-title>
+                <v-card-text>
+                    <v-alert icon="$info" color="primary" variant="outlined" density="compact" class="mb-2">
+                        <div class="text-body-1">{{ $t('organizationChartDefinition.addNewUserExplanation') }}</div>
+                    </v-alert>
+                    <div v-for="(user, index) in newUserList" :key="index" class="py-2">
+                        <v-text-field 
+                            v-model="user.name" 
+                            :label="$t('organizationChartDefinition.userName')" 
+                            :rules="nameRules"
+                            class="mb-2"
+                        ></v-text-field>
+                        <v-text-field 
+                            v-model="user.email" 
+                            :label="$t('organizationChartDefinition.userEmail')" 
+                            :rules="emailRules" 
+                            class="mb-2"
+                        ></v-text-field>
+                        <v-text-field 
+                            v-model="user.role" 
+                            :label="$t('organizationChartDefinition.role')" 
+                            class="mb-2"
+                        ></v-text-field>
+                        <v-divider></v-divider>
+                    </div>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="primary" @click="createNewUser(newUserList)" :disabled="!isValid">
+                        {{ $t('organizationChartDefinition.add') }}
+                    </v-btn>
+                    <v-btn color="error" @click="userDialog = false">
+                        {{ $t('organizationChartDefinition.close') }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </v-card>
 </template>
 
@@ -107,6 +108,25 @@ export default {
         organizationChartId: null,
         editingTeam: null,
     }),
+    computed: {
+        emailRules() {
+            return [
+                (value) => !!value || this.$t('organizationChartDefinition.emailRequired'),
+                (value) => /.+@.+\..+/.test(value) || this.$t('organizationChartDefinition.emailInvalid'),
+                (value) => !this.isExistUser(value) || this.$t('organizationChartDefinition.emailAlreadyExists'),
+            ];
+        },
+        nameRules() {
+            return [
+                (value) => !!value || this.$t('organizationChartDefinition.nameRequired'),
+            ];
+        },
+        isValid() {
+            return this.newUserList.every(user => {
+                return this.emailRules.every(rule => rule(user.email) === true) && this.nameRules.every(rule => rule(user.name) === true);
+            });
+        }
+    },
     async mounted() {
         await this.init();
         const defaultName = window.$tenantName || window.$mode;
@@ -258,35 +278,42 @@ export default {
             this.putObject("chats", putObj);
         },
         async createNewUser(users) {
-            if (users && users.length > 0) {
-                users.forEach(async user => {
-                    let userInfo = {
-                        username: user.name,
-                        email: user.email,
-                        role: user.role
-                    }
-                    const result = await this.backend.createUser(userInfo);
-                    if (result.user) {
-                        this.editingTeam.children.push({
-                            id: result.user.id,
-                            data: {
-                                id: result.user.id,
-                                img: "",
-                                name: user.name,
+            var me = this
+            me.$try({
+                action: async () => {
+                    if (users && users.length > 0) {
+                        users.forEach(async user => {
+                            let userInfo = {
+                                username: user.name,
                                 email: user.email,
-                                role: user.role,
-                                pid: this.editingTeam.id,
-                            },
-                            name: user.name,
+                                role: user.role
+                            }
+                            const result = await me.backend.createUser(userInfo);
+                            if (result.user) {
+                                me.editingTeam.children.push({
+                                    id: result.user.id,
+                                    data: {
+                                        id: result.user.id,
+                                        img: "/images/defaultUser.png",
+                                        name: user.name,
+                                        email: user.email,
+                                        role: user.role,
+                                        pid: me.editingTeam.id,
+                                    },
+                                    name: user.name,
+                                });
+                                await me.updateNode();
+                                me.$refs.organizationChart.drawTree();
+                            }
                         });
-                        await this.updateNode();
-                        this.$refs.organizationChart.drawTree();
+                        me.userList = await me.backend.getUserList();
                     }
-                });
-                this.userList = await this.backend.getUserList();
-            }
-            this.newUserList = [];
-            this.userDialog = false;
+                    me.newUserList = [];
+                    me.userDialog = false;
+                },
+                successMsg: me.$t('organizationChartDefinition.addUserSuccess'),
+                errorMsg: me.$t('organizationChartDefinition.addUserFailed'),
+            });
         },
         async deleteUser(users) {
             if (users && users.length > 0) {
@@ -322,7 +349,10 @@ export default {
                 role: "",
             }];
             this.userDialog = true;
-        }
+        },
+        isExistUser(value) {
+            return this.userList.find(user => user.email == value);
+        },
     }
 }
 </script>

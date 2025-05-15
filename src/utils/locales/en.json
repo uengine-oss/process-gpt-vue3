@@ -171,7 +171,18 @@
         "from": "From",
         "add": "Add",
         "edit": "Edit",
-        "delete": "Delete"
+        "delete": "Delete",
+        "close": "Close",
+        "addNewUser": "Add New User",
+        "userName": "Name",
+        "userEmail": "Email",
+        "nameRequired": "Please enter your name.",
+        "emailRequired": "Please enter your email.",
+        "emailInvalid": "Invalid email format.",
+        "emailAlreadyExists": "Email already exists.",
+        "addUserSuccess": "User added successfully.",
+        "addUserFailed": "Failed to add user.",
+        "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000."
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",

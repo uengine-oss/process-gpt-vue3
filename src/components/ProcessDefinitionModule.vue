@@ -46,22 +46,35 @@ export default {
                     element.type === 'UserActivity'
                 );
                 this.generateFormTask = {};
+
+                let externalCustomerActs = null;
+                if (this.processDefinition.roles && this.processDefinition.roles.length > 0) {
+                    const externalCustomer = this.processDefinition.roles.find(role => role.endpoint == "external_customer");
+                    if (externalCustomer && externalCustomer.name) {
+                        externalCustomerActs = activities.filter(act => act.role == externalCustomer.name);
+                    }
+                }
                 
                 for (const activity of activities) {
                     let inputs = null;
+                    if (externalCustomerActs && externalCustomerActs.length > 0) {
+                        if (activity.id == externalCustomerActs[0].id) {
+                            if (window.$i18n.global.locale == 'ko') {
+                                inputs = "이메일(*필드명은 customer_email)";
+                            } else {
+                                inputs = "email(*field name is customer_email)";
+                            }
+                        }
+                    }
                     if (activity.outputData && activity.outputData.length > 0) {
-                        inputs = activity.outputData ? activity.outputData.join(', ') : '';
+                        inputs = inputs ? inputs + ", " + activity.outputData.join(', ') : activity.outputData.join(', ');
                     }
-                    let outputs = null;
-                    if (activity.inputData && activity.inputData.length > 0) {
-                        const uniqueInputs = activity.inputData.filter(item => !activity.outputData.includes(item));
-                        outputs = uniqueInputs.join(', ');
-                    }
-                    if (inputs || outputs) { 
+                    
+                    if (inputs) { 
                         this.generateFormTask[activity.id] = 'generating';
                         let generateMsg = `Please refer to the following and create a form.`;
                         if (inputs) generateMsg += `Fields to enter: ${inputs}`;
-                        if (outputs) generateMsg += `Fields to read only without input: ${outputs}`;
+                        generateMsg += `\nPlease place all fields in one area and arrange them vertically.`;
                         const formHtml = await this.generateForm(generateMsg, activity);
                         // 완료 메세지
                         let messageWriting = this.messages[this.messages.length - 1];
@@ -381,6 +394,7 @@ export default {
                                     const oldRole = me.processDefinition.roles.find(oldRole => oldRole.name === newRole.name);
                                     if (oldRole) {
                                         newRole.resolutionRule = oldRole.resolutionRule;
+                                        newRole.endpoint = oldRole.endpoint;
                                     }
                                     return newRole;
                                 });
@@ -619,13 +633,17 @@ export default {
                     data: data,
                     roles: lanes.map((lane) => {
                         let endpoint = '';
-                        if (lane['bpmn:extensionElements'] && lane['bpmn:extensionElements']['uengine:properties'] && lane['bpmn:extensionElements']['uengine:properties']['uengine:json']) {
-                            let laneJson = JSON.parse(lane['bpmn:extensionElements']['uengine:properties']['uengine:json']);
-                            if (laneJson.roleResolutionContext) {
-                                if (laneJson.roleResolutionContext.endpoint) {
-                                    endpoint = laneJson.roleResolutionContext.endpoint;
+                        if (!lane.endpoint) {
+                            if (lane['bpmn:extensionElements'] && lane['bpmn:extensionElements']['uengine:properties'] && lane['bpmn:extensionElements']['uengine:properties']['uengine:json']) {
+                                let laneJson = JSON.parse(lane['bpmn:extensionElements']['uengine:properties']['uengine:json']);
+                                if (laneJson.roleResolutionContext) {
+                                    if (laneJson.roleResolutionContext.endpoint) {
+                                        endpoint = laneJson.roleResolutionContext.endpoint;
+                                    }
                                 }
                             }
+                        } else {
+                            endpoint = lane.endpoint;
                         }
                         return {
                             name: lane.name,

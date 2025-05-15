@@ -4,39 +4,18 @@
         <div id="tree" ref="tree" class="h-100"></div>
         <!-- dialogs -->
         <v-dialog v-model="dialog" max-width="500">
-            <v-card v-if="dialogType == 'addTeam'">
-                <v-row class="ma-0 pa-4 pb-0">
-                    <v-card-title>{{ $t('organizationChartDefinition.addTeam') }}</v-card-title>
-                    <v-spacer></v-spacer>
-                    <v-btn @click="dialog = false"
-                        icon variant="text" density="comfortable"
-                    >
-                        <Icons :icon="'close'" :size="16"/>
-                    </v-btn>
-                </v-row>
-                
-                <v-card-text class="text-center">
+            <v-card>
+                <v-card-title>{{ dialogTitle }}</v-card-title>
+
+                <!-- add team -->
+                <v-card-text v-if="dialogType == 'addTeam'" class="text-center">
                     <v-text-field v-model="newTeam.id" :label="$t('organizationChartDefinition.teamId')"></v-text-field>
                     <v-text-field v-model="newTeam.name" :label="$t('organizationChartDefinition.teamName')"></v-text-field>
                 </v-card-text>
-                <v-row class="ma-0 pa-4">
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" rounded @click="updateNode">{{ $t('organizationChartDefinition.add') }}</v-btn>
-                </v-row>
-            </v-card>
 
-            <v-card v-if="dialogType == 'edit'" class="pa-4">
-                <template v-if="editUser.data.isTeam">
-                    <v-row class="ma-0 pa-0 mb-2">
-                        <v-spacer></v-spacer>
-                        <v-btn @click="dialog = false"
-                            icon variant="text" density="comfortable"
-                        >
-                            <Icons :icon="'close'" :size="16"/>
-                        </v-btn>
-                    </v-row>
+                <!-- edit team -->
+                <v-card-text v-else-if="dialogType == 'edit'">
                     <v-text-field v-model="editUser.data.name" :label="$t('organizationChartDefinition.teamName')"></v-text-field>
-
                     <v-autocomplete v-model="editUser.children" :items="allUsers" chips 
                         closable-chips color="blue-grey-lighten-2" item-title="data.name" :item-value="item => item" 
                         multiple :label="$t('organizationChartDefinition.selectTeamMember')" small-chips>
@@ -54,48 +33,18 @@
                             </v-list-item>
                         </template>
                     </v-autocomplete>
-                </template>
-                
-                <v-card-text v-else class="text-center mt-5">
-                    <div class="d-flex mb-2">
-                        <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
-                            <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
-                        </v-avatar>
-                        <div class="text-start align-self-center ml-4">
-                            <h6 class="text-h6 font-weight-bold">{{ editUser.data.name }}</h6>
-                            <div class="text-body-1">{{ editUser.data.email }}</div>
-                        </div>
-                    </div>
-                    
-                    <v-select v-model="editUser.data.pid" :items="allTeams" item-title="name"
-                        item-value="id" :label="$t('organizationChartDefinition.team')"></v-select>
-                    <v-text-field v-model="editUser.data.role" :label="$t('organizationChartDefinition.role')"></v-text-field>
                 </v-card-text>
 
-                <v-row class="ma-0 pa-4">
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" rounded @click="updateNode">{{ $t('organizationChartDefinition.edit') }}</v-btn>
-                </v-row>
-            </v-card>
-
-            <v-card v-if="dialogType == 'delete'">
-                <v-row class="ma-0 pa-2">
-                    <v-card-title>{{ editUser.data.isTeam ? $t('organizationChartDefinition.team') : $t('organizationChartDefinition.teamMember') }} {{ $t('organizationChartDefinition.delete') }}</v-card-title>
-                    <v-spacer></v-spacer>
-                    <v-btn @click="dialog = false"
-                        icon variant="text" density="comfortable"
-                    >
-                        <Icons :icon="'close'" :size="16"/>
-                    </v-btn>
-                </v-row>
-                <v-card-text>
-                    <div v-if="editUser.data.isTeam">'{{ editUser.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }}</div>
-                    <div v-else>'{{ currentTeam.name }}' {{ $t('organizationChartDefinition.from') }} '{{ editUser.data.name }}' {{ $t('organizationChartDefinition.deleteMessage1') }}</div>
+                <!-- delete team -->
+                <v-card-text v-else-if="dialogType == 'delete'">
+                    <div>'{{ editUser.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }}</div>
                 </v-card-text>
-                <v-row class="ma-0 pa-4">
+
+                <v-card-actions>
                     <v-spacer></v-spacer>
-                    <v-btn color="primary" rounded  @click="updateNode">{{ $t('organizationChartDefinition.delete') }}</v-btn>
-                </v-row>
+                    <v-btn color="primary" @click="updateNode">{{ buttonText }}</v-btn>
+                    <v-btn color="error" @click="dialog = false">{{ $t('organizationChartDefinition.close') }}</v-btn>
+                </v-card-actions>
             </v-card>
         </v-dialog>
     </div>
@@ -127,7 +76,7 @@ export default {
             id: '',
             name: '',
             isTeam: true,
-            img: '/src/assets/images/chat/chat-icon.png',
+            img: '/images/chat-icon.png',
         },
     }),
     computed: {
@@ -137,6 +86,24 @@ export default {
         currentTeam() {
             return this.allTeams.find(team => team.id === this.editUser.data.pid);
         },
+        dialogTitle() {
+            if (this.dialogType == 'addTeam') {
+                return this.$t('organizationChartDefinition.addTeam')
+            } else if (this.dialogType == 'edit') {
+                return this.$t('organizationChartDefinition.team') + ' ' + this.$t('organizationChartDefinition.edit')
+            } else if (this.dialogType == 'delete') {
+                return this.$t('organizationChartDefinition.team') + ' ' + this.$t('organizationChartDefinition.delete')
+            }
+        },
+        buttonText() {
+            if (this.dialogType == 'addTeam') {
+                return this.$t('organizationChartDefinition.add')
+            } else if (this.dialogType == 'edit') {
+                return this.$t('organizationChartDefinition.edit')
+            } else if (this.dialogType == 'delete') {
+                return this.$t('organizationChartDefinition.delete')
+            }
+        }
     },
     watch: {
         node(newVal) {
@@ -176,7 +143,7 @@ export default {
                 enableExpandCollapse: true,
                 nodeTemplate: (content) =>`
                 <div class='node-content' id='${content.id}' style='display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;'>
-                    ${content.id == 'root' ? '' : (content.img ? `<img class="node-content-img" src='${content.img}' />` : `<img class="node-content-img" src='src/assets/images/profile/defaultUser.png' />`)}
+                    ${content.id == 'root' ? '' : (content.img ? `<img class="node-content-img" src='${content.img}' />` : `<img class="node-content-img" src='/images/defaultUser.png' />`)}
                     <div class="node-content-text-box">
                         <div style="font-weight: bold; font-family: Arial; font-size: 14px;">${content.name}</div>
                         ${content.email ? `<div style="font-family: Arial; font-size: 12px">${content.email}</div>` : ''}

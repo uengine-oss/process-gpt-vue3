@@ -41,6 +41,7 @@ export default {
           json.roles[1].forEach(role => {
             result.roles.push({
               "name": role.name,
+              "endpoint": role.endpoint || '',
               "resolutionRule": role.name
             });
           });
