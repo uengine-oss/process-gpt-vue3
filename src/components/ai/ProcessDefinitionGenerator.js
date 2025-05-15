@@ -113,7 +113,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
           
           {
             "action": "replace" | "add" | "delete",
-            "targetJsonPath": "$.activities[?(@.id=='request_vacation')]", // action 이 add 인 경우 "$.activities" 만 리턴. e.g. "$.sequences", action 이 add 가 아닌 경우 "$.activities[?(@.id=='request_vacation')]" 와 같이 수정, 삭제될 Path 의 상위 목록("activities", "sequences" 등...)을 참고하여 "$.activities" 뒤에 수정, 삭제될 값을 찾을 수 있는 필터("[?(@.id=='request_vacation')]") 를 반드시 포함하여 리턴.  // e.g. "$.sequences[?(@.source=='leave_request_activity' && @.target=='leave_approval_activity')].condition"
+            "targetJsonPath": "$.activities[?(@.id=='request_vacation')]", // action 이 add 인 경우 "$.activities" 만 리턴. e.g. "$.sequences", action 이 add 가 아닌 경우 "$.activities[?(@.id=='request_vacation')]" 와 같이 수정, 삭제될 Path 의 상위 목록("activities", "sequences" 등...)을 참고하여 "$.activities" 뒤에 수정, 삭제될 값을 찾을 수 있는 필터("[?(@.id=='request_vacation')]") 를 반드시 포함하여 리턴.  // e.g. "$.sequences[?(@.source=='leave_request_activity' && @.target=='leave_approval_activity')].condition" // "$.elements" 로 생성 금지. "$.elements"가 아닌 elementType 을 알 수 있는 path(예시: $.activities)여야함. 기존 프로세스 정보중 activities, sequences 가 없는 경우에만 elements 를 포함한 path 생성 가능
             "value": {...}, //delete 인 경우에는 삭제 될 Sequence의 id를 {"id": "삭제 될 Sequence의 id"} 형식으로 리턴, replace의 경우 기존 value에서 변경된 부분을 수정하여 생략 하지 않고 value로 리턴
             "beforeActivity": "" // 추가 되거나 변경 되는 Activity의 이전 단계 Activity의 id
           }   
@@ -139,7 +139,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
         "modifications": [
           {
             "action": "replace" | "add" | "delete",
-            "targetJsonPath": "$.activities[?(@.id=='request_vacation')]",
+            "targetJsonPath": "$.activities[?(@.id=='request_vacation')]", // "$.elements" 로 생성 금지. "$.elements"가 아닌 elementType 을 알 수 있는 path(예시: $.activities)여야함. 기존 프로세스 정보중 activities, sequences 가 없는 경우에만 elements 를 포함한 path 생성 가능
             "value": { ... },
             "beforeActivity": ""
           }   
