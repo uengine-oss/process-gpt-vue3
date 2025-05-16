@@ -1499,12 +1499,9 @@ class ProcessGPTBackend implements Backend {
                 }
             }).catch(error => {
                 console.error('Vector search error:', error);
-                const loadingIndex = results.findIndex(item => item.type === 'loading');
-                if (loadingIndex !== -1) {
-                    results.splice(loadingIndex, 1);
-                }
+                const newResults = results.filter((item: any) => item.type !== 'loading');
                 if (callback) {
-                    callback(results);
+                    callback(newResults);
                 }
             });
         } catch (error) {

@@ -112,6 +112,18 @@ export default {
             if (worklist.length > 0) {
                 const currentTask = worklist.find(item => item.tracingTag === this.activityId);
                 if (currentTask) {
+                    if (currentTask.status === 'DONE' || currentTask.status === 'COMPLETED') {
+                        this.isSubmitted = true;
+                    }
+                    // 폼 정보 조회
+                    const formId = currentTask.tool ? currentTask.tool.split('formHandler:')[1] : null;
+                    if (formId) {
+                        const formData = await backend.getVariableWithTaskId(this.instanceId, currentTask.taskId, formId);
+                        if (formData) {
+                            this.formData = formData.valueMap || {};
+                        }
+                    }
+                    // 참조 폼 목록 조회
                     const refForms = await backend.getRefForm(currentTask.taskId);
                     this.refForms = refForms.map(item => {
                         return {

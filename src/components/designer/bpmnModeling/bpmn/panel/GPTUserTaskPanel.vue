@@ -9,9 +9,9 @@
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
                 <div class="mb-4">{{ $t('BpmnPropertyPanel.role') }}: {{ copyUengineProperties.role ? copyUengineProperties.role.name : '' }}</div>
-                <v-text-field v-model="name" label="이름" autofocus class="mb-4"></v-text-field>
+                <!-- <v-text-field v-model="name" label="이름" autofocus class="mb-4"></v-text-field> -->
                 <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
-                <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
+                <Instruction v-model="activity.description" class="mb-4"></Instruction>
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
                 <div>
                     <v-file-input

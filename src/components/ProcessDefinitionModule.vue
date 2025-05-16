@@ -24,6 +24,7 @@ export default {
         loading: false,
         isChanged: false,
         generateFormTask: null,
+        oldProcDefId: ''
     }),
     computed: {
         lastPath() {
@@ -399,22 +400,22 @@ export default {
                                     return newRole;
                                 });
                             }
-                            if (me.processDefinition.activities) {
-                                newProcessDefinition.activities = newProcessDefinition.activities.map(activity => {
-                                    const oldActivity = me.processDefinition.activities.find(oldActivity => oldActivity.id === activity.id);
-                                    if (oldActivity) {
-                                        activity.uuid = oldActivity.uuid;
-                                        activity.instruction = oldActivity.instruction;
-                                        activity.description = oldActivity.description;
-                                        activity.checkpoints = oldActivity.checkpoints;
-                                        activity.duration = oldActivity.duration;
-                                        activity.attachments = oldActivity.attachments;
-                                        activity.pythonCode = oldActivity.pythonCode;
-                                        activity.taskLink = oldActivity.taskLink;
-                                    }
-                                    return activity;
-                                });
-                            }
+                            // if (me.processDefinition.activities) {
+                            //     newProcessDefinition.activities = newProcessDefinition.activities.map(activity => {
+                            //         const oldActivity = me.processDefinition.activities.find(oldActivity => oldActivity.id === activity.id);
+                            //         if (oldActivity) {
+                            //             activity.uuid = oldActivity.uuid;
+                            //             activity.instruction = oldActivity.instruction;
+                            //             activity.description = oldActivity.description;
+                            //             activity.checkpoints = oldActivity.checkpoints;
+                            //             activity.duration = oldActivity.duration;
+                            //             activity.attachments = oldActivity.attachments;
+                            //             activity.pythonCode = oldActivity.pythonCode;
+                            //             activity.taskLink = oldActivity.taskLink;
+                            //         }
+                            //         return activity;
+                            //     });
+                            // }
                             me.processDefinition = newProcessDefinition
                         }
 
@@ -713,6 +714,7 @@ export default {
                                             : [];
                                     task.properties = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'];
                                     task.duration = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'].duration ? activity['bpmn:extensionElements']['uengine:properties']['uengine:json'].duration : 5;
+                                    task.description = parseProperties.description ? parseProperties.description : task.description;
                                 } else {
                                     task.inputData = [];
                                     task.outputData = [];
@@ -858,10 +860,13 @@ export default {
                         }
                     } else {
                         // GPT
-                        if (!me.processDefinition) me.processDefinition = {};
-                        if (!me.processDefinition.processDefinitionId) me.processDefinition.processDefinitionId = null;
+                        if (!me.processDefinition) {
+                            me.processDefinition = {
+                                processDefinitionId: info.proc_def_id,
+                                processDefinitionName: info.name
+                            };
+                        }
                         if (me.processDefinition.processDefinitionId == 'definition-map') me.processDefinition.processDefinitionId = info.proc_def_id
-                        if (!me.processDefinition.processDefinitionName) me.processDefinition.processDefinitionName = null;
 
                         // 최초 저장 시 폼 정보 저장
                         if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
@@ -870,26 +875,37 @@ export default {
                                 me.processDefinition.activities.forEach(async (activity) => {
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
                                         activity.tool.replace("formHandler:definition-map_", info.proc_def_id + '_')
+                                        let formHtml = null;
                                         const formId = info.proc_def_id + '_' + activity.id + '_form';
-                                        if (formId) {
-                                            const formHtml = localStorage.getItem(formId);
-                                            if (formHtml) {
-                                                let fieldData = me.extractFields(formHtml);
-                                                fieldData = fieldData.map((field) => ({
-                                                    name: field.key,
-                                                    description: field.text,
-                                                    type: field.type
-                                                }));
-                                                me.processDefinition.data = me.processDefinition.data.concat(fieldData);
-                                                const options = {
-                                                    type: 'form',
-                                                    proc_def_id: info.proc_def_id,
-                                                    activity_id: activity.id
+                                        const currentFormHtml = localStorage.getItem(formId);
+                                        if (currentFormHtml) {
+                                            formHtml = currentFormHtml;
+                                        } else {
+                                            if (me.oldProcDefId && me.oldProcDefId !== info.proc_def_id) {
+                                                const oldFormId = me.oldProcDefId + '_' + activity.id + '_form';
+                                                const oldFormHtml = localStorage.getItem(oldFormId);
+                                                if (oldFormHtml) {
+                                                    formHtml = oldFormHtml;
+                                                    activity.tool = 'formHandler:' + formId;
                                                 }
-                                                await backend.putRawDefinition(formHtml, formId, options);
                                             }
-                                            localStorage.removeItem(formId);
                                         }
+                                        if (formHtml) {
+                                            let fieldData = me.extractFields(formHtml);
+                                            fieldData = fieldData.map((field) => ({
+                                                name: field.key,
+                                                description: field.text,
+                                                type: field.type
+                                            }));
+                                            me.processDefinition.data = me.processDefinition.data.concat(fieldData);
+                                            const options = {
+                                                type: 'form',
+                                                proc_def_id: info.proc_def_id,
+                                                activity_id: activity.id
+                                            }
+                                            await backend.putRawDefinition(formHtml, formId, options);
+                                        }
+                                        localStorage.removeItem(formId);
                                     }
                                 });
                             }

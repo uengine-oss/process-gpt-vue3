@@ -725,6 +725,7 @@ export default {
                             me.processDefinition.processDefinitionId = value.id;
                             me.processDefinition.processDefinitionName = value.name;
                             me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
+                            me.oldProcDefId = me.processDefinition.processDefinitionId;
                             me.afterLoadBpmn();
                         }
 
@@ -764,6 +765,7 @@ export default {
                             me.projectName = me.$route.query.name.replace('.bpmn', '');
                             me.processDefinition.processDefinitionName = me.projectName;
                         }
+                        me.oldProcDefId = me.processDefinition.processDefinitionId;
                     }
 
                     me.isEditable = true;
@@ -891,6 +893,7 @@ export default {
                             this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
                             this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
                             this.projectName = unknown.processDefinitionName
+                            this.oldProcDefId = unknown.processDefinitionId;
                             this.definitionChangeCount++;
                         }
                     }
@@ -1242,7 +1245,7 @@ export default {
                             }
                             this.bpmn = this.createBpmnXml(this.processDefinition);
                         }
-                        
+                        this.oldProcDefId = unknown.processDefinitionId;
                         this.definitionChangeCount++;
                     }
 
