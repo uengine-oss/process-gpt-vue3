@@ -1452,28 +1452,26 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async search(keyword: string) {
+    async search(keyword: string, callback?: (results: any[]) => void) {
         try {
             let results: any[] = [];
 
             const dbPromise = storage.search(keyword);
             const vectorPromise = this.searchVector(keyword);
 
-            const dbResult = await dbPromise;
-            results = [...dbResult];
-
             results.push({
                 type: 'loading',
                 header: '유사한 결과 검색 중...',
                 list: []
             });
+            const dbResult = await dbPromise;
+            results = [...results, ...dbResult];
+            
+            if (callback) {
+                callback(results);
+            }
 
             vectorPromise.then(async (vectorResult) => {
-                const loadingIndex = results.findIndex(item => item.type === 'loading');
-                if (loadingIndex !== -1) {
-                    results.splice(loadingIndex, 1);
-                }
-
                 if (vectorResult && vectorResult.length > 0) {
                     const procDefs = await storage.list('proc_def', { match: { isdeleted: false } });
                     let list = procDefs.filter((item: any) => vectorResult.includes(item.id));
@@ -1485,18 +1483,30 @@ class ProcessGPTBackend implements Backend {
                         }
                     });
                     if (list.length > 0) {
-                        results.push({
-                            type: 'similar-definition',
-                            header: '유사한 프로세스 정의',
-                            list: list
-                        });
+                        const loadingIndex = results.findIndex(item => item.type === 'loading');
+                        if (loadingIndex !== -1) {
+                            results.splice(loadingIndex, 1, {
+                                type: 'similar-definition',
+                                header: '유사한 프로세스 정의',
+                                list: list
+                            });
+                        }
                     }
+                }
+                const newResults = results.filter((item: any) => item.type !== 'loading');
+                if (callback) {
+                    callback(newResults);
                 }
             }).catch(error => {
                 console.error('Vector search error:', error);
+                const loadingIndex = results.findIndex(item => item.type === 'loading');
+                if (loadingIndex !== -1) {
+                    results.splice(loadingIndex, 1);
+                }
+                if (callback) {
+                    callback(results);
+                }
             });
-
-            return results;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

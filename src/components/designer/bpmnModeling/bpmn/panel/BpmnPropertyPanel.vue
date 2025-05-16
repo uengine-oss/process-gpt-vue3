@@ -17,17 +17,17 @@
                     autocomplete="off"
                 />
                 <v-menu
-                    v-if="menu && menu.length > 0"
+                    v-if="menu && filteredTemplateOptions.length > 0"
                     v-model="menu"
                     :activator="$refs.inputRef"
                     offset-y
                     transition="scale-transition"
                     min-height="0"
-                    max-height="500"
+                    max-height="200"
                 >
                     <v-list>
                         <v-list-item
-                            v-for="(item, index) in filteredOptions"
+                            v-for="(item, index) in filteredTemplateOptions"
                             :key="index"
                             @click="selectItem(item)"
                         >
@@ -186,6 +186,10 @@ export default {
         // this.$refs.cursor.focus();
     },
     computed: {
+        filteredTemplateOptions() {
+            const filtered = this.templateOptions.filter(option => option.includes(this.name));
+            return filtered? filtered : [];
+        },
         mode() {
             return window.$mode;
         },
