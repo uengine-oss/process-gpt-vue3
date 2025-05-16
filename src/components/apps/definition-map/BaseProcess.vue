@@ -18,7 +18,22 @@ export default {
         hover: false,
         permissionProcess: null,
         permissionProcessMap: null,
+        editable: false,
     }),
+    async mounted() {
+        const role = localStorage.getItem('role');
+        if (role == 'superAdmin') {
+            this.editable = true;
+        } else {
+            const uid = localStorage.getItem('uid');
+            const permission = await backend.getUserPermissions({ proc_def_id: this.process.id, user_id: uid });
+            if (permission) {
+                this.editable = permission.writable;
+            } else {
+                this.editable = false;
+            }
+        }
+    },
     methods: {
         closePermissionDialog() {
             this.permissionProcess = null;
