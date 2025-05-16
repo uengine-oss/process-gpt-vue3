@@ -56,7 +56,6 @@
                             </template>
                         </v-tooltip>
                     </v-row>
-
                     <div v-if="isXmlMode" style="height: calc(100% - 50px); margin-top: 50px; overflow: auto; padding: 10px">
                         <XmlViewer v-if="isViewMode" :xml="bpmn"/>
                         <XMLEditor v-else :xml="bpmn" @changeBpmn="changeBpmn"/>
@@ -64,6 +63,7 @@
                     <BpmnuEngine
                         v-else
                         ref="bpmnVue"
+                        :key="bpmnKey"
                         :bpmn="bpmn"
                         :options="options"
                         :isViewMode="isViewMode"
@@ -360,6 +360,8 @@ export default {
         currentActivities: [],
         validationList: {},
         // definitionPath: null
+
+        bpmnKey: 0,
     }),
     computed: {
         mode() {
@@ -401,6 +403,9 @@ export default {
         }
     },
     watch: {
+        isViewMode(newVal, oldVal) {
+            this.bpmnKey++;
+        },
         processDefinition: {
             deep: true,
             handler(newVal) {

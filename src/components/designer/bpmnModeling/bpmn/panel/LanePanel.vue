@@ -5,31 +5,10 @@
             <v-card variant="outlined" class="pa-2" style="border-radius:8px !important;">
                 <v-radio-group v-model="type" row style="margin-top: 0px !important">
                     <v-radio
-                        id="roleResolution"
-                        name="roleResolution"
-                        value="None"
-                        :label="$t('LanePanel.none')"
-                        style="margin-right: 8px !important; font-size: 15px"
-                    ></v-radio>
-                    <v-radio
-                        id="roleResolution"
-                        name="roleResolution"
-                        value="org.uengine.five.overriding.IAMRoleResolutionContext"
-                        :label="$t('LanePanel.IAMScope')"
-                        style="margin-right: 8px !important; font-size: 15px"
-                    ></v-radio>
-                    <v-radio
-                        id="roleResolution"
-                        name="roleResolution"
-                        value="org.uengine.kernel.DirectRoleResolutionContext"
-                        :label="$t('LanePanel.DirecUser')"
-                        style="margin-right: 8px !important; font-size: 15px"
-                    ></v-radio>
-                    <v-radio
-                        id="roleResolution"
-                        name="roleResolution"
-                        value="org.uengine.kernel.ExternalCustomerRoleResolutionContext"
-                        :label="$t('LanePanel.externalCustomer')"
+                        v-for="option in roleOptions"
+                        :key="option.value"
+                        :value="option.value"
+                        :label="$t(option.label)"
                         style="margin-right: 8px !important; font-size: 15px"
                     ></v-radio>
                 </v-radio-group>
@@ -115,6 +94,12 @@ export default {
             definitionCnt: 0,
             type: 'None',
             role: null,
+            roleOptions: [
+                { value: 'None', label: 'LanePanel.none' },
+                { value: 'org.uengine.five.overriding.IAMRoleResolutionContext', label: 'LanePanel.IAMScope' },
+                { value: 'org.uengine.kernel.DirectRoleResolutionContext', label: 'LanePanel.DirecUser' },
+                { value: 'org.uengine.kernel.ExternalCustomerRoleResolutionContext', label: 'LanePanel.externalCustomer' }
+            ],
             radioDescription: [
                 {
                     title: 'LanePanel.radioDescriptionSubTitle'
