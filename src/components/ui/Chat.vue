@@ -513,11 +513,7 @@
                 <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
                     <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
                 </div> -->
-                <!-- image preview -->
-                <div style="position: absolute; bottom: 20%; z-index: 9999;" class="d-flex">
-                    <div id="imagePreview"></div>
-                    <v-btn v-if="delImgBtn" @click="deleteImage()" density="compact" icon="mdi-close" variant="text" class="ml-1"></v-btn>
-                </div>
+                
             </div>
             <v-divider />
 
@@ -565,11 +561,28 @@
                 <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
                 <!-- image upload -->
                 <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+                <!-- image preview -->
+                <!-- 한글 설명: 버튼의 배경색을 검정(black), 아이콘을 흰색(white)으로 변경 -->
+                <div style="z-index: 9999;" class="d-flex">
+                    <div id="imagePreview"></div>
+                    <!-- 한글 설명: Vuetify3에서 color가 적용되지 않을 때, style로 background-color를 직접 지정 -->
+                    <v-btn
+                        v-if="delImgBtn"
+                        @click="deleteImage()"
+                        density="compact"
+                        icon
+                        size="16"
+                        style="background-color: black !important; margin: 4px 0px 0px -20px !important;"
+                    >
+                        <v-icon color="white" size="14">mdi-close</v-icon>
+                    </v-btn>
+                </div>
                 <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex align-center pa-0">
                     <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                         class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
                         auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
                         style="font-size:20px !important; height:77px;" @input="handleTextareaInput"
+                        @paste="handlePaste"
                     >
                         <template v-slot:prepend-inner>
                             <v-btn @click="openChatMenu()"
@@ -1240,7 +1253,7 @@ export default {
                 const data = await backend.uploadImage(fileName, imageFile);
                 if (data && data.path) {
                     const imageUrl = await backend.getImageUrl(data.path);
-                    var html = `<img src=${imageUrl} width='100%' />`;
+                    var html = `<img src=${imageUrl} width='56px' height='56px;' style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />`;
                     $('#imagePreview').append(html);
                     me.attachedImg = imageUrl;
                 }
@@ -1261,7 +1274,7 @@ export default {
                         const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
 
                         // 이미지 미리보기에 추가
-                        var html = `<img src=${srcEncoded} width='100%' />`;
+                        var html = `<img src=${srcEncoded} width='56px' height='56px;' style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />`;
                         $('#imagePreview').append(html);
                         me.attachedImg = event.target.result;
                         me.delImgBtn = true;
@@ -1334,7 +1347,52 @@ export default {
             }
             
             return false;
-        }
+        },
+        // 클립보드에서 이미지 붙여넣기 처리 함수
+        handlePaste(event) {
+            // 클립보드 데이터 확인
+            const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+            let imageFound = false;
+            
+            for (const item of items) {
+                // 이미지 형식인지 확인
+                if (item.type.indexOf('image') === 0) {
+                    const blob = item.getAsFile();
+                    imageFound = true;
+                    
+                    // 파일리더로 이미지 데이터 읽기
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const imgElement = document.createElement("img");
+                        imgElement.src = e.target.result;
+                        imgElement.onload = () => {
+                            const canvas = document.createElement("canvas");
+                            const max_width = 200;
+                            const scaleSize = max_width / imgElement.width;
+                            canvas.width = max_width;
+                            canvas.height = imgElement.height * scaleSize;
+
+                            const ctx = canvas.getContext("2d");
+                            ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+                            const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
+
+                            // 이미지 미리보기에 추가
+                            var html = `<img src=${srcEncoded} width='56px' height='56px;' style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />`;
+                            $('#imagePreview').append(html);
+                            this.attachedImg = e.target.result;
+                            this.delImgBtn = true;
+                        };
+                    };
+                    reader.readAsDataURL(blob);
+                    break;
+                }
+            }
+            
+            // 이미지가 있으면 기본 텍스트 붙여넣기를 방지하지 않음
+            if (!imageFound) {
+                return true;
+            }
+        },
     }
 };
 </script>
