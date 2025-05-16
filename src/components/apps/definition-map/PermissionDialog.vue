@@ -138,7 +138,7 @@ export default {
             }
         },
     },
-    async created() {
+    async mounted() {
         await this.loadData();
         this.permissionProcessMap = this.getMatchingProcessMap(this.procDef, this.processMap);
     },
@@ -161,26 +161,33 @@ export default {
                     value: user.id,
                 }));
 
+                const editPermissionList = [];
                 if (permissions && permissions.length > 0) {
                     this.permissionList = permissions;
-                    this.editPermissionList = [];
                     permissions.forEach(permission => {
                         this.emailOptions = this.emailOptions.filter(item => item.value !== permission.user_id);
 
                         const user = userList.find(user => user.id === permission.user_id);
                         if (user) {
-                            this.editPermissionList.push({
-                                name: `${user.username} (${user.email})`,
-                                value: permission.user_id,
-                                proc_def_id: permission.proc_def_id,
-                                readable: permission.readable,
-                                writable: permission.writable
-                            });
+                            const isExist = editPermissionList.find(item => item.value === permission.user_id && item.proc_def_id === permission.proc_def_id);
+                            if (!isExist) {
+                                editPermissionList.push({
+                                    name: `${user.username} (${user.email})`,
+                                    value: permission.user_id,
+                                    proc_def_id: permission.proc_def_id,
+                                    readable: permission.readable,
+                                    writable: permission.writable
+                                });
+                            }
                         }
                     });
                 } else {
                     this.permissionList = [];
                     this.editPermissionList = [];
+                }
+
+                if (editPermissionList.length > 0) {
+                    this.editPermissionList = editPermissionList;
                 }
             }
         },

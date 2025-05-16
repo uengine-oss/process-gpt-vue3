@@ -7,7 +7,7 @@ const backend = BackendFactory.createBackend();
 const isLogin = ref(false);
 
 onMounted(async () => {
-    if (window.$isTenantServer) {
+    if (window.$isTenantServer && !window.$pal) {
         const tenantId = window.$tenantName;
         if (tenantId) {
             isLogin.value = await backend.setTenant(tenantId) ?? false;

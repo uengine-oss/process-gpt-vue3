@@ -775,6 +775,7 @@ export default {
         createParticipant(element) {
             let participant = {
                 name: element.name,
+                endpoint: element.endpoint || null,
                 resolutionRule: '',
                 pos: {
                     x: element.x,
@@ -788,6 +789,7 @@ export default {
         createRole(element) {
             let role = {
                 name: element.name,
+                endpoint: element.endpoint || null,
                 resolutionRule: '',
                 pos: {
                     x: element.x,

@@ -950,10 +950,10 @@ export default class StorageBaseSupabase {
 
     async searchProcDef(keyword) {
         try {
-            const keyword1 = keyword.charAt(0);
             const { data, error } = await window.$supabase.from('proc_def')
                 .select()
-                .or(`id.ilike.%${keyword1}%,name.ilike.%${keyword1}%,bpmn.ilike.%${keyword1}%`);
+                .eq('isdeleted', false)
+                .or(`id.ilike.%${keyword}%,name.ilike.%${keyword}%,bpmn.ilike.%${keyword}%`);
             var formatData = data;
             for (var i = 1; i < keyword.length; i++) {
                 formatData.push(formatData.filter(item => 
@@ -967,7 +967,7 @@ export default class StorageBaseSupabase {
             if (error) throw new StorageBaseError('error in searchProcDef', error, arguments);
 
             if (formatData && formatData.length > 0) {
-                const list = formatData.map((item) => {
+                let list = formatData.map((item) => {
                     if (!item.id) return null;
                     const matchingColumns = [];
                     for (var i = 0; i < keyword.length; i++) {
@@ -990,8 +990,8 @@ export default class StorageBaseSupabase {
                         matches: matchingColumns
                     };
                 });
+                list = list.filter(item => item !== null);
                 if (list.length > 0) {
-                    list = list.filter(item => item !== null);
                     return {
                         type: 'definition',
                         header: '프로세스 정의',
@@ -1014,7 +1014,7 @@ export default class StorageBaseSupabase {
             if (error) throw new StorageBaseError('error in searchFormDef', error, arguments);
 
             if (data && data.length > 0) {
-                const list = data.map((item) => {
+                let list = data.map((item) => {
                     const matchingColumns = [];
                     if (item.id && item.id.toLowerCase().includes(keyword.toLowerCase())) {
                         matchingColumns.push(item.id);
@@ -1025,6 +1025,7 @@ export default class StorageBaseSupabase {
                         matches: matchingColumns
                     };
                 });
+                list = list.filter(item => item !== null);
                 if (list.length > 0) {
                     return {
                         type: 'form',
@@ -1050,7 +1051,7 @@ export default class StorageBaseSupabase {
 
             const filteredData = data.filter(item => item.participants.some(participant => participant.email === email));
             if (filteredData && filteredData.length > 0) {
-                const list = filteredData.map((item) => {
+                let list = filteredData.map((item) => {
                     const matchingColumns = [item.participants.map(user => user.username).join(', ')]
                     return {
                         title: item.name,
@@ -1058,6 +1059,7 @@ export default class StorageBaseSupabase {
                         matches: matchingColumns
                     };
                 });
+                list = list.filter(item => item !== null);
                 if (list.length > 0) {
                     return {
                         type: 'chat-room',

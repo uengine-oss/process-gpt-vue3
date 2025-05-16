@@ -108,6 +108,7 @@ export default {
         roles: (jsonModel.roles || []).map(role => ({
           name: role.name,
           resolutionRule: role.resolutionRule || "실제 " + role.name + "을(를) 매핑",
+          endpoint: role.endpoint || null,
           boundary: role.boundary || null
         })),
         elements: Array.isArray(jsonModel.elements) ? [] : {},
@@ -517,6 +518,25 @@ export default {
             const lane = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:lane');
             lane.setAttribute('id', 'Lane_' + idx);
             lane.setAttribute('name', role.name);
+            if (role.endpoint) {
+              const ext = xmlDoc.createElementNS(this.NAMESPACES.BPMN, 'bpmn:extensionElements');
+              const prop = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:properties');
+              const json = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:json');
+              let endpointPayload = {
+                roleResolutionContext: {
+                  "endpoint": role.endpoint
+                }
+              };
+
+              if (role.endpoint == "external_customer") {
+                endpointPayload.roleResolutionContext["_type"] = "org.uengine.kernel.ExternalCustomerRoleResolutionContext";
+              }
+              
+              json.textContent = JSON.stringify(endpointPayload);
+              prop.appendChild(json);
+              ext.appendChild(prop);
+              lane.appendChild(ext);
+            }
             lane.setAttribute('resolutionRule', role.resolutionRule);
             laneSet.appendChild(lane);
             

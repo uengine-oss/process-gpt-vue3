@@ -83,18 +83,15 @@
                                     <template v-slot:activator="{ props }">
                                         <div v-bind="props">
                                             <v-btn icon variant="text" type="file" class="text-medium-emphasis" 
-                                                density="comfortable" @click="toggleLock" :disabled="!isEditable">
+                                                density="comfortable" @click="toggleLock">
                                                 <Icons :icon="lock ? 'lock' : 'unLock'"/>
                                             </v-btn>
                                         </div>
                                     </template>
-                                    <span v-if="lock && isEditable">
+                                    <span v-if="lock">
                                         {{ editUser != '' && editUser != userInfo.name
                                             ? `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?`
                                             : $t('chat.unlock') }}
-                                    </span>
-                                    <span v-else-if="!isEditable">
-                                        권한이 없습니다.
                                     </span>
                                     <span v-else>{{ $t('chat.lock') }}</span>
                                 </v-tooltip>

@@ -69,6 +69,9 @@ export default {
     },
     methods: {
         async search() {
+            if (this.searchKeyword.length == 0) {
+                return;
+            }
             this.searching = true;
             this.searchResult = [];
             const results = await backend.search(this.searchKeyword);
