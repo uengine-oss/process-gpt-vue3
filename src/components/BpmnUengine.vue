@@ -2,7 +2,7 @@
     <div ref="container" class="vue-bpmn-diagram-container">
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
     </div>
-    <v-dialog v-model="isPreviewPDFDialog" max-width="850px">
+    <v-dialog v-model="isPreviewPDFDialog" max-width="1160px">
         <v-card >
             <v-card-title class="headline">{{ $t('PDFPreviewer.title') }}</v-card-title>
             <PDFPreviewer  :bpmnViewer="bpmnViewer" @closeDialog="closePDFDialog"/>

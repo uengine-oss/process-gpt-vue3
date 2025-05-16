@@ -161,6 +161,8 @@ import BaseProcess from './BaseProcess.vue'
 
 import BackendFactory from '@/components/api/BackendFactory';
 
+const backend = BackendFactory.createBackend();
+
 export default {
     components: {
         ProcessDefinition,
@@ -250,15 +252,30 @@ export default {
         },
         async openSubProcess(e) {
             let me = this;
-            if (e.extensionElements?.values[0]?.definition) {
-                const backend = BackendFactory.createBackend();
-                const defId = e.extensionElements.values[0].definition;
-                const defInfo = await backend.getRawDefinition(defId, null);
-                if (defInfo) {
-                    let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
-                    me.subProcessBreadCrumb.push(obj)
-                    me.selectedSubProcess = e.extensionElements.values[0].definition
-                    me.updateBpmn(defInfo.bpmn)
+            if(this.Pal) {
+                if(e.extensionElements?.values[0]) {
+                    const json = JSON.parse(e.extensionElements.values[0].$children[0].$body);
+                    if(json.definitionId) {
+                        const defInfo = await backend.getRawDefinition(json.definitionId, null);
+                        if (defInfo) {
+                            let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
+                            me.subProcessBreadCrumb.push(obj)
+                            me.selectedSubProcess = e.extensionElements.values[0].definition
+                            me.updateBpmn(defInfo.bpmn)
+                        }
+                    }
+                }
+            } else {
+                if (e.extensionElements?.values[0]?.definition) {
+                    const backend = BackendFactory.createBackend();
+                    const defId = e.extensionElements.values[0].definition;
+                    const defInfo = await backend.getRawDefinition(defId, null);
+                    if (defInfo) {
+                        let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
+                        me.subProcessBreadCrumb.push(obj)
+                        me.selectedSubProcess = e.extensionElements.values[0].definition
+                        me.updateBpmn(defInfo.bpmn)
+                    }
                 }
             }
         },

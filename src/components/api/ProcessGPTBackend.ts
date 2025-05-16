@@ -2158,6 +2158,11 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async saveTask(id: string, name: string, type: string, json: any) {
+        console.warn("method is not implemented only use PalModeBackend");
+        return null;
+    }
+    
     async getRefForm(taskId: string) {
         try {
             const refForms = [];
@@ -2195,6 +2200,11 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             throw new Error(error.message);
         }
+    }
+
+    async getTaskList() {
+        console.warn("method is not implemented only use PalModeBackend");
+        return null;
     }
 }
 

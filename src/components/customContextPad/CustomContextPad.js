@@ -249,9 +249,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
         className: isHorizontal ? 'bpmn-icon-lane-insert-above' : 'bpmn-icon-lane-insert-above icon-rotate-270',
         title: isHorizontal ? i18n.global.t('customContextPad.laneAbove') : i18n.global.t('customContextPad.laneToTheLeft'),
         action: {
-          click: function (event2, element2) {
-            modeling.addLane(element2, "top");
-          }
+          click: actions['lane-insert-above'].action.click
         }
       },
       'lane-insert-below': {
@@ -259,9 +257,7 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
         className: isHorizontal ? 'bpmn-icon-lane-insert-below' : 'bpmn-icon-lane-insert-below icon-rotate-270',
         title: isHorizontal ? i18n.global.t('customContextPad.laneBelow') : i18n.global.t('customContextPad.laneToTheRight'),
         action: {
-          click: function (event2, element2) {
-            modeling.addLane(element2, "bottom");
-          }
+          click: actions['lane-insert-below'].action.click
         }
       },
       'lane-divide-two': {

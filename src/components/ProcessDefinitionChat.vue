@@ -462,7 +462,45 @@ export default {
                 await this.$emit("createdBPMN", this.processDefinition)
                 info.skipSaveProcMap = true
             } 
+            if(window.$pal){
+                await this.beforeSavePALUserTasks(info);
+            }
             this.saveDefinition(info);
+        },
+        async beforeSavePALUserTasks(info) {
+            var me = this;
+            if (!me.processDefinition || !me.processDefinition.activities) {
+                console.warn('프로세스 정의가 없거나 activities가 정의되지 않았습니다.');
+                return;
+            }
+            
+            try {
+                for (let activity of me.processDefinition.activities) {
+                    const taskId = activity.uuid;
+                    
+                    const task = await backend.saveTask(
+                        taskId,                
+                        activity.name,         
+                        activity.type,        
+                        JSON.stringify({       
+                            description: activity.description,
+                            instruction: activity.instruction,
+                            role: activity.role,
+                            process: activity.process,
+                            inputData: activity.inputData || [],
+                            outputData: activity.outputData || [],
+                            properties: activity.properties,
+                            duration: activity.duration,
+                            tool: activity.tool
+                        })
+                    );
+                    activity.uuid = task.id;
+                }
+                
+                console.log('모든 PAL 태스크가 저장되었습니다.');
+            } catch (error) {
+                console.error('PAL 태스크 저장 중 오류가 발생했습니다:', error);
+            }
         },
         showXmlMode() {
             this.isXmlMode = !this.isXmlMode;
@@ -524,8 +562,19 @@ export default {
                     jsonContent = me.convertOldJson(JSON.parse(content));
                     convertedBpmn = me.createBpmnXml(jsonContent);
                 }
-                // 파일 내용 처리
-                me.loadBPMN(convertedBpmn);
+                if(file.name.indexOf('.csv') != -1 || file.name.indexOf('.xlsx') != -1) {
+                    jsonContent = me.convertCSVToJSON(content);
+                    console.log("convertCSVToJSON", jsonContent);
+                    if(jsonContent) {
+                        convertedBpmn = me.createBpmnXml(jsonContent);
+                    }
+                }
+
+                if(convertedBpmn) {
+                    me.loadBPMN(convertedBpmn);
+                } else {
+                    alert('BPMN 파일 변환 중 오류가 발생했습니다.');
+                }
             };
             reader.readAsText(file);
         },
@@ -676,6 +725,7 @@ export default {
                             me.processDefinition.processDefinitionId = value.id;
                             me.processDefinition.processDefinitionName = value.name;
                             me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
+                            me.afterLoadBpmn();
                         }
 
                         const role = localStorage.getItem('role');
@@ -731,6 +781,26 @@ export default {
             } catch (e) {
                 console.log(e);
                 alert(e);
+            }
+        },
+        async afterLoadBpmn(){
+            if(!this.pal) return;
+            if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
+                this.processDefinition.activities.foreach(async (act)=>{
+                    const activity = this.processDefinition.activities.find(activity => activity.id === act.id);
+                    if (activity) {
+                        if(activity.uuid) {
+                            const task = await this.backend.getTask({ id: this.activity.uuid });
+                            const json = task.json_ko;
+                            this.activity = json;
+                            this.activity.uuid = task.id;
+                            this.activity.type = task.type;
+                        } 
+                        console.log('Activity updated:', activity);
+                    } else {
+                        console.log('Activity not found');
+                    }
+                });
             }
         },
         async onLoadBpmn() {
