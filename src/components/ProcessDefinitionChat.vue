@@ -786,19 +786,22 @@ export default {
         async afterLoadBpmn(){
             if(!this.pal) return;
             if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
-                this.processDefinition.activities.foreach(async (act)=>{
-                    const activity = this.processDefinition.activities.find(activity => activity.id === act.id);
+                Object.keys(this.processDefinition.activities).forEach(async (actId) => {
+                    const activity = this.processDefinition.activities[actId];
+
                     if (activity) {
-                        if(activity.uuid) {
-                            const task = await this.backend.getTask({ id: this.activity.uuid });
+                        if (activity.uuid) {
+                            const task = await this.backend.getTask({ id: activity.uuid });
                             const json = task.json_ko;
+
                             this.activity = json;
                             this.activity.uuid = task.id;
                             this.activity.type = task.type;
-                        } 
+                        }
+
                         console.log('Activity updated:', activity);
                     } else {
-                        console.log('Activity not found');
+                        console.log('Activity not found:', actId);
                     }
                 });
             }
