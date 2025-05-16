@@ -15,7 +15,7 @@
                     <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode" >
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock" @click="openAlertDialog">
-                                <LockIcon width="24" height="24" />
+                                <Icons :icon="'pencil'" :size="18" />
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.unlock') }}</span>
@@ -24,7 +24,7 @@
                     <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName == editUser">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
-                                <LockOpenIcon width="24" height="24" />
+                                <Icons :icon="'save'" :size="24" />
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.lock') }}</span>

@@ -84,7 +84,9 @@
                                         <div v-bind="props">
                                             <v-btn icon variant="text" type="file" class="text-medium-emphasis" 
                                                 density="comfortable" @click="toggleLock">
-                                                <Icons :icon="lock ? 'lock' : 'unLock'"/>
+                                                <!-- lock 값에 따라 아이콘과 사이즈를 분리하여 통일성 있게 처리 -->
+                                                <Icons v-if="lock" :icon="'pencil'" :size="18"/>
+                                                <Icons v-else :icon="'save'" :size="24"/>
                                             </v-btn>
                                         </div>
                                     </template>
