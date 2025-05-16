@@ -6,6 +6,10 @@ class UEngineBackend implements Backend {
     // constructor() {
     //     super();
     // }
+    async watchNotifications(onNotification?: (notification: any) => void) {
+        return null;
+    }
+
     async getRefForm(taskId: string) {
         return null;
     }
