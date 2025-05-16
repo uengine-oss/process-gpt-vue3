@@ -240,10 +240,15 @@ class ProcessGPTBackend implements Backend {
                     return data;
                 } else if(options.type === "bpmn") {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "_")
-                    const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
-                    if(!data) {
-                        return null;
-                    }
+                    let data = null;
+                    // ::TODO: 개정된 프로세스 실행에 대한 작업 완료 후 사용
+                    // if (options.version && options.version != '') {
+                    //     data = await storage.getString(`proc_def_arcv`, { column: 'snapshot', match: {
+                    //         proc_def_id: defId, arcv_id: options.version
+                    //     } });
+                    // } else {
+                        data = await storage.getString(`proc_def`, { column: 'bpmn', match: { id: defId } });
+                    // }
                     return data;
                 }
             } else {
@@ -343,6 +348,7 @@ class ProcessGPTBackend implements Backend {
                 instance.defId = instance.proc_def_id;
                 instance.instanceId = instanceId;
                 instance.name = instance.proc_inst_name;
+                instance.defVer = instance.proc_def_version;
             }
             return instance;
         } catch (e) {
@@ -422,7 +428,8 @@ class ProcessGPTBackend implements Backend {
                     description: workitem.description || "",
                     tool: workitem.tool || "",
                     currentActivities: instance && instance.current_activity_ids ? 
-                        instance.current_activity_ids : [ activityInfo.id ]
+                        instance.current_activity_ids : [ activityInfo.id ],
+                    defVerId: instance && instance.proc_def_version ? instance.proc_def_version : null
                 },
                 activity: {
                     name: workitem.activity_name,
@@ -1461,28 +1468,29 @@ class ProcessGPTBackend implements Backend {
                 list: []
             });
 
-            vectorPromise.then(vectorResult => {
+            vectorPromise.then(async (vectorResult) => {
                 const loadingIndex = results.findIndex(item => item.type === 'loading');
                 if (loadingIndex !== -1) {
                     results.splice(loadingIndex, 1);
                 }
 
-                const existedDef = results.find((item: any) => item.type === 'definition');
-                if (existedDef) {
-                    existedDef.list = [...existedDef.list, ...vectorResult];
-                    const uniqueList = existedDef.list.filter((item, index, self) =>
-                        index === self.findIndex((t) => (
-                            t.href === item.href
-                        ))
-                    );
-                    
-                    existedDef.list = uniqueList;
-                } else {
-                    results.push({
-                        type: 'definition',
-                        header: '프로세스 정의',
-                        list: vectorResult
+                if (vectorResult && vectorResult.length > 0) {
+                    const procDefs = await storage.list('proc_def', { match: { isdeleted: false } });
+                    let list = procDefs.filter((item: any) => vectorResult.includes(item.id));
+                    list = list.map((item: any) => {
+                        return {
+                            title: item.name,
+                            href: `/definitions/${item.id}`,
+                            matches: [item.bpmn]
+                        }
                     });
+                    if (list.length > 0) {
+                        results.push({
+                            type: 'similar-definition',
+                            header: '유사한 프로세스 정의',
+                            list: list
+                        });
+                    }
                 }
             }).catch(error => {
                 console.error('Vector search error:', error);
@@ -1501,27 +1509,22 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.post('/execution/process-search', {
                 query: keyword
             });
-            const vectorResult = response.data;
+            let vectorResult = response.data;
             if (vectorResult && vectorResult.length > 0) {
-                list = vectorResult.map((item: any) => {
+                vectorResult = vectorResult.map((item: any) => {
                     const matchingColumns = item.page_content.split(": ");
                     const content = JSON.parse(matchingColumns[1]);
-                    return {
-                        title: content.processDefinitionName,
-                        href: `/definitions/${content.processDefinitionId}`,
-                        matches: [ item.page_content ]
-                    }
+                    return content.processDefinitionId;
                 });
             }
 
-            const uniqueList = list.filter((item, index, self) => {
-                if (item && item.href) {
+            const uniqueList = vectorResult.filter((item, index, self) => {
+                if (item) {
                     return index === self.findIndex((t) => (
-                        t.href === item.href
+                        t === item
                     ))
                 }
             });
-            
             return uniqueList;
         } catch (error) {
             //@ts-ignore

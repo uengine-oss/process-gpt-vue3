@@ -667,6 +667,7 @@ create table if not exists public.bpm_proc_inst (
     variables_data jsonb null,
     status text null,
     tenant_id text null default auth.tenant_id(),
+    proc_def_version text null,
     constraint bpm_proc_inst_pkey primary key (proc_inst_id),
     constraint bpm_proc_inst_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -699,6 +700,9 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bpm_proc_inst' AND column_name='tenant_id') THEN
         ALTER TABLE public.bpm_proc_inst ADD COLUMN tenant_id text null default auth.tenant_id();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bpm_proc_inst' AND column_name='proc_def_version') THEN
+        ALTER TABLE public.bpm_proc_inst ADD COLUMN proc_def_version text null;
     END IF;
 END;
 $$;

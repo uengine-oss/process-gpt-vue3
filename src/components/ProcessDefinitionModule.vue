@@ -718,11 +718,11 @@ export default {
                                     task.outputData = [];
                                 }
                                 const form = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']);
-                                if (form && form.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
-                                    task.tool = 'formHandler:' + form.variableForHtmlFormContext.name;
+                                if (window.$mode == 'ProcessGPT') {
+                                    task.tool = 'formHandler:' + processDefinitionId + '_' + task.id + '_form';
                                 } else {
-                                    if (window.$mode == 'ProcessGPT') {
-                                        task.tool = 'formHandler:' + processDefinitionId + '_' + task.id + '_form';
+                                    if (form && form.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
+                                        task.tool = 'formHandler:' + form.variableForHtmlFormContext.name;
                                     } else {
                                         task.tool = '';
                                     }
