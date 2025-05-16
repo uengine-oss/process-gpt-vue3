@@ -10,7 +10,215 @@ export default {
       sequenceConditions:{}
     }),
     methods: {
-        convertOldJson(content) {
+      convertCSVToJSON(content) {
+        const typeMap = {
+          "조건": "Gateway",
+          "일반": "Activity",
+          "호출": "CallActivity"
+        };
+
+        const elementTypeMap = {
+          "Gateway": { elementType: "Gateway", type: "ExclusiveGateway" },
+          "Activity": { elementType: "Activity", type: "UserActivity" },
+          "CallActivity": { elementType: "CallActivity", type: "CallActivity" }
+        };
+
+        const clean = s => (s || "").replace(/^"+|"+$/g, '').trim();
+
+        const rows = this.parseCsvToJson(content); // 🔥 CSV는 이 함수에서만 파싱함
+
+        const elements = [];
+        const rolesSet = new Set();
+        const nameToIdMap = {};
+        const idToNameMap = {};
+        let idCounter = 1;
+        let sequenceCounter = 1;
+        const sequenceSet = new Set();
+
+        // 1. 엘리먼트 생성
+        rows.forEach(row => {
+          const name = clean(row.name);
+          const role = clean(row.role);
+          const rawType = clean(row.type);
+          const mappedType = typeMap[rawType] || "Activity";
+          const typeInfo = elementTypeMap[mappedType];
+
+          const id = `el_${idCounter++}`;
+          nameToIdMap[name] = id;
+          idToNameMap[id] = name;
+          rolesSet.add(role);
+
+          const base = {
+            elementType: typeInfo.elementType,
+            id,
+            name,
+            role,
+            source: null,
+            type: typeInfo.type,
+            description: ""
+          };
+
+          if (typeInfo.elementType === "Activity") {
+            base.instruction = "";
+            base.inputData = [];
+            base.outputData = [];
+            base.checkpoints = [];
+            base.duration = "5";
+          }
+
+          elements.push(base);
+        });
+
+        // 2. 후행 기준 시퀀스 연결
+        rows.forEach(row => {
+          const sourceName = clean(row.name);
+          const sourceId = nameToIdMap[sourceName];
+          const nexts = clean(row.nextProcess || "")
+            .split(",")
+            .map(clean)
+            .filter(Boolean);
+
+          nexts.forEach(targetName => {
+            const targetId = nameToIdMap[targetName];
+            const seqKey = `${sourceId}->${targetId}`;
+            if (sourceId && targetId && !sequenceSet.has(seqKey)) {
+              elements.push({
+                elementType: "Sequence",
+                id: `seq_${sequenceCounter++}`,
+                name: `${sourceName} → ${targetName}`,
+                source: sourceId,
+                target: targetId
+              });
+              sequenceSet.add(seqKey);
+            }
+          });
+        });
+
+        // 3. StartEvent / EndEvent 후처리
+        const taskElements = elements.filter(el => (el.elementType === "Activity" || el.elementType === "CallActivity" || el.elementType === "Gateway"));
+
+        taskElements.forEach(task => {
+          const id = task.id;
+
+          const hasIncoming = elements.some(
+            el => el.elementType === "Sequence" && el.target === id
+          );
+          const hasOutgoing = elements.some(
+            el => el.elementType === "Sequence" && el.source === id
+          );
+
+          if (!hasIncoming) {
+            const startId = `start_${id}`;
+            elements.push({
+              elementType: "Event",
+              id: startId,
+              name: "Start",
+              role: task.role,
+              source: null,
+              type: "StartEvent",
+              description: "",
+              trigger: ""
+            });
+            elements.push({
+              elementType: "Sequence",
+              id: `seq_${sequenceCounter++}`,
+              name: `Start → ${task.name}`,
+              source: startId,
+              target: id
+            });
+          }
+
+          if (!hasOutgoing) {
+            const endId = `end_${id}`;
+            elements.push({
+              elementType: "Event",
+              id: endId,
+              name: "End",
+              role: task.role,
+              source: id,
+              type: "EndEvent",
+              description: "",
+              trigger: ""
+            });
+            elements.push({
+              elementType: "Sequence",
+              id: `seq_${sequenceCounter++}`,
+              name: `${task.name} → End`,
+              source: id,
+              target: endId
+            });
+          }
+        });
+
+        return {
+          megaProcessId: "test1",
+          majorProcessId: "test1",
+          processDefinitionName: "테스트 프로세스",
+          processDefinitionId: "test_process",
+          description: "CSV 기반 프로세스 자동 생성",
+          isHorizontal: true,
+          data: [],
+          roles: [...rolesSet].map(role => ({
+            name: role,
+            resolutionRule: ""
+          })),
+          elements
+        };
+      },
+      parseCsvToJson(csvString) {
+        const fieldMap = {
+          "이름": "name",
+          "역할": "role",
+          "선행 프로세스": "prevProcess",
+          "후행": "nextProcess",
+          "유형": "type",
+          "호출 프로세스": "calledProcess"
+        };
+
+        const clean = s => (s || "").replace(/^"+|"+$/g, '').trim();
+
+        const lines = csvString.trim().split("\n");
+        const headersRaw = lines[0].split(",").map(clean);
+        const headers = headersRaw.map(h => {
+          const base = h.replace(/\(.*\)/g, "").trim(); // 괄호 제거
+          return fieldMap[base] || base;
+        });
+
+        const rows = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          const cells = [];
+          let current = '';
+          let inQuotes = false;
+
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+
+            if (char === '"' && line[j + 1] === '"') {
+              current += '"';
+              j++;
+            } else if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              cells.push(clean(current));
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          cells.push(clean(current));
+
+          const row = {};
+          headers.forEach((key, idx) => {
+            row[key] = cells[idx] || "";
+          });
+          rows.push(row);
+        }
+
+        return rows;
+      },
+      convertOldJson(content) {
           let me = this;
           me.currentSource = 'start_event';
           me.loopSource = null;

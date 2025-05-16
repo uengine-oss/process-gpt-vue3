@@ -893,6 +893,16 @@ class UEngineBackend implements Backend {
     async checkDBConnection() {
         return true;
     }
+    
+    async saveTask(id: string, name: string, type: string, json: any) {
+        console.warn("method is not implemented only use PalModeBackend");
+        return null;
+    }
+
+    async getTaskList() {
+        console.warn("method is not implemented only use PalModeBackend");
+        return null;
+    }
 }
 
 export default UEngineBackend;

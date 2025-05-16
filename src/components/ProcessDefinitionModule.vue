@@ -403,6 +403,7 @@ export default {
                                 newProcessDefinition.activities = newProcessDefinition.activities.map(activity => {
                                     const oldActivity = me.processDefinition.activities.find(oldActivity => oldActivity.id === activity.id);
                                     if (oldActivity) {
+                                        activity.uuid = oldActivity.uuid;
                                         activity.instruction = oldActivity.instruction;
                                         activity.description = oldActivity.description;
                                         activity.checkpoints = oldActivity.checkpoints;
@@ -957,4 +958,3 @@ export default {
     }
 };
 </script>
-'

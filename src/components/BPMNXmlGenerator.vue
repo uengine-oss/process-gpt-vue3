@@ -29,6 +29,7 @@ export default {
       ELEMENT_TYPES: {
         ACTIVITY: 'Activity',
         GATEWAY: 'Gateway',
+        CALL_ACTIVITY: 'bpmn:callActivity',
         EVENT: 'Event',
         START_EVENT: 'StartEvent',
         END_EVENT: 'EndEvent',
@@ -91,6 +92,8 @@ export default {
           return this.ELEMENT_TYPES.SCRIPT_TASK;
         case 'EmailActivity':
           return this.ELEMENT_TYPES.SEND_TASK;
+        case 'CallActivity':
+          return this.ELEMENT_TYPES.CALL_ACTIVITY;
         default:
           return this.ELEMENT_TYPES.USER_TASK;
       }
@@ -172,6 +175,18 @@ export default {
                 width: element.width,
                 height: element.height
               });
+            } else if (element.elementType === "CallActivity") {
+              transformedModel.elements.push({
+                elementType: "CallActivity",
+                id: element.id,
+                name: element.name || "",
+                source: element.source || "",
+                description: element.description || "",
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height
+              });
             } else if (element.elementType === "Sequence") {
               transformedModel.elements.push({
                 elementType: "Sequence",
@@ -230,6 +245,18 @@ export default {
                 role: element.role || "",
                 source: element.source || "",
                 gateWayType: element.type === "ExclusiveGateway" ? "bpmn:exclusiveGateway" : "bpmn:parallelGateway",
+                description: element.description || "",
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height
+              };
+            } else if (element.elementType === "CallActivity") {
+              transformedModel.elements[element.id] = {
+                elementType: "CallActivity",
+                id: element.id,
+                name: element.name || "",
+                source: element.source || "",
                 description: element.description || "",
                 x: element.x,
                 y: element.y,
@@ -391,6 +418,21 @@ export default {
 
       process.appendChild(task);
     },
+    createCallActivity(element, data, laneMap, outMap, inMap, process, xmlDoc) {
+      // ── Lane 매핑
+      laneMap[element.role] = (laneMap[element.role] || []).concat(element.id);
+
+      // ── 태스크 생성
+      const taskType = this.taskMapping(element.type);  
+      const task     = xmlDoc.createElementNS(
+        'http://www.omg.org/spec/BPMN/20100524/MODEL',
+        taskType
+      );
+      task.setAttribute('id',   element.id);
+      task.setAttribute('name', element.name || '');
+
+      process.appendChild(task);
+    },
 
     /*****************************************************************
      * 3. 수정된 createGateway                                       *
@@ -472,6 +514,8 @@ export default {
         displayableElements.forEach(element => {
           if (element.elementType === 'Activity') {
             this.createActivity(element, jsonModel.data, laneActivityMapping, outGoing, inComing, process, xmlDoc);
+          } else if (element.elementType === 'CallActivity') {
+            this.createCallActivity(element, jsonModel.data, laneActivityMapping, outGoing, inComing, process, xmlDoc);
           } else if (element.elementType === 'Gateway') {
             this.createGateway(element, laneActivityMapping, outGoing, inComing, process, xmlDoc);
           } else if (element.elementType === 'Event') {
@@ -758,6 +802,9 @@ export default {
             width = 50;
             height = 50;
         } else if(element.elementType === "Activity"){
+            width = 100;
+            height = 80;
+        } else if(element.elementType === "CallActivity") {
             width = 100;
             height = 80;
         } else if(element.elementType === "Event") {

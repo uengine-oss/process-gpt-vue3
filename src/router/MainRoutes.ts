@@ -108,7 +108,7 @@ const MainRoutes = {
         {
             name: 'dashboard',
             path: '/dashboard',
-            component: () => import('@/views/dashboard/dashboard2.vue')
+            component: () => window.$pal?  import('@/views/dashboard/dashboard2-pal.vue'): import('@/views/dashboard/dashboard2.vue')
         },
         {
             name: 'Account Setting',

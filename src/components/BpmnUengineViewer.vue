@@ -31,12 +31,14 @@
 </template>
 
 <script>
+import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import ZoomScroll from './customZoomScroll';
 // import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
 import MoveCanvas from './customMoveCanvas';
 // import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
+import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
@@ -487,6 +489,10 @@ export default {
                     container: container,
                     keyboard: {
                         bindTo: window
+                    },
+                    moddleExtensions: {
+                        // uengine: uEngineModdleDescriptor,
+                        phase: phaseModdle
                     }
                 },
                 self.options
