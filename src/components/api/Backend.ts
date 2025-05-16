@@ -79,6 +79,8 @@ export interface Backend {
     getAllWorkListByInstId(instId: number): Promise<any>;
     listMarketplaceDefinition(): Promise<any>;
     getRefForm(taskId: string): Promise<any>;
+    saveTask(id: string, name: string, type: string, json: any): Promise<any>;
+    getTaskList(): Promise<any>;
 }
 
 // export type { Backend }

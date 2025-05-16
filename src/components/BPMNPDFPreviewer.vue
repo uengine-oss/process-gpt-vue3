@@ -69,24 +69,29 @@ export default {
                 let svgWidth = parseInt(viewBoxValues[2]); // 전체 너비
                 let svgHeight = parseInt(viewBoxValues[3]); // 전체 높이
 
-                let pageWidth = 800;  // A4 너비
-                let pageHeight = 1120; // A4 높이
+                let cropWidth = 1920;
+                let cropHeight = 1200;
+                let pageWidth = 1120;  // A4 너비
+                let pageHeight = 800; // A4 높이
+                let scale = Math.min(pageWidth / cropWidth, pageHeight / cropHeight);
+                let displayWidth = cropWidth * scale;
+                let displayHeight = cropHeight * scale;
 
                 let pages = [];
                 
-                for (let y = svgY; y < svgY + svgHeight; y += pageHeight) {
-                    for (let x = svgX; x < svgX + svgWidth; x += pageWidth) {
+                for (let y = svgY; y < svgY + svgHeight; y += cropWidth) {
+                    for (let x = svgX; x < svgX + svgWidth; x += cropHeight) {
                         pages.push({ x, y });
                     }
                 }
 
                 pages.forEach(({ x, y }, index) => {
                     let newSvg = originalSvg.cloneNode(true);
-                    newSvg.setAttribute("width", `${pageWidth}px`);
-                    newSvg.setAttribute("height", `${pageHeight}px`);
-                    newSvg.setAttribute("viewBox", `${x} ${y} ${pageWidth} ${pageHeight}`);
+                    newSvg.setAttribute("width", `${displayWidth}px`);
+                    newSvg.setAttribute("height", `${displayHeight}px`);
+                    newSvg.setAttribute("viewBox", `${x} ${y} ${cropWidth} ${cropHeight}`);
                     newSvg.style.border = "1px solid black"; // 경계선 표시
-                    newSvg.style.background = "white";
+                    newSvg.style.background = "white";newSvg.setAttribute("preserveAspectRatio", "xMidYMid meet"); 
 
                     console.log(`🔹 Page ${index + 1} - ViewBox: ${x} ${y} ${pageWidth} ${pageHeight}`);
 
