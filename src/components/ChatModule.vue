@@ -157,7 +157,7 @@ export default {
             var me = this;
             me.userInfo = await this.storage.getUserInfo();
            
-            await this.storage.watch(`db://chats/${chatRoomIds.join(',')}`, async (data) => {
+            await this.storage.watch(`db://chats/${chatRoomIds.join(',')}`, "chat_channel", async (data) => {
                 if(data && data.new){
                     if(data.eventType == "DELETE"){
                         let messageIndex = me.messages.findIndex(msg => msg.uuid === data.old.uuid);

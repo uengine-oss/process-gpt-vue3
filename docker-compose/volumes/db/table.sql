@@ -309,7 +309,7 @@ create table if not exists public.proc_def (
     bpmn text null,
     uuid uuid not null default gen_random_uuid (),
     tenant_id text null default auth.tenant_id(),
-    isDeleted boolean not null default false,
+    isdeleted boolean not null default false,
     constraint proc_def_pkey primary key (uuid),
     constraint proc_def_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;

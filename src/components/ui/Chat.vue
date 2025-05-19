@@ -292,7 +292,7 @@
                                                                     </v-card>
                                                                 </v-col>
                                                             </v-row>
-                                                            <v-row v-if="message.memento" class="my-5">
+                                                            <v-row v-if="message.memento && (message.memento.sources && message.memento.sources.length > 0)" class="my-5">
                                                                 <v-col cols="12">
                                                                     <v-card outlined>
                                                                         <v-card-title>Memento</v-card-title>

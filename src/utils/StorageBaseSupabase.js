@@ -597,7 +597,7 @@ export default class StorageBaseSupabase {
                         table: path
                     },
                     (payload) => {
-                        console.log('Change received!', payload);
+                        // console.log('Change received!', payload);
                         callback(payload);
                     }
                 )
@@ -621,7 +621,8 @@ export default class StorageBaseSupabase {
                     {
                         event: '*',
                         schema: 'public',
-                        table: obj.table
+                        table: obj.table,
+                        filter: obj.chatRoomIds ? `id=in.(${obj.chatRoomIds})` : null
                     },
                     (payload) => {
                         // console.log('Change received!', payload);
@@ -648,7 +649,7 @@ export default class StorageBaseSupabase {
                         table: obj.table
                     },
                     (payload) => {
-                        console.log('Change received!', payload);
+                        // console.log('Change received!', payload);
                         callback(payload);
                     }
                 )
