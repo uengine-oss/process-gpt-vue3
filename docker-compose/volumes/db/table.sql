@@ -1415,7 +1415,8 @@ create table if not exists public.proc_def_marketplace (
     author_name text null,
     author_uid text null,
     import_count integer not null default 0,
-    constraint proc_def_marketplace_pkey primary key (uuid)
+    constraint proc_def_marketplace_pkey primary key (uuid),
+    constraint proc_def_marketplace_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
 
 DO $$
@@ -1478,6 +1479,65 @@ CREATE POLICY proc_def_marketplace_delete_policy
     FOR DELETE
     TO authenticated
     USING (true);
+
+
+
+create table if not exists public.form_def_marketplace (
+    uuid uuid not null default gen_random_uuid (),
+    id text null default ''::text,
+    proc_def_id text not null,
+    activity_id text not null,
+    html text not null,
+    author_uid text null,
+    constraint form_def_marketplace_pkey primary key (uuid)
+) tablespace pg_default;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='proc_def_marketplace' AND column_name='id') THEN
+        ALTER TABLE public.proc_def_marketplace ADD COLUMN id TEXT PRIMARY KEY;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='form_def_marketplace' AND column_name='proc_def_id') THEN
+        ALTER TABLE public.form_def_marketplace ADD COLUMN proc_def_id TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='form_def_marketplace' AND column_name='activity_id') THEN
+        ALTER TABLE public.form_def_marketplace ADD COLUMN activity_id TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='form_def_marketplace' AND column_name='html') THEN
+        ALTER TABLE public.form_def_marketplace ADD COLUMN html TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='form_def_marketplace' AND column_name='author_uid') THEN
+        ALTER TABLE public.form_def_marketplace ADD COLUMN author_uid TEXT;
+    END IF;
+END;
+$$;
+
+ALTER TABLE form_def_marketplace ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY form_def_marketplace_insert_policy
+    ON form_def_marketplace
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (true);
+
+CREATE POLICY form_def_marketplace_select_policy
+    ON form_def_marketplace
+    FOR SELECT
+    TO authenticated
+    USING (true);
+
+CREATE POLICY form_def_marketplace_update_policy
+    ON form_def_marketplace
+    FOR UPDATE
+    TO authenticated
+    USING (true);
+
+CREATE POLICY form_def_marketplace_delete_policy
+    ON form_def_marketplace
+    FOR DELETE
+    TO authenticated
+    USING (true);
+
 
 
 

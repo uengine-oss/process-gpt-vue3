@@ -2077,7 +2077,34 @@ class ProcessGPTBackend implements Backend {
                     author_uid: user.uid,
                 }
                 const response = await storage.putObject('proc_def_marketplace', putObj);
-                return response;
+
+                if (!response.error) {
+                    const formList = await storage.list('form_def', {
+                        match: {
+                            proc_def_id: definition.id,
+                            tenant_id: window.$tenantName
+                        }
+                    });
+                    if (formList && formList.length > 0) {
+                        for (const form of formList) {
+                            const formObj = {
+                                id: form.id,
+                                proc_def_id: definition.id,
+                                activity_id: form.activity_id,
+                                html: form.html,
+                                author_uid: user.uid
+                            }
+                            const formResponse = await storage.putObject('form_def_marketplace', formObj);
+                            if (formResponse.error) {
+                                console.log(formResponse.error);
+                            }
+                        }
+                    }
+
+                    return response;
+                } else {
+                    throw new Error('User not found');
+                }
             } else {
                 throw new Error('User not found');
             }
@@ -2095,6 +2122,24 @@ class ProcessGPTBackend implements Backend {
                 bpmn: definition.bpmn,
             }
             const response = await storage.putObject('proc_def', putObj);
+
+            // 프로세스 폼 정의 복사
+            const formList = await storage.list('form_def_marketplace', {
+                match: {
+                    proc_def_id: definition.id,
+                    author_uid: definition.author_uid
+                }
+            });
+            if (formList && formList.length > 0) {
+                for (const form of formList) {
+                    const formObj = {
+                        type: 'form',
+                        proc_def_id: form.proc_def_id,
+                        activity_id: form.activity_id
+                    }
+                    await this.putRawDefinition(form.html, form.id, formObj);
+                }
+            }
             
             if (!response.error) {
                 // 프로세스 정의 체계도 업데이트
