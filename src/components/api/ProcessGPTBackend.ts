@@ -1544,9 +1544,8 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 orderBy: 'username',
                 sort: 'asc',
-                matchArray: {
-                    column: 'tenants',
-                    values: [window.$tenantName]
+                match: {
+                    tenant_id: window.$tenantName
                 }
             }
             const users = await storage.list('users', options);
@@ -1589,7 +1588,7 @@ class ProcessGPTBackend implements Backend {
     async updateUserInfo(value: any) {
         try {
             if (value.type === 'update') {
-                value.user.current_tenant = window.$tenantName;
+                value.user.tenant_id = window.$tenantName;
                 await storage.putObject('users', value.user);
                 const user: any = await this.getUserInfo();
                 if (user && value.user.id === user.uid) {
@@ -1701,9 +1700,6 @@ class ProcessGPTBackend implements Backend {
             if (!user || !user.uid) {
                 return false;
             }
-            if (user.tenants && !user.tenants.includes(tenantId)) {
-                return false;
-            }
             const user_id = user.uid;
             const request = {
                 input: {
@@ -1718,15 +1714,15 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.post('/execution/set-tenant', request);
             if (response.status === 200) {
                 const isOwner = await storage.checkTenantOwner(tenantId);
-                const role = isOwner ? 'superAdmin' : 'user';
-                const isAdmin = isOwner ? true : false;
-                await storage.putObject('users', {
+                const putObj: any = {
                     id: user_id,
-                    role: role,
-                    is_admin: isAdmin,
-                    current_tenant: tenantId
-                }, { onConflict: 'id' });
-
+                    role: isOwner ? 'superAdmin' : 'user',
+                    tenant_id: tenantId
+                }
+                if (isOwner) {
+                    putObj.is_admin = true;
+                }
+                await storage.putObject('users', putObj, { onConflict: 'id' });
                 await storage.refreshSession();
                 return await storage.isConnection();
             } else {
@@ -1747,16 +1743,13 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('tenants', { id: tenantId });
             const user: any = await this.getUserInfo();
-            const tenantList = user?.tenants || [];
-            if (!tenantList.includes(tenantId)) {
-                tenantList.push(tenantId);
-            }
             await storage.putObject('users', {
                 id: user.uid,
+                email: user.email,
+                username: user.name,
                 role: 'superAdmin',
                 is_admin: true,
-                tenants: tenantList,
-                current_tenant: tenantId
+                tenant_id: tenantId
             });
         } catch (error) {
             //@ts-ignore
@@ -1780,9 +1773,19 @@ class ProcessGPTBackend implements Backend {
             }
             const response = await axios.post('/execution/create-user', request);
             if (response.status === 200) {
-                return response.data;
+                if (response.data) {
+                    return response.data;
+                } else {
+                    const newUser = await storage.getObject('users', {
+                        match: {
+                            email: userInfo.email,
+                            tenant_id: window.$tenantName
+                        }
+                    });
+                    return { user: newUser };
+                }
             } else {
-                throw new Error(response.data.message);
+                return { error: true, message: response.data.message };
             }
         } catch (error) {
             //@ts-ignore

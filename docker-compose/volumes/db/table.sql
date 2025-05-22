@@ -4,6 +4,8 @@ create table if not exists public.tenants (
     constraint tenants_pkey primary key (id)
 ) tablespace pg_default;
 
+INSERT INTO public.tenants (id, owner) VALUES ('process-gpt', '');
+
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tenants' AND column_name='id') THEN
@@ -64,18 +66,15 @@ create table if not exists public.users (
     email text null,
     is_admin boolean not null default false,
     role text null,
-    current_tenant text null,
-    tenants text[] null,
-    constraint users_pkey primary key (id)
+    tenant_id text null,
+    constraint users_pkey primary key (id, tenant_id),
+    constraint users_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
 
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='tenants') THEN
-        ALTER TABLE public.users ADD COLUMN tenants text[] null;
-    END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='id') THEN
-        ALTER TABLE public.users ADD COLUMN id uuid not null primary key;
+        ALTER TABLE public.users ADD COLUMN id uuid not null;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='username') THEN
         ALTER TABLE public.users ADD COLUMN username text null;
@@ -92,8 +91,8 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='role') THEN
         ALTER TABLE public.users ADD COLUMN role text null;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='current_tenant') THEN
-        ALTER TABLE public.users ADD COLUMN current_tenant text null;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='tenant_id') THEN
+        ALTER TABLE public.users ADD COLUMN tenant_id text null;
     END IF;
 END;
 $$;
@@ -147,31 +146,14 @@ CREATE POLICY users_delete_policy
     ON users
     FOR DELETE
     TO authenticated
-    USING (auth.tenant_id() = current_tenant);
+    USING (auth.tenant_id() = tenant_id);
 
 
 
--- 테넌트가 삭제될 때 users 테이블을 업데이트하는 함수
-CREATE OR REPLACE FUNCTION update_users_on_tenant_delete()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- 삭제된 테넌트 ID를 tenants 배열에서 제거하고, current_tenant가 동일한 경우 null로 설정
-    UPDATE public.users
-    SET 
-        tenants = array_remove(tenants, OLD.id),
-        current_tenant = CASE WHEN current_tenant = OLD.id THEN NULL ELSE current_tenant END
-    WHERE OLD.id = ANY(tenants) OR current_tenant = OLD.id;
-    
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
--- 테넌트가 삭제된 후 함수를 호출하는 트리거
-CREATE TRIGGER after_tenant_delete
-AFTER DELETE ON public.tenants
-FOR EACH ROW
-EXECUTE FUNCTION update_users_on_tenant_delete();
-
+DROP TRIGGER IF EXISTS after_tenant_delete ON public.tenants;
+DROP FUNCTION IF EXISTS update_users_on_tenant_delete();
+DROP TRIGGER IF EXISTS on_public_user_deleted ON public.users;
+DROP FUNCTION IF EXISTS public.handle_delete_user();
 
 
 
@@ -1260,9 +1242,7 @@ create table if not exists public.user_permissions (
     proc_def_ids jsonb not null,
     readable boolean not null default false,
     writable boolean not null default false,
-    constraint user_permissions_pkey primary key (id),
-    constraint user_permissions_user_id_fkey foreign key (user_id) references users (id) on update cascade on delete cascade,
-    constraint user_permissions_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
+    constraint user_permissions_pkey primary key (id)
 ) tablespace pg_default;
 
 DO $$
