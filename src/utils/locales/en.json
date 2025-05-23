@@ -535,6 +535,11 @@
     },
     "UserTaskPanel": {
         "default": "Default",
+        "defaultInfo": "All users with the role of the current task can view this task. The user who first selects the task will be designated as the assignee.",
+        "sharedGroupInfo": "All users in the selected shared group can view this task. The user who first selects the task will be designated as the assignee.",
+        "assigneeInfo": "Only the designated user can view this task. Other users cannot view it.",
+        "loadBalancingInfo": "The task is automatically assigned to users within the designated group. You can select a distribution strategy.",
+        "expressionInfo": "The assignee is determined dynamically based on the expression. ex) ${initiatorManager}",
         "form": "Form",
         "external": "External Application",
         "formCreateDialog": "Do you want to create a form?",
@@ -542,11 +547,11 @@
         "no": "No",
         "radioSelectDescriptionTitle": "Select data processing method: Basic data processing, Custom screen creation, External system integration.",
         "radioSelectDescriptionSubTitle1": "1. Basic: Use basic data \n2. Form: Screen created in screen definition \n3. External Application: Generates a field for entering a business screen URL",
-        "assignmentType": "Assignment Type",
-        "defaultAssignment": "Default Assignment",
-        "competitionAssignment": "Competition Assignment",
-        "directAssignment": "Direct Assignment",
-        "automaticAssignment": "Automatic Assignment",
+        "assignmentType": "Task Assignment Type",
+        "assignee": "Single Assignment",
+        "sharedGroup": "Shared Group",
+        "loadBalancing": "Load Balancing",
+        "expression": "Expression-based",
         "taskType": "Task Type",
         "descriptionTo": "Assignment Target",
         "descriptionToTitle": "Assignment Target Input",
@@ -554,7 +559,11 @@
         "inputForm": "Reference Form",
         "outputForm": "Write Form",
         "addFormParameter": "Add Form Parameter",
-        "removeFormParameter": "Remove Form Parameter"
+        "removeFormParameter": "Remove Form Parameter",
+        "loadBalancingGroup": "Load Balancing Group",
+        "loadBalancingStrategy": "Load Balancing Strategy",
+        "leastTasks": "Least Tasks",
+        "idle": "Idle"
     },
     "Mapper": {
         "mapper": "Mapper"
