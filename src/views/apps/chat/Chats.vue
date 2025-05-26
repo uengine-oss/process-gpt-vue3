@@ -57,6 +57,8 @@
                         :isSystemChat="isSystemChat"
                         :chatRoomId="chatRoomId"
                         :newMessageInfo="newMessageInfo"
+                        :initialChatHeight="250"
+                        :maxAllowedBase="460"
                         @requestDraftAgent="requestDraftAgent"
                         @requestFile="requestFile"
                         @beforeReply="beforeReply"

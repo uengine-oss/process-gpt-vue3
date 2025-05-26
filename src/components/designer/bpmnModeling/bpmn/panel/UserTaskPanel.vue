@@ -5,6 +5,93 @@
             <v-radio :label="$t('UserTaskPanel.form')" value="FormActivity"></v-radio>
             <v-radio v-if="useEvent" :label="$t('UserTaskPanel.external')" value="URLActivity"></v-radio>
         </v-radio-group>
+        <v-radio-group
+            v-if="useEvent"
+            v-model="copyUengineProperties.assignmentType"
+            inline
+            class="mt-4"
+            :label="$t('UserTaskPanel.assignmentType')"
+        >
+            <v-radio :label="$t('UserTaskPanel.default')" value="default"></v-radio>
+            <v-radio :label="$t('UserTaskPanel.sharedGroup')" value="sharedGroup"></v-radio>
+            <v-radio :label="$t('UserTaskPanel.assignee')" value="assignee"></v-radio>
+            <v-radio :label="$t('UserTaskPanel.loadBalancing')" value="loadBalancing"></v-radio>
+            <v-radio :label="$t('UserTaskPanel.expression')" value="expression"></v-radio>
+        </v-radio-group>
+        <div v-if="copyUengineProperties.assignmentType === 'default'" class="mt-2">
+            <DetailComponent
+                :title="$t('UserTaskPanel.defaultInfo')"
+            />
+        </div>
+
+
+        <div v-if="copyUengineProperties.assignmentType === 'sharedGroup'" class="mt-2">
+            <DetailComponent :title="$t('UserTaskPanel.sharedGroupInfo')" />
+            <v-combobox
+                v-model="copyUengineProperties.sharedGroup"
+                :label="$t('UserTaskPanel.sharedGroup')"
+                multiple
+                chips
+                variant="outlined"
+                density="compact"
+                hide-details
+            ></v-combobox>
+        </div>
+
+        
+        <!-- 업무 할당 타입별 설정 필드 -->
+        <div v-if="copyUengineProperties.assignmentType === 'assignee'" class="mt-2">
+            <DetailComponent :title="$t('UserTaskPanel.assigneeInfo')" />
+            <v-text-field
+                v-model="copyUengineProperties.assignee"
+                :label="$t('UserTaskPanel.assignee')"
+                variant="outlined"
+                density="compact"
+                hide-details
+            ></v-text-field>
+        </div>
+
+        <div v-if="copyUengineProperties.assignmentType === 'loadBalancing'" class="mt-2">
+            <DetailComponent :title="$t('UserTaskPanel.loadBalancingInfo')" />
+            <!-- 로드밸런싱 그룹 선택 -->
+            <v-combobox
+                v-model="copyUengineProperties.roundRobinGroup"
+                :label="$t('UserTaskPanel.loadBalancingGroup')"
+                variant="outlined"
+                hide-details
+                density="compact"
+                :items="roles.map(r => r.name)"
+            ></v-combobox>
+
+            <!-- 로드밸런싱 전략 선택 -->
+            <v-select
+                v-model="copyUengineProperties.loadBalancingStrategy"
+                :label="$t('UserTaskPanel.loadBalancingStrategy')"
+                :items="[
+                { title: $t('UserTaskPanel.roundRobin'), value: 'roundRobin' },
+                { title: $t('UserTaskPanel.leastTasks'), value: 'leastTasks' },
+                { title: $t('UserTaskPanel.idle'), value: 'idle' }
+                ]"
+                variant="outlined"
+                density="compact"
+                hide-details
+                class="mt-2"
+            ></v-select>
+        </div>
+
+        <div v-if="copyUengineProperties.assignmentType === 'expression'" class="mt-2">
+            <DetailComponent :title="$t('UserTaskPanel.expressionInfo')" />
+            <v-text-field
+                v-model="copyUengineProperties.assignmentExpression"
+                :label="$t('UserTaskPanel.expression')"
+                variant="outlined"
+                density="compact"
+                hide-details
+                placeholder="${initiatorManager}"
+            ></v-text-field>
+        </div>
+
+
         <DetailComponent
             :title="$t('UserTaskPanel.radioSelectDescriptionTitle')"
             :details="radioSelectDescription"
@@ -409,6 +496,12 @@ export default {
                         me.copyUengineProperties.eventSynchronization.attributes = [];
                     if (!me.copyUengineProperties.eventSynchronization.mappingContext)
                         me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
+                }
+            }
+
+            if(window.$mode == "uEngine"){
+                if(!me.copyUengineProperties.assignmentType){
+                    me.copyUengineProperties.assignmentType = 'default';
                 }
             }
 

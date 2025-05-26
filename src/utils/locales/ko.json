@@ -535,6 +535,11 @@
     },
     "UserTaskPanel" : {
         "default" : "기본", 
+        "defaultInfo": "현재 태스크의 역할에 해당하는 사용자 모두가 이 업무를 확인할 수 있습니다.  가장 먼저 업무를 선택한 사용자가 담당자로 지정됩니다.",
+        "sharedGroupInfo": "선택된 공동 담당 그룹에 속한 사용자는 모두 이 업무를 확인할 수 있으며, 먼저 선택한 사용자가 담당자가 됩니다.  ex) 작성자,검토자",
+        "assigneeInfo": "지정된 단일 사용자에게만 이 업무가 할당되며, 다른 사용자는 열람할 수 없습니다.",
+        "loadBalancingInfo": "지정된 그룹 내 사용자에게 자동으로 업무를 분배합니다. 분배 전략을 선택할 수 있습니다.",
+        "expressionInfo": "표현식을 기반으로 실행 시 동적으로 담당자를 결정합니다. ex) ${initiatorManager}",
         "form" : "폼", 
         "external" : "외부 어플리케이션",
         "formCreateDialog" : "폼 생성을 하시겠습니까?",
@@ -542,11 +547,11 @@
         "no" : "아니오",
         "radioSelectDescriptionTitle": "데이터 처리 방식 선택: 기본 데이터 처리, 커스텀 화면 생성, 외부 시스템 연동.",
         "radioSelectDescriptionSubTitle1": "1. 기본 : 기본적인 데이터 사용 \n2. 폼 : 화면 정의에서 생성한 화면 \n3. 외부 어플리케이션 : 업무 화면 URL 입력 필드 생성",
-        "assignmentType": "할당 유형",
-        "defaultAssignment": "기본 할당",
-        "competitionAssignment": "경쟁 할당",
-        "directAssignment": "직접 할당",
-        "automaticAssignment": "자동 할당",
+        "assignmentType": "업무 할당 방식",
+        "assignee": "담당자 지정",
+        "sharedGroup": "공동 담당 그룹",
+        "expression": "표현식 기반",
+        "loadBalancing": "로드 밸런싱",
         "taskType": "작업 유형",
         "descriptionTo": "할당 대상",
         "descriptionToTitle": "할당 대상 입력",
@@ -554,7 +559,12 @@
         "inputForm": "참조 폼",
         "outputForm": "작성 폼",
         "addFormParameter": "폼 추가",
-        "removeFormParameter": "폼 삭제"
+        "removeFormParameter": "폼 삭제",
+        "loadBalancingGroup": "로드밸런싱 그룹",
+        "loadBalancingStrategy": "할당 전략",
+        "roundRobin": "라운드 로빈 (순차 할당)",
+        "leastTasks": "최소 작업량 우선",
+        "idle": "오래 쉰 사용자 우선"
     },
     "Mapper" : {
         "mapper" : "매퍼"

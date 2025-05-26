@@ -39,7 +39,7 @@
                 </v-tab>
             </v-tabs>
             <v-divider></v-divider>
-            <v-card-text style="height: calc(100vh - 260px);" class="pa-0">
+            <v-card-text style="height: calc(100vh - 238px);" class="pa-0">
                 <v-window style="height: 100%;" v-model="tab">
                     <v-window-item style="height: 100%;" v-for="tabItem in tabItems" :key="tabItem.value" :value="tabItem.value">
                         <component :is="tabItem.component" :instance="instance" :ref="tabItem.value" />

@@ -49,8 +49,8 @@
                 </v-row>
                 
                 <div class="custom-tools">
-                    <v-row class="ma-0 pa-0 pt-3"
-                        :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : 'margin-top: 12px;'"
+                    <v-row class="ma-0 pa-0 pt-1"
+                        :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : ''"
                     >
                     
                         <div class="mr-0 d-flex" v-if="Pal">

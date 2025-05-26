@@ -1,5 +1,5 @@
 <template>
-    <div class="customHeight" style="background-color: rgba( 255, 255, 255, 1 );">
+    <div style="background-color: rgba( 255, 255, 255, 1 );">
         <div>
             <div>
                 <div>
@@ -27,7 +27,9 @@
                     </slot>
 
                     <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll" :style="type == 'form_simulation' ? 'max-height: 300px;':''">
-                        <div class="d-flex w-100 chat-view-box" :style="!$globalState.state.isRightZoomed ? (type == 'form_simulation' ? 'height: 300px;':chatHeight) : 'height:100vh;'">
+                        <div class="d-flex w-100 chat-view-box"
+                            :style="!$globalState.state.isRightZoomed ? (type == 'form_simulation' ? 'height: 300px;':chatHeight) : 'height:100vh;'"
+                        >
                             <v-col>
                                 <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                                     <template v-slot:title>
@@ -577,54 +579,84 @@
                         <v-icon color="white" size="14">mdi-close</v-icon>
                     </v-btn>
                 </div>
-                <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex align-center pa-0">
+                <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                     <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                        class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
+                        class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
                         auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
-                        style="font-size:20px !important; height:77px;" @input="handleTextareaInput"
+                        style="font-size: 20px !important; max-height: 200px; overflow: auto; width: 100%;" @input="handleTextareaInput"
                         @paste="handlePaste"
                     >
-                        <template v-slot:prepend-inner>
+                    </v-textarea>
+                    
+                    <!-- 버튼 영역 -->
+                    <div class="d-flex justify-space-between align-center w-100 pa-2">
+                        <div class="d-flex">
                             <v-btn @click="openChatMenu()"
+                                class="mr-1 text-medium-emphasis"
                                 density="comfortable"
                                 icon
-                                variant="text"
+                                variant="outlined"
+                                size="small"
+                                style="border-color: #e0e0e0 !important;"
                             >
                                 <v-icon v-if="!isOpenedChatMenu">mdi-plus</v-icon>
                                 <v-icon v-else>mdi-close</v-icon>
                             </v-btn>
+                        </div>
+                        
+                        <div>
                             <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                                class="mr-1 text-medium-emphasis"
                                 density="comfortable"
                                 icon
-                                variant="text"
+                                variant="outlined"
+                                size="small"
+                                style="border-color: #e0e0e0 !important;"
                             >
-                                <Icons :icon="'sharp-mic'" />
+                                <Icons :icon="'sharp-mic'" :size="'16'" />
                             </v-btn>
                             <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                                class="mr-1 text-medium-emphasis"
                                 density="comfortable"
                                 icon
-                                variant="text"
+                                variant="outlined"
+                                size="small"
+                                style="border-color: #e0e0e0 !important;"
                             >
-                                <Icons :icon="'stop'" :size="'20'" />
+                                <Icons :icon="'stop'" :size="'16'" />
                             </v-btn>
                             <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
-                        </template>
-                        <template v-slot:append-inner>
-                            <div style="height: -webkit-fill-available; margin:5px 5px 0px 0px;">
-                                <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
-                                    style="width:30px; height:30px;" :disabled="disableBtn">
-                                    <icons :icon="'send-outline'" :size="20" />
-                                </v-btn>
-                                <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
-                                    style="width:30px; height:30px;">
-                                    <Icons :icon="'outline-stop-circle'" :size="20" />
-                                </v-btn>
-                                <!-- <v-btn icon variant="text" class="text-medium-emphasis">
-                                    <PaperclipIcon size="20" />
-                                </v-btn> -->
-                            </div>
-                        </template>
-                    </v-textarea>
+
+                            <v-btn v-if="!isLoading"
+                                class="cp-send text-medium-emphasis"
+                                color="primary" 
+                                variant="outlined" 
+                                type="submit" 
+                                density="comfortable"
+                                icon
+                                size="small"
+                                style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
+                                @click="beforeSend"
+                                :disabled="disableBtn"
+                            >
+                                <icons :icon="'send-outline'" :size="16" />
+                            </v-btn>
+                            <v-btn v-else 
+                                class="cp-send text-medium-emphasis"
+                                color="primary" 
+                                variant="outlined" 
+                                type="submit" 
+                                density="comfortable"
+                                icon
+                                size="small"
+                                style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
+                                @click="isLoading = !isLoading"
+                            >
+                                <Icons :icon="'outline-stop-circle'" :size="16" />
+                            </v-btn>
+                        </div>
+                    </div>
+                    
                     <div v-if="showUserList" class="user-list"
                         style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
                         <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
@@ -694,6 +726,19 @@ export default {
         chatRoomId: String,
         isMobile: Boolean,
         newMessageInfo: Object,
+        maxAllowedBase: {
+            type: Number,
+            default: null // 자동 계산되도록 null로 설정
+        },
+        initialChatHeight: {
+            type: Number,
+            default: 325 // 채팅 영역의 초기 높이 (100vh - 숫자px)
+        },
+        // maxBaseOffset: initialChatHeight와 maxAllowedBase의 차이 값
+        maxBaseOffset: {
+            type: Number,
+            default: 160 // maxAllowedBase = initialChatHeight + maxBaseOffset
+        }
     },
     data() {
         return {
@@ -734,7 +779,10 @@ export default {
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
             isRender: false,
-            chatHeight: 'height:calc(100vh - 325px)',
+            chatHeight: '',
+            textareaAreaHeight: 84, // textarea와 버튼 영역의 초기 높이는 84px
+            calculatedMaxBase: 0, // 계산된 maxAllowedBase 값을 저장
+            windowWidth: window.innerWidth, // 현재 창 너비 저장
             
             // assistantChat
             checked: true,
@@ -745,6 +793,11 @@ export default {
             previewMessage: null,
         };
     },
+    created() {
+        // 초기값 설정 - 항상 100vh - 값px 형태로 설정
+        // 화면 너비가 1872px 이하일 때 initialChatHeight 값을 360으로 설정
+        this.updateChatHeightByWindowSize();
+    },
     mounted() {
         var me = this
         document.addEventListener('click', (event) => {
@@ -753,19 +806,9 @@ export default {
                 me.$emit("requestFile", event.target.getAttribute('data-filename'));
             }
         });
-        if (window.location.pathname && window.location.pathname.includes('/definitions/')) {
-            if (!this.isMobile) {
-                this.chatHeight = 'height:calc(100vh - 325px)'
-            } else {
-                this.chatHeight = 'height:calc(100vh - 450px)'
-            }
-        } else if (window.location.pathname && window.location.pathname.includes('/instancelist')) {
-            if (!this.isMobile) {
-                this.chatHeight = 'height:calc(100vh - 350px)'
-            } else {
-                this.chatHeight = 'height:calc(100vh - 450px)'
-            }
-        }
+
+        // 창 크기 변경 이벤트 리스너 추가
+        window.addEventListener('resize', this.handleResize);
 
         this.EventBus.on('scroll_update', () => {
             if (this.$refs && this.$refs.scrollContainer) {
@@ -775,9 +818,36 @@ export default {
             }
         });
         
+        // 기본 chatHeight 설정
+        // if (window.location.pathname && window.location.pathname.includes('/definitions/')) {
+        //     if (!this.isMobile) {
+        //         this.chatHeight = 'height:calc(100vh - 325px)'
+        //     } else {
+        //         this.chatHeight = 'height:calc(100vh - 450px)'
+        //     }
+        // } else if (window.location.pathname && window.location.pathname.includes('/instancelist')) {
+        //     if (!this.isMobile) {
+        //         this.chatHeight = 'height:calc(100vh - 350px)'
+        //     } else {
+        //         this.chatHeight = 'height:calc(100vh - 450px)'
+        //     }
+        // }
+
+        // 컴포넌트가 렌더링된 후 텍스트 영역 측정
         this.$nextTick(() => {
+            // querySelector로 textarea 요소를 찾음
+            const textarea = this.$el.querySelector('textarea');
+            if (textarea) {
+                // 초기 textarea 높이 측정
+                this.updateChatHeight(textarea);
+            }
+            
             this.scrollToBottom();
         });
+    },
+    beforeUnmount() {
+        // 컴포넌트 제거 시 이벤트 리스너 제거
+        window.removeEventListener('resize', this.handleResize);
     },
     watch: {
         prompt(newVal, oldVal) {
@@ -795,6 +865,15 @@ export default {
             if (newVal) {
                 this.previewMessage = null;
             }
+        },
+        // textarea 내용 변경 감지
+        newMessage() {
+            this.$nextTick(() => {
+                const textarea = this.$el.querySelector('textarea');
+                if (textarea) {
+                    this.updateChatHeight(textarea);
+                }
+            });
         }
     },
     computed: {
@@ -1053,7 +1132,48 @@ export default {
 
             if (text.startsWith('>') || text.startsWith('!')) {
                 // 명령어 목록 표시 로직 추가
-            } 
+            }
+            
+            // textarea 높이가 변경될 때 chatHeight 업데이트
+            this.updateChatHeight(event.target);
+        },
+        
+        // textarea 높이에 따라 채팅창 높이 업데이트 메서드
+        updateChatHeight(textarea) {
+            if (!textarea) return;
+            
+            this.$nextTick(() => {
+                // 현재 textarea 높이 + 버튼 영역 높이
+                const currentHeight = textarea.scrollHeight + 44; // 버튼 영역은 약 44px로 가정
+                
+                // 높이 차이 계산 (현재 높이 - 초기 높이)
+                const heightDiff = currentHeight - this.textareaAreaHeight;
+                
+                let baseHeight;
+                
+                // props로 값이 전달된 경우 그 값을 최우선으로 사용
+                if (this.$props.initialChatHeight !== undefined && this.$props.initialChatHeight !== null) {
+                    baseHeight = this.$props.initialChatHeight;
+                } else {
+                    // props로 값이 전달되지 않은 경우에만 창 크기에 따라 계산
+                    if (this.windowWidth <= 1872) {
+                        baseHeight = 360;
+                    } else {
+                        baseHeight = 325;
+                    }
+                    
+                    // 모바일인 경우 별도 처리
+                    if (this.isMobile) {
+                        baseHeight = 450;
+                    }
+                }
+                
+                // 최소 높이 제한 (100vh - calculatedMaxBase)
+                const adjustedBase = Math.min(baseHeight + heightDiff, this.calculatedMaxBase);
+                
+                // 기본 chatHeight에서 높이 차이만큼 빼서 계산
+                this.chatHeight = `height:calc(100vh - ${adjustedBase}px)`;
+            });
         },
         selectUser(user) {
             const beforeMention = this.newMessage.substring(0, this.mentionStartIndex);
@@ -1205,6 +1325,14 @@ export default {
                 this.newMessage = "";
                 this.mentionedUsers = [];
                 this.showUserList = false;
+                
+                // message를 비운 후 textarea 높이 업데이트
+                this.$nextTick(() => {
+                    const textarea = this.$el.querySelector('textarea');
+                    if (textarea) {
+                        this.updateChatHeight(textarea);
+                    }
+                });
             }, 100);
         },
         cancel() {
@@ -1394,6 +1522,35 @@ export default {
             if (!imageFound) {
                 return true;
             }
+        },
+        // 창 크기 변경 핸들러
+        handleResize() {
+            this.windowWidth = window.innerWidth;
+            this.updateChatHeightByWindowSize();
+            
+            // textarea 높이도 업데이트
+            const textarea = this.$el.querySelector('textarea');
+            if (textarea) {
+                this.updateChatHeight(textarea);
+            }
+        },
+        
+        // 창 크기에 따른 채팅 높이 업데이트
+        updateChatHeightByWindowSize() {
+            // props로 값이 전달된 경우 그 값을 최우선으로 사용
+            if (this.$props.initialChatHeight !== undefined && this.$props.initialChatHeight !== null) {
+                this.chatHeight = `height:calc(100vh - ${this.$props.initialChatHeight}px)`;
+                // maxAllowedBase도 props 값을 우선 사용
+                this.calculatedMaxBase = this.maxAllowedBase || (this.$props.initialChatHeight + this.maxBaseOffset);
+                return;
+            }
+            
+            // props로 값이 전달되지 않은 경우에만 창 크기에 따라 계산
+            const chatHeight = this.windowWidth <= 1872 ? 360 : this.initialChatHeight;
+            this.chatHeight = `height:calc(100vh - ${chatHeight}px)`;
+            
+            // maxAllowedBase가 지정되지 않았다면 초기 높이 + offset으로 계산
+            this.calculatedMaxBase = this.maxAllowedBase || (chatHeight + this.maxBaseOffset);
         },
     }
 };

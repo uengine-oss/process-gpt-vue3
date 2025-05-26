@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="included" style="margin-bottom: 22px">
+        <div class="included pa-4 pt-0" style="margin-bottom: 22px">
             <div class="mt-4">{{$t('LanePanel.selectRoleType')}}</div>
             <v-card variant="outlined" class="pa-2" style="border-radius:8px !important;">
                 <v-radio-group v-model="type" row style="margin-top: 0px !important">

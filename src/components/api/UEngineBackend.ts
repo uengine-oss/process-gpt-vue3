@@ -907,6 +907,12 @@ class UEngineBackend implements Backend {
         console.warn("method is not implemented only use PalModeBackend");
         return null;
     }
+
+    
+    async fetchNotifications() {
+        console.warn("method is not implemented only use Process-GPT Mode");
+        return [];
+    }
 }
 
 export default UEngineBackend;
