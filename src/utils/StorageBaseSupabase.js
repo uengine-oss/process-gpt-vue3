@@ -811,6 +811,16 @@ export default class StorageBaseSupabase {
                     window.localStorage.setItem('email', data.email);
                     window.localStorage.setItem('uid', data.id);
 
+                    // FCM 토큰 처리
+                    const fcm_token = localStorage.getItem('fcm_token');
+                    if (fcm_token && (!data.device_token || data.device_token !== fcm_token)) {
+                        await window.$supabase
+                            .from('users')
+                            .update({ device_token: fcm_token })
+                            .match(filter);
+                        console.log('FCM 토큰이 users 테이블에 업데이트되었습니다:', fcm_token);
+                    }
+
                     const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: data.is_admin } });
                     window.dispatchEvent(event);
                 }
