@@ -1544,9 +1544,8 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 orderBy: 'username',
                 sort: 'asc',
-                matchArray: {
-                    column: 'tenants',
-                    values: [window.$tenantName]
+                match: {
+                    tenant_id: window.$tenantName
                 }
             }
             const users = await storage.list('users', options);
@@ -1589,7 +1588,7 @@ class ProcessGPTBackend implements Backend {
     async updateUserInfo(value: any) {
         try {
             if (value.type === 'update') {
-                value.user.current_tenant = window.$tenantName;
+                value.user.tenant_id = window.$tenantName;
                 await storage.putObject('users', value.user);
                 const user: any = await this.getUserInfo();
                 if (user && value.user.id === user.uid) {
@@ -1701,9 +1700,6 @@ class ProcessGPTBackend implements Backend {
             if (!user || !user.uid) {
                 return false;
             }
-            if (user.tenants && !user.tenants.includes(tenantId)) {
-                return false;
-            }
             const user_id = user.uid;
             const request = {
                 input: {
@@ -1718,15 +1714,15 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.post('/execution/set-tenant', request);
             if (response.status === 200) {
                 const isOwner = await storage.checkTenantOwner(tenantId);
-                const role = isOwner ? 'superAdmin' : 'user';
-                const isAdmin = isOwner ? true : false;
-                await storage.putObject('users', {
+                const putObj: any = {
                     id: user_id,
-                    role: role,
-                    is_admin: isAdmin,
-                    current_tenant: tenantId
-                }, { onConflict: 'id' });
-
+                    role: isOwner ? 'superAdmin' : 'user',
+                    tenant_id: tenantId
+                }
+                if (isOwner) {
+                    putObj.is_admin = true;
+                }
+                await storage.putObject('users', putObj, { onConflict: 'id' });
                 await storage.refreshSession();
                 return await storage.isConnection();
             } else {
@@ -1747,16 +1743,13 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('tenants', { id: tenantId });
             const user: any = await this.getUserInfo();
-            const tenantList = user?.tenants || [];
-            if (!tenantList.includes(tenantId)) {
-                tenantList.push(tenantId);
-            }
             await storage.putObject('users', {
                 id: user.uid,
+                email: user.email,
+                username: user.name,
                 role: 'superAdmin',
                 is_admin: true,
-                tenants: tenantList,
-                current_tenant: tenantId
+                tenant_id: tenantId
             });
         } catch (error) {
             //@ts-ignore
@@ -1780,9 +1773,19 @@ class ProcessGPTBackend implements Backend {
             }
             const response = await axios.post('/execution/create-user', request);
             if (response.status === 200) {
-                return response.data;
+                if (response.data) {
+                    return response.data;
+                } else {
+                    const newUser = await storage.getObject('users', {
+                        match: {
+                            email: userInfo.email,
+                            tenant_id: window.$tenantName
+                        }
+                    });
+                    return { user: newUser };
+                }
             } else {
-                throw new Error(response.data.message);
+                return { error: true, message: response.data.message };
             }
         } catch (error) {
             //@ts-ignore
@@ -2077,7 +2080,34 @@ class ProcessGPTBackend implements Backend {
                     author_uid: user.uid,
                 }
                 const response = await storage.putObject('proc_def_marketplace', putObj);
-                return response;
+
+                if (!response.error) {
+                    const formList = await storage.list('form_def', {
+                        match: {
+                            proc_def_id: definition.id,
+                            tenant_id: window.$tenantName
+                        }
+                    });
+                    if (formList && formList.length > 0) {
+                        for (const form of formList) {
+                            const formObj = {
+                                id: form.id,
+                                proc_def_id: definition.id,
+                                activity_id: form.activity_id,
+                                html: form.html,
+                                author_uid: user.uid
+                            }
+                            const formResponse = await storage.putObject('form_def_marketplace', formObj);
+                            if (formResponse.error) {
+                                console.log(formResponse.error);
+                            }
+                        }
+                    }
+
+                    return response;
+                } else {
+                    throw new Error('User not found');
+                }
             } else {
                 throw new Error('User not found');
             }
@@ -2095,6 +2125,24 @@ class ProcessGPTBackend implements Backend {
                 bpmn: definition.bpmn,
             }
             const response = await storage.putObject('proc_def', putObj);
+
+            // 프로세스 폼 정의 복사
+            const formList = await storage.list('form_def_marketplace', {
+                match: {
+                    proc_def_id: definition.id,
+                    author_uid: definition.author_uid
+                }
+            });
+            if (formList && formList.length > 0) {
+                for (const form of formList) {
+                    const formObj = {
+                        type: 'form',
+                        proc_def_id: form.proc_def_id,
+                        activity_id: form.activity_id
+                    }
+                    await this.putRawDefinition(form.html, form.id, formObj);
+                }
+            }
             
             if (!response.error) {
                 // 프로세스 정의 체계도 업데이트

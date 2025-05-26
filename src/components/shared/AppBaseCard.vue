@@ -115,6 +115,7 @@ const slotName = computed(() => {
 .right-part {
     width: 100%;
     overflow: auto;
+    background: white;
 }
 
 .left-part {

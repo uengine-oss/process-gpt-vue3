@@ -289,7 +289,7 @@ export default {
                                 role: user.role
                             }
                             const result = await me.backend.createUser(userInfo);
-                            if (result.user) {
+                            if (!result.error) {
                                 me.editingTeam.children.push({
                                     id: result.user.id,
                                     data: {

@@ -120,7 +120,7 @@ export default {
         currentVersion: null,
         currentVersionMessage: null,
 
-        nextProcessInfo: null,
+        lastProcessInfo: null,
         leftDiffActivities: {},
         rightDiffActivities: {}
     }),
@@ -182,11 +182,12 @@ export default {
             if (!me.lists[index].xml) me.lists[index].xml = await me.loadXMLOfVer(me.lists[index].version)
             await me.setCurrentInfo(me.lists[index].xml);
             if(index == me.lists.length - 1){
-                me.nextProcessInfo = JSON.parse(JSON.stringify(me.currentInfo))
+                me.lastProcessInfo = JSON.parse(JSON.stringify(me.currentInfo))
                 me.leftDiffActivities = {};
                 me.rightDiffActivities = {};
             } else {    
-                await me.setNextInfo(me.lists[index + 1].xml);
+                if(!me.lists[me.lists.length - 1].xml) me.lists[me.lists.length - 1].xml = await me.loadXMLOfVer(me.lists[me.lists.length - 1].version)
+                if(!me.lastProcessInfo) await me.setLastVersionInfo(me.lists[me.lists.length - 1].xml);
                 me.calculateDifferences();
             }
             me.loading = false
@@ -219,9 +220,9 @@ export default {
             }
             me.currentInfo = currentInfo;
         },
-        async setNextInfo(xml) {
+        async setLastVersionInfo(xml) {
             let me = this;
-            me.nextProcessInfo = await me.convertXMLToJSON(xml);
+            me.lastProcessInfo = await me.convertXMLToJSON(xml);
         },
         async loadXMLOfVer(version) {
             var me = this
@@ -265,25 +266,25 @@ export default {
             me.leftDiffActivities = {};
             me.rightDiffActivities = {};
             
-            if (!me.currentInfo || !me.nextProcessInfo) return;
+            if (!me.currentInfo || !me.lastProcessInfo) return;
             
             const currentActivities = me.currentInfo.activities || [];
-            const nextActivities = me.nextProcessInfo.activities || [];
+            const lastActivities = me.lastProcessInfo.activities || [];
             
             // 현재 액티비티 ID 목록
             const currentActivityIds = currentActivities.map(act => act.id);
             // 다음 버전 액티비티 ID 목록
-            const nextActivityIds = nextActivities.map(act => act.id);
+            const lastActivityIds = lastActivities.map(act => act.id);
             
             // 삭제된 액티비티 찾기 (현재에는 있지만 다음에는 없는 것)
             currentActivities.forEach(activity => {
-                if (!nextActivityIds.includes(activity.id)) {
+                if (!lastActivityIds.includes(activity.id)) {
                     me.leftDiffActivities[activity.id] = 'deleted';
                 }
             });
             
             // 추가된 액티비티 찾기 (다음에는 있지만 현재에는 없는 것)
-            nextActivities.forEach(activity => {
+            lastActivities.forEach(activity => {
                 if (!currentActivityIds.includes(activity.id)) {
                     me.rightDiffActivities[activity.id] = 'added';
                 }
@@ -291,15 +292,15 @@ export default {
             
             // 수정된 액티비티 찾기 (양쪽 다 있지만 내용이 변경된 것)
             currentActivities.forEach(currentActivity => {
-                const nextActivity = nextActivities.find(act => act.id === currentActivity.id);
-                if (nextActivity) {
+                const lastActivity = lastActivities.find(act => act.id === currentActivity.id);
+                if (lastActivity) {
                     // 속성 비교를 위해 JSON 문자열로 변환하여 비교
                     const currentJson = JSON.stringify(currentActivity);
-                    const nextJson = JSON.stringify(nextActivity);
+                    const lastJson = JSON.stringify(lastActivity);
                     
-                    if (currentJson !== nextJson) {
+                    if (currentJson !== lastJson) {
                         me.leftDiffActivities[currentActivity.id] = 'modified';
-                        me.rightDiffActivities[nextActivity.id] = 'modified';
+                        me.rightDiffActivities[lastActivity.id] = 'modified';
                     }
                 }
             });

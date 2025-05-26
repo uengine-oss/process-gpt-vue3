@@ -94,10 +94,12 @@ export default class StorageBaseSupabase {
 
     async signIn(userInfo) {
         try {
-            const existUser = await this.getObject('users', { match: { email: userInfo.email } });
-            if ((window.$isTenantServer && !window.$tenantName) ||
-                (existUser && existUser.tenants && existUser.tenants.includes(window.$tenantName))
-            ) {
+            const filter = { match: { email: userInfo.email } }
+            if (window.$tenantName) {
+                filter.match.tenant_id = window.$tenantName;
+            }
+            const existUser = await this.getObject('users', filter);
+            if ((window.$isTenantServer && !window.$tenantName) || (existUser && existUser.id)) {
                 const result = await window.$supabase.auth.signInWithPassword({
                     email: userInfo.email,
                     password: userInfo.password
@@ -168,31 +170,24 @@ export default class StorageBaseSupabase {
     async signUp(userInfo) {
         try {
             const tenantId = window.$tenantName || 'process-gpt';
-            const existUser = await this.getObject('users', { match: { email: userInfo.email } });
+            const existUser = await this.getObject('users', { match: { email: userInfo.email, tenant_id: tenantId } });
             if (existUser && existUser.id) {
-                var tenants = existUser.tenants || [];
-                if (!tenants.includes(tenantId)) {
-                    tenants.push(tenantId);
-                } else if (tenants.includes(tenantId) && existUser.current_tenant == tenantId) {
-                    return {
-                        error: true,
-                        errorMsg: '이미 가입된 이메일입니다.'
-                    };
-                }
-                existUser.tenants = tenants;
-                const isOwner = await this.checkTenantOwner(window.$tenantName);
-                const role = isOwner ? 'superAdmin' : 'user';
-                const isAdmin = isOwner ? true : false;
-                await this.putObject('users', {
-                    id: existUser.id,
-                    username: userInfo.username,
-                    email: userInfo.email,
-                    role: role,
-                    is_admin: isAdmin,
-                    tenants: tenants,
-                    current_tenant: tenantId
-                }, { onConflict: 'id' });
-                return await this.signIn(userInfo);
+                return {
+                    error: true,
+                    errorMsg: '이미 가입된 이메일입니다.'
+                };
+                // const isOwner = await this.checkTenantOwner(window.$tenantName);
+                // const role = isOwner ? 'superAdmin' : 'user';
+                // const isAdmin = isOwner ? true : false;
+                // await this.putObject('users', {
+                //     id: existUser.id,
+                //     username: userInfo.username,
+                //     email: userInfo.email,
+                //     role: role,
+                //     is_admin: isAdmin,
+                //     tenant_id: tenantId
+                // }, { onConflict: 'id' });
+                // return await this.signIn(userInfo);
             } else {
                 const result = await window.$supabase.auth.signUp({
                     email: userInfo.email,
@@ -224,8 +219,7 @@ export default class StorageBaseSupabase {
                             email: userInfo.email,
                             role: role,
                             is_admin: isAdmin,
-                            tenants: [window.$tenantName],
-                            current_tenant: window.$tenantName
+                            tenant_id: window.$tenantName
                         });
                     } else {
                         await this.putObject('users', {
@@ -234,8 +228,7 @@ export default class StorageBaseSupabase {
                             email: userInfo.email,
                             role: 'user',
                             is_admin: false,
-                            tenants: [],
-                            current_tenant: ''
+                            tenant_id: 'process-gpt'
                         });
                     }
                     result.data["isNewUser"] = true;
@@ -284,7 +277,15 @@ export default class StorageBaseSupabase {
                     throw new StorageBaseError('error in getUserInfo', userData.error, arguments);
                 } else if (userData.data.user) {
                     const uid = userData.data.user.id;
-                    var { data, error } = await window.$supabase.from('users').select().eq('id', uid).maybeSingle();
+                    const filter = { id: uid }   
+                    if (window.$tenantName) {
+                        filter.tenant_id = window.$tenantName;
+                    }
+                    var { data, error } = await window.$supabase.from('users')
+                        .select()
+                        .match(filter)
+                        .maybeSingle();
+                    
                     if (!error && data) {
                         return {
                             email: data.email,
@@ -292,8 +293,7 @@ export default class StorageBaseSupabase {
                             profile: data.profile,
                             uid: data.id,
                             role: data.role,
-                            tenants: data.tenants,
-                            current_tenant: data.current_tenant
+                            tenant_id: data.tenant_id
                         }
                     } else if (error) {
                         throw new StorageBaseError('error in getUserInfo', error, arguments);
@@ -597,7 +597,7 @@ export default class StorageBaseSupabase {
                         table: path
                     },
                     (payload) => {
-                        console.log('Change received!', payload);
+                        // console.log('Change received!', payload);
                         callback(payload);
                     }
                 )
@@ -621,7 +621,8 @@ export default class StorageBaseSupabase {
                     {
                         event: '*',
                         schema: 'public',
-                        table: obj.table
+                        table: obj.table,
+                        filter: obj.chatRoomIds ? `id=in.(${obj.chatRoomIds})` : null
                     },
                     (payload) => {
                         // console.log('Change received!', payload);
@@ -648,7 +649,7 @@ export default class StorageBaseSupabase {
                         table: obj.table
                     },
                     (payload) => {
-                        console.log('Change received!', payload);
+                        // console.log('Change received!', payload);
                         callback(payload);
                     }
                 )
@@ -790,10 +791,14 @@ export default class StorageBaseSupabase {
                 window.localStorage.setItem('author', value.user.email);
                 window.localStorage.setItem('uid', value.user.id);
 
+                let filter = { id: value.user.id };
+                if (window.$tenantName) {
+                    filter.tenant_id = window.$tenantName;
+                }
                 const { data, error } = await window.$supabase
                     .from('users')
                     .select('*')
-                    .eq('id', value.user.id)
+                    .match(filter)
                     .maybeSingle();
 
                 if (!error) {

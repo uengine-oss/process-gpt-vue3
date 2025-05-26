@@ -1,8 +1,13 @@
 <template>
-    <v-card flat>
-        <div :class="{'d-flex': !isMobile}">
-            <div v-if="type === 'edit'" class="w-100 d-flex justify-center">
-                <div v-if="isShowMashup" class="overflow-y-auto">
+    <div>
+        <v-row class="ma-0 pa-0"
+            style="height: calc(100vh - 260px);"
+        >
+            <v-col v-if="type === 'edit'"
+                class="pa-0 pl-4 overflow-y-auto"
+                style="height: calc(100vh - 260px);"
+            >
+                <div v-if="isShowMashup">
                     <mashup ref="mashup" v-model="kEditorInput" :key="mashupKey"  
                         @onInitKEditorContent="updateKEditorContentBeforeSave"
                         @onChangeKEditorContent="changedKEditorContent"
@@ -11,9 +16,14 @@
                 <div v-else class="align-self-center">
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
                 </div>
-            </div>
+            </v-col>
+            <!-- 오른쪽 세로선 추가 (한글 주석) -->
+            <v-divider vertical v-if="type !== 'preview'"></v-divider>
 
-            <div v-if="type === 'preview'" class="w-100 mt-5">
+            <v-col v-if="type === 'preview'" 
+                class="pa-0 pl-4 overflow-y-auto"
+                style="height: calc(100vh - 260px);"
+            >
                 <template v-if="isShowPreview">
                     <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
                     <!-- <template v-if="dev.isDevMode">
@@ -29,17 +39,29 @@
                 <div v-else class="align-self-center">
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
                 </div>
-            </div>
-            <div v-if="!isMobile && type != 'preview'" :class="type == 'simulation' ? '':'ml-auto'" :style="type == 'simulation' ? '':'max-width: 250px;'">
-                <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo" :type="type == 'simulation' ? 'form_simulation':'form'"
-                    @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
+            </v-col>
+            <v-col v-if="!isMobile && type != 'preview'"
+                :class="type == 'simulation' ? '':'ml-auto'"
+                :style="type == 'simulation' ? '' : 'max-width: 250px; height: calc(100vh - 260px) !important; overflow: auto;'"
+                class="pa-0"
+            >
+                <Chat :chatInfo="chatInfo"
+                    :messages="messages"
+                    :userInfo="userInfo"
+                    :type="type == 'simulation' ? 'form_simulation':'form'"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                    :maxAllowedBase="508"
+                    :initialChatHeight="346"
+                >
                     <template v-slot:custom-title>
                         <div></div>
                     </template>
                 </Chat>
-            </div>
-        </div>
-    </v-card>
+            </v-col>
+        </v-row>
+    </div>
 </template>
 
 <script>

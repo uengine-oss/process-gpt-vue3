@@ -1,7 +1,9 @@
 <template>
     
-    <div class="gpt-user-task-panel">
-        <v-tabs v-model="activeTab" class="ma-3">
+    <div>
+        <v-tabs v-model="activeTab"
+            class="pl-4 pr-4"
+        >
             <v-tab value="setting">설정</v-tab>
             <v-tab value="edit">폼 편집</v-tab>
             <v-tab value="preview">폼 미리보기</v-tab>

@@ -57,6 +57,8 @@
                         :isSystemChat="isSystemChat"
                         :chatRoomId="chatRoomId"
                         :newMessageInfo="newMessageInfo"
+                        :initialChatHeight="250"
+                        :maxAllowedBase="460"
                         @requestDraftAgent="requestDraftAgent"
                         @requestFile="requestFile"
                         @beforeReply="beforeReply"
@@ -751,7 +753,8 @@ export default {
                             const token = localStorage.getItem('accessToken');
                             const responseTable = await axios.post(`/execution/process-data-query`, {
                                 input: {
-                                    query: responseObj.content
+                                    query: responseObj.content,
+                                    user_id: this.userInfo.email
                                 }
                             },
                             {
@@ -761,7 +764,7 @@ export default {
                                 }
                             });
                             if(responseTable.data) {
-                                obj.tableData = responseTable.data.output
+                                obj.tableData = responseTable.data
                             } else {
                                 obj.tableData = null
                             }
