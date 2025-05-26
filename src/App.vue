@@ -73,6 +73,13 @@ export default {
                 this.loadScreen = true;
             }
         });
+
+        window.addEventListener('fcmTokenReceived', (event) => {
+            const data = JSON.parse(event.detail);
+            const token = data.token;
+            console.log('FCM 토큰 수신됨:', token);
+            localStorage.setItem('fcm_token', token);
+        }); 
         
         // 클릭 이벤트로 스낵바 닫기
         document.addEventListener('click', this.closeSnackbarOnEvent);
