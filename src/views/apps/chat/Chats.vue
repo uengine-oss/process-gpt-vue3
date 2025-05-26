@@ -732,9 +732,11 @@ export default {
                     // });
                     if(responseObj.work == 'CompanyQuery'){
                         try{
-                            let mementoRes = await axios.post(`/memento/query`, {
-                                query: responseObj.content,
-                                tenant_id: window.$tenantName
+                            let mementoRes = await axios.get(`/memento/query`, {
+                                params: {
+                                    query: responseObj.content,
+                                    tenant_id: window.$tenantName
+                                }
                             });
                             console.log(mementoRes)
                             obj.memento = {}

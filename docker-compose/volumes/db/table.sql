@@ -1395,8 +1395,7 @@ create table if not exists public.proc_def_marketplace (
     author_name text null,
     author_uid text null,
     import_count integer not null default 0,
-    constraint proc_def_marketplace_pkey primary key (uuid),
-    constraint proc_def_marketplace_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
+    constraint proc_def_marketplace_pkey primary key (uuid)
 ) tablespace pg_default;
 
 DO $$

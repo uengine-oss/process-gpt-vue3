@@ -1016,16 +1016,18 @@ export default {
             me.$try({
                 action: async () => {
                     if (!me.file) return; // 파일이 없으면 함수 종료
-        
-                    const formData = new FormData();
-                    formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
+                    const fileName = me.file[0].name;
+                    const response = await backend.uploadFile(fileName, me.file[0], 'drive');
+                    console.log(response);
+                    // const formData = new FormData();
+                    // formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
 
-                    const response = await axios.post(`/memento/uploadfile/`, formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data',
-                        },
-                    });
-                    console.log(response.data); // 응답 로그 출력
+                    // const response = await axios.post(`/memento/uploadfile/`, formData, {
+                    //     headers: {
+                    //         'Content-Type': 'multipart/form-data',
+                    //     },
+                    // });
+                    // console.log(response.data); // 응답 로그 출력
                     this.file = null
                     
                 },
@@ -1182,7 +1184,7 @@ export default {
                 }
             }
         },
-        send() {
+        async send() {
             if (this.editIndex >= 0) {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;

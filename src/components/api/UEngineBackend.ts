@@ -37,7 +37,7 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    async uploadFile(fileName: string, file: File) {
+    async uploadFile(fileName: string, file: File, storageType: string) {
         return null;
     }
 

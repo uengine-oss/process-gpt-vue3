@@ -984,33 +984,22 @@ class ProcessGPTBackend implements Backend {
                 return;
             }
 
-            const columnName: any = varName.toLowerCase().replace(/ /g, '_');
-            const instance: any = await this.getInstance(instId);
-            if (instance && instance.variables_data && instance.variables_data.length > 0) {
-                let existed = false;
-                instance.variables_data.forEach((item: any) => {
-                    if (item.key === columnName) {
-                        item.value = varValue.valueMap ? varValue.valueMap : varValue;
-                        existed = true;
-                    }
-                })
-                if (!existed) { 
-                    instance.variables_data.push({
-                        key: columnName,
-                        value: varValue.valueMap ? varValue.valueMap : varValue
-                    })
+            if (varValue.valueMap) {
+                varValue = varValue.valueMap;
+            }
+
+            if (varValue._type) {
+                delete varValue._type;
+            }
+
+            const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            if (workItem) {
+                const formId = workItem.tool.replace('formHandler:', '');
+                if (formId) {
+                    workItem.output[formId] = varValue;
                 }
-            } else {
-                instance.variables_data = [{
-                    key: columnName,
-                    value: varValue.valueMap ? varValue.valueMap : varValue
-                }]
             }
-            const putObj: any = {
-                proc_inst_id: instId,
-                variables_data: instance.variables_data
-            }
-            await storage.putObject('bpm_proc_inst', putObj);
+            await storage.putObject('todolist', workItem);
         } catch (error) {
             
             //@ts-ignore
@@ -1841,14 +1830,55 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadFile(fileName: string, file: File) {
+    async uploadFile(fileName: string, file: File, storageType: string) {
         try {
-            const res = await storage.uploadFile(fileName, file);
-            if (!res.error && res.fullPath) {
-                const indexRes = await this.indexFile(res.fullPath);
-                console.log(indexRes);
+            let response: any;
+            if (storageType === 'drive') {
+                response = await this.uploadFileToDrive(fileName, file);
+            } else {
+                response = await this.uploadFileToStorage(fileName, file);
             }
-            return res;
+            console.log(response);
+
+            if (!response.error) {
+                const indexRes = await this.processFile(response.fullPath, storageType);
+                console.log(indexRes);
+                return response;
+            } else {
+                return response;
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async uploadFileToStorage(fileName: string, file: File) {
+        try {
+            const response = await storage.uploadFile(fileName, file);
+            return response;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async uploadFileToDrive(fileName: string, file: File) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('file_name', fileName);
+
+            const response = await axios.post('/memento/save-to-drive', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            });
+
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data.message);
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1864,11 +1894,20 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async indexFile(filePath: string) {
+    async downloadFile(path: string) {
         try {
-            const response = await axios.post('/memento/index', JSON.stringify({
-                path: filePath
-            }), {
+            return await storage.downloadFile(path);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async processFile(filePath: string, storageType: string) {
+        try {
+            const response = await axios.post('/memento/process', {
+                file_path: filePath,
+                storage_type: storageType
+            }, {
                 headers: {
                     'Content-Type': 'application/json',
                 }
