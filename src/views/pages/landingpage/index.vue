@@ -1,8 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import Header from '@/components/landingpage/layout/Header.vue';
-import Revolution from '@/components/landingpage/section/Revolution.vue';
-import Footer from '@/components/landingpage/layout/Footer.vue';
+
+// 에이전트 메인페이지
+import './mainPage/mainPages.css'
+import Header from './mainPage/Header.vue';
+import HomeView from './mainPage/HomeView.vue';
+import Footer from './mainPage/Footer.vue';
+
+
+// 기존 메인페이지 
+// import Header from '@/components/landingpage/layout/Header.vue';
+// import Revolution from '@/components/landingpage/section/Revolution.vue';
+// import Footer from '@/components/landingpage/layout/Footer.vue';
 
 import 'aos/dist/aos.css';
 import AOS from 'aos';
@@ -14,19 +23,28 @@ onMounted(() => {
 </script>
 
 <template>
+    <!-- 기존 메인페이지 -->
     <div class="lp-wraper">
-        <!--Header-->
-        <Header />
+        <!-- <Header /> -->
         <!----------->
         <!--Content-->
-        <Revolution/>
+        <!-- <Revolution/>
         <OurProducts/>
         <Features/>
         <UserReview />
-        <Purchase/>
+        <Purchase/> -->
         <!----------->
         <!--Footer-->
-        <Footer />
+        <!-- <Footer /> -->
         <!----------->
     </div>
+
+    <!-- 에이전트 메인페이지 -->
+    <div style="background: white;">
+        <Header />
+        <HomeView />
+        <Footer />
+    </div>
+
+    
 </template>
