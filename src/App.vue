@@ -73,6 +73,10 @@ export default {
                 this.loadScreen = true;
             }
         });
+
+        window.addEventListener('fcmTokenReceived', (event) => {
+            localStorage.setItem('fcm_token', event.token);
+        }); 
         
         // 클릭 이벤트로 스낵바 닫기
         document.addEventListener('click', this.closeSnackbarOnEvent);
