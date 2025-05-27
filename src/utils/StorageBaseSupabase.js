@@ -53,7 +53,14 @@ export default class StorageBaseSupabase {
             if (refreshError) {
                 console.error('Error refreshing session (no initial tokens):', refreshError);
                 const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-                if (window.location.host.includes('process-gpt.io')) {
+                
+                // 웹뷰 환경 체크
+                const isWebView = window.navigator.userAgent.includes('wv');
+                
+                if (isWebView) {
+                    document.cookie = `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=None`;
+                    document.cookie = `refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=None`;
+                } else if (window.location.host.includes('process-gpt.io')) {
                     document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
                     document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
                 } else {
@@ -62,7 +69,11 @@ export default class StorageBaseSupabase {
                 }
                 window.localStorage.removeItem('accessToken');
             } else {
-                if (window.location.host.includes('process-gpt.io')) {
+                if (isWebView) {
+                    document.cookie = `access_token=${refreshData.session.access_token}; path=/; Secure; SameSite=None`;
+                    document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; Secure; SameSite=None`;
+                }
+                else if (window.location.host.includes('process-gpt.io')) {
                     document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
                     document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
                 } else {
@@ -779,7 +790,15 @@ export default class StorageBaseSupabase {
         try {
             if (value.session) {
                 window.localStorage.setItem('accessToken', value.session.access_token);
-                if (window.location.host.includes('process-gpt.io')) {
+                
+                // 웹뷰 환경 체크
+                const isWebView = window.navigator.userAgent.includes('wv');
+                
+                if (isWebView) {
+                    // 웹뷰에서는 SameSite=None 사용 및 도메인 설정 제외
+                    document.cookie = `access_token=${value.session.access_token}; path=/; Secure; SameSite=None`;
+                    document.cookie = `refresh_token=${value.session.refresh_token}; path=/; Secure; SameSite=None`;
+                } else if (window.location.host.includes('process-gpt.io')) {
                     document.cookie = `access_token=${value.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
                     document.cookie = `refresh_token=${value.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
                 } else {
