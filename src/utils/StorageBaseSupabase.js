@@ -1153,7 +1153,7 @@ export default class StorageBaseSupabase {
                     cacheControl: '3600',
                     upsert: false,
                     metadata: {
-                        originalFileName: fileName
+                        original_filename: fileName
                     }
                 });
 
@@ -1163,7 +1163,7 @@ export default class StorageBaseSupabase {
 
             return {
                 ...data,
-                originalFileName: fileName
+                original_filename: fileName
             };
         } catch (error) {
             throw new StorageBaseError('error in uploadFile', error, arguments);

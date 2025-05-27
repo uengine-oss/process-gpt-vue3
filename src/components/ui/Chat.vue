@@ -3,6 +3,7 @@
         <div>
             <div>
                 <div>
+                    <slot name="attachments-area"></slot>
                     <slot name="custom-title">
                         <div class="chat-info-title" style="position: sticky; top:0px; z-index:1; background-color:white;">
                             <div class="align-right gap-3 pa-4 justify-space-between">
@@ -1089,29 +1090,38 @@ export default {
                 this.isMicRecorderLoading = false; // 로딩 상태 종료
             }
         },
-        async submitFile() {
+        submitFile() {
             var me = this
+            if (!me.file) return;
+            const fileName = me.file[0].name;
+            const fileObj = {
+                chat_room_id: me.chatRoomId,
+                user_name: me.userInfo.name
+            }
+            backend.uploadFile(fileName, me.file[0], 'drive', fileObj).then((response) => {
+                me.$try({
+                    action: async () => {
+                        console.log(response);
+                        this.file = null
+                    },
+                    successMsg: '파일 업로드가 완료되었습니다.'
+                })
+            });
             
-            me.$try({
-                action: async () => {
-                    if (!me.file) return; // 파일이 없으면 함수 종료
-                    const fileName = me.file[0].name;
-                    const response = await backend.uploadFile(fileName, me.file[0], 'drive');
-                    console.log(response);
-                    // const formData = new FormData();
-                    // formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
-
-                    // const response = await axios.post(`/memento/uploadfile/`, formData, {
-                    //     headers: {
-                    //         'Content-Type': 'multipart/form-data',
-                    //     },
-                    // });
-                    // console.log(response.data); // 응답 로그 출력
-                    this.file = null
-                    
-                },
-                successMsg: '파일 업로드가 완료되었습니다.'
-            })
+            // me.$try({
+            //     action: async () => {
+            //         if (!me.file) return;
+            //         const fileName = me.file[0].name;
+            //         const fileObj = {
+            //             chat_room_id: me.chatRoomId,
+            //             user_name: me.userInfo.name
+            //         }
+            //         const response = await backend.uploadFile(fileName, me.file[0], 'drive', fileObj);
+            //         console.log(response);
+            //         this.file = null
+            //     },
+            //     successMsg: '파일 업로드가 완료되었습니다.'
+            // })
         },
         openVerMangerDialog() {
             this.$emit('openVerMangerDialog', true)

@@ -1830,18 +1830,18 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadFile(fileName: string, file: File, storageType: string) {
+    async uploadFile(fileName: string, file: File, storageType: string, options?: any) {
         try {
             let response: any;
             if (storageType === 'drive') {
-                response = await this.uploadFileToDrive(fileName, file);
+                response = await this.uploadFileToDrive(fileName, file, options);
             } else {
+                storageType = 'storage';
                 response = await this.uploadFileToStorage(fileName, file);
             }
-            console.log(response);
 
             if (!response.error) {
-                const indexRes = await this.processFile(response.fullPath, storageType);
+                const indexRes = await this.processFile(response, storageType);
                 console.log(indexRes);
                 return response;
             } else {
@@ -1862,7 +1862,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadFileToDrive(fileName: string, file: File) {
+    async uploadFileToDrive(fileName: string, file: File, options?: any) {
         try {
             const formData = new FormData();
             formData.append('file', file);
@@ -1875,6 +1875,16 @@ class ProcessGPTBackend implements Backend {
             });
 
             if (response.status === 200) {
+                if (options && options.chat_room_id) {
+                    const putObj = {
+                        id: response.data.file_id,
+                        file_name: response.data.file_name,
+                        file_path: response.data.download_link,
+                        chat_room_id: options.chat_room_id,
+                        user_name: options.user_name
+                    }
+                    await storage.putObject('chat_attachments', putObj);
+                }
                 return response.data;
             } else {
                 throw new Error(response.data.message);
@@ -1902,10 +1912,21 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async processFile(filePath: string, storageType: string) {
+    async processFile(file: any, storageType: string) {
         try {
+            let file_path = '';
+            let original_filename = '';
+            if (storageType == 'storage') {
+                file_path = file.fullPath.replace('files/', '');
+                original_filename = file.original_filename;
+            } else {
+                file_path = file.file_name;
+                original_filename = file.file_name;
+            }
+
             const response = await axios.post('/memento/process', {
-                file_path: filePath,
+                file_path: file_path,
+                original_filename: original_filename,
                 storage_type: storageType
             }, {
                 headers: {
@@ -1916,6 +1937,30 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    async getAttachments(chatRoomId: string, callback: (attachment: any) => void) {
+        await storage.watch('chat_attachments', chatRoomId, (payload) => {
+            if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+                const attachment = payload.new;
+                if (callback) {
+                    callback(attachment);
+                }
+            }
+        });
+
+        if (callback) {
+            const attachments = await storage.list('chat_attachments', {
+                match: {
+                    chat_room_id: chatRoomId
+                }
+            });
+            if (attachments && attachments.length > 0) {
+                for (const attachment of attachments) {
+                    callback(attachment);
+                }
+            }
         }
     }
 
