@@ -71,7 +71,25 @@
                         @stopMessage="stopMessage"
                         @toggleProcessGPTActive="toggleProcessGPTActive"
                         @startWorkOrder="startWorkOrder"
-                    ></Chat>
+                    >
+                        <template #attachments-area>
+                            <div class="attachment-container">
+                                <div class="position-fixed">
+                                    <div v-if="attachments.length > 0">
+                                        <v-tooltip text="Attachments" location="right">
+                                            <template v-slot:activator="{ props }">
+                                                <v-btn v-bind="props" @click="toggleAttachments" icon variant="text" class="text-medium-emphasis">
+                                                    <v-icon v-if="isAttachmentsOpen">mdi-close</v-icon>
+                                                    <v-icon v-else>mdi-chevron-down</v-icon>
+                                                </v-btn>
+                                            </template>
+                                        </v-tooltip>
+                                    </div>
+                                    <Attachments :isOpen="isAttachmentsOpen" :attachments="attachments" />
+                                </div>
+                            </div>
+                        </template>
+                    </Chat>
                 </div>
             </template>
 
@@ -206,6 +224,7 @@
 
 <script>
 import AssistantChats from "../chat/AssistantChats.vue";
+import Attachments from "./Attachments.vue";
 import ChatModule from "@/components/ChatModule.vue";
 import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
@@ -228,8 +247,8 @@ export default {
         UserListing,
         ChatProfile,
         VDataTable,
-        AssistantChats
-
+        AssistantChats,
+        Attachments
     },
     data: () => ({
         headers: [
@@ -256,6 +275,10 @@ export default {
         selectedUserInfo: null,
         timeBoundMenu: false,
         myChatRoomIds: [],
+
+        // attachments
+        isAttachmentsOpen: false,
+        attachments: [],
     }),
     computed: {
         filteredChatRoomList() {
@@ -264,10 +287,11 @@ export default {
     },
     watch: {
         currentChatRoom: {
-            handler(newVal) {
+            async handler(newVal) {
                 if(this.generator && newVal && newVal.id){
                     this.chatRoomId = newVal.id;
                     this.generator.setChatRoomData(newVal);
+                    await this.getAttachments();
                 }
             },
             deep: true
@@ -292,6 +316,7 @@ export default {
         await this.getChatRoomList();
         await this.getUserList();
         await this.getCalendar();
+        await this.getAttachments();
 
         this.EventBus.on('messages-updated', () => {
             this.chatRenderKey++;
@@ -301,6 +326,18 @@ export default {
         this.EventBus.emit('chat-room-unselected');
     },
     methods: {
+        toggleAttachments() {
+            this.isAttachmentsOpen = !this.isAttachmentsOpen;
+        },
+        async getAttachments() {
+            await this.backend.getAttachments(this.chatRoomId, (attachment) => {
+                if (this.attachments.find(a => a.id == attachment.id)) {
+                    return;
+                } else {
+                    this.attachments.push(attachment);
+                }
+            });
+        },
         selectedUser(user){
             this.selectedUserInfo = user
         },
@@ -734,9 +771,11 @@ export default {
                     // });
                     if(responseObj.work == 'CompanyQuery'){
                         try{
-                            let mementoRes = await axios.post(`/memento/query`, {
-                                query: responseObj.content,
-                                tenant_id: window.$tenantName
+                            let mementoRes = await axios.get(`/memento/query`, {
+                                params: {
+                                    query: responseObj.content,
+                                    tenant_id: window.$tenantName
+                                }
                             });
                             console.log(mementoRes)
                             obj.memento = {}
@@ -805,4 +844,14 @@ export default {
     height:81.6vh;
     overflow: auto;
 }
+
+.attachment-container {
+    position: relative;
+    z-index: 1000;
+}
+
+.attachment-container .v-btn {
+    background-color: white;
+}
+
 </style>

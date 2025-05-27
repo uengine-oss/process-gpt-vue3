@@ -1174,13 +1174,26 @@ export default class StorageBaseSupabase {
     async uploadFile(fileName, file) {
         try {
             const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-            const { data, error } = await window.$supabase.storage.from('files').upload(sanitizedFileName, file);
+            const storageFileName = `uploads/${Date.now()}_${sanitizedFileName}`;
+            
+            const { data, error } = await window.$supabase.storage
+                .from('files')
+                .upload(storageFileName, file, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    metadata: {
+                        original_filename: fileName
+                    }
+                });
 
             if (error) {
                 return error;
             }
 
-            return data;
+            return {
+                ...data,
+                original_filename: fileName
+            };
         } catch (error) {
             throw new StorageBaseError('error in uploadFile', error, arguments);
         }
@@ -1197,6 +1210,37 @@ export default class StorageBaseSupabase {
             return data.publicUrl;
         } catch (error) {
             throw new StorageBaseError('error in getFileUrl', error, arguments);
+        }
+    }
+
+    async downloadFile(path) {
+        try {
+            const { data: urlData, error: urlError } = await window.$supabase.storage
+                .from('files')
+                .getPublicUrl(path);
+
+            if (urlError) {
+                console.log(urlError);
+                return urlError;
+            }
+
+            const response = await fetch(urlData.publicUrl);
+            const blob = await response.blob();
+            
+            const originalFileName = path.split('/').pop().split('_').slice(1).join('_');
+            const file = new File([blob], originalFileName, { type: blob.type });
+
+            if (file) {
+                return {
+                    file: file,
+                    file_path: path,
+                    originalFileName: originalFileName
+                };
+            } else {
+                return null;
+            }
+        } catch (error) {
+            throw new StorageBaseError('error in downloadFile', error, arguments);
         }
     }
 }

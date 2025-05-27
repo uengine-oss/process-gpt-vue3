@@ -984,33 +984,22 @@ class ProcessGPTBackend implements Backend {
                 return;
             }
 
-            const columnName: any = varName.toLowerCase().replace(/ /g, '_');
-            const instance: any = await this.getInstance(instId);
-            if (instance && instance.variables_data && instance.variables_data.length > 0) {
-                let existed = false;
-                instance.variables_data.forEach((item: any) => {
-                    if (item.key === columnName) {
-                        item.value = varValue.valueMap ? varValue.valueMap : varValue;
-                        existed = true;
-                    }
-                })
-                if (!existed) { 
-                    instance.variables_data.push({
-                        key: columnName,
-                        value: varValue.valueMap ? varValue.valueMap : varValue
-                    })
+            if (varValue.valueMap) {
+                varValue = varValue.valueMap;
+            }
+
+            if (varValue._type) {
+                delete varValue._type;
+            }
+
+            const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            if (workItem) {
+                const formId = workItem.tool.replace('formHandler:', '');
+                if (formId) {
+                    workItem.output[formId] = varValue;
                 }
-            } else {
-                instance.variables_data = [{
-                    key: columnName,
-                    value: varValue.valueMap ? varValue.valueMap : varValue
-                }]
             }
-            const putObj: any = {
-                proc_inst_id: instId,
-                variables_data: instance.variables_data
-            }
-            await storage.putObject('bpm_proc_inst', putObj);
+            await storage.putObject('todolist', workItem);
         } catch (error) {
             
             //@ts-ignore
@@ -1841,14 +1830,65 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadFile(fileName: string, file: File) {
+    async uploadFile(fileName: string, file: File, storageType: string, options?: any) {
         try {
-            const res = await storage.uploadFile(fileName, file);
-            if (!res.error && res.fullPath) {
-                const indexRes = await this.indexFile(res.fullPath);
-                console.log(indexRes);
+            let response: any;
+            if (storageType === 'drive') {
+                response = await this.uploadFileToDrive(fileName, file, options);
+            } else {
+                storageType = 'storage';
+                response = await this.uploadFileToStorage(fileName, file);
             }
-            return res;
+
+            if (!response.error) {
+                const indexRes = await this.processFile(response, storageType);
+                console.log(indexRes);
+                return response;
+            } else {
+                return response;
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async uploadFileToStorage(fileName: string, file: File) {
+        try {
+            const response = await storage.uploadFile(fileName, file);
+            return response;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async uploadFileToDrive(fileName: string, file: File, options?: any) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('file_name', fileName);
+
+            const response = await axios.post('/memento/save-to-drive', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            });
+
+            if (response.status === 200) {
+                if (options && options.chat_room_id) {
+                    const putObj = {
+                        id: response.data.file_id,
+                        file_name: response.data.file_name,
+                        file_path: response.data.download_link,
+                        chat_room_id: options.chat_room_id,
+                        user_name: options.user_name
+                    }
+                    await storage.putObject('chat_attachments', putObj);
+                }
+                return response.data;
+            } else {
+                throw new Error(response.data.message);
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1864,11 +1904,31 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async indexFile(filePath: string) {
+    async downloadFile(path: string) {
         try {
-            const response = await axios.post('/memento/index', JSON.stringify({
-                path: filePath
-            }), {
+            return await storage.downloadFile(path);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async processFile(file: any, storageType: string) {
+        try {
+            let file_path = '';
+            let original_filename = '';
+            if (storageType == 'storage') {
+                file_path = file.fullPath.replace('files/', '');
+                original_filename = file.original_filename;
+            } else {
+                file_path = file.file_name;
+                original_filename = file.file_name;
+            }
+
+            const response = await axios.post('/memento/process', {
+                file_path: file_path,
+                original_filename: original_filename,
+                storage_type: storageType
+            }, {
                 headers: {
                     'Content-Type': 'application/json',
                 }
@@ -1877,6 +1937,30 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    async getAttachments(chatRoomId: string, callback: (attachment: any) => void) {
+        await storage.watch('chat_attachments', chatRoomId, (payload) => {
+            if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+                const attachment = payload.new;
+                if (callback) {
+                    callback(attachment);
+                }
+            }
+        });
+
+        if (callback) {
+            const attachments = await storage.list('chat_attachments', {
+                match: {
+                    chat_room_id: chatRoomId
+                }
+            });
+            if (attachments && attachments.length > 0) {
+                for (const attachment of attachments) {
+                    callback(attachment);
+                }
+            }
         }
     }
 

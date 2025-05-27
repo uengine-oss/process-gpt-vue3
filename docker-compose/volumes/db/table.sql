@@ -1096,6 +1096,19 @@ execute function handle_chat_insert();
 
 
 
+create table if not exists public.chat_attachments (
+    id text not null,
+    file_name text null,
+    file_path text null,
+    chat_room_id text null,
+    user_id text null,
+    created_at timestamp with time zone not null default now(),
+    constraint chat_attachments_pkey primary key (id),
+    constraint chat_attachments_chat_room_id_fkey foreign key (chat_room_id) references chat_rooms (id)
+) tablespace pg_default;
+
+
+
 create table if not exists public.calendar (
     uid text not null,
     data jsonb null,
@@ -1349,8 +1362,9 @@ create table documents (
 );
 
 create or replace function match_documents(
-  filter jsonb,
-  query_embedding vector(1536)
+  query_embedding vector(1536),
+  filter jsonb default '{}'::jsonb,
+  match_count int default 5
 )
 returns table (
   id uuid,
@@ -1361,14 +1375,30 @@ returns table (
 language sql
 as $$
   select
-    id,
-    content,
-    metadata,
-    1 - (embedding <=> query_embedding) as similarity
+    documents.id,
+    documents.content,
+    documents.metadata,
+    1 - (documents.embedding <=> query_embedding) as similarity
   from documents
-  where metadata @> filter
-  order by embedding <=> query_embedding;
+  where documents.metadata @> filter
+  order by documents.embedding <=> query_embedding
+  limit match_count;
 $$;
+
+create table
+  public.processed_files (
+    id uuid not null default uuid_generate_v4 (),
+    file_id text not null,
+    tenant_id text not null,
+    processed_at timestamp with time zone null default now(),
+    file_name text null,
+    constraint processed_files_pkey primary key (id),
+    constraint processed_files_file_id_tenant_id_key unique (file_id, tenant_id)
+  ) tablespace pg_default;
+
+create index if not exists idx_processed_files_tenant_id on public.processed_files using btree (tenant_id) tablespace pg_default;
+
+create index if not exists idx_processed_files_file_id on public.processed_files using btree (file_id) tablespace pg_default;
 
 
 
@@ -1399,8 +1429,7 @@ create table if not exists public.proc_def_marketplace (
     author_name text null,
     author_uid text null,
     import_count integer not null default 0,
-    constraint proc_def_marketplace_pkey primary key (uuid),
-    constraint proc_def_marketplace_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
+    constraint proc_def_marketplace_pkey primary key (uuid)
 ) tablespace pg_default;
 
 DO $$
