@@ -869,7 +869,7 @@ export default {
                         if (me.processDefinition.processDefinitionId == 'definition-map') me.processDefinition.processDefinitionId = info.proc_def_id
 
                         // 최초 저장 시 폼 정보 저장
-                        if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
+                        if (me.$route.fullPath.includes('/chat') || me.$route.fullPath.includes('/definition-map')) {
                             if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
                                 me.processDefinition.data = [];
                                 me.processDefinition.activities.forEach(async (activity) => {

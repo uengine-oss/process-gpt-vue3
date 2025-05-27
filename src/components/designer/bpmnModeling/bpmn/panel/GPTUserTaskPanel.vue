@@ -211,8 +211,7 @@ export default {
             }
             if (files && files.length > 0) {
                 files.forEach(async (file) => {
-                    const fileName = `uploads/${Date.now()}_${file.name}`;
-                    const data = await me.backend.uploadFile(fileName, file);
+                    const data = await me.backend.uploadFile(file.name, file);
                     if (data && data.path) {
                         me.activity.attachments.push(data.path);
                     }
