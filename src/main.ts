@@ -166,11 +166,6 @@ async function setupTenant() {
             configurable: false
         });
     }
-
-    console.log('hostname:', window.location.hostname);
-    console.log('subdomain:', window.location.hostname.split('.')[0]);
-    console.log('$isTenantServer:', window.$isTenantServer);
-    console.log('$tenantName:', window.$tenantName);
 }
 
 async function initializeApp() {
