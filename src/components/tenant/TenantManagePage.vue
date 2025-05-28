@@ -134,10 +134,19 @@ export default {
         
         async toSelectedTenantPage(tenantId) {
             await backend.setTenant(tenantId);
+            
+            // Android 웹뷰 브릿지 체크
+            if (window.AndroidBridge) {
+                // 네이티브 앱에 테넌트 변경 요청
+                window.AndroidBridge.changeTenant(tenantId);
+                return;
+            }
+
+            // 일반 웹 브라우저인 경우 기존 로직 실행
             if(!location.port || location.port == '') {
-                location.href = `https://${tenantId}.process-gpt.io`
+                location.href = `https://${tenantId}.process-gpt.io`;
             } else {
-                location.href = `http://${tenantId}.process-gpt.io:${location.port}`
+                location.href = `http://${tenantId}.process-gpt.io:${location.port}`;
             }
         }
     },
