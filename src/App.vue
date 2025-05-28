@@ -105,8 +105,10 @@ export default {
                         }
                         return;
                     } else {
-                        const res = await this.backend.setTenant(window.$tenantName);
-                        if (!res) {
+                        // 루트 페이지인 경우 로그인 체크 건너뛰기 옵션 추가
+                        const skipLoginCheck = window.location.pathname === '/';
+                        const res = await this.backend.setTenant(window.$tenantName, skipLoginCheck);
+                        if (!res && !skipLoginCheck) {
                             this.$try({}, null, {
                                 errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
                             })

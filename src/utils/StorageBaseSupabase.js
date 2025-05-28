@@ -312,6 +312,11 @@ export default class StorageBaseSupabase {
                     }
                 }
             } else {
+                // 루트 페이지('/')에서는 로그인 체크를 하지 않음
+                if (window.location.pathname === '/') {
+                    return null;
+                }
+                
                 if (window.location.pathname != '/auth/login') {
                     await window.$app_.try({
                         action: () => Promise.reject(new Error()),

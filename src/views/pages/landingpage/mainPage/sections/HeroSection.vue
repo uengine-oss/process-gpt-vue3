@@ -45,6 +45,9 @@
 </template>
 
 <script>
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
+
 export default {
   name: 'HeroSection',
   methods: {
@@ -61,30 +64,22 @@ export default {
 
     // vue3에서는 methods에 함수 선언식으로 작성
     async gotoStart() {
-        // 로그인 여부 확인 함수
-        const checkIsLogin = async () => {
-            // isLogin이 false일 때 로그인 필요 알림
-            if (!this.isLogin) {
-                alert("로그인이 필요합니다.");
-                await this.$router.push('/auth/login');
-                return false;
-            }
-            return true;
-        };
+        // 로그인 여부 확인
+        const isLogin = await backend.checkDBConnection();
+        if(!isLogin) {
+            alert("로그인이 필요합니다.");
+            await this.$router.push('/auth/login');
+            return;
+        }
 
         // 적절한 URL로 이동하는 함수
-        const gotoProperUrl = async () => {
-            let gotoUrl = "";
+        let gotoUrl = "";
 
-            if (window.$isTenantServer) gotoUrl = '/tenant/manage';
-            // 둘 다 '/definition-map'으로 이동하도록 수정
-            else gotoUrl = '/definition-map';
+        if (window.$isTenantServer) gotoUrl = '/tenant/manage';
+        // 둘 다 '/definition-map'으로 이동하도록 수정
+        else gotoUrl = '/definition-map';
 
-            await this.$router.push(gotoUrl);
-        };
-
-        // 로그인 확인 후 이동
-        if (await checkIsLogin()) await gotoProperUrl();
+        await this.$router.push(gotoUrl);
     },
   }
 }
