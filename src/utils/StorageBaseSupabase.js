@@ -42,11 +42,11 @@ export default class StorageBaseSupabase {
 
             if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
                 console.log('4. 세션 설정 시도');
-                console.log('setSession 호출 전 supabase 상태:', {
+                console.log('setSession 호출 전 supabase 상태:', JSON.stringify({
                     isConnected: window.$supabase?.auth?.autoRefreshToken,
                     hasSession: window.$supabase?.auth?.session,
                     currentUrl: window.location.href
-                });
+                }));
 
                 console.log('accessToken', accessToken)
                 console.log('refreshToken', refreshToken)
@@ -54,9 +54,6 @@ export default class StorageBaseSupabase {
                     access_token: accessToken,
                     refresh_token: refreshToken
                 });
-
-                console.log('API 요청 URL:', window.$supabase.auth.api.url);
-                console.log('현재 요청 헤더:', window.$supabase.auth.headers);
 
                 console.log('setSession 호출 후 결과:', {
                     error: sessionResult.error,
