@@ -113,11 +113,7 @@ export default {
         const isLogin = await backend.checkDBConnection();
         if(!isLogin) {
             alert("로그인이 필요합니다.")
-            if(window.navigator.userAgent.includes('wv')){
-                window.location.href = 'https://www.process-gpt.io/auth/login'
-            } else {
-                this.$router.push('/auth/login')
-            }
+            this.$router.push('/auth/login')
         }
         const tenants = await backend.getTenants();
         this.tenantInfos = tenants;
