@@ -5,7 +5,8 @@ import { ref } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 const authStore = useAuthStore();
 const checkbox = ref(false);
-const password = ref('admin123');
+const password = ref('');
+const showPassword = ref(false);
 
 // localStorage에서 이메일을 가져오고, 없으면 빈 문자열로 설정
 const storedEmail = localStorage.getItem('email') || '';
@@ -37,8 +38,11 @@ function validate(values: any, { setErrors }: any) {
             :rules="passwordRules"
             required
             hide-details="auto"
-            type="password"
+            :type="showPassword ? 'text' : 'password'"
             class="pwdInput cp-pwd"
+            :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+            @click:append-inner="showPassword = !showPassword"
+            style="background: #E8F0FE;"
         ></VTextField>
         <div class="d-flex flex-wrap align-center my-3 ml-n2">
             <v-checkbox v-model="checkbox" :rules="[(v:any) => !!v || 'You must agree to continue!']" required hide-details color="primary">
