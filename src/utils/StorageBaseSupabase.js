@@ -63,11 +63,7 @@ export default class StorageBaseSupabase {
                 }
                 window.localStorage.removeItem('accessToken');
             } else {
-                if (isWebView) {
-                    document.cookie = `access_token=${refreshData.session.access_token}; path=/; Secure; SameSite=None`;
-                    document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; Secure; SameSite=None`;
-                }
-                else if (window.location.host.includes('process-gpt.io')) {
+                if (window.location.host.includes('process-gpt.io')) {
                     document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
                     document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
                 } else {
