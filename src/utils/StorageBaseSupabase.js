@@ -50,14 +50,14 @@ export default class StorageBaseSupabase {
     async refreshSession() {
         try {
             const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
+            const isWebView = window.navigator.userAgent.includes('wv');
+
             if (refreshError) {
                 console.error('Error refreshing session (no initial tokens):', refreshError);
                 const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
                 
-                // 웹뷰 환경 체크
-                const isWebView = window.navigator.userAgent.includes('wv');
-                
                 if (isWebView) {
+                    console.log('isWebView1')
                     document.cookie = `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=None`;
                     document.cookie = `refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=None`;
                 } else if (window.location.host.includes('process-gpt.io')) {
@@ -70,6 +70,7 @@ export default class StorageBaseSupabase {
                 window.localStorage.removeItem('accessToken');
             } else {
                 if (isWebView) {
+                    console.log('isWebView2')
                     document.cookie = `access_token=${refreshData.session.access_token}; path=/; Secure; SameSite=None`;
                     document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; Secure; SameSite=None`;
                 }
@@ -795,6 +796,7 @@ export default class StorageBaseSupabase {
                 const isWebView = window.navigator.userAgent.includes('wv');
                 
                 if (isWebView) {
+                    console.log('isWebView3')
                     // 웹뷰에서는 SameSite=None 사용 및 도메인 설정 제외
                     document.cookie = `access_token=${value.session.access_token}; path=/; Secure; SameSite=None`;
                     document.cookie = `refresh_token=${value.session.refresh_token}; path=/; Secure; SameSite=None`;
