@@ -3,7 +3,7 @@
     <div class="container">
       <div class="footer-content">
         <div class="logo">
-          <img src="@/assets/images/mainPages/uEngine_logo.png" alt="Process GPT 로고" />
+          <img src="@/assets/images/mainPages/uengine_logo_img.png" alt="Process GPT 로고" />
         </div>
       </div>
       <div class="footer-bottom">
