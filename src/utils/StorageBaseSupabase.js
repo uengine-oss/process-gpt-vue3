@@ -13,7 +13,8 @@ export default class StorageBaseSupabase {
         try {
             let accessToken = "";
             let refreshToken = "";
-           
+            console.log('document', document)
+            console.log('document.cookie', document.cookie)
             if (document.cookie && document.cookie.includes('; ')) {
                 accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token'))?.split('=')[1];
                 refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token'))?.split('=')[1];
@@ -106,11 +107,15 @@ export default class StorageBaseSupabase {
 
     async signIn(userInfo) {
         try {
+            console.log('signIn', userInfo)
             const filter = { match: { email: userInfo.email } }
+            console.log('tenantName', window.$tenantName)
             if (window.$tenantName) {
                 filter.match.tenant_id = window.$tenantName;
             }
             const existUser = await this.getObject('users', filter);
+            console.log('existUser', existUser)
+            console.log('isTenantServer', window.$isTenantServer)
             if ((window.$isTenantServer && !window.$tenantName) || (existUser && existUser.id)) {
                 const result = await window.$supabase.auth.signInWithPassword({
                     email: userInfo.email,
