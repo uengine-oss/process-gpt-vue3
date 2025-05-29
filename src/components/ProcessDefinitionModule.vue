@@ -874,9 +874,9 @@ export default {
                                 me.processDefinition.data = [];
                                 me.processDefinition.activities.forEach(async (activity) => {
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
-                                        activity.tool.replace("formHandler:definition-map_", info.proc_def_id + '_')
                                         let formHtml = null;
                                         const formId = info.proc_def_id + '_' + activity.id + '_form';
+                                        activity.tool = `formHandler:${formId}`;
                                         const currentFormHtml = localStorage.getItem(formId);
                                         if (currentFormHtml) {
                                             formHtml = currentFormHtml;
