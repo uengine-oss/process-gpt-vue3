@@ -2135,13 +2135,41 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async listMarketplaceDefinition() {
+    async listMarketplaceDefinition(tagOrKeyword?: string, isSearch: boolean = false) {
         try {
             const options = {
                 orderBy: 'import_count',
                 sort: 'desc',
             }
             const list = await storage.list('proc_def_marketplace', options);
+            
+            // 검색 기능이 활성화된 경우
+            if (isSearch && tagOrKeyword && tagOrKeyword.trim() !== '') {
+                const keyword = tagOrKeyword.toLowerCase().trim();
+                return list.filter(item => {
+                    // 이름, 작성자, 태그 검색
+                    const nameMatch = item.name && item.name.toLowerCase().includes(keyword);
+                    const authorMatch = item.author_name && item.author_name.toLowerCase().includes(keyword);
+                    
+                    // 태그 검색
+                    let tagMatch = false;
+                    if (item.tags) {
+                        const tags = item.tags.split(',').map((t: string) => t.trim().toLowerCase());
+                        tagMatch = tags.some(tag => tag.includes(keyword));
+                    }
+                    
+                    return nameMatch || authorMatch || tagMatch;
+                });
+            }
+            // 태그 필터링
+            else if (tagOrKeyword && tagOrKeyword !== 'all') {
+                return list.filter(item => {
+                    if (!item.tags) return false;
+                    const tags = item.tags.split(',').map((t: string) => t.trim());
+                    return tags.includes(tagOrKeyword);
+                });
+            }
+            
             return list;
         } catch (error) {
             throw new Error(error.message);

@@ -903,5 +903,27 @@
     },
     "ProcessDefinitionChatHeader": {
         "addMarketplace" : "마켓플레이스 등록"
+    },
+    "ProcessDefinitionMarketPlaceDialog": {
+        "title": "마켓플레이스 등록",
+        "processId": "프로세스 아이디",
+        "processName": "프로세스 이름",
+        "description": "설명",
+        "category1": "카테고리1",
+        "category2": "카테고리2",
+        "tags": "태그",
+        "register": "등록",
+        "requiredField": "필수 입력 항목입니다"
+    },
+    "ProcessDefinitionMarketPlace": {
+        "searchPlaceholder": "프로세스 이름, 작성자, 태그 검색",
+        "allCategory": "전체",
+        "searchResultTitle": "검색 결과",
+        "searchingTitle": "검색 중...",
+        "relatedTemplates": "관련 템플릿",
+        "addedButton": "추가됨",
+        "addButton": "추가",
+        "otherCategory": "기타",
+        "countUnit": "개"
     }
 }

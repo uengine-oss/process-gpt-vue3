@@ -902,5 +902,27 @@
     },
     "ProcessDefinitionChatHeader": {
         "addMarketplace": "Register to Marketplace"
+    },
+    "ProcessDefinitionMarketPlaceDialog": {
+        "title": "Register to Marketplace",
+        "processId": "Process ID",
+        "processName": "Process Name",
+        "description": "Description",
+        "category1": "Category 1",
+        "category2": "Category 2",
+        "tags": "Tags",
+        "register": "Register",
+        "requiredField": "This field is required"
+    },
+    "ProcessDefinitionMarketPlace": {
+        "searchPlaceholder": "Search by process name, author, or tag",
+        "allCategory": "All",
+        "searchResultTitle": "Search Results",
+        "searchingTitle": "Searching...",
+        "relatedTemplates": "Related Templates",
+        "addedButton": "Added",
+        "addButton": "Add",
+        "otherCategory": "Other",
+        "countUnit": "items"
     }
 }
