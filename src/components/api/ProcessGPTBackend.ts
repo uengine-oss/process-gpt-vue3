@@ -1564,6 +1564,63 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async getAgentList() {
+        try {
+            const options = {
+                match: {
+                    tenant_id: window.$tenantName
+                }
+            }
+            const list = await storage.list('agents', options);
+            return list;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getAgent(agentId: string) {
+        try {
+            const options = {
+                match: {
+                    id: agentId
+                }
+            }
+            const agent = await storage.getObject('agents', options);
+            return agent;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async putAgent(newAgent: any) {
+        try {
+            const putObj: any = {
+                id: newAgent.id,
+                name: newAgent.name,
+                role: newAgent.role,
+                goal: newAgent.goal,
+                persona: newAgent.persona,
+                tenant_id: window.$tenantName
+            }
+            await storage.putObject('agents', putObj);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteAgent(agentId: string) {
+        try {
+            await storage.delete('agents', { match: { id: agentId } });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getUserInfo() {
         try {
             const user = await storage.getUserInfo();
@@ -1927,7 +1984,8 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.post('/memento/process', {
                 file_path: file_path,
                 original_filename: original_filename,
-                storage_type: storageType
+                storage_type: storageType,
+                tenant_id: window.$tenantName
             }, {
                 headers: {
                     'Content-Type': 'application/json',
