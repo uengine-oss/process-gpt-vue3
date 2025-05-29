@@ -911,5 +911,8 @@
         "submit": "Submit",
         "submitted": "Submitted",
         "submittedMessage": "Submitted successfully."
+    },
+    "ProcessDefinitionChatHeader": {
+        "addMarketplace": "Register to Marketplace"
     }
 }

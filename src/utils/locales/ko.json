@@ -912,5 +912,8 @@
         "submit": "제출",
         "submitted": "제출 완료",
         "submittedMessage": "제출되었습니다."
+    },
+    "ProcessDefinitionChatHeader": {
+        "addMarketplace" : "마켓플레이스 등록"
     }
 }
