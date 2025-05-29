@@ -375,7 +375,7 @@ export default class StorageBaseSupabase {
                 if (window.location.pathname != '/auth/login') {
                     await window.$app_.try({
                         action: () => Promise.reject(new Error()),
-                        errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
+                        // errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
                     });
                     window.location.href = '/auth/login';
                 }
