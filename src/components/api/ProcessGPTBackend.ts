@@ -1938,7 +1938,8 @@ class ProcessGPTBackend implements Backend {
                         file_name: response.data.file_name,
                         file_path: response.data.download_link,
                         chat_room_id: options.chat_room_id,
-                        user_name: options.user_name
+                        user_name: options.user_name,
+                        tenant_id: window.$tenantName
                     }
                     await storage.putObject('chat_attachments', putObj);
                 }
