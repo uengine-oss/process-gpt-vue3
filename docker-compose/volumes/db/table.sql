@@ -1101,11 +1101,34 @@ create table if not exists public.chat_attachments (
     file_name text null,
     file_path text null,
     chat_room_id text null,
-    user_id text null,
+    user_name text null,
     created_at timestamp with time zone not null default now(),
     constraint chat_attachments_pkey primary key (id),
-    constraint chat_attachments_chat_room_id_fkey foreign key (chat_room_id) references chat_rooms (id)
+    constraint chat_attachments_chat_room_id_fkey foreign key (chat_room_id) references chat_rooms (id) on update cascade on delete cascade
 ) tablespace pg_default;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chat_attachments' AND column_name='id') THEN
+        ALTER TABLE public.chat_attachments ADD COLUMN id text not null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chat_attachments' AND column_name='file_name') THEN
+        ALTER TABLE public.chat_attachments ADD COLUMN file_name text null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chat_attachments' AND column_name='file_path') THEN
+        ALTER TABLE public.chat_attachments ADD COLUMN file_path text null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chat_attachments' AND column_name='chat_room_id') THEN
+        ALTER TABLE public.chat_attachments ADD COLUMN chat_room_id text null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chat_attachments' AND column_name='user_name') THEN
+        ALTER TABLE public.chat_attachments ADD COLUMN user_name text null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chat_attachments' AND column_name='created_at') THEN
+        ALTER TABLE public.chat_attachments ADD COLUMN created_at timestamp with time zone not null default now();
+    END IF;
+END;
+$$;
 
 
 
@@ -1385,8 +1408,7 @@ as $$
   limit match_count;
 $$;
 
-create table
-  public.processed_files (
+create table if not exists public.processed_files (
     id uuid not null default uuid_generate_v4 (),
     file_id text not null,
     tenant_id text not null,
@@ -1397,7 +1419,6 @@ create table
   ) tablespace pg_default;
 
 create index if not exists idx_processed_files_tenant_id on public.processed_files using btree (tenant_id) tablespace pg_default;
-
 create index if not exists idx_processed_files_file_id on public.processed_files using btree (file_id) tablespace pg_default;
 
 
@@ -1550,6 +1571,41 @@ CREATE POLICY form_def_marketplace_delete_policy
     FOR DELETE
     TO authenticated
     USING (true);
+
+
+
+create table if not exists public.agents (
+    id text not null,
+    name text null,
+    role text null,
+    goal text null,
+    persona text null,
+    tenant_id text not null,
+    constraint agents_pkey primary key (id)
+) tablespace pg_default;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agents' AND column_name='id') THEN
+        ALTER TABLE public.agents ADD COLUMN id TEXT PRIMARY KEY;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agents' AND column_name='name') THEN
+        ALTER TABLE public.agents ADD COLUMN name TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agents' AND column_name='role') THEN
+        ALTER TABLE public.agents ADD COLUMN role TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agents' AND column_name='goal') THEN
+        ALTER TABLE public.agents ADD COLUMN goal TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agents' AND column_name='persona') THEN
+        ALTER TABLE public.agents ADD COLUMN persona TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='agents' AND column_name='tenant_id') THEN
+        ALTER TABLE public.agents ADD COLUMN tenant_id TEXT;
+    END IF;
+END;
+$$;
 
 
 

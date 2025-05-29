@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: frontend-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
   - port: 5173
     targetPort: 8080
@@ -15,7 +15,7 @@ kind: Service
 metadata:
   name: execution-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
   - port: 8000
     targetPort: 8000
@@ -27,7 +27,7 @@ kind: Service
 metadata:
   name: autonomous-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: autonomous
   ports:
@@ -40,7 +40,7 @@ kind: Service
 metadata:
   name: memento-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: memento
   ports:

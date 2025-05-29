@@ -171,18 +171,30 @@
         "from": "From",
         "add": "Add",
         "edit": "Edit",
+        "save": "Save",
         "delete": "Delete",
         "close": "Close",
-        "addNewUser": "Add New User",
+        "addNewUser": "Add New User(Team Member)",
+        "addNewAgent": "Add New Agent",
         "userName": "Name",
         "userEmail": "Email",
+        "idRequired": "Please enter your ID.",
         "nameRequired": "Please enter your name.",
         "emailRequired": "Please enter your email.",
         "emailInvalid": "Invalid email format.",
         "emailAlreadyExists": "Email already exists.",
         "addUserSuccess": "User added successfully.",
         "addUserFailed": "Failed to add user.",
-        "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000."
+        "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000.",
+        "agent": "Agent",
+        "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member."
+    },
+    "agentField": {
+        "agentId": "Agent ID",
+        "agentName": "Name",
+        "agentRole": "Role",
+        "agentGoal": "Goal",
+        "agentPersona": "Persona"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
