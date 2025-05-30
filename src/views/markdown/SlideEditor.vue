@@ -87,85 +87,12 @@ export default {
   mounted() {
     const params = new URLSearchParams(window.location.search)
     const content = decodeURIComponent(params.get('content') || '')
-    const savedContent = localStorage.getItem('markdownContent')
     if(content.length > 0)  this.content = content;
     if(this.content) {
       this.markdownContent = this.content
     } else {
-      this.markdownContent = savedContent || `# Welcome to Your Presentation
-
-Create beautiful slide decks with Markdown and reveal.js!
-
----
-
-## Horizontal Slides
-
-Use three dashes on a single line to create a new horizontal slide
-
----
-
-## Vertical Slides
-
-Use two dashes on a single line to create a vertical slide
-
---
-
-### This is a Vertical Slide
-
-Navigate using up/down arrows
-
----
-
-## Fragments
-
-Items appear one by one
-
-* First point <!-- .element: class="fragment" -->
-* Second point <!-- .element: class="fragment" -->
-* Third point <!-- .element: class="fragment" -->
-
----
-
-## Code Highlighting
-
-\`\`\`js [1-2|3|4]
-let a = 1;
-let b = 2;
-let c = x => 1 + 2 + x;
-c(3);
-\`\`\`
-
----
-
-## Speaker Notes
-
-This slide has speaker notes.
-
-Note: These notes are only visible in speaker view.
-Press 'S' to open speaker view.
-
----
-
-## Math Formulas
-
-$e^{i\pi} + 1 = 0$
-
----
-
-## PDF Export
-
-You can export this presentation as a PDF file!
-`
-
-
       window.addEventListener('message', this.handleMessage)
-
       window.parent.postMessage({ type: 'ON_LOAD', data:'' }, '*')
-    }
-  },
-  watch: {
-    markdownContent(newContent) {
-      localStorage.setItem('markdownContent', newContent)
     }
   },
   beforeUnmount() {
