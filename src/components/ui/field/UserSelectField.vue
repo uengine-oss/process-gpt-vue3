@@ -72,6 +72,10 @@ export default {
             default() {
                 return window.$mode !== 'ProcessGPT';
             }
+        },
+        useAgent: {
+            type: Boolean,
+            default: false
         }
     },
 
@@ -91,7 +95,9 @@ export default {
                 commonSettingInfos["localReadonly"]
             ],
 
-            usersToSelect: []
+            usersToSelect: [],
+            userList: [],
+            agentList: []
         };
     },
 
@@ -124,16 +130,34 @@ export default {
             immediate: true
         }
     },
-
-    async created() {
+    created() {
         this.localModelValue = this.modelValue ?? []
         
         this.localName = this.name ?? "name"
         this.localAlias = this.alias ?? ""
         this.localDisabled = this.disabled === "true"
         this.localReadonly = this.readonly === "true"
-        
-        this.usersToSelect = await backend.getUserList();
+    },
+    async mounted() {
+        this.userList = await backend.getUserList();
+        this.agentList = await backend.getAgentList();
+
+        if(this.useAgent) {
+            const list = [...this.userList, ...this.agentList];
+            this.usersToSelect = list.map(member => {
+                if ("username" in member) {
+                    return member;
+                } else {
+                    return {
+                        id: member.id,
+                        username: member.name,
+                        email: member.id
+                    };
+                }
+            });
+        } else {
+            this.usersToSelect = this.userList;
+        }
     }
 };
 </script>

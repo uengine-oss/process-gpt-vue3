@@ -21,7 +21,6 @@ const router = useRouter()
 const gotoDashboard = async () => {
     const checkIsLogin = async () => {
         if(!isLogin) {
-            alert("로그인이 필요합니다.")
             await router.push('/auth/login')
             return false
         }

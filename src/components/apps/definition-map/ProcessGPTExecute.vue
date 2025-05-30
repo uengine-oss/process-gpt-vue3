@@ -20,6 +20,7 @@
                                 :name="roleMapping.name"
                                 :item-value="'email'"
                                 :hide-details="true"
+                                :use-agent="true"
                             ></user-select-field>
                         </div>
                     </div>
@@ -65,7 +66,6 @@
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
 import WorkItem from '@/components/apps/todolist/WorkItem.vue';
-import OrganizationChart from "@/components/ui/OrganizationChart.vue";
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -75,7 +75,6 @@ export default {
     components: {
         AppBaseCard,
         WorkItem,
-        OrganizationChart,
         UserSelectField
     },
     props: {
@@ -88,8 +87,6 @@ export default {
         definition: null,
         workItem: null,
         roleMappings: [],
-        organizationChart: {},
-        userList: [],
         isMobile: false,
         activityIndex: 0,
         renderKey: 0,

@@ -911,7 +911,7 @@ class ProcessGPTBackend implements Backend {
         const fieldTags = [
             'text-field', 'select-field', 'checkbox-field', 'radio-field', 
             'file-field', 'label-field', 'boolean-field', 'textarea-field', 
-            'user-select-field'
+            'user-select-field', 'markdown-field'
         ];
     
         fieldTags.forEach(tag => {
@@ -1564,6 +1564,63 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async getAgentList() {
+        try {
+            const options = {
+                match: {
+                    tenant_id: window.$tenantName
+                }
+            }
+            const list = await storage.list('agents', options);
+            return list;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getAgent(agentId: string) {
+        try {
+            const options = {
+                match: {
+                    id: agentId
+                }
+            }
+            const agent = await storage.getObject('agents', options);
+            return agent;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async putAgent(newAgent: any) {
+        try {
+            const putObj: any = {
+                id: newAgent.id,
+                name: newAgent.name,
+                role: newAgent.role,
+                goal: newAgent.goal,
+                persona: newAgent.persona,
+                tenant_id: window.$tenantName
+            }
+            await storage.putObject('agents', putObj);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteAgent(agentId: string) {
+        try {
+            await storage.delete('agents', { match: { id: agentId } });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getUserInfo() {
         try {
             const user = await storage.getUserInfo();
@@ -1881,7 +1938,8 @@ class ProcessGPTBackend implements Backend {
                         file_name: response.data.file_name,
                         file_path: response.data.download_link,
                         chat_room_id: options.chat_room_id,
-                        user_name: options.user_name
+                        user_name: options.user_name,
+                        tenant_id: window.$tenantName
                     }
                     await storage.putObject('chat_attachments', putObj);
                 }
@@ -1927,7 +1985,8 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.post('/memento/process', {
                 file_path: file_path,
                 original_filename: original_filename,
-                storage_type: storageType
+                storage_type: storageType,
+                tenant_id: window.$tenantName
             }, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -2135,13 +2194,41 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async listMarketplaceDefinition() {
+    async listMarketplaceDefinition(tagOrKeyword?: string, isSearch: boolean = false) {
         try {
             const options = {
                 orderBy: 'import_count',
                 sort: 'desc',
             }
             const list = await storage.list('proc_def_marketplace', options);
+            
+            // 검색 기능이 활성화된 경우
+            if (isSearch && tagOrKeyword && tagOrKeyword.trim() !== '') {
+                const keyword = tagOrKeyword.toLowerCase().trim();
+                return list.filter(item => {
+                    // 이름, 작성자, 태그 검색
+                    const nameMatch = item.name && item.name.toLowerCase().includes(keyword);
+                    const authorMatch = item.author_name && item.author_name.toLowerCase().includes(keyword);
+                    
+                    // 태그 검색
+                    let tagMatch = false;
+                    if (item.tags) {
+                        const tags = item.tags.split(',').map((t: string) => t.trim().toLowerCase());
+                        tagMatch = tags.some(tag => tag.includes(keyword));
+                    }
+                    
+                    return nameMatch || authorMatch || tagMatch;
+                });
+            }
+            // 태그 필터링
+            else if (tagOrKeyword && tagOrKeyword !== 'all') {
+                return list.filter(item => {
+                    if (!item.tags) return false;
+                    const tags = item.tags.split(',').map((t: string) => t.trim());
+                    return tags.includes(tagOrKeyword);
+                });
+            }
+            
             return list;
         } catch (error) {
             throw new Error(error.message);

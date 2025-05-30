@@ -12,6 +12,7 @@
  *    boolean-field: Read(true/false) / Write(true/false)
  *    textarea-field: Read("value1"과 같은 문자열 값) / Write("value1"과 같은 문자열 값) 
  *    user-select-field: Read(["id1", "id2"]) 와 같이 선택된 유저 ID 값들을 담은 리스트) / Write(Read와 동일)
+ *    markdown-field: Read(마크다운 형식의 텍스트) / Write(마크다운 형식의 텍스트)
  */
 import { h } from 'vue';
 import TextField from '@/components/ui/field/TextField.vue';
@@ -26,6 +27,7 @@ import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 import RowLayout from '@/components/ui/field/RowLayout.vue';
 import RowLayoutItemHead from '@/components/ui/field/RowLayoutItemHead.vue';
 import CodeField from '@/components/ui/field/CodeField.vue';
+import MarkdownField from '@/components/ui/field/MarkdownField.vue';
 
 export default {
   props: {
@@ -125,7 +127,7 @@ export default {
         const parser = new DOMParser();
         const doc = parser.parseFromString(targetHTML, 'text/html');
 
-        const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field, boolean-field, textarea-field, user-select-field');
+        const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field, boolean-field, textarea-field, user-select-field, markdown-field');
 
         fields.forEach(field => {
           field.setAttribute('readonly', 'true');
@@ -156,6 +158,7 @@ export default {
     const r = {
       components: {
         TextField,
+        MarkdownField,
         SelectField,
         CheckboxField,
         RadioField,

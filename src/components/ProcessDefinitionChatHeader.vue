@@ -175,10 +175,10 @@
                         <div class="mr-4 d-flex" v-if="bpmn && useMarketplace">
                             <v-tooltip location="bottom" :text="$t('ProcessDefinitionChatHeader.addMarketplace')">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis mt-1" 
+                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
                                         density="comfortable" @click="openMarketplaceDialog"
                                     >
-                                        <Icons :icon="'addMarketplace'" />
+                                        <Icons :icon="'addMarketplace'" style="margin-top: 4px;" />
                                     </v-btn>
                                 </template>
                             </v-tooltip>

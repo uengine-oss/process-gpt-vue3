@@ -25,6 +25,7 @@
                             <v-divider class="my-2"></v-divider>
                             <UserListing 
                                 :userList="userList" 
+                                :agentList="agentList"
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
@@ -109,6 +110,7 @@
                             <v-divider class="my-2"></v-divider>
                             <UserListing 
                                 :userList="userList" 
+                                :agentList="agentList"
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
@@ -279,6 +281,9 @@ export default {
         // attachments
         isAttachmentsOpen: false,
         attachments: [],
+
+        // agent
+        agentList: []
     }),
     computed: {
         filteredChatRoomList() {
@@ -314,7 +319,10 @@ export default {
     async mounted() {
         this.userInfo = await this.backend.getUserInfo();
         await this.getChatRoomList();
+
         await this.getUserList();
+        await this.getAgentList();
+        
         await this.getCalendar();
         await this.getAttachments();
 
@@ -337,6 +345,9 @@ export default {
                     this.attachments.push(attachment);
                 }
             });
+        },
+        async getAgentList(){
+            this.agentList = await this.backend.getAgentList();
         },
         selectedUser(user){
             this.selectedUserInfo = user

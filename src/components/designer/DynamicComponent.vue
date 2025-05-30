@@ -10,6 +10,7 @@ import BooleanField from '@/components/ui/field/BooleanField.vue';
 import TextareaField from '@/components/ui/field/TextareaField.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 import CodeField from '@/components/ui/field/CodeField.vue';
+import MarkdownField from '@/components/ui/field/MarkdownField.vue';
 
 export default {
   props: {
@@ -82,6 +83,8 @@ export default {
         return this.createComponentWithRef(UserSelectField, {vueRenderUUID:this.vueRenderUUID, tagName: tagName, ...this.parseContentToProps(this.content)});
       case "code-field":
         return this.createComponentWithRef(CodeField, {vueRenderUUID:this.vueRenderUUID, tagName: tagName, ...this.parseContentToProps(this.content)});
+      case "markdown-field":
+        return this.createComponentWithRef(MarkdownField, {vueRenderUUID:this.vueRenderUUID, tagName: tagName, ...this.parseContentToProps(this.content)});
       default:
         console.error("유효하지 않은 렌더링 content:", this.content)
         return "";

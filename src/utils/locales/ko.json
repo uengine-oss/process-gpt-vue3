@@ -170,19 +170,31 @@
         "deleteMessage1": "님을 삭제하시겠습니까?",
         "from": "에서",
         "edit": "수정",
+        "save": "저장",
         "add": "추가",
         "delete": "삭제",
         "close": "닫기",
-        "addNewUser": "신규 사용자 추가",
+        "addNewUser": "신규 사용자(팀원) 추가",
+        "addNewAgent": "신규 에이전트 추가",
         "userName": "이름",
         "userEmail": "이메일",
+        "idRequired": "ID를 입력해주세요.",
         "nameRequired": "이름을 입력해주세요.",
         "emailRequired": "이메일을 입력해주세요.",
         "emailInvalid": "유효하지 않은 이메일 형식입니다.",
         "emailAlreadyExists": "이미 존재하는 이메일입니다.",
         "addUserSuccess": "사용자가 추가되었습니다.",
         "addUserFailed": "사용자 추가에 실패했습니다.",
-        "addNewUserExplanation": "신규 사용자를 추가하려면 이름과 이메일을 입력해 주세요. 입력된 이메일 주소로 회원가입이 자동 처리되며, 초기 비밀번호는 000000으로 설정됩니다."
+        "addNewUserExplanation": "신규 사용자를 추가하려면 이름과 이메일을 입력해 주세요. 입력된 이메일 주소로 회원가입이 자동 처리되며, 초기 비밀번호는 000000으로 설정됩니다.",
+        "agent": "에이전트",
+        "deleteAgentExplanation": "팀원 삭제가 아닌 영구 삭제입니다. 삭제된 에이전트는 복구할 수 없습니다. 팀원 삭제를 원하신다면 소속 팀의 + 버튼을 눌러 팀원을 수정해주세요."
+    },
+    "agentField": {
+        "agentId": "에이전트 ID",
+        "agentName": "이름",
+        "agentRole": "역할",
+        "agentGoal": "목표",
+        "agentPersona": "페르소나"
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
@@ -903,5 +915,30 @@
     },
     "ProcessDefinitionChatHeader": {
         "addMarketplace" : "마켓플레이스 등록"
+    },
+    "ProcessDefinitionMarketPlaceDialog": {
+        "title": "마켓플레이스 등록",
+        "processId": "프로세스 아이디",
+        "processName": "프로세스 이름",
+        "description": "설명",
+        "category1": "카테고리1",
+        "category2": "카테고리2",
+        "tags": "태그",
+        "register": "등록",
+        "requiredField": "필수 입력 항목입니다"
+    },
+    "ProcessDefinitionMarketPlace": {
+        "searchPlaceholder": "프로세스 이름, 작성자, 태그 검색",
+        "allCategory": "전체",
+        "searchResultTitle": "검색 결과",
+        "searchingTitle": "검색 중...",
+        "relatedTemplates": "관련 템플릿",
+        "addedButton": "추가됨",
+        "addButton": "추가",
+        "otherCategory": "기타",
+        "countUnit": "개"
+    },
+    "MarkdownField": {
+        "editMarkdown": "마크다운 편집"
     }
 }
