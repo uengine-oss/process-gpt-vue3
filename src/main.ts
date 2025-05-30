@@ -115,9 +115,6 @@ async function setupSupabase() {
     const supabaseUrl = window._env_?.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
     const supabaseKey = window._env_?.VITE_SUPABASE_KEY || import.meta.env.VITE_SUPABASE_KEY;
 
-    console.log('supabaseUrl', supabaseUrl)
-    console.log('supabaseKey', supabaseKey)
-    console.log('Supabase 클라이언트 초기화 시작');
     Object.defineProperty(window, '$supabase', {
         value: createClient(
             supabaseUrl,
@@ -132,7 +129,6 @@ async function setupSupabase() {
         writable: false,
         configurable: false
     });
-    console.log('Supabase 클라이언트 초기화 완료', window.$supabase);
 }
 
 async function setupTenant() {
