@@ -90,6 +90,10 @@ export default {
 
             if (!window.$pal) {
                 this.loadScreen = false;
+                if(window.location.pathname.includes('privacy')) {
+                    this.loadScreen = true;
+                    return;
+                }
                 this.backend = BackendFactory.createBackend();
                 if (window.$isTenantServer) {
                     await this.backend.checkDBConnection();
@@ -107,11 +111,16 @@ export default {
                     } else {
                         // 루트 페이지인 경우 로그인 체크 건너뛰기 옵션 추가
                         const skipLoginCheck = window.location.pathname === '/';
-                        const res = await this.backend.setTenant(window.$tenantName, skipLoginCheck);
-                        if (!res && !skipLoginCheck) {
-                            this.$try({}, null, {
-                                errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
-                            })
+                        const userInfo = await this.backend.getUserInfo();
+                        if(!skipLoginCheck) {
+                            if(userInfo) {
+                                const res = await this.backend.setTenant(window.$tenantName);
+                                if (!res) {
+                                    this.$try({}, null, {
+                                        errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
+                                    })
+                                }
+                            } 
                             this.$router.push('/auth/login');
                         }
                         this.loadScreen = true;

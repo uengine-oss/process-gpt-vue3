@@ -938,5 +938,8 @@
         "otherCategory": "기타",
         "countUnit": "개",
         "allTemplates": "전체 템플릿"
+    },
+    "MarkdownField": {
+        "editMarkdown": "마크다운 편집"
     }
 }

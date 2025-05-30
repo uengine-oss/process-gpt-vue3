@@ -4,7 +4,7 @@ create table if not exists public.tenants (
     constraint tenants_pkey primary key (id)
 ) tablespace pg_default;
 
-INSERT INTO public.tenants (id, owner) VALUES ('process-gpt', '');
+INSERT INTO public.tenants (id, owner) VALUES ('process-gpt', null);
 
 DO $$
 BEGIN
@@ -1097,15 +1097,17 @@ execute function handle_chat_insert();
 
 
 create table if not exists public.chat_attachments (
-    id text not null,
-    file_name text null,
-    file_path text null,
-    chat_room_id text null,
-    user_name text null,
-    created_at timestamp with time zone not null default now(),
-    constraint chat_attachments_pkey primary key (id),
-    constraint chat_attachments_chat_room_id_fkey foreign key (chat_room_id) references chat_rooms (id) on update cascade on delete cascade
-) tablespace pg_default;
+  id text not null,
+  file_name text null,
+  file_path text null,
+  chat_room_id text null,
+  user_name text null,
+  created_at timestamp with time zone not null default now(),
+  tenant_id text null,
+  constraint chat_attachments_pkey primary key (id),
+  constraint chat_attachments_chat_room_id_fkey foreign KEY (chat_room_id) references chat_rooms (id) on update CASCADE on delete CASCADE,
+  constraint chat_attachments_tenant_id_fkey foreign KEY (tenant_id) references tenants (id)
+) TABLESPACE pg_default;
 
 DO $$
 BEGIN
@@ -1126,6 +1128,9 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chat_attachments' AND column_name='created_at') THEN
         ALTER TABLE public.chat_attachments ADD COLUMN created_at timestamp with time zone not null default now();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='chat_attachments' AND column_name='tenant_id') THEN
+        ALTER TABLE public.chat_attachments ADD COLUMN tenant_id text null;
     END IF;
 END;
 $$;
@@ -1416,7 +1421,7 @@ create table if not exists public.processed_files (
     file_name text null,
     constraint processed_files_pkey primary key (id),
     constraint processed_files_file_id_tenant_id_key unique (file_id, tenant_id)
-  ) tablespace pg_default;
+) tablespace pg_default;
 
 create index if not exists idx_processed_files_tenant_id on public.processed_files using btree (tenant_id) tablespace pg_default;
 create index if not exists idx_processed_files_file_id on public.processed_files using btree (file_id) tablespace pg_default;

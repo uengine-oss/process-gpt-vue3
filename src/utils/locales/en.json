@@ -937,5 +937,8 @@
         "otherCategory": "Other",
         "countUnit": "items",
         "allTemplates": "All Templates"
+    },
+    "MarkdownField": {
+        "editMarkdown": "Edit Markdown"
     }
 }

@@ -10,9 +10,15 @@
             interactive: true,
             trigger: 'manual',
             hideOnClick: true,
-            appendTo: 'parent',
+            appendTo: getAppendTarget,
             popperOptions: {
               modifiers: [
+                {
+                  name: 'offset',
+                  options: {
+                    offset: [0, -300],
+                  },
+                },
                 {
                   name: 'preventOverflow',
                   options: {
@@ -136,7 +142,9 @@ export default {
   },
   data() {
     return {
+      getAppendTarget: () => $('.editor-wrapper').parent()[0],
       editor: null,
+      isUpdated : false,
       aiOptions: [
         { label: 'Create Content', icon: 'mdi-file-outline', value: mode.CREATE },
         { label: 'Replace selection', icon: 'mdi-check', value: mode.REPLACE },
@@ -163,30 +171,21 @@ export default {
     modelValue: {
       immediate: true,
       handler(newVal) {
-        if (!this.editor && !this.supresswatch) {
-          return
+        if(this.editor && !this.isUpdated) {
+          const html = this.parseMarkdownOrHtmlToSlice(newVal)
+
+          this.htmlContent = html;
+          this.editor.commands.setContent(this.htmlContent.content, false) // false = history에 쌓지 않음
+          this.isUpdated = true;
         }
-
-        if (typeof newVal !== 'string') return
-
-        // 마크다운 문자열을 HTML로 변환
-        const html = marked(newVal)
-
-        // HTML -> DOM -> ProseMirror Slice
-        const dom = new DOMParser().parseFromString(html, 'text/html')
-        const slice = ProseMirrorDOMParser
-          .fromSchema(this.editor.schema)
-          .parseSlice(dom.body)
-
-        // 에디터에 반영
-        this.editor.commands.setContent(slice.content, false) // false = history에 쌓지 않음
       }
     },
   },
   methods: {
     initEditor() {
+      this.isUpdated = false;
       this.editor = new Editor({
-        content: this.htmlContent || '<p>노션 스타일 에디터를 시작해보세요</p>',
+        content: this.htmlContent || '',
         extensions: [
           StarterKit,
           BubbleMenuExtension.configure({
@@ -215,13 +214,16 @@ export default {
             view.dispatch(view.state.tr.replaceSelection(slice))
             return true
           },
-          onUpdate: ({ editor }) => {
-            const html = editor.getHTML()
-            this.$emit('update:modelValue', html) // v-model 지원
-            console.log('[Tiptap Updated]', html) // 또는 디버깅
-          }
+        },
+
+        // ✅ 이 부분이 핵심
+        onUpdate: ({ editor }) => {
+          const html = editor.getHTML()
+          const markdown = this.convertHtmlToMarkdown(html);
+          this.$emit('update:modelValue', markdown)
         }
       });
+
     },
     convertHtmlToMarkdown(html) {
       const turndownService = new TurndownService();
@@ -395,6 +397,7 @@ export default {
 
 <style scoped>
 .editor-wrapper {
+  overflow: visible;
   width: 100%;
   height: 100%;
   margin: 0 auto;
