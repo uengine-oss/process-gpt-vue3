@@ -935,7 +935,8 @@
         "addedButton": "Added",
         "addButton": "Add",
         "otherCategory": "Other",
-        "countUnit": "items"
+        "countUnit": "items",
+        "allTemplates": "All Templates"
     },
     "MarkdownField": {
         "editMarkdown": "Edit Markdown"

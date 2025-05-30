@@ -11,135 +11,110 @@ export default class StorageBaseSupabase {
 
     async isConnection() {
         try {
-            console.log('=== isConnection 시작 ===');
             let accessToken = "";
             let refreshToken = "";
-
-            console.log('1. 쿠키 체크 시작');
-            console.log('document.cookie:', document.cookie);
-            console.log('includes(; ):', document.cookie.includes('; '));
-
-            if (document.cookie && document.cookie.includes('; ')) {
-                console.log('2. 쿠키 파싱 시작');
-                const cookieArray = document.cookie.split('; ');
-                console.log('쿠키 배열:', JSON.stringify(cookieArray));
-                
-                const accessTokenCookie = cookieArray.find(row => row.startsWith('access_token'));
-                console.log('access_token 쿠키:', accessTokenCookie);
-                
-                const refreshTokenCookie = cookieArray.find(row => row.startsWith('refresh_token'));
-                console.log('refresh_token 쿠키:', refreshTokenCookie);
-                
-                accessToken = accessTokenCookie?.split('=')[1];
-                refreshToken = refreshTokenCookie?.split('=')[1];
+            
+            // Check if we're in webview mode
+            if (window.AndroidBridge) {
+                try {
+                    console.log("wvtest:isConnection - webview mode");
+                    const sessionTokenStr = window.AndroidBridge.getSessionToken();
+                    console.log("wvtest:isConnection - webview mode - sessionTokenStr", sessionTokenStr);
+                    if (sessionTokenStr) {
+                        const sessionTokens = JSON.parse(sessionTokenStr);
+                        accessToken = sessionTokens.access_token || "";
+                        refreshToken = sessionTokens.refresh_token || "";
+                        console.log("wvtest:isConnection - webview mode - accessToken", accessToken);
+                        console.log("wvtest:isConnection - webview mode - refreshToken", refreshToken);
+                    }
+                } catch (e) {
+                    console.error('Error parsing session tokens:', e);
+                    accessToken = "";
+                    refreshToken = "";
+                }
+            } else {
+                if (document.cookie && document.cookie.includes('; ')) {
+                    accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token'))?.split('=')[1];
+                    refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token'))?.split('=')[1];
+                }
             }
-
-            console.log('3. 토큰 상태 체크');
-            console.log('accessToken 존재:', !!accessToken);
-            console.log('refreshToken 존재:', !!refreshToken);
-            console.log('accessToken 길이:', accessToken?.length);
-            console.log('refreshToken 길이:', refreshToken?.length);
-
+            console.log("wvtest:isConnection - setSession", accessToken, refreshToken);
             if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
-                console.log('4. 세션 설정 시도');
-                console.log('setSession 호출 전 supabase 상태:', JSON.stringify({
-                    isConnected: window.$supabase?.auth?.autoRefreshToken,
-                    hasSession: window.$supabase?.auth?.session,
-                    currentUrl: window.location.href
-                }));
-
-                console.log('accessToken', accessToken)
-                console.log('refreshToken', refreshToken)
-                const sessionResult = await window.$supabase.auth.setSession({
+                const { error: sessionError } = await window.$supabase.auth.setSession({
                     access_token: accessToken,
                     refresh_token: refreshToken
                 });
 
-                console.log('setSession 호출 후 결과:', {
-                    error: sessionResult.error,
-                    session: sessionResult.data?.session,
-                    timestamp: new Date().getTime()
-                });
-                console.log('세션 설정 결과:', JSON.stringify(sessionResult));
-
-                if (sessionResult.error) {
-                    console.log('6. 세션 에러 발생, refreshSession 시도');
-                    console.log('세션 에러:', JSON.stringify(sessionResult.error));
+                if (sessionError) {
+                    console.log("wvtest:isConnection - setSession - sessionError", sessionError);
                     await this.refreshSession();
                 }
             } else {
-                console.log('7. 토큰 없음, refreshSession 시도');
-                await this.refreshSession();
+                console.log("wvtest:isConnection - refreshSession");
+                await this.refreshSession();                
             }
-            
-            console.log('8. 사용자 정보 조회 시도');
-            const userResult = await window.$supabase.auth.getUser();
-            console.log('사용자 정보 조회 결과:', JSON.stringify(userResult));
-
-            if (userResult.error) {
-                console.log('9. 사용자 정보 조회 실패');
-                console.log('에러:', JSON.stringify(userResult.error));
+            console.log("wvtest:isConnection - getUser");
+            const { data, error } = await window.$supabase.auth.getUser();
+            if (error) {
+                console.log("wvtest:isConnection - getUser - error", error);
                 return false;
             }
 
-            if (userResult.data) {
-                console.log('10. 사용자 정보 조회 성공');
-                console.log('사용자 데이터:', JSON.stringify(userResult.data));
-                console.log('11. writeUserData 호출');
-                await this.writeUserData(userResult.data);
-                console.log('12. writeUserData 완료');
+            if (data) {
+                console.log("wvtest:isConnection - getUser - data", data);
+                this.writeUserData(data);
                 return true;
             }
-
-            console.log('13. 사용자 데이터 없음');
-            return false;
         } catch (error) {
-            console.log('14. 예외 발생');
-            console.error('Error in isConnection:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+            console.log("wvtest:isConnection - error", error);
+            console.error('Error checking Supabase connection:', error);
             return false;
         }
     }
 
     async refreshSession() {
         try {
-            console.log('=== refreshSession 시작 ===');
-            console.log('현재 host:', window.location.host);
-            
-            const refreshResult = await window.$supabase.auth.refreshSession();
-            console.log('refreshSession 결과:', JSON.stringify(refreshResult));
+            const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
 
-            if (refreshResult.error) {
-                console.log('refreshSession 에러 발생');
-                console.log('에러 내용:', JSON.stringify(refreshResult.error));
+            if (refreshError) {
+                console.error('Error refreshing session:', refreshError);
                 const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
                 
-                if (window.location.host.includes('process-gpt.io')) {
-                    console.log('process-gpt.io 도메인 쿠키 삭제');
-                    document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
-                    document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                // Check if we're in webview mode
+                if (window.AndroidBridge) {
+                    window.AndroidBridge.clearSession();
                 } else {
-                    console.log('기타 도메인 쿠키 삭제');
-                    document.cookie = `access_token=; ${cookieOptionsBase}`;
-                    document.cookie = `refresh_token=; ${cookieOptionsBase}`;
+                    if (window.location.host.includes('process-gpt.io')) {
+                        document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                        document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                    } else {
+                        document.cookie = `access_token=; ${cookieOptionsBase}`;
+                        document.cookie = `refresh_token=; ${cookieOptionsBase}`;
+                    }
                 }
                 window.localStorage.removeItem('accessToken');
-                console.log('쿠키 삭제 후 상태:', document.cookie);
             } else {
-                console.log('refreshSession 성공');
-                if (window.location.host.includes('process-gpt.io')) {
-                    console.log('process-gpt.io 도메인 새 쿠키 설정');
-                    document.cookie = `access_token=${refreshResult.data.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    document.cookie = `refresh_token=${refreshResult.data.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                // Check if we're in webview mode
+                if (window.AndroidBridge) {
+                    console.log("refreshSession - webview mode");
+                    window.AndroidBridge.saveSessionToken(
+                        refreshData.session.access_token,
+                        refreshData.session.refresh_token
+                    );
+                    console.log("refreshSession - webview mode - saveSessionToken", refreshData.session.access_token, refreshData.session.refresh_token);
                 } else {
-                    console.log('기타 도메인 새 쿠키 설정');
-                    document.cookie = `access_token=${refreshResult.data.session.access_token}; path=/; SameSite=Lax`;
-                    document.cookie = `refresh_token=${refreshResult.data.session.refresh_token}; path=/; SameSite=Lax`;
+                    if (window.location.host.includes('process-gpt.io')) {
+                        document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    } else {
+                        document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
+                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
+                    }
                 }
-                window.localStorage.setItem('accessToken', refreshResult.data.session.access_token);
-                console.log('새 쿠키 설정 후 상태:', document.cookie);
+                window.localStorage.setItem('accessToken', refreshData.session.access_token);
             }
         } catch (e) {
-            console.log('refreshSession 예외 발생:', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+            console.error('Error in refreshSession:', e);
         }
     }
 
@@ -322,12 +297,17 @@ export default class StorageBaseSupabase {
             window.localStorage.removeItem('execution');
             window.localStorage.removeItem('role');
             
-            if (window.location.host.includes('process-gpt.io')) {
-                document.cookie = 'access_token=; domain=.process-gpt.io; path=/';
-                document.cookie = 'refresh_token=; domain=.process-gpt.io; path=/';
+            // Check if we're in webview mode
+            if (window.AndroidBridge) {
+                window.AndroidBridge.clearSession();
             } else {
-                document.cookie = 'access_token=; path=/';
-                document.cookie = 'refresh_token=; path=/';
+                if (window.location.host.includes('process-gpt.io')) {
+                    document.cookie = 'access_token=; domain=.process-gpt.io; path=/';
+                    document.cookie = 'refresh_token=; domain=.process-gpt.io; path=/';
+                } else {
+                    document.cookie = 'access_token=; path=/';
+                    document.cookie = 'refresh_token=; path=/';
+                }
             }
 
             return await window.$supabase.auth.signOut();
@@ -849,86 +829,68 @@ export default class StorageBaseSupabase {
 
     async writeUserData(value, userInfo) {
         try {
-            console.log('=== writeUserData 시작 ===');
-            console.log('value:', JSON.stringify(value));
-            console.log('userInfo:', JSON.stringify(userInfo));
-            console.log('현재 host:', window.location.host);
-
             if (value.session) {
-                console.log('세션 데이터 처리 시작');
                 window.localStorage.setItem('accessToken', value.session.access_token);
-                console.log('localStorage accessToken 설정 완료');
                 
-                if (window.location.host.includes('process-gpt.io')) {
-                    console.log('process-gpt.io 도메인 쿠키 설정');
-                    document.cookie = `access_token=${value.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    document.cookie = `refresh_token=${value.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                // Check if we're in webview mode
+                if (window.AndroidBridge) {
+                    console.log("wvtest:writeUserData - webview mode");
+                    window.AndroidBridge.saveSessionToken(
+                        value.session.access_token,
+                        value.session.refresh_token
+                    );
+                    console.log("wvtest:writeUserData - webview mode - saveSessionToken", value.session.access_token, value.session.refresh_token);
                 } else {
-                    console.log('기타 도메인 쿠키 설정');
-                    document.cookie = `access_token=${value.session.access_token}; path=/; SameSite=Lax`;
-                    document.cookie = `refresh_token=${value.session.refresh_token}; path=/; SameSite=Lax`;
+                    if (window.location.host.includes('process-gpt.io')) {
+                        document.cookie = `access_token=${value.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                        document.cookie = `refresh_token=${value.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    } else {
+                        document.cookie = `access_token=${value.session.access_token}; path=/; SameSite=Lax`;
+                        document.cookie = `refresh_token=${value.session.refresh_token}; path=/; SameSite=Lax`;
+                    }
                 }
-                console.log('쿠키 설정 후 상태:', document.cookie);
             }
-
             if (value.user) {
-                console.log('사용자 데이터 처리 시작');
-                console.log('user 데이터:', JSON.stringify(value.user));
-                
+                console.log("wvtest:writeUserData - user", value.user);
                 window.localStorage.setItem('author', value.user.email);
                 window.localStorage.setItem('uid', value.user.id);
-                console.log('localStorage 사용자 정보 설정 완료');
 
                 let filter = { id: value.user.id };
-                console.log('window.$tenantName:', window.$tenantName);
-                
                 if (window.$tenantName) {
                     filter.tenant_id = window.$tenantName;
                 }
-                console.log('사용자 조회 필터:', JSON.stringify(filter));
-
-                const userResult = await window.$supabase
+                const { data, error } = await window.$supabase
                     .from('users')
                     .select('*')
                     .match(filter)
                     .maybeSingle();
-                
-                console.log('사용자 조회 결과:', JSON.stringify(userResult));
 
-                if (!userResult.error) {
-                    console.log('사용자 정보 localStorage 저장 시작');
-                    window.localStorage.setItem('isAdmin', userResult.data.is_admin);
-                    window.localStorage.setItem('picture', userResult.data.profile);
-                    if (userResult.data.role && userResult.data.role !== '') {
-                        window.localStorage.setItem('role', userResult.data.role);
+                if (!error) {
+                    window.localStorage.setItem('isAdmin', data.is_admin);
+                    window.localStorage.setItem('picture', data.profile);
+                    if (data.role && data.role !== '') {
+                        window.localStorage.setItem('role', data.role);
                     }
-                    window.localStorage.setItem('userName', userResult.data.username);
-                    window.localStorage.setItem('email', userResult.data.email);
-                    window.localStorage.setItem('uid', userResult.data.id);
-                    console.log('사용자 정보 localStorage 저장 완료');
+                    window.localStorage.setItem('userName', data.username);
+                    window.localStorage.setItem('email', data.email);
+                    window.localStorage.setItem('uid', data.id);
 
                     // FCM 토큰 처리
                     const fcm_token = localStorage.getItem('fcm_token');
-                    console.log('FCM 토큰:', fcm_token);
-                    if (fcm_token && (!userResult.data.device_token || userResult.data.device_token !== fcm_token)) {
-                        console.log('FCM 토큰 업데이트 시도');
-                        const updateResult = await window.$supabase
+                    if (fcm_token && (!data.device_token || data.device_token !== fcm_token)) {
+                        await window.$supabase
                             .from('users')
                             .update({ device_token: fcm_token })
                             .match(filter);
-                        console.log('FCM 토큰 업데이트 결과:', JSON.stringify(updateResult));
+                        console.log('FCM 토큰이 users 테이블에 업데이트되었습니다:', fcm_token);
                     }
 
-                    const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: userResult.data.is_admin } });
+                    const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: data.is_admin } });
                     window.dispatchEvent(event);
-                    console.log('isAdmin 이벤트 발송 완료');
-                } else {
-                    console.log('사용자 조회 에러:', JSON.stringify(userResult.error));
                 }
             }
-            console.log('=== writeUserData 완료 ===');
         } catch (e) {
-            console.log('writeUserData 예외 발생:', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+            console.log("wvtest:writeUserData - error", e);
             throw new StorageBaseError('error in writeUserData', e, arguments);
         }
     }

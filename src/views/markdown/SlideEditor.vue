@@ -85,37 +85,12 @@ export default {
     }
   },
   mounted() {
-    const params = new URLSearchParams(window.location.search)
-    const content = decodeURIComponent(params.get('content') || '')
-    if(content.length > 0)  this.content = content;
     if(this.content) {
-      this.markdownContent = this.content
-    } else {
-      window.addEventListener('message', this.handleMessage)
-      window.parent.postMessage({ type: 'ON_LOAD', data:'' }, '*')
+      this.markdownContent = this.content;
+      this.init();
     }
   },
-  beforeUnmount() {
-    window.removeEventListener('message', this.handleMessage)
-  },
   methods: {
-    handleMessage(event) {
-      if (!event.data || typeof event.data !== 'object') return
-
-      if (event.data.type === 'SAVE') {
-        console.log('[SlideEditor] SAVE 요청 수신됨')
-
-        const payload = {
-          type: 'SAVE_RESULT',
-          data: this.markdownContent
-        }
-
-        window.parent.postMessage(payload, '*') // 또는 origin 체크
-      } else if (event.data.type === 'LOAD_CONTENT') {
-        this.markdownContent = event.data.data
-        this.init();
-      }
-    },
     init() {
       this.$nextTick(() => {
         this.$refs.slideComponent.init()
@@ -150,6 +125,9 @@ export default {
     },
     openPptxExport() {
       this.$refs.pptxExportHelper?.openModal()
+    },
+    save() {
+      this.$emit('save', this.markdownContent);
     }
   }
 }
