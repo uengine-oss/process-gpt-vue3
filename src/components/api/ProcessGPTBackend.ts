@@ -1924,6 +1924,7 @@ class ProcessGPTBackend implements Backend {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('file_name', fileName);
+            formData.append('tenant_id', window.$tenantName);
 
             const response = await axios.post('/memento/save-to-drive', formData, {
                 headers: {
