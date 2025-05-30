@@ -17,11 +17,15 @@ export default class StorageBaseSupabase {
             // Check if we're in webview mode
             if (window.AndroidBridge) {
                 try {
+                    console.log("wvtest:isConnection - webview mode");
                     const sessionTokenStr = window.AndroidBridge.getSessionToken();
+                    console.log("wvtest:isConnection - webview mode - sessionTokenStr", sessionTokenStr);
                     if (sessionTokenStr) {
                         const sessionTokens = JSON.parse(sessionTokenStr);
                         accessToken = sessionTokens.access_token || "";
                         refreshToken = sessionTokens.refresh_token || "";
+                        console.log("wvtest:isConnection - webview mode - accessToken", accessToken);
+                        console.log("wvtest:isConnection - webview mode - refreshToken", refreshToken);
                     }
                 } catch (e) {
                     console.error('Error parsing session tokens:', e);
@@ -34,7 +38,7 @@ export default class StorageBaseSupabase {
                     refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token'))?.split('=')[1];
                 }
             }
-
+            console.log("wvtest:isConnection - setSession", accessToken, refreshToken);
             if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
                 const { error: sessionError } = await window.$supabase.auth.setSession({
                     access_token: accessToken,
@@ -42,22 +46,27 @@ export default class StorageBaseSupabase {
                 });
 
                 if (sessionError) {
+                    console.log("wvtest:isConnection - setSession - sessionError", sessionError);
                     await this.refreshSession();
                 }
             } else {
+                console.log("wvtest:isConnection - refreshSession");
                 await this.refreshSession();                
             }
-            
+            console.log("wvtest:isConnection - getUser");
             const { data, error } = await window.$supabase.auth.getUser();
             if (error) {
+                console.log("wvtest:isConnection - getUser - error", error);
                 return false;
             }
 
             if (data) {
+                console.log("wvtest:isConnection - getUser - data", data);
                 this.writeUserData(data);
                 return true;
             }
         } catch (error) {
+            console.log("wvtest:isConnection - error", error);
             console.error('Error checking Supabase connection:', error);
             return false;
         }
@@ -87,10 +96,12 @@ export default class StorageBaseSupabase {
             } else {
                 // Check if we're in webview mode
                 if (window.AndroidBridge) {
+                    console.log("refreshSession - webview mode");
                     window.AndroidBridge.saveSessionToken(
                         refreshData.session.access_token,
                         refreshData.session.refresh_token
                     );
+                    console.log("refreshSession - webview mode - saveSessionToken", refreshData.session.access_token, refreshData.session.refresh_token);
                 } else {
                     if (window.location.host.includes('process-gpt.io')) {
                         document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
@@ -823,10 +834,12 @@ export default class StorageBaseSupabase {
                 
                 // Check if we're in webview mode
                 if (window.AndroidBridge) {
+                    console.log("wvtest:writeUserData - webview mode");
                     window.AndroidBridge.saveSessionToken(
                         value.session.access_token,
                         value.session.refresh_token
                     );
+                    console.log("wvtest:writeUserData - webview mode - saveSessionToken", value.session.access_token, value.session.refresh_token);
                 } else {
                     if (window.location.host.includes('process-gpt.io')) {
                         document.cookie = `access_token=${value.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
@@ -838,6 +851,7 @@ export default class StorageBaseSupabase {
                 }
             }
             if (value.user) {
+                console.log("wvtest:writeUserData - user", value.user);
                 window.localStorage.setItem('author', value.user.email);
                 window.localStorage.setItem('uid', value.user.id);
 
@@ -876,6 +890,7 @@ export default class StorageBaseSupabase {
                 }
             }
         } catch (e) {
+            console.log("wvtest:writeUserData - error", e);
             throw new StorageBaseError('error in writeUserData', e, arguments);
         }
     }
