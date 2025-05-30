@@ -14,9 +14,9 @@
                 disabled
             />
             <v-textarea v-model="newDefinition.description" :label="$t('ProcessDefinitionMarketPlaceDialog.description')" rows="3" />
-            <div class="d-flex flex-wrap justify-space-between">
-                <v-text-field v-model="megaCategory" :label="$t('ProcessDefinitionMarketPlaceDialog.category1') + ' *'" class="category-field mr-2" />
-                <v-text-field v-model="majorCategory" :label="$t('ProcessDefinitionMarketPlaceDialog.category2') + ' *'" class="category-field" />
+            <div class="d-flex justify-space-between">
+                <v-text-field v-model="megaCategory" :label="$t('ProcessDefinitionMarketPlaceDialog.category1') + ' *'" class="mr-1" />
+                <v-text-field v-model="majorCategory" :label="$t('ProcessDefinitionMarketPlaceDialog.category2') + ' *'" class="ml-1" />
             </div>
             <v-combobox
                 v-model="tagsArray"
@@ -116,9 +116,4 @@ export default {
 </script>
 
 <style scoped>
-.category-field {
-    min-width: 200px;
-    flex-grow: 1;
-    margin-bottom: 8px;
-}
 </style>
