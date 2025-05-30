@@ -308,7 +308,9 @@
                                                                                     v-for="(source, index) in message.memento.sources"
                                                                                     :key="index" variant="outlined" size="x-small"
                                                                                     text-color="primary"
-                                                                                    style="margin-bottom: 1px;">
+                                                                                    style="margin-bottom: 1px;"
+                                                                                    @click="downloadFile(source)"
+                                                                                >
                                                                                     <v-icon start icon="mdi-label" x-small></v-icon>
                                                                                     {{source.file_name }}
                                                                                 </v-chip>
@@ -1122,6 +1124,23 @@ export default {
             //     },
             //     successMsg: '파일 업로드가 완료되었습니다.'
             // })
+        },
+        async downloadFile(source) {
+            let filePath = null;
+            if (source.storage_type == 'drive') {
+                const options = {
+                    storageType: 'drive',
+                }
+                filePath = await backend.getFileUrl(source.file_id, options);
+                
+            } else if (source.storage_type == 'storage') {
+                filePath = await backend.getFileUrl(source.file_path);
+            }
+            if (filePath) {
+                window.open(filePath, '_blank');
+            } else {
+                alert('파일을 찾을 수 없습니다.');
+            }
         },
         openVerMangerDialog() {
             this.$emit('openVerMangerDialog', true)
