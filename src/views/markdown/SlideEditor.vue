@@ -20,18 +20,18 @@
     </div>
     
     <div class="editor-container">
-      <div class="slides-sidebar">
+      <!--<div class="slides-sidebar">
         <div class="instruction-box">
           <h3>Markdown Slides</h3>
           <p>Separate slides with <code>---</code> (three dashes on a single line)</p>
           <p>Vertical slides: <code>--</code> (two dashes)</p>
           <p>Speaker notes: Start with <code>Note:</code></p>
-          <p>Fragments: <code><!-- .element: class="fragment" --></code></p>
+          <p>Fragments: <code></code></p>
           <p>Code highlighting: <code>```js [1-2|3|4]</code></p>
           <p><a href="https://revealjs.com/markdown/" target="_blank">More info</a></p>
         </div>
         <slide-styler />
-      </div>
+      </div>-->
       
       <div class="editor-content" style="height: 100%; overflow: auto;">
         <markdown-editor
@@ -43,6 +43,8 @@
       <div class="preview-panel">
         <div class="preview-header">Preview</div>
         <slide-component 
+          :key="markdownContent"
+          ref="slideComponent"
           :content="markdownContent"
           :isEditMode="false"
           class="editor-preview"
@@ -71,14 +73,26 @@ export default {
     PptxExportHelper,
     MarkdownEditor
   },
+  props: {
+    content: {
+      type: String,
+      default: null
+    }
+  },
   data() {
     return {
       markdownContent: '',
     }
   },
   mounted() {
+    const params = new URLSearchParams(window.location.search)
+    const content = decodeURIComponent(params.get('content') || '')
     const savedContent = localStorage.getItem('markdownContent')
-    this.markdownContent = savedContent || `# Welcome to Your Presentation
+    if(content.length > 0)  this.content = content;
+    if(this.content) {
+      this.markdownContent = this.content
+    } else {
+      this.markdownContent = savedContent || `# Welcome to Your Presentation
 
 Create beautiful slide decks with Markdown and reveal.js!
 
@@ -141,19 +155,45 @@ $e^{i\pi} + 1 = 0$
 ## PDF Export
 
 You can export this presentation as a PDF file!
+`
 
----
 
-## Thank You!
+      window.addEventListener('message', this.handleMessage)
 
-Visit [reveal.js](https://revealjs.com) for more information.`
+      window.parent.postMessage({ type: 'ON_LOAD', data:'' }, '*')
+    }
   },
   watch: {
     markdownContent(newContent) {
       localStorage.setItem('markdownContent', newContent)
     }
   },
+  beforeUnmount() {
+    window.removeEventListener('message', this.handleMessage)
+  },
   methods: {
+    handleMessage(event) {
+      if (!event.data || typeof event.data !== 'object') return
+
+      if (event.data.type === 'SAVE') {
+        console.log('[SlideEditor] SAVE 요청 수신됨')
+
+        const payload = {
+          type: 'SAVE_RESULT',
+          data: this.markdownContent
+        }
+
+        window.parent.postMessage(payload, '*') // 또는 origin 체크
+      } else if (event.data.type === 'LOAD_CONTENT') {
+        this.markdownContent = event.data.data
+        this.init();
+      }
+    },
+    init() {
+      this.$nextTick(() => {
+        this.$refs.slideComponent.init()
+      })
+    },
     addSlide() {
       this.markdownContent += `\n\n---\n\n# New Slide\n\nAdd your content here...`
     },

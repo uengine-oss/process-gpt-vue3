@@ -936,5 +936,8 @@
         "addButton": "Add",
         "otherCategory": "Other",
         "countUnit": "items"
+    },
+    "MarkdownField": {
+        "editMarkdown": "Edit Markdown"
     }
 }

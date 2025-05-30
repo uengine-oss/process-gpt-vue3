@@ -937,5 +937,8 @@
         "addButton": "추가",
         "otherCategory": "기타",
         "countUnit": "개"
+    },
+    "MarkdownField": {
+        "editMarkdown": "마크다운 편집"
     }
 }
