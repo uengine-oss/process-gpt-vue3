@@ -136,12 +136,6 @@ export default class MarkdownGenerator extends AIGenerator {
 
                     You can export this presentation as a PDF file!
 
-                    ---
-
-                    ## Thank You!
-
-                    Visit [reveal.js](https://revealjs.com) for more information.
-
             규칙:
             - 따로 언급이 없을 경우 기존 마크다운 문법은 유지해야 하며, 절대 변경하거나 제거하지 마세요.
             - 따로 언급이 없을 경우 기존 HTML 태그(예: <strong>, <em>, <a> 등)는 모두 **원형 그대로 유지**해야 하며, 해당 태그가 적용된 단어를 바꾸더라도 **같은 위치에 같은 태그를 적용**해야 합니다.

@@ -10,9 +10,15 @@
             interactive: true,
             trigger: 'manual',
             hideOnClick: true,
-            appendTo: 'parent',
+            appendTo: getAppendTarget,
             popperOptions: {
               modifiers: [
+                {
+                  name: 'offset',
+                  options: {
+                    offset: [0, -300],
+                  },
+                },
                 {
                   name: 'preventOverflow',
                   options: {
@@ -136,6 +142,7 @@ export default {
   },
   data() {
     return {
+      getAppendTarget: () => $('.editor-wrapper').parent()[0],
       editor: null,
       isUpdated : false,
       aiOptions: [
@@ -390,6 +397,7 @@ export default {
 
 <style scoped>
 .editor-wrapper {
+  overflow: visible;
   width: 100%;
   height: 100%;
   margin: 0 auto;
