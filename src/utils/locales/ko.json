@@ -936,7 +936,8 @@
         "addedButton": "추가됨",
         "addButton": "추가",
         "otherCategory": "기타",
-        "countUnit": "개"
+        "countUnit": "개",
+        "allTemplates": "전체 템플릿"
     },
     "MarkdownField": {
         "editMarkdown": "마크다운 편집"
