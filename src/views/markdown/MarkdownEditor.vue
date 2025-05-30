@@ -298,15 +298,29 @@ export default {
     extractContentWithoutMode(output) {
       return output.replace(/^\[mode:\s*\w+\]\s*/i, '');
     },
-    parseMarkdownOrHtmlToSlice (markdownOrHtml) {
-      const html = markdownOrHtml.includes('<') ? markdownOrHtml : marked(markdownOrHtml)
-      const dom = new DOMParser().parseFromString(html, 'text/html')
-      const content = dom.body
-      const { schema } = this.editor.state
+    parseMarkdownOrHtmlToSlice(markdownOrHtml) {
+      const cleaned = markdownOrHtml
+        .replace(/\\#/g, '#')
+        .replace(/\\\*/g, '*')
+        .replace(/\\`/g, '`')
+        .replace(/\\\\/g, '\\'); // 가장 마지막에
 
-      return ProseMirrorDOMParser
-        .fromSchema(schema)
-        .parseSlice(content)
+      const html = cleaned.includes('<') ? cleaned : marked(cleaned);
+      const dom = new DOMParser().parseFromString(html, 'text/html');
+      const content = dom.body;
+      const { schema } = this.editor.state;
+
+      const slice = ProseMirrorDOMParser.fromSchema(schema).parseSlice(content);
+
+      console.group('[ParseSlice Debug]');
+      console.log('▶ Original input:', markdownOrHtml);
+      console.log('▶ Cleaned input:', cleaned);
+      console.log('▶ Generated HTML:', html);
+      console.log('▶ DOM body innerHTML:', content.innerHTML);
+      console.log('▶ Final Slice Content JSON:', slice.content.toJSON?.());
+      console.groupEnd();
+
+      return slice;
     },
     async onGenerationFinished(response) {
       const selectedMode = this.extractModeFromText(response);
@@ -339,21 +353,33 @@ export default {
       this.editor.commands.setTextSelection({ from: selection.to, to: selection.to });
     },
     replaceText(responseHtml) {
-      let me = this;
       const { from, to } = this.selection;
       const slice = this.parseMarkdownOrHtmlToSlice(responseHtml);
+
+      console.group('[ReplaceText Debug]');
+      console.log('▶ responseHtml:', responseHtml);
+      console.log('▶ Selection from:', from, 'to:', to);
+      console.log('▶ Slice content size:', slice?.content?.size);
+      console.log('▶ Slice childCount:', slice?.content?.childCount);
+      console.log('▶ Slice content JSON:', slice?.content?.toJSON?.());
+      console.groupEnd();
+
+      if (!slice || slice.content.size === 0) {
+        console.warn('[ReplaceText Debug] ⚠️ Empty slice — skipping replace');
+        return;
+      }
 
       this.editor.commands.command(({ tr, dispatch }) => {
         tr.replaceRange(from, to, slice);
         dispatch(tr);
         this.$nextTick(() => {
-          const html = this.editor.getHTML()
+          const html = this.editor.getHTML();
           const markdown = this.convertHtmlToMarkdown(html);
-          this.$emit('update:modelValue', markdown)
-        })
+          this.$emit('update:modelValue', markdown);
+        });
         return true;
       });
-    }, 
+    },
     insertBelow(responseHtml) {
       let me = this;
       const { to } = this.selection;
