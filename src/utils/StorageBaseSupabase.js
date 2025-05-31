@@ -46,15 +46,19 @@ export default class StorageBaseSupabase {
             } else {
                 await this.refreshSession();                
             }
-            const { data, error } = await window.$supabase.auth.getUser();
-            if (error) {
+            
+            // getSession()을 사용하여 세션과 사용자 정보를 모두 가져옴
+            const { data, error } = await window.$supabase.auth.getSession();
+            if (error || !data.session) {
                 return false;
             }
 
-            if (data) {
+            if (data.session && data.session.user) {
                 this.writeUserData(data);
                 return true;
             }
+            
+            return false;
         } catch (error) {
             console.error('Error checking Supabase connection:', error);
             return false;
@@ -837,11 +841,11 @@ export default class StorageBaseSupabase {
                     }
                 }
             }
-            if (value.user) {
-                window.localStorage.setItem('author', value.user.email);
-                window.localStorage.setItem('uid', value.user.id);
+            if (value.session.user) {
+                window.localStorage.setItem('author', value.session.user.email);
+                window.localStorage.setItem('uid', value.session.user.id);
 
-                let filter = { id: value.user.id };
+                let filter = { id: value.session.user.id };
                 if (window.$tenantName) {
                     filter.tenant_id = window.$tenantName;
                 }

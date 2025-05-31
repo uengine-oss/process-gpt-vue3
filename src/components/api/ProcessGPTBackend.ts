@@ -1351,6 +1351,19 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async sendWebViewNotification(notification: any): Promise<any> {
+        try {
+            await axios.post(`/execution/send-webview-notification`, {
+                "input": {
+                    "notification": notification
+                }
+            })
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
     async watchNotifications(onNotification?: (notification: any) => void) {
         try {
             await storage.watchNotifications(`notifications`, (payload) => {
