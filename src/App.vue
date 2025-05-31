@@ -156,38 +156,35 @@ export default {
         async watchNotifications(email){
             // this.backend = BackendFactory.createBackend();
             await this.backend.watchNotifications((notification) => {
-                const isWebView = window.androidBridge || navigator.userAgent.includes('wv');
-                if (isWebView) {
-                    this.backend.sendWebViewNotification(notification);
-                } else {
-                    if (notification.user_id === email && Notification.permission === 'granted') {
-                        let notiHeader = null;
-                        let notiBody = null;
-                        if(notification.type === 'workitem_bpm') {
-                            notiHeader = 'New Todo';
-                            notiBody = notification.title || '새 할 일 목록 추가';
-                        } else if(notification.type === 'chat') {
-                            if (!this.currentChatRoomId || (this.currentChatRoomId && !notification.url.includes(this.currentChatRoomId))) {
-                                notiHeader = notification.description || '채팅방';
-                                const senderName = notification.from_user_id || '알 수 없는 사용자';
-                                const messageContent = notification.title || '새 메시지';
-                                notiBody = `${senderName}\n${messageContent}`;
-                            }
+                this.backend.sendWebViewNotification(notification);
+                if (notification.user_id === email && Notification.permission === 'granted') {
+                    let notiHeader = null;
+                    let notiBody = null;
+                    if(notification.type === 'workitem_bpm') {
+                        notiHeader = 'New Todo';
+                        notiBody = notification.title || '새 할 일 목록 추가';
+                    } else if(notification.type === 'chat') {
+                        if (!this.currentChatRoomId || (this.currentChatRoomId && !notification.url.includes(this.currentChatRoomId))) {
+                            notiHeader = notification.description || '채팅방';
+                            const senderName = notification.from_user_id || '알 수 없는 사용자';
+                            const messageContent = notification.title || '새 메시지';
+                            notiBody = `${senderName}\n${messageContent}`;
                         }
-                        if(notiHeader && notiBody) {
-                            new Notification(notiHeader, {
-                                body: notiBody,
-                                icon: '/process-gpt-favicon.png',
-                                badge: '/process-gpt-favicon.png',
-                                tag: `noti-${notification.id || Date.now()}`,
-                                data: { url: notification.url }
-                            }).onclick = function() {
-                                window.focus();
-                                window.location.href = notification.url;
-                            };
-                        }
-                    }   
-                }
+                    }
+                    if(notiHeader && notiBody) {
+                        new Notification(notiHeader, {
+                            body: notiBody,
+                            icon: '/process-gpt-favicon.png',
+                            badge: '/process-gpt-favicon.png',
+                            tag: `noti-${notification.id || Date.now()}`,
+                            data: { url: notification.url }
+                        }).onclick = function() {
+                            window.focus();
+                            window.location.href = notification.url;
+                        };
+                    }
+                }   
+                
             });
         },
         // 알림 권한 요청 메서드
