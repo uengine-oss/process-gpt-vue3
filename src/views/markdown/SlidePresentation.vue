@@ -1,10 +1,10 @@
 <template>
   <div v-if="isPresentationMode" class="slide-presentation" @keydown="handleKeydown" tabindex="0" :class="{ 'print-mode': printPdf }">
     <div class="presentation-controls" v-if="!printPdf">
-      <button @click="closeModal" class="control-btn">Exit</button>
+      <v-btn @click="closeModal" :color="themeColor" variant="flat">Exit</v-btn>
       <div>
-        <button @click="openPdfExport" class="control-btn">PDF Export</button>
-        <button @click="openPptxExport" class="control-btn">PowerPoint Export</button>
+        <v-btn @click="openPdfExport" :color="themeColor" variant="flat" class="mx-1">PDF Export</v-btn>
+        <v-btn @click="openPptxExport" :color="themeColor" variant="flat">PowerPoint Export</v-btn>
       </div>
     </div>
     
@@ -33,6 +33,7 @@
 import SlideComponent from './SlideComponent.vue'
 import PdfExportHelper from './PdfExportHelper.vue'
 import PptxExportHelper from './PptxExportHelper.vue'
+import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin.js'
 
 export default {
   name: 'SlidePresentation',
@@ -41,6 +42,7 @@ export default {
     PdfExportHelper,
     PptxExportHelper
   },
+  mixins: [ThemeColorMixin],
   props: {
     printPdf: {
       type: Boolean,
@@ -157,17 +159,6 @@ export default {
 
 .slide-presentation:hover .presentation-controls {
   opacity: 1;
-}
-
-.control-btn {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  text-decoration: none;
-  cursor: pointer;
-  font-size: 0.9rem;
 }
 
 .slide-container {

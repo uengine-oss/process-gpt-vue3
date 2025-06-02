@@ -115,27 +115,13 @@ export default {
 </script>
 
 <style>
-
-:root {
-  --slide-font-scale: 1;
-  --slide-bg: white;
-  --slide-text: #333;
-  --slide-heading: #42b883;
-  --slide-transition: none;
-  --slide-numbers-display: block;
-}
-
 .reveal-container {
   width: 100%;
   height: 100%;
-  background-color: var(--slide-bg);
   border-radius: 4px;
   overflow: hidden;
   position: relative;
-}
-
-.reveal-container:not(.edit-mode) {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  padding-bottom: 0px !important;
 }
 
 .edit-mode .reveal .slides section {

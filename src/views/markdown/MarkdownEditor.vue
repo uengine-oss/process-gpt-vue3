@@ -16,7 +16,7 @@
                 {
                   name: 'offset',
                   options: {
-                    offset: [150, -300],
+                    offset: [400, -300],
                   },
                 },
                 {

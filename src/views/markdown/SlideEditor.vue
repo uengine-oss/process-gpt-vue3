@@ -1,22 +1,65 @@
 <template>
   <div class="slide-editor">
     <div class="editor-header">
-      <h1>Slide Presentation Editor</h1>
+      <v-card-title>Slide Presentation Editor</v-card-title>
+      <!-- 모든 버튼을 Vuetify3 라운드 스타일(compact, rounded-pill) 및 컴펫(variant="elevated") 버튼으로 변경 -->
       <div class="actions">
-        <button @click="addSlide" class="btn">Add Slide</button>
-        <button @click="exportMarkdown" class="btn">Export MD</button>
-        <button @click="openPdfExport" class="btn">PDF Export</button>
-        <button @click="openPptxExport" class="btn">PowerPoint Export</button>
-        <button @click="openWordExport" class="btn">Word Export</button>
-        <label for="import-file" class="btn">Import</label>
-        <input 
-          type="file" 
-          id="import-file" 
-          accept=".md,.txt" 
-          @change="importMarkdown" 
-          style="display: none;" 
-        />
-        <button @click="presentation" class="btn">Present</button>
+          <v-btn 
+              @click="addSlide" 
+              :color="themeColor" 
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+          >슬라이드 추가</v-btn>
+          <v-btn 
+              @click="exportMarkdown" 
+              :color="themeColor" 
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+          >MD 내보내기</v-btn>
+          <v-btn 
+              @click="openPdfExport" 
+              :color="themeColor" 
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+          >PDF 내보내기</v-btn>
+          <v-btn 
+              @click="openPptxExport" 
+              :color="themeColor" 
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+          >파워포인트 내보내기</v-btn>
+          <v-btn 
+              @click="openWordExport" 
+              :color="themeColor" 
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+          >워드 내보내기</v-btn>
+          <v-btn 
+              :color="themeColor" 
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+              @click="$refs.importFile.click()"
+          >가져오기</v-btn>
+          <input 
+              type="file" 
+              ref="importFile"
+              accept=".md,.txt" 
+              @change="importMarkdown" 
+              style="display: none;" 
+          />
+          <v-btn 
+              @click="presentation" 
+              :color="themeColor" 
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+          >프레젠테이션</v-btn>
       </div>
     </div>
     
@@ -42,7 +85,11 @@
       </div>
       
       <div class="preview-panel">
-        <div class="preview-header">Preview</div>
+        <!-- 미리보기 안내 텍스트: 회색, 9px 폰트로 표시 -->
+        <div class="d-flex align-center ml-1 mt-1">
+            <v-icon style="font-size: 18px; color: #888;">mdi-alert-circle</v-icon>
+            <div class="ml-1" style="font-size: 14px; color: #888;">미리보기 입니다.</div>
+        </div>
         <slide-component 
           v-if="!isPresentationMode"
           :key="markdownContent"
@@ -73,6 +120,7 @@ import PdfExportHelper from './PdfExportHelper.vue'
 import PptxExportHelper from './PptxExportHelper.vue'
 import WordExportHelper from './WordExportHelper.vue'
 import MarkdownEditor from './MarkdownEditor.vue'
+import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin.js'
 
 export default {
   name: 'SlideEditor',
@@ -85,6 +133,7 @@ export default {
     MarkdownEditor,
     SlidePresentation
   },
+  mixins: [ThemeColorMixin],
   props: {
     content: {
       type: String,
@@ -164,7 +213,6 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background-color: #f1f1f1;
   border-bottom: 1px solid #ddd;
 }
 
@@ -234,7 +282,7 @@ export default {
 
 .preview-panel {
   flex: 0 0 40%;
-  border-left: 1px solid #ddd;
+  background: white;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -242,8 +290,6 @@ export default {
 
 .preview-header {
   padding: 0.5rem 1rem;
-  background-color: #f1f1f1;
-  border-bottom: 1px solid #ddd;
   font-weight: bold;
 }
 
@@ -252,19 +298,12 @@ export default {
   flex: 1;
 }
 
-.btn {
-  background-color: #42b883;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  text-decoration: none;
-  cursor: pointer;
-  font-weight: bold;
-  margin-left: 0.5rem;
-}
-
 .actions {
   display: flex;
+  gap: 8px;
+}
+
+.v-btn {
+  margin: 0 !important;
 }
 </style>

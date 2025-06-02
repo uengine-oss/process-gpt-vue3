@@ -9,7 +9,7 @@
                 </div>
                 <div>
                     <div class="font-weight-medium">{{ localAlias ? localAlias : localName }}</div>
-                    <div class="text-caption text-grey-lighten-3">마크다운</div>
+                    <div class="text-caption text-grey-lighten-3">{{ localMode }}</div>
                 </div>
                 <v-spacer></v-spacer>
                 <!-- Vuetify의 flex 유틸리티를 사용하여 아이콘을 정중앙 정렬 -->
