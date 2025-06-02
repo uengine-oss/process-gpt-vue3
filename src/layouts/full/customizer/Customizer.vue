@@ -22,57 +22,65 @@ const customizer = useCustomizerStore();
 const themeColors = ref([
     {
         name: 'BLUE_THEME',
-        bg: 'themeBlue'
+        bg: 'themeBlue',
+        colorCode: '#0085DB'
     },
     {
         name: 'AQUA_THEME',
-        bg: 'themeAqua'
+        bg: 'themeAqua',
+        colorCode: '#0074BA'
     },
     {
         name: 'PURPLE_THEME',
-        bg: 'themePurple'
+        bg: 'themePurple',
+        colorCode: '#763EBD'
     },
     {
         name: 'GREEN_THEME',
-        bg: 'themeGreen'
+        bg: 'themeGreen',
+        colorCode: '#0A7EA4'
     },
     {
         name: 'CYAN_THEME',
-        bg: 'themeCyan'
+        bg: 'themeCyan',
+        colorCode: '#01C0C8'
     },
     {
         name: 'ORANGE_THEME',
-        bg: 'themeOrange'
+        bg: 'themeOrange',
+        colorCode: '#FA896B'
     }
-]);
-
-// Dark Theme Colors
-const DarkthemeColors = ref([
-    { name: 'DARK_BLUE_THEME', bg: 'themeDarkBlue' },
-    { name: 'DARK_AQUA_THEME', bg: 'themeDarkAqua' },
-    { name: 'DARK_PURPLE_THEME', bg: 'themeDarkPurple' },
-    { name: 'DARK_GREEN_THEME', bg: 'themeDarkGreen' },
-    { name: 'DARK_CYAN_THEME', bg: 'themeDarkCyan' },
-    { name: 'DARK_ORANGE_THEME', bg: 'themeDarkOrange' }
 ]);
 
 
 // LocalStorage에서 설정 불러오기 및 초기화
 onMounted(() => {
-  const savedSettings = JSON.parse(localStorage.getItem('userSettings') ?? '{}');
-  customizer.boxed = savedSettings.boxed ?? false;
-  customizer.mini_sidebar = savedSettings.mini_sidebar ?? false;
-  customizer.actTheme = savedSettings.actTheme ?? 'BLUE_THEME';
+    const savedSettings = JSON.parse(localStorage.getItem('userSettings') ?? '{}');
+    customizer.boxed = savedSettings.boxed ?? false;
+    customizer.mini_sidebar = savedSettings.mini_sidebar ?? false;
+    customizer.actTheme = savedSettings.actTheme ?? 'BLUE_THEME';
+    
+    // 저장된 테마 색상 코드 확인
+    if (savedSettings.themeColorCode) {
+        // 테마 색상 코드를 사용할 수 있는 로직 추가 (필요에 따라 활용)
+        // 예: CSS 변수로 설정하거나 Vuetify 테마 동적 변경 등
+        document.documentElement.style.setProperty('--theme-primary', savedSettings.themeColorCode);
+    }
 });
 
 // 모든 관련 상태를 하나의 watch에서 감시
 watch(
   [() => customizer.boxed, () => customizer.mini_sidebar, () => customizer.actTheme], 
   ([newBoxed, newMiniSidebar, newActTheme]) => {
+    // 현재 선택된 테마의 색상 코드 찾기
+    const selectedTheme = themeColors.value.find(theme => theme.name === newActTheme);
+    const themeColorCode = selectedTheme ? selectedTheme.colorCode : '#0085DB';
+    
     const userSettings = {
       boxed: newBoxed,
       mini_sidebar: newMiniSidebar,
       actTheme: newActTheme,
+      themeColorCode: themeColorCode
     };
     localStorage.setItem('userSettings', JSON.stringify(userSettings));
   }

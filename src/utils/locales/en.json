@@ -939,6 +939,8 @@
         "allTemplates": "All Templates"
     },
     "MarkdownField": {
-        "editMarkdown": "Edit Markdown"
+        "markdownEditor": "Markdown Editor",
+        "editMarkdown": "Edit Markdown",
+        "mode": "Mode"
     }
 }

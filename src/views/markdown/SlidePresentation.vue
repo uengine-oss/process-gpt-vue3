@@ -1,24 +1,25 @@
 <template>
-  <div class="slide-presentation" @keydown="handleKeydown" tabindex="0" :class="{ 'print-mode': printPdf }">
+  <div v-if="isPresentationMode" class="slide-presentation" @keydown="handleKeydown" tabindex="0" :class="{ 'print-mode': printPdf }">
     <div class="presentation-controls" v-if="!printPdf">
-      <button @click="$router.go(-1)" class="control-btn">Exit</button>
+      <v-btn @click="closeModal" :color="themeColor" variant="flat">Exit</v-btn>
       <div>
-        <button @click="openPdfExport" class="control-btn">PDF Export</button>
-        <button @click="openPptxExport" class="control-btn">PowerPoint Export</button>
+        <v-btn @click="openPdfExport" :color="themeColor" variant="flat" class="mx-1">PDF Export</v-btn>
+        <v-btn @click="openPptxExport" :color="themeColor" variant="flat">PowerPoint Export</v-btn>
       </div>
     </div>
     
     <div class="slide-container">
       <slide-component 
+        :key="markdownContent"
         :content="markdownContent"
         :isEditMode="false"
         class="presentation-slide"
       />
-      <div class="slide empty-slide" v-if="!markdownContent">
+      <!-- <div class="slide empty-slide" v-if="!markdownContent">
         <h1>No content available</h1>
         <p>Return to the editor to create your presentation first.</p>
         <router-link to="/" class="btn">Go to Editor</router-link>
-      </div>
+      </div> -->
     </div>
     
     <!-- Add PDF Export Helper Component -->
@@ -32,6 +33,7 @@
 import SlideComponent from './SlideComponent.vue'
 import PdfExportHelper from './PdfExportHelper.vue'
 import PptxExportHelper from './PptxExportHelper.vue'
+import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin.js'
 
 export default {
   name: 'SlidePresentation',
@@ -40,6 +42,7 @@ export default {
     PdfExportHelper,
     PptxExportHelper
   },
+  mixins: [ThemeColorMixin],
   props: {
     printPdf: {
       type: Boolean,
@@ -56,22 +59,27 @@ export default {
     previousPage: {
       type: String,
       default: '/'
+    },
+    modelValue: {
+      type: String,
+      default: ''
+    },
+    isPresentationMode: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
     return {
-      markdownContent: ''
+      markdownContent: '',
     }
   },
   mounted() {
-    const savedContent = localStorage.getItem('markdownContent')
-    if (savedContent) {
-      this.markdownContent = savedContent
-    }
-    if (!this.printPdf) {
-      this.$el.focus()
-      window.addEventListener('keydown', this.handleKeydown)
-    }
+    this.markdownContent = this.modelValue;
+    // if (!this.printPdf) {
+    //   this.$el.focus()
+    //   window.addEventListener('keydown', this.handleKeydown)
+    // }
     // PDF 모드 세팅
     if (this.printPdf) {
       document.body.classList.add('print-pdf')
@@ -101,6 +109,9 @@ export default {
       }
       // Other keyboard navigation is handled by reveal.js
     },
+    closeModal() {
+      this.$emit('close')
+    },
     openPdfExport() {
       if (this.$refs.pdfExportHelper) {
         this.$refs.pdfExportHelper.openModal()
@@ -118,7 +129,7 @@ export default {
 <style>
 .slide-presentation {
   height: 100vh;
-  width: 100vw;
+  width: 92vw;
   background-color: #111;
   overflow: hidden;
   display: flex;
@@ -148,17 +159,6 @@ export default {
 
 .slide-presentation:hover .presentation-controls {
   opacity: 1;
-}
-
-.control-btn {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  text-decoration: none;
-  cursor: pointer;
-  font-size: 0.9rem;
 }
 
 .slide-container {

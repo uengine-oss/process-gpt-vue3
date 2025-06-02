@@ -16,7 +16,7 @@
                 {
                   name: 'offset',
                   options: {
-                    offset: [0, -300],
+                    offset: [400, -300],
                   },
                 },
                 {
@@ -138,6 +138,14 @@ export default {
     useDefaultEditorStyle: {
       type: Boolean,
       default: true
+    },
+    updateKey: {
+      type: String,
+      default: null
+    },
+    readOnly: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -163,19 +171,39 @@ export default {
   },
   mounted() {
     this.initEditor();
+    if(this.modelValue) {
+      const html = marked(this.modelValue)
+
+      // HTML -> DOM -> ProseMirror Slice
+      const dom = new DOMParser().parseFromString(html, 'text/html')
+      const slice = ProseMirrorDOMParser
+        .fromSchema(this.editor.schema)
+        .parseSlice(dom.body)
+
+      // 에디터에 반영
+      this.editor.commands.setContent(slice.content, false) // false = history에 쌓지 않음
+    }
   },
   beforeUnmount() {
     if (this.editor) this.editor.destroy();
   },
   watch: {
-    modelValue: {
+    updateKey: {
       immediate: true,
       handler(newVal) {
-        if(this.editor && !this.isUpdated) {
-          const html = this.parseMarkdownOrHtmlToSlice(newVal)
+        if(this.editor) {
+          // 마크다운 문자열을 HTML로 변환
+          const html = marked(newVal)
 
-          this.htmlContent = html;
-          this.editor.commands.setContent(this.htmlContent.content, false) // false = history에 쌓지 않음
+          // HTML -> DOM -> ProseMirror Slice
+          const dom = new DOMParser().parseFromString(html, 'text/html')
+          const slice = ProseMirrorDOMParser
+            .fromSchema(this.editor.schema)
+            .parseSlice(dom.body)
+
+          // 에디터에 반영
+          this.editor.commands.setContent(slice.content, false) // false = history에 쌓지 않음
+
           this.isUpdated = true;
         }
       }
@@ -198,42 +226,33 @@ export default {
         ],
         editorProps: {
           handlePaste(view, event) {
-            const markdown = event.clipboardData.getData('text/plain')
-
+            const markdown = event.clipboardData.getData('text/plain');
             if (!markdown.includes('#') && !markdown.includes('-') && !markdown.includes('```') && !markdown.includes('---')) {
-              return false
+              return false;
             }
-
-            const html = marked(markdown)
-            const dom = new window.DOMParser().parseFromString(html, 'text/html')
-
-            const slice = ProseMirrorDOMParser
-              .fromSchema(view.state.schema)
-              .parseSlice(dom.body)
-
-            view.dispatch(view.state.tr.replaceSelection(slice))
-            return true
+            const html = marked(markdown);
+            const dom = new window.DOMParser().parseFromString(html, 'text/html');
+            const slice = ProseMirrorDOMParser.fromSchema(view.state.schema).parseSlice(dom.body);
+            view.dispatch(view.state.tr.replaceSelection(slice));
+            return true;
           },
         },
-
-        // ✅ 이 부분이 핵심
         onUpdate: ({ editor }) => {
-          const html = editor.getHTML()
+          const html = editor.getHTML();
           const markdown = this.convertHtmlToMarkdown(html);
-          this.$emit('update:modelValue', markdown)
+          this.$emit('update:modelValue', markdown);
         }
       });
-
     },
     convertHtmlToMarkdown(html) {
       const turndownService = new TurndownService();
       turndownService.addRule('horizontalRule', {
         filter: 'hr',
         replacement: function () {
-          return '\n---\n'
+          return '\n---\n';
         }
-      })
-      return turndownService.turndown(html)
+      });
+      return turndownService.turndown(html);
     },
     async generate() {
       this.generator = new MarkdownGenerator(this, {
@@ -263,35 +282,23 @@ export default {
     getSelectedHtml() {
       const { view } = this.editor;
       const { from, to } = view.state.selection;
-
       const slice = view.state.doc.slice(from, to);
-      const fragment = DOMSerializer
-        .fromSchema(view.state.schema)
-        .serializeFragment(slice.content);
-
+      const fragment = DOMSerializer.fromSchema(view.state.schema).serializeFragment(slice.content);
       const wrapper = document.createElement('div');
       wrapper.appendChild(fragment);
-
       return wrapper.innerHTML;
     },
     handleAIOption(option) {
       const selectedText = this.getSelectedHtml();
       const { from, to, anchor, head } = this.editor.state.selection;
       this.selection = { from, to, anchor, head };
-
       this.selectedText = selectedText;
-      this.allText = this.editor.options.content
-      if(option) {
-        console.log(`[AI] ${option.label} requested for:`, selectedText);
-        this.selectedAIMode = option.value;
-      } else {
-        this.selectedAIMode = mode.NONE;
-      }
-
+      this.allText = this.editor.options.content;
+      this.selectedAIMode = option ? option.value : mode.NONE;
       this.isGenerating = true;
       this.generate();
     },
-    extractModeFromText(output)  {
+    extractModeFromText(output) {
       const match = output.match(/^\[mode:\s*(\w+)\]/i);
       return match ? match[1].toLowerCase() : null;
     },
@@ -303,24 +310,10 @@ export default {
         .replace(/\\#/g, '#')
         .replace(/\\\*/g, '*')
         .replace(/\\`/g, '`')
-        .replace(/\\\\/g, '\\'); // 가장 마지막에
-
+        .replace(/\\\\/g, '\\');
       const html = cleaned.includes('<') ? cleaned : marked(cleaned);
       const dom = new DOMParser().parseFromString(html, 'text/html');
-      const content = dom.body;
-      const { schema } = this.editor.state;
-
-      const slice = ProseMirrorDOMParser.fromSchema(schema).parseSlice(content);
-
-      console.group('[ParseSlice Debug]');
-      console.log('▶ Original input:', markdownOrHtml);
-      console.log('▶ Cleaned input:', cleaned);
-      console.log('▶ Generated HTML:', html);
-      console.log('▶ DOM body innerHTML:', content.innerHTML);
-      console.log('▶ Final Slice Content JSON:', slice.content.toJSON?.());
-      console.groupEnd();
-
-      return slice;
+      return ProseMirrorDOMParser.fromSchema(this.editor.state.schema).parseSlice(dom.body);
     },
     async onGenerationFinished(response) {
       const selectedMode = this.extractModeFromText(response);
@@ -345,8 +338,9 @@ export default {
           this.tryAgain(content);
           break;
       }
-      this.editor.commands.focus(); // 커서 위치 강제 갱신
-      this.editor.view.updateState(this.editor.state); // 전체 리렌더
+
+      this.editor.commands.focus();
+      this.editor.view.updateState(this.editor.state);
       this.selection = null;
       const selection = this.editor.view.state.selection;
       this.selectedAIMode = mode.NONE;
@@ -355,19 +349,7 @@ export default {
     replaceText(responseHtml) {
       const { from, to } = this.selection;
       const slice = this.parseMarkdownOrHtmlToSlice(responseHtml);
-
-      console.group('[ReplaceText Debug]');
-      console.log('▶ responseHtml:', responseHtml);
-      console.log('▶ Selection from:', from, 'to:', to);
-      console.log('▶ Slice content size:', slice?.content?.size);
-      console.log('▶ Slice childCount:', slice?.content?.childCount);
-      console.log('▶ Slice content JSON:', slice?.content?.toJSON?.());
-      console.groupEnd();
-
-      if (!slice || slice.content.size === 0) {
-        console.warn('[ReplaceText Debug] ⚠️ Empty slice — skipping replace');
-        return;
-      }
+      if (!slice || slice.content.size === 0) return;
 
       this.editor.commands.command(({ tr, dispatch }) => {
         tr.replaceRange(from, to, slice);
@@ -381,7 +363,6 @@ export default {
       });
     },
     insertBelow(responseHtml) {
-      let me = this;
       const { to } = this.selection;
       const slice = this.parseMarkdownOrHtmlToSlice(responseHtml);
 
@@ -389,25 +370,24 @@ export default {
         tr.insert(to, slice.content);
         dispatch(tr);
         this.$nextTick(() => {
-          const html = this.editor.getHTML()
+          const html = this.editor.getHTML();
           const markdown = this.convertHtmlToMarkdown(html);
-          this.$emit('update:modelValue', markdown)
-        })
+          this.$emit('update:modelValue', markdown);
+        });
         return true;
       });
     },
     discardText() {
-      let me = this;
       const { from, to } = this.selection;
 
       this.editor.commands.command(({ tr, dispatch }) => {
         tr.delete(from, to);
         dispatch(tr);
         this.$nextTick(() => {
-          const html = this.editor.getHTML()
+          const html = this.editor.getHTML();
           const markdown = this.convertHtmlToMarkdown(html);
-          this.$emit('update:modelValue', markdown)
-        })
+          this.$emit('update:modelValue', markdown);
+        });
         return true;
       });
     },
@@ -416,6 +396,11 @@ export default {
     },
     createContent(responseHtml) {
       this.replaceText(responseHtml);
+    },
+    save() {
+      const html = this.editor.getHTML();
+      const markdown = this.convertHtmlToMarkdown(html);
+      this.$emit('save', markdown);
     }
   }
 }

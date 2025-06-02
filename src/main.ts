@@ -84,6 +84,7 @@ declare global {
         $isTenantServer: boolean;
         $tenantName: string;
         _env_: any;
+        $themeColor: any; // 테마 색상을 위한 전역 변수 추가
     }
 }
 
@@ -172,6 +173,7 @@ async function initializeApp() {
     await setupSupabase();
     await setupTenant();
     const app = createApp(App);
+    
     app.use(VueMonacoEditorPlugin, {
         paths: {
             vs: '/node_modules/monaco-editor/min/vs'
