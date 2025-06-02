@@ -61,6 +61,9 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import ganttastic from '@infectoone/vue-ganttastic'
 
+// 테마 색상 믹스인 추가
+import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin';
+
 const i18n = createI18n({
     locale: 'ko',
     fallbackLocale: 'en',
@@ -84,6 +87,7 @@ declare global {
         $isTenantServer: boolean;
         $tenantName: string;
         _env_: any;
+        $themeColor: any; // 테마 색상을 위한 전역 변수 추가
     }
 }
 
@@ -172,6 +176,10 @@ async function initializeApp() {
     await setupSupabase();
     await setupTenant();
     const app = createApp(App);
+    
+    // 테마 색상 믹스인을 전역으로 등록
+    app.mixin(ThemeColorMixin);
+    
     app.use(VueMonacoEditorPlugin, {
         paths: {
             vs: '/node_modules/monaco-editor/min/vs'

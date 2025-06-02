@@ -1,13 +1,32 @@
 <template>
     <div>
         <!-- <slide-component :key="localModelValue" style="width: 100%; height: 250px;" :content="localModelValue" :isEditMode="false" class="presentation-slide" /> -->
-        <v-btn color="primary" style="width: 100%;" @click="editMarkdown">마크다운 편집</v-btn>
+        <v-card class="rounded-lg mb-2" :style="`background-color: ${hexToRgba(themeColor, 0.05)} !important;`" elevation="0" @click="editMarkdown" hover>
+            <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
+            <v-row class="ma-0 pa-4 align-center">
+                <div :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
+                    <Icons :icon="'slide-show'" color="white" />
+                </div>
+                <div>
+                    <div class="font-weight-medium">{{ localAlias ? localAlias : localName }}</div>
+                    <div class="text-caption text-grey-lighten-3">마크다운</div>
+                </div>
+                <v-spacer></v-spacer>
+                <!-- Vuetify의 flex 유틸리티를 사용하여 아이콘을 정중앙 정렬 -->
+                <div
+                    style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px;"
+                    class="d-flex align-center justify-center"
+                >
+                    <v-icon icon="mdi-eye-outline" :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
+                </div>
+            </v-row>
+        </v-card>
         <v-dialog 
             v-model="showDialog" 
             persistent 
             max-width="1600px" 
             transition="dialog-transition"
-            >
+        >
             <v-card>
                 <v-card-text style="height: 600px; padding: 0;">
                 <slide-editor
@@ -19,7 +38,7 @@
                 </v-card-text>
                 <v-card-actions>
                 <v-spacer />
-                <v-btn color="primary" @click="saveMarkdown">저장</v-btn>
+                <v-btn :color="themeColor" @click="saveMarkdown">저장</v-btn>
                 <v-btn color="secondary" @click="cancelMarkdown">취소</v-btn>
                 </v-card-actions>
             </v-card>
@@ -31,13 +50,17 @@
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
 import SlideComponent from '@/views/markdown/SlideComponent.vue';
 import SlideEditor from '@/views/markdown/SlideEditor.vue';
+import Icons from "@/components/ui-components/Icons.vue";
+import ThemeColorMixin from "./ThemeColorMixin.js";
 
 export default {
     name: "TextareaField",
     components: {
         SlideComponent,
-        SlideEditor
+        SlideEditor,
+        Icons
     },
+    mixins: [ThemeColorMixin],
     computed: {
         defaultContent() {
             if(this.$t) {
@@ -114,6 +137,7 @@ export default {
         this.localDisabled = this.disabled === "true"
         this.localReadonly = this.readonly === "true"
     },
+
     mounted() {
         this.localModelValue = this.modelValue ?? this.defaultContent;
     },
