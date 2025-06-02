@@ -36,6 +36,7 @@
                         v-model="localModelValue"
                         @save="saveMarkdownContent"
                         :useDefaultEditorStyle="false"
+                        :readOnly="localReadonly"
                     ></markdown-editor>
                 </v-card-text>
                 <v-card-actions>
@@ -46,7 +47,7 @@
             </v-card>
         </v-dialog>
         <v-dialog 
-            v-if="localMode === 'slides'"
+            v-if="localMode === 'slides' && !localReadonly"
             v-model="showDialog" 
             persistent 
             max-width="1600px" 
@@ -68,6 +69,24 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+        <v-dialog
+            v-if="localMode === 'slides' && localReadonly"
+            v-model="showDialog" 
+            persistent 
+            max-width="1600px" 
+            transition="dialog-transition"
+        >
+            <v-card>
+                <v-card-text>
+                    
+                <slide-presentation ref="slidePresentation"
+                    :modelValue="localModelValue" 
+                    :key="localModelValue" 
+                    :isPresentationMode="true"
+                    @close="showDialog = false"/>
+                </v-card-text>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -78,6 +97,7 @@ import SlideEditor from '@/views/markdown/SlideEditor.vue';
 import MarkdownEditor from '@/views/markdown/MarkdownEditor.vue';
 import Icons from "@/components/ui-components/Icons.vue";
 import ThemeColorMixin from "./ThemeColorMixin.js";
+import SlidePresentation from '@/views/markdown/SlidePresentation.vue';
 
 export default {
     name: "MarkdownField",
@@ -85,7 +105,8 @@ export default {
         SlideComponent,
         SlideEditor,
         MarkdownEditor,
-        Icons
+        Icons,
+        SlidePresentation
     },
     mixins: [ThemeColorMixin],
     computed: {
