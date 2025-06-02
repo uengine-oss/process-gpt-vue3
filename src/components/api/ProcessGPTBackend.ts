@@ -1351,6 +1351,19 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async sendWebViewNotification(notification: any): Promise<any> {
+        try {
+            await axios.post(`/execution/send-webview-notification`, {
+                "input": {
+                    "notification": notification
+                }
+            })
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
     async watchNotifications(onNotification?: (notification: any) => void) {
         try {
             await storage.watchNotifications(`notifications`, (payload) => {
@@ -1924,6 +1937,7 @@ class ProcessGPTBackend implements Backend {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('file_name', fileName);
+            formData.append('tenant_id', window.$tenantName);
 
             const response = await axios.post('/memento/save-to-drive', formData, {
                 headers: {
@@ -1953,9 +1967,24 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getFileUrl(path: string) {
+    async getFileUrl(path: string, options?: any) {
         try {
-            return await storage.getFileUrl(path);
+            if (options && options.storageType == 'drive') {
+                const filePath = await storage.getString('chat_attachments', {
+                    column: 'file_path',
+                    match: {
+                        id: path,
+                        tenant_id: window.$tenantName
+                    }
+                });
+                if (filePath) {
+                    return filePath;
+                } else {
+                    return null;
+                }
+            } else {
+                return await storage.getFileUrl(path);
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

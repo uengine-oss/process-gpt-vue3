@@ -34,7 +34,6 @@ export default class StorageBaseSupabase {
                     refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token'))?.split('=')[1];
                 }
             }
-
             if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
                 const { error: sessionError } = await window.$supabase.auth.setSession({
                     access_token: accessToken,
@@ -48,15 +47,18 @@ export default class StorageBaseSupabase {
                 await this.refreshSession();                
             }
             
-            const { data, error } = await window.$supabase.auth.getUser();
-            if (error) {
+            // getSession()을 사용하여 세션과 사용자 정보를 모두 가져옴
+            const { data, error } = await window.$supabase.auth.getSession();
+            if (error || !data.session) {
                 return false;
             }
 
-            if (data) {
+            if (data.session && data.session.user) {
                 this.writeUserData(data);
                 return true;
             }
+            
+            return false;
         } catch (error) {
             console.error('Error checking Supabase connection:', error);
             return false;
@@ -87,10 +89,12 @@ export default class StorageBaseSupabase {
             } else {
                 // Check if we're in webview mode
                 if (window.AndroidBridge) {
+                    console.log("refreshSession - webview mode");
                     window.AndroidBridge.saveSessionToken(
                         refreshData.session.access_token,
                         refreshData.session.refresh_token
                     );
+                    console.log("refreshSession - webview mode - saveSessionToken", refreshData.session.access_token, refreshData.session.refresh_token);
                 } else {
                     if (window.location.host.includes('process-gpt.io')) {
                         document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
@@ -837,11 +841,11 @@ export default class StorageBaseSupabase {
                     }
                 }
             }
-            if (value.user) {
-                window.localStorage.setItem('author', value.user.email);
-                window.localStorage.setItem('uid', value.user.id);
+            if (value.session.user) {
+                window.localStorage.setItem('author', value.session.user.email);
+                window.localStorage.setItem('uid', value.session.user.id);
 
-                let filter = { id: value.user.id };
+                let filter = { id: value.session.user.id };
                 if (window.$tenantName) {
                     filter.tenant_id = window.$tenantName;
                 }

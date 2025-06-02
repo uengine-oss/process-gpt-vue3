@@ -6,6 +6,11 @@ class UEngineBackend implements Backend {
     // constructor() {
     //     super();
     // }
+
+    async sendWebViewNotification(notification: any): Promise<any> {
+        return null;
+    }
+
     async watchNotifications(onNotification?: (notification: any) => void) {
         return null;
     }

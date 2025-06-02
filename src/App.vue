@@ -119,9 +119,11 @@ export default {
                                     this.$try({}, null, {
                                         errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
                                     })
+                                    window.location.href = 'https://www.process-gpt.io/tenant/manage';
                                 }
-                            } 
-                            this.$router.push('/auth/login');
+                            } else {
+                                this.$router.push('/auth/login');
+                            }
                         }
                         this.loadScreen = true;
                     }
@@ -154,6 +156,7 @@ export default {
         async watchNotifications(email){
             // this.backend = BackendFactory.createBackend();
             await this.backend.watchNotifications((notification) => {
+                this.backend.sendWebViewNotification(notification);
                 if (notification.user_id === email && Notification.permission === 'granted') {
                     let notiHeader = null;
                     let notiBody = null;
@@ -180,7 +183,8 @@ export default {
                             window.location.href = notification.url;
                         };
                     }
-                }
+                }   
+                
             });
         },
         // 알림 권한 요청 메서드

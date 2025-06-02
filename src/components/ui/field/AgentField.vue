@@ -85,7 +85,7 @@ export default {
         }
     },
     mounted() {
-        if (this.modelValue) {
+        if (this.modelValue && this.modelValue.id != '') {
             this.agent = this.modelValue;
             this.agent.isAgent = true;
             this.isEdit = true;

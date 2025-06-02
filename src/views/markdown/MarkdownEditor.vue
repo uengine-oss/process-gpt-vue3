@@ -172,10 +172,18 @@ export default {
       immediate: true,
       handler(newVal) {
         if(this.editor && !this.isUpdated) {
-          const html = this.parseMarkdownOrHtmlToSlice(newVal)
+          // 마크다운 문자열을 HTML로 변환
+          const html = marked(newVal)
 
-          this.htmlContent = html;
-          this.editor.commands.setContent(this.htmlContent.content, false) // false = history에 쌓지 않음
+          // HTML -> DOM -> ProseMirror Slice
+          const dom = new DOMParser().parseFromString(html, 'text/html')
+          const slice = ProseMirrorDOMParser
+            .fromSchema(this.editor.schema)
+            .parseSlice(dom.body)
+
+          // 에디터에 반영
+          this.editor.commands.setContent(slice.content, false) // false = history에 쌓지 않음
+
           this.isUpdated = true;
         }
       }

@@ -29,8 +29,8 @@
           </div>
           
           <div class="actions">
-            <button @click="exportToPptx" class="action-btn">Export to PowerPoint</button>
-            <button @click="closeModal" class="cancel-btn">Cancel</button>
+            <v-btn color="primary" @click="exportToPptx" >Export to PowerPoint</v-btn>
+            <v-btn color="secondary" @click="closeModal" >Cancel</v-btn>
           </div>
         </div>
       </div>
