@@ -16,7 +16,7 @@
                 {
                   name: 'offset',
                   options: {
-                    offset: [0, -300],
+                    offset: [150, -300],
                   },
                 },
                 {
@@ -163,6 +163,18 @@ export default {
   },
   mounted() {
     this.initEditor();
+    if(this.modelValue) {
+      const html = marked(this.modelValue)
+
+      // HTML -> DOM -> ProseMirror Slice
+      const dom = new DOMParser().parseFromString(html, 'text/html')
+      const slice = ProseMirrorDOMParser
+        .fromSchema(this.editor.schema)
+        .parseSlice(dom.body)
+
+      // 에디터에 반영
+      this.editor.commands.setContent(slice.content, false) // false = history에 쌓지 않음
+    }
   },
   beforeUnmount() {
     if (this.editor) this.editor.destroy();
@@ -171,7 +183,7 @@ export default {
     modelValue: {
       immediate: true,
       handler(newVal) {
-        if(this.editor && !this.isUpdated) {
+        if(this.editor) {
           // 마크다운 문자열을 HTML로 변환
           const html = marked(newVal)
 
@@ -424,6 +436,11 @@ export default {
     },
     createContent(responseHtml) {
       this.replaceText(responseHtml);
+    },
+    save() {
+      const html = this.editor.getHTML()
+      const markdown = this.convertHtmlToMarkdown(html);
+      this.$emit('save', markdown);
     }
   }
 }

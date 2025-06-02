@@ -22,6 +22,31 @@
             </v-row>
         </v-card>
         <v-dialog 
+            v-if="localMode === 'markdown'"
+            v-model="showDialog" 
+            persistent 
+            max-width="1600px" 
+            transition="dialog-transition"
+        >
+            <v-card>
+                <v-card-title>마크다운 에디터</v-card-title>
+                <v-card-text class="ml-4 mr-4 editor" style="height: 600px; padding: 0 !important; overflow: auto;">
+                    <markdown-editor
+                        ref="markdownEditor"
+                        v-model="localModelValue"
+                        @save="saveMarkdownContent"
+                        :useDefaultEditorStyle="false"
+                    ></markdown-editor>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer />
+                    <v-btn :color="themeColor" @click="saveMarkdown">저장</v-btn>
+                    <v-btn color="secondary" @click="cancelMarkdown">취소</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+        <v-dialog 
+            v-if="localMode === 'slides'"
             v-model="showDialog" 
             persistent 
             max-width="1600px" 
@@ -32,7 +57,7 @@
                 <slide-editor
                     :content="localModelValue"
                     style="width: 100%; height: 100%; border: none;"
-                    ref="slideEditor"
+                    ref="markdownEditor"
                     @save="saveMarkdownContent"
                 ></slide-editor>
                 </v-card-text>
@@ -50,6 +75,7 @@
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
 import SlideComponent from '@/views/markdown/SlideComponent.vue';
 import SlideEditor from '@/views/markdown/SlideEditor.vue';
+import MarkdownEditor from '@/views/markdown/MarkdownEditor.vue';
 import Icons from "@/components/ui-components/Icons.vue";
 import ThemeColorMixin from "./ThemeColorMixin.js";
 
@@ -58,6 +84,7 @@ export default {
     components: {
         SlideComponent,
         SlideEditor,
+        MarkdownEditor,
         Icons
     },
     mixins: [ThemeColorMixin],
@@ -84,9 +111,9 @@ export default {
         modelValue: String,
         vueRenderUUID: String,
         tagName: String,
-
         name: String,
         alias: String,
+        mode: String,
         disabled: String,
         readonly: String
     },
@@ -104,6 +131,13 @@ export default {
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
+                {
+                    dataToUse: "localMode",
+                    htmlAttribute: "mode",
+                    settingLabel: "MarkdownField.mode",
+                    settingType: "select",
+                    settingValue: ["markdown", "slides"],
+                },
                 commonSettingInfos["localDisabled"],
                 commonSettingInfos["localReadonly"]
             ]
@@ -133,7 +167,7 @@ export default {
         
         this.localName = this.name ?? "name"
         this.localAlias = this.alias ?? ""
-        this.localRows = this.rows ?? 5
+        this.localMode = this.mode ?? "markdown"
         this.localDisabled = this.disabled === "true"
         this.localReadonly = this.readonly === "true"
     },
@@ -143,8 +177,8 @@ export default {
     },
     methods: {
         saveMarkdown() {
-            const slideEditor = this.$refs.slideEditor;
-            slideEditor.save();
+            const markdownEditor = this.$refs.markdownEditor;
+            markdownEditor.save();
         },
         saveMarkdownContent(markdownContent) {
             this.localModelValue = markdownContent;
@@ -169,5 +203,16 @@ export default {
 <style lang="scss">
 .form-text-area {
     margin-bottom: 16px;
+}
+
+.editor {
+  flex: 1;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+  resize: none;
+  line-height: 1.5;
+  font-size: 14px;
 }
 </style>
