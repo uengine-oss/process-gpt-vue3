@@ -41,8 +41,8 @@
             </div>
           </div>
           <div class="actions">
-            <button @click="preparePdfExport" class="action-btn">Prepare for PDF</button>
-            <button @click="closeModal" class="cancel-btn">Cancel</button>
+            <v-btn color="primary" @click="preparePdfExport" >Prepare for PDF</v-btn>
+            <v-btn color="secondary" @click="closeModal" >Cancel</v-btn>
           </div>
         </div>
       </div>

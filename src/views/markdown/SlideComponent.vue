@@ -40,7 +40,7 @@ export default {
     }
   },
   watch: {
-    /*content: {
+    content: {
       handler: async function (newContent) {
         if (this.$refs.markdownContent) {
           console.log('[Reveal Debug] updating textarea content')
@@ -50,15 +50,12 @@ export default {
           requestAnimationFrame(() => {
             if (this.deck) {
               this.init();
-              // this.deck.sync();
-              // this.deck.layout();
-              // this.$forceUpdate();
               console.log('[Reveal Debug] slide count after sync:', this.deck.getSlides().length)
             }
           })
         }
       }
-    }*/
+    }
   },
   methods: {
     async init() {

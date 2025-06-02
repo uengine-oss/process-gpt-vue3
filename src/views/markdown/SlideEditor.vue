@@ -7,6 +7,7 @@
         <button @click="exportMarkdown" class="btn">Export MD</button>
         <button @click="openPdfExport" class="btn">PDF Export</button>
         <button @click="openPptxExport" class="btn">PowerPoint Export</button>
+        <button @click="openWordExport" class="btn">Word Export</button>
         <label for="import-file" class="btn">Import</label>
         <input 
           type="file" 
@@ -15,7 +16,7 @@
           @change="importMarkdown" 
           style="display: none;" 
         />
-        <router-link to="/present" class="btn">Present</router-link>
+        <button @click="presentation" class="btn">Present</button>
       </div>
     </div>
     
@@ -43,6 +44,7 @@
       <div class="preview-panel">
         <div class="preview-header">Preview</div>
         <slide-component 
+          v-if="!isPresentationMode"
           :key="markdownContent"
           ref="slideComponent"
           :content="markdownContent"
@@ -54,14 +56,22 @@
     
     <pdf-export-helper ref="pdfExportHelper" />
     <pptx-export-helper ref="pptxExportHelper" />
+    <word-export-helper ref="wordExportHelper" />
+    <slide-presentation ref="slidePresentation"
+     :modelValue="markdownContent" 
+     :key="markdownContent" 
+     :isPresentationMode="isPresentationMode"
+     @close="isPresentationMode = false"/>
   </div>
 </template>
 
 <script>
 import SlideComponent from './SlideComponent.vue'
 import SlideStyler from './SlideStyler.vue'
+import SlidePresentation from './SlidePresentation.vue'
 import PdfExportHelper from './PdfExportHelper.vue'
 import PptxExportHelper from './PptxExportHelper.vue'
+import WordExportHelper from './WordExportHelper.vue'
 import MarkdownEditor from './MarkdownEditor.vue'
 
 export default {
@@ -71,7 +81,9 @@ export default {
     SlideStyler,
     PdfExportHelper,
     PptxExportHelper,
-    MarkdownEditor
+    WordExportHelper,
+    MarkdownEditor,
+    SlidePresentation
   },
   props: {
     content: {
@@ -82,6 +94,7 @@ export default {
   data() {
     return {
       markdownContent: '',
+      isPresentationMode: false
     }
   },
   mounted() {
@@ -126,8 +139,14 @@ export default {
     openPptxExport() {
       this.$refs.pptxExportHelper?.openModal()
     },
+    openWordExport() {
+      this.$refs.wordExportHelper?.openModal()
+    },
     save() {
       this.$emit('save', this.markdownContent);
+    },
+    presentation() {
+      this.isPresentationMode = true;
     }
   }
 }
