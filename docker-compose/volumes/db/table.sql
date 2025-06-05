@@ -57,6 +57,11 @@ as $$
         )::text
 $$;
 
+create table if not exists public.user_devices (
+    user_email text not null,
+    device_token text null,
+    constraint user_devices_pkey primary key (user_email)
+) tablespace pg_default;
 
 
 create table if not exists public.users (
@@ -94,9 +99,6 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='tenant_id') THEN
         ALTER TABLE public.users ADD COLUMN tenant_id text null;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='device_token') THEN
-        ALTER TABLE public.users ADD COLUMN device_token text null;
     END IF;
 END;
 $$;
