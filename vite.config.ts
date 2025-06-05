@@ -2,7 +2,6 @@ import { fileURLToPath, URL } from 'url';
 import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vuetify from 'vite-plugin-vuetify';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import dotenv from 'dotenv'
 import path from 'path';
 dotenv.config()
@@ -19,15 +18,7 @@ export default defineConfig({
         vuetify({
             autoImport: true,
             styles: { configFile: 'src/scss/variables.scss' }
-        }),
-        nodePolyfills({
-            include: ['http', 'https', 'url', 'buffer'],
-            globals: {
-                Buffer: true,
-                global: true,
-                process: true,
-            },
-        }),
+        })
     ],
     resolve: {
         alias: {
