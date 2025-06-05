@@ -372,6 +372,7 @@
         "title": "Company Management",
         "subTitle1": "Create a new company or go to a page managed by the selected company.",
         "subTitle2": "(* Sign-up is not possible on mobile devices.)",
+        "subTitle3": "Select a company to go to the page managed by the selected company.",
         "createCompany": "Create a company"
     },
     "tenantInfoField": {

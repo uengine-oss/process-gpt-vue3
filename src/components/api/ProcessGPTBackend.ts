@@ -1528,6 +1528,24 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getUserAllTenants() {
+        try {
+            const uid: string = localStorage.getItem('uid') || '';
+            const options = {
+                orderBy: 'username',
+                sort: 'asc',
+                match: {
+                    id: uid
+                }
+            }
+            const users = await storage.list('users', options);
+            return users
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getUserList() {
         try {
             const options = {
