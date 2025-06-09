@@ -6,42 +6,30 @@
       <div class="actions">
           <v-btn 
               @click="addSlide" 
-              :color="themeColor" 
-              variant="elevated" 
               class="rounded-pill"
               density="compact"
           >{{ i18n.global.t('SlideEditor.addSlide') }}</v-btn>
           <v-btn 
               @click="exportMarkdown" 
-              :color="themeColor" 
-              variant="elevated" 
               class="rounded-pill"
               density="compact"
           >{{ i18n.global.t('SlideEditor.exportMarkdown') }}</v-btn>
           <v-btn 
               @click="openPdfExport" 
-              :color="themeColor" 
-              variant="elevated" 
               class="rounded-pill"
               density="compact"
           >{{ i18n.global.t('SlideEditor.exportPdf') }}</v-btn>
           <v-btn 
               @click="openPptxExport" 
-              :color="themeColor" 
-              variant="elevated" 
               class="rounded-pill"
               density="compact"
           >{{ i18n.global.t('SlideEditor.exportPptx') }}</v-btn>
           <v-btn 
               @click="openWordExport" 
-              :color="themeColor" 
-              variant="elevated" 
               class="rounded-pill"
               density="compact"
           >{{ i18n.global.t('SlideEditor.exportWord') }}</v-btn>
           <v-btn 
-              :color="themeColor" 
-              variant="elevated" 
               class="rounded-pill"
               density="compact"
               @click="$refs.importFile.click()"
@@ -56,7 +44,6 @@
           <v-btn 
               @click="presentation" 
               :color="themeColor" 
-              variant="elevated" 
               class="rounded-pill"
               density="compact"
           >{{ i18n.global.t('SlideEditor.presentation') }}</v-btn>
@@ -193,7 +180,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .slide-editor {
   display: flex;
   flex-direction: column;
@@ -254,7 +241,6 @@ export default {
 /* 에디터는 유동 (남은 공간에서 preview 뺀 나머지 차지) */
 .editor-content {
   flex: 1;
-  padding: 1rem;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -295,7 +281,21 @@ export default {
   gap: 8px;
 }
 
-.v-btn {
-  margin: 0 !important;
+:deep(.v-btn) {
+  transition: none !important;
+}
+
+:deep(.v-btn:hover) {
+  box-shadow: none !important;
+  transform: none !important;
+  background-color: inherit;
+}
+
+:deep(.v-btn--elevated:hover) {
+  box-shadow: none !important;
+}
+
+:deep(.v-btn--variant-elevated:hover) {
+  box-shadow: none !important;
 }
 </style>

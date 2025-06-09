@@ -42,14 +42,12 @@
                 <v-row class="ma-0 pa-4">
                     <v-spacer></v-spacer>
                     <v-btn @click="cancelMarkdown"
-                        variant="elevated" 
                         class="rounded-pill mr-2"
                         density="compact"
                         >취소
                     </v-btn>
                     <v-btn @click="saveMarkdown"
                         :color="themeColor"
-                        variant="elevated" 
                         class="rounded-pill"
                         density="compact"
                     >저장</v-btn>
@@ -75,14 +73,12 @@
                 <v-row class="ma-0 pa-4">
                     <v-spacer></v-spacer>
                     <v-btn @click="cancelMarkdown"
-                        variant="elevated" 
                         class="rounded-pill mr-2"
                         density="compact"
                     >취소
                     </v-btn>
                     <v-btn @click="saveMarkdown"
                         :color="themeColor"
-                        variant="elevated" 
                         class="rounded-pill"
                         density="compact"
                     >저장</v-btn>
@@ -241,7 +237,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style scoped>
 .form-text-area {
     margin-bottom: 16px;
 }
@@ -255,5 +251,23 @@ export default {
   resize: none;
   line-height: 1.5;
   font-size: 14px;
+}
+
+:deep(.v-btn) {
+  transition: none !important;
+}
+
+:deep(.v-btn:hover) {
+  box-shadow: none !important;
+  transform: none !important;
+  background-color: inherit;
+}
+
+:deep(.v-btn--elevated:hover) {
+  box-shadow: none !important;
+}
+
+:deep(.v-btn--variant-elevated:hover) {
+  box-shadow: none !important;
 }
 </style>

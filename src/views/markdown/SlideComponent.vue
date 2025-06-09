@@ -132,6 +132,14 @@ export default {
   transform: none !important;
 }
 
+.reveal-container .reveal .controls button {
+    color: black !important;
+}
+
+.reveal-container .progress {
+    color: black !important;
+}
+
 .reveal {
   height: 100%;
 }

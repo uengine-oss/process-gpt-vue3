@@ -14,7 +14,7 @@
                 <div class="ml-auto d-flex">
                     <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode" >
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock" @click="openAlertDialog">
+                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-2 cp-unlock" @click="openAlertDialog">
                                 <Icons :icon="'pencil'" :size="18" />
                             </v-btn>
                         </template>
@@ -23,7 +23,7 @@
 
                     <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName == editUser">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
+                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-2cp-lock" @click="openAlertDialog">
                                 <Icons :icon="'save'" :size="24" />
                             </v-btn>
                         </template>
@@ -32,7 +32,7 @@
 
                     <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName != editUser">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" @click="openAlertDialog">
+                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-2" @click="openAlertDialog">
                                 <LockIcon width="24" height="24" />
                             </v-btn>
                         </template>
