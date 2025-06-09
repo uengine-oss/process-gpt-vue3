@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 /*import tabler icons*/
-import { UserCircleIcon,BellIcon,ArticleIcon,LockIcon } from 'vue-tabler-icons';
+import { UserCircleIcon, UsersIcon, BrandGoogleDriveIcon } from 'vue-tabler-icons';
 //components
 import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
+import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
 // import SecurityTab from '@/components/pages/account-settings/SecurityTab.vue';
@@ -27,9 +28,12 @@ const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
                     <v-tab v-if="superAdmin" value="ManageAccess">
                         <UsersIcon class="mr-2" size="20"/>{{ $t('accountTab.manageAccess') }}
                     </v-tab>
-                    <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab>
-                    <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab>
-                    <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
+                    <v-tab value="Drive">
+                        <BrandGoogleDriveIcon class="mr-2" size="20"/>{{ $t('accountTab.drive') }}
+                    </v-tab>
+                    <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
+                    <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
+                    <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
                 </v-tabs>
                 <v-divider></v-divider>
                 <v-card-text class="pa-sm-6 pa-3 pb-sm-6 pb-6">
@@ -39,6 +43,9 @@ const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
                         </v-window-item>
                         <v-window-item value="ManageAccess">
                             <ManageAccessTab />
+                        </v-window-item>
+                        <v-window-item value="Drive">
+                            <DriveTab/>
                         </v-window-item>
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>
