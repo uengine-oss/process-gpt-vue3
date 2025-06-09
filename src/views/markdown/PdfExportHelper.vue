@@ -2,47 +2,59 @@
   <div class="pdf-export-helper">
     <div class="modal" v-if="showModal">
       <div class="modal-content">
-        <div class="modal-header">
-          <h3>PDF Export Instructions</h3>
-          <button @click="closeModal" class="close-btn">&times;</button>
-        </div>
+        <v-row class="ma-0 pa-4 align-center">
+          <h3>{{ i18n.global.t('PdfExportHelper.title') }}</h3>
+          <v-spacer></v-spacer>
+          <v-btn @click="closeModal"
+              icon variant="text"
+              density="comfortable"
+              style="margin-top:-8px;"
+          >
+              <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-row>
         <div class="modal-body">
           <ol>
-            <li>Click the "Prepare for PDF" button below</li>
-            <li>Once the page reloads, press <strong>CTRL/CMD+P</strong> in your browser</li>
-            <li>In the print dialog, set <strong>Destination</strong> to <strong>Save as PDF</strong></li>
-            <li>Set <strong>Layout</strong> to <strong>Landscape</strong></li>
-            <li>Set <strong>Margins</strong> to <strong>None</strong></li>
-            <li>Enable <strong>Background graphics</strong> option</li>
-            <li>Click <strong>Save</strong></li>
+            <li>{{ i18n.global.t('PdfExportHelper.step1') }}</li>
+            <li>{{ i18n.global.t('PdfExportHelper.step2') }}</li>
+            <li>{{ i18n.global.t('PdfExportHelper.step3') }}</li>
+            <li>{{ i18n.global.t('PdfExportHelper.step4') }}</li>
+            <li>{{ i18n.global.t('PdfExportHelper.step5') }}</li>
+            <li>{{ i18n.global.t('PdfExportHelper.step6') }}</li>
+            <li>{{ i18n.global.t('PdfExportHelper.step7') }}</li>
           </ol>
           <div class="pdf-config">
             <div class="config-item">
               <label>
                 <input type="checkbox" v-model="showNotes">
-                Include speaker notes
+                {{ i18n.global.t('PdfExportHelper.includeNotes') }}
               </label>
             </div>
             <div class="config-item" v-if="showNotes">
               <label>
                 <input type="radio" v-model="notesLayout" value="overlay">
-                Overlay notes
+                {{ i18n.global.t('PdfExportHelper.overlayNotes') }}
               </label>
               <label>
                 <input type="radio" v-model="notesLayout" value="separate-page">
-                Separate page
+                {{ i18n.global.t('PdfExportHelper.separatePage') }}
               </label>
             </div>
             <div class="config-item">
               <label>
                 <input type="checkbox" v-model="separateFragments">
-                Separate fragments to different slides
+                {{ i18n.global.t('PdfExportHelper.separateFragments') }}
               </label>
             </div>
           </div>
           <div class="actions">
-            <v-btn color="primary" @click="preparePdfExport" >Prepare for PDF</v-btn>
-            <v-btn color="secondary" @click="closeModal" >Cancel</v-btn>
+            <v-btn @click="preparePdfExport"
+              :color="themeColor" 
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+            >{{ i18n.global.t('PdfExportHelper.prepareButton') }}
+            </v-btn>
           </div>
         </div>
       </div>
@@ -52,9 +64,12 @@
 
 <script>
 import { ref } from 'vue'
+import { i18n } from '@/main'
+import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin.js'
 
 export default {
   name: 'PdfExportHelper',
+  mixins: [ThemeColorMixin],
   emits: ['open-modal'],
   setup(props, { emit }) {
     const showModal = ref(false)
@@ -100,6 +115,7 @@ export default {
     }
 
     return {
+      i18n,
       showModal,
       showNotes,
       notesLayout,

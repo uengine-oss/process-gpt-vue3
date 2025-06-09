@@ -2,15 +2,22 @@
   <div class="docx-export-helper">
     <div class="modal" v-if="showModal">
       <div class="modal-content">
-        <div class="modal-header">
-          <h3>Word Export</h3>
-          <button @click="closeModal" class="close-btn">&times;</button>
-        </div>
+        <v-row class="ma-0 pa-4 align-center">
+          <h3>{{ i18n.global.t('WordExportHelper.title') }}</h3>
+          <v-spacer></v-spacer>
+          <v-btn @click="closeModal"
+              icon variant="text"
+              density="comfortable"
+              style="margin-top:-8px;"
+          >
+              <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-row>
         <div class="modal-body">
-          <p>Configure your Word export options:</p>
+          <p>{{ i18n.global.t('WordExportHelper.configureOptions') }}</p>
           <div class="export-config">
             <div class="config-item">
-              <label>Document name:</label>
+              <label>{{ i18n.global.t('WordExportHelper.documentName') }}:</label>
               <input 
                 type="text" 
                 v-model="fileName" 
@@ -19,9 +26,15 @@
               />
             </div>
           </div>
+          
           <div class="actions">
-            <v-btn color="primary" @click="exportToDocx" >Export to Word</v-btn>
-            <v-btn color="secondary" @click="closeModal" >Cancel</v-btn>
+            <v-btn @click="exportToDocx"
+              :color="themeColor" 
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+            >{{ i18n.global.t('WordExportHelper.exportButton') }}
+            </v-btn>
           </div>
         </div>
       </div>
@@ -34,9 +47,12 @@ import { ref } from 'vue'
 import { Document, Packer, Paragraph, HeadingLevel, TextRun } from 'docx'
 import { saveAs } from 'file-saver'
 import { marked } from 'marked'
+import { i18n } from '@/main'
+import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin.js'
 
 export default {
   name: 'WordExportHelper',
+  mixins: [ThemeColorMixin],
   setup() {
     const showModal = ref(false)
     const fileName = ref('document.docx')
@@ -129,6 +145,7 @@ export default {
     }
 
     return {
+      i18n,
       showModal,
       fileName,
       openModal,

@@ -2,23 +2,30 @@
   <div class="pptx-export-helper">
     <div class="modal" v-if="showModal">
       <div class="modal-content">
-        <div class="modal-header">
-          <h3>PowerPoint Export</h3>
-          <button @click="closeModal" class="close-btn">&times;</button>
-        </div>
+        <v-row class="ma-0 pa-4 align-center">
+          <h3>{{ i18n.global.t('PptxExportHelper.title') }}</h3>
+          <v-spacer></v-spacer>
+          <v-btn @click="closeModal"
+              icon variant="text"
+              density="comfortable"
+              style="margin-top:-8px;"
+          >
+              <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-row>
         <div class="modal-body">
-          <p>Configure your PowerPoint export options:</p>
+          <p>{{ i18n.global.t('PptxExportHelper.configureOptions') }}</p>
           
           <div class="export-config">
             <div class="config-item">
               <label>
                 <input type="checkbox" v-model="includeNotes">
-                Include speaker notes
+                {{ i18n.global.t('PptxExportHelper.includeSpeakerNotes') }}
               </label>
             </div>
             
             <div class="config-item">
-              <label>Presentation name:</label>
+              <label>{{ i18n.global.t('PptxExportHelper.presentationName') }}:</label>
               <input 
                 type="text" 
                 v-model="fileName" 
@@ -29,8 +36,13 @@
           </div>
           
           <div class="actions">
-            <v-btn color="primary" @click="exportToPptx" >Export to PowerPoint</v-btn>
-            <v-btn color="secondary" @click="closeModal" >Cancel</v-btn>
+            <v-btn @click="exportToPptx"
+              :color="themeColor" 
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+            >{{ i18n.global.t('PptxExportHelper.exportButton') }}
+            </v-btn>
           </div>
         </div>
       </div>
@@ -41,9 +53,12 @@
 <script>
 import { ref } from 'vue'
 import pptxgen from 'pptxgenjs'
+import { i18n } from '@/main'
+import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin.js'
 
 export default {
   name: 'PptxExportHelper',
+  mixins: [ThemeColorMixin],
   setup() {
     const showModal = ref(false)
     const includeNotes = ref(true)
@@ -174,6 +189,7 @@ export default {
     }
 
     return {
+      i18n,
       showModal,
       includeNotes,
       fileName,
@@ -212,12 +228,10 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid #eee;
 }
 
 .pptx-export-helper .modal-header h3 {
   margin: 0;
-  color: #42b883;
 }
 
 .pptx-export-helper .close-btn {
