@@ -1926,9 +1926,11 @@ class ProcessGPTBackend implements Backend {
             formData.append('file_name', fileName);
             formData.append('tenant_id', window.$tenantName);
 
+            const token = localStorage.getItem('accessToken');
             const response = await axios.post('/memento/save-to-drive', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
@@ -1950,6 +1952,28 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getDriveInfo() {
+        try {
+            const response = await storage.getObject('tenant_oauth', {
+                match: {
+                    tenant_id: window.$tenantName
+                }
+            });
+            return response;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async saveDriveInfo(driveInfo: any) {
+        try {
+            const response = await storage.putObject('tenant_oauth', driveInfo);
+            return response;
+        } catch (error) {
             throw new Error(error.message);
         }
     }
@@ -1998,6 +2022,7 @@ class ProcessGPTBackend implements Backend {
                 original_filename = file.file_name;
             }
 
+            const token = localStorage.getItem('accessToken');
             const response = await axios.post('/memento/process', {
                 file_path: file_path,
                 original_filename: original_filename,
@@ -2006,6 +2031,7 @@ class ProcessGPTBackend implements Backend {
             }, {
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 }
             });
             return response.data;

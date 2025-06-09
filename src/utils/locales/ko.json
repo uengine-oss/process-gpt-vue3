@@ -328,7 +328,13 @@
         "phone": "전화번호",
         "address": "주소",
         "save": "저장",
-        "manageAccess": "역할 관리"
+        "manageAccess": "역할 관리",
+        "drive": "구글 드라이브 설정",
+        "clientId": "클라이언트 ID",
+        "clientSecret": "클라이언트 Secret",
+        "folderId": "폴더 ID",
+        "edit": "수정",
+        "cancel": "취소"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",

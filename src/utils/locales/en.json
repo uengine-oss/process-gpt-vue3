@@ -187,7 +187,8 @@
         "addUserFailed": "Failed to add user.",
         "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000.",
         "agent": "Agent",
-        "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member."
+        "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member.",
+        "oauth": "OAuth Settings"
     },
     "agentField": {
         "agentId": "Agent ID",
@@ -328,7 +329,13 @@
         "phone": "Phone",
         "address": "Address",
         "save": "Save",
-        "manageAccess": "Manage Access"
+        "manageAccess": "Manage Access",
+        "drive": "Google Drive Settings",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "folderId": "Folder ID",
+        "edit": "Edit",
+        "cancel": "Cancel"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
