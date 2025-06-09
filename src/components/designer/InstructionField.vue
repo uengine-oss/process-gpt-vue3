@@ -11,7 +11,7 @@ export default {
     },
     data() {
         return {
-            instruction: JSON.parse(JSON.stringify(this.modelValue)),            
+            instruction: this.modelValue ? JSON.parse(JSON.stringify(this.modelValue)) : '',            
         };
     },
 
