@@ -14,8 +14,12 @@ export default {
          * 로컬스토리지에서 테마 색상 로드
          */
         loadThemeColor() {
-            const savedSettings = JSON.parse(localStorage.getItem('userSettings') ?? '{}');
-            this.themeColor = savedSettings.themeColorCode || '#0085DB';
+            try {
+                const savedSettings = JSON.parse(localStorage.getItem('userSettings') ?? '{}');
+                this.themeColor = savedSettings.themeColorCode || '#0085DB';
+            } catch (e) {
+                console.error('테마 색상 로드 오류:', e);
+            }
         },
 
         /**
@@ -29,36 +33,10 @@ export default {
             const g = parseInt(hex.slice(3, 5), 16);
             const b = parseInt(hex.slice(5, 7), 16);
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        },
-
-        /**
-         * localStorage 변경 이벤트 핸들러
-         */
-        handleStorageChange(event) {
-            if (event.key === 'userSettings') {
-                try {
-                    const savedSettings = JSON.parse(event.newValue || '{}');
-                    if (savedSettings.themeColorCode && savedSettings.themeColorCode !== this.themeColor) {
-                        this.themeColor = savedSettings.themeColorCode;
-                    }
-                } catch (e) {
-                    console.error('테마 색상 파싱 오류:', e);
-                }
-            }
         }
     },
 
     created() {
         this.loadThemeColor();
-    },
-
-    mounted() {
-        // localStorage 변경 이벤트 리스너 등록
-        window.addEventListener('storage', this.handleStorageChange);
-    },
-
-    beforeUnmount() {
-        // localStorage 변경 이벤트 리스너 제거
-        window.removeEventListener('storage', this.handleStorageChange);
     }
 }; 

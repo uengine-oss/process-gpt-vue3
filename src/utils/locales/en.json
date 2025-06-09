@@ -34,13 +34,13 @@
     "headerMenu": {
         "sidebar": "Sidebar",
         "dashboard": "Dashboard",
-        "todoList": "Todo List",
+        "todoList" : "My Task List",
         "calendar": "Calendar",
         "layoutSetting": "Layout Setting",
         "admin" : "Admin Page"
     },
     "DashboardTodoList": {
-        "todo": "Todo",
+        "todo": "My Task List",
         "inProgress": "In Progess",
         "done": "Done"
     },
@@ -57,8 +57,8 @@
         "welcome": "Welcome"
     },
     "todoList": {
-        "title": "ToDoList",
-        "todo": "ToDo",
+        "title": "My Tasks",
+        "todo": "Upcoming Tasks",
         "inProgress": "In Progress",
         "pending": "Pending",
         "done": "Done"
@@ -856,13 +856,13 @@
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Definition Export",
         "save": "Save",
-        "trash": "휴지통"
+        "trash": "Trash"
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "Process Execution Performance",
         "startDate": "Start Date",
         "endDate": "End Date",
-        "toDo": "To Do",
+        "toDo": "Upcoming Tasks",
         "inProcess": "In Progress",
         "done": "Completed",
         "all": "All",
