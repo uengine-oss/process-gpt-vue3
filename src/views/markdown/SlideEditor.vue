@@ -1,7 +1,7 @@
 <template>
   <div class="slide-editor">
     <div class="editor-header">
-      <v-card-title>Slide Presentation Editor</v-card-title>
+      <v-card-title>{{ i18n.global.t('SlideEditor.title') }}</v-card-title>
       <!-- 모든 버튼을 Vuetify3 라운드 스타일(compact, rounded-pill) 및 컴펫(variant="elevated") 버튼으로 변경 -->
       <div class="actions">
           <v-btn 
@@ -10,42 +10,42 @@
               variant="elevated" 
               class="rounded-pill"
               density="compact"
-          >슬라이드 추가</v-btn>
+          >{{ i18n.global.t('SlideEditor.addSlide') }}</v-btn>
           <v-btn 
               @click="exportMarkdown" 
               :color="themeColor" 
               variant="elevated" 
               class="rounded-pill"
               density="compact"
-          >MD 내보내기</v-btn>
+          >{{ i18n.global.t('SlideEditor.exportMarkdown') }}</v-btn>
           <v-btn 
               @click="openPdfExport" 
               :color="themeColor" 
               variant="elevated" 
               class="rounded-pill"
               density="compact"
-          >PDF 내보내기</v-btn>
+          >{{ i18n.global.t('SlideEditor.exportPdf') }}</v-btn>
           <v-btn 
               @click="openPptxExport" 
               :color="themeColor" 
               variant="elevated" 
               class="rounded-pill"
               density="compact"
-          >파워포인트 내보내기</v-btn>
+          >{{ i18n.global.t('SlideEditor.exportPptx') }}</v-btn>
           <v-btn 
               @click="openWordExport" 
               :color="themeColor" 
               variant="elevated" 
               class="rounded-pill"
               density="compact"
-          >워드 내보내기</v-btn>
+          >{{ i18n.global.t('SlideEditor.exportWord') }}</v-btn>
           <v-btn 
               :color="themeColor" 
               variant="elevated" 
               class="rounded-pill"
               density="compact"
               @click="$refs.importFile.click()"
-          >가져오기</v-btn>
+          >{{ i18n.global.t('SlideEditor.import') }}</v-btn>
           <input 
               type="file" 
               ref="importFile"
@@ -59,23 +59,11 @@
               variant="elevated" 
               class="rounded-pill"
               density="compact"
-          >프레젠테이션</v-btn>
+          >{{ i18n.global.t('SlideEditor.presentation') }}</v-btn>
       </div>
     </div>
     
     <div class="editor-container">
-      <!--<div class="slides-sidebar">
-        <div class="instruction-box">
-          <h3>Markdown Slides</h3>
-          <p>Separate slides with <code>---</code> (three dashes on a single line)</p>
-          <p>Vertical slides: <code>--</code> (two dashes)</p>
-          <p>Speaker notes: Start with <code>Note:</code></p>
-          <p>Fragments: <code></code></p>
-          <p>Code highlighting: <code>```js [1-2|3|4]</code></p>
-          <p><a href="https://revealjs.com/markdown/" target="_blank">More info</a></p>
-        </div>
-        <slide-styler />
-      </div>-->
       
       <div class="editor-content" style="height: 100%; overflow: auto;">
         <markdown-editor
@@ -89,7 +77,7 @@
         <!-- 미리보기 안내 텍스트: 회색, 9px 폰트로 표시 -->
         <div class="d-flex align-center ml-1 mt-1">
             <v-icon style="font-size: 18px; color: #888;">mdi-alert-circle</v-icon>
-            <div class="ml-1" style="font-size: 14px; color: #888;">미리보기 입니다.</div>
+            <div class="ml-1" style="font-size: 14px; color: #888;">{{ i18n.global.t('SlideEditor.preview') }}</div>
         </div>
         <slide-component 
           v-if="!isPresentationMode"
@@ -122,6 +110,7 @@ import PptxExportHelper from './PptxExportHelper.vue'
 import WordExportHelper from './WordExportHelper.vue'
 import MarkdownEditor from './MarkdownEditor.vue'
 import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin.js'
+import { i18n } from '@/main'
 
 export default {
   name: 'SlideEditor',
@@ -145,6 +134,7 @@ export default {
     return {
       markdownContent: '',
       isPresentationMode: false,
+      i18n,
       updateKey: ''
     }
   },

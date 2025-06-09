@@ -8,12 +8,15 @@
             <h1 class="text-grey200" style="font-size: 40px;">{{ $t('tenantManagePage.title') }}</h1>
         </v-row>
         <v-row no-gutters justify="center">
-            <p class="font-weight-semibold text-grey100 text-h5" style="text-align: center;">
+            <p v-if="isOwner" class="font-weight-semibold text-grey100 text-h5" style="text-align: center;">
                 {{ $t('tenantManagePage.subTitle1') }}
+            </p>
+            <p v-else class="font-weight-semibold text-grey100 text-h5" style="text-align: center;">
+                {{ $t('tenantManagePage.subTitle3') }}
             </p>
         </v-row>
 
-        <v-row no-gutters justify="center" class="mt-5">
+        <v-row no-gutters justify="center" class="mt-5" v-if="isOwner">
             <v-card @click="toAddTenentPage()"
                 elevation="9" variant="outlined"
                 style="padding: 10px;
@@ -51,7 +54,7 @@
                             <v-col cols="9">
                                 &nbsp; {{ tenantInfo.id }}
                             </v-col>
-                            <v-col cols="1">
+                            <v-col v-if="isOwner" cols="1">
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                     <v-tooltip text="수정">
                                         <template v-slot:activator="{ props }">
@@ -62,7 +65,7 @@
                                     </v-tooltip>
                                 </v-sheet>
                             </v-col>
-                            <v-col cols="1">
+                            <v-col v-if="isOwner" cols="1">
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                     <v-tooltip text="삭제">
                                         <template v-slot:activator="{ props }">
@@ -108,6 +111,7 @@ export default {
         tenantInfos: [],
         deleteDialog: false,
         tenantIdToDelete: null,
+        isOwner: false,
     }),
     async created() {
         const isLogin = await backend.checkDBConnection();
@@ -115,7 +119,38 @@ export default {
             this.$router.push('/auth/login')
         }
         const tenants = await backend.getTenants();
-        this.tenantInfos = tenants;
+        
+        if (tenants && tenants.length > 0) {
+            this.tenantInfos = tenants;
+            this.isOwner = true;
+        } else {
+            // tenantInfos가 없다면 users 테이블에서 유저 정보를 가져온다
+            try {
+                const users = await backend.getUserAllTenants();
+                
+                if (users && users.length > 0) {
+                    // tenant_id를 추출하여 고유한 tenant 목록을 만든다
+                    const uniqueTenants = [...new Set(users.map(user => user.tenant_id))];
+                    
+                    if (uniqueTenants.length === 1) {
+                        // 유저 정보가 하나의 tenant에만 속해있다면 바로 리다이렉션
+                        const tenantId = uniqueTenants[0];
+                        if (tenantId) {
+                            if (tenantId == 'localhost') {
+                                this.window.location.href = 'http://localhost:8088/definition-map';
+                            } else {
+                                this.toSelectedTenantPage(tenantId);
+                            }
+                        }
+                    } else if (uniqueTenants.length > 1) {
+                        // 여러 tenant가 있다면 tenant 목록으로 설정
+                        this.tenantInfos = uniqueTenants.map(tenantId => ({ id: tenantId }));
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching user list:', error);
+            }
+        }
     },
     methods: {
         toAddTenentPage() {
@@ -143,9 +178,9 @@ export default {
 
             // 일반 웹 브라우저인 경우 기존 로직 실행
             if(!location.port || location.port == '') {
-                location.href = `https://${tenantId}.process-gpt.io`;
+                location.href = `https://${tenantId}.process-gpt.io/definition-map`;
             } else {
-                location.href = `http://${tenantId}.process-gpt.io:${location.port}`;
+                location.href = `http://${tenantId}.process-gpt.io:${location.port}/definition-map`;
             }
         }
     },

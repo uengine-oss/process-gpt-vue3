@@ -30,7 +30,7 @@
         >
             <v-card>
                 <v-card-title>마크다운 에디터</v-card-title>
-                <v-card-text class="ml-4 mr-4 editor" style="height: 600px; padding: 0 !important; overflow: auto;">
+                <v-card-text class="ml-4 mr-4 editor" style="height: 80vh; padding: 0 !important; overflow: auto;">
                     <markdown-editor
                         ref="markdownEditor"
                         v-model="localModelValue"
@@ -39,11 +39,21 @@
                         :readOnly="localReadonly"
                     ></markdown-editor>
                 </v-card-text>
-                <v-card-actions>
-                    <v-spacer />
-                    <v-btn :color="themeColor" @click="saveMarkdown">저장</v-btn>
-                    <v-btn color="secondary" @click="cancelMarkdown">취소</v-btn>
-                </v-card-actions>
+                <v-row class="ma-0 pa-4">
+                    <v-spacer></v-spacer>
+                    <v-btn @click="cancelMarkdown"
+                        variant="elevated" 
+                        class="rounded-pill mr-2"
+                        density="compact"
+                        >취소
+                    </v-btn>
+                    <v-btn @click="saveMarkdown"
+                        :color="themeColor"
+                        variant="elevated" 
+                        class="rounded-pill"
+                        density="compact"
+                    >저장</v-btn>
+                </v-row>
             </v-card>
         </v-dialog>
         <v-dialog 
@@ -54,7 +64,7 @@
             transition="dialog-transition"
         >
             <v-card>
-                <v-card-text style="height: 600px; padding: 0;">
+                <v-card-text style="height: 80vh; padding: 0;">
                 <slide-editor
                     :content="localModelValue"
                     style="width: 100%; height: 100%; border: none;"
@@ -62,11 +72,21 @@
                     @save="saveMarkdownContent"
                 ></slide-editor>
                 </v-card-text>
-                <v-card-actions>
-                <v-spacer />
-                <v-btn :color="themeColor" @click="saveMarkdown">저장</v-btn>
-                <v-btn color="secondary" @click="cancelMarkdown">취소</v-btn>
-                </v-card-actions>
+                <v-row class="ma-0 pa-4">
+                    <v-spacer></v-spacer>
+                    <v-btn @click="cancelMarkdown"
+                        variant="elevated" 
+                        class="rounded-pill mr-2"
+                        density="compact"
+                    >취소
+                    </v-btn>
+                    <v-btn @click="saveMarkdown"
+                        :color="themeColor"
+                        variant="elevated" 
+                        class="rounded-pill"
+                        density="compact"
+                    >저장</v-btn>
+                </v-row>
             </v-card>
         </v-dialog>
         <v-dialog

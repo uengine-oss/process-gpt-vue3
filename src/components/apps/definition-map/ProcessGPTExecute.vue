@@ -5,6 +5,11 @@
                 <h2 v-if="isSimulate == 'true'">{{ $t('ProcessGPTExecute.processSimulate') }}</h2>
                 <h2 v-else>{{ $t('ProcessGPTExecute.processStart') }}</h2>
                 <v-spacer></v-spacer>
+                <div v-if="isSimulate == 'true'" style="margin: -20px;">
+                    <v-btn @click="closeDialog" icon size="small">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </div>
                 <div class="form-work-item-mobile ml-auto" v-if="!isCompleted">
                     <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
                 </div>

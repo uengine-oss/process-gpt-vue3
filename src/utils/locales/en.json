@@ -379,6 +379,7 @@
         "title": "Company Management",
         "subTitle1": "Create a new company or go to a page managed by the selected company.",
         "subTitle2": "(* Sign-up is not possible on mobile devices.)",
+        "subTitle3": "Select a company to go to the page managed by the selected company.",
         "createCompany": "Create a company"
     },
     "tenantInfoField": {
@@ -949,5 +950,51 @@
         "markdownEditor": "Markdown Editor",
         "editMarkdown": "Edit Markdown",
         "mode": "Mode"
+    },
+    "PptxExportHelper": {
+        "title": "Export to PowerPoint",
+        "configureOptions": "Set PowerPoint export options:",
+        "includeSpeakerNotes": "Include speaker notes",
+        "presentationName": "Presentation name",
+        "exportButton": "Export as PowerPoint",
+        "cancelButton": "Cancel"
+    },
+    "SlideEditor": {
+        "title": "Slide Presentation Editor",
+        "addSlide": "Add Slide",
+        "exportMarkdown": "Export as MD",
+        "exportPdf": "Export as PDF",
+        "exportPptx": "Export as PowerPoint",
+        "exportWord": "Export as Word",
+        "import": "Import",
+        "presentation": "Presentation",
+        "preview": "This is a preview."
+    },
+    "WordExportHelper": {
+        "title": "Export to Word",
+        "configureOptions": "Set Word export options:",
+        "documentName": "Document name",
+        "exportButton": "Export as Word",
+        "cancelButton": "Cancel"
+    },
+    "PdfExportHelper": {
+        "title": "Export to PDF",
+        "instructions": "PDF Export Instructions",
+        "step1": "Click the \"Prepare PDF\" button below.",
+        "step2": "When the page reloads, press CTRL/CMD+P in your browser.",
+        "step3": "In the print dialog, set the destination to Save as PDF.",
+        "step4": "Set the layout to Landscape.",
+        "step5": "Set the margins to None.",
+        "step6": "Enable the background graphics option.",
+        "step7": "Click Save.",
+        "includeNotes": "Include speaker notes",
+        "overlayNotes": "Overlay notes",
+        "separatePage": "Separate page",
+        "separateFragments": "Split fragments into separate slides",
+        "prepareButton": "Prepare PDF",
+        "cancelButton": "Cancel"
+    },
+    "SlidePresentation" : {
+        "arrowKeyNavigation": "You can navigate slides using the left and right arrow keys."
     }
 }

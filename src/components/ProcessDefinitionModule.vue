@@ -785,11 +785,101 @@ export default {
                     participants: participants,
                     instanceNamePattern: instanceNamePattern
                 };
-                resultJsonData = jsonData;
+                
+                // 시퀀스 정보를 활용하여 activities 순서 재정렬
+                resultJsonData = this.reorderActivitiesBySequence(jsonData);
+                
                 return resultJsonData;
             } catch (error) {
                 console.error('Error parsing XML:', error);
                 throw error;
+            }
+        },
+        
+        // 시퀀스 정보를 활용하여 activities 순서를 재정렬하는 함수
+        reorderActivitiesBySequence(jsonData) {
+            try {
+                if (!jsonData.sequences || !jsonData.activities || jsonData.activities.length === 0) {
+                    return jsonData;
+                }
+
+                // 시퀀스로부터 그래프 구조 생성
+                const graph = {};
+                const inDegree = {};
+                
+                // 모든 노드 초기화
+                [...jsonData.events, ...jsonData.activities, ...jsonData.gateways].forEach(node => {
+                    graph[node.id] = [];
+                    inDegree[node.id] = 0;
+                });
+
+                // 시퀀스로부터 그래프 간선 추가
+                jsonData.sequences.forEach(seq => {
+                    if (graph[seq.source] && inDegree.hasOwnProperty(seq.target)) {
+                        graph[seq.source].push(seq.target);
+                        inDegree[seq.target]++;
+                    }
+                });
+
+                // 시작 노드 찾기 (보통 start_event이지만 inDegree가 0인 노드들 중에서)
+                let startNodes = Object.keys(inDegree).filter(node => inDegree[node] === 0);
+                
+                if (startNodes.length === 0) {
+                    // 순환이 있는 경우 원래 순서 유지
+                    return jsonData;
+                }
+
+                // BFS를 통한 순서 결정
+                const visitedOrder = [];
+                const visited = new Set();
+                const queue = [...startNodes];
+
+                while (queue.length > 0) {
+                    const currentNode = queue.shift();
+                    
+                    if (visited.has(currentNode)) {
+                        continue;
+                    }
+                    
+                    visited.add(currentNode);
+                    visitedOrder.push(currentNode);
+                    
+                    // 다음 노드들을 큐에 추가 (inDegree 감소시키면서)
+                    graph[currentNode].forEach(nextNode => {
+                        inDegree[nextNode]--;
+                        if (inDegree[nextNode] === 0 && !visited.has(nextNode)) {
+                            queue.push(nextNode);
+                        }
+                    });
+                }
+
+                // activities만 추출하여 순서대로 재정렬
+                const activityIds = jsonData.activities.map(activity => activity.id);
+                const orderedActivityIds = visitedOrder.filter(id => activityIds.includes(id));
+                
+                // 순서대로 activities 재배열
+                const reorderedActivities = [];
+                orderedActivityIds.forEach(id => {
+                    const activity = jsonData.activities.find(act => act.id === id);
+                    if (activity) {
+                        reorderedActivities.push(activity);
+                    }
+                });
+
+                // 혹시 누락된 activities가 있다면 마지막에 추가
+                jsonData.activities.forEach(activity => {
+                    if (!reorderedActivities.find(act => act.id === activity.id)) {
+                        reorderedActivities.push(activity);
+                    }
+                });
+
+                jsonData.activities = reorderedActivities;
+                return jsonData;
+                
+            } catch (error) {
+                console.error('Error reordering activities:', error);
+                // 에러 발생 시 원래 데이터 반환
+                return jsonData;
             }
         },
         async setDefinitionInfo(info) {  
