@@ -23,7 +23,7 @@
 
                     <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName == editUser">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-2cp-lock" @click="openAlertDialog">
+                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-2 cp-lock" @click="openAlertDialog">
                                 <Icons :icon="'save'" :size="24" />
                             </v-btn>
                         </template>
