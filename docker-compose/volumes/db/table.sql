@@ -155,6 +155,44 @@ CREATE POLICY users_delete_policy
     USING (public.tenant_id() = tenant_id);
 
 
+-- Add OAuth related columns to users table
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS google_credentials TEXT,
+ADD COLUMN IF NOT EXISTS google_credentials_updated_at TIMESTAMP WITH TIME ZONE;
+
+-- Create function to encrypt credentials
+CREATE OR REPLACE FUNCTION encrypt_credentials(credentials TEXT)
+RETURNS TEXT AS $$
+BEGIN
+    RETURN pgp_sym_encrypt(credentials, current_setting('app.settings.encryption_key'));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create function to decrypt credentials
+CREATE OR REPLACE FUNCTION decrypt_credentials(encrypted_credentials TEXT)
+RETURNS TEXT AS $$
+BEGIN
+    RETURN pgp_sym_decrypt(encrypted_credentials::bytea, current_setting('app.settings.encryption_key'));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create trigger to automatically encrypt credentials
+CREATE OR REPLACE FUNCTION encrypt_credentials_trigger()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.google_credentials IS NOT NULL THEN
+        NEW.google_credentials = encrypt_credentials(NEW.google_credentials);
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER encrypt_credentials_trigger
+    BEFORE INSERT OR UPDATE ON public.users
+    FOR EACH ROW
+    EXECUTE FUNCTION encrypt_credentials_trigger();
+
+
 
 DROP TRIGGER IF EXISTS after_tenant_delete ON public.tenants;
 DROP FUNCTION IF EXISTS update_users_on_tenant_delete();
@@ -1613,6 +1651,86 @@ BEGIN
     END IF;
 END;
 $$;
+
+
+
+-- Create tenant_oauth table
+CREATE TABLE IF NOT EXISTS public.tenant_oauth (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    provider VARCHAR(50) NOT NULL,
+    client_id VARCHAR(255) NOT NULL,
+    client_secret TEXT NOT NULL,
+    redirect_uri VARCHAR(255),
+    drive_folder_id TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(tenant_id, provider)
+) tablespace pg_default;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tenant_oauth' AND column_name='id') THEN
+        ALTER TABLE public.tenant_oauth ADD COLUMN id UUID PRIMARY KEY DEFAULT uuid_generate_v4();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tenant_oauth' AND column_name='tenant_id') THEN
+        ALTER TABLE public.tenant_oauth ADD COLUMN tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tenant_oauth' AND column_name='provider') THEN
+        ALTER TABLE public.tenant_oauth ADD COLUMN provider VARCHAR(50) NOT NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tenant_oauth' AND column_name='client_id') THEN
+        ALTER TABLE public.tenant_oauth ADD COLUMN client_id VARCHAR(255) NOT NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tenant_oauth' AND column_name='client_secret') THEN
+        ALTER TABLE public.tenant_oauth ADD COLUMN client_secret TEXT NOT NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tenant_oauth' AND column_name='redirect_uri') THEN
+        ALTER TABLE public.tenant_oauth ADD COLUMN redirect_uri VARCHAR(255);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tenant_oauth' AND column_name='drive_folder_id') THEN
+        ALTER TABLE public.tenant_oauth ADD COLUMN drive_folder_id TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tenant_oauth' AND column_name='created_at') THEN
+        ALTER TABLE public.tenant_oauth ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tenant_oauth' AND column_name='updated_at') THEN
+        ALTER TABLE public.tenant_oauth ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+    END IF;
+END;
+$$;
+
+ALTER TABLE tenant_oauth ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_oauth_insert_policy
+    ON tenant_oauth
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (EXISTS ( SELECT 1
+   FROM users
+  WHERE ((users.id = auth.uid()) AND (users.is_admin = true))));
+
+CREATE POLICY tenant_oauth_select_policy
+    ON tenant_oauth
+    FOR SELECT
+    TO service_role
+    USING (true);
+
+CREATE POLICY tenant_oauth_update_policy
+    ON tenant_oauth
+    FOR UPDATE
+    TO authenticated
+    USING (EXISTS ( SELECT 1
+   FROM users
+  WHERE ((users.id = auth.uid()) AND (users.is_admin = true))));
+
+CREATE POLICY tenant_oauth_delete_policy
+    ON tenant_oauth
+    FOR DELETE
+    TO authenticated
+    USING (EXISTS ( SELECT 1
+   FROM users
+  WHERE ((users.id = auth.uid()) AND (users.is_admin = true))));
 
 
 

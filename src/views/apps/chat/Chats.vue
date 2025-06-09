@@ -864,5 +864,4 @@ export default {
 .attachment-container .v-btn {
     background-color: white;
 }
-
 </style>

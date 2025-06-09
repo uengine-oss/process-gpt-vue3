@@ -1,10 +1,21 @@
 <template>
   <div v-if="isPresentationMode" class="slide-presentation" @keydown="handleKeydown" tabindex="0" :class="{ 'print-mode': printPdf }">
-    <div class="presentation-controls" v-if="!printPdf">
-      <v-btn @click="closeModal" :color="themeColor" variant="flat">Exit</v-btn>
-      <div>
-        <v-btn @click="openPdfExport" :color="themeColor" variant="flat" class="mx-1">PDF Export</v-btn>
-        <v-btn @click="openPptxExport" :color="themeColor" variant="flat">PowerPoint Export</v-btn>
+    <div class="presentation-controls pa-4 pb-0 d-flex" v-if="!printPdf">
+      <!-- 뒤로가기(Exit) 버튼을 아이콘 버튼으로 변경 -->
+      <!-- Vuetify props를 이용해서 버튼을 작게 변경 (density="compact"와 size="small" 사용) -->
+      <v-btn 
+          @click="closeModal" 
+          :color="themeColor" 
+          variant="flat" 
+          icon 
+          density="compact" 
+      >
+          <v-icon size="18">mdi-arrow-left</v-icon>
+      </v-btn>
+      <!-- 미리보기 안내 텍스트: 회색, 9px 폰트로 표시 -->
+      <div class="d-flex align-center ml-2">
+          <v-icon style="font-size: 22px; color: #888;">mdi-alert-circle</v-icon>
+          <div class="ml-1" style="font-size: 18px; color: #888;">{{ i18n.global.t('SlidePresentation.arrowKeyNavigation') }}</div>
       </div>
     </div>
     
@@ -34,6 +45,7 @@ import SlideComponent from './SlideComponent.vue'
 import PdfExportHelper from './PdfExportHelper.vue'
 import PptxExportHelper from './PptxExportHelper.vue'
 import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin.js'
+import { i18n } from '@/main'
 
 export default {
   name: 'SlidePresentation',
@@ -72,6 +84,7 @@ export default {
   data() {
     return {
       markdownContent: '',
+      i18n,
     }
   },
   mounted() {
@@ -130,7 +143,6 @@ export default {
 .slide-presentation {
   height: 100vh;
   width: 92vw;
-  background-color: #111;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -140,21 +152,6 @@ export default {
 
 .slide-presentation.print-mode {
   background-color: #fff;
-}
-
-.presentation-controls {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-between;
-  padding: 1rem;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
-  z-index: 100;
-  opacity: 0.2;
-  transition: opacity 0.3s;
 }
 
 .slide-presentation:hover .presentation-controls {

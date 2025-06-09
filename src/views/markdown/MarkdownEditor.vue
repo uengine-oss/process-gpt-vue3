@@ -427,7 +427,6 @@ export default {
 .editor-content {
   width: 100%;
   height: 100%;
-  padding: 16px;
   font-size: 16px;
   line-height: 1.6;
 }

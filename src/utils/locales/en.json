@@ -34,13 +34,13 @@
     "headerMenu": {
         "sidebar": "Sidebar",
         "dashboard": "Dashboard",
-        "todoList": "Todo List",
+        "todoList" : "My Task List",
         "calendar": "Calendar",
         "layoutSetting": "Layout Setting",
         "admin" : "Admin Page"
     },
     "DashboardTodoList": {
-        "todo": "Todo",
+        "todo": "My Task List",
         "inProgress": "In Progess",
         "done": "Done"
     },
@@ -57,8 +57,8 @@
         "welcome": "Welcome"
     },
     "todoList": {
-        "title": "ToDoList",
-        "todo": "ToDo",
+        "title": "My Tasks",
+        "todo": "Upcoming Tasks",
         "inProgress": "In Progress",
         "pending": "Pending",
         "done": "Done"
@@ -187,7 +187,8 @@
         "addUserFailed": "Failed to add user.",
         "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000.",
         "agent": "Agent",
-        "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member."
+        "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member.",
+        "oauth": "OAuth Settings"
     },
     "agentField": {
         "agentId": "Agent ID",
@@ -328,7 +329,13 @@
         "phone": "Phone",
         "address": "Address",
         "save": "Save",
-        "manageAccess": "Manage Access"
+        "manageAccess": "Manage Access",
+        "drive": "Google Drive Settings",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "folderId": "Folder ID",
+        "edit": "Edit",
+        "cancel": "Cancel"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -849,13 +856,13 @@
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Definition Export",
         "save": "Save",
-        "trash": "휴지통"
+        "trash": "Trash"
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "Process Execution Performance",
         "startDate": "Start Date",
         "endDate": "End Date",
-        "toDo": "To Do",
+        "toDo": "Upcoming Tasks",
         "inProcess": "In Progress",
         "done": "Completed",
         "all": "All",
@@ -943,5 +950,51 @@
         "markdownEditor": "Markdown Editor",
         "editMarkdown": "Edit Markdown",
         "mode": "Mode"
+    },
+    "PptxExportHelper": {
+        "title": "Export to PowerPoint",
+        "configureOptions": "Set PowerPoint export options:",
+        "includeSpeakerNotes": "Include speaker notes",
+        "presentationName": "Presentation name",
+        "exportButton": "Export as PowerPoint",
+        "cancelButton": "Cancel"
+    },
+    "SlideEditor": {
+        "title": "Slide Presentation Editor",
+        "addSlide": "Add Slide",
+        "exportMarkdown": "Export as MD",
+        "exportPdf": "Export as PDF",
+        "exportPptx": "Export as PowerPoint",
+        "exportWord": "Export as Word",
+        "import": "Import",
+        "presentation": "Presentation",
+        "preview": "This is a preview."
+    },
+    "WordExportHelper": {
+        "title": "Export to Word",
+        "configureOptions": "Set Word export options:",
+        "documentName": "Document name",
+        "exportButton": "Export as Word",
+        "cancelButton": "Cancel"
+    },
+    "PdfExportHelper": {
+        "title": "Export to PDF",
+        "instructions": "PDF Export Instructions",
+        "step1": "Click the \"Prepare PDF\" button below.",
+        "step2": "When the page reloads, press CTRL/CMD+P in your browser.",
+        "step3": "In the print dialog, set the destination to Save as PDF.",
+        "step4": "Set the layout to Landscape.",
+        "step5": "Set the margins to None.",
+        "step6": "Enable the background graphics option.",
+        "step7": "Click Save.",
+        "includeNotes": "Include speaker notes",
+        "overlayNotes": "Overlay notes",
+        "separatePage": "Separate page",
+        "separateFragments": "Split fragments into separate slides",
+        "prepareButton": "Prepare PDF",
+        "cancelButton": "Cancel"
+    },
+    "SlidePresentation" : {
+        "arrowKeyNavigation": "You can navigate slides using the left and right arrow keys."
     }
 }

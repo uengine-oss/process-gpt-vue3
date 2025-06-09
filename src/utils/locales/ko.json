@@ -31,16 +31,16 @@
         "title": "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
-    "headerMenu" : {
+    "headerMenu": {
         "sidebar" : "메뉴 접기 펼치기",
         "dashboard" : "대시보드",
-        "todoList" : "할 일",
+        "todoList" : "내 업무 목록",
         "calendar" : "달력",
         "layoutSetting" : "레이아웃 설정",
         "admin" : "관리자 페이지"
     },
     "DashboardTodoList": {
-        "todo": "할 일",
+        "todo": "내 업무 목록",
         "inProgress": "진행 중",
         "done": "완료"
     },
@@ -57,8 +57,8 @@
         "welcome": "환영합니다."
     },
     "todoList": {
-        "title": "할 일 목록",
-        "todo": "할 일",
+        "title": "내 업무 목록",
+        "todo": "예정업무",
         "inProgress": "진행 중",
         "pending": "보류 중",
         "done": "완료됨"
@@ -328,7 +328,13 @@
         "phone": "전화번호",
         "address": "주소",
         "save": "저장",
-        "manageAccess": "역할 관리"
+        "manageAccess": "역할 관리",
+        "drive": "구글 드라이브 설정",
+        "clientId": "클라이언트 ID",
+        "clientSecret": "클라이언트 Secret",
+        "folderId": "폴더 ID",
+        "edit": "수정",
+        "cancel": "취소"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -856,7 +862,7 @@
         "processExecutionPerformance": "프로세스 실행실적",
         "startDate": "시작일",
         "endDate": "종료일",
-        "toDo": "할 일",
+        "toDo": "예정업무",
         "inProcess": "진행 중",
         "done": "완료 됨",
         "all": "전체",
@@ -944,5 +950,51 @@
         "markdownEditor": "마크다운 편집기",
         "editMarkdown": "마크다운 편집",
         "mode": "모드"
+    },
+    "PptxExportHelper": {
+        "title": "파워포인트 내보내기",
+        "configureOptions": "파워포인트 내보내기 옵션 설정:",
+        "includeSpeakerNotes": "발표자 노트 포함",
+        "presentationName": "프레젠테이션 이름",
+        "exportButton": "파워포인트로 내보내기",
+        "cancelButton": "취소"
+    },
+    "SlideEditor": {
+        "title": "슬라이드 프레젠테이션 편집기",
+        "addSlide": "슬라이드 추가",
+        "exportMarkdown": "MD 내보내기",
+        "exportPdf": "PDF 내보내기",
+        "exportPptx": "파워포인트 내보내기",
+        "exportWord": "워드 내보내기",
+        "import": "가져오기",
+        "presentation": "프레젠테이션",
+        "preview": "미리보기 입니다."
+    },
+    "WordExportHelper": {
+        "title": "워드 내보내기",
+        "configureOptions": "워드 내보내기 옵션 설정:",
+        "documentName": "문서 이름",
+        "exportButton": "워드로 내보내기",
+        "cancelButton": "취소"
+    },
+    "PdfExportHelper": {
+        "title": "PDF 내보내기",
+        "instructions": "PDF 내보내기 안내",
+        "step1": "아래의 \"PDF 준비하기\" 버튼을 클릭하세요",
+        "step2": "페이지가 다시 로드되면 브라우저에서 CTRL/CMD+P를 누르세요",
+        "step3": "인쇄 대화상자에서 대상을 PDF로 저장으로 설정하세요",
+        "step4": "레이아웃을 가로로 설정하세요",
+        "step5": "여백을 없음으로 설정하세요",
+        "step6": "배경 그래픽 옵션을 활성화하세요",
+        "step7": "저장을 클릭하세요",
+        "includeNotes": "발표자 노트 포함",
+        "overlayNotes": "노트 오버레이",
+        "separatePage": "별도 페이지",
+        "separateFragments": "프래그먼트를 다른 슬라이드로 분리",
+        "prepareButton": "PDF 준비하기",
+        "cancelButton": "취소"
+    },
+    "SlidePresentation" : {
+        "arrowKeyNavigation": "방향키 오른쪽/왼쪽으로 이동 가능합니다."
     }
 }
