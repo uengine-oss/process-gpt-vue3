@@ -156,7 +156,6 @@ export default {
         async watchNotifications(email){
             // this.backend = BackendFactory.createBackend();
             await this.backend.watchNotifications((notification) => {
-                this.backend.sendWebViewNotification(notification);
                 if (notification.user_id === email && Notification.permission === 'granted') {
                     let notiHeader = null;
                     let notiBody = null;
@@ -165,10 +164,10 @@ export default {
                         notiBody = notification.title || '새 할 일 목록 추가';
                     } else if(notification.type === 'chat') {
                         if (!this.currentChatRoomId || (this.currentChatRoomId && !notification.url.includes(this.currentChatRoomId))) {
-                            notiHeader = notification.description || '채팅방';
-                            const senderName = notification.from_user_id || '알 수 없는 사용자';
+                            notiHeader = notification.from_user_id || '알 수 없는 사용자';
+                            const chatRoomName = notification.description || '채팅방';
                             const messageContent = notification.title || '새 메시지';
-                            notiBody = `${senderName}\n${messageContent}`;
+                            notiBody = `${chatRoomName}\n${messageContent}`;
                         }
                     }
                     if(notiHeader && notiBody) {

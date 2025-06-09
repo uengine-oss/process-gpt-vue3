@@ -68,6 +68,7 @@
       <div class="editor-content" style="height: 100%; overflow: auto;">
         <markdown-editor
           v-model="markdownContent"
+          :updateKey="markdownContent"
           :useDefaultEditorStyle="false"
         />
       </div>
@@ -133,7 +134,8 @@ export default {
     return {
       markdownContent: '',
       isPresentationMode: false,
-      i18n
+      i18n,
+      updateKey: ''
     }
   },
   mounted() {

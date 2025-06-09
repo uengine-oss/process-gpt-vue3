@@ -1350,19 +1350,6 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
-
-    async sendWebViewNotification(notification: any): Promise<any> {
-        try {
-            await axios.post(`/execution/send-webview-notification`, {
-                "input": {
-                    "notification": notification
-                }
-            })
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
     
     async watchNotifications(onNotification?: (notification: any) => void) {
         try {
@@ -1535,6 +1522,24 @@ class ProcessGPTBackend implements Backend {
                 }
             });
             return uniqueList;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getUserAllTenants() {
+        try {
+            const uid: string = localStorage.getItem('uid') || '';
+            const options = {
+                orderBy: 'username',
+                sort: 'asc',
+                match: {
+                    id: uid
+                }
+            }
+            const users = await storage.list('users', options);
+            return users
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
