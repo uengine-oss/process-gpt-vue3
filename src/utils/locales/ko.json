@@ -946,9 +946,9 @@
         "countUnit": "개",
         "allTemplates": "전체 템플릿"
     },
-    "MarkdownField": {
-        "markdownEditor": "마크다운 편집기",
-        "editMarkdown": "마크다운 편집",
+    "ContentEditorField": {
+        "contentEditor": "콘텐츠 편집기",
+        "editContent": "콘텐츠 편집",
         "mode": "모드"
     },
     "PptxExportHelper": {

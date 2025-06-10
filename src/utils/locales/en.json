@@ -946,9 +946,9 @@
         "countUnit": "items",
         "allTemplates": "All Templates"
     },
-    "MarkdownField": {
-        "markdownEditor": "Markdown Editor",
-        "editMarkdown": "Edit Markdown",
+    "ContentEditorField": {
+        "contentEditor": "Content Editor",
+        "editContent": "Edit Content",
         "mode": "Mode"
     },
     "PptxExportHelper": {
