@@ -288,8 +288,8 @@ export default {
             // if (tooltips.length > 0) return true;
             
             // 기타 모달 클래스 확인 (커스텀 모달이 있을 경우)
-            const customModals = document.querySelectorAll('.modal.show, .popup.active, [role="dialog"][aria-hidden="false"]');
-            if (customModals.length > 0) return true;
+            // const customModals = document.querySelectorAll('.modal.show, .popup.active, [role="dialog"][aria-hidden="false"]');
+            // if (customModals.length > 0) return true;
             
             // v-overlay가 활성화된 것들 중 스낵바가 아닌 것 확인
             const overlays = document.querySelectorAll('.v-overlay--active:not(.v-snackbar)');
@@ -300,44 +300,33 @@ export default {
         
         // 팝업 닫기 (DOM 요소에 직접 접근)
         closePopupOrModal() {
-            // 1. v-dialog 닫기 시도
+            // 1. v-dialog 직접 제거
             const dialogs = document.querySelectorAll('.v-dialog.v-overlay--active');
             if (dialogs.length > 0) {
-                // 가장 마지막(최상위) 다이얼로그 찾기
-                const lastDialog = dialogs[dialogs.length - 1];
-                
-                // ESC 키 이벤트 시뮬레이션 (Vuetify 다이얼로그는 ESC로 닫힘)
-                const escEvent = new KeyboardEvent('keydown', {
-                    key: 'Escape',
-                    keyCode: 27,
-                    which: 27,
-                    bubbles: true
+                dialogs.forEach(dialog => {
+                    dialog.remove();
                 });
-                lastDialog.dispatchEvent(escEvent);
+                
+                // overlay도 제거
+                const overlays = document.querySelectorAll('.v-overlay');
+                overlays.forEach(overlay => overlay.remove());
+                
                 return true;
             }
             
-            // 2. v-menu 닫기 시도
+            // 2. v-menu 제거
             const menus = document.querySelectorAll('.v-menu .v-overlay--active');
             if (menus.length > 0) {
-                const lastMenu = menus[menus.length - 1];
-                // 메뉴 외부 클릭 시뮬레이션
-                const clickEvent = new MouseEvent('click', { bubbles: true });
-                document.body.dispatchEvent(clickEvent);
+                menus.forEach(menu => menu.remove());
                 return true;
             }
             
-            // 3. 기타 커스텀 모달 닫기 시도
-            const customModals = document.querySelectorAll('.modal.show, .popup.active');
-            if (customModals.length > 0) {
-                const lastModal = customModals[customModals.length - 1];
-                // 닫기 버튼 찾아서 클릭
-                const closeBtn = lastModal.querySelector('.close, .btn-close, [data-dismiss="modal"]');
-                if (closeBtn) {
-                    closeBtn.click();
-                    return true;
-                }
-            }
+            // 3. 기타 커스텀 모달 제거
+            // const customModals = document.querySelectorAll('.modal.show, .popup.active');
+            // if (customModals.length > 0) {
+            //     customModals.forEach(modal => modal.remove());
+            //     return true;
+            // }
             
             return false;
         }
