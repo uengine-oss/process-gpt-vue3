@@ -80,9 +80,6 @@ export default {
         
         // 클릭 이벤트로 스낵바 닫기
         document.addEventListener('click', this.closeSnackbarOnEvent);
-        
-        // 안드로이드 뒤로가기 버튼 이벤트 리스너 등록
-        window.addEventListener('androidBackButton', this.handleAndroidBackButton);
     },
     async mounted() {
         if (window.$mode == 'ProcessGPT') {
@@ -252,88 +249,6 @@ export default {
             } finally {
                 window.$app_.loading = false;
             }
-        },
-        
-        // 안드로이드 뒤로가기 버튼 처리
-        handleAndroidBackButton() {
-            const isPopupOpen = this.checkIfPopupOrModalIsOpen();
-            console.log("isPopupOpen", isPopupOpen);
-            if (isPopupOpen) {
-                // 팝업 닫기
-                this.closePopupOrModal();
-                // 안드로이드에 처리 완료 알림
-                if (window.AndroidBridge && window.AndroidBridge.handleBackButton) {
-                    window.AndroidBridge.handleBackButton(true);
-                }
-            } else {
-                // 처리하지 않음을 알림 (WebView 히스토리로 넘어감)
-                if (window.AndroidBridge && window.AndroidBridge.handleBackButton) {
-                    window.AndroidBridge.handleBackButton(false);
-                }
-            }
-        },
-        
-        // 팝업이나 모달이 열려있는지 확인 (DOM에서 직접 확인)
-        checkIfPopupOrModalIsOpen() {
-            // Vuetify 다이얼로그 확인
-            const dialogs = document.querySelectorAll('.v-dialog.v-overlay--active');
-            if (dialogs.length > 0) return true;
-            
-            // Vuetify 메뉴 확인
-            const menus = document.querySelectorAll('.v-menu .v-overlay--active');
-            if (menus.length > 0) return true;
-            
-            // Vuetify 툴팁 확인 (보통 닫기 대상은 아니지만)
-            // const tooltips = document.querySelectorAll('.v-tooltip.v-overlay--active');
-            // if (tooltips.length > 0) return true;
-            
-            // 기타 모달 클래스 확인 (커스텀 모달이 있을 경우)
-            // const customModals = document.querySelectorAll('.modal.show, .popup.active, [role="dialog"][aria-hidden="false"]');
-            // if (customModals.length > 0) return true;
-            
-            // v-overlay가 활성화된 것들 중 스낵바가 아닌 것 확인
-            const overlays = document.querySelectorAll('.v-overlay--active:not(.v-snackbar)');
-            if (overlays.length > 0) return true;
-            
-            return false;
-        },
-        
-        // 팝업 닫기 (DOM 요소에 직접 접근)
-        closePopupOrModal() {
-            // 1. v-dialog 직접 제거
-            const dialogs = document.querySelectorAll('.v-dialog.v-overlay--active');
-            console.log("dialogs", dialogs);
-            if (dialogs.length > 0) {
-                dialogs.forEach(dialog => {
-                    dialog.remove();
-                });
-                
-                // overlay도 제거
-                const overlays = document.querySelectorAll('.v-overlay');
-                console.log("overlays", overlays);
-                overlays.forEach(overlay => overlay.remove());
-                
-                return true;
-            }
-            
-            // 2. v-menu 제거
-            const menus = document.querySelectorAll('.v-menu .v-overlay--active');
-            console.log("menus", menus);
-            if (menus.length > 0) {
-                menus.forEach(menu => menu.remove());
-                return true;
-            }
-            
-            // 3. 기타 커스텀 모달 제거
-            // const customModals = document.querySelectorAll('.modal.show, .popup.active');
-            // if (customModals.length > 0) {
-            //     customModals.forEach(modal => modal.remove());
-            //     return true;
-            // }
-
-            console.log("return false");
-            
-            return false;
         }
     },
     beforeUnmount() {
