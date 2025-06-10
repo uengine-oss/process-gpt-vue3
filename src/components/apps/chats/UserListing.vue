@@ -65,7 +65,7 @@
                     <div v-if="selectedUserInfo && selectedUserInfo.id === agent.id">
                         <v-tooltip location="bottom" :text="$t('userListing.chat')">
                             <template v-slot:activator="{ props }">
-                                <v-btn @click="startChat('chat')" v-bind="props" 
+                                <v-btn @click="startChat('agent-chat')" v-bind="props" 
                                     icon variant="text"
                                     class="text-medium-emphasis" 
                                     density="comfortable"
@@ -76,7 +76,7 @@
                         </v-tooltip>
                         <v-tooltip location="bottom" text="업무 지시">
                             <template v-slot:activator="{ props }">
-                                <v-btn @click="startChat('work')" v-bind="props" 
+                                <v-btn @click="startChat('agent-work')" v-bind="props" 
                                     icon variant="text"
                                     class="text-medium-emphasis" 
                                     density="comfortable"

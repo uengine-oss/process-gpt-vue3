@@ -283,7 +283,8 @@ export default {
         attachments: [],
 
         // agent
-        agentList: []
+        agentList: [],
+        isAgentChat: false
     }),
     computed: {
         filteredChatRoomList() {
@@ -293,13 +294,32 @@ export default {
     watch: {
         currentChatRoom: {
             async handler(newVal) {
-                if(this.generator && newVal && newVal.id){
+                if(this.generator && newVal && newVal.id) {
+                    if (newVal.participants.length > 0) {
+                        this.isAgentChat = newVal.participants.some(participant => participant.is_agent);
+                    }
                     this.chatRoomId = newVal.id;
                     this.generator.setChatRoomData(newVal);
                     await this.getAttachments();
                 }
             },
             deep: true
+        },
+        isAgentChat: {
+            async handler(newVal) {
+                if (newVal) {
+                    this.generator = new ChatGenerator(this, {
+                        isStream: false,
+                        preferredLanguage: "Korean",
+                        agent: true
+                    });
+                } else {
+                    this.generator = new ChatGenerator(this, {
+                        isStream: true,
+                        preferredLanguage: "Korean"
+                    });
+                }
+            }
         }
     },  
     async created() {
@@ -357,11 +377,24 @@ export default {
             const selectedUserEmail = this.selectedUserInfo.email;
             const currentUserEmail = this.userInfo.email;
 
-            if(type == 'work'){
+            if(type == 'work' || type == 'agent-work'){
                 chatRoomInfo = {}
-                chatRoomInfo.name = this.selectedUserInfo.username
+                chatRoomInfo.name = type == 'agent-work' ? this.selectedUserInfo.name : this.selectedUserInfo.username
                 chatRoomInfo.participants = []
-                chatRoomInfo.participants.push(this.selectedUserInfo)
+                if (type == 'agent-work') {
+                    const agentInfo = {
+                        email: 'system@uengine.org',
+                        id: this.selectedUserInfo.id,
+                        username: this.selectedUserInfo.name,
+                        is_agent: true,
+                        goal: this.selectedUserInfo.goal,
+                        role: this.selectedUserInfo.role,
+                        persona: this.selectedUserInfo.persona
+                    }
+                    chatRoomInfo.participants.push(agentInfo)
+                } else {
+                    chatRoomInfo.participants.push(this.selectedUserInfo)
+                }
                 this.createChatRoom(chatRoomInfo)
             } else {
                 const chatRoomExists = this.chatRoomList.some(chatRoom => {
@@ -378,9 +411,22 @@ export default {
                     this.chatRoomSelected(chatRoomInfo)
                 } else {
                     chatRoomInfo = {}
-                    chatRoomInfo.name = this.selectedUserInfo.username
+                    chatRoomInfo.name = type == 'agent-chat' ? this.selectedUserInfo.name : this.selectedUserInfo.username
                     chatRoomInfo.participants = []
-                    chatRoomInfo.participants.push(this.selectedUserInfo)
+                    if (type == 'agent-chat') {
+                        const agentInfo = {
+                            email: 'system@uengine.org',
+                            id: this.selectedUserInfo.id,
+                            username: this.selectedUserInfo.name,
+                            is_agent: true,
+                            goal: this.selectedUserInfo.goal,
+                            role: this.selectedUserInfo.role,
+                            persona: this.selectedUserInfo.persona
+                        }
+                        chatRoomInfo.participants.push(agentInfo)
+                    } else {
+                        chatRoomInfo.participants.push(this.selectedUserInfo)
+                    }
                     this.createChatRoom(chatRoomInfo)
                 }
             }
@@ -537,7 +583,7 @@ export default {
         },
         chatRoomSelected(chatRoomInfo){
             this.currentChatRoom = chatRoomInfo
-            if(chatRoomInfo.participants.find(p => p.id === "system_id")){
+            if(chatRoomInfo.participants.find(p => p.id === "system_id" || p.is_agent)){
                 this.ProcessGPTActive = true
                 if(chatRoomInfo.participants.length == 2){
                     this.isSystemChat = true
@@ -751,7 +797,9 @@ export default {
                     me.$router.push(`/definitions/${responseObj.processId}`);
                 }
 
-                systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
+                if (!this.isAgentChat) {
+                    systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
+                }
 
                 const systemMsgObj = me.createMessageObj(systemMsg, 'system')
                 if(this.messages[this.messages.length - 1].content === '...' && this.messages[this.messages.length - 1].isLoading){
@@ -782,10 +830,15 @@ export default {
                     // });
                     if(responseObj.work == 'CompanyQuery'){
                         try{
+                            const token = localStorage.getItem('accessToken');
                             let mementoRes = await axios.get(`/memento/query`, {
                                 params: {
                                     query: responseObj.content,
                                     tenant_id: window.$tenantName
+                                },
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
                                 }
                             });
                             console.log(mementoRes)
@@ -800,7 +853,6 @@ export default {
                                 }
                             });
                             obj.memento.sources = sources
-                            const token = localStorage.getItem('accessToken');
                             const responseTable = await axios.post(`/execution/process-data-query`, {
                                 input: {
                                     query: responseObj.content,
