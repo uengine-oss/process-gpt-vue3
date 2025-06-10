@@ -5,7 +5,7 @@
             <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
             <v-row class="ma-0 pa-4 align-center">
                 <div :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
-                    <Icons :icon="'slide-show'" color="white" />
+                    <Icons :icon="'report'" color="white" />
                 </div>
                 <div>
                     <div class="font-weight-medium">{{ localAlias ? localAlias : localName }}</div>
