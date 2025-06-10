@@ -257,7 +257,7 @@ export default {
         // 안드로이드 뒤로가기 버튼 처리
         handleAndroidBackButton() {
             const isPopupOpen = this.checkIfPopupOrModalIsOpen();
-            
+            console.log("isPopupOpen", isPopupOpen);
             if (isPopupOpen) {
                 // 팝업 닫기
                 this.closePopupOrModal();
@@ -302,6 +302,7 @@ export default {
         closePopupOrModal() {
             // 1. v-dialog 직접 제거
             const dialogs = document.querySelectorAll('.v-dialog.v-overlay--active');
+            console.log("dialogs", dialogs);
             if (dialogs.length > 0) {
                 dialogs.forEach(dialog => {
                     dialog.remove();
@@ -309,6 +310,7 @@ export default {
                 
                 // overlay도 제거
                 const overlays = document.querySelectorAll('.v-overlay');
+                console.log("overlays", overlays);
                 overlays.forEach(overlay => overlay.remove());
                 
                 return true;
@@ -316,6 +318,7 @@ export default {
             
             // 2. v-menu 제거
             const menus = document.querySelectorAll('.v-menu .v-overlay--active');
+            console.log("menus", menus);
             if (menus.length > 0) {
                 menus.forEach(menu => menu.remove());
                 return true;
@@ -327,6 +330,8 @@ export default {
             //     customModals.forEach(modal => modal.remove());
             //     return true;
             // }
+
+            console.log("return false");
             
             return false;
         }
