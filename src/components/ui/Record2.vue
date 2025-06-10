@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
     <div class="container">
         <canvas ref="canvas"></canvas>
         <button title="Record" @click="toggleRecording">
@@ -272,4 +272,4 @@ canvas {
 .reveal[aria-pressed="true"] svg:nth-of-type(2) {
     display: block;
 }
-</style>
+</style> -->
