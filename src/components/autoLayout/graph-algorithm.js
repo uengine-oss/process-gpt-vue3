@@ -162,7 +162,7 @@ class SugiyamaLayout {
             const currentId = queue.shift();
             const currentNode = this.graph.getNode(currentId);
             
-            this.graph.getOutgoingEdges(currentId).forEach(edge => {
+            this.graph.getOutgoingEdges(currentId).filter(e => !e.feedback).forEach(edge => {
                 const targetNode = this.graph.getNode(edge.target);
                 targetNode.layer = Math.max(targetNode.layer, currentNode.layer + 1);
                 
@@ -256,7 +256,7 @@ class SugiyamaLayout {
         
         // 간단한 순서 지정: 이전 계층의 연결된 노드 기반 무게중심(barycenter) 계산
         currentLayer.forEach(node => {
-            const incomingEdges = this.graph.getIncomingEdges(node.id);
+            const incomingEdges = this.graph.getIncomingEdges(node.id).filter(e => !e.feedback);
             if (incomingEdges.length === 0) {
                 node.barycenter = 0;
                 return;
@@ -1012,72 +1012,39 @@ class SugiyamaLayout {
         };
         
         const optimizePath = (path) => {
-            if (path.length < 3) return path;
-            
-            // 1단계: 불필요한 중간 지점 제거
-            const removeUnnecessaryPoints = (inputPath) => {
-                const result = [inputPath[0]];
-                
-                for (let i = 1; i < inputPath.length - 1; i++) {
-                    const prev = result[result.length - 1];
-                    const curr = inputPath[i];
-                    const next = inputPath[i + 1];
-                    
-                    // 세 점이 직선 상에 있으면 중간 점 제외
-                    const isStraight = (prev.x === curr.x && curr.x === next.x) ||
-                                     (prev.y === curr.y && curr.y === next.y);
-                    
-                    if (!isStraight) {
-                        // 현재 지점이 실제로 필요한 꺾임인지 확인
-                        const isNecessaryTurn = true;
-                        if (isNecessaryTurn) {
-                            result.push(curr);
-                        }
-                    }
-                }
-                
-                result.push(inputPath[inputPath.length - 1]);
-                return result;
+            if (path.length <= 2) return path;
+        
+            const epsilon = 0.5;
+        
+            const areColinear = (p1, p2, p3) => {
+                const dx1 = p2.x - p1.x;
+                const dy1 = p2.y - p1.y;
+                const dx2 = p3.x - p2.x;
+                const dy2 = p3.y - p2.y;
+                return Math.abs(dx1 * dy2 - dy1 * dx2) < epsilon;
             };
-            
-            // 2단계: 꺾임 최소화를 위한 점 정렬
-            const alignCorners = (inputPath) => {
-                if (inputPath.length <= 3) return inputPath;
-                
-                const result = [inputPath[0]];
-                
-                for (let i = 1; i < inputPath.length - 1; i++) {
-                    const prev = inputPath[i - 1];
-                    const curr = inputPath[i];
-                    const next = inputPath[i + 1];
-                    
-                    // 가능한 경우 꺾임을 정렬 (격자에 맞추기)
-                    let adjustedPoint = {...curr};
-                    
-                    // x 또는 y 좌표가 비슷하면 완전히 정렬
-                    if (Math.abs(curr.x - prev.x) < gridSize / 2) {
-                        adjustedPoint.x = prev.x;
-                    }
-                    if (Math.abs(curr.y - prev.y) < gridSize / 2) {
-                        adjustedPoint.y = prev.y;
-                    }
-                    
-                    result.push(adjustedPoint);
+        
+            const result = [path[0]]; // 시작점 유지
+            let prev = path[0];
+        
+            for (let i = 1; i < path.length - 1; i++) {
+                const curr = path[i];
+                const next = path[i + 1];
+                if (!areColinear(prev, curr, next)) {
+                    result.push(curr); // 꺾였으면 유지
+                    prev = curr;
                 }
-                
-                result.push(inputPath[inputPath.length - 1]);
-                return result;
-            };
-            
-            // 최적화 단계 적용
-            let optimized = removeUnnecessaryPoints(path);
-            optimized = alignCorners(optimized);
-            
-            return optimized;
+                // 직선이면 curr 생략, prev 유지
+            }
+        
+            result.push(path[path.length - 1]); // 끝점 유지
+            return result;
         };
+        
+        
     
         const obstacles = getAllObstacles();
-        const baseStep = 20; // 최초 직선 거리 (예: 20px)
+        const baseStep = 15; // 최초 직선 거리 (예: 20px)
 
         const adjustInitialStep = (point) => {
             const { x, y, direction } = point;
@@ -1138,6 +1105,40 @@ class SugiyamaLayout {
         console.log('[DEBUG_EDGES] 엣지 좌표 생성 완료');
         return this;
     }
+
+    simplifyAllEdgePaths() {
+        const epsilon = 0.5;
+    
+        const areColinear = (p1, p2, p3) => {
+            const dx1 = p2.x - p1.x;
+            const dy1 = p2.y - p1.y;
+            const dx2 = p3.x - p2.x;
+            const dy2 = p3.y - p2.y;
+            return Math.abs(dx1 * dy2 - dy1 * dx2) < epsilon;
+        };
+    
+        this.graph.edges.forEach(edge => {
+            const wp = edge.waypoints;
+            if (!wp || wp.length <= 2) return;
+    
+            const result = [wp[0]];
+            let prev = wp[0];
+    
+            for (let i = 1; i < wp.length - 1; i++) {
+                const curr = wp[i];
+                const next = wp[i + 1];
+                if (!areColinear(prev, curr, next)) {
+                    result.push(curr);
+                    prev = curr;
+                }
+            }
+    
+            result.push(wp[wp.length - 1]);
+            edge.waypoints = result;
+        });
+        return this;
+    }
+    
     
     // 노드 위치가 레인 경계를 넘는지 확인하고 수정하는 함수 추가
     ensureNodeWithinLaneBounds(node, laneMinX, laneMaxX, nodeMargin) {
@@ -1176,15 +1177,49 @@ class SugiyamaLayout {
         
         return node;
     }
+
+    markFeedbackEdges() {
+        const visited = new Set();
+        const stack = new Set();
+    
+        const dfs = (nodeId) => {
+            if (stack.has(nodeId)) return; // 이미 재귀 호출 스택에 있으면 skip
+            if (visited.has(nodeId)) return;
+            visited.add(nodeId);
+            stack.add(nodeId);
+    
+            const current = this.graph.getNode(nodeId);
+            const outEdges = this.graph.getOutgoingEdges(nodeId);
+    
+            outEdges.forEach(edge => {
+                const targetId = edge.target;
+                if (stack.has(targetId)) {
+                    // 이 엣지는 사이클을 형성하므로 feedback으로 마킹
+                    edge.feedback = true;
+                } else {
+                    dfs(targetId);
+                }
+            });
+    
+            stack.delete(nodeId);
+        };
+    
+        this.graph.nodes.forEach(node => dfs(node.id));
+
+        return this;
+    }
+    
     
     // 전체 레이아웃 알고리즘 실행
     run() {
-        this.assignLayers()
-            .minimizeCrossings()
+        this.markFeedbackEdges()
+            .assignLayers()
+            // .minimizeCrossings()
             .assignCoordinates()
             .calculateGroupHeights()
             .adjustNodePositionsForGroups() // 강제로 모든 노드가 자신의 레인 내에 있도록 조정하는 단계 추가
-            .generateEdgeCoordinates();
+            .generateEdgeCoordinates()
+            .simplifyAllEdgePaths();
         console.log(this.graph);
         return this.graph;
     }

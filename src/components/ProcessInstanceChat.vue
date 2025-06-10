@@ -221,7 +221,7 @@ export default {
                 })
             } else {
                 this.generator.previousMessages.push({
-                    "content": "이전 작업 내역 리스트: null",
+                    "content": "이전 작업 내역 리스트: []",
                     "role": "user"
                 })
             }

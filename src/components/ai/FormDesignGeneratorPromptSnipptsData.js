@@ -121,9 +121,25 @@ Detailed guidelines:
 6. When declaring a string, use single quotes like 'text'`
         },
         {
-            tagName: "markdown-field",
-            tag: `<markdown-field name='<unique_identifier>' alias='<display_label>'></markdown-field>`,
+            tagName: "report-field",
+            tag: `<report-field name='<unique_identifier>' alias='<display_label>'></report-field>`,
             purpose: "To collect markdown input",
+            limit: `
+      다음 요구사항에 맞춰 새로운 마크다운 문서를 작성하십시오.
+      
+      규칙:
+      - 마크다운 문서 형식을 준수하십시오. (예: # 제목, ## 소제목, - 목록, \`코드블록\`, **굵은 글씨** 등)
+      - 문서의 구조는 논리적이며 주제에 맞는 흐름을 따라야 합니다.
+      - 문서는 최소 3개의 문단 또는 섹션으로 구성되어야 합니다.
+      - **구분선(단락)은 반드시 \`---\`로 작성해야 합니다.**
+      - 불필요한 반복이나 형식 오류 없이 명확하고 간결하게 작성하십시오.
+      - 출력은 반드시 마크다운 문서 본문만 포함하고, 그 외의 설명이나 해설은 절대 포함하지 마십시오.
+      `.trim()
+        },
+        {
+            tagName: "slide-field",
+            tag: `<slide-field name='<unique_identifier>' alias='<display_label>'></slide-field>`,
+            purpose: "To collect slide input",
             limit: `
       다음 요구사항에 맞춰 새로운 마크다운 문서를 작성하십시오.
       

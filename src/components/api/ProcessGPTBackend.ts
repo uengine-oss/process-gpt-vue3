@@ -911,7 +911,7 @@ class ProcessGPTBackend implements Backend {
         const fieldTags = [
             'text-field', 'select-field', 'checkbox-field', 'radio-field', 
             'file-field', 'label-field', 'boolean-field', 'textarea-field', 
-            'user-select-field', 'markdown-field'
+            'user-select-field', 'report-field', 'slide-field'
         ];
     
         fieldTags.forEach(tag => {

@@ -325,7 +325,11 @@ export default {
             this.processDefinition['activities'] && 
             this.processDefinition['activities'][this.activityIndex] && !this.processDefinition['activities'][this.activityIndex].inputFormData){
                 setTimeout(() => {
-                    this.selectedTab = 'agent';
+                    if(this.formData && Object.keys(this.formData).length > 0) {
+                        this.selectedTab = 'agent';
+                    } else {
+                        this.$emit('agentGenerationFinished', null)
+                    }
                 }, 1500);
             }
         }
