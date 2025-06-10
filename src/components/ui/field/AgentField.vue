@@ -5,7 +5,7 @@
             :label="$t('agentField.agentId')" 
             :rules="idRules"
             class="mb-2"
-            :disabled="isEdit"
+            :readonly="isEdit"
         ></v-text-field>
         <v-text-field 
             v-model="agent.name" 

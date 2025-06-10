@@ -164,6 +164,9 @@
                                 class="dynamic-form">
                             </DynamicForm>
                         </v-window-item>
+                        <v-window-item value="output" class="pa-2">
+                            <InstanceOutput :instance="processInstance" :isInWorkItem="true" />
+                        </v-window-item>
                     </v-window>
                 </v-alert>
             </v-col>
@@ -225,6 +228,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import DefaultWorkItem from './DefaultWorkItem.vue';
 import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임포트
 import URLWorkItem from './URLWorkItem.vue';
+import InstanceOutput from './InstanceOutput.vue';
 import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
@@ -262,7 +266,8 @@ export default {
         'work-history-ProcessGPT': ProcessInstanceChat,
         BpmnUengine,
         DynamicForm,
-        FormDefinition
+        FormDefinition,
+        InstanceOutput
     },
     data: () => ({    
         workItem: null,
@@ -302,6 +307,8 @@ export default {
         simulation_data: {},
         agentRenderKey: 0,
         isAddedNewForm: false,
+
+        processInstance: null,
     }),
     created() {
         // this.init();
@@ -381,6 +388,7 @@ export default {
             if (this.mode == 'ProcessGPT') {
                 if(this.bpmn) {
                     return [
+                        { value: 'output', label: this.$t('InstanceCard.output') },
                         { value: 'progress', label: this.$t('WorkItem.progress') },
                         // { value: 'history', label: this.$t('WorkItem.history') },
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
@@ -480,8 +488,10 @@ export default {
                             me.currentActivities = me.workListByInstId.map((item) => item.tracingTag);
                         }
 
-                        // FormWorkItem 데이터 로드
-                        await me.loadRefForm();
+                        if (me.mode !== 'ProcessGPT') {
+                            // FormWorkItem 데이터 로드
+                            await me.loadRefForm();
+                        }
                     }
                     if(me.workItem.worklist) {
                         me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
@@ -492,6 +502,8 @@ export default {
                     } else {
                         me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
                     }
+
+                    me.processInstance = await backend.getInstance(me.workItem.worklist.instId);
 
                     me.updatedDefKey++;
                 },

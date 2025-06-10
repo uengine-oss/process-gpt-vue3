@@ -874,7 +874,8 @@
         "workItem": "워크 아이템",
         "workHistory": "워크 히스토리",
         "ganttChart": "간트 차트",
-        "sendEvent": "{event} 이벤트 보내기"
+        "sendEvent": "{event} 이벤트 보내기",
+        "output": "산출물"
     },
     "DryRunProcess": {
         "notFound": "워크아이템을 찾을 수 없습니다."
