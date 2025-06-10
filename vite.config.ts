@@ -27,15 +27,7 @@ export default defineConfig({
             '@fullcalendar/core': path.resolve(__dirname, 'node_modules/@fullcalendar/core'),
             'vue': 'vue/dist/vue.esm-bundler.js',
             // Node.js 내장 모듈들을 빈 객체로 대체 (브라우저 환경에서 사용 불가)
-            'https': 'rollup-plugin-node-polyfills/polyfills/empty',
-            'http': 'rollup-plugin-node-polyfills/polyfills/empty',
-            'fs': 'rollup-plugin-node-polyfills/polyfills/empty',
-            'path': 'rollup-plugin-node-polyfills/polyfills/empty',
-            'url': 'rollup-plugin-node-polyfills/polyfills/empty',
-            'stream': 'rollup-plugin-node-polyfills/polyfills/empty',
-            'buffer': 'rollup-plugin-node-polyfills/polyfills/empty',
-            'util': 'rollup-plugin-node-polyfills/polyfills/empty',
-            'timers': 'rollup-plugin-node-polyfills/polyfills/empty'
+            'https': 'rollup-plugin-node-polyfills/polyfills/empty'
         }
     },
     css: {
@@ -91,19 +83,11 @@ export default defineConfig({
     build: {
         rollupOptions: {
             // Node.js 내장 모듈들을 외부 모듈로 처리하여 번들에서 제외
-            external: ['https', 'http', 'fs', 'path', 'url', 'stream', 'buffer', 'util', 'timers'],
+            external: ['https'],
             output: {
                 // 외부 모듈에 대한 globals 설정
                 globals: {
-                    'https': '{}',
-                    'http': '{}',
-                    'fs': '{}',
-                    'path': '{}',
-                    'url': '{}',
-                    'stream': '{}',
-                    'buffer': '{}',
-                    'util': '{}',
-                    'timers': '{}'
+                    'https': '{}'
                 }
             }
         }
