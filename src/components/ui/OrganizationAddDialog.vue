@@ -11,6 +11,7 @@
             <v-window v-model="tab">
                 <v-window-item value="user">
                     <v-autocomplete
+                        v-if="!isNewUser"
                         v-model="selectedList" 
                         :items="teamMembers" 
                         item-title="data.name" 

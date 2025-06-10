@@ -2,7 +2,8 @@
     <div style="background-color: rgba(255, 255, 255, 0); width: 100%;">
         <Chat :messages="messages" :agentInfo="agentInfo"
             :isAgentMode="isAgentMode" :userInfo="userInfo" 
-            :disableChat="disableChat" :type="'instances'" :name="chatName" :chatRoomId="chatRoomId"
+            :disableChat="disableChat" :type="'instances'" :name="chatName" 
+            :chatRoomId="chatRoomId" :hideInput="!isTaskMode" :initialChatHeight="initialChatHeight"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
             @reGenerateAgentAI="reGenerateAgentAI">
@@ -40,17 +41,17 @@ export default {
     data: () => ({
         processDefinition: null,
         processInstance: null,
-        path: 'proc_inst',
-        organizationChart: [],
+        
         chatInfo: null,
         imgKeyList: [],
+
         // bpmn
         onLoad: false,
         bpmn: null,
         currentActivities: null,
         
-        // temp
-        isRunningId: null,
+        isTaskMode: false,
+        initialChatHeight: 325,
 
         // mcp agent
         threadId: '',
@@ -63,7 +64,7 @@ export default {
             return '';
         },
     },
-    async created() {
+    async mounted() {
         await this.init();
 
         this.generator = new ChatGenerator(this, {
@@ -97,9 +98,13 @@ export default {
                     if (!newVal.params.taskId) {
                         this.messages = [];
                     }
+                    this.initialChatHeight = 325;
+                    this.isTaskMode = true;
                     await this.init();
                 } else if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
                     this.messages = [];
+                    this.isTaskMode = false;
+                    this.initialChatHeight = 240;
                     await this.init();
                 }
             }

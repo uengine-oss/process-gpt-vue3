@@ -874,7 +874,8 @@
         "workItem": "Work Item",
         "workHistory": "Work History",
         "ganttChart": "Gantt Chart",
-        "sendEvent": "Send {event} event"
+        "sendEvent": "Send {event} event",
+        "output": "Output"
     },
     "DryRunProcess": {
         "notFound": "Work item not found."

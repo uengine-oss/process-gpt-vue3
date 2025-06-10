@@ -61,13 +61,15 @@ import InstanceProgress from './InstanceProgress.vue';
 import InstanceTodo from './InstanceTodo.vue';
 import InstanceWorkHistory from './InstanceWorkHistory.vue';
 import InstanceGantt from './InstanceGantt.vue';
+import InstanceOutput from './InstanceOutput.vue';
 
 export default {
     components: {
         InstanceProgress,
         InstanceTodo,
         InstanceWorkHistory,
-        InstanceGantt
+        InstanceGantt,
+        InstanceOutput
     },
     data: () => ({
         instance: null,
@@ -78,7 +80,8 @@ export default {
             { value: 'progress', label: 'InstanceCard.progress', component: 'InstanceProgress' },
             { value: 'todo', label: 'InstanceCard.workItem', component: 'InstanceTodo' },
             { value: 'workhistory', label: 'InstanceCard.workHistory', component: 'InstanceWorkHistory' },
-            { value: 'gantt', label: 'InstanceCard.ganttChart', component: 'InstanceGantt' }
+            { value: 'gantt', label: 'InstanceCard.ganttChart', component: 'InstanceGantt' },
+            { value: 'output', label: 'InstanceCard.output', component: 'InstanceOutput' }
         ],
         workitemRunning: false
     }),

@@ -12,13 +12,13 @@
                 @closeDialog="closeTeamDialog"
             ></OrganizationTeamDialog>
         </v-dialog>
-        <v-dialog v-model="agentDialog" max-width="500">
-            <OrganizationAgentDialog
-                :dialogType="agentDialogType"
-                :editAgent="editNode"
-                @updateAgent="updateAgent"
-                @closeDialog="closeAgentDialog"
-            ></OrganizationAgentDialog>
+        <v-dialog v-model="editDialog" max-width="500">
+            <OrganizationEditDialog
+                :dialogType="editDialogType"
+                :editNode="editNode"
+                @updateNode="updateNode"
+                @closeDialog="closeEditDialog"
+            ></OrganizationEditDialog>
         </v-dialog>
     </div>
 </template>
@@ -26,12 +26,12 @@
 <script>
 import ApexTree from 'apextree';
 import OrganizationTeamDialog from './OrganizationTeamDialog.vue';
-import OrganizationAgentDialog from './OrganizationAgentDialog.vue';
+import OrganizationEditDialog from './OrganizationEditDialog.vue';
 
 export default {
     components: {
         OrganizationTeamDialog,
-        OrganizationAgentDialog
+        OrganizationEditDialog
     },
     props: {
         node: {
@@ -45,7 +45,7 @@ export default {
         // dialog
         editNode: null,
         teamDialog: false,
-        agentDialog: false,
+        editDialog: false,
     }),
     watch: {
         node(newVal) {
@@ -80,6 +80,7 @@ export default {
                             ${content.isTeam == true ? `<img class="node-content-btn delete-team-btn" src="/assets/images/icon/trash.svg">` : ''}
                             ${content.isAgent == true ? `<img class="node-content-btn edit-agent-btn" src="/assets/images/icon/pencil.svg">` : ''}
                             ${content.isAgent == true ? `<img class="node-content-btn delete-agent-btn" src="/assets/images/icon/trash.svg">` : ''}
+                            ${!content.isAgent && !content.isTeam ? `<img class="node-content-btn edit-member-btn" src="/assets/images/icon/pencil.svg">` : ''}
                         </div>
                     </div>
                 </div>
@@ -102,12 +103,15 @@ export default {
                 } else if (event.target.classList.contains('add-member-btn')) {
                     event.stopPropagation();
                     this.$emit('addMember', this.editNode);
+                } else if (event.target.classList.contains('edit-member-btn')) {
+                    event.stopPropagation();
+                    this.openEditDialog('edit-user');
                 } else if (event.target.classList.contains('edit-agent-btn')) {
                     event.stopPropagation();
-                    this.openAgentDialog('edit');
+                    this.openEditDialog('edit-agent');
                 } else if (event.target.classList.contains('delete-agent-btn')) {
                     event.stopPropagation();
-                    this.openAgentDialog('delete');
+                    this.openEditDialog('delete');
                 }
             });
         }
@@ -198,15 +202,15 @@ export default {
             }
             return children;
         },
-        openAgentDialog(type) {
-            this.agentDialog = true;
-            this.agentDialogType = type;
+        openEditDialog(type) {
+            this.editDialog = true;
+            this.editDialogType = type;
         },
-        closeAgentDialog() {
-            this.agentDialog = false;
-            this.agentDialogType = '';
+        closeEditDialog() {
+            this.editDialog = false;
+            this.editDialogType = '';
         },
-        async updateAgent(type, editNode) {
+        async updateNode(type, editNode) {
             if (type == 'edit') {
                 this.node.children.forEach(team => {
                     if (team.id == editNode.id) {
@@ -219,7 +223,7 @@ export default {
             this.$emit('updateAgent', type, editNode);
             await this.drawTree();
             this.$emit('updateNode');
-            this.closeAgentDialog();
+            this.closeEditDialog();
         },
     },
 }
