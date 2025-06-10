@@ -12,11 +12,6 @@
       >
           <v-icon size="18">mdi-arrow-left</v-icon>
       </v-btn>
-      <!-- 미리보기 안내 텍스트: 회색, 9px 폰트로 표시 -->
-      <div class="d-flex align-center ml-2">
-          <v-icon style="font-size: 22px; color: #888;">mdi-alert-circle</v-icon>
-          <div class="ml-1" style="font-size: 18px; color: #888;">{{ i18n.global.t('SlidePresentation.arrowKeyNavigation') }}</div>
-      </div>
     </div>
     
     <div class="slide-container">

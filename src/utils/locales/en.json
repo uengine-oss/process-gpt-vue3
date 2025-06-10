@@ -993,8 +993,5 @@
         "separateFragments": "Split fragments into separate slides",
         "prepareButton": "Prepare PDF",
         "cancelButton": "Cancel"
-    },
-    "SlidePresentation" : {
-        "arrowKeyNavigation": "You can navigate slides using the left and right arrow keys."
     }
 }

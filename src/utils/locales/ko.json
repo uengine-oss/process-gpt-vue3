@@ -993,8 +993,5 @@
         "separateFragments": "프래그먼트를 다른 슬라이드로 분리",
         "prepareButton": "PDF 준비하기",
         "cancelButton": "취소"
-    },
-    "SlidePresentation" : {
-        "arrowKeyNavigation": "방향키 오른쪽/왼쪽으로 이동 가능합니다."
     }
 }
