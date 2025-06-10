@@ -201,6 +201,16 @@ export default {
   border-radius: 2px;
 }
 
+.reveal-viewport code {
+  background: black;
+  color: white;
+  padding: 1.5rem !important;
+  border-radius: 0.75rem !important;
+  font-family: monospace, monospace !important;
+  line-height: 1.6 !important;
+  font-size: 22px;
+}
+
 /* PDF Export Specific Styles */
 @media print {
   .reveal-container {
