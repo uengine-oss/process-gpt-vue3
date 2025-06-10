@@ -666,17 +666,23 @@ export default {
                     }
                 }
                 // jsonData = this.removeComments(jsonData);
-                if(jsonData != null) {
-                    if(jsonData['formValues']){
+                if(this.isAgentMode) {
+                    if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
                         this.EventBus.emit('form-values-updated', jsonData['formValues']);
                         this.messages[this.messages.length - 1].content = '초안 생성을 완료하였습니다.'
                         this.afterAgentGeneration(jsonData);
                     } else {
-                        this.afterGenerationFinished(jsonData);
+                        this.messages[this.messages.length - 1].content = '폼 정보가 존재하지 않아 초안을 생성할 수 없습니다.'
+                        this.afterAgentGeneration(null);
                     }
                 } else {
-                    this.afterGenerationFinished(response);
+                    if(jsonData){
+                        this.afterGenerationFinished(jsonData);
+                    } else {
+                        this.afterGenerationFinished(response);
+                    }
                 }
+
                 this.EventBus.emit('scroll_update');
             }
         },

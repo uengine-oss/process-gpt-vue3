@@ -126,7 +126,7 @@ export default {
                         data: inProcessData,
                     },
                     {
-                        name: "할 일",
+                        name: "예정업무",
                         data: todoData,
                     },
                 ],

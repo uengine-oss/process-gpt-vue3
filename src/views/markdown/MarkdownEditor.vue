@@ -191,7 +191,7 @@ export default {
     updateKey: {
       immediate: true,
       handler(newVal) {
-        if(this.editor) {
+        if(this.editor && !this.isUpdated) {
           // 마크다운 문자열을 HTML로 변환
           const html = marked(newVal)
 
@@ -427,7 +427,6 @@ export default {
 .editor-content {
   width: 100%;
   height: 100%;
-  padding: 16px;
   font-size: 16px;
   line-height: 1.6;
 }
