@@ -191,7 +191,7 @@ export default {
     updateKey: {
       immediate: true,
       handler(newVal) {
-        if(this.editor) {
+        if(this.editor && !this.isUpdated) {
           // 마크다운 문자열을 HTML로 변환
           const html = marked(newVal)
 

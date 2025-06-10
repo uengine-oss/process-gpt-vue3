@@ -39,18 +39,24 @@ class ProcessGPTBackend implements Backend {
         return false;
     }
 
-    async listDefinition(path: string) {
+    async listDefinition(path: string, options?: any) {
         try {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
             if (path == 'form_def') {
-                let formDefs = await storage.list('form_def');
+                let formDefs = await storage.list('form_def', options);
                 formDefs.map((item: any) => {
                     item.path = `${item.id}`
                     item.name = item.name || item.path 
                 });
                 return formDefs
             } else {
-                let procDefs = await storage.list('proc_def', (path ? { like: `${path}%`, match: { isdeleted: false } } : { match: { isdeleted: false } }));
+                if (options) {
+                    options.match = { isdeleted: false }
+                    if (path) {
+                        options.like = `${path}%`
+                    }
+                }
+                let procDefs = await storage.list('proc_def', options);
                 procDefs.map((item: any) => {
                     item.path = `${item.id}`
                     item.name = item.name || item.path 
@@ -480,7 +486,8 @@ class ProcessGPTBackend implements Backend {
                         tracingTag: item.activity_id || "",
                         description: item.description || "",
                         tool: item.tool || "",
-                        instName: item.proc_inst_name || ""
+                        instName: item.proc_inst_name || "",
+                        output: item.output || ""
                     };
                     worklist.push(workItem);
                 }
@@ -911,7 +918,7 @@ class ProcessGPTBackend implements Backend {
         const fieldTags = [
             'text-field', 'select-field', 'checkbox-field', 'radio-field', 
             'file-field', 'label-field', 'boolean-field', 'textarea-field', 
-            'user-select-field', 'markdown-field'
+            'user-select-field', 'report-field', 'slide-field'
         ];
     
         fieldTags.forEach(tag => {

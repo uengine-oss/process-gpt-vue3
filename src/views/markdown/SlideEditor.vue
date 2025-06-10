@@ -1,70 +1,77 @@
 <template>
   <div class="slide-editor">
     <div class="editor-header">
-      <v-card-title>{{ i18n.global.t('SlideEditor.title') }}</v-card-title>
-      <!-- 모든 버튼을 Vuetify3 라운드 스타일(compact, rounded-pill) 및 컴펫(variant="elevated") 버튼으로 변경 -->
+      <v-card-title class="pa-2">{{ i18n.global.t('SlideEditor.title') }}</v-card-title>
+      <!-- 모든 버튼을 일반 HTML 버튼으로 변경하고 for문 사용 -->
       <div class="actions">
-          <v-btn 
-              @click="addSlide" 
-              class="rounded-pill"
-              density="compact"
-          >{{ i18n.global.t('SlideEditor.addSlide') }}</v-btn>
-          <v-btn 
-              @click="exportMarkdown" 
-              class="rounded-pill"
-              density="compact"
-          >{{ i18n.global.t('SlideEditor.exportMarkdown') }}</v-btn>
-          <v-btn 
-              @click="openPdfExport" 
-              class="rounded-pill"
-              density="compact"
-          >{{ i18n.global.t('SlideEditor.exportPdf') }}</v-btn>
-          <v-btn 
-              @click="openPptxExport" 
-              class="rounded-pill"
-              density="compact"
-          >{{ i18n.global.t('SlideEditor.exportPptx') }}</v-btn>
-          <v-btn 
-              @click="openWordExport" 
-              class="rounded-pill"
-              density="compact"
-          >{{ i18n.global.t('SlideEditor.exportWord') }}</v-btn>
-          <v-btn 
-              class="rounded-pill"
-              density="compact"
-              @click="$refs.importFile.click()"
-          >{{ i18n.global.t('SlideEditor.import') }}</v-btn>
-          <input 
-              type="file" 
-              ref="importFile"
-              accept=".md,.txt" 
-              @change="importMarkdown" 
-              style="display: none;" 
-          />
-          <v-btn 
-              @click="presentation" 
-              :color="themeColor" 
-              class="rounded-pill"
-              density="compact"
-          >{{ i18n.global.t('SlideEditor.presentation') }}</v-btn>
+        <!-- 데스크톱 화면에서는 버튼 표시 -->
+        <div class="desktop-buttons">
+          <button 
+            v-for="(button, index) in slideEditorButtons" 
+            :key="index"
+            @click="button.action"
+            class="action-button"
+            :style="button.color ? `background-color: ${button.color}; color: white;` : ''"
+          >
+            {{ button.label }}
+          </button>
+        </div>
+        
+        <!-- 모바일 화면에서는 메뉴 표시 -->
+        <div class="mobile-menu">
+          <v-menu>
+            <template v-slot:activator="{ props }">
+              <v-btn 
+                v-bind="props"
+                density="comfortable"
+                icon
+              >
+                <v-icon>mdi-menu</v-icon>
+              </v-btn>
+            </template>
+            <v-list>
+              <v-list-item 
+                v-for="(button, index) in slideEditorButtons" 
+                :key="index"
+                @click="button.action"
+                :style="button.color ? `color: ${button.color};` : ''"
+              >
+                <template v-slot:prepend>
+                  <v-icon :color="button.color || undefined">{{ button.icon }}</v-icon>
+                </template>
+                <v-list-item-title>{{ button.label }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
+        
+        <input 
+          type="file" 
+          ref="importFile"
+          accept=".md,.txt" 
+          @change="importMarkdown" 
+          style="display: none;" 
+        />
       </div>
     </div>
     
-    <div class="editor-container">
-      
-      <div class="editor-content" style="height: 100%; overflow: auto;">
+    <v-row class="editor-container ma-0">
+      <!-- 에디터 영역 -->
+      <v-col cols="12" md="7" class="pa-0 editor-section">
         <markdown-editor
           v-model="markdownContent"
           :updateKey="markdownContent"
           :useDefaultEditorStyle="false"
+          style="height: 100%;"
         />
-      </div>
+      </v-col>
       
-      <div class="preview-panel">
-        <!-- 미리보기 안내 텍스트: 회색, 9px 폰트로 표시 -->
+      <!-- 프리뷰 영역 -->
+      <v-col cols="12" md="5" class="pa-0 preview-section">
+        <!-- 미리보기 안내 텍스트 -->
         <div class="d-flex align-center ml-1 mt-1">
-            <v-icon style="font-size: 18px; color: #888;">mdi-alert-circle</v-icon>
-            <div class="ml-1" style="font-size: 14px; color: #888;">{{ i18n.global.t('SlideEditor.preview') }}</div>
+          <v-icon style="font-size: 18px; color: #888;">mdi-alert-circle</v-icon>
+          <div class="ml-1" style="font-size: 14px; color: #888;">{{ i18n.global.t('SlideEditor.preview') }}</div>
         </div>
         <slide-component 
           v-if="!isPresentationMode"
@@ -74,8 +81,8 @@
           :isEditMode="false"
           class="editor-preview"
         />
-      </div>
-    </div>
+      </v-col>
+    </v-row>
     
     <pdf-export-helper ref="pdfExportHelper" />
     <pptx-export-helper ref="pptxExportHelper" />
@@ -122,7 +129,49 @@ export default {
       markdownContent: '',
       isPresentationMode: false,
       i18n,
-      updateKey: ''
+      updateKey: '',
+    }
+  },
+  computed: {
+    slideEditorButtons() {
+      return [
+        { 
+          label: this.i18n.global.t('SlideEditor.addSlide'), 
+          action: this.addSlide,
+          icon: 'mdi-plus-box'
+        },
+        { 
+          label: this.i18n.global.t('SlideEditor.exportMarkdown'), 
+          action: this.exportMarkdown,
+          icon: 'mdi-file-export'
+        },
+        { 
+          label: this.i18n.global.t('SlideEditor.exportPdf'), 
+          action: this.openPdfExport,
+          icon: 'mdi-file-pdf-box'
+        },
+        { 
+          label: this.i18n.global.t('SlideEditor.exportPptx'), 
+          action: this.openPptxExport,
+          icon: 'mdi-microsoft-powerpoint'
+        },
+        { 
+          label: this.i18n.global.t('SlideEditor.exportWord'), 
+          action: this.openWordExport,
+          icon: 'mdi-microsoft-word'
+        },
+        { 
+          label: this.i18n.global.t('SlideEditor.import'), 
+          action: () => this.$refs.importFile.click(),
+          icon: 'mdi-file-import'
+        },
+        { 
+          label: this.i18n.global.t('SlideEditor.presentation'), 
+          action: this.presentation, 
+          color: this.themeColor,
+          icon: 'mdi-presentation-play'
+        }
+      ];
     }
   },
   mounted() {
@@ -185,95 +234,45 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
 }
 
 .editor-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: 8px;
   border-bottom: 1px solid #ddd;
+  flex-shrink: 0;
 }
 
 .editor-container {
-  display: flex;
   flex: 1;
-  overflow: hidden;
+  min-height: 0;
 }
 
-/* 사이드바는 고정 */
-.slides-sidebar {
-  flex: 0 0 250px;
-  background-color: #f8f8f8;
-  border-right: 1px solid #ddd;
-  overflow-y: auto;
-  padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
-}
-
-.instruction-box {
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.instruction-box h3 {
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  color: #42b883;
-}
-
-.instruction-box p {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-.instruction-box code {
-  background-color: #f0f0f0;
-  padding: 0.1rem 0.3rem;
-  border-radius: 3px;
-  font-family: monospace;
-}
-
-/* 에디터는 유동 (남은 공간에서 preview 뺀 나머지 차지) */
-.editor-content {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-
-.markdown-editor {
-  flex: 1;
-  padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: monospace;
-  resize: none;
-  line-height: 1.5;
-  font-size: 14px;
-}
-
-.preview-panel {
-  flex: 0 0 40%;
+.preview-section {
   background: white;
-  overflow-y: auto;
+  border-left: 1px solid #ddd;
+  height: 100%;
+  overflow: auto;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
-.preview-header {
-  padding: 0.5rem 1rem;
-  font-weight: bold;
+.editor-section {
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .editor-preview {
   padding: 1rem;
   flex: 1;
+  min-height: 0;
 }
 
 .actions {
@@ -281,21 +280,48 @@ export default {
   gap: 8px;
 }
 
-:deep(.v-btn) {
-  transition: none !important;
+.action-button {
+  color: #333;
+  border: none;
+  border-radius: 50px;
+  padding: 4px 8px 4px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-:deep(.v-btn:hover) {
-  box-shadow: none !important;
-  transform: none !important;
-  background-color: inherit;
+.action-button:hover {
+  /* 한글 설명: hover 시 배경색을 더 연하게(#f2f2f2) 변경 */
+  background-color: #f2f2f2;
 }
 
-:deep(.v-btn--elevated:hover) {
-  box-shadow: none !important;
+/* 반응형 디자인 */
+.desktop-buttons {
+  display: flex;
+  gap: 8px;
 }
 
-:deep(.v-btn--variant-elevated:hover) {
-  box-shadow: none !important;
+.mobile-menu {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .desktop-buttons {
+    display: none;
+  }
+  
+  .mobile-menu {
+    display: block;
+  }
+  
+  .preview-section {
+    border-left: none;
+    border-top: 1px solid #ddd;
+    height: 50%;
+  }
+  
+  .editor-section {
+    height: 50%;
+  }
 }
 </style>

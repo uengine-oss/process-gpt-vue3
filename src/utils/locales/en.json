@@ -874,7 +874,8 @@
         "workItem": "Work Item",
         "workHistory": "Work History",
         "ganttChart": "Gantt Chart",
-        "sendEvent": "Send {event} event"
+        "sendEvent": "Send {event} event",
+        "output": "Output"
     },
     "DryRunProcess": {
         "notFound": "Work item not found."
@@ -946,9 +947,9 @@
         "countUnit": "items",
         "allTemplates": "All Templates"
     },
-    "MarkdownField": {
-        "markdownEditor": "Markdown Editor",
-        "editMarkdown": "Edit Markdown",
+    "ContentEditorField": {
+        "contentEditor": "Content Editor",
+        "editContent": "Edit Content",
         "mode": "Mode"
     },
     "PptxExportHelper": {
@@ -993,8 +994,5 @@
         "separateFragments": "Split fragments into separate slides",
         "prepareButton": "Prepare PDF",
         "cancelButton": "Cancel"
-    },
-    "SlidePresentation" : {
-        "arrowKeyNavigation": "You can navigate slides using the left and right arrow keys."
     }
 }

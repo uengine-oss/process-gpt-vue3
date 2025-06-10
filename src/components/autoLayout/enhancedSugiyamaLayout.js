@@ -62,7 +62,7 @@
           const isGateway = node.nodeType && node.nodeType.includes('Gateway');
           
           // 모든 노드에 대해 출력 엣지 검사 (게이트웨이에만 제한하지 않음)
-          const outgoingEdges = this.graph.getOutgoingEdges(node.id);
+          const outgoingEdges = this.graph.getOutgoingEdges(node.id).filter(e => !e.feedback);
           
           // 노드에서 나가는 모든 노드는 현재 노드보다 더 높은 레이어에 있어야 함
           for (const edge of outgoingEdges) {

@@ -5,11 +5,10 @@
             <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
             <v-row class="ma-0 pa-4 align-center">
                 <div :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
-                    <Icons :icon="'slide-show'" color="white" />
+                    <Icons :icon="'report'" color="white" />
                 </div>
                 <div>
                     <div class="font-weight-medium">{{ localAlias ? localAlias : localName }}</div>
-                    <div class="text-caption text-grey-lighten-3">{{ localMode }}</div>
                 </div>
                 <v-spacer></v-spacer>
                 <!-- Vuetify의 flex 유틸리티를 사용하여 아이콘을 정중앙 정렬 -->
@@ -22,14 +21,13 @@
             </v-row>
         </v-card>
         <v-dialog 
-            v-if="localMode === 'markdown'"
             v-model="showDialog" 
             persistent 
             max-width="1600px" 
             transition="dialog-transition"
         >
             <v-card>
-                <v-card-title>마크다운 에디터</v-card-title>
+                <v-card-title>컨텐츠 에디터</v-card-title>
                 <v-card-text class="ml-4 mr-4 editor" style="height: 80vh; padding: 0 !important; overflow: auto;">
                     <markdown-editor
                         ref="markdownEditor"
@@ -42,65 +40,18 @@
                 <v-row class="ma-0 pa-4">
                     <v-spacer></v-spacer>
                     <v-btn @click="cancelMarkdown"
+                        variant="elevated" 
                         class="rounded-pill mr-2"
                         density="compact"
                         >취소
                     </v-btn>
                     <v-btn @click="saveMarkdown"
                         :color="themeColor"
+                        variant="elevated" 
                         class="rounded-pill"
                         density="compact"
                     >저장</v-btn>
                 </v-row>
-            </v-card>
-        </v-dialog>
-        <v-dialog 
-            v-else-if="localMode === 'slides' && !localReadonly"
-            v-model="showDialog" 
-            persistent 
-            max-width="1600px" 
-            transition="dialog-transition"
-        >
-            <v-card>
-                <v-card-text style="height: 80vh; padding: 0;">
-                <slide-editor
-                    :content="localModelValue"
-                    style="width: 100%; height: 100%; border: none;"
-                    ref="markdownEditor"
-                    @save="saveMarkdownContent"
-                ></slide-editor>
-                </v-card-text>
-                <v-row class="ma-0 pa-4">
-                    <v-spacer></v-spacer>
-                    <v-btn @click="cancelMarkdown"
-                        class="rounded-pill mr-2"
-                        density="compact"
-                    >취소
-                    </v-btn>
-                    <v-btn @click="saveMarkdown"
-                        :color="themeColor"
-                        class="rounded-pill"
-                        density="compact"
-                    >저장</v-btn>
-                </v-row>
-            </v-card>
-        </v-dialog>
-        <v-dialog
-            v-else
-            v-model="showDialog" 
-            persistent 
-            max-width="1600px" 
-            transition="dialog-transition"
-        >
-            <v-card>
-                <v-card-text>
-                    
-                <slide-presentation ref="slidePresentation"
-                    :modelValue="localModelValue" 
-                    :key="localModelValue" 
-                    :isPresentationMode="true"
-                    @close="showDialog = false"/>
-                </v-card-text>
             </v-card>
         </v-dialog>
     </div>
@@ -116,7 +67,7 @@ import ThemeColorMixin from "./ThemeColorMixin.js";
 import SlidePresentation from '@/views/markdown/SlidePresentation.vue';
 
 export default {
-    name: "MarkdownField",
+    name: "ContentEditorField",
     components: {
         SlideComponent,
         SlideEditor,
@@ -128,7 +79,7 @@ export default {
     computed: {
         defaultContent() {
             if(this.$t) {
-                return this.$t("MarkdownField.defaultContent")
+                return this.$t("ContentEditorField.defaultContent")
             }
             return `# 당신의 프레젠테이션에 오신 것을 환영합니다 
 
@@ -192,7 +143,7 @@ $e^{i\\pi} + 1 = 0$
 
 이 프레젠테이션을 PDF 파일로 내보낼 수 있습니다!`        
 
-}
+        }
     },
     
     props: {
@@ -229,13 +180,6 @@ $e^{i\\pi} + 1 = 0$
             settingInfos: [
                 commonSettingInfos["localName"],
                 commonSettingInfos["localAlias"],
-                {
-                    dataToUse: "localMode",
-                    htmlAttribute: "mode",
-                    settingLabel: "MarkdownField.mode",
-                    settingType: "select",
-                    settingValue: ["markdown", "slides"],
-                },
                 commonSettingInfos["localDisabled"],
                 commonSettingInfos["localReadonly"]
             ]
@@ -265,7 +209,6 @@ $e^{i\\pi} + 1 = 0$
         
         this.localName = this.name ?? "name"
         this.localAlias = this.alias ?? ""
-        this.localMode = this.mode ?? "markdown"
         this.localDisabled = this.disabled === "true"
         this.localReadonly = this.readonly === "true"
     },
@@ -298,7 +241,7 @@ $e^{i\\pi} + 1 = 0$
 }
 </script>
 
-<style scoped>
+<style lang="scss">
 .form-text-area {
     margin-bottom: 16px;
 }
@@ -312,23 +255,5 @@ $e^{i\\pi} + 1 = 0$
   resize: none;
   line-height: 1.5;
   font-size: 14px;
-}
-
-:deep(.v-btn) {
-  transition: none !important;
-}
-
-:deep(.v-btn:hover) {
-  box-shadow: none !important;
-  transform: none !important;
-  background-color: inherit;
-}
-
-:deep(.v-btn--elevated:hover) {
-  box-shadow: none !important;
-}
-
-:deep(.v-btn--variant-elevated:hover) {
-  box-shadow: none !important;
 }
 </style>
