@@ -43,23 +43,8 @@ export default {
         await this.init();
     },
     mounted() {
-        this.EventBus.on('instances-running', (processName) => {
-            clearInterval(this.intervalId);
-
-            this.instanceList.push({
-                title: processName + this.$t('runningInstance.running'),
-                to: '',
-                BgColor: 'grey',
-                isNew: true
-            });            
-        });
-
         this.EventBus.on('instances-updated', async () => {
             await this.init();
-            
-            this.intervalId = setInterval(() => {
-                this.init();
-            }, 10000);
         });
         
         this.intervalId = setInterval(() => {
@@ -88,9 +73,10 @@ export default {
                 const title = item.instName;
                 item = {
                     // icon: 'ph:cube',
-                    title: title,
+                    title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
                     to: `/instancelist/${route}`,
-                    BgColor:'primary'
+                    BgColor:'primary',
+                    isNew: item.status == 'NEW'
                 };
                 return item;
             });
