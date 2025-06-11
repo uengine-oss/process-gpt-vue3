@@ -335,7 +335,7 @@ export default {
                     if(this.formData && Object.keys(this.formData).length > 0) {
                         this.selectedTab = 'agent';
                     } else {
-                        this.$emit('agentGenerationFinished', null)
+                        this.agentGenerationFinished(null)
                     }
                 }, 1500);
             }
@@ -503,7 +503,11 @@ export default {
                         me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
                     }
 
-                    me.processInstance = await backend.getInstance(me.workItem.worklist.instId);
+                    if(me.isSimulate != 'true') {
+                        me.processInstance = await backend.getInstance(me.workItem.worklist.instId);
+                    }
+
+                    
 
                     me.updatedDefKey++;
                 },
