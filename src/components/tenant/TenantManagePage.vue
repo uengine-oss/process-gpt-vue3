@@ -16,7 +16,7 @@
             </p>
         </v-row>
 
-        <v-row no-gutters justify="center" class="mt-5" v-if="isOwner">
+        <v-row no-gutters justify="center" class="mt-5">
             <v-card @click="toAddTenentPage()"
                 elevation="9" variant="outlined"
                 style="padding: 10px;
