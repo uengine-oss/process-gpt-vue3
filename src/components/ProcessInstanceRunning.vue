@@ -1,16 +1,5 @@
 <template>
-    <v-card elevation="10" style="height: calc(100vh - 131px);">
-        <div class="d-flex">
-            <div class="px-3 py-3 pb-2 pl-4 align-center">
-                <div class="d-flex">
-                    <h5 class="text-h5 font-weight-semibold">
-                        {{ title }}
-                    </h5>
-                </div>
-            </div>
-        </div>
-        <v-divider></v-divider>
-
+    <div>
         <v-card-text class="pa-4">
             <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
                 <div class="d-flex w-100 chat-view-box">
@@ -38,7 +27,7 @@
                 </div>
             </perfect-scrollbar>
         </v-card-text>
-    </v-card>
+    </div>
 </template>
 
 <script>
@@ -46,43 +35,28 @@ import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
 
 export default {
+    props: {
+        instance: Object
+    },
     data() {
         return {
             workItem: null,
-            processDefinition: null,
             title: '',
             streamingText: '...',
+            taskId: ''
         }
-    },
-    computed: {
-        taskId() {
-            return this.$route.query.taskId;
-        }
-    },
-    watch: {
     },
     async mounted() {
-        this.workItem = await backend.getWorkItem(this.taskId);
-        if (this.workItem && this.workItem.worklist) {
-            if (this.workItem.worklist.defId) {
-                this.processDefinition = await backend.getRawDefinition(this.workItem.worklist.defId);
-
-                if (this.workItem.worklist.instId == "new") {
-                    this.title = this.processDefinition.name + this.$t('runningInstance.running');
-                } else {
-                    this.title = this.workItem.activity.name + this.$t('runningInstance.running');
-                }
-            }
-
-            if (this.workItem.worklist.status == "COMPLETED") {
-                const instId = btoa(encodeURIComponent(this.workItem.worklist.instId));
-                this.$router.push(`/instancelist/${instId}`);
-            }
+        if (this.instance.status == 'NEW') {
+            const worklist = await backend.getWorkListByInstId(this.instance.instanceId);
+            this.workItem = worklist[0];
+            this.taskId = this.workItem.taskId;
         }
 
         await backend.getTaskLog(this.taskId, async (task) => {
             this.streamingText = task.log;
             if (task.status == "DONE") {
+                this.$emit('updated');
                 this.EventBus.emit('instances-updated');
 
                 if (task.description && task.description.length > 0 && task.description.includes("WorkItem Error")) {
@@ -90,18 +64,8 @@ export default {
                     if (retry) {
                         await backend.putWorkItemComplete(this.taskId, this.workItem);
                     } else {
-                        if (task.proc_inst_id && task.proc_inst_id != "new") {
-                            const instId = btoa(encodeURIComponent(task.proc_inst_id));
-                            this.$router.push(`/instancelist/${instId}`);
-                        } else {
-                            this.$router.go(-1);
-                        }
+                        this.$router.go(-1);
                     }
-                }
-
-                if (task.proc_inst_id && task.proc_inst_id != "new") {
-                    const instId = btoa(encodeURIComponent(task.proc_inst_id));
-                    this.$router.push(`/instancelist/${instId}`);
                 }
             }
         });

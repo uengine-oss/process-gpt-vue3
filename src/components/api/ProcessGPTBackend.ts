@@ -1180,34 +1180,32 @@ class ProcessGPTBackend implements Backend {
     }
 
     async fetchInstanceListByStatus(status: string): Promise<any[]> {
+        var me = this
         const list = await storage.list('bpm_proc_inst', { match: { status: status } });
         const email = window.localStorage.getItem("email");
         const filteredData = list.filter((item: any) => item.current_user_ids.includes(email));
 
         if (filteredData && filteredData.length > 0) {
-            const result = filteredData.map((item: any) => {
-                return {
-                    instId: item.proc_inst_id,
-                    instName: item.proc_inst_name,
-                    status: item.status,
-                    defId: item.proc_def_id
-                }
+            return filteredData.map((item: any) => {
+                return me.returnInstanceObject(item);
             });
-            return result;
         }
         return [];
     }
 
-    // async getInstanceList() {
-    //     try {
-    //         let instList: any[] = await this.fetchInstanceListByStatus("RUNNING");
-    //         return instList;
-    //     } catch (error) {
+    async getInstanceList() {
+        try {
+            let instList: any[] = [];
+            const runningList = await this.fetchInstanceListByStatus("RUNNING");
+            const newList = await this.fetchInstanceListByStatus("NEW");
+            instList = [...runningList, ...newList];
+            return instList;
+        } catch (error) {
             
-    //         //@ts-ignore
-    //         throw new Error(error.message);
-    //     }
-    // }
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
 
     async getInstanceListByRole(roles: string) {
         return this.getInstanceList();
@@ -2576,18 +2574,18 @@ class ProcessGPTBackend implements Backend {
         });
     }
 
-    async getInstanceList() {
-        try {
-            // const list = await storage.list('bpm_proc_inst',  { orderBy: "status", startAt: "RUNNING", endAt: "RUNNING", not: { key: "definition_id", operator: "is", value: null } });
-            const list = await storage.list('bpm_proc_inst');
-            return list.map((item: any) => {
-                return this.returnInstanceObject(item);
-            });
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
+    // async getInstanceList() {
+    //     try {
+    //         // const list = await storage.list('bpm_proc_inst',  { orderBy: "status", startAt: "RUNNING", endAt: "RUNNING", not: { key: "definition_id", operator: "is", value: null } });
+    //         const list = await storage.list('bpm_proc_inst');
+    //         return list.map((item: any) => {
+    //             return this.returnInstanceObject(item);
+    //         });
+    //     } catch (error) {
+    //         //@ts-ignore
+    //         throw new Error(error.message);
+    //     }
+    // }
 
     async getProjectList() {
         try {

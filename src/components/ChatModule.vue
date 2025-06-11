@@ -672,7 +672,7 @@ export default {
                         this.messages[this.messages.length - 1].content = '초안 생성을 완료하였습니다.'
                         this.afterAgentGeneration(jsonData);
                     } else {
-                        this.messages[this.messages.length - 1].content = '폼 정보가 존재하지 않아 초안을 생성할 수 없습니다.'
+                        this.messages[this.messages.length - 1].content = '초안을 생성에 실패하였습니다. 잠시 후 다시 시도해주세요.'
                         this.afterAgentGeneration(null);
                     }
                 } else {
