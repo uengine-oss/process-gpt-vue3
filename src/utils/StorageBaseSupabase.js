@@ -759,6 +759,12 @@ export default class StorageBaseSupabase {
                 query = query.contains(options.matchArray.column, options.matchArray.values);
             }
 
+            if(options.not) {
+                query = query.not(options.not.key, options.not.operator, options.not.value);
+            }
+            if(options.maybeSingle) {
+                query = query.maybeSingle()
+            }
             // size 처리
             if (options.size) {
                 query = query.limit(options.size);

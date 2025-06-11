@@ -478,7 +478,8 @@ class UEngineBackend implements Backend {
             title: task.title,
             tool: task.tool,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
-            task: task
+            adhoc: task.adhoc,
+            task: task,
         }));
 
         return mappedResult;
@@ -503,6 +504,7 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            adhoc: task.adhoc,
             task: task
         }));
 
@@ -527,6 +529,7 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            adhoc: task.adhoc,
             task: task
         }));
 
@@ -557,6 +560,7 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            adhoc: task.adhoc,
             task: task
         }));
     }
@@ -579,6 +583,7 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            adhoc: task.adhoc,
             task: task
         }));
 
@@ -602,6 +607,7 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            adhoc: task.adhoc,
             task: task
         }));
 

@@ -69,15 +69,35 @@ const customizer = useCustomizerStore();
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
                 <div
-                    v-if="!pal"
+                    v-if="!pal && isShowProcessInstanceList"
                     style="font-size:14px;"
                     class="text-medium-emphasis cp-menu mt-3 ml-2"
                 >{{ $t('VerticalSidebar.instanceList') }}</div>
-                <v-col v-if="instanceList && !pal" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                <v-col v-if="isShowProcessInstanceList && !pal" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
                     <ProcessInstanceList
-                        @update:instanceList="handleInstanceListUpdate" 
+                        @update:instanceLists="handleInstanceListUpdate" 
                     />
                 </v-col>
+                <div
+                    v-if="isShowProject"
+                    style="font-size:14px;"
+                    class="text-medium-emphasis cp-menu mt-3 ml-2"
+                >
+                    {{ $t('VerticalSidebar.projectList') }} 
+                    <v-btn @click="openNewProject()"> + </v-btn>
+                </div>
+                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                    <ProjectList/>
+                </v-col>
+                <div
+                    v-if="isShowProject"
+                    style="font-size:14px;"
+                    class="text-medium-emphasis cp-menu mt-3 ml-2"
+                >{{ $t('VerticalSidebar.instanceList') }}</div>
+                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                    <InstanceList/>
+                </v-col>
+
                 <v-col class="pa-0" style="flex: 0 0 auto;">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
@@ -161,26 +181,94 @@ const customizer = useCustomizerStore();
             </v-row>
         </v-card>
     </v-dialog>
+    <v-dialog v-model="isNewProjectOpen" max-width="400" class="delete-input-details">
+        <v-card class="pa-4 pt-2">
+            <v-card-title> {{ $t('VerticalSidebar.newProject') }} </v-card-title>
+            <v-card-text>
+                <v-text-field v-model="newProjectInfo.name" label="프로젝트 명" required></v-text-field>
+                <v-menu
+                    v-model="startDateMenu"
+                    :close-on-content-click="false"
+                    transition="scale-transition"
+                    offset-y
+                    min-width="auto"
+                >
+                    <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                            v-model="newProjectInfo.startDate"
+                            label="프로젝트 시작일"
+                            prepend-icon="mdi-calendar"
+                            readonly
+                            v-bind="attrs"
+                            v-on="on"
+                        ></v-text-field>
+                    </template>
+                    <v-date-picker
+                        v-model="newProjectInfo.startDate"
+                        @input="startDateMenu = false"
+                    ></v-date-picker>
+                </v-menu>
+
+                <v-menu
+                    v-model="dueDateMenu"
+                    :close-on-content-click="false"
+                    transition="scale-transition"
+                    offset-y
+                    min-width="auto"
+                >
+                    <template v-slot:activator="{ on, attrs }">
+                        <v-text-field
+                            v-model="newProjectInfo.dueDate"
+                            label="프로젝트 종료일"
+                            prepend-icon="mdi-calendar"
+                            readonly
+                            v-bind="attrs"
+                            v-on="on"
+                        ></v-text-field>
+                    </template>
+                    <v-date-picker
+                        v-model="newProjectInfo.dueDate"
+                        @input="dueDateMenu = false"
+                    ></v-date-picker>
+                </v-menu>
+            </v-card-text>
+            <v-card-actions class="justify-end">
+                    <v-btn @click="closeNewProject()"> 취소 </v-btn>
+                    <v-btn @click="createNewProject()"> 생성 </v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
-
+import ProjectList from '@/components/ui/ProjectList.vue';
+import InstanceList from '@/components/ui/InstanceList.vue';
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
-        ProcessInstanceList
+        ProcessInstanceList,
+        ProjectList,
+        InstanceList
     },
     data: () => ({
         sidebarItem: [],
         definitionItem: [],
         definitionList: null,
         logoPadding: '',
-        instanceList: [],
+        instanceLists: [],
         isOpen: false,
-        deletedDefinitionList: []
+        startDateMenu: false,
+        dueDateMenu: false,
+        newProjectInfo: {
+            name: '',
+            startDate: null,
+            dueDate: null,
+        },
+        isNewProjectOpen: false,
+        deletedDefinitionList: [],
     }),
     computed: {
         JMS() {
@@ -191,7 +279,13 @@ export default {
         },
         pal() {
             return window.$pal;
-        }
+        },
+        isShowProcessInstanceList() {
+            return this.instanceLists.length > 0;
+        },
+        isShowProject(){
+            return true;
+        },
     },
     created() {
         const isAdmin = localStorage.getItem('isAdmin');
@@ -292,6 +386,17 @@ export default {
                     }
                 });
             }
+        },
+        openNewProject(){
+            console.log('openNewProject');
+            this.isNewProjectOpen = true;
+        },
+        createNewProject(){
+
+            this.closeNewProject();
+        },
+        closeNewProject(){
+            this.isNewProjectOpen = false;
         },
         openDialog() {
             this.isOpen = true;
@@ -440,7 +545,7 @@ export default {
             }
         },
         handleInstanceListUpdate(instanceList) {
-            this.instanceList = instanceList;
+            this.instanceLists = instanceList;
         }
     }
 };
