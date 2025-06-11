@@ -91,7 +91,7 @@ export default {
         },
         async initStatus() {
             var me = this;
-            me.taskStatus = await backend.getActivitiesStatus(me.instance.instanceId);
+            me.taskStatus = await backend.getActivitiesStatus(me.instance.instId);
             me.updatedDefKey++;
         }
     }

@@ -48,7 +48,7 @@ export default {
     },
     async mounted() {
         if (this.instance.status == 'NEW') {
-            const worklist = await backend.getWorkListByInstId(this.instance.instanceId);
+            const worklist = await backend.getWorkListByInstId(this.instance.instId);
             this.workItem = worklist[0];
             this.taskId = this.workItem.taskId;
         }

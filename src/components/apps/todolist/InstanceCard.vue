@@ -22,8 +22,8 @@
                         </v-btn>
                     </div>
                 </div>
-                <div v-if="instance.instanceId" class="font-weight-medium" style="color:gray; font-size:14px;">
-                    ID: {{ instance.instanceId }}
+                <div v-if="instance.instId" class="font-weight-medium" style="color:gray; font-size:14px;">
+                    ID: {{ instance.instId }}
                 </div>
             </div>
             <v-btn v-if="deletable" @click="deleteInstance" variant="plain" icon class="ml-auto">
@@ -69,6 +69,7 @@ import InstanceOutput from './InstanceOutput.vue';
 import ProcessInstanceRunning from '@/components/ProcessInstanceRunning.vue';
 
 export default {
+    mixins: [InstanceTodo],
     components: {
         InstanceProgress,
         InstanceTodo,
@@ -142,7 +143,7 @@ export default {
         deletable() {
             if (this.instance) {
                 const email = localStorage.getItem('email');
-                if (this.instance.current_user_ids && this.instance.current_user_ids.length > 0 && this.instance.current_user_ids.includes(email)) {
+                if (this.instance.currentUserIds && this.instance.currentUserIds.length > 0 && this.instance.currentUserIds.includes(email)) {
                     return true;
                 }
             }
@@ -174,7 +175,7 @@ export default {
                     if (!me.id) return;
                     me.instance = await backend.getInstance(me.id);
                     if (me.instance) {
-                        me.eventList = await backend.getEventList(me.instance.instanceId);
+                        me.eventList = await backend.getEventList(me.instance.instId);
                     }
                         const activeComponents = me.$refs[me.tab];
                         if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
@@ -187,7 +188,7 @@ export default {
             return new Promise((resolve) => setTimeout(resolve, time));
         },
         async fireMessage(event) {
-            await backend.fireMessage(this.instance.instanceId, event);
+            await backend.fireMessage(this.instance.instId, event);
             this.init();
             const progressComponent = this.$refs.progress[0];
             if (progressComponent) {
