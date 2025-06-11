@@ -266,7 +266,8 @@ export default {
                 }
                 
                 backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
-                me.$router.push(`/instancelist/running?taskId=${me.$route.params.taskId}`);
+                const path = btoa(encodeURIComponent(me.workItem.worklist.instId));
+                me.$router.push(`/instancelist/${path}?submitted=true`);
             } else {
                 // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
                 me.$try({

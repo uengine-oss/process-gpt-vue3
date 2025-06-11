@@ -36,7 +36,6 @@ export default {
         formData: Object,
         useThreadId: Boolean,
         simulationInstances: Array,
-        streamingText: String,
     },
     data: () => ({
         processDefinition: null,
@@ -89,6 +88,32 @@ export default {
 
             this.handleDraftResponse()
         }
+
+        if (!this.isAgentMode && !this.isTaskMode) {
+            const worklist = await backend.getWorkListByInstId(this.chatRoomId);
+            const workItem = worklist.find(item => item.task.status == 'SUBMITTED');
+            this.streamingText = '';
+            if (workItem) {
+                const taskId = workItem.taskId;
+                await backend.getTaskLog(taskId, async (task) => {
+                    if (this.streamingText == '') {
+                        this.streamingText = task.log;
+                        this.messages.push({
+                            role: 'system',
+                            content: this.streamingText,
+                        });
+                    } else if (this.streamingText != '') {
+                        this.streamingText = task.log;
+                        this.messages[this.messages.length - 1].content = this.streamingText;
+                    }
+                    if (task.status == "DONE") {
+                        this.$emit('updated');
+                        this.EventBus.emit('instances-updated');
+                        await this.getChatList(this.chatRoomId);
+                    }
+                });
+            }
+        }
     },
     watch: {
         "$route": {
@@ -109,18 +134,6 @@ export default {
                 }
             }
         },
-        streamingText(newVal, oldVal) {
-            if (newVal && newVal !== oldVal && oldVal == '') {
-                this.messages.push({
-                    role: 'system',
-                    content: this.streamingText,
-                });
-            } else if (newVal && newVal !== oldVal && oldVal != '') {
-                this.messages[this.messages.length - 1].content = newVal;
-            } else {
-                this.getChatList(this.chatRoomId);
-            }
-        }
     },
     methods: {
         async resizeBase64Image(base64Str, minWidth, minHeight) {

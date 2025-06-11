@@ -1133,7 +1133,10 @@ class ProcessGPTBackend implements Backend {
 
     async getInstanceList() {
         try {
-            let instList: any[] = await this.fetchInstanceListByStatus("RUNNING");
+            let instList: any[] = [];
+            const runningList = await this.fetchInstanceListByStatus("RUNNING");
+            const newList = await this.fetchInstanceListByStatus("NEW");
+            instList = [...runningList, ...newList];
             return instList;
         } catch (error) {
             
@@ -1165,9 +1168,6 @@ class ProcessGPTBackend implements Backend {
         try {
             const list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
             const worklist: any[] = list.map((item: any) => {
-                if (item.status == 'SUBMITTED') {
-                    item.status = 'IN_PROGRESS';
-                }
                 return {
                     defId: item.proc_def_id,
                     instId: item.proc_inst_id,
@@ -1176,7 +1176,7 @@ class ProcessGPTBackend implements Backend {
                     startDate: item.start_date,
                     endDate: item.end_date,
                     dueDate: item.due_date,
-                    status: item.status,
+                    status: item.status == 'SUBMITTED' ? 'IN_PROGRESS' : item.status,
                     title: item.activity_name,
                     tool: item.tool || '',
                     tracingTag: item.activity_id || '',
