@@ -74,7 +74,7 @@
           <div class="ml-1" style="font-size: 14px; color: #888;">{{ i18n.global.t('SlideEditor.preview') }}</div>
         </div>
         <slide-component 
-          v-if="!isPresentationMode"
+          v-if="!isPresentationMode && onLoaded"
           :key="markdownContent"
           ref="slideComponent"
           :content="markdownContent"
@@ -84,9 +84,9 @@
       </v-col>
     </v-row>
     
-    <pdf-export-helper ref="pdfExportHelper" />
-    <pptx-export-helper ref="pptxExportHelper" />
-    <word-export-helper ref="wordExportHelper" />
+    <pdf-export-helper ref="pdfExportHelper" v-model="markdownContent" />
+    <pptx-export-helper ref="pptxExportHelper" v-model="markdownContent" />
+    <word-export-helper ref="wordExportHelper" v-model="markdownContent" />
     <slide-presentation ref="slidePresentation"
      :modelValue="markdownContent" 
      :key="markdownContent" 
@@ -130,6 +130,7 @@ export default {
       isPresentationMode: false,
       i18n,
       updateKey: '',
+      onLoaded: false,
     }
   },
   computed: {
@@ -177,15 +178,10 @@ export default {
   mounted() {
     if(this.content) {
       this.markdownContent = this.content;
-      this.init();
+      this.onLoaded = true;
     }
   },
   methods: {
-    init() {
-      this.$nextTick(() => {
-        this.$refs.slideComponent.init()
-      })
-    },
     addSlide() {
       this.markdownContent += `\n\n---\n\n# New Slide\n\nAdd your content here...`
     },

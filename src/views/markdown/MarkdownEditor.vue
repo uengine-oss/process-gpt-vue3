@@ -246,13 +246,53 @@ export default {
     },
     convertHtmlToMarkdown(html) {
       const turndownService = new TurndownService();
+
+       // <hr> → ---
       turndownService.addRule('horizontalRule', {
-        filter: 'hr',
+        filter: function (node) {
+          return node.nodeName === 'HR';
+        },
         replacement: function () {
-          return '\n---\n';
+          return '\n\n---\n\n';
         }
       });
-      return turndownService.turndown(html);
+
+      
+      // <pre><code> → ```lang\ncode\n```
+      turndownService.addRule('codeBlock', {
+        filter: function (node) {
+          return (
+            node.nodeName === 'PRE' &&
+            node.firstChild &&
+            node.firstChild.nodeName === 'CODE'
+          );
+        },
+        replacement: function (content, node) {
+          const codeNode = node.firstChild;
+          const classAttr = codeNode.getAttribute('class') || '';
+          const highlight = content.match(/^\[.*\]/);
+          const lang = highlight;
+          const code = codeNode.textContent.replace('\n', '').replace(highlight, '');
+          return `\`\`\`${lang}\n${code}\n\`\`\``;
+        }
+      }); 
+
+      let result = turndownService.turndown(html);
+      
+      // 하이픈 3개 이상 → 정확히 3개로 통일
+      result = result.replace(/-{4,}/g, '---');
+      // 2. \-- → -- 로 치환
+      result = result.replace(/\\--/g, '--');
+      // 3. * 리스트 항목에 fragment 주석 자동 추가
+      result = result.replace(
+        /^(\s*\* .+?)(\s*)$/gm,
+        (match, item, space) => {
+          if (item.includes('<!--')) return match; // 이미 주석 있으면 그대로
+          return `${item} <!-- .element: class="fragment" -->${space}`;
+        }
+      );
+
+      return result;
     },
     async generate() {
       this.generator = new MarkdownGenerator(this, {

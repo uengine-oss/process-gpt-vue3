@@ -27,11 +27,10 @@
         <router-link to="/" class="btn">Go to Editor</router-link>
       </div> -->
     </div>
-    
     <!-- Add PDF Export Helper Component -->
-    <pdf-export-helper ref="pdfExportHelper" />
+    <pdf-export-helper ref="pdfExportHelper" :modelValue="markdownContent" />
     <!-- Add PowerPoint Export Helper Component -->
-    <pptx-export-helper ref="pptxExportHelper" />
+    <pptx-export-helper ref="pptxExportHelper" :modelValue="markdownContent" />
   </div>
 </template>
 
