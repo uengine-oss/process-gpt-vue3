@@ -4,7 +4,7 @@
             <div v-if="bpmn" style="height: 100%">
                 <BpmnUengine
                     ref="bpmnVue"
-                    :instanceId="$route.params.instId"
+                    :instanceId="instance.instId"
                     :key= "updatedDefKey"
                     :bpmn="bpmn"
                     :options="options"
@@ -91,7 +91,7 @@ export default {
         },
         async initStatus() {
             var me = this;
-            me.taskStatus = await backend.getActivitiesStatus(me.instance.instanceId);
+            me.taskStatus = await backend.getActivitiesStatus(me.instance.instId);
             me.updatedDefKey++;
         }
     }

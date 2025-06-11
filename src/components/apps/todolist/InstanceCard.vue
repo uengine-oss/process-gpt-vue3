@@ -32,23 +32,50 @@
         </div>
 
         <div :key="updatedKey">
-            <div v-if="!isNew" style="height: 100%;">
-                <v-tabs v-model="tab" bg-color="transparent" height="40" color="primary">
-                    <v-tab v-for="tabItem in tabItems" :key="tabItem.value" :value="tabItem.value">
-                        {{ $t(tabItem.label) }}
+            <div v-if="isNew">
+                <ProcessInstanceRunning :instance="instance" @updated="handleInstanceUpdated" />
+            </div>
+            <div v-else style="height: 100%;">
+                <v-tabs v-model="tab" color="primary">
+                    <v-tab
+                        v-for="item in filteredTabItems"
+                        :key="item.value"
+                        :value="item.value"
+                    >
+                        {{ $t(item.label) }}
                     </v-tab>
                 </v-tabs>
-                <v-divider></v-divider>
-                <v-card-text style="height: calc(100vh - 238px);" class="pa-0">
-                    <v-window style="height: 100%;" v-model="tab">
-                        <v-window-item style="height: 100%;" v-for="tabItem in tabItems" :key="tabItem.value" :value="tabItem.value">
-                            <component :is="tabItem.component" :instance="instance" :ref="tabItem.value" />
-                        </v-window-item>
-                    </v-window>
-                </v-card-text>
-            </div>
-            <div v-else>
-                <ProcessInstanceRunning :instance="instance" @updated="handleInstanceUpdated" />
+                <v-window v-model="tab">
+                    <v-window-item value="gantt">
+                        <div class="gantt-area" v-if="!isLoading">
+                            <GanttChart 
+                                :tasks="tasks" 
+                                :dependencies="dependencies"
+                                :users="[]" 
+                                @task-updated="handleTaskUpdated" 
+                                @task-added="handleTaskAdded"
+                                @task-clicked="handleTaskClicked"
+                                @grid-row-clicked="handleGridRowClicked"
+                                @task-tree-opened="handleTaskTreeOpened"
+                                @link-event="handleLinkEvent"
+                            />
+                        </div>
+                    </v-window-item>
+                    <v-window-item value="progress">
+                        <div style="height: 860px;">
+                            <InstanceProgress :instance="instance"/>
+                        </div>
+                    </v-window-item>
+                    <v-window-item value="todo">
+                        <KanbanBoard  :columns="columns"/>
+                    </v-window-item>
+                    <v-window-item value="workhistory">
+                        <InstanceWorkHistory :instance="instance"/>
+                    </v-window-item>
+                    <v-window-item value="output">
+                        <InstanceOutput :instance="instance"/>
+                    </v-window-item>
+                </v-window>
             </div>
         </div>
     </v-card>
@@ -62,32 +89,59 @@ import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 import InstanceProgress from './InstanceProgress.vue';
-import InstanceTodo from './InstanceTodo.vue';
 import InstanceWorkHistory from './InstanceWorkHistory.vue';
-import InstanceGantt from './InstanceGantt.vue';
 import InstanceOutput from './InstanceOutput.vue';
 import ProcessInstanceRunning from '@/components/ProcessInstanceRunning.vue';
+import GanttChart from '@/components/apps/todolist/GanttChart.vue';
+import KanbanBoard from '@/components/apps/todolist/KanbanBoard.vue';
 
 export default {
     components: {
         InstanceProgress,
-        InstanceTodo,
         InstanceWorkHistory,
-        InstanceGantt,
         InstanceOutput,
-        ProcessInstanceRunning
+        ProcessInstanceRunning,
+        GanttChart,
+        KanbanBoard,
     },
     data: () => ({
+        isLoading: true,
         instance: null,
         eventList: [],
         // tab
         tab: "progress",
         tabItems: [
-            { value: 'progress', label: 'InstanceCard.progress', component: 'InstanceProgress' },
-            { value: 'todo', label: 'InstanceCard.workItem', component: 'InstanceTodo' },
-            { value: 'workhistory', label: 'InstanceCard.workHistory', component: 'InstanceWorkHistory' },
-            { value: 'gantt', label: 'InstanceCard.ganttChart', component: 'InstanceGantt' },
-            { value: 'output', label: 'InstanceCard.output', component: 'InstanceOutput' }
+            { value: 'progress', label: 'InstanceCard.progress'},
+            { value: 'todo', label: 'InstanceCard.kanbanBoard'},
+            { value: 'workhistory', label: 'InstanceCard.workHistory'},
+            { value: 'gantt', label: 'InstanceCard.ganttChart'},
+            { value: 'output', label: 'InstanceCard.output'}
+        ],
+        columns: [
+            {
+                id: 'TODO',
+                title: 'todoList.todo',
+                cardbg: 'background',
+                tasks: []
+            },
+            {
+                id: 'IN_PROGRESS',
+                title: 'todoList.inProgress',
+                cardbg: 'lightsecondary',
+                tasks: []
+            },
+            {
+                id: 'PENDING',
+                title: 'todoList.pending',
+                cardbg: 'lightinfo',
+                tasks: []
+            },
+            {
+                id: 'DONE',
+                title: 'todoList.done',
+                cardbg: 'lightsuccess',
+                tasks: []
+            }
         ],
 
         updatedKey: 0,
@@ -136,6 +190,13 @@ export default {
                 return this.$route.params.instId
             }
         },
+        filteredTabItems() {
+            if (this.instance && !this.instance.defId) {
+                this.tab = 'todo';
+                return this.tabItems.filter(item => item.value !== 'progress');
+            }
+            return this.tabItems;
+        },
         isCompleted() {
             return this.instance.status == "COMPLETED"
         },
@@ -172,14 +233,36 @@ export default {
                 context: me,
                 action: async () => {
                     if (!me.id) return;
+                    me.isLoading = true;
                     me.instance = await backend.getInstance(me.id);
                     if (me.instance) {
                         me.eventList = await backend.getEventList(me.instance.instanceId);
                     }
-                        const activeComponents = me.$refs[me.tab];
-                        if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
-                            await activeComponents[0].init();
+                    const activeComponents = me.$refs[me.tab];
+                    if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
+                        await activeComponents[0].init();
                     }
+
+
+                    let result = [];
+                    const tasks = await backend.getWorkList({instId: me.id});
+                    result = result.concat(tasks);
+                    // 바로 아래 자식 태스크 추가
+                    for (const task of tasks) {
+                        let childTaks = await backend.getWorkList({instId: task.taskId});
+                        const updatedWorklist = childTaks.map(item => ({
+                            ...item,
+                            parent: task.taskId, // 인스턴스가 부모
+                        }));
+                        result = result.concat(updatedWorklist);
+                    }
+                    me.tasks = result;
+                    me.dependencies = await backend.getTaskDependencyByInstId(me.id)
+                    // 칸반 컬럼 업데이트
+                    me.columns.forEach(column => {
+                        column.tasks = me.tasks.filter(task => task.status === column.id);
+                    });
+                    me.isLoading = false
                 }
             });
         },
@@ -207,9 +290,96 @@ export default {
                 successMsg: this.$t('successMsg.instanceDelete')
             });
         },
+
+        async handleTaskUpdated(task){
+            await backend.putWorklist(task.taskId, task)
+        },
+        async handleTaskAdded(task){
+            task.projectId = this.instance.projectId;
+            task.parent = this.instance.instId;
+
+            await backend.putWorklist(null, task);
+        },
+        async handleTaskClicked(event){
+            console.log(event);
+        },
+        async handleGridRowClicked(event){
+            console.log(event);
+        },
+        async handleLinkEvent(event){
+            let link = event.link;
+            if(event.type == 'add') {
+                await backend.putTaskDependency({
+                    id: link.id,
+                    task_id: link.target,
+                    depends_id: link.source,
+                    type: link.type
+                })
+            } else if(event.type == 'delete') {
+                await backend.deleteTaskDependency(link.id)
+            }
+        },
+        async handleTaskTreeOpened(event){
+            var me = this
+            const rootTaskId = event.id;
+            let rootTask = this.tasks.find(x=>x.taskId == rootTaskId);
+            if(rootTask.isOpened) return;
+
+
+            let result = [];
+            const tasks = await backend.getWorkList({instId: rootTaskId});
+            result = result.concat(tasks);
+            // 바로 아래 자식 태스크 추가
+            for (let task of tasks) {
+                task.parent = rootTaskId;
+                let childTaks = await backend.getWorkList({instId: task.taskId});
+                const updatedWorklist = childTaks.map(item => ({
+                    ...item,
+                    parent: task.taskId,
+                }));
+                result = result.concat(updatedWorklist);
+            }
+            me.tasks = me.tasks.concat(result);
+
+
+            const rootTaskDependencies = await backend.getTaskDependencyByInstId(rootTaskId);
+            me.dependencies = me.dependencies.concat(rootTaskDependencies);
+
+            rootTask.isOpened = true;
+        },
     }
 };
 </script>
 
 <style>
+    .center-container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start; /* 상단 정렬로 변경 */
+        min-height: 100vh;       /* 화면 전체 높이 */
+        background: #f2f6fa;
+    }
+    .vertical-layout {
+        display: flex;
+        flex-direction: column;
+        width: 600px;
+        height: 80vh;
+        min-width: 400px;
+    }
+    .top-section {
+        flex: 3;
+        margin-bottom: 16px;
+    }
+    .bottom-section {
+        flex: 7;
+    }
+    .list-card {
+        width: 100%;
+        height: 100%;
+    }
+    .gantt-area {
+        flex: 1;
+        min-height: 400px;      /* Gantt 차트 영역 최소 높이 */
+        height: 500px;          /* 필요시 고정 높이 */
+    }
 </style>

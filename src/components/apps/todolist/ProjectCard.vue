@@ -9,7 +9,7 @@
             <v-window v-model="tab">
                 <v-window-item value="managment">
                     <div class="gantt-area" v-if="!isLoading">
-                        <Gantt 
+                        <GanttChart 
                             :tasks="tasks" 
                             :dependencies="dependencies"
                             :users="[]" 
@@ -69,13 +69,15 @@ const backend = BackendFactory.createBackend();
 import Gantt from '@/components/Gantt.vue';
 import KanbanBoard from './KanbanBoard.vue';
 import TodoTaskColumn from './TodoTaskColumn.vue';
+import GanttChart from './GanttChart.vue';
 
 
 export default {
     components: {
         Gantt,
         KanbanBoard,
-        TodoTaskColumn
+        TodoTaskColumn,
+        GanttChart
     },
     data: () => ({  
         
@@ -180,6 +182,12 @@ export default {
             } else {
                 await backend.putWorklist(null, task);
             }
+        },
+        async handleTaskClicked(task){
+            console.log(task);
+        },
+        async handleGridRowClicked(id){
+            router.push(`/todolist/${id}`);
         },
         async handleLinkEvent(event){
             let link = event.link;
