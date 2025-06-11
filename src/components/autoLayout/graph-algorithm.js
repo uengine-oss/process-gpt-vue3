@@ -442,9 +442,6 @@ class SugiyamaLayout {
         
         if (groupCount === 0) return ranges;
         
-        // 고정된 총 너비 대신 동적으로 계산
-        let calculatedTotalWidth = 0;
-        
         // 각 그룹별 레이어당 노드 수 계산 및 최대 밀도 파악
         const groupLayerDensity = {};
         
@@ -472,88 +469,18 @@ class SugiyamaLayout {
             console.log(`[DEBUG_DENSITY] 그룹=${groupId}, 최대 레이어 밀도=${maxNodesInLayer}개 노드`);
         });
         
-        // 각 그룹별 노드의 최대 X 좌표를 찾아 총 너비 계산
-        this.graph.groupOrder.forEach(groupId => {
-            const nodesInGroup = this.graph.getNodesInGroup(groupId);
-            
-            if (nodesInGroup.length > 0) {
-                // 그룹 내 최대/최소 X 좌표 찾기
-                let minNodeX = Infinity;
-                let maxNodeX = -Infinity;
-                
-                nodesInGroup.forEach(node => {
-                    // 노드의 실제 경계를 고려
-                    const halfWidth = (node.width || 80) / 2;
-                    minNodeX = Math.min(minNodeX, node.x - halfWidth);
-                    maxNodeX = Math.max(maxNodeX, node.x + halfWidth);
-                });
-                
-                // 기본 그룹 너비 계산
-                let groupWidth = (maxNodeX - minNodeX) + 40; // 좌우 각각 20px 여유 공간
-                
-                // 레이어 밀도에 따른 너비 조정
-                const density = groupLayerDensity[groupId];
-                if (density && density.maxNodesInLayer > 1) {
-                    // 같은 레이어에 2개 이상 노드가 있을 경우 너비 확장
-                    const densityFactor = Math.min(3, Math.log2(density.maxNodesInLayer + 1));
-                    const baseNodeWidth = 200; // 기본 노드 너비 (여유 공간 포함)
-                    const minWidthForDensity = baseNodeWidth * density.maxNodesInLayer * 0.8; // 노드 중첩 허용
-                    
-                    // 너비가 밀도에 비해 부족하면 확장
-                    if (groupWidth < minWidthForDensity) {
-                        const originalWidth = groupWidth;
-                        groupWidth = minWidthForDensity;
-                        console.log(`[DEBUG_WIDTH_ADJUST] 그룹=${groupId}, 레이어 밀도로 인한 너비 확장: ${originalWidth.toFixed(1)} → ${groupWidth.toFixed(1)}`);
-                    }
-                }
-                
-                calculatedTotalWidth += groupWidth;
-            } else {
-                // 노드가 없는 그룹은 기본 너비 할당
-                calculatedTotalWidth += 200; // 기본 너비
-            }
-        });
-        
-        // 적어도 필요한 최소 너비 보장
-        const minTotalWidth = this.graph.groupOrder.length * 200;
-        if (calculatedTotalWidth < minTotalWidth) {
-            calculatedTotalWidth = minTotalWidth;
-        }
-        
-        console.log(`[DEBUG_WIDTH] 계산된 총 너비: ${calculatedTotalWidth}px (그룹 수: ${groupCount})`);
-        
-        // 레인 간 간격 제거: 레인 사이의 간격을 0으로 설정
-        const laneSpacing = 0; // 레인 사이 간격 제거 (기존 spacing 대신 사용)
-        
-        // 레이어 밀도에 따라 그룹별 비율 조정
-        const groupWidthRatios = {};
-        let totalRatio = 0;
-        
-        this.graph.groupOrder.forEach(groupId => {
-            const density = groupLayerDensity[groupId];
-            // 기본 비율 1, 밀도에 따라 최대 3배까지 증가
-            const ratio = density && density.maxNodesInLayer > 1 
-                ? 1 + Math.min(2, Math.log2(density.maxNodesInLayer) / 2)
-                : 1;
-            groupWidthRatios[groupId] = ratio;
-            totalRatio += ratio;
-        });
-        
-        // 비율에 따라 너비 분배
         let currentX = 0;
-        this.graph.groupOrder.forEach(groupId => {
-            const ratio = groupWidthRatios[groupId];
-            const groupWidth = (calculatedTotalWidth * ratio) / totalRatio;
-            
+        Object.keys(groupLayerDensity).forEach(groupId => {
+            const group = groupLayerDensity[groupId];
+            const baseWidth = 120;
+            const groupWidth = baseWidth * group.maxNodesInLayer;
             ranges[groupId] = {
                 minX: currentX,
                 maxX: currentX + groupWidth
             };
-            
-            console.log(`[DEBUG_GROUP_WIDTH] 그룹=${groupId}, 비율=${ratio.toFixed(2)}, 너비=${groupWidth.toFixed(1)}`);
             currentX += groupWidth;
         });
-        
+
         console.log('[DEBUG_RANGES] 그룹 수평 범위 계산:', ranges);
         return ranges;
     }
@@ -685,85 +612,91 @@ class SugiyamaLayout {
         /**
         * getBoundaryPoint: 장애물 회피를 고려하여 노드의 시작/종료 포트를 동적으로 결정
         */
-       const getBoundaryPoint = (node, to, allObstacles) => {
-           const spacing = 20;
-           const testLength = 60; // 테스트 선 길이
-           const directions = {
-               right: { dx: 1, dy: 0 },
-               left: { dx: -1, dy: 0 },
-               top: { dx: 0, dy: -1 },
-               bottom: { dx: 0, dy: 1 }
-           };
-
-           const isHorizontalLayout = window.isHorizontalLayout || false;
-       
-           const halfWidth = isHorizontalLayout 
-               ? (node.height || defaultNodeHeight) / 2 
-               : (node.width || defaultNodeWidth) / 2;
-           const halfHeight = isHorizontalLayout 
-               ? (node.width || defaultNodeWidth) / 2 
-               : (node.height || defaultNodeHeight) / 2;
-       
-           const portPoints = {
-               left: { x: node.x - halfWidth, y: node.y , direction: 'left'},
-               right: { x: node.x + halfWidth, y: node.y , direction: 'right'},
-               top: { x: node.x, y: node.y - halfHeight , direction: 'top'},
-               bottom: { x: node.x, y: node.y + halfHeight , direction: 'bottom'}
-           };
-       
-           const priority = { 'free': 3, 'group': 2, 'node': 1 };
-       
-           const checkDirection = (dirKey) => {
-               const { x, y } = portPoints[dirKey];
-               const { dx, dy } = directions[dirKey];
-               let status = 'free';
-       
-               for (let d = 0; d < testLength; d += 10) {
-                   const px = x + dx * d;
-                   const py = y + dy * d;
-                   for (const obs of allObstacles) {
-                       if (obs.id === node.id) continue; // 자기 자신 제외
-                       const left = obs.x - obs.width / 2;
-                       const right = obs.x + obs.width / 2;
-                       const top = obs.y - obs.height / 2;
-                       const bottom = obs.y + obs.height / 2;
-       
-                       if (px >= left && px <= right && py >= top && py <= bottom) {
-                           if (obs.type === 'node') return 'node';
-                           if (obs.type === 'group' && status !== 'node') status = 'group';
-                       }
-                   }
-               }
-       
-               return status;
-           };
-       
-           // to 방향에 기반하여 우선순위 방향 리스트 계산
-           const dx = to.x - node.x;
-           const dy = to.y - node.y;
-           const absDx = Math.abs(dx);
-           const absDy = Math.abs(dy);
-       
-           const toDirs = [];
-           if (dy < 0) toDirs.push('top');
-           if (dy > 0) toDirs.push('bottom');
-           if (dx > 0) toDirs.push('right');
-           if (dx < 0) toDirs.push('left');
-       
-           const allDirs = ['top', 'right', 'bottom', 'left'];
-           const orderedDirs = [...toDirs, ...allDirs.filter(d => !toDirs.includes(d))];
-       
-           const directionScores = {};
-           for (const dir of orderedDirs) {
-               directionScores[dir] = checkDirection(dir);
-           }
-       
-           // 가장 우선순위 높은 방향 선택 (to 상대 위치 기반)
-           const bestDir = Object.entries(directionScores)
-               .sort((a, b) => priority[b[1]] - priority[a[1]])[0][0];
-       
-           return portPoints[bestDir];
-       };
+        const getBoundaryPoint = (node, to, allObstacles, isStart) => {
+            const spacing = 20;
+            const testLength = 60; // 테스트 선 길이
+            const directions = {
+                right: { dx: 1, dy: 0 },
+                left: { dx: -1, dy: 0 },
+                top: { dx: 0, dy: -1 },
+                bottom: { dx: 0, dy: 1 }
+            };
+        
+            const isHorizontalLayout = window.isHorizontalLayout || false;
+        
+            const halfWidth = isHorizontalLayout 
+                ? (node.height || defaultNodeHeight) / 2 
+                : (node.width || defaultNodeWidth) / 2;
+            const halfHeight = isHorizontalLayout 
+                ? (node.width || defaultNodeWidth) / 2 
+                : (node.height || defaultNodeHeight) / 2;
+        
+            const portPoints = {
+                left: { x: node.x - halfWidth, y: node.y , direction: 'left'},
+                right: { x: node.x + halfWidth, y: node.y , direction: 'right'},
+                top: { x: node.x, y: node.y - halfHeight , direction: 'top'},
+                bottom: { x: node.x, y: node.y + halfHeight , direction: 'bottom'}
+            };
+        
+            const priority = { 'free': 3, 'group': 2, 'node': 1 };
+        
+            const checkDirection = (dirKey) => {
+                const { x, y } = portPoints[dirKey];
+                const { dx, dy } = directions[dirKey];
+                let status = 'free';
+        
+                for (let d = 0; d < testLength; d += 10) {
+                    const px = x + dx * d;
+                    const py = y + dy * d;
+                    for (const obs of allObstacles) {
+                        // if (obs.id === node.id) continue; // 자기 자신 제외
+                        const left = obs.x - obs.width / 2;
+                        const right = obs.x + obs.width / 2;
+                        const top = obs.y - obs.height / 2;
+                        const bottom = obs.y + obs.height / 2;
+        
+                        if (px >= left && px <= right && py >= top && py <= bottom) {
+                            if (obs.type === 'node') return 'node';
+                            if (obs.type === 'group' && status !== 'node') status = 'group';
+                        }
+                    }
+                }
+        
+                return status;
+            };
+        
+            // to 방향에 기반하여 우선순위 방향 리스트 계산
+            const dx = to.x - node.x;
+            const dy = to.y - node.y;
+        
+            const toDirs = [];
+            if (dy < 0) toDirs.push('top');
+            if (dy > 0) toDirs.push('bottom');
+            if (dx > 0) toDirs.push('right');
+            if (dx < 0) toDirs.push('left');
+        
+            const allDirs = ['top', 'right', 'bottom', 'left'];
+            let orderedDirs = [...toDirs, ...allDirs.filter(d => !toDirs.includes(d))];
+        
+            // ✅ isStart 조건에 따라 방향 제한
+            if (isStart) {
+                orderedDirs = orderedDirs.filter(d => d !== 'top');
+            } else {
+                orderedDirs = orderedDirs.filter(d => d !== 'left');
+            }
+        
+            const directionScores = {};
+            for (const dir of orderedDirs) {
+                directionScores[dir] = checkDirection(dir);
+            }
+        
+            // 가장 우선순위 높은 방향 선택 (to 상대 위치 기반)
+            const bestDir = Object.entries(directionScores)
+                .sort((a, b) => priority[b[1]] - priority[a[1]])[0][0];
+        
+            return portPoints[bestDir];
+        };
+        
     
         const getAllObstacles = () => {
             return this.graph.nodes
@@ -1063,8 +996,8 @@ class SugiyamaLayout {
             if (!source || !target) return;
     
 
-            const rawStart = getBoundaryPoint(source, target, obstacles);
-            const rawEnd = getBoundaryPoint(target, source, obstacles);
+            const rawStart = getBoundaryPoint(source, target, obstacles, true);
+            const rawEnd = getBoundaryPoint(target, source, obstacles, false);
             
             const startPoint = adjustInitialStep(rawStart);
             const endPoint = adjustInitialStep(rawEnd);
