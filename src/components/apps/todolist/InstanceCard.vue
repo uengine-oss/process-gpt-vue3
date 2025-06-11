@@ -88,6 +88,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
+import InstanceTodo from './InstanceTodo.vue';
 import InstanceProgress from './InstanceProgress.vue';
 import InstanceWorkHistory from './InstanceWorkHistory.vue';
 import InstanceOutput from './InstanceOutput.vue';
@@ -117,32 +118,6 @@ export default {
             { value: 'workhistory', label: 'InstanceCard.workHistory'},
             { value: 'gantt', label: 'InstanceCard.ganttChart'},
             { value: 'output', label: 'InstanceCard.output'}
-        ],
-        columns: [
-            {
-                id: 'TODO',
-                title: 'todoList.todo',
-                cardbg: 'background',
-                tasks: []
-            },
-            {
-                id: 'IN_PROGRESS',
-                title: 'todoList.inProgress',
-                cardbg: 'lightsecondary',
-                tasks: []
-            },
-            {
-                id: 'PENDING',
-                title: 'todoList.pending',
-                cardbg: 'lightinfo',
-                tasks: []
-            },
-            {
-                id: 'DONE',
-                title: 'todoList.done',
-                cardbg: 'lightsuccess',
-                tasks: []
-            }
         ],
 
         updatedKey: 0,
