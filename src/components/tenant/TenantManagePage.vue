@@ -265,7 +265,8 @@ export default {
                     let userInfo = {
                         username: user.name,
                         email: user.email,
-                        role: user.role
+                        role: user.role,
+                        tenant_id: me.currentTenantId
                     }
                     const result = await backend.createUser(userInfo);
                     console.log(result)
