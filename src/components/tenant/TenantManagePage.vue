@@ -213,9 +213,8 @@ export default {
             role: ''
         },
         roleOptions: [
-            { text: '관리자', value: 'admin' },
-            { text: '사용자', value: 'user' },
-            { text: '뷰어', value: 'viewer' }
+            { text: '관리자', value: 'superAdmin' },
+            { text: '사용자', value: 'user' }
         ]
     }),
     async created() {
