@@ -25,6 +25,7 @@
                             <v-divider class="my-2"></v-divider>
                             <UserListing 
                                 :userList="userList" 
+                                :agentList="agentList"
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
@@ -71,7 +72,25 @@
                         @stopMessage="stopMessage"
                         @toggleProcessGPTActive="toggleProcessGPTActive"
                         @startWorkOrder="startWorkOrder"
-                    ></Chat>
+                    >
+                        <template #attachments-area>
+                            <div class="attachment-container">
+                                <div class="position-fixed">
+                                    <div v-if="attachments.length > 0">
+                                        <v-tooltip text="Attachments" location="right">
+                                            <template v-slot:activator="{ props }">
+                                                <v-btn v-bind="props" @click="toggleAttachments" icon variant="text" class="text-medium-emphasis">
+                                                    <v-icon v-if="isAttachmentsOpen">mdi-close</v-icon>
+                                                    <v-icon v-else>mdi-chevron-down</v-icon>
+                                                </v-btn>
+                                            </template>
+                                        </v-tooltip>
+                                    </div>
+                                    <Attachments :isOpen="isAttachmentsOpen" :attachments="attachments" />
+                                </div>
+                            </div>
+                        </template>
+                    </Chat>
                 </div>
             </template>
 
@@ -91,6 +110,7 @@
                             <v-divider class="my-2"></v-divider>
                             <UserListing 
                                 :userList="userList" 
+                                :agentList="agentList"
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
@@ -206,6 +226,7 @@
 
 <script>
 import AssistantChats from "../chat/AssistantChats.vue";
+import Attachments from "./Attachments.vue";
 import ChatModule from "@/components/ChatModule.vue";
 import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
@@ -228,8 +249,8 @@ export default {
         UserListing,
         ChatProfile,
         VDataTable,
-        AssistantChats
-
+        AssistantChats,
+        Attachments
     },
     data: () => ({
         headers: [
@@ -256,6 +277,14 @@ export default {
         selectedUserInfo: null,
         timeBoundMenu: false,
         myChatRoomIds: [],
+
+        // attachments
+        isAttachmentsOpen: false,
+        attachments: [],
+
+        // agent
+        agentList: [],
+        isAgentChat: false
     }),
     computed: {
         filteredChatRoomList() {
@@ -264,13 +293,33 @@ export default {
     },
     watch: {
         currentChatRoom: {
-            handler(newVal) {
-                if(this.generator && newVal && newVal.id){
+            async handler(newVal) {
+                if(this.generator && newVal && newVal.id) {
+                    if (newVal.participants.length > 0) {
+                        this.isAgentChat = newVal.participants.some(participant => participant.is_agent);
+                    }
                     this.chatRoomId = newVal.id;
                     this.generator.setChatRoomData(newVal);
+                    await this.getAttachments();
                 }
             },
             deep: true
+        },
+        isAgentChat: {
+            async handler(newVal) {
+                if (newVal) {
+                    this.generator = new ChatGenerator(this, {
+                        isStream: false,
+                        preferredLanguage: "Korean",
+                        agent: true
+                    });
+                } else {
+                    this.generator = new ChatGenerator(this, {
+                        isStream: true,
+                        preferredLanguage: "Korean"
+                    });
+                }
+            }
         }
     },  
     async created() {
@@ -290,8 +339,12 @@ export default {
     async mounted() {
         this.userInfo = await this.backend.getUserInfo();
         await this.getChatRoomList();
+
         await this.getUserList();
+        await this.getAgentList();
+        
         await this.getCalendar();
+        await this.getAttachments();
 
         this.EventBus.on('messages-updated', () => {
             this.chatRenderKey++;
@@ -301,6 +354,21 @@ export default {
         this.EventBus.emit('chat-room-unselected');
     },
     methods: {
+        toggleAttachments() {
+            this.isAttachmentsOpen = !this.isAttachmentsOpen;
+        },
+        async getAttachments() {
+            await this.backend.getAttachments(this.chatRoomId, (attachment) => {
+                if (this.attachments.find(a => a.id == attachment.id)) {
+                    return;
+                } else {
+                    this.attachments.push(attachment);
+                }
+            });
+        },
+        async getAgentList(){
+            this.agentList = await this.backend.getAgentList();
+        },
         selectedUser(user){
             this.selectedUserInfo = user
         },
@@ -309,11 +377,24 @@ export default {
             const selectedUserEmail = this.selectedUserInfo.email;
             const currentUserEmail = this.userInfo.email;
 
-            if(type == 'work'){
+            if(type == 'work' || type == 'agent-work'){
                 chatRoomInfo = {}
-                chatRoomInfo.name = this.selectedUserInfo.username
+                chatRoomInfo.name = type == 'agent-work' ? this.selectedUserInfo.name : this.selectedUserInfo.username
                 chatRoomInfo.participants = []
-                chatRoomInfo.participants.push(this.selectedUserInfo)
+                if (type == 'agent-work') {
+                    const agentInfo = {
+                        email: 'system@uengine.org',
+                        id: this.selectedUserInfo.id,
+                        username: this.selectedUserInfo.name,
+                        is_agent: true,
+                        goal: this.selectedUserInfo.goal,
+                        role: this.selectedUserInfo.role,
+                        persona: this.selectedUserInfo.persona
+                    }
+                    chatRoomInfo.participants.push(agentInfo)
+                } else {
+                    chatRoomInfo.participants.push(this.selectedUserInfo)
+                }
                 this.createChatRoom(chatRoomInfo)
             } else {
                 const chatRoomExists = this.chatRoomList.some(chatRoom => {
@@ -330,9 +411,22 @@ export default {
                     this.chatRoomSelected(chatRoomInfo)
                 } else {
                     chatRoomInfo = {}
-                    chatRoomInfo.name = this.selectedUserInfo.username
+                    chatRoomInfo.name = type == 'agent-chat' ? this.selectedUserInfo.name : this.selectedUserInfo.username
                     chatRoomInfo.participants = []
-                    chatRoomInfo.participants.push(this.selectedUserInfo)
+                    if (type == 'agent-chat') {
+                        const agentInfo = {
+                            email: 'system@uengine.org',
+                            id: this.selectedUserInfo.id,
+                            username: this.selectedUserInfo.name,
+                            is_agent: true,
+                            goal: this.selectedUserInfo.goal,
+                            role: this.selectedUserInfo.role,
+                            persona: this.selectedUserInfo.persona
+                        }
+                        chatRoomInfo.participants.push(agentInfo)
+                    } else {
+                        chatRoomInfo.participants.push(this.selectedUserInfo)
+                    }
                     this.createChatRoom(chatRoomInfo)
                 }
             }
@@ -489,7 +583,7 @@ export default {
         },
         chatRoomSelected(chatRoomInfo){
             this.currentChatRoom = chatRoomInfo
-            if(chatRoomInfo.participants.find(p => p.id === "system_id")){
+            if(chatRoomInfo.participants.find(p => p.id === "system_id" || p.is_agent)){
                 this.ProcessGPTActive = true
                 if(chatRoomInfo.participants.length == 2){
                     this.isSystemChat = true
@@ -703,7 +797,9 @@ export default {
                     me.$router.push(`/definitions/${responseObj.processId}`);
                 }
 
-                systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
+                if (!this.isAgentChat) {
+                    systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
+                }
 
                 const systemMsgObj = me.createMessageObj(systemMsg, 'system')
                 if(this.messages[this.messages.length - 1].content === '...' && this.messages[this.messages.length - 1].isLoading){
@@ -734,9 +830,16 @@ export default {
                     // });
                     if(responseObj.work == 'CompanyQuery'){
                         try{
-                            let mementoRes = await axios.post(`/memento/query`, {
-                                query: responseObj.content,
-                                tenant_id: window.$tenantName
+                            const token = localStorage.getItem('accessToken');
+                            let mementoRes = await axios.get(`/memento/query`, {
+                                params: {
+                                    query: responseObj.content,
+                                    tenant_id: window.$tenantName
+                                },
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                }
                             });
                             console.log(mementoRes)
                             obj.memento = {}
@@ -750,7 +853,6 @@ export default {
                                 }
                             });
                             obj.memento.sources = sources
-                            const token = localStorage.getItem('accessToken');
                             const responseTable = await axios.post(`/execution/process-data-query`, {
                                 input: {
                                     query: responseObj.content,
@@ -804,5 +906,14 @@ export default {
 .description-card {
     height:81.6vh;
     overflow: auto;
+}
+
+.attachment-container {
+    position: relative;
+    z-index: 1000;
+}
+
+.attachment-container .v-btn {
+    background-color: white;
 }
 </style>

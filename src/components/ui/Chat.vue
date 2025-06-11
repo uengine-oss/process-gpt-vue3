@@ -3,6 +3,7 @@
         <div>
             <div>
                 <div>
+                    <slot name="attachments-area"></slot>
                     <slot name="custom-title">
                         <div class="chat-info-title" style="position: sticky; top:0px; z-index:1; background-color:white;">
                             <div class="align-right gap-3 pa-4 justify-space-between">
@@ -307,7 +308,9 @@
                                                                                     v-for="(source, index) in message.memento.sources"
                                                                                     :key="index" variant="outlined" size="x-small"
                                                                                     text-color="primary"
-                                                                                    style="margin-bottom: 1px;">
+                                                                                    style="margin-bottom: 1px;"
+                                                                                    @click="downloadFile(source)"
+                                                                                >
                                                                                     <v-icon start icon="mdi-label" x-small></v-icon>
                                                                                     {{source.file_name }}
                                                                                 </v-chip>
@@ -473,84 +476,75 @@
                                     <v-row class="ma-0 pa-0"
                                         :style="file && file.length > 0 ? 'margin:-13px 0px 0px 7px !important;' : ''"
                                     >
-                                    <v-tooltip :text="$t('chat.fileUpLoad')">
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn v-if="file && file.length > 0" type="submit" 
-                                                v-bind="props"
-                                                icon variant="text"
-                                                class="text-medium-emphasis"
-                                                style="width:30px;
-                                                    height:30px;
-                                                    margin:12.5px 0px 0px 0px;"
-                                            >
-                                                <Icons :icon="'upload'" />
-                                            </v-btn>
-                                        </template>
-                                    </v-tooltip>
-                                    <v-file-input class="chat-file-up-load"
-                                        :class="{'chat-file-up-load-display': file && file.length > 0}"
-                                        :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
-                                        v-model="file"
-                                        label="Choose a file"
-                                        prepend-icon="mdi-paperclip"
-                                        outlined
-                                        :disabled="disableChat"
-                                    ></v-file-input>
-                                    <v-tooltip v-if="type == 'chats' && !isSystemChat" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); toggleProcessGPTActive()" v-bind="props"
-                                                style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
-                                                <img :style="ProcessGPTActive ? 'opacity:1' : 'opacity:0.5'"
-                                                    src="@/assets/images/chat/chat-icon.png"
-                                                    style="height:24px;"
-                                                />
-                                            </v-btn>
-                                        </template>
-                                    </v-tooltip>
-                                </v-row>
-                            </v-form>
-                        </div>
-                    </v-row>
-                </div>
-                <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
-                    <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
-                </div> -->
-                
-            </div>
-            <v-divider />
-
-            <!-- <div v-if="showNewMessageNoti"
-                style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
-                <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
-                    <div @click="clickToScroll">
-                        <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
+                                        <v-tooltip :text="$t('chat.fileUpLoad')">
+                                            <template v-slot:activator="{ props }">
+                                                <v-btn v-if="file && file.length > 0" type="submit" 
+                                                    v-bind="props"
+                                                    icon variant="text"
+                                                    class="text-medium-emphasis"
+                                                    style="width:30px;
+                                                        height:30px;
+                                                        margin:12.5px 0px 0px 0px;"
+                                                >
+                                                    <Icons :icon="'upload'" />
+                                                </v-btn>
+                                            </template>
+                                        </v-tooltip>
+                                        <v-file-input class="chat-file-up-load"
+                                            :class="{'chat-file-up-load-display': file && file.length > 0}"
+                                            :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
+                                            v-model="file"
+                                            label="Choose a file"
+                                            prepend-icon="mdi-paperclip"
+                                            outlined
+                                            :disabled="disableChat"
+                                        ></v-file-input>
+                                        <v-tooltip v-if="type == 'chats' && !isSystemChat" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
+                                            <template v-slot:activator="{ props }">
+                                                <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); toggleProcessGPTActive()" v-bind="props"
+                                                    style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
+                                                    <img :style="ProcessGPTActive ? 'opacity:1' : 'opacity:0.5'"
+                                                        src="@/assets/images/chat/chat-icon.png"
+                                                        style="height:24px;"
+                                                    />
+                                                </v-btn>
+                                            </template>
+                                        </v-tooltip>
+                                    </v-row>
+                                </v-form>
+                            </div>
+                        </v-row>
                     </div>
-                    <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
+                    <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
                         <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
                     </div> -->
                 </div>
-                <div style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
-                    <div class="message-info-box" v-if="isReply || (!isAtBottom && previewMessage)">
-                        <div class="message-info-content">
-                            <template v-if="isReply">
-                                <div class="message-info-header">
-                                    <div>{{ replyUser.role == 'system' ? $t('chat.systemReply') : $t('chat.userReply', { name: replyUser.name }) }}</div>
-                                    <v-icon @click="cancelReply()" size="small">mdi-close</v-icon>
-                                </div>
-                                <div class="message-info-text">{{ replyUser.content }}</div>
-                            </template>
-                            <template v-else>
-                                <div class="message-info-header">
-                                    <div>{{ previewMessage.name }}</div>
-                                    <v-icon @click="scrollToBottom()" color="primary" size="small">mdi-arrow-down-circle</v-icon>
-                                </div>
-                                <div class="message-info-text">{{ previewMessage.content }}</div>
-                            </template>
-                        </div>
+                <v-divider v-if="!hideInput" />
+            </div>
+
+            <div v-if="!hideInput" style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
+                <div class="message-info-box" v-if="isReply || (!isAtBottom && previewMessage)">
+                    <div class="message-info-content">
+                        <template v-if="isReply">
+                            <div class="message-info-header">
+                                <div>{{ replyUser.role == 'system' ? $t('chat.systemReply') : $t('chat.userReply', { name: replyUser.name }) }}</div>
+                                <v-icon @click="cancelReply()" size="small">mdi-close</v-icon>
+                            </div>
+                            <div class="message-info-text">{{ replyUser.content }}</div>
+                        </template>
+                        <template v-else>
+                            <div class="message-info-header">
+                                <div>{{ previewMessage.name }}</div>
+                                <v-icon @click="scrollToBottom()" color="primary" size="small">mdi-arrow-down-circle</v-icon>
+                            </div>
+                            <div class="message-info-text">{{ previewMessage.content }}</div>
+                        </template>
                     </div>
                 </div>
-                <v-divider />
+            </div>
+            <v-divider v-if="!hideInput" />
 
+            <div v-if="!hideInput">
                 <!-- <div v-if="showNewMessageNoti"
                     style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
                     <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
@@ -674,6 +668,7 @@
             <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
                 :audioResponse="newMessage" :chatRoomId="chatRoomId" :recordingMode="recordingMode" />
         </div>
+    </div>
 </template>
 
 <script>
@@ -738,6 +733,10 @@ export default {
         maxBaseOffset: {
             type: Number,
             default: 160 // maxAllowedBase = initialChatHeight + maxBaseOffset
+        },
+        hideInput: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
@@ -1089,27 +1088,55 @@ export default {
                 this.isMicRecorderLoading = false; // 로딩 상태 종료
             }
         },
-        async submitFile() {
+        submitFile() {
             var me = this
+            if (!me.file) return;
+            const fileName = me.file[0].name;
+            const fileObj = {
+                chat_room_id: me.chatRoomId,
+                user_name: me.userInfo.name
+            }
+            backend.uploadFile(fileName, me.file[0], 'drive', fileObj).then((response) => {
+                me.$try({
+                    action: async () => {
+                        console.log(response);
+                        this.file = null
+                    },
+                    successMsg: '파일 업로드가 완료되었습니다.'
+                })
+            });
             
-            me.$try({
-                action: async () => {
-                    if (!me.file) return; // 파일이 없으면 함수 종료
-        
-                    const formData = new FormData();
-                    formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
-
-                    const response = await axios.post(`/memento/uploadfile/`, formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data',
-                        },
-                    });
-                    console.log(response.data); // 응답 로그 출력
-                    this.file = null
-                    
-                },
-                successMsg: '파일 업로드가 완료되었습니다.'
-            })
+            // me.$try({
+            //     action: async () => {
+            //         if (!me.file) return;
+            //         const fileName = me.file[0].name;
+            //         const fileObj = {
+            //             chat_room_id: me.chatRoomId,
+            //             user_name: me.userInfo.name
+            //         }
+            //         const response = await backend.uploadFile(fileName, me.file[0], 'drive', fileObj);
+            //         console.log(response);
+            //         this.file = null
+            //     },
+            //     successMsg: '파일 업로드가 완료되었습니다.'
+            // })
+        },
+        async downloadFile(source) {
+            let filePath = null;
+            if (source.storage_type == 'drive') {
+                const options = {
+                    storageType: 'drive',
+                }
+                filePath = await backend.getFileUrl(source.file_id, options);
+                
+            } else if (source.storage_type == 'storage') {
+                filePath = await backend.getFileUrl(source.file_path);
+            }
+            if (filePath) {
+                window.open(filePath, '_blank');
+            } else {
+                alert('파일을 찾을 수 없습니다.');
+            }
         },
         openVerMangerDialog() {
             this.$emit('openVerMangerDialog', true)
@@ -1143,7 +1170,6 @@ export default {
             this.$nextTick(() => {
                 // 현재 textarea 높이 + 버튼 영역 높이
                 const currentHeight = textarea.scrollHeight + 44; // 버튼 영역은 약 44px로 가정
-                
                 // 높이 차이 계산 (현재 높이 - 초기 높이)
                 const heightDiff = currentHeight - this.textareaAreaHeight;
                 
@@ -1302,7 +1328,7 @@ export default {
                 }
             }
         },
-        send() {
+        async send() {
             if (this.editIndex >= 0) {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;

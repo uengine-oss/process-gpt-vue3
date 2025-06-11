@@ -2,132 +2,57 @@
     <div style="height:100%;">
         <!-- organization chart -->
         <div id="tree" ref="tree" class="h-100"></div>
+        
         <!-- dialogs -->
-        <v-dialog v-model="dialog" max-width="500">
-            <v-card>
-                <v-card-title>{{ dialogTitle }}</v-card-title>
-
-                <!-- add team -->
-                <v-card-text v-if="dialogType == 'addTeam'" class="text-center">
-                    <v-text-field v-model="newTeam.id" :label="$t('organizationChartDefinition.teamId')"></v-text-field>
-                    <v-text-field v-model="newTeam.name" :label="$t('organizationChartDefinition.teamName')"></v-text-field>
-                </v-card-text>
-
-                <!-- edit team -->
-                <v-card-text v-else-if="dialogType == 'edit'">
-                    <v-text-field v-model="editUser.data.name" :label="$t('organizationChartDefinition.teamName')"></v-text-field>
-                    <v-autocomplete v-model="editUser.children" :items="allUsers" chips 
-                        closable-chips color="blue-grey-lighten-2" item-title="data.name" :item-value="item => item" 
-                        multiple :label="$t('organizationChartDefinition.selectTeamMember')" small-chips>
-                        <template v-slot:chip="{ props, item }">
-                            <v-chip v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" :text="item.raw.data.name"></v-chip>
-                            <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.data.name"></v-chip>
-                        </template>
-                        <template v-slot:item="{ props, item }">
-                            <v-list-item v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" 
-                                :title="item.raw.data.name" :subtitle="item.raw.data.email"></v-list-item>
-                            <v-list-item v-else v-bind="props" :title="item.raw.data.name" :subtitle="item.raw.data.email">
-                                <template v-slot:prepend>
-                                    <v-icon style="position: relative; margin-right: 10px; margin-left: -3px;" size="48">mdi-account-circle</v-icon>
-                                </template>
-                            </v-list-item>
-                        </template>
-                    </v-autocomplete>
-                </v-card-text>
-
-                <!-- delete team -->
-                <v-card-text v-else-if="dialogType == 'delete'">
-                    <div>'{{ editUser.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }}</div>
-                </v-card-text>
-
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="updateNode">{{ buttonText }}</v-btn>
-                    <v-btn color="error" @click="dialog = false">{{ $t('organizationChartDefinition.close') }}</v-btn>
-                </v-card-actions>
-            </v-card>
+        <v-dialog v-model="teamDialog" max-width="500">
+            <OrganizationTeamDialog 
+                :dialogType="teamDialogType" 
+                :editNode="editNode"
+                @updateTeam="updateTeam"
+                @closeDialog="closeTeamDialog"
+            ></OrganizationTeamDialog>
+        </v-dialog>
+        <v-dialog v-model="editDialog" max-width="500">
+            <OrganizationEditDialog
+                :dialogType="editDialogType"
+                :editNode="editNode"
+                @updateNode="updateNode"
+                @closeDialog="closeEditDialog"
+            ></OrganizationEditDialog>
         </v-dialog>
     </div>
 </template>
 
 <script>
 import ApexTree from 'apextree';
+import OrganizationTeamDialog from './OrganizationTeamDialog.vue';
+import OrganizationEditDialog from './OrganizationEditDialog.vue';
 
 export default {
+    components: {
+        OrganizationTeamDialog,
+        OrganizationEditDialog
+    },
     props: {
         node: {
             type: Object,
             default: {},
         },
-        userList: {
-            type: Array,
-            default: [],
-        }
     },
     data: () => ({
         tree: null,
-        openMenu: false,
-        editUser: null,
-        dialog: false,
-        dialogType: '',
-        allTeams: [],
-        allUsers: [],
-        newTeam: {
-            id: '',
-            name: '',
-            isTeam: true,
-            img: '/images/chat-icon.png',
-        },
+        
+        // dialog
+        editNode: null,
+        teamDialog: false,
+        editDialog: false,
     }),
-    computed: {
-        isRoot() {
-            return this.editUser.id === 'root';
-        },
-        currentTeam() {
-            return this.allTeams.find(team => team.id === this.editUser.data.pid);
-        },
-        dialogTitle() {
-            if (this.dialogType == 'addTeam') {
-                return this.$t('organizationChartDefinition.addTeam')
-            } else if (this.dialogType == 'edit') {
-                return this.$t('organizationChartDefinition.team') + ' ' + this.$t('organizationChartDefinition.edit')
-            } else if (this.dialogType == 'delete') {
-                return this.$t('organizationChartDefinition.team') + ' ' + this.$t('organizationChartDefinition.delete')
-            }
-        },
-        buttonText() {
-            if (this.dialogType == 'addTeam') {
-                return this.$t('organizationChartDefinition.add')
-            } else if (this.dialogType == 'edit') {
-                return this.$t('organizationChartDefinition.edit')
-            } else if (this.dialogType == 'delete') {
-                return this.$t('organizationChartDefinition.delete')
-            }
-        }
-    },
     watch: {
         node(newVal) {
             if (newVal && newVal.id && newVal.data) {
                 this.drawTree()
-                this.allTeams = newVal.children.filter(c => c.data.isTeam).map(t => ({
-                    id: t.id,
-                    name: t.data.name
-                }))
             }
         },
-        userList(newVal) {
-            this.allUsers = newVal.map(user => ({
-                id: user.id,
-                name: user.username,
-                data: {
-                    name: user.username,
-                    img: user.profile,
-                    email: user.email,
-                    role: user.role || '',
-                    pid: user.pid || ''
-                }
-            }))
-        }
     },
     async mounted() {
         if (this.node && this.node.id && this.node.data) {
@@ -149,10 +74,13 @@ export default {
                         ${content.email ? `<div style="font-family: Arial; font-size: 12px">${content.email}</div>` : ''}
                         ${content.role ? `<div style="font-family: Arial; color:gray; font-size: 11px">${content.role}</div>` : ''}
                         <div class="node-content-btn-box">
-                            ${content.id == 'root' ? `<img class="node-content-btn add-team-btn" src="/assets/images/icon/plus.svg" alt="Add Team">` : ''}
-                            ${content.isTeam == true ? `<img class="node-content-btn add-member-btn" src="/assets/images/icon/plus.svg" alt="Add Member">` : ''}
-                            ${content.isTeam == true ? `<img class="node-content-btn edit-team-btn" src="/assets/images/icon/pencil.svg" alt="Edit Team">` : ''}
-                            ${content.isTeam == true ? `<img class="node-content-btn delete-team-btn" src="/assets/images/icon/trash.svg" alt="Delete Team">` : ''}
+                            ${content.id == 'root' ? `<img class="node-content-btn add-team-btn" src="/assets/images/icon/plus.svg">` : ''}
+                            ${content.isTeam == true ? `<img class="node-content-btn add-member-btn" src="/assets/images/icon/plus.svg">` : ''}
+                            ${content.isTeam == true ? `<img class="node-content-btn edit-team-btn" src="/assets/images/icon/pencil.svg">` : ''}
+                            ${content.isTeam == true ? `<img class="node-content-btn delete-team-btn" src="/assets/images/icon/trash.svg">` : ''}
+                            ${content.isAgent == true ? `<img class="node-content-btn edit-agent-btn" src="/assets/images/icon/pencil.svg">` : ''}
+                            ${content.isAgent == true ? `<img class="node-content-btn delete-agent-btn" src="/assets/images/icon/trash.svg">` : ''}
+                            ${!content.isAgent && !content.isTeam ? `<img class="node-content-btn edit-member-btn" src="/assets/images/icon/pencil.svg">` : ''}
                         </div>
                     </div>
                 </div>
@@ -165,24 +93,27 @@ export default {
             document.addEventListener('click', (event) => {
                 if (event.target.classList.contains('add-team-btn')) {
                     event.stopPropagation();
-                    this.openDialog('addTeam');
-                } else if (event.target.classList.contains('add-member-btn')) {
-                    event.stopPropagation();
-                    this.$emit('addUser', this.editUser);
+                    this.openTeamDialog('add');
                 } else if (event.target.classList.contains('edit-team-btn')) {
                     event.stopPropagation();
-                    this.openDialog('edit');
+                    this.openTeamDialog('edit');
                 } else if (event.target.classList.contains('delete-team-btn')) {
                     event.stopPropagation();
-                    this.openDialog('delete');
+                    this.openTeamDialog('delete');
+                } else if (event.target.classList.contains('add-member-btn')) {
+                    event.stopPropagation();
+                    this.$emit('addMember', this.editNode);
+                } else if (event.target.classList.contains('edit-member-btn')) {
+                    event.stopPropagation();
+                    this.openEditDialog('edit-user');
+                } else if (event.target.classList.contains('edit-agent-btn')) {
+                    event.stopPropagation();
+                    this.openEditDialog('edit-agent');
+                } else if (event.target.classList.contains('delete-agent-btn')) {
+                    event.stopPropagation();
+                    this.openEditDialog('delete');
                 }
             });
-
-
-            this.allTeams = this.node.children.filter(c => c.data.isTeam).map(t => ({
-                id: t.id,
-                name: t.data.name
-            }));
         }
 
         this.$refs.tree.addEventListener('click', this.handleNodeClick);
@@ -218,10 +149,7 @@ export default {
                 }
                 const foundNode = this.findNodeById(this.node, target.id);
                 if (foundNode && foundNode.data) {
-                    this.editUser = foundNode;
-                    if (!this.openMenu) {
-                        this.openMenu = true;
-                    }
+                    this.editNode = foundNode;
                 }
                 const textBox = target.querySelector('.node-content-text-box');
                 if (textBox) {
@@ -232,42 +160,37 @@ export default {
                 if (this.previousTarget) {
                     this.previousTarget.style.backgroundColor = '';
                 }
-                this.openMenu = false;
             }
         },
-        openDialog(type) {
-            this.dialog = true;
-            this.dialogType = type;
-            if (type == 'addTeam') {
-                this.newTeam = {
-                    id: '',
-                    name: '',
-                    isTeam: true,
-                    img: '/src/assets/images/chat/chat-icon.png',
-                }
-            }
+        openTeamDialog(type) {
+            this.teamDialog = true;
+            this.teamDialogType = type;
         },
-        async updateNode() {
-            if (this.dialogType == 'addTeam') {
+        closeTeamDialog() {
+            this.teamDialog = false;
+            this.teamDialogType = '';
+        },
+        async updateTeam(type, editNode, newTeam) {
+            if (type == 'add') {
                 this.node.children.push({
-                    id: this.newTeam.id,
-                    data: this.newTeam,
+                    id: newTeam.id,
+                    data: newTeam,
                     children: []
                 })
-            } else if (this.dialogType == 'delete') {
-                this.node.children = await this.deleteNode(this.editUser, this.node.children);
-            } else if (this.dialogType == 'edit') {
-                if (this.editUser.data.isTeam) {
-                    this.editUser.children.forEach(user => {
-                        user.data.pid = this.editUser.id;
+            } else if (type == 'delete') {
+                this.node.children = await this.deleteNode(editNode, this.node.children);
+            } else if (type == 'edit') {
+                if (editNode.data.isTeam) {
+                    this.node.children.forEach(team => {
+                        if (team.id == editNode.id) {
+                            team = editNode
+                        }
                     })
                 }
             }
             await this.drawTree();
-            
             this.$emit('updateNode');
-            this.dialog = false;
-            this.dialogType = '';
+            this.closeTeamDialog();
         },
         deleteNode(obj, children) {
             if (children && children.some(item => item.id == obj.id)) {
@@ -278,7 +201,30 @@ export default {
                 })
             }
             return children;
-        }
+        },
+        openEditDialog(type) {
+            this.editDialog = true;
+            this.editDialogType = type;
+        },
+        closeEditDialog() {
+            this.editDialog = false;
+            this.editDialogType = '';
+        },
+        async updateNode(type, editNode) {
+            if (type == 'edit') {
+                this.node.children.forEach(team => {
+                    if (team.id == editNode.id) {
+                        team = editNode
+                    }
+                })
+            } else if (type == 'delete') {
+                this.node.children = await this.deleteNode(editNode, this.node.children);
+            }
+            this.$emit('updateAgent', type, editNode);
+            await this.drawTree();
+            this.$emit('updateNode');
+            this.closeEditDialog();
+        },
     },
 }
 </script>

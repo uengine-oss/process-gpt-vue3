@@ -20,8 +20,6 @@
 </template>
 
 <script>
-import BackendFactory from "@/components/api/BackendFactory";
-const backend = BackendFactory.createBackend();
 import KanbanColumn from './KanbanColumn.vue';
 
 export default {
@@ -30,18 +28,7 @@ export default {
     },
     props: {
         columns: Array,
-
-       
     },
-    data: () => ({
-        
-    }),
-    async mounted() {
-        
-    },
-    methods: {
-        
-    }
 }
 </script>
 <style>

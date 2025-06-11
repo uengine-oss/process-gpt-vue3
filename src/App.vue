@@ -73,6 +73,10 @@ export default {
                 this.loadScreen = true;
             }
         });
+
+        window.addEventListener('fcmTokenReceived', (event) => {
+            localStorage.setItem('fcm_token', event.token);
+        }); 
         
         // 클릭 이벤트로 스낵바 닫기
         document.addEventListener('click', this.closeSnackbarOnEvent);
@@ -86,6 +90,10 @@ export default {
 
             if (!window.$pal) {
                 this.loadScreen = false;
+                if(window.location.pathname.includes('privacy')) {
+                    this.loadScreen = true;
+                    return;
+                }
                 this.backend = BackendFactory.createBackend();
                 if (window.$isTenantServer) {
                     await this.backend.checkDBConnection();
@@ -101,12 +109,21 @@ export default {
                         }
                         return;
                     } else {
-                        const res = await this.backend.setTenant(window.$tenantName);
-                        if (!res) {
-                            this.$try({}, null, {
-                                errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
-                            })
-                            this.$router.push('/auth/login');
+                        // 루트 페이지인 경우 로그인 체크 건너뛰기 옵션 추가
+                        const skipLoginCheck = window.location.pathname === '/';
+                        const userInfo = await this.backend.getUserInfo();
+                        if(!skipLoginCheck) {
+                            if(userInfo) {
+                                const res = await this.backend.setTenant(window.$tenantName);
+                                if (!res) {
+                                    this.$try({}, null, {
+                                        errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
+                                    })
+                                    window.location.href = 'https://www.process-gpt.io/tenant/manage';
+                                }
+                            } else {
+                                this.$router.push('/auth/login');
+                            }
                         }
                         this.loadScreen = true;
                     }
@@ -139,7 +156,7 @@ export default {
         async watchNotifications(email){
             // this.backend = BackendFactory.createBackend();
             await this.backend.watchNotifications((notification) => {
-                if (notification.user_id === email && Notification.permission === 'granted') {
+                if (notification.user_id === email && (Notification && Notification.permission === 'granted')) {
                     let notiHeader = null;
                     let notiBody = null;
                     if(notification.type === 'workitem_bpm') {
@@ -147,10 +164,10 @@ export default {
                         notiBody = notification.title || '새 할 일 목록 추가';
                     } else if(notification.type === 'chat') {
                         if (!this.currentChatRoomId || (this.currentChatRoomId && !notification.url.includes(this.currentChatRoomId))) {
-                            notiHeader = notification.description || '채팅방';
-                            const senderName = notification.from_user_id || '알 수 없는 사용자';
+                            notiHeader = notification.from_user_id || '알 수 없는 사용자';
+                            const chatRoomName = notification.description || '채팅방';
                             const messageContent = notification.title || '새 메시지';
-                            notiBody = `${senderName}\n${messageContent}`;
+                            notiBody = `${chatRoomName}\n${messageContent}`;
                         }
                     }
                     if(notiHeader && notiBody) {
@@ -165,7 +182,8 @@ export default {
                             window.location.href = notification.url;
                         };
                     }
-                }
+                }   
+                
             });
         },
         // 알림 권한 요청 메서드
@@ -177,7 +195,7 @@ export default {
             }
 
             // 이미 권한이 결정되지 않은 경우에만 요청
-            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+            if (Notification && (Notification.permission !== 'granted' && Notification.permission !== 'denied')) {
                 // 브라우저 내장 알림 허용 UI가 표시됨
                 Notification.requestPermission();
             }
@@ -236,6 +254,7 @@ export default {
     beforeUnmount() {
         // 이벤트 리스너 정리
         document.removeEventListener('click', this.closeSnackbarOnEvent);
+        window.removeEventListener('androidBackButton', this.handleAndroidBackButton);
         
         if (window.$mode == 'ProcessGPT') {
             // 구독 정리

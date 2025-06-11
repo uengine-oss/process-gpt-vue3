@@ -18,7 +18,27 @@ export const router = createRouter({
         },
         MainRoutes,
         AuthRoutes,
-        TenantRoutes
+        TenantRoutes,
+        {
+            name: 'Markdown Editor',
+            path: '/markdown-editor',
+            component: () => import('@/views/markdown/MarkdownEditor.vue')
+        },
+        {
+            name: 'Slide',
+            path: '/slide-editor',
+            component: () => import('@/views/markdown/SlideEditor.vue')
+        },
+        {
+            path: '/present',
+            name: 'presentation',
+            component: () => import('@/views/markdown/SlidePresentation.vue'),
+            props: (route) => ({
+                printPdf: route.query['print-pdf'] !== undefined,
+                showNotes: route.query.showNotes,
+                pdfSeparateFragments: route.query.pdfSeparateFragments
+            })
+        }
     ]
 });
 

@@ -19,7 +19,8 @@
                         :key="organizationChart.id"
                         :userList="userList"
                         @updateNode="updateNode"
-                        @addUser="openUserDialog"
+                        @updateAgent="updateAgent"
+                        @addMember="openAddDialog"
                         ref="organizationChart"
                 ></OrganizationChart>
             </template>
@@ -36,44 +37,15 @@
                 ></Chat>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="userDialog" max-width="500">
-            <v-card>
-                <v-card-title>{{ $t('organizationChartDefinition.addNewUser') }}</v-card-title>
-                <v-card-text>
-                    <v-alert icon="$info" color="primary" variant="outlined" density="compact" class="mb-2">
-                        <div class="text-body-1">{{ $t('organizationChartDefinition.addNewUserExplanation') }}</div>
-                    </v-alert>
-                    <div v-for="(user, index) in newUserList" :key="index" class="py-2">
-                        <v-text-field 
-                            v-model="user.name" 
-                            :label="$t('organizationChartDefinition.userName')" 
-                            :rules="nameRules"
-                            class="mb-2"
-                        ></v-text-field>
-                        <v-text-field 
-                            v-model="user.email" 
-                            :label="$t('organizationChartDefinition.userEmail')" 
-                            :rules="emailRules" 
-                            class="mb-2"
-                        ></v-text-field>
-                        <v-text-field 
-                            v-model="user.role" 
-                            :label="$t('organizationChartDefinition.role')" 
-                            class="mb-2"
-                        ></v-text-field>
-                        <v-divider></v-divider>
-                    </div>
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" @click="createNewUser(newUserList)" :disabled="!isValid">
-                        {{ $t('organizationChartDefinition.add') }}
-                    </v-btn>
-                    <v-btn color="error" @click="userDialog = false">
-                        {{ $t('organizationChartDefinition.close') }}
-                    </v-btn>
-                </v-card-actions>
-            </v-card>
+        <v-dialog v-model="addDialog" max-width="500">
+            <OrganizationAddDialog
+                :teamInfo="editNode"
+                :userList="userList"
+                :agentList="agentList"
+                @addUser="addUser"
+                @addAgent="addAgent"
+                @closeDialog="closeAddDialog"
+            ></OrganizationAddDialog>
         </v-dialog>
     </v-card>
 </template>
@@ -88,6 +60,7 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
 import Chat from "@/components/ui/Chat.vue";
 import OrganizationChart from "@/components/ui/OrganizationChart.vue";
+import OrganizationAddDialog from "@/components/ui/OrganizationAddDialog.vue";
 
 export default {
     mixins: [ChatModule],
@@ -95,38 +68,20 @@ export default {
         AppBaseCard,
         Chat,
         OrganizationChart,
+        OrganizationAddDialog,
     },
     data: () => ({
         organizationChart: {},
-        userList: [],
+        organizationChartId: null,
         chatInfo: {
             title: "organizationChartDefinition.cardTitle",
             text: "organizationChartDefinition.organizationChartExplanation"
         },
-        userDialog: false,
-        newUserList: [],
-        organizationChartId: null,
-        editingTeam: null,
+        addDialog: false,
+        userList: [],
+        agentList: [],
+        editNode: null,
     }),
-    computed: {
-        emailRules() {
-            return [
-                (value) => !!value || this.$t('organizationChartDefinition.emailRequired'),
-                (value) => /.+@.+\..+/.test(value) || this.$t('organizationChartDefinition.emailInvalid'),
-                (value) => !this.isExistUser(value) || this.$t('organizationChartDefinition.emailAlreadyExists'),
-            ];
-        },
-        nameRules() {
-            return [
-                (value) => !!value || this.$t('organizationChartDefinition.nameRequired'),
-            ];
-        },
-        isValid() {
-            return this.newUserList.every(user => {
-                return this.emailRules.every(rule => rule(user.email) === true) && this.nameRules.every(rule => rule(user.name) === true);
-            });
-        }
-    },
     async mounted() {
         await this.init();
         const defaultName = window.$tenantName || window.$mode;
@@ -169,11 +124,11 @@ export default {
                     }
                 }
             }
-
-            await this.getChatList('organization_chart_chat');
+            this.chatRoomId = 'organization_chart_chat';
+            await this.getChatList(this.chatRoomId);
 
             this.userList = await this.backend.getUserList();
-            this.chatRoomId = 'organization_chart_chat';
+            this.agentList = await this.backend.getAgentList();
         },
         beforeSendMessage(newMessage) {
             this.sendMessage(newMessage);
@@ -237,24 +192,18 @@ export default {
                         });
                     }
 
-                    if (unknown && unknown.newUsers) {
-                        this.newUserList = unknown.newUsers;
-                        this.userDialog = true;
-                    } else if (unknown && unknown.deleteUsers) {
-                        this.deleteUser(unknown.deleteUsers);
-                    } else {
-                        var putObj =  {
-                            key: 'organization',
-                            value: {
-                                chart: this.organizationChart,
-                            },
-                        };
-                        this.drawChart(this.organizationChart);
-                        if (this.organizationChartId) {
-                            putObj.uuid = this.organizationChartId;
-                        }
-                        await this.putObject("configuration", putObj);
+                    
+                    var putObj =  {
+                        key: 'organization',
+                        value: {
+                            chart: this.organizationChart,
+                        },
+                    };
+                    this.drawChart(this.organizationChart);
+                    if (this.organizationChartId) {
+                        putObj.uuid = this.organizationChartId;
                     }
+                    await this.putObject("configuration", putObj);
                 }
 
                 const newMessage = this.messages[this.messages.length - 1];
@@ -277,57 +226,38 @@ export default {
             };
             this.putObject("chats", putObj);
         },
-        async createNewUser(users) {
+        async createNewUser(user) {
             var me = this
             me.$try({
                 action: async () => {
-                    if (users && users.length > 0) {
-                        users.forEach(async user => {
-                            let userInfo = {
-                                username: user.name,
-                                email: user.email,
-                                role: user.role
-                            }
-                            const result = await me.backend.createUser(userInfo);
-                            if (!result.error) {
-                                me.editingTeam.children.push({
-                                    id: result.user.id,
-                                    data: {
-                                        id: result.user.id,
-                                        img: "/images/defaultUser.png",
-                                        name: user.name,
-                                        email: user.email,
-                                        role: user.role,
-                                        pid: me.editingTeam.id,
-                                    },
-                                    name: user.name,
-                                });
-                                await me.updateNode();
-                                me.$refs.organizationChart.drawTree();
-                            }
-                        });
-                        me.userList = await me.backend.getUserList();
+                    let userInfo = {
+                        username: user.name,
+                        email: user.email,
+                        role: user.role
                     }
-                    me.newUserList = [];
-                    me.userDialog = false;
+                    const result = await me.backend.createUser(userInfo);
+                    if (!result.error) {
+                        me.editNode.children.push({
+                            id: result.user.id,
+                            data: {
+                                id: result.user.id,
+                                img: "/images/defaultUser.png",
+                                name: user.name,
+                                email: user.email,
+                                role: user.role,
+                                pid: me.editNode.id,
+                            },
+                            name: user.name,
+                        });
+                        await me.updateNode();
+                        me.$refs.organizationChart.drawTree();
+                    }
+                    me.userList = await me.backend.getUserList();
+                    me.agentList = await me.backend.getAgentList();
                 },
                 successMsg: me.$t('organizationChartDefinition.addUserSuccess'),
                 errorMsg: me.$t('organizationChartDefinition.addUserFailed'),
             });
-        },
-        async deleteUser(users) {
-            if (users && users.length > 0) {
-                users.forEach(async user => {
-                    const options = {
-                        match: {
-                            email: user.email,
-                            username: user.name,
-                        }
-                    }
-                    await this.storage.delete('users', options);
-                });
-                this.userList = await this.backend.getUserList();
-            }
         },
         async updateNode() {
             var putObj =  {
@@ -341,17 +271,42 @@ export default {
             }
             await this.putObject("configuration", putObj);
         },
-        openUserDialog(value) {
-            this.editingTeam = value;
-            this.newUserList = [{
-                name: "",
-                email: "",
-                role: "",
-            }];
-            this.userDialog = true;
+
+        // dialog 관련
+        openAddDialog(value) {
+            this.editNode = value;
+            this.addDialog = true;
         },
-        isExistUser(value) {
-            return this.userList.find(user => user.email == value);
+        closeAddDialog() {
+            this.addDialog = false;
+        },
+        async addUser(addUserList, newUser) {
+            if (newUser) {
+                await this.createNewUser(newUser);
+            }
+            if (addUserList && addUserList.length > 0) {
+                this.editNode.children = addUserList;
+            }
+            await this.updateNode();
+            this.$refs.organizationChart.drawTree();
+        },
+        async addAgent(newAgent) {
+            const agent = {
+                id: newAgent.id,
+                name: newAgent.name,
+                data: newAgent
+            }
+            this.editNode.children.push(agent);
+            await this.backend.putAgent(newAgent);
+            await this.updateNode();
+            this.$refs.organizationChart.drawTree();
+        },
+        async updateAgent(type,editAgent) {
+            if (type == 'edit') {
+                await this.backend.putAgent(editAgent.data);
+            } else if (type == 'delete') {
+                await this.backend.deleteAgent(editAgent.id);
+            }
         },
     }
 }

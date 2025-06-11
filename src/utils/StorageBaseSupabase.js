@@ -13,12 +13,27 @@ export default class StorageBaseSupabase {
         try {
             let accessToken = "";
             let refreshToken = "";
-           
-            if (document.cookie && document.cookie.includes('; ')) {
-                accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token'))?.split('=')[1];
-                refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token'))?.split('=')[1];
+            
+            // Check if we're in webview mode
+            if (window.AndroidBridge) {
+                try {
+                    const sessionTokenStr = window.AndroidBridge.getSessionToken();
+                    if (sessionTokenStr) {
+                        const sessionTokens = JSON.parse(sessionTokenStr);
+                        accessToken = sessionTokens.access_token || "";
+                        refreshToken = sessionTokens.refresh_token || "";
+                    }
+                } catch (e) {
+                    console.error('Error parsing session tokens:', e);
+                    accessToken = "";
+                    refreshToken = "";
+                }
+            } else {
+                if (document.cookie && document.cookie.includes('; ')) {
+                    accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token'))?.split('=')[1];
+                    refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token'))?.split('=')[1];
+                }
             }
-
             if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
                 const { error: sessionError } = await window.$supabase.auth.setSession({
                     access_token: accessToken,
@@ -32,15 +47,18 @@ export default class StorageBaseSupabase {
                 await this.refreshSession();                
             }
             
-            const { data, error } = await window.$supabase.auth.getUser();
-            if (error) {
+            // getSession()을 사용하여 세션과 사용자 정보를 모두 가져옴
+            const { data, error } = await window.$supabase.auth.getSession();
+            if (error || !data.session) {
                 return false;
             }
 
-            if (data) {
+            if (data.session && data.session.user) {
                 this.writeUserData(data);
                 return true;
             }
+            
+            return false;
         } catch (error) {
             console.error('Error checking Supabase connection:', error);
             return false;
@@ -50,29 +68,46 @@ export default class StorageBaseSupabase {
     async refreshSession() {
         try {
             const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
+
             if (refreshError) {
-                console.error('Error refreshing session (no initial tokens):', refreshError);
+                console.error('Error refreshing session:', refreshError);
                 const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-                if (window.location.host.includes('process-gpt.io')) {
-                    document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
-                    document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                
+                // Check if we're in webview mode
+                if (window.AndroidBridge) {
+                    window.AndroidBridge.clearSession();
                 } else {
-                    document.cookie = `access_token=; ${cookieOptionsBase}`;
-                    document.cookie = `refresh_token=; ${cookieOptionsBase}`;
+                    if (window.location.host.includes('process-gpt.io')) {
+                        document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                        document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                    } else {
+                        document.cookie = `access_token=; ${cookieOptionsBase}`;
+                        document.cookie = `refresh_token=; ${cookieOptionsBase}`;
+                    }
                 }
                 window.localStorage.removeItem('accessToken');
             } else {
-                if (window.location.host.includes('process-gpt.io')) {
-                    document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                // Check if we're in webview mode
+                if (window.AndroidBridge) {
+                    console.log("refreshSession - webview mode");
+                    window.AndroidBridge.saveSessionToken(
+                        refreshData.session.access_token,
+                        refreshData.session.refresh_token
+                    );
+                    console.log("refreshSession - webview mode - saveSessionToken", refreshData.session.access_token, refreshData.session.refresh_token);
                 } else {
-                    document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
-                    document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
+                    if (window.location.host.includes('process-gpt.io')) {
+                        document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    } else {
+                        document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
+                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
+                    }
                 }
                 window.localStorage.setItem('accessToken', refreshData.session.access_token);
             }
         } catch (e) {
-            console.log(e)
+            console.error('Error in refreshSession:', e);
         }
     }
 
@@ -255,12 +290,17 @@ export default class StorageBaseSupabase {
             window.localStorage.removeItem('execution');
             window.localStorage.removeItem('role');
             
-            if (window.location.host.includes('process-gpt.io')) {
-                document.cookie = 'access_token=; domain=.process-gpt.io; path=/';
-                document.cookie = 'refresh_token=; domain=.process-gpt.io; path=/';
+            // Check if we're in webview mode
+            if (window.AndroidBridge) {
+                window.AndroidBridge.clearSession();
             } else {
-                document.cookie = 'access_token=; path=/';
-                document.cookie = 'refresh_token=; path=/';
+                if (window.location.host.includes('process-gpt.io')) {
+                    document.cookie = 'access_token=; domain=.process-gpt.io; path=/';
+                    document.cookie = 'refresh_token=; domain=.process-gpt.io; path=/';
+                } else {
+                    document.cookie = 'access_token=; path=/';
+                    document.cookie = 'refresh_token=; path=/';
+                }
             }
 
             return await window.$supabase.auth.signOut();
@@ -300,10 +340,15 @@ export default class StorageBaseSupabase {
                     }
                 }
             } else {
+                // 루트 페이지('/')에서는 로그인 체크를 하지 않음
+                if (window.location.pathname === '/') {
+                    return null;
+                }
+                
                 if (window.location.pathname != '/auth/login') {
                     await window.$app_.try({
                         action: () => Promise.reject(new Error()),
-                        errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
+                        // errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
                     });
                     window.location.href = '/auth/login';
                 }
@@ -611,24 +656,21 @@ export default class StorageBaseSupabase {
     async watch(path, channel, callback) {
         try {
             let obj = this.formatDataPath(path);
+            let watchOptions = {
+                event: '*',
+                schema: 'public',
+                table: obj.table,
+            }
             if (obj.table === 'chats' && path.startsWith('db://chats/')) {
                 obj.chatRoomIds = path.split('/')[3];
+                watchOptions.filter = obj.chatRoomIds ? `id=in.(${obj.chatRoomIds})` : null;
             }
             await window.$supabase
                 .channel(channel)
-                .on(
-                    'postgres_changes',
-                    {
-                        event: '*',
-                        schema: 'public',
-                        table: obj.table,
-                        filter: obj.chatRoomIds ? `id=in.(${obj.chatRoomIds})` : null
-                    },
-                    (payload) => {
-                        // console.log('Change received!', payload);
-                        callback(payload);
-                    }
-                )
+                .on('postgres_changes', watchOptions, (payload) => {
+                    // console.log('Change received!', payload);
+                    callback(payload);
+                })
                 .subscribe();
 
         } catch (error) {
@@ -785,19 +827,28 @@ export default class StorageBaseSupabase {
         try {
             if (value.session) {
                 window.localStorage.setItem('accessToken', value.session.access_token);
-                if (window.location.host.includes('process-gpt.io')) {
-                    document.cookie = `access_token=${value.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                    document.cookie = `refresh_token=${value.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                
+                // Check if we're in webview mode
+                if (window.AndroidBridge) {
+                    window.AndroidBridge.saveSessionToken(
+                        value.session.access_token,
+                        value.session.refresh_token
+                    );
                 } else {
-                    document.cookie = `access_token=${value.session.access_token}; path=/; SameSite=Lax`;
-                    document.cookie = `refresh_token=${value.session.refresh_token}; path=/; SameSite=Lax`;
+                    if (window.location.host.includes('process-gpt.io')) {
+                        document.cookie = `access_token=${value.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                        document.cookie = `refresh_token=${value.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    } else {
+                        document.cookie = `access_token=${value.session.access_token}; path=/; SameSite=Lax`;
+                        document.cookie = `refresh_token=${value.session.refresh_token}; path=/; SameSite=Lax`;
+                    }
                 }
             }
-            if (value.user) {
-                window.localStorage.setItem('author', value.user.email);
-                window.localStorage.setItem('uid', value.user.id);
+            if (value.session.user) {
+                window.localStorage.setItem('author', value.session.user.email);
+                window.localStorage.setItem('uid', value.session.user.id);
 
-                let filter = { id: value.user.id };
+                let filter = { id: value.session.user.id };
                 if (window.$tenantName) {
                     filter.tenant_id = window.$tenantName;
                 }
@@ -816,6 +867,39 @@ export default class StorageBaseSupabase {
                     window.localStorage.setItem('userName', data.username);
                     window.localStorage.setItem('email', data.email);
                     window.localStorage.setItem('uid', data.id);
+
+                    // FCM 토큰 처리 - user_devices 테이블 사용
+                    const fcm_token = localStorage.getItem('fcm_token');
+                    const userEmail = data.email;
+                    
+                    // user_devices 테이블에서 해당 유저 정보 확인
+                    const { data: deviceData, error: deviceError } = await window.$supabase
+                        .from('user_devices')
+                        .select('*')
+                        .eq('user_email', userEmail)
+                        .maybeSingle();
+                    
+                    if (deviceError && deviceError.code !== 'PGRST116') {
+                        console.error('user_devices 테이블 조회 오류:', deviceError);
+                    } else if (!deviceData) {
+                        // 해당 유저 정보가 없으면 새로 생성 (device_token은 null로 설정)
+                        await window.$supabase
+                            .from('user_devices')
+                            .insert({
+                                user_email: userEmail,
+                                device_token: null
+                            });
+                        console.log('user_devices 테이블에 새 유저 정보 생성:', userEmail);
+                    }
+                    
+                    // FCM 토큰이 있고, 기존 토큰과 다르면 업데이트
+                    if (fcm_token && (!deviceData?.device_token || deviceData.device_token !== fcm_token)) {
+                        await window.$supabase
+                            .from('user_devices')
+                            .update({ device_token: fcm_token })
+                            .eq('user_email', userEmail);
+                        console.log('user_devices 테이블에 FCM 토큰 업데이트:', fcm_token);
+                    }
 
                     const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: data.is_admin } });
                     window.dispatchEvent(event);
@@ -1151,13 +1235,26 @@ export default class StorageBaseSupabase {
     async uploadFile(fileName, file) {
         try {
             const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-            const { data, error } = await window.$supabase.storage.from('files').upload(sanitizedFileName, file);
+            const storageFileName = `uploads/${Date.now()}_${sanitizedFileName}`;
+            
+            const { data, error } = await window.$supabase.storage
+                .from('files')
+                .upload(storageFileName, file, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    metadata: {
+                        original_filename: fileName
+                    }
+                });
 
             if (error) {
                 return error;
             }
 
-            return data;
+            return {
+                ...data,
+                original_filename: fileName
+            };
         } catch (error) {
             throw new StorageBaseError('error in uploadFile', error, arguments);
         }
@@ -1174,6 +1271,37 @@ export default class StorageBaseSupabase {
             return data.publicUrl;
         } catch (error) {
             throw new StorageBaseError('error in getFileUrl', error, arguments);
+        }
+    }
+
+    async downloadFile(path) {
+        try {
+            const { data: urlData, error: urlError } = await window.$supabase.storage
+                .from('files')
+                .getPublicUrl(path);
+
+            if (urlError) {
+                console.log(urlError);
+                return urlError;
+            }
+
+            const response = await fetch(urlData.publicUrl);
+            const blob = await response.blob();
+            
+            const originalFileName = path.split('/').pop().split('_').slice(1).join('_');
+            const file = new File([blob], originalFileName, { type: blob.type });
+
+            if (file) {
+                return {
+                    file: file,
+                    file_path: path,
+                    originalFileName: originalFileName
+                };
+            } else {
+                return null;
+            }
+        } catch (error) {
+            throw new StorageBaseError('error in downloadFile', error, arguments);
         }
     }
 }

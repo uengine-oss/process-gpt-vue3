@@ -125,6 +125,11 @@ const MainRoutes = {
             path: '/account-settings',
             component: () => import('@/views/pages/account-settings/AccountSettings.vue')
         },
+        {
+            name: 'privacy',
+            path: '/privacy',
+            component: () => import('@/views/pages/privacy/Privacy.vue')
+        },
 
         // {
         //     name: 'Email',

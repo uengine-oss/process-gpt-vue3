@@ -5,6 +5,11 @@
                 <h2 v-if="isSimulate == 'true'">{{ $t('ProcessGPTExecute.processSimulate') }}</h2>
                 <h2 v-else>{{ $t('ProcessGPTExecute.processStart') }}</h2>
                 <v-spacer></v-spacer>
+                <div v-if="isSimulate == 'true'" style="margin: -20px;">
+                    <v-btn @click="closeDialog" icon size="small">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </div>
                 <div class="form-work-item-mobile ml-auto" v-if="!isCompleted">
                     <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
                 </div>
@@ -20,6 +25,7 @@
                                 :name="roleMapping.name"
                                 :item-value="'email'"
                                 :hide-details="true"
+                                :use-agent="true"
                             ></user-select-field>
                         </div>
                     </div>
@@ -65,7 +71,6 @@
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
 import WorkItem from '@/components/apps/todolist/WorkItem.vue';
-import OrganizationChart from "@/components/ui/OrganizationChart.vue";
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -75,7 +80,6 @@ export default {
     components: {
         AppBaseCard,
         WorkItem,
-        OrganizationChart,
         UserSelectField
     },
     props: {
@@ -88,8 +92,6 @@ export default {
         definition: null,
         workItem: null,
         roleMappings: [],
-        organizationChart: {},
-        userList: [],
         isMobile: false,
         activityIndex: 0,
         renderKey: 0,
@@ -211,18 +213,18 @@ export default {
         agentGenerationFinished(value) {
             if(value) {
                 this.processDefinition.activities[this.activityIndex].inputFormData = value.formValues;
-                // Check if activity with same ID already exists in simulationInstances
-                const existingIndex = this.simulationInstances.findIndex(
-                    instance => instance.id === this.processDefinition.activities[this.activityIndex].id
-                );
-                
-                if (existingIndex !== -1) {
-                    // If exists, update the existing instance
-                    this.simulationInstances[existingIndex] = this.processDefinition.activities[this.activityIndex];
-                } else {
-                    // If not exists, push as new instance
-                    this.simulationInstances.push(this.processDefinition.activities[this.activityIndex]);
-                }
+            }
+            // Check if activity with same ID already exists in simulationInstances
+            const existingIndex = this.simulationInstances.findIndex(
+                instance => instance.id === this.processDefinition.activities[this.activityIndex].id
+            );
+            
+            if (existingIndex !== -1) {
+                // If exists, update the existing instance
+                this.simulationInstances[existingIndex] = this.processDefinition.activities[this.activityIndex];
+            } else {
+                // If not exists, push as new instance
+                this.simulationInstances.push(this.processDefinition.activities[this.activityIndex]);
             }
         },
         backToPrevStep() {

@@ -6,6 +6,7 @@ class UEngineBackend implements Backend {
     // constructor() {
     //     super();
     // }
+
     async watchNotifications(onNotification?: (notification: any) => void) {
         return null;
     }
@@ -37,7 +38,7 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    async uploadFile(fileName: string, file: File) {
+    async uploadFile(fileName: string, file: File, storageType: string) {
         return null;
     }
 
@@ -912,6 +913,12 @@ class UEngineBackend implements Backend {
     async getTaskList() {
         console.warn("method is not implemented only use PalModeBackend");
         return null;
+    }
+
+    
+    async fetchNotifications() {
+        console.warn("method is not implemented only use Process-GPT Mode");
+        return [];
     }
 }
 

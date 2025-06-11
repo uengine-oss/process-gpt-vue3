@@ -71,8 +71,9 @@ export interface Backend {
     getWorkListAll(): Promise<any>;
     uploadImage(fileName: string, image: File): Promise<any>;
     getImageUrl(fileName: string): Promise<any>;
-    uploadFile(fileName: string, file: File): Promise<any>;
+    uploadFile(fileName: string, file: File, storageType: string): Promise<any>;
     getFileUrl(path: string): Promise<any>;
+    downloadFile(path: string): Promise<any>;
     getTenant(tenantId: string): Promise<any>;
     setTenant(tenantId: string): Promise<any>;
     updateUser(userInfo: any): Promise<any>;

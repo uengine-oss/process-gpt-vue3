@@ -31,16 +31,16 @@
         "title": "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
-    "headerMenu" : {
+    "headerMenu": {
         "sidebar" : "메뉴 접기 펼치기",
         "dashboard" : "대시보드",
-        "todoList" : "할 일",
+        "todoList" : "내 업무 목록",
         "calendar" : "달력",
         "layoutSetting" : "레이아웃 설정",
         "admin" : "관리자 페이지"
     },
     "DashboardTodoList": {
-        "todo": "할 일",
+        "todo": "내 업무 목록",
         "inProgress": "진행 중",
         "done": "완료"
     },
@@ -57,8 +57,8 @@
         "welcome": "환영합니다."
     },
     "todoList": {
-        "title": "할 일 목록",
-        "todo": "할 일",
+        "title": "내 업무 목록",
+        "todo": "예정업무",
         "inProgress": "진행 중",
         "pending": "보류 중",
         "done": "완료됨"
@@ -170,19 +170,31 @@
         "deleteMessage1": "님을 삭제하시겠습니까?",
         "from": "에서",
         "edit": "수정",
+        "save": "저장",
         "add": "추가",
         "delete": "삭제",
         "close": "닫기",
-        "addNewUser": "신규 사용자 추가",
+        "addNewUser": "신규 사용자(팀원) 추가",
+        "addNewAgent": "신규 에이전트 추가",
         "userName": "이름",
         "userEmail": "이메일",
+        "idRequired": "ID를 입력해주세요.",
         "nameRequired": "이름을 입력해주세요.",
         "emailRequired": "이메일을 입력해주세요.",
         "emailInvalid": "유효하지 않은 이메일 형식입니다.",
         "emailAlreadyExists": "이미 존재하는 이메일입니다.",
         "addUserSuccess": "사용자가 추가되었습니다.",
         "addUserFailed": "사용자 추가에 실패했습니다.",
-        "addNewUserExplanation": "신규 사용자를 추가하려면 이름과 이메일을 입력해 주세요. 입력된 이메일 주소로 회원가입이 자동 처리되며, 초기 비밀번호는 000000으로 설정됩니다."
+        "addNewUserExplanation": "신규 사용자를 추가하려면 이름과 이메일을 입력해 주세요. 입력된 이메일 주소로 회원가입이 자동 처리되며, 초기 비밀번호는 000000으로 설정됩니다.",
+        "agent": "에이전트",
+        "deleteAgentExplanation": "팀원 삭제가 아닌 영구 삭제입니다. 삭제된 에이전트는 복구할 수 없습니다. 팀원 삭제를 원하신다면 소속 팀의 + 버튼을 눌러 팀원을 수정해주세요."
+    },
+    "agentField": {
+        "agentId": "에이전트 ID",
+        "agentName": "이름",
+        "agentRole": "역할",
+        "agentGoal": "목표",
+        "agentPersona": "페르소나"
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
@@ -316,7 +328,13 @@
         "phone": "전화번호",
         "address": "주소",
         "save": "저장",
-        "manageAccess": "역할 관리"
+        "manageAccess": "역할 관리",
+        "drive": "구글 드라이브 설정",
+        "clientId": "클라이언트 ID",
+        "clientSecret": "클라이언트 Secret",
+        "folderId": "폴더 ID",
+        "edit": "수정",
+        "cancel": "취소"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -360,6 +378,7 @@
         "title": "회사 관리",
         "subTitle1": "새로운 회사를 생성하거나 선택한 회사가 관리하는 페이지로 이동합니다.",
         "subTitle2": "(* 모바일 환경에서는 가입 진행이 불가능합니다.)",
+        "subTitle3": "회사를 선택하시면 선택한 회사가 관리하는 페이지로 이동합니다.",
         "createCompany": "회사 생성"
     },
     "tenantInfoField": {
@@ -535,6 +554,11 @@
     },
     "UserTaskPanel" : {
         "default" : "기본", 
+        "defaultInfo": "현재 태스크의 역할에 해당하는 사용자 모두가 이 업무를 확인할 수 있습니다.  가장 먼저 업무를 선택한 사용자가 담당자로 지정됩니다.",
+        "sharedGroupInfo": "선택된 공동 담당 그룹에 속한 사용자는 모두 이 업무를 확인할 수 있으며, 먼저 선택한 사용자가 담당자가 됩니다.  ex) 작성자,검토자",
+        "assigneeInfo": "지정된 단일 사용자에게만 이 업무가 할당되며, 다른 사용자는 열람할 수 없습니다.",
+        "loadBalancingInfo": "지정된 그룹 내 사용자에게 자동으로 업무를 분배합니다. 분배 전략을 선택할 수 있습니다.",
+        "expressionInfo": "표현식을 기반으로 실행 시 동적으로 담당자를 결정합니다. ex) ${initiatorManager}",
         "form" : "폼", 
         "external" : "외부 어플리케이션",
         "formCreateDialog" : "폼 생성을 하시겠습니까?",
@@ -542,11 +566,11 @@
         "no" : "아니오",
         "radioSelectDescriptionTitle": "데이터 처리 방식 선택: 기본 데이터 처리, 커스텀 화면 생성, 외부 시스템 연동.",
         "radioSelectDescriptionSubTitle1": "1. 기본 : 기본적인 데이터 사용 \n2. 폼 : 화면 정의에서 생성한 화면 \n3. 외부 어플리케이션 : 업무 화면 URL 입력 필드 생성",
-        "assignmentType": "할당 유형",
-        "defaultAssignment": "기본 할당",
-        "competitionAssignment": "경쟁 할당",
-        "directAssignment": "직접 할당",
-        "automaticAssignment": "자동 할당",
+        "assignmentType": "업무 할당 방식",
+        "assignee": "담당자 지정",
+        "sharedGroup": "공동 담당 그룹",
+        "expression": "표현식 기반",
+        "loadBalancing": "로드 밸런싱",
         "taskType": "작업 유형",
         "descriptionTo": "할당 대상",
         "descriptionToTitle": "할당 대상 입력",
@@ -554,7 +578,12 @@
         "inputForm": "참조 폼",
         "outputForm": "작성 폼",
         "addFormParameter": "폼 추가",
-        "removeFormParameter": "폼 삭제"
+        "removeFormParameter": "폼 삭제",
+        "loadBalancingGroup": "로드밸런싱 그룹",
+        "loadBalancingStrategy": "할당 전략",
+        "roundRobin": "라운드 로빈 (순차 할당)",
+        "leastTasks": "최소 작업량 우선",
+        "idle": "오래 쉰 사용자 우선"
     },
     "Mapper" : {
         "mapper" : "매퍼"
@@ -835,7 +864,7 @@
         "processExecutionPerformance": "프로세스 실행실적",
         "startDate": "시작일",
         "endDate": "종료일",
-        "toDo": "예정 업무",
+        "toDo": "예정업무",
         "inProcess": "진행 중",
         "done": "완료 됨",
         "all": "전체",
@@ -847,7 +876,8 @@
         "workItem": "워크 아이템",
         "workHistory": "워크 히스토리",
         "ganttChart": "간트 차트",
-        "sendEvent": "{event} 이벤트 보내기"
+        "sendEvent": "{event} 이벤트 보내기",
+        "output": "산출물"
     },
     "DryRunProcess": {
         "notFound": "워크아이템을 찾을 수 없습니다."
@@ -892,5 +922,79 @@
         "submit": "제출",
         "submitted": "제출 완료",
         "submittedMessage": "제출되었습니다."
+    },
+    "ProcessDefinitionChatHeader": {
+        "addMarketplace" : "마켓플레이스 등록"
+    },
+    "ProcessDefinitionMarketPlaceDialog": {
+        "title": "마켓플레이스 등록",
+        "processId": "프로세스 아이디",
+        "processName": "프로세스 이름",
+        "description": "설명",
+        "category1": "카테고리1",
+        "category2": "카테고리2",
+        "tags": "태그",
+        "register": "등록",
+        "requiredField": "필수 입력 항목입니다"
+    },
+    "ProcessDefinitionMarketPlace": {
+        "searchPlaceholder": "프로세스 이름, 작성자, 태그 검색",
+        "allCategory": "전체",
+        "searchResultTitle": "검색 결과",
+        "searchingTitle": "검색 중...",
+        "relatedTemplates": "관련 템플릿",
+        "addedButton": "추가됨",
+        "addButton": "추가",
+        "otherCategory": "기타",
+        "countUnit": "개",
+        "allTemplates": "전체 템플릿"
+    },
+    "ContentEditorField": {
+        "contentEditor": "콘텐츠 편집기",
+        "editContent": "콘텐츠 편집",
+        "mode": "모드"
+    },
+    "PptxExportHelper": {
+        "title": "파워포인트 내보내기",
+        "configureOptions": "파워포인트 내보내기 옵션 설정:",
+        "includeSpeakerNotes": "발표자 노트 포함",
+        "presentationName": "프레젠테이션 이름",
+        "exportButton": "파워포인트로 내보내기",
+        "cancelButton": "취소"
+    },
+    "SlideEditor": {
+        "title": "슬라이드 프레젠테이션 편집기",
+        "addSlide": "슬라이드 추가",
+        "exportMarkdown": "MD 내보내기",
+        "exportPdf": "PDF 내보내기",
+        "exportPptx": "파워포인트 내보내기",
+        "exportWord": "워드 내보내기",
+        "import": "가져오기",
+        "presentation": "프레젠테이션",
+        "preview": "미리보기 입니다."
+    },
+    "WordExportHelper": {
+        "title": "워드 내보내기",
+        "configureOptions": "워드 내보내기 옵션 설정:",
+        "documentName": "문서 이름",
+        "exportButton": "워드로 내보내기",
+        "cancelButton": "취소"
+    },
+    "PdfExportHelper": {
+        "title": "PDF 내보내기",
+        "instructions": "PDF 내보내기 안내",
+        "step1": "아래의 \"PDF 준비하기\" 버튼을 클릭하세요",
+        "step2": "페이지가 다시 로드되면 브라우저에서 CTRL/CMD+P를 누르세요",
+        "step3": "인쇄 대화상자에서 대상을 PDF로 저장으로 설정하세요",
+        "step4": "레이아웃을 가로로 설정하세요",
+        "step5": "여백을 없음으로 설정하세요",
+        "step6": "배경 그래픽 옵션을 활성화하세요",
+        "step7": "저장을 클릭하세요",
+        "includeNotes": "발표자 노트 포함",
+        "overlayNotes": "노트 오버레이",
+        "separatePage": "별도 페이지",
+        "separateFragments": "프래그먼트를 다른 슬라이드로 분리",
+        "prepareButton": "PDF 준비하기",
+        "cancelButton": "취소"
     }
 }

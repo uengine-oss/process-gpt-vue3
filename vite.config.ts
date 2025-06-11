@@ -25,7 +25,9 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./src', import.meta.url)),
             'apextree': path.resolve(__dirname, 'node_modules/apextree/apextree.min.js'),
             '@fullcalendar/core': path.resolve(__dirname, 'node_modules/@fullcalendar/core'),
-            'vue': 'vue/dist/vue.esm-bundler.js'
+            'vue': 'vue/dist/vue.esm-bundler.js',
+            // Node.js 내장 모듈들을 빈 객체로 대체 (브라우저 환경에서 사용 불가)
+            'https': 'rollup-plugin-node-polyfills/polyfills/empty'
         }
     },
     css: {
@@ -77,10 +79,17 @@ export default defineConfig({
                 changeOrigin: true
             },
         }
+    },
+    build: {
+        rollupOptions: {
+            // Node.js 내장 모듈들을 외부 모듈로 처리하여 번들에서 제외
+            external: ['https'],
+            output: {
+                // 외부 모듈에 대한 globals 설정
+                globals: {
+                    'https': '{}'
+                }
+            }
+        }
     }
-    // build: {
-    //     rollupOptions: {
-    //         treeshake:  false 
-    //     }
-    // },
 });
