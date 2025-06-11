@@ -67,7 +67,7 @@ export default {
             }
             const formList = await backend.listDefinition('form_def', formOptions);
             
-            const taskList = await backend.getAllWorkListByInstId(this.instance.instanceId);
+            const taskList = await backend.getAllWorkListByInstId(this.instance.instId);
             const sortedTaskList = taskList.sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
 
             const outputList = [];
