@@ -84,7 +84,7 @@ const customizer = useCustomizerStore();
                     class="text-medium-emphasis cp-menu mt-3 ml-2"
                 >
                     {{ $t('VerticalSidebar.projectList') }} 
-                    <v-btn @click="openNewProject()"> + </v-btn>
+                    <!-- <v-btn @click="openNewProject()"> + </v-btn> -->
                 </div>
                 <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
                     <ProjectList/>
@@ -95,7 +95,9 @@ const customizer = useCustomizerStore();
                     class="text-medium-emphasis cp-menu mt-3 ml-2"
                 >{{ $t('VerticalSidebar.instanceList') }}</div>
                 <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
-                    <InstanceList/>
+                    <ProcessInstanceList
+                        @update:instanceLists="handleInstanceListUpdate" 
+                    />
                 </v-col>
 
                 <v-col class="pa-0" style="flex: 0 0 auto;">
@@ -244,14 +246,14 @@ const customizer = useCustomizerStore();
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import ProjectList from '@/components/ui/ProjectList.vue';
-import InstanceList from '@/components/ui/InstanceList.vue';
+// import InstanceList from '@/components/ui/InstanceList.vue';
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
         ProcessInstanceList,
         ProjectList,
-        InstanceList
+        // InstanceList
     },
     data: () => ({
         sidebarItem: [],

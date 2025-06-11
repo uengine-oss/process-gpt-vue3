@@ -53,14 +53,38 @@ import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin.js'
 export default {
   name: 'WordExportHelper',
   mixins: [ThemeColorMixin],
-  setup() {
-    const showModal = ref(false)
-    const fileName = ref('document.docx')
+  props: {
+    modelValue: {
+      type: String,
+      default: ''
+    }
+  },
+  mounted() {
+    this.init();
+  },
+  data() {
+    return {
+      showModal: false,
+      fileName: 'document.docx',
+      i18n,
+    }
+  },
+  methods: {
+    init() {
+      // 필요하면 초기화 로직 작성
+    },
 
-    // 마크다운을 docx Paragraph 배열로 변환
-    const markdownToDocxParagraphs = (markdown) => {
-      const tokens = marked.lexer(markdown)
-      const paragraphs = []
+    openModal() {
+      this.showModal = true;
+    },
+
+    closeModal() {
+      this.showModal = false;
+    },
+
+    markdownToDocxParagraphs(markdown) {
+      const tokens = marked.lexer(markdown);
+      const paragraphs = [];
       tokens.forEach(token => {
         if (token.type === 'heading') {
           paragraphs.push(
@@ -75,9 +99,9 @@ export default {
                 6: HeadingLevel.HEADING_6,
               }[token.depth] || HeadingLevel.HEADING_1
             })
-          )
+          );
         } else if (token.type === 'paragraph') {
-          paragraphs.push(new Paragraph(token.text))
+          paragraphs.push(new Paragraph(token.text));
         } else if (token.type === 'list') {
           token.items.forEach(item => {
             paragraphs.push(
@@ -86,8 +110,8 @@ export default {
                 bullet: token.ordered ? undefined : { level: 0 },
                 numbering: token.ordered ? { reference: 'numbered-list', level: 0 } : undefined
               })
-            )
-          })
+            );
+          });
         } else if (token.type === 'code') {
           paragraphs.push(
             new Paragraph({
@@ -100,37 +124,29 @@ export default {
                 })
               ]
             })
-          )
+          );
         } else if (token.type === 'blockquote') {
           paragraphs.push(
             new Paragraph({
               text: token.text,
               style: 'Quote'
             })
-          )
+          );
         } else if (token.type === 'hr') {
-          paragraphs.push(new Paragraph({ text: '---' }))
+          paragraphs.push(new Paragraph({ text: '---' }));
         }
-        // 표, 이미지 등은 미지원
-      })
-      return paragraphs
-    }
+      });
+      return paragraphs;
+    },
 
-    const openModal = () => {
-      showModal.value = true
-    }
-
-    const closeModal = () => {
-      showModal.value = false
-    }
-
-    const exportToDocx = async () => {
-      const markdownContent = localStorage.getItem('markdownContent')
+    async exportToDocx() {
+      let me = this;
+      const markdownContent = me.modelValue;
       if (!markdownContent) {
-        alert('No document content found.')
-        return
+        alert('No document content found.');
+        return;
       }
-      const paragraphs = markdownToDocxParagraphs(markdownContent)
+      const paragraphs = me.markdownToDocxParagraphs(markdownContent);
       const doc = new Document({
         sections: [
           {
@@ -138,19 +154,10 @@ export default {
             children: paragraphs
           }
         ]
-      })
-      const blob = await Packer.toBlob(doc)
-      saveAs(blob, fileName.value || 'document.docx')
-      closeModal()
-    }
-
-    return {
-      i18n,
-      showModal,
-      fileName,
-      openModal,
-      closeModal,
-      exportToDocx
+      });
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, me.fileName || 'document.docx');
+      me.closeModal();
     }
   }
 }

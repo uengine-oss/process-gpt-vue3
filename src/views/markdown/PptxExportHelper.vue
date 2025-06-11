@@ -59,143 +59,125 @@ import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin.js'
 export default {
   name: 'PptxExportHelper',
   mixins: [ThemeColorMixin],
-  setup() {
-    const showModal = ref(false)
-    const includeNotes = ref(true)
-    const fileName = ref('presentation.pptx')
+  props: {
+    modelValue: {
+      type: String,
+      default: ''
+    }
+  },
+  mounted() {
+    this.init();
+  },
+  data() {
+  return {
+      showModal: false,
+      includeNotes: true,
+      fileName: 'presentation.pptx',
+      i18n,
+    }
+  },
+  methods: {
+    init() {
+      // 초기화용 훅 (필요 시 사용)
+    },
 
-    // Parse markdown content into slides
-    const parseMarkdownSlides = (markdown) => {
-      // Split horizontal slides
-      const horizontalSlides = markdown.split(/^\n*---\n*$/gm)
-      
-      // Process each slide
+    openModal() {
+      this.showModal = true;
+    },
+
+    closeModal() {
+      this.showModal = false;
+    },
+
+    parseMarkdownSlides(markdown) {
+      // 수평 슬라이드 기준 분할
+      const horizontalSlides = markdown.split(/^\n*---\n*$/gm);
+
       return horizontalSlides.map(slideContent => {
-        // Check for vertical slides
-        const verticalSlides = slideContent.split(/^\n*--\n*$/gm)
-        
-        // Process speaker notes
+        const verticalSlides = slideContent.split(/^\n*--\n*$/gm);
+
         const processSlide = (content) => {
-          let slideText = content.trim()
-          let notes = ''
-          
-          // Extract speaker notes if present
-          const notesMatch = slideText.match(/Note:([\s\S]+?)(?=\n*$|^\n*--\n*|^\n*---\n*)/m)
+          let slideText = content.trim();
+          let notes = '';
+
+          const notesMatch = slideText.match(/Note:([\s\S]+?)(?=\n*$|^\n*--\n*|^\n*---\n*)/m);
           if (notesMatch) {
-            notes = notesMatch[1].trim()
-            // Remove notes from slide content
-            slideText = slideText.replace(/Note:[\s\S]+?(?=\n*$|^\n*--\n*|^\n*---\n*)/m, '').trim()
+            notes = notesMatch[1].trim();
+            slideText = slideText.replace(/Note:[\s\S]+?(?=\n*$|^\n*--\n*|^\n*---\n*)/m, '').trim();
           }
-          
-          return { content: slideText, notes }
-        }
-        
-        // If there are vertical slides, process each one
+
+          return { content: slideText, notes };
+        };
+
         if (verticalSlides.length > 1) {
-          return verticalSlides.map(processSlide)
+          return verticalSlides.map(processSlide);
         }
-        
-        // Single slide
-        return [processSlide(verticalSlides[0])]
-      })
-    }
 
-    const openModal = () => {
-      showModal.value = true
-    }
+        return [processSlide(verticalSlides[0])];
+      });
+    },
 
-    const closeModal = () => {
-      showModal.value = false
-    }
+    exportToPptx() {
+      let me = this;
+      const markdownContent = me.modelValue;
 
-    const exportToPptx = () => {
-      // Get markdown content from localStorage
-      const markdownContent = localStorage.getItem('markdownContent')
-      
       if (!markdownContent) {
-        alert('No presentation content found.')
-        return
+        alert('No presentation content found.');
+        return;
       }
-      
-      // Parse slides
-      const slides = parseMarkdownSlides(markdownContent)
-      
-      // Create PowerPoint
-      const pres = new pptxgen()
-      
-      // Set presentation properties
-      pres.layout = 'LAYOUT_16x9'
-      
-      // Process each slide
+
+      const slides = me.parseMarkdownSlides(markdownContent);
+
+      const pres = new pptxgen();
+      pres.layout = 'LAYOUT_16x9';
+
       slides.forEach(slideGroup => {
-        // Handle vertical slides
         slideGroup.forEach(slide => {
-          // Create a new slide
-          const pptSlide = pres.addSlide()
-          
-          // Get content and notes
-          const { content, notes } = slide
-          
-          // Add slide content
-          const lines = content.split('\n')
-          let slideTitle = ''
-          let slideBody = ''
-          
-          // Extract title from first line if it's a heading
+          const pptSlide = pres.addSlide();
+          const { content, notes } = slide;
+
+          const lines = content.split('\n');
+          let slideTitle = '';
+          let slideBody = '';
+
           if (lines[0]?.startsWith('#')) {
-            slideTitle = lines[0].replace(/^#+\s*/, '')
-            lines.shift()
+            slideTitle = lines[0].replace(/^#+\s*/, '');
+            lines.shift();
           }
-          
-          // Remaining content becomes the body
-          slideBody = lines.join('\n')
-          
-          // Add title if present
+
+          slideBody = lines.join('\n');
+
           if (slideTitle) {
-            pptSlide.addText(slideTitle, { 
-              x: 0.5, 
-              y: 0.5, 
+            pptSlide.addText(slideTitle, {
+              x: 0.5,
+              y: 0.5,
               w: '90%',
               fontSize: 36,
               bold: true,
-              color: '363636' 
-            })
+              color: '363636'
+            });
           }
-          
-          // Add body content
+
           if (slideBody) {
-            pptSlide.addText(slideBody, { 
-              x: 0.5, 
-              y: slideTitle ? 1.5 : 0.5, 
+            pptSlide.addText(slideBody, {
+              x: 0.5,
+              y: slideTitle ? 1.5 : 0.5,
               w: '90%',
               h: slideTitle ? 4 : 5,
               fontSize: 24,
-              color: '363636' 
-            })
+              color: '363636'
+            });
           }
-          
-          // Add speaker notes if enabled
-          if (includeNotes.value && notes) {
-            pptSlide.addNotes(notes)
-          }
-        })
-      })
-      
-      // Save the presentation
-      pres.writeFile({ fileName: fileName.value || 'presentation.pptx' })
-      
-      // Close the modal
-      closeModal()
-    }
 
-    return {
-      i18n,
-      showModal,
-      includeNotes,
-      fileName,
-      openModal,
-      closeModal,
-      exportToPptx
+          if (me.includeNotes && notes) {
+            pptSlide.addNotes(notes);
+          }
+        });
+      });
+
+      pres.writeFile({ fileName: me.fileName || 'presentation.pptx' });
+
+      me.closeModal();
     }
   }
 }
