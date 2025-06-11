@@ -9,7 +9,7 @@
 </template>
 
 <script>
-import gsap from 'https://cdn.skypack.dev/gsap';
+import gsap from 'gsap';
 import { Icon } from '@iconify/vue';
 
 export default {
