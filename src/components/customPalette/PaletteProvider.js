@@ -218,6 +218,33 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
   
       originalWaypoints[sequenceFlow.id] = newWaypoints;
     });
+
+    let rotatedLabelBounds = [];
+    childElements.forEach(child => {
+      if (child.type === 'bpmn:SequenceFlow') {
+        const label = child.labels[0];
+        if(label) {
+          const labelBounds = label.di.label.bounds;
+
+          const originalCenterX = labelBounds.x + (labelBounds.width / 2);
+          const originalCenterY = labelBounds.y + (labelBounds.height / 2);
+  
+          const relativeX = originalCenterX - oldParticipantBounds.x;
+          const relativeY = originalCenterY - oldParticipantBounds.y;
+  
+          const rotatedX = relativeY * 1.2 * SCALE_FIX;
+          const rotatedY = relativeX * 0.8 * SCALE_FIX;
+  
+          const newLabelBounds = {
+            x: newParticipantBounds.x + rotatedX - (labelBounds.width / 2),
+            y: newParticipantBounds.y + rotatedY - (labelBounds.height / 2),
+            width: labelBounds.width,
+            height: labelBounds.height
+          };
+          rotatedLabelBounds.push({label: label, bounds: newLabelBounds});
+        }
+      }
+    });
   
     // 🧭 기타 노드 위치 보정
     childElements.forEach(child => {
@@ -246,6 +273,10 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
           modeling.resizeShape(child, newChildBounds);
         }
       }
+
+      rotatedLabelBounds.forEach(label => {
+        modeling.resizeShape(label.label, label.bounds);
+      });
     });
 
     adjustParticipantBoundsByLanes(element, lanes, false);
@@ -257,6 +288,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
         waypoints: originalWaypoints[sequenceFlow.id]
       });
     });
+
   }
   
   
@@ -356,6 +388,35 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
   
       originalWaypoints[sequenceFlow.id] = newWaypoints;
     });
+
+    let rotatedLabelBounds = [];
+
+
+    childElements.forEach(child => {
+      if (child.type === 'bpmn:SequenceFlow') {
+        const label = child.labels[0];
+        if(label) {
+          const labelBounds = label.di.label.bounds;
+  
+          const originalCenterX = labelBounds.x + (labelBounds.width / 2);
+          const originalCenterY = labelBounds.y + (labelBounds.height / 2);
+          
+          const relativeX = originalCenterX - oldParticipantBounds.x;
+          const relativeY = originalCenterY - oldParticipantBounds.y;
+  
+          const rotatedX = relativeY * 1.2;
+          const rotatedY = relativeX * 0.8;
+  
+          const newLabelBounds = {
+            x: newParticipantBounds.x + rotatedX - (labelBounds.width / 2),
+            y: newParticipantBounds.y + rotatedY - (labelBounds.height / 2),
+            width: labelBounds.width,
+            height: labelBounds.height
+          };
+          rotatedLabelBounds.push({label: label, bounds: newLabelBounds});
+        }
+      }
+    });
   
     // 🧭 기타 노드 보정
     childElements.forEach(child => {
@@ -394,6 +455,12 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
       modeling.updateProperties(sequenceFlow, {
         waypoints: originalWaypoints[sequenceFlow.id]
       });
+    });
+
+
+    
+    rotatedLabelBounds.forEach(label => {
+      modeling.resizeShape(label.label, label.bounds);
     });
   }
   

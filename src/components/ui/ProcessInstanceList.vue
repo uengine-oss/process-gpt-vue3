@@ -32,12 +32,14 @@ export default {
         NavItem
     },
     data: () => ({
+        instanceList: [],
+        //
+        myGroupInstanceList: [],
+        intervalId: null,
         runningInstances: {
             header: 'runningInstance.title',
         },
-        instanceList: [],
-        myGroupInstanceList: [],
-        intervalId: null,
+        
     }),
     async created() {
         await this.init();
@@ -69,12 +71,12 @@ export default {
             let result = await backend.getInstanceList();
             if (!result) result = [];
             this.instanceList = result.map((item) => {
+                const title = item.name;
                 const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
-                const title = item.instName;
                 item = {
                     // icon: 'ph:cube',
                     title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
-                    to: `/instancelist/${route}`,
+                    to: `/instance/${route}`,
                     BgColor:'primary',
                     isNew: item.status == 'NEW'
                 };
@@ -92,7 +94,7 @@ export default {
                 const title = item.instName;
                 return {
                     title: title,
-                    to: `/instancelist/${route}`,
+                    to: `/instance/${route}`,
                     BgColor:'primary'
                 };
             });
@@ -106,11 +108,13 @@ export default {
                 const title = item.instName;
                 return {
                     title: title,
-                    to: `/instancelist/${route}`,
+                    to: `/instance/${route}`,
                     BgColor:'primary'
                 };
             });
         }
+        
+        
     }
 };
 </script>

@@ -694,6 +694,10 @@ create table if not exists public.bpm_proc_inst (
     status text null,
     tenant_id text null default public.tenant_id(),
     proc_def_version text null,
+    project_id uuid null,
+    start_date timestamp without time zone null,
+    end_date timestamp without time zone null,
+    due_date timestamp without time zone null,
     constraint bpm_proc_inst_pkey primary key (proc_inst_id),
     constraint bpm_proc_inst_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -729,6 +733,18 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bpm_proc_inst' AND column_name='proc_def_version') THEN
         ALTER TABLE public.bpm_proc_inst ADD COLUMN proc_def_version text null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bpm_proc_inst' AND column_name='project_id') THEN
+        ALTER TABLE public.bpm_proc_inst ADD COLUMN project_id uuid null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bpm_proc_inst' AND column_name='start_date') THEN
+        ALTER TABLE public.bpm_proc_inst ADD COLUMN start_date timestamp without time zone null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bpm_proc_inst' AND column_name='end_date') THEN
+        ALTER TABLE public.bpm_proc_inst ADD COLUMN end_date timestamp without time zone null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bpm_proc_inst' AND column_name='due_date') THEN
+        ALTER TABLE public.bpm_proc_inst ADD COLUMN due_date timestamp without time zone null;
     END IF;
 END;
 $$;
@@ -789,6 +805,7 @@ create table if not exists public.todolist (
     retry integer null default 0,
     consumer text null,
     log text null,
+    project_id uuid null,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -857,6 +874,9 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='log') THEN
         ALTER TABLE public.todolist ADD COLUMN log text null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='todolist' AND column_name='project_id') THEN
+        ALTER TABLE public.todolist ADD COLUMN project_id uuid null;
     END IF;
 END;
 $$;
@@ -1731,6 +1751,76 @@ CREATE POLICY tenant_oauth_delete_policy
     USING (EXISTS ( SELECT 1
    FROM users
   WHERE ((users.id = auth.uid()) AND (users.is_admin = true))));
+
+
+
+create table if not exists public.project (
+    name character varying null,
+    start_date date null,
+    end_date date null,
+    created_date date null,
+    status character varying not null,
+    project_id uuid not null default gen_random_uuid (),
+    due_date date null,
+    constraint project_pkey primary key (project_id)
+) tablespace pg_default;
+
+
+
+create table if not exists public.milestone (
+    id bigserial,
+    impact_type character varying null,
+    impact_desc text null,
+    created_date date null,
+    task_id uuid null,
+    impact_id uuid null,
+    constraint milestone_pkey primary key (id),
+    constraint fk_milestone_task foreign key (task_id) references worklist (task_id),
+    constraint fk_milestone_impact_id foreign key (impact_id) references worklist (task_id),
+    constraint fk_milestone_impact foreign key (impact_id) references worklist (task_id)
+) tablespace pg_default;
+
+
+
+create table if not exists public.task_dependency (
+    id bigserial,
+    lag_time integer null,
+    lead_time integer null,
+    type character varying null,
+    created_date date null,
+    task_id uuid null,
+    depends_id uuid null,
+    constraint worklist_dependency_pkey primary key (id)
+) tablespace pg_default;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_views
+        WHERE viewname = 'v_task_dependency'
+        AND schemaname = 'public'
+    ) THEN
+        CREATE VIEW public.v_task_dependency AS
+        SELECT
+            d.id,
+            d.lag_time,
+            d.lead_time,
+            d.type,
+            d.created_date,
+            d.task_id,
+            d.depends_id,
+            t.proc_inst_id,
+            t.project_id
+        FROM
+            task_dependency d
+            JOIN todolist t ON d.task_id = t.id;
+    END IF;
+END;
+$$;
+
 
 
 

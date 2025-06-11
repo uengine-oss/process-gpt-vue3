@@ -45,7 +45,7 @@ export default {
                 profile: 'https://avatars0.githubusercontent.com/u/9064066?v=4&s=460',
                 roleName: workItem.task.roleName,
                 _item: workItem,
-                content: workItem.title,
+                content: workItem.name,
                 description: workItem.description,
                 timeStamp: workItem.startDate
             }));
@@ -61,7 +61,7 @@ export default {
                 context: me,
                 action: async () => {
                     if (me.instance) {
-                        me.workListByInstId = await backend.getWorkListByInstId(me.instance.instanceId);
+                        me.workListByInstId = await backend.getWorkListByInstId(me.instance.instId);
                         me.updatedKey++;
                     }
                 }

@@ -62,12 +62,12 @@ export default {
             
             const formOptions = {
                 match: {
-                    proc_def_id: this.instance.proc_def_id, 
+                    proc_def_id: this.instance.defId, 
                 }
             }
             const formList = await backend.listDefinition('form_def', formOptions);
             
-            const taskList = await backend.getAllWorkListByInstId(this.instance.instanceId);
+            const taskList = await backend.getAllWorkListByInstId(this.instance.instId);
             const sortedTaskList = taskList.sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
 
             const outputList = [];
@@ -97,7 +97,6 @@ export default {
                     }
                 }
             })
-            console.log(outputList);
             this.outputList = outputList;
         },
     },

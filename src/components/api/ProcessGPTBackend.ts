@@ -350,13 +350,29 @@ class ProcessGPTBackend implements Backend {
                 }
             };
             const instance = await storage.getObject('bpm_proc_inst', options);
-            if (instance) {
-                instance.defId = instance.proc_def_id;
-                instance.instanceId = instanceId;
-                instance.name = instance.proc_inst_name;
-                instance.defVer = instance.proc_def_version;
-            }
-            return instance;
+            // const instance = await storage.getObject('instance', { match: { 'instance_id': instanceId } });
+            // if (instance) {
+            //     instance.defId = instance.proc_def_id;
+            //     instance.instanceId = instanceId;
+            //     instance.name = instance.proc_inst_name;
+            //     instance.defVer = instance.proc_def_version;
+            // }
+            return this.returnInstanceObject(instance);
+            // return  {
+            //     instId: instance.proc_inst_id,
+            //     defId: instance.proc_def_id,
+            //     name: instance.proc_inst_name,
+            //     projectId: instance.project_id,
+            //     currentActivityIds: instance.current_activity_ids,
+            //     currentUserIds: instance.current_user_ids,
+            //     roleBindings: instance.role_bindings,
+            //     variables_data: instance.variables_data,
+            //     status: instance.status,
+            //     tenantId: instance.tenant_id,
+            //     startDate: instance.start_date,
+            //     endDate: instance.end_date,
+            //     dueDate: instance.due_date,
+            // };
         } catch (e) {
             
             //@ts-ignore
@@ -367,10 +383,56 @@ class ProcessGPTBackend implements Backend {
     async getAllInstanceList(page: any, size: any) {
         try {
             const list = await storage.list('bpm_proc_inst');
-            return list;
+            return list.map((item: any) => {
+                return this.returnInstanceObject(item);
+                // return {
+                //     instId: item.proc_inst_id,
+                //     defId: item.proc_def_id,
+                //     name: item.proc_inst_name,
+                //     projectId: item.project_id,
+                //     currentActivityIds: item.current_activity_ids,
+                //     currentUserIds: item.current_user_ids,
+                //     roleBindings: item.role_bindings,
+                //     variables_data: item.variables_data,
+                //     status: item.status,
+                //     tenantId: item.tenant_id,
+                //     startDate: item.start_date,
+                //     endDate: item.end_date,
+                //     dueDate: item.due_date,
+                // }
+            })
         } catch (e) {
             //@ts-ignore
             throw new Error(e.message);
+        }
+    }
+
+    async getInstanceByProjectId(projectId: number) {
+        try {
+            const list = await storage.list('bpm_proc_inst', {match: { 'project_id': projectId } });
+
+            return list.map((item: any) => {
+                return this.returnInstanceObject(item);
+                // return {
+                //     instId: item.proc_inst_id,
+                //     defId: item.proc_def_id,
+                //     name: item.proc_inst_name,
+                //     projectId: item.project_id,
+                //     currentActivityIds: item.current_activity_ids,
+                //     currentUserIds: item.current_user_ids,
+                //     roleBindings: item.role_bindings,
+                //     variables_data: item.variables_data,
+                //     status: item.status,
+                //     tenantId: item.tenant_id,
+                //     startDate: item.start_date,
+                //     endDate: item.end_date,
+                //     dueDate: item.due_date,
+                // }
+            })
+        } catch (error) {
+            
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 
@@ -462,6 +524,11 @@ class ProcessGPTBackend implements Backend {
             if (options && options.status) {
                 filter.match.status = options.status;
             }
+             
+            if(options && options.projectId) {
+                filter.match.project_id = options.projectId;
+            }
+
             if (options && options.instId) {
                 filter.match.proc_inst_id = options.instId;
             } else {
@@ -469,30 +536,29 @@ class ProcessGPTBackend implements Backend {
                 filter.match.user_id = email;
             }
             const list = await storage.list('todolist', filter);
-            const worklist: any[] = [];
-            if (list && list.length > 0) {
-                for (const item of list) {
-                    const workItem: any = {
-                        defId: item.proc_def_id,
-                        endpoint: item.user_id,
-                        instId: item.proc_inst_id,
-                        rootInstId: null,
-                        taskId: item.id,
-                        startDate: item.start_date,
-                        endDate: item.end_date,
-                        dueDate: item.due_date,
-                        status: item.status,
-                        title: item.activity_name || "",
-                        tracingTag: item.activity_id || "",
-                        description: item.description || "",
-                        tool: item.tool || "",
-                        instName: item.proc_inst_name || "",
-                        output: item.output || ""
-                    };
-                    worklist.push(workItem);
-                }
-            }
-            return worklist;
+
+            return list.map((item: any) => {
+                return this.returnWorkItemObject(item);
+                // return {
+                //     taskId: item.id,
+                //     defId: item.proc_def_id,
+                //     endpoint: item.user_id,
+                //     instId: item.proc_inst_id,
+                //     rootInstId: null,
+                //     startDate: item.start_date,
+                //     endDate: item.end_date,
+                //     dueDate: item.due_date,
+                //     status: item.status,
+                //     name: item.activity_name || "",
+                //     tracingTag: item.activity_id || "",
+                //     description: item.description || "",
+                //     tool: item.tool || "",
+                //     instName: item.proc_inst_name || "",
+                //     projectId: item.project_id || null,
+                //     adhoc: item.adhoc || false,
+                //     output: item.output || ""
+                // }
+            });
         } catch (error) {
             
             //@ts-ignore
@@ -513,19 +579,20 @@ class ProcessGPTBackend implements Backend {
             let result: any = null;
             if (!workItem.instId || workItem.status != "DONE") {
                 const putObj = {
-                    id: taskId,
+                    id: taskId || this.uuid(),
                     proc_def_id: workItem.defId || workItem.defId,
-                    user_id: workItem.endpoint || workItem.endpoint,
-                    proc_inst_id: workItem.instId || workItem.instId,
+                    user_id: workItem.endpoint || localStorage.getItem('email'),
+                    proc_inst_id: workItem.instId || workItem.parent,
                     start_date: workItem.startDate || workItem.startDate,
                     end_date: workItem.endDate || workItem.endDate,
                     due_date: workItem.dueDate || workItem.dueDate,
                     status: workItem.status || workItem.status,
                     activity_id: workItem.tracingTag || workItem.title,
-                    activity_name: workItem.title || workItem.title,
-                    description: workItem.description || workItem.description,
-                    tool: workItem.tool || workItem.tool,
-                    adhoc: workItem.adhoc || workItem.adhoc
+                    activity_name: workItem.title || workItem.name,
+                    description: workItem.description || null,
+                    tool: workItem.tool || null,
+                    adhoc: workItem.adhoc || null,
+                    project_id: workItem.projectId || null,
                 }
                 await storage.putObject('todolist', putObj);
 
@@ -1113,20 +1180,15 @@ class ProcessGPTBackend implements Backend {
     }
 
     async fetchInstanceListByStatus(status: string): Promise<any[]> {
+        var me = this
         const list = await storage.list('bpm_proc_inst', { match: { status: status } });
         const email = window.localStorage.getItem("email");
         const filteredData = list.filter((item: any) => item.current_user_ids.includes(email));
 
         if (filteredData && filteredData.length > 0) {
-            const result = filteredData.map((item: any) => {
-                return {
-                    instId: item.proc_inst_id,
-                    instName: item.proc_inst_name,
-                    status: item.status,
-                    defId: item.proc_def_id
-                }
+            return filteredData.map((item: any) => {
+                return me.returnInstanceObject(item);
             });
-            return result;
         }
         return [];
     }
@@ -1168,25 +1230,10 @@ class ProcessGPTBackend implements Backend {
         try {
             const list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
             const worklist: any[] = list.map((item: any) => {
-                return {
-                    defId: item.proc_def_id,
-                    instId: item.proc_inst_id,
-                    rootInstId: item.proc_inst_id,
-                    taskId: item.id,
-                    startDate: item.start_date,
-                    endDate: item.end_date,
-                    dueDate: item.due_date,
-                    status: item.status == 'SUBMITTED' ? 'IN_PROGRESS' : item.status,
-                    title: item.activity_name,
-                    tool: item.tool || '',
-                    tracingTag: item.activity_id || '',
-                    description: item.description || '',
-                    endpoint: item.user_id,
-                    assignees: item.assignees || [],
-                    adhoc: item.adhoc || false,
-                    reference_ids: item.reference_ids || [],
-                    task: item
+                if (item.status == 'SUBMITTED') {
+                    item.status = 'IN_PROGRESS';
                 }
+                return this.returnWorkItemObject(item);
             })
             return worklist;
         } catch (e) {
@@ -1311,6 +1358,30 @@ class ProcessGPTBackend implements Backend {
     async getCurrentWorkItemByCorrKey(corrKey: number) {
         try {
             return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async putInstance(instId: string, instItem: any) {
+        try {
+            return await storage.putObject('bpm_proc_inst', {
+                proc_inst_id: instId || this.uuid(),
+                proc_def_id: instItem.procDefId,
+                proc_inst_name: instItem.name,
+                current_activity_ids: instItem.currentActivityIds || [],
+                current_user_ids: instItem.currentUserIds || [],
+                role_bindings: instItem.roleBindings || [],
+                variables_data: instItem.variablesData || [],
+                status: instItem.status,
+                tenant_id: instItem.tenantId || 'localhost',
+                start_date: instItem.startDate,
+                end_date: instItem.endDate,
+                due_date: instItem.dueDate,
+                project_id: instItem.projectId,
+            });
+                
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2489,6 +2560,197 @@ class ProcessGPTBackend implements Backend {
         console.warn("method is not implemented only use PalModeBackend");
         return null;
     }
+
+    //////////////////////////////////////////////////////// PROJECT ////////////////////////////////////////////////////////
+    async fetchProjectByStatus(status: string): Promise<any[]> {
+        var me = this
+        const list = await storage.list('project', { match: { status: status } });
+
+        if(!list) return [];
+        if(!Array.isArray(list)) return [];
+
+        return list.map((item: any) => {
+            return me.returnProjectObject(item);
+        });
+    }
+
+    // async getInstanceList() {
+    //     try {
+    //         // const list = await storage.list('bpm_proc_inst',  { orderBy: "status", startAt: "RUNNING", endAt: "RUNNING", not: { key: "definition_id", operator: "is", value: null } });
+    //         const list = await storage.list('bpm_proc_inst');
+    //         return list.map((item: any) => {
+    //             return this.returnInstanceObject(item);
+    //         });
+    //     } catch (error) {
+    //         //@ts-ignore
+    //         throw new Error(error.message);
+    //     }
+    // }
+
+    async getProjectList() {
+        try {
+            const list = await storage.list('project', { match: { status: "RUNNING" } });
+            return list.map((item: any) => {
+                return this.returnProjectObject(item);
+            });
+            
+        } catch (error) {
+            
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    async getProjectById(projectId: number) {
+        try {
+            const list = await storage.list('project', {match: { 'project_id': projectId } });
+            let project = list && list.length > 0 ? list[0] : null;
+            if(!project) return null;
+            return this.returnProjectObject(project)
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+
+    async getTaskDependencyByProjectId(projectId: number) {
+        try {
+            return await storage.list('v_task_dependency', {
+                key: `*`,
+                orderBy: 'project_id',
+                startAt: projectId,
+                endAt: projectId,
+            });
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getTaskDependencyByInstId(instId: number) {
+        try {
+            return await storage.list('v_task_dependency', {
+                key: `*`,
+                orderBy: 'proc_inst_id',
+                startAt: instId,
+                endAt: instId,
+            });
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+
+    async putTaskDependency(item: any) {
+        try {
+            return await storage.putObject('task_dependency', item);     
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteTaskDependency(id: string) {
+        try {
+            return await storage.delete('task_dependency', { match: { id: id } });     
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    // 백엔드로 보낼 날짜 포맷 함수
+    formatDateForBackend(date, isEndDate) {
+        if (!date) return;
+        let year, month, day;
+
+        if (typeof date === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(date)) {
+            // '일-월-연도' 형식
+            const [d, m, y] = date.split('-');
+            year = y;
+            month = m.padStart(2, '0');
+            day = d.padStart(2, '0');
+        } else {
+            // Date 객체 또는 ISO 문자열 등
+            const d = new Date(date);
+            year = d.getFullYear();
+            month = String(d.getMonth() + 1).padStart(2, '0');
+            day = String(d.getDate()).padStart(2, '0');
+        }
+
+        const time = isEndDate ? '23:59:59' : '00:00:00';
+        return `${year}-${month}-${day}T${time}.000Z`;
+    }
+
+    async isColumnValueExists(table: string, key: string, value: string) {
+        try {
+            return !!await storage.list(table, {
+                orderBy: key,
+                startAt: value,
+                endAt: value,
+                maybeSingle: true
+            });     
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
+    private returnProjectObject(item: any) {
+        return {
+            projectId: item.project_id,
+            name: item.name,
+            startDate: item.start_date,
+            endDate: item.end_date,
+            dueDate: item.due_date,
+            createdDate: item.created_date,
+            status: item.status
+        }
+    }
+
+    private returnInstanceObject(item: any) {
+        return {
+            instId: item.proc_inst_id,
+            defId: item.proc_def_id,
+            name: item.proc_inst_name,
+            projectId: item.project_id,
+            currentActivityIds: item.current_activity_ids,
+            currentUserIds: item.current_user_ids,
+            roleBindings: item.role_bindings,
+            variables_data: item.variables_data,
+            status: item.status,
+            tenantId: item.tenant_id,
+            startDate: item.start_date,
+            endDate: item.end_date,
+            dueDate: item.due_date,
+        }
+    }
+
+    private returnWorkItemObject(item: any) {
+        return {
+            defId: item.proc_def_id,
+            instId: item.proc_inst_id,
+            rootInstId: item.proc_inst_id,
+            taskId: item.id,
+            startDate: item.start_date,
+            endDate: item.end_date,
+            dueDate: item.due_date,
+            status: item.status,
+            name: item.activity_name,
+            tool: item.tool || '',
+            tracingTag: item.activity_id || '',
+            description: item.description || '',
+            endpoint: item.user_id,
+            assignees: item.assignees || [],
+            adhoc: item.adhoc || false,
+            referenceIds: item.reference_ids || [],
+            projectId: item.project_id || null,
+            task: item
+        }
+    }
+
+    
 }
 
 export default ProcessGPTBackend;
