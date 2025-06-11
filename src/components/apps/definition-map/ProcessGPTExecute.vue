@@ -106,6 +106,13 @@ export default {
         window.removeEventListener('resize', this.checkIfMobile);
     },
     methods: {
+        findStartActivity() {
+            const startSequence = this.definition.sequences.find(sequence => sequence.source === 'start_event');
+            if (startSequence) {
+                return this.definition.activities.find(activity => activity.id === startSequence.target);
+            }
+            return this.definition.activities[0];
+        },
         init() {
             var me = this;
             me.$try({
@@ -146,7 +153,7 @@ export default {
                         }
                         startActivity = me.processDefinition.activities[me.activityIndex];
                     } else {
-                        startActivity = me.definition.activities[0];
+                        startActivity = this.findStartActivity();
                     }
                     if (startActivity) {
                         let parameters = [];
@@ -274,10 +281,9 @@ export default {
                     if (response && response.error) {
                         me.handleError(response.error);
                     } else if (response) {
-                        if (response && response.id) {
-                            me.EventBus.emit('instances-running', me.definition.processDefinitionName);
-                            const taskId = response.id;
-                            const path = `/instancelist/running?taskId=${taskId}`;
+                        if (response && response.id && response.proc_inst_id) {
+                            const instId = btoa(encodeURIComponent(response.proc_inst_id));
+                            const path = `/instancelist/${instId}`;
                             me.$router.push(path);
                         }
                     }

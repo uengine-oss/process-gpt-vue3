@@ -1,11 +1,10 @@
 <template>
-    <v-card elevation="10" v-if="instance" style="height: calc(100vh - 131px); ">
-        <v-progress-linear v-if="workitemRunning" indeterminate color="primary" />
+    <v-card v-if="instance" elevation="10" style="height: calc(100vh - 131px);">
         <div class="d-flex">
             <div class="px-3 py-3 pb-2 pl-4 align-center">
                 <div class="d-flex">
                     <h5 class="text-h5 font-weight-semibold">
-                        {{ instance.name }}
+                        {{ instanceName }}
                     </h5>
 
                     <v-chip v-if="instance.status" size="x-small" variant="outlined"
@@ -32,20 +31,25 @@
             </v-btn>
         </div>
 
-        <div style="height: 100%;">
-            <v-tabs v-model="tab" bg-color="transparent" height="40" color="primary">
-                <v-tab v-for="tabItem in tabItems" :key="tabItem.value" :value="tabItem.value">
-                    {{ $t(tabItem.label) }}
-                </v-tab>
-            </v-tabs>
-            <v-divider></v-divider>
-            <v-card-text style="height: calc(100vh - 238px);" class="pa-0">
-                <v-window style="height: 100%;" v-model="tab">
-                    <v-window-item style="height: 100%;" v-for="tabItem in tabItems" :key="tabItem.value" :value="tabItem.value">
-                        <component :is="tabItem.component" :instance="instance" :ref="tabItem.value" />
-                    </v-window-item>
-                </v-window>
-            </v-card-text>
+        <div :key="updatedKey">
+            <div v-if="!isNew" style="height: 100%;">
+                <v-tabs v-model="tab" bg-color="transparent" height="40" color="primary">
+                    <v-tab v-for="tabItem in tabItems" :key="tabItem.value" :value="tabItem.value">
+                        {{ $t(tabItem.label) }}
+                    </v-tab>
+                </v-tabs>
+                <v-divider></v-divider>
+                <v-card-text style="height: calc(100vh - 238px);" class="pa-0">
+                    <v-window style="height: 100%;" v-model="tab">
+                        <v-window-item style="height: 100%;" v-for="tabItem in tabItems" :key="tabItem.value" :value="tabItem.value">
+                            <component :is="tabItem.component" :instance="instance" :ref="tabItem.value" />
+                        </v-window-item>
+                    </v-window>
+                </v-card-text>
+            </div>
+            <div v-else>
+                <ProcessInstanceRunning :instance="instance" @updated="handleInstanceUpdated" />
+            </div>
         </div>
     </v-card>
     <v-card v-else>
@@ -62,6 +66,7 @@ import InstanceTodo from './InstanceTodo.vue';
 import InstanceWorkHistory from './InstanceWorkHistory.vue';
 import InstanceGantt from './InstanceGantt.vue';
 import InstanceOutput from './InstanceOutput.vue';
+import ProcessInstanceRunning from '@/components/ProcessInstanceRunning.vue';
 
 export default {
     components: {
@@ -69,7 +74,8 @@ export default {
         InstanceTodo,
         InstanceWorkHistory,
         InstanceGantt,
-        InstanceOutput
+        InstanceOutput,
+        ProcessInstanceRunning
     },
     data: () => ({
         instance: null,
@@ -83,13 +89,16 @@ export default {
             { value: 'gantt', label: 'InstanceCard.ganttChart', component: 'InstanceGantt' },
             { value: 'output', label: 'InstanceCard.output', component: 'InstanceOutput' }
         ],
-        workitemRunning: false
+
+        updatedKey: 0,
     }),
     watch: {
         $route: {
             deep: true,
             async handler(newVal, oldVal) {
-                if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
+                if (newVal && newVal.query && newVal.query.submitted) {
+                    this.tab = "workhistory";
+                } else if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
                     this.tab = "progress";
                     await this.init();
                 }
@@ -103,9 +112,16 @@ export default {
                 }
             }
         },
-        workitemRunning(newVal, oldVal) {
-            if (newVal && newVal !== oldVal) {
-                this.tab = "workhistory";
+        isNew: {
+            immediate: true,
+            handler(newVal) {
+                if (!newVal) {
+                    if (this.$route.query && this.$route.query.submitted) {
+                        this.tab = "workhistory";
+                    } else {
+                        this.tab = "progress";
+                    }
+                }
             }
         }
     },
@@ -131,10 +147,26 @@ export default {
                 }
             }
             return false;
+        },
+        isNew() {
+            return this.instance && this.instance.status == 'NEW';
+        },
+        instanceName() {
+            if (this.instance && !this.isNew) {
+                return this.instance.name;
+            } else if (this.instance && this.isNew) {
+                return this.instance.name + this.$t('runningInstance.running');
+            } else {
+                return '';
+            }
         }
     },
     methods: {
-        init() {
+        handleInstanceUpdated() {
+            this.updatedKey++;
+            this.init();
+        },
+        async init() {
             var me = this;
             me.$try({
                 context: me,
@@ -144,9 +176,9 @@ export default {
                     if (me.instance) {
                         me.eventList = await backend.getEventList(me.instance.instanceId);
                     }
-                    const activeComponents = me.$refs[me.tab];
-                    if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
-                        await activeComponents[0].init();
+                        const activeComponents = me.$refs[me.tab];
+                        if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
+                            await activeComponents[0].init();
                     }
                 }
             });
