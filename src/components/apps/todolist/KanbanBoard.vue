@@ -8,7 +8,8 @@
                 <KanbanColumn 
                     :column="column" 
                     :loading="loading" 
-                    @executeTask="executeTask" 
+                    :isNotAll="false"
+                    :showAddButton="false"
                     @scrollBottom="handleScrollBottom"
                     @todoTaskColumnFold="todoTaskColumnFold"
                     @todoTaskColumnunfold="todoTaskColumnUnfold"
@@ -28,7 +29,11 @@ export default {
     },
     props: {
         columns: Array,
+        users: Array,
     },
+    methods: {
+        
+    }
 }
 </script>
 <style>

@@ -76,7 +76,7 @@ export default {
                 item = {
                     // icon: 'ph:cube',
                     title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
-                    to: `/instance/${route}`,
+                    to: `/instancelist/${route}`,
                     BgColor:'primary',
                     isNew: item.status == 'NEW'
                 };
@@ -94,7 +94,7 @@ export default {
                 const title = item.instName;
                 return {
                     title: title,
-                    to: `/instance/${route}`,
+                    to: `/instancelist/${route}`,
                     BgColor:'primary'
                 };
             });
@@ -108,7 +108,7 @@ export default {
                 const title = item.instName;
                 return {
                     title: title,
-                    to: `/instance/${route}`,
+                    to: `/instancelist/${route}`,
                     BgColor:'primary'
                 };
             });

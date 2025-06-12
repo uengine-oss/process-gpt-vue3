@@ -52,8 +52,6 @@
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
-                    :maxAllowedBase="508"
-                    :initialChatHeight="346"
                 >
                     <template v-slot:custom-title>
                         <div></div>

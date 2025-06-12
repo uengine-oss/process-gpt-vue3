@@ -208,6 +208,7 @@
         "downloadImage": "Download definition diagram as an image",
         "consultingAI": "Process Consulting AI",
         "consultingButton": "Start Process Consulting",
+        "analyzeAndImproveProcessWithAI": "Start process consulting with AI",
         "editingUser": "is editing.",
         "checkIn": "Check In",
         "checkOut": "Check Out",
@@ -821,6 +822,7 @@
         "history": "Work History",
         "chatbot": "Assistant",
         "agent": "Create Agent Draft",
+        "agentMonitor": "Agent Monitor",
         "toggleInputFieldSize": "Toggle Input Field Size",
         "previous": "Previous Step",
         "inputForm": "Input"

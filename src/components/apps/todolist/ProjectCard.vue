@@ -2,9 +2,9 @@
     <div class="center-container">
         <v-card elevation="10" class="list-card">
             <v-tabs v-model="tab" color="primary">
-                <v-tab value="managment">프로젝트 관리</v-tab>
-                <v-tab value="workflow">업무 목록</v-tab>
-                <v-tab value="instance">인스턴스 목록</v-tab>
+                <v-tab value="managment">{{ $t('ProjectCard.managment') }}</v-tab>
+                <v-tab value="kanbanBoard">{{ $t('ProjectCard.kanbanBoard') }}</v-tab>
+                <v-tab value="instanceList">{{ $t('ProjectCard.instanceList') }}</v-tab>
             </v-tabs>
             <v-window v-model="tab">
                 <v-window-item value="managment">
@@ -12,7 +12,7 @@
                         <GanttChart 
                             :tasks="tasks" 
                             :dependencies="dependencies"
-                            :users="[]" 
+                            :users="userList" 
                             @task-updated="handleTaskUpdated" 
                             @task-added="handleTaskAdded"
                             @task-clicked="handleTaskClicked"
@@ -21,14 +21,15 @@
                         />
                     </div>
                 </v-window-item>
-                <v-window-item value="workflow">
+                <v-window-item value="kanbanBoard">
                     <div style="height: 860px;">
                         <KanbanBoard 
-                            :columns="columns"  
+                            :columns="columns"
+                            :users="userList"
                         />
                     </div>
                 </v-window-item>
-                <v-window-item value="instance">
+                <v-window-item value="instanceList">
                     <!-- 프로젝트 정보 -->
                     <div style="padding: 24px; text-align: left; color: #888;">
                         <div v-if="project">
@@ -64,52 +65,23 @@
   </template>
 
 <script>
+import KanbanBoard from './KanbanBoard.vue';
+import GanttChart from './GanttChart.vue';
+import KanbanColumnConfig from './KanbanColumnConfig.vue';
+
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
-import Gantt from '@/components/Gantt.vue';
-import KanbanBoard from './KanbanBoard.vue';
-import TodoTaskColumn from './TodoTaskColumn.vue';
-import GanttChart from './GanttChart.vue';
-
 
 export default {
+    mixins: [KanbanColumnConfig],
     components: {
-        Gantt,
         KanbanBoard,
-        TodoTaskColumn,
         GanttChart
     },
     data: () => ({  
-        
         tab: 'managment', // 탭 인덱스
         project: null,
         instanceList: [],
-        columns: [
-            {
-                id: 'TODO',
-                title: 'todoList.todo',
-                cardbg: 'background',
-                tasks: []
-            },
-            {
-                id: 'IN_PROGRESS',
-                title: 'todoList.inProgress',
-                cardbg: 'lightsecondary',
-                tasks: []
-            },
-            {
-                id: 'PENDING',
-                title: 'todoList.pending',
-                cardbg: 'lightinfo',
-                tasks: []
-            },
-            {
-                id: 'DONE',
-                title: 'todoList.done',
-                cardbg: 'lightsuccess',
-                tasks: []
-            }
-        ],
         isLoading: true,
         tasks: [],
         dependencies: [],
@@ -129,7 +101,11 @@ export default {
     },
     computed: {
         projectId() {
-            return this.$route.params.projectId
+            if ($mode == "ProcessGPT") {
+                return decodeURIComponent(atob(this.$route.params.projectId))
+            } else {
+                return this.$route.params.projectId
+            }
         }
     },
     methods: {
@@ -170,7 +146,7 @@ export default {
         },
         async handleTaskUpdated(task){
             if(task.parent == 0){
-                await backend.putInstance(task.taskId, task)
+                await backend.putInstance(task.instId, task)
             } else {
                 await backend.putWorklist(task.taskId, task)
             }
@@ -203,7 +179,8 @@ export default {
             }
         },
         onItemClick(item) {
-               this.$router.push(`/instance/${item.instId}`);
+            const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
+            this.$router.push(`/instancelist/${route}`);
         },
     }
 };

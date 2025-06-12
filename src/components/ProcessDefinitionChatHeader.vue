@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <div style="position: sticky; top:0px; z-index:1; background-color:white;">
+    <div class="chat-info-header">
+        <div>
             <div class="align-right gap-3 justify-space-between" 
                 :style="modelValueStyle ? 'padding: 12px 16px 2px 16px;' : 'padding: 9px 16px 9px 16px;'"
             >

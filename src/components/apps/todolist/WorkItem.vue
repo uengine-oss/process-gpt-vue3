@@ -68,11 +68,14 @@
                         <v-tab v-if="messages && messages.length > 0" value="history">{{ $t('WorkItem.history') }}</v-tab>
                         <v-tab v-if="messages" value="agent">{{ $t('WorkItem.agent') }}</v-tab> -->
                     </v-tabs>
-                    <v-window v-model="selectedTab">
+                    <v-window v-model="selectedTab"
+                        :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 249px); color: black; overflow: auto'"
+                    >
                         <v-window-item value="progress">
                             <div
                                 class="pa-2"
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 210px); color: black; overflow: auto'"
+
                             >
                                 <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">
@@ -154,6 +157,11 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
+                        <v-window-item value="agent-monitor" class="pa-2">
+                            <v-card elevation="10" class="pa-4">
+                                <AgentMonitor />
+                            </v-card>
+                        </v-window-item>
                         <v-window-item v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
                            <DynamicForm 
                                 v-if="inFormValues[index]?.html" 
@@ -230,6 +238,7 @@ import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임�
 import URLWorkItem from './URLWorkItem.vue';
 import InstanceOutput from './InstanceOutput.vue';
 import BpmnUengine from '@/components/BpmnUengineViewer.vue';
+import AgentMonitor from '@/views/markdown/AgentMonitor.vue';
 
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
@@ -267,7 +276,8 @@ export default {
         BpmnUengine,
         DynamicForm,
         FormDefinition,
-        InstanceOutput
+        InstanceOutput,
+        AgentMonitor
     },
     data: () => ({    
         workItem: null,
@@ -393,6 +403,7 @@ export default {
                         // { value: 'history', label: this.$t('WorkItem.history') },
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent', label: this.$t('WorkItem.agent') },
+                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
                     ]
                 } else {
                     return [
@@ -493,8 +504,10 @@ export default {
                             await me.loadRefForm();
                         }
                     }
-                    if(me.workItem.worklist) {
+
+                    if(me.workItem.worklist && me.workItem.worklist.instId) {
                         me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
+                        me.processInstance = await backend.getInstance(me.workItem.worklist.instId);
                     }
 
                     if (me.mode == 'ProcessGPT' && !me.pal) {
@@ -502,12 +515,6 @@ export default {
                     } else {
                         me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
                     }
-
-                    if(me.isSimulate != 'true') {
-                        me.processInstance = await backend.getInstance(me.workItem.worklist.instId);
-                    }
-
-                    
 
                     me.updatedDefKey++;
                 },

@@ -1,37 +1,37 @@
 <template>
-    <div style="background-color: rgba( 255, 255, 255, 1 );">
-        <div>
-            <div>
-                <div>
+    <div style="background-color: rgba( 255, 255, 255, 1 );"
+        class="chat-info-view-wrapper"
+    >
+        <div class="chat-info-view-wrapper">
+            <div class="chat-info-view-area">
+                <div class="chat-info-view-area">
                     <slot name="attachments-area"></slot>
                     <slot name="custom-title">
-                        <div class="chat-info-title" style="position: sticky; top:0px; z-index:1; background-color:white;">
-                            <div class="align-right gap-3 pa-4 justify-space-between">
-                                <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
-                                    <div>
-                                        <h5 class="text-h5 mb-n1">{{ name }}</h5>
-                                    </div>
+                        <div>
+                            <div v-if="name && name !== ''" class="d-flex gap-2 align-center pa-4">
+                                <div>
+                                    <h5 class="text-h5 mb-n1">{{ name }}</h5>
                                 </div>
-                                <div v-else-if="chatInfo" class="d-flex gap-2 align-center">
-                                    <v-avatar v-if="chatInfo.img">
-                                        <img :src="chatInfo.img" width="50" />
-                                    </v-avatar>
-                                    <div>
-                                        <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
-                                        <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
-                                    </div>
-                                </div>
-                                <slot name="custom-tools"></slot>
                             </div>
+                            <div v-else-if="chatInfo" class="d-flex gap-2 align-center">
+                                <v-avatar v-if="chatInfo.img">
+                                    <img :src="chatInfo.img" width="50" />
+                                </v-avatar>
+                                <div>
+                                    <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
+                                    <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
+                                </div>
+                            </div>
+                            <slot name="custom-tools"></slot>
                             <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
                         </div>
                     </slot>
 
-                    <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll" :style="type == 'form_simulation' ? 'max-height: 300px;':''">
-                        <div class="d-flex w-100 chat-view-box"
-                            :style="!$globalState.state.isRightZoomed ? (type == 'form_simulation' ? 'height: 300px;':chatHeight) : 'height:100vh;'"
+                    <perfect-scrollbar class="h-100 chat-view-box" ref="scrollContainer" @scroll="handleScroll">
+                        <div class="d-flex w-100"
+                            :style="$globalState.state.isRightZoomed ? 'height:100vh;' : ''"
                         >
-                            <v-col>
+                            <v-col class="chat-view-box-col">
                                 <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                                     <template v-slot:title>
                                         <Icons style="padding-left:-5px;" :icon="'info-line'" :size="32" :color="'#2196F3'"/>
@@ -115,14 +115,11 @@
                                                                     <icons :icon="'pencil'" :size="20"  />
                                                                 </v-btn>
     
-                                                            <!-- <transition name="slide-fade"> -->
                                                                 <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
                                                                     :key="isRender"
                                                                 >
-                                                                <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
                                                                     <div @click="showGeneratedWorkList = !showGeneratedWorkList"
                                                                         class="find-message"
-                                                                        :key="generatedWorkList"
                                                                         :class="generatedWorkList.length > 0 ? 'find-message-on' : 'find-message-off'"
                                                                     >
                                                                         <img src="@/assets/images/chat/chat-icon.png"
@@ -130,7 +127,6 @@
                                                                         />
                                                                     </div>
                                                                 </div>
-                                                            <!-- </transition> -->
                                                             </v-row>
                                                         </div>
                                                     </v-sheet>
@@ -515,9 +511,6 @@
                             </div>
                         </v-row>
                     </div>
-                    <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
-                        <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
-                    </div> -->
                 </div>
                 <v-divider v-if="!hideInput" />
             </div>
@@ -544,24 +537,11 @@
             </div>
             <v-divider v-if="!hideInput" />
 
-            <div v-if="!hideInput">
-                <!-- <div v-if="showNewMessageNoti"
-                    style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
-                    <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
-                        <div @click="clickToScroll">
-                            <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
-                        </div>
-                    </v-chip>
-                </div> -->
-                <!-- camera capture -->
+            <div v-if="!hideInput" class="chat-info-message-input-box">
                 <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
-                <!-- image upload -->
                 <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-                <!-- image preview -->
-                <!-- 한글 설명: 버튼의 배경색을 검정(black), 아이콘을 흰색(white)으로 변경 -->
                 <div style="z-index: 9999;" class="d-flex">
                     <div id="imagePreview"></div>
-                    <!-- 한글 설명: Vuetify3에서 color가 적용되지 않을 때, style로 background-color를 직접 지정 -->
                     <v-btn
                         v-if="delImgBtn"
                         @click="deleteImage()"
@@ -582,7 +562,6 @@
                     >
                     </v-textarea>
                     
-                    <!-- 버튼 영역 -->
                     <div class="d-flex justify-space-between align-center w-100 pa-2">
                         <div class="d-flex">
                             <v-btn @click="openChatMenu()"
@@ -681,7 +660,6 @@ import AgentsChat from './AgentsChat.vue';
 import axios from 'axios';
 import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
-// import Record from './Record2.vue';
 import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 
@@ -712,7 +690,6 @@ export default {
         agentInfo: Object,
         userList: Array,
         currentChatRoom: Object,
-        // documentQueryStr: String,
         lock: Boolean,
         generatedWorkList: Array,
         ProcessGPTActive: Boolean,
@@ -721,19 +698,6 @@ export default {
         chatRoomId: String,
         isMobile: Boolean,
         newMessageInfo: Object,
-        maxAllowedBase: {
-            type: Number,
-            default: null // 자동 계산되도록 null로 설정
-        },
-        initialChatHeight: {
-            type: Number,
-            default: 325 // 채팅 영역의 초기 높이 (100vh - 숫자px)
-        },
-        // maxBaseOffset: initialChatHeight와 maxAllowedBase의 차이 값
-        maxBaseOffset: {
-            type: Number,
-            default: 160 // maxAllowedBase = initialChatHeight + maxBaseOffset
-        },
         hideInput: {
             type: Boolean,
             default: false
@@ -778,10 +742,6 @@ export default {
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
             isRender: false,
-            chatHeight: '',
-            textareaAreaHeight: 84, // textarea와 버튼 영역의 초기 높이는 84px
-            calculatedMaxBase: 0, // 계산된 maxAllowedBase 값을 저장
-            windowWidth: window.innerWidth, // 현재 창 너비 저장
             
             // assistantChat
             checked: true,
@@ -790,12 +750,14 @@ export default {
 
             //preview-message
             previewMessage: null,
+            
+            // 채팅창 높이 관련 변수
+            windowWidth: window.innerWidth
         };
     },
     created() {
-        // 초기값 설정 - 항상 100vh - 값px 형태로 설정
-        // 화면 너비가 1872px 이하일 때 initialChatHeight 값을 360으로 설정
-        this.updateChatHeightByWindowSize();
+        // 창 크기 변경 시 높이 조정을 위한 이벤트 리스너 추가
+        window.addEventListener('resize', this.handleResize);
     },
     mounted() {
         var me = this
@@ -806,9 +768,6 @@ export default {
             }
         });
 
-        // 창 크기 변경 이벤트 리스너 추가
-        window.addEventListener('resize', this.handleResize);
-
         this.EventBus.on('scroll_update', () => {
             if (this.$refs && this.$refs.scrollContainer) {
                 setTimeout(() => {
@@ -817,30 +776,7 @@ export default {
             }
         });
         
-        // 기본 chatHeight 설정
-        // if (window.location.pathname && window.location.pathname.includes('/definitions/')) {
-        //     if (!this.isMobile) {
-        //         this.chatHeight = 'height:calc(100vh - 325px)'
-        //     } else {
-        //         this.chatHeight = 'height:calc(100vh - 450px)'
-        //     }
-        // } else if (window.location.pathname && window.location.pathname.includes('/instancelist')) {
-        //     if (!this.isMobile) {
-        //         this.chatHeight = 'height:calc(100vh - 350px)'
-        //     } else {
-        //         this.chatHeight = 'height:calc(100vh - 450px)'
-        //     }
-        // }
-
-        // 컴포넌트가 렌더링된 후 텍스트 영역 측정
         this.$nextTick(() => {
-            // querySelector로 textarea 요소를 찾음
-            const textarea = this.$el.querySelector('textarea');
-            if (textarea) {
-                // 초기 textarea 높이 측정
-                this.updateChatHeight(textarea);
-            }
-            
             this.scrollToBottom();
         });
     },
@@ -865,15 +801,6 @@ export default {
                 this.previewMessage = null;
             }
         },
-        // textarea 내용 변경 감지
-        newMessage() {
-            this.$nextTick(() => {
-                const textarea = this.$el.querySelector('textarea');
-                if (textarea) {
-                    this.updateChatHeight(textarea);
-                }
-            });
-        }
     },
     computed: {
         isSystemMentioned() {
@@ -956,6 +883,15 @@ export default {
         }
     },
     methods: {
+        handleResize() {
+            // 화면 크기 변경 시 즉시 높이 업데이트
+            this.windowWidth = window.innerWidth;
+            
+            // 스크롤 컨테이너가 존재하면 업데이트
+            if (this.$refs && this.$refs.scrollContainer) {
+                this.$refs.scrollContainer.update();
+            }
+        },
         clickedWorkOrder(){
             this.$emit('clickedWorkOrder');
         },
@@ -1158,46 +1094,6 @@ export default {
             if (text.startsWith('>') || text.startsWith('!')) {
                 // 명령어 목록 표시 로직 추가
             }
-            
-            // textarea 높이가 변경될 때 chatHeight 업데이트
-            this.updateChatHeight(event.target);
-        },
-        
-        // textarea 높이에 따라 채팅창 높이 업데이트 메서드
-        updateChatHeight(textarea) {
-            if (!textarea) return;
-            
-            this.$nextTick(() => {
-                // 현재 textarea 높이 + 버튼 영역 높이
-                const currentHeight = textarea.scrollHeight + 44; // 버튼 영역은 약 44px로 가정
-                // 높이 차이 계산 (현재 높이 - 초기 높이)
-                const heightDiff = currentHeight - this.textareaAreaHeight;
-                
-                let baseHeight;
-                
-                // props로 값이 전달된 경우 그 값을 최우선으로 사용
-                if (this.$props.initialChatHeight !== undefined && this.$props.initialChatHeight !== null) {
-                    baseHeight = this.$props.initialChatHeight;
-                } else {
-                    // props로 값이 전달되지 않은 경우에만 창 크기에 따라 계산
-                    if (this.windowWidth <= 1872) {
-                        baseHeight = 360;
-                    } else {
-                        baseHeight = 325;
-                    }
-                    
-                    // 모바일인 경우 별도 처리
-                    if (this.isMobile) {
-                        baseHeight = 450;
-                    }
-                }
-                
-                // 최소 높이 제한 (100vh - calculatedMaxBase)
-                const adjustedBase = Math.min(baseHeight + heightDiff, this.calculatedMaxBase);
-                
-                // 기본 chatHeight에서 높이 차이만큼 빼서 계산
-                this.chatHeight = `height:calc(100vh - ${adjustedBase}px)`;
-            });
         },
         selectUser(user) {
             const beforeMention = this.newMessage.substring(0, this.mentionStartIndex);
@@ -1241,19 +1137,6 @@ export default {
             const user = this.userList.find(user => user.email === email);
             return user && user.profile ? (user.profile.includes('defaultUser.png') ? '/images/defaultUser.png' : user.profile) : '/images/defaultUser.png';
         },
-        // shouldDisplayButtons(message, index) {
-        //     if (message.role !== 'system') {
-        //         return false;
-        //     }
-        //     // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
-        //     for (let i = index + 1; i < this.filteredMessages.length; i++) {
-        //         if (this.filteredMessages[i].email === this.userInfo.email) {
-        //             return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
-        //         }
-        //     }
-        //     // 위의 조건들을 모두 통과했다면 버튼을 표시
-        //     return true;
-        // },
         requestDraftAgent() {
             this.$emit('requestDraftAgent', this.newMessage);
         },
@@ -1349,14 +1232,6 @@ export default {
                 this.newMessage = "";
                 this.mentionedUsers = [];
                 this.showUserList = false;
-                
-                // message를 비운 후 textarea 높이 업데이트
-                this.$nextTick(() => {
-                    const textarea = this.$el.querySelector('textarea');
-                    if (textarea) {
-                        this.updateChatHeight(textarea);
-                    }
-                });
             }, 100);
         },
         cancel() {
@@ -1418,7 +1293,7 @@ export default {
                     imgElement.src = event.target.result;
                     imgElement.onload = () => {
                         const canvas = document.createElement("canvas");
-                        const max_width = 200; // 최대 너비 설정
+                        const max_width = 200;
                         const scaleSize = max_width / imgElement.width;
                         canvas.width = max_width;
                         canvas.height = imgElement.height * scaleSize;
@@ -1546,35 +1421,6 @@ export default {
             if (!imageFound) {
                 return true;
             }
-        },
-        // 창 크기 변경 핸들러
-        handleResize() {
-            this.windowWidth = window.innerWidth;
-            this.updateChatHeightByWindowSize();
-            
-            // textarea 높이도 업데이트
-            const textarea = this.$el.querySelector('textarea');
-            if (textarea) {
-                this.updateChatHeight(textarea);
-            }
-        },
-        
-        // 창 크기에 따른 채팅 높이 업데이트
-        updateChatHeightByWindowSize() {
-            // props로 값이 전달된 경우 그 값을 최우선으로 사용
-            if (this.$props.initialChatHeight !== undefined && this.$props.initialChatHeight !== null) {
-                this.chatHeight = `height:calc(100vh - ${this.$props.initialChatHeight}px)`;
-                // maxAllowedBase도 props 값을 우선 사용
-                this.calculatedMaxBase = this.maxAllowedBase || (this.$props.initialChatHeight + this.maxBaseOffset);
-                return;
-            }
-            
-            // props로 값이 전달되지 않은 경우에만 창 크기에 따라 계산
-            const chatHeight = this.windowWidth <= 1872 ? 360 : this.initialChatHeight;
-            this.chatHeight = `height:calc(100vh - ${chatHeight}px)`;
-            
-            // maxAllowedBase가 지정되지 않았다면 초기 높이 + offset으로 계산
-            this.calculatedMaxBase = this.maxAllowedBase || (chatHeight + this.maxBaseOffset);
         },
     }
 };
