@@ -179,6 +179,23 @@ export default {
             }
             return null
         },
+        allTaskDependencies() {
+            if (!this.tasks || !Array.isArray(this.tasks)) {
+                return [];
+            }
+            
+            return this.tasks.reduce((dependencies, task) => {
+                if (task.referenceIds && task.referenceIds.length > 0) {
+                    const taskDeps = task.referenceIds.map(refId => ({
+                        id: this.generateUUID(),
+                        taskId: task.taskId,
+                        depends_id: refId
+                    }));
+                    return [...dependencies, ...taskDeps];
+                }
+                return dependencies;
+            }, []);
+        },
         userInfoForTask() {
             if (!this.userInfo || !this.task || !this.task.endpoint) return null;
             return this.userInfo.find(user => user.email === this.task.endpoint);
@@ -215,9 +232,15 @@ export default {
         }
     },
     methods: {
+        generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        },
         executeTask() {
             if (!this.managed) {
-                // this.$emit('executeTask', this.task);
                 this.$router.push(`/todolist/${this.task.taskId}`)
             } else {
                 this.dialogType = 'view';

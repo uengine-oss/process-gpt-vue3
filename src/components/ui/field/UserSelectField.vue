@@ -141,6 +141,7 @@ export default {
     async mounted() {
         this.userList = await backend.getUserList();
         this.agentList = await backend.getAgentList();
+        if(!this.agentList) this.agentList  = []
 
         if(this.useAgent) {
             const list = [...this.userList, ...this.agentList];

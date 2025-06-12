@@ -49,7 +49,7 @@
             
 
             formattedTasks.sort((a, b) => {
-                return new Date(a.start_date)- new Date(b.start_date);
+                return new Date(a.startDate)- new Date(b.startDate);
             });
             const formattedData = {
                 data: formattedTasks,
@@ -468,8 +468,8 @@
                 if (dependeny) {
                     links.push({
                         id: dependeny.id,
-                        source: dependeny.depends_id, // 참조된 작업의 ID
-                        target: dependeny.task_id,       // 현재 작업의 ID
+                        source: dependeny.dependsId, // 참조된 작업의 ID
+                        target: dependeny.taskId,       // 현재 작업의 ID
                         type: typeMap[dependeny.type] || "0"              // 기본 링크 타입 (Finish to Start)
                     });
                 }
