@@ -59,15 +59,19 @@ export default {
     methods: {
         async init() {
             this.outputList = [];
+            
             const formOptions = {
                 match: {
-                    proc_def_id: this.instance.proc_def_id, 
+                    proc_def_id: this.instance.defId, 
                 }
             }
             const formList = await backend.listDefinition('form_def', formOptions);
-            const taskList = await backend.getAllWorkListByInstId(this.instance.instanceId);
+            
+            const taskList = await backend.getAllWorkListByInstId(this.instance.instId);
+            const sortedTaskList = taskList.sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
+
             const outputList = [];
-            taskList.forEach(async (item) => {
+            sortedTaskList.forEach(async (item) => {
                 if (item.status !== 'DONE') return;
                 const formId = item.tool.replace('formHandler:', '');
                 const form = formList.find(form => form.id === formId);
@@ -93,7 +97,6 @@ export default {
                     }
                 }
             })
-            console.log(outputList);
             this.outputList = outputList;
         },
     },

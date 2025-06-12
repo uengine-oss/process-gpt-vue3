@@ -33,6 +33,16 @@ const MainRoutes = {
             component: () => import('@/components/apps/todolist/InstanceCard.vue'),
         },
         {
+            name: 'Project',
+            path: '/project/:projectId',
+            component: () => import('@/components/apps/todolist/ProjectCard.vue'),
+        },
+        {
+            name: 'InstanceCard',
+            path: '/instance/:instId',
+            component: () => import('@/components/apps/todolist/InstanceCard.vue'),
+        },
+        {
             name: 'InstanceRunning',
             path: '/instancelist/running',
             component: () => import('@/components/ProcessInstanceRunning.vue'),

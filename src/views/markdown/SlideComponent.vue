@@ -36,7 +36,16 @@ export default {
       this.$refs.markdownContent.textContent = this.content
 
       // DOM 반영 → 렌더링 → Reveal 초기화까지 안전하게 대기
-      this.init();
+      if (this.$refs.markdownContent) {
+        console.log('[Reveal Debug] setting textarea content')
+        this.$refs.markdownContent.textContent = this.content
+
+        this.$nextTick(() => {
+          requestAnimationFrame(() => {
+            this.init()
+          })
+        })
+      }
     }
   },
   watch: {
@@ -90,11 +99,12 @@ export default {
         autoSlide: 0,
         width: this.isEditMode ? 600 : 960,
         height: this.isEditMode ? 400 : 700,
+        highlight: {
+          highlightOnLoad: true,
+          lineNumbers: true 
+        },
         markdown: {
           smartypants: true
-        },
-        highlight: {
-          highlightOnLoad: true
         },
         pdfSeparateFragments: pdfSeparateFragments,
         pdfMaxPagesPerSlide: 1,
@@ -102,7 +112,6 @@ export default {
       })
 
       await this.deck.initialize()
-
       // 슬라이드 수 확인 로그
       console.log('[Reveal Debug] slide count:', this.deck.getSlides().length)
     },

@@ -70,59 +70,112 @@ import ThemeColorMixin from '@/components/ui/field/ThemeColorMixin.js'
 export default {
   name: 'PdfExportHelper',
   mixins: [ThemeColorMixin],
+  props: {
+    modelValue: {
+      type: String,
+      default: ''
+    }
+  },
   emits: ['open-modal'],
-  setup(props, { emit }) {
-    const showModal = ref(false)
-    const showNotes = ref(false)
-    const notesLayout = ref('overlay')
-    const separateFragments = ref(true)
-
-    const openModal = () => {
-      showModal.value = true
-    }
-
-    const closeModal = () => {
-      showModal.value = false
-    }
-
-    const preparePdfExport = () => {
-      // Create PDF export URL with appropriate query parameters
-      let url = window.location.href
-
-      // Check if we're already on the presentation page, if not, navigate to it
-      if (!url.includes('/present')) {
-        url = `${window.location.origin}/present`
-      }
-
-      // Add print-pdf parameter
-      url = url.includes('?') ? `${url}&print-pdf` : `${url}?print-pdf`
-
-      // Add speaker notes configuration if enabled
-      if (showNotes.value) {
-        url += `&showNotes=${notesLayout.value}`
-      }
-
-      // Add fragments configuration
-      if (!separateFragments.value) {
-        url += '&pdfSeparateFragments=false'
-      }
-
-      // Open in a new tab
-      window.open(url, '_blank')
-      
-      // Close the modal
-      closeModal()
-    }
-
+  mounted() {
+    this.init();
+  },
+  data() {
     return {
+      showModal: false,
+      fileName: 'document.docx',
       i18n,
-      showModal,
-      showNotes,
-      notesLayout,
-      separateFragments,
-      openModal,
-      closeModal,
-      preparePdfExport
+    }
+  },
+  methods: {
+    init() {
+      // 필요하면 초기화 로직 작성
+    },
+
+    openModal() {
+      this.showModal = true;
+    },
+
+    closeModal() {
+      this.showModal = false;
+    },
+
+    markdownToDocxParagraphs(markdown) {
+      const tokens = marked.lexer(markdown);
+      const paragraphs = [];
+      tokens.forEach(token => {
+        if (token.type === 'heading') {
+          paragraphs.push(
+            new Paragraph({
+              text: token.text,
+              heading: {
+                1: HeadingLevel.HEADING_1,
+                2: HeadingLevel.HEADING_2,
+                3: HeadingLevel.HEADING_3,
+                4: HeadingLevel.HEADING_4,
+                5: HeadingLevel.HEADING_5,
+                6: HeadingLevel.HEADING_6,
+              }[token.depth] || HeadingLevel.HEADING_1
+            })
+          );
+        } else if (token.type === 'paragraph') {
+          paragraphs.push(new Paragraph(token.text));
+        } else if (token.type === 'list') {
+          token.items.forEach(item => {
+            paragraphs.push(
+              new Paragraph({
+                text: item.text,
+                bullet: token.ordered ? undefined : { level: 0 },
+                numbering: token.ordered ? { reference: 'numbered-list', level: 0 } : undefined
+              })
+            );
+          });
+        } else if (token.type === 'code') {
+          paragraphs.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: token.text,
+                  font: 'Consolas',
+                  size: 20,
+                  color: '888888',
+                })
+              ]
+            })
+          );
+        } else if (token.type === 'blockquote') {
+          paragraphs.push(
+            new Paragraph({
+              text: token.text,
+              style: 'Quote'
+            })
+          );
+        } else if (token.type === 'hr') {
+          paragraphs.push(new Paragraph({ text: '---' }));
+        }
+      });
+      return paragraphs;
+    },
+
+    async exportToDocx() {
+      let me = this;
+      const markdownContent = me.modelValue;
+      if (!markdownContent) {
+        alert('No document content found.');
+        return;
+      }
+      const paragraphs = me.markdownToDocxParagraphs(markdownContent);
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: paragraphs
+          }
+        ]
+      });
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, me.fileName || 'document.docx');
+      me.closeModal();
     }
   }
 }

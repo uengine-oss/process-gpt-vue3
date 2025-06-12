@@ -46,7 +46,7 @@ export default {
     created() {
         this.init();
         this.EventBus.on('process-definition-updated', async () => {
-            this.bpmn = await backend.getRawDefinition(this.instance.defId, { type: 'bpmn', version: this.instance.defVer });
+            this.bpmn = await backend.getRawDefinition(this.instance.defId, { type: 'bpmn', version: this.instance.definitionVersion });
             this.updatedDefKey++;
         });
     },
@@ -69,7 +69,7 @@ export default {
         instance: {
             deep: true,
             async handler(newVal, oldVal) {
-                if (newVal.instanceId !== oldVal.instanceId) {
+                if (newVal.instId !== oldVal.instId) {
                     await this.init();
                 }
             }
@@ -82,7 +82,7 @@ export default {
                 context: me,
                 action: async () => {
                     if (me.instance) {
-                        me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn', version: this.instance.defVer });
+                        me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn', version: me.instance.definitionVersion });
                         await me.initStatus();
                         me.updatedDefKey++;
                     }

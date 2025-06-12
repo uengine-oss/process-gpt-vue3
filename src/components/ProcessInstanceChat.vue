@@ -36,7 +36,6 @@ export default {
         formData: Object,
         useThreadId: Boolean,
         simulationInstances: Array,
-        streamingText: String,
     },
     data: () => ({
         processDefinition: null,
@@ -57,8 +56,8 @@ export default {
     }),
     computed: {
         chatName() {
-            if (this.processInstance && this.processInstance.proc_inst_name) {
-                return this.processInstance.proc_inst_name;
+            if (this.processInstance && this.processInstance.name) {
+                return this.processInstance.name;
             }
             return '';
         },
@@ -88,6 +87,32 @@ export default {
 
             this.handleDraftResponse()
         }
+
+        if (!this.isAgentMode && !this.isTaskMode) {
+            const worklist = await backend.getWorkListByInstId(this.chatRoomId);
+            const workItem = worklist.find(item => item.task.status == 'SUBMITTED');
+            this.streamingText = '';
+            if (workItem) {
+                const taskId = workItem.taskId;
+                await backend.getTaskLog(taskId, async (task) => {
+                    if (this.streamingText == '') {
+                        this.streamingText = task.log;
+                        this.messages.push({
+                            role: 'system',
+                            content: this.streamingText,
+                        });
+                    } else if (this.streamingText != '') {
+                        this.streamingText = task.log;
+                        this.messages[this.messages.length - 1].content = this.streamingText;
+                    }
+                    if (task.status == "DONE") {
+                        this.$emit('updated');
+                        this.EventBus.emit('instances-updated');
+                        await this.getChatList(this.chatRoomId);
+                    }
+                });
+            }
+        }
     },
     watch: {
         "$route": {
@@ -106,18 +131,6 @@ export default {
                 }
             }
         },
-        streamingText(newVal, oldVal) {
-            if (newVal && newVal !== oldVal && oldVal == '') {
-                this.messages.push({
-                    role: 'system',
-                    content: this.streamingText,
-                });
-            } else if (newVal && newVal !== oldVal && oldVal != '') {
-                this.messages[this.messages.length - 1].content = newVal;
-            } else {
-                this.getChatList(this.chatRoomId);
-            }
-        }
     },
     methods: {
         async resizeBase64Image(base64Str, minWidth, minHeight) {
@@ -210,8 +223,8 @@ export default {
                     "role": "user"
                 })
             }
-            if(this.processInstance && this.processInstance.proc_inst_id){
-                const instance = await backend.getInstance(this.processInstance.proc_inst_id);
+            if(this.processInstance && this.processInstance.instId){
+                const instance = await backend.getInstance(this.processInstance.instId);
                 this.generator.previousMessages.push({
                     "content": "이전 작업 내역 리스트: " + JSON.stringify(instance),
                     "role": "user"
@@ -281,16 +294,16 @@ export default {
         async loadProcess() {
             this.onLoad = false;
             let id, defId;
-            if (this.processInstance && this.processInstance.current_activity_ids) {
-                this.currentActivities = this.processInstance.current_activity_ids;
-                id = this.processInstance.proc_inst_id;
+            if (this.processInstance && this.processInstance.currentActivityIds) {
+                this.currentActivities = this.processInstance.currentActivityIds;
+                id = this.processInstance.instId;
                 defId = id.split('.')[0];
             } else {
                 id = this.$route.params.taskId;
                 defId = id.split('.')[0];
                 this.processInstance = await backend.getInstance(id);
                 if (this.processInstance) {
-                    this.currentActivities = this.processInstance.current_activity_ids;
+                    this.currentActivities = this.processInstance.currentActivityIds;
                 }
             }
             var bpmn = await backend.getRawDefinition(defId, { type: "bpmn"});
@@ -328,7 +341,7 @@ export default {
                 }
                 await me.loadProcess();
                 if(this.isAgentMode){
-                    me.processInstanceId = value.proc_inst_id
+                    me.processInstanceId = value.instId
                 } else {
                     await me.getChatList(me.chatRoomId)
                 }
@@ -336,7 +349,7 @@ export default {
 
             if (me.useThreadId) {
                 if (me.messages.length > 0) {
-                    me.threadId = me.messages[0].thread_id;
+                    me.threadId = me.messages[0].threadId;
                 } else {
                     me.threadId = await backend.createThreadId();
                 }
@@ -348,9 +361,9 @@ export default {
             }
 
             if (this.processInstance) {
-                if (this.processInstance.current_user_ids &&
-                    this.processInstance.current_user_ids.length > 0 &&
-                    !this.processInstance.current_user_ids.includes(this.userInfo.email)
+                if (this.processInstance.currentUserIds &&
+                    this.processInstance.currentUserIds.length > 0 &&
+                    !this.processInstance.currentUserIds.includes(this.userInfo.email)
                 ) {
                     this.disableChat = true;
                 }
@@ -422,8 +435,8 @@ export default {
 
             if (this.$route.params.taskId) {
                 id = this.$route.params.taskId;
-            } else if (this.processInstance && this.processInstance.proc_inst_id) {
-                id = this.processInstance.proc_inst_id;
+            } else if (this.processInstance && this.processInstance.instId) {
+                id = this.processInstance.instId;
             }
 
             if (id != '') {
