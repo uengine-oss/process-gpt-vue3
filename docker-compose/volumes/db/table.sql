@@ -556,6 +556,7 @@ create table if not exists public.notifications (
     url text null,
     from_user_id text null,
     tenant_id text null default public.tenant_id(),
+    consumer text null,
     constraint notifications_pkey primary key (id),
     constraint notifications_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -591,6 +592,9 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='from_user_id') THEN
         ALTER TABLE public.notifications ADD COLUMN from_user_id text null;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='consumer') THEN
+        ALTER TABLE public.notifications ADD COLUMN consumer text null;
     END IF;
 END;
 $$;

@@ -1,5 +1,5 @@
 <template>
-    <v-container class="bg-surface" style="height: 100%">
+    <v-container v-if="tenantInfos.length > 0" class="bg-surface" style="height: 100%">
         <v-row no-gutters>
             <Logo/>
         </v-row>
@@ -91,6 +91,22 @@
                     </v-card>
                 </v-row>
             </div>
+        </div>
+    </v-container>
+
+    <v-container v-else>
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: white;"
+            class="main-page-skeleton"
+        >
+            <v-row class="ma-0 pa-0" style="height: 100%;">
+                <v-col cols="2" class="pa-4">
+                    <v-skeleton-loader type="card"></v-skeleton-loader>
+                </v-col>
+                <v-col cols="10" class="pa-4">
+                    <v-skeleton-loader class="main-page-skeleton-right1" type="card"></v-skeleton-loader>
+                    <v-skeleton-loader class="main-page-skeleton-right2" type="card"></v-skeleton-loader>
+                </v-col>
+            </v-row>
         </div>
     </v-container>
 
@@ -212,11 +228,7 @@ export default {
                         // 유저 정보가 하나의 tenant에만 속해있다면 바로 리다이렉션
                         const tenantId = uniqueTenants[0];
                         if (tenantId) {
-                            if (tenantId == 'localhost') {
-                                this.window.location.href = 'http://localhost:8088/definition-map';
-                            } else {
-                                this.toSelectedTenantPage(tenantId);
-                            }
+                            this.toSelectedTenantPage(tenantId);
                         }
                     } else if (uniqueTenants.length > 1) {
                         // 여러 tenant가 있다면 tenant 목록으로 설정
