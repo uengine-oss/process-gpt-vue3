@@ -1,8 +1,8 @@
 <template>
     <div>
         <v-card-text class="pa-4">
-            <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                <div class="d-flex w-100 chat-view-box">
+            <perfect-scrollbar class="h-100 chat-view-box" ref="scrollContainer" @scroll="handleScroll">
+                <div class="d-flex w-100">
                     <v-col>
                         <div class="px-1 py-1">
                             <div style="margin-top: -20px;">
@@ -74,11 +74,6 @@ export default {
 </script>
 
 <style scoped>
-.chat-view-box {
-    height: calc(100vh - 220px);
-    overflow: auto;
-}
-
 .chat-message-bubble {
   position: relative;
   max-width: 70%;

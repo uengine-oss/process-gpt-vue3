@@ -60,13 +60,13 @@ const sidebarItems = ref<SidebarItem[]>([
         disable: false,
         isVisible: isAdmin // Only visible if isAdmin is true
     },
-    {
-        title: 'headerMenu.calendar',
-        icon: 'calendar-line-duotone',
-        to: '/calendar',
-        disable: false,
-        isVisible: window.$mode === 'ProcessGPT' && !window.$pal
-    }
+    // {
+    //     title: 'headerMenu.calendar',
+    //     icon: 'calendar-line-duotone',
+    //     to: '/calendar',
+    //     disable: false,
+    //     isVisible: window.$mode === 'ProcessGPT' && !window.$pal
+    // }
 ]);
 
 // 생명주기 훅 사용

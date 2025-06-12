@@ -253,17 +253,6 @@
                 </v-card-text>
             </v-card>
         </v-dialog>
-
-        <!-- <v-dialog v-model="executeDialog" max-width="80%">
-            <process-gpt-execute v-if="mode === 'LLM'" :definitionId="definitionPath" 
-                @close="executeDialog = false"></process-gpt-execute>
-            <div v-else>
-                <test-process v-if="isSimulate == 'true'" :definitionId="definitionPath" @close="executeDialog = false" />
-                <dry-run-process v-else :is-simulate="isSimulate" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
-            </div>
-        </v-dialog> -->
-
-        <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
     </div>
 </template>
 

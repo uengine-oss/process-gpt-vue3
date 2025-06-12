@@ -325,7 +325,7 @@ const deleteChatRoom = () => {
 }
 
 .lgScroll {
-    height: calc(100vh - 310px);
+    height: calc(100vh - 235px);
 }
 
 .selected-chat {

@@ -45,7 +45,9 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <div :key="chatRenderKey">
+                <div :key="chatRenderKey"
+                    class="chat-info-view-wrapper-chats"
+                >
                     <Chat
                         :messages="messages"
                         :userInfo="userInfo"
@@ -58,8 +60,6 @@
                         :isSystemChat="isSystemChat"
                         :chatRoomId="chatRoomId"
                         :newMessageInfo="newMessageInfo"
-                        :initialChatHeight="250"
-                        :maxAllowedBase="460"
                         @requestDraftAgent="requestDraftAgent"
                         @requestFile="requestFile"
                         @beforeReply="beforeReply"

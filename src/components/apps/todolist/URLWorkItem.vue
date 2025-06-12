@@ -1,5 +1,5 @@
 <template>
-    <div style="height: calc(100vh - 255px); padding: 20px" >
+    <div style="height: calc(100vh - 239px); padding: 20px" >
         <URLForm :url="url"></URLForm>
     </div>
 </template>
