@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Logo from '@/layouts/full/logo/Logo.vue';
 /* Set password form */
-import SetPasswordForm from '@/components/auth/SetPasswordForm.vue';
+import InitialSettingForm from '@/components/auth/InitialSettingForm.vue';
 </script>
 
 <template>
@@ -17,11 +17,11 @@ import SetPasswordForm from '@/components/auth/SetPasswordForm.vue';
             </v-col>
             <v-col cols="12" lg="4" xl="4" xxl="3" class="d-flex align-center justify-center bg-surface">
                 <div class="pa-sm-7 pa-4">
-                    <h2 class="text--darken-2 text-h4 font-weight-semibold">초기 비밀번호 설정</h2>
+                    <h2 class="text--darken-2 text-h4 font-weight-semibold">초기 설정</h2>
                     <p class="text-subtitle-1 text-grey100 py-4 text-10">
-                        계정 사용을 위해 새로운 비밀번호를 설정해주세요.
+                        계정 사용을 위해 사용하실 사용자명과 새로운 비밀번호를 설정해주세요.
                     </p>
-                    <SetPasswordForm />
+                    <InitialSettingForm />
                 </div>
             </v-col>
         </v-row>
