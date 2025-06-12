@@ -493,8 +493,10 @@ export default {
                             await me.loadRefForm();
                         }
                     }
-                    if(me.workItem.worklist) {
+
+                    if(me.workItem.worklist && me.workItem.worklist.instId) {
                         me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
+                        me.processInstance = await backend.getInstance(me.workItem.worklist.instId);
                     }
 
                     if (me.mode == 'ProcessGPT' && !me.pal) {
@@ -502,8 +504,6 @@ export default {
                     } else {
                         me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
                     }
-
-                    me.processInstance = await backend.getInstance(me.workItem.worklist.instId);
 
                     me.updatedDefKey++;
                 },
