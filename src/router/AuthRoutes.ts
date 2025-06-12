@@ -48,6 +48,11 @@ const AuthRoutes = {
             path: '/auth/reset-password',
             component: () => import('@/views/authentication/SideResetPassword.vue')
         },
+        {
+            name: 'Side Set Password',
+            path: '/auth/set-password',
+            component: () => import('@/views/authentication/SideSetPassword.vue')
+        },
         // {
         //     name: 'Boxed Forgot Password',
         //     path: '/auth/forgot-password2',

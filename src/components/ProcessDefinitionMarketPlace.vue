@@ -539,8 +539,8 @@ export default {
 
 <style scoped>
 .marketplace-scroll-area {
-    max-height: 60vh;
-    min-height: 60vh;
+    max-height: 56vh;
+    min-height: 56vh;
     overflow: auto;
     padding: 0px 8px 0px 8px;
 }

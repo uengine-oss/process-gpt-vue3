@@ -869,7 +869,19 @@ export default class StorageBaseSupabase {
                     window.localStorage.setItem('uid', data.id);
 
                     // FCM 토큰 처리 - user_devices 테이블 사용
-                    const fcm_token = localStorage.getItem('fcm_token');
+                    let fcm_token;
+                    
+                    // Check if we're in webview mode
+                    if (window.AndroidBridge) {
+                        // Get FCM token from Android bridge
+                        try {
+                            fcm_token = window.AndroidBridge.getFcmToken();
+                        } catch (e) {
+                            console.log('Failed to get FCM token from AndroidBridge:', e);
+                            fcm_token = null;
+                        }
+                    }
+                    
                     const userEmail = data.email;
                     
                     // user_devices 테이블에서 해당 유저 정보 확인

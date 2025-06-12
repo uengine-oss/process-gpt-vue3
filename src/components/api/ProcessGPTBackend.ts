@@ -1700,6 +1700,8 @@ class ProcessGPTBackend implements Backend {
                 role: newAgent.role,
                 goal: newAgent.goal,
                 persona: newAgent.persona,
+                url: newAgent.url,
+                description: newAgent.description,
                 tenant_id: window.$tenantName
             }
             await storage.putObject('agents', putObj);
@@ -1909,12 +1911,38 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async inviteUser(userInfo: any) {
+        try {
+            const request = {
+                input: userInfo
+            }
+            const response = await axios.post('/execution/invite-user', request);
+            if (response.status === 200) {
+                if (response.data) {
+                    return response.data;
+                } else {
+                    const newUser = await storage.getObject('users', {
+                        match: {
+                            email: userInfo.email,
+                            tenant_id: userInfo.tenant_id
+                        }
+                    });
+                    return { user: newUser };
+                }
+            } else {
+                return { error: true, message: response.data.message };
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async createUser(userInfo: any) {
         try {
             const request = {
                 input: userInfo
             }
-            console.log(request)
             const response = await axios.post('/execution/create-user', request);
             if (response.status === 200) {
                 if (response.data) {

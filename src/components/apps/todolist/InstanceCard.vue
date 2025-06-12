@@ -69,13 +69,11 @@
                     <v-window-item value="todo">
                         <v-card elevation="10">
                             <div class="pa-4 todolist-card-box">
-                                <div class="d-flex align-center justify-space-between ml-2">
-                                    <h5 class="text-h5 font-weight-semibold">{{ $t('todoList.title') }}</h5>
-
+                                <div class="d-flex align-center justify-end ml-2">
                                     <v-avatar v-if="mode === 'ProcessGPT'"
                                         size="24" elevation="10" class="bg-surface d-flex align-center cursor-pointer"
                                         @click="openDialog">
-                                        <v-tooltip activator="parent" location="left">할 일 등록</v-tooltip>
+                                        <v-tooltip activator="parent" location="left">업무 등록</v-tooltip>
                                         <PlusIcon size="24" stroke-width="2" />
                                     </v-avatar>
                                 </div>
@@ -89,7 +87,7 @@
                             </div>
 
                             <v-dialog v-model="dialog" max-width="500">
-                                <TodoDialog :todolist="todolist" @close="closeDialog" />
+                                <TodoDialog :instId="instance.instId" :defId="instance.defId" :todolist="columns" @close="closeDialog" />
                             </v-dialog>
                         </v-card>
                     </v-window-item>

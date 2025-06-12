@@ -13,22 +13,39 @@
             :rules="nameRules"
             class="mb-2"
         ></v-text-field>
-        <v-text-field 
-            v-model="agent.role" 
-            :label="$t('agentField.agentRole')" 
-            class="mb-2"
-        ></v-text-field>
-        <v-text-field 
-            v-model="agent.goal" 
-            :label="$t('agentField.agentGoal')" 
-            class="mb-2"
-        ></v-text-field>
-        <v-textarea
-            v-model="agent.persona" 
-            :label="$t('agentField.agentPersona')" 
-            class="mb-2"
-            rows="3"
-        ></v-textarea>
+
+        <div v-if="type === 'a2a'">
+            <v-text-field 
+                v-model="agent.url" 
+                label="URL"
+                class="mb-2"
+            ></v-text-field>
+            <v-textarea
+                v-model="agent.description" 
+                label="Description"
+                class="mb-2"
+                rows="3"
+            ></v-textarea>
+        </div>
+
+        <div v-else>
+            <v-text-field 
+                v-model="agent.role" 
+                :label="$t('agentField.agentRole')" 
+                class="mb-2"
+            ></v-text-field>
+            <v-text-field 
+                v-model="agent.goal" 
+                :label="$t('agentField.agentGoal')" 
+                class="mb-2"
+            ></v-text-field>
+            <v-textarea
+                v-model="agent.persona" 
+                :label="$t('agentField.agentPersona')" 
+                class="mb-2"
+                rows="3"
+            ></v-textarea>
+        </div>
     </div>
 </template>
 
@@ -43,7 +60,9 @@ export default {
                 name: '',
                 role: '',
                 goal: '',
-                persona: ''
+                persona: '',
+                url: '',
+                description: ''
             })
         },  
         idRules: {
@@ -55,6 +74,11 @@ export default {
             type: Array,
             required: true,
             default: () => []
+        },
+        type: {
+            type: String,
+            required: true,
+            default: 'agent'
         }
     },
     data() {
@@ -65,7 +89,9 @@ export default {
                 role: '',
                 goal: '',
                 persona: '',
-                isAgent: true
+                isAgent: true,
+                url: '',
+                description: '',
             },
             isEdit: false
         }
@@ -85,9 +111,9 @@ export default {
         }
     },
     mounted() {
-        if (this.modelValue && this.modelValue.id != '') {
+        console.log(this.modelValue)
+        if (this.modelValue && this.modelValue.isAgent) {
             this.agent = this.modelValue;
-            this.agent.isAgent = true;
             this.isEdit = true;
         }
     },

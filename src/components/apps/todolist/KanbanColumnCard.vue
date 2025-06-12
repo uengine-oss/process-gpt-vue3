@@ -210,8 +210,8 @@ export default {
             return this.$route.path.includes('/todolist');
         }
     },
-    async created() {
-        this.managed = !this.task.instId ? true : false;
+    async mounted() {
+        this.managed = this.task.adhoc;
         
         try {
             // 인스턴스 목록 가져오기
@@ -224,7 +224,7 @@ export default {
                     inst => inst.instId === this.task.instId
                 );
                 if (matchingInstance) {
-                    this.task.procInstName = matchingInstance.instName;
+                    this.task.procInstName = matchingInstance.name;
                 }
             }
         } catch (error) {

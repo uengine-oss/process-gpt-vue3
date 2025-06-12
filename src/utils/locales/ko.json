@@ -34,13 +34,13 @@
     "headerMenu": {
         "sidebar" : "메뉴 접기 펼치기",
         "dashboard" : "대시보드",
-        "todoList" : "칸반보드",
+        "todoList" : "나의 업무",
         "calendar" : "달력",
         "layoutSetting" : "레이아웃 설정",
         "admin" : "관리자 페이지"
     },
     "DashboardTodoList": {
-        "todo": "칸반보드",
+        "todo": "나의 업무",
         "inProgress": "진행 중",
         "done": "완료"
     },
@@ -57,7 +57,7 @@
         "welcome": "환영합니다."
     },
     "todoList": {
-        "title": "칸반보드",
+        "title": "나의 업무",
         "todo": "예정업무",
         "inProgress": "진행 중",
         "pending": "보류 중",
