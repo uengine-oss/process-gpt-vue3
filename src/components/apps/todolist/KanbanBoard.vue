@@ -10,6 +10,7 @@
                     :loading="loading" 
                     :isNotAll="false"
                     :showAddButton="false"
+                    :users="users"
                     @scrollBottom="handleScrollBottom"
                     @todoTaskColumnFold="todoTaskColumnFold"
                     @todoTaskColumnunfold="todoTaskColumnUnfold"
