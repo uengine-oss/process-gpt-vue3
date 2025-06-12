@@ -11,7 +11,6 @@
                     <PlusIcon size="24" stroke-width="2" />
                 </v-avatar>
             </div>
-
             <KanbanBoard
                 :columns="todolist"
                 :isNotAll="false"

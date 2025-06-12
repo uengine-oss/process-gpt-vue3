@@ -51,7 +51,7 @@
                             <GanttChart 
                                 :tasks="tasks" 
                                 :dependencies="dependencies"
-                                :users="[]" 
+                                :users="userList" 
                                 @task-updated="handleTaskUpdated" 
                                 @task-added="handleTaskAdded"
                                 @task-clicked="handleTaskClicked"
@@ -67,7 +67,31 @@
                         </div>
                     </v-window-item>
                     <v-window-item value="todo">
-                        <KanbanBoard  :columns="columns"/>
+                        <v-card elevation="10">
+                            <div class="pa-4 todolist-card-box">
+                                <div class="d-flex align-center justify-space-between ml-2">
+                                    <h5 class="text-h5 font-weight-semibold">{{ $t('todoList.title') }}</h5>
+
+                                    <v-avatar v-if="mode === 'ProcessGPT'"
+                                        size="24" elevation="10" class="bg-surface d-flex align-center cursor-pointer"
+                                        @click="openDialog">
+                                        <v-tooltip activator="parent" location="left">할 일 등록</v-tooltip>
+                                        <PlusIcon size="24" stroke-width="2" />
+                                    </v-avatar>
+                                </div>
+                                <KanbanBoard
+                                    :columns="columns" :users="userList"
+                                    :isNotAll="false"
+                                    :showAddButton="false"
+                                    @loadMore="handleLoadMore"
+                                    @updateStatus="updateStatus"
+                                />
+                            </div>
+
+                            <v-dialog v-model="dialog" max-width="500">
+                                <TodoDialog :todolist="todolist" @close="closeDialog" />
+                            </v-dialog>
+                        </v-card>
                     </v-window-item>
                     <v-window-item value="workhistory">
                         <InstanceWorkHistory :instance="instance"/>
@@ -85,19 +109,21 @@
 </template>
 
 <script>
-import BackendFactory from '@/components/api/BackendFactory';
-const backend = BackendFactory.createBackend();
-
-import InstanceTodo from './InstanceTodo.vue';
+// import InstanceTodo from './InstanceTodo.vue';
 import InstanceProgress from './InstanceProgress.vue';
 import InstanceWorkHistory from './InstanceWorkHistory.vue';
 import InstanceOutput from './InstanceOutput.vue';
 import ProcessInstanceRunning from '@/components/ProcessInstanceRunning.vue';
 import GanttChart from '@/components/apps/todolist/GanttChart.vue';
 import KanbanBoard from '@/components/apps/todolist/KanbanBoard.vue';
+import KanbanColumnConfig from './KanbanColumnConfig.vue';
+import TodoDialog from './TodoDialog.vue';
+
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 export default {
-    mixins: [InstanceTodo],
+    mixins: [KanbanColumnConfig],
     components: {
         InstanceProgress,
         InstanceWorkHistory,
@@ -105,8 +131,10 @@ export default {
         ProcessInstanceRunning,
         GanttChart,
         KanbanBoard,
+        TodoDialog
     },
     data: () => ({
+        mode: window.$mode,
         isLoading: true,
         instance: null,
         eventList: [],
@@ -272,8 +300,11 @@ export default {
         },
         async handleTaskAdded(task){
             task.projectId = this.instance.projectId;
-            task.parent = this.instance.instId;
-
+            if(task.parent == 0){
+                task.instId = this.instance.instId;
+            } else {
+                task.instId = task.parent;
+            }
             await backend.putWorklist(null, task);
         },
         async handleTaskClicked(event){
@@ -323,6 +354,12 @@ export default {
 
             rootTask.isOpened = true;
         },
+        openDialog() {
+            this.dialog = true;
+        },
+        closeDialog() {
+            this.dialog = false;
+        }
     }
 };
 </script>

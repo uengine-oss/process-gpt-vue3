@@ -1133,7 +1133,7 @@
                         me.backend.$bind("definition/" + me.id + ".json", def);
                         def.$load().then(function (definition) {
                             definition.instantiation.$create(null, {"simulation": true}).then(function (instance) {
-                                window.open('#/instance/' + instance.instanceId + '/' + instance.instanceId, '_blank');
+                                window.open('#/instancelist/' + instance.instanceId + '/' + instance.instanceId, '_blank');
                             });
                         });
                     }
