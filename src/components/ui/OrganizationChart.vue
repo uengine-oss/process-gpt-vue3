@@ -80,7 +80,7 @@ export default {
                             ${content.isTeam == true ? `<img class="node-content-btn delete-team-btn" src="/assets/images/icon/trash.svg">` : ''}
                             ${content.isAgent == true ? `<img class="node-content-btn edit-agent-btn" src="/assets/images/icon/pencil.svg">` : ''}
                             ${content.isAgent == true ? `<img class="node-content-btn delete-agent-btn" src="/assets/images/icon/trash.svg">` : ''}
-                            ${!content.isAgent && !content.isTeam ? `<img class="node-content-btn edit-member-btn" src="/assets/images/icon/pencil.svg">` : ''}
+                            ${!content.isAgent && !content.isTeam && content.id != 'root' ? `<img class="node-content-btn edit-member-btn" src="/assets/images/icon/pencil.svg">` : ''}
                         </div>
                     </div>
                 </div>

@@ -30,7 +30,6 @@
 <script>
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
 import BackendFactory from '@/components/api/BackendFactory';
-const backend = BackendFactory.createBackend();
 
 export default {
     name: "UserSelectField",
@@ -97,7 +96,9 @@ export default {
 
             usersToSelect: [],
             userList: [],
-            agentList: []
+            agentList: [],
+
+            backend: null
         };
     },
 
@@ -139,8 +140,10 @@ export default {
         this.localReadonly = this.readonly === "true"
     },
     async mounted() {
-        this.userList = await backend.getUserList();
-        this.agentList = await backend.getAgentList();
+        this.backend = BackendFactory.createBackend();
+
+        this.userList = await this.backend.getUserList();
+        this.agentList = await this.backend.getAgentList();
 
         if(this.useAgent) {
             const list = [...this.userList, ...this.agentList];

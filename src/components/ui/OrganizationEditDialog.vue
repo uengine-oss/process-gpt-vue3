@@ -33,11 +33,11 @@
 
             <!-- edit agent -->
             <div v-if="dialogType == 'edit-agent'">
-                <AgentField v-model="editNode.data" :idRules="idRules" :nameRules="nameRules" />
+                <AgentField v-model="editNode.data" :idRules="idRules" :nameRules="nameRules" :type="editNode.data.type" />
             </div>
 
             <!-- delete agent -->
-            <div v-else-if="dialogType == 'delete-agent'">
+            <div v-else-if="dialogType == 'delete'">
                 <v-alert icon="$warning" color="warning" variant="outlined" density="compact" class="mb-4">
                     <div class="text-body-1">{{ $t('organizationChartDefinition.deleteAgentExplanation') }}</div>
                 </v-alert>

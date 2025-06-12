@@ -301,8 +301,8 @@ export default {
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
         },
-        async updateAgent(type,editAgent) {
-            if (type == 'edit') {
+        async updateAgent(type, editAgent) {
+            if (type == 'edit-agent') {
                 await this.backend.putAgent(editAgent.data);
             } else if (type == 'delete') {
                 await this.backend.deleteAgent(editAgent.id);
