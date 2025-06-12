@@ -207,6 +207,7 @@
         "downloadImage": "정의 체계도를 이미지로 다운로드",
         "consultingAI": "프로세스 컨설팅 AI",
         "consultingButton": "프로세스 컨설팅 시작하기",
+        "analyzeAndImproveProcessWithAI": "프로세스 컨설팅 시작하기",
         "editingUser": "{name} 님이 수정 중 입니다.",
         "checkIn": "잠금",
         "checkOut": "잠금 해제",

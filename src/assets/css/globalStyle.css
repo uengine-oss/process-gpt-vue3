@@ -368,11 +368,6 @@ hr {
     display: none;
 }
 
-.process-consulting-chat-layout-card .chat-view-box {
-    height:200px !important;
-    overflow: auto;
-}
-
 .delete-input-details .v-input__details {
     display: none !important;
 }
@@ -564,6 +559,57 @@ hr {
 
 .instance-select-box:focus {
     background-color: #f5f5f5; /* 포커스 시 색상 */
+}
+
+
+/* 채팅 레이아웃 관련 UI 시작 */
+.process-definition-map-chat .chat-view-box-col {
+    height: 70vh;
+}
+
+.chat-info-view-wrapper-chats {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0; /* 중요! 안 주면 flexbox에서 스크롤 안 생기는 경우 있음 */
+}
+
+.chat-info-view-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-info-view-area {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+/* 헤더 영역 */
+.chat-info-header {
+    flex: 0 0 auto;
+}
+
+/* 중간 텍스트 박스영역 */
+.chat-view-box {
+    flex: 1 1 auto;
+}
+
+/* 채팅창 입력 및 버튼 영역 */
+.chat-info-message-input-box {
+    flex: 0 0 auto;
+}
+/* 채팅 레이아웃 관련 UI 끝  */
+
+
+.mobile-menu-nav {
+    top:111px !important;
+    height: calc(100% - 111px) !important;
+    border-radius: 10px !important;
+}
+
+.no-scrollbar {
+    height: 100% !important;
 }
 
 @media only screen and (max-width:1450px) {

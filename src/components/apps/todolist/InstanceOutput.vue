@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10" class="w-100">
-        <v-row v-if="outputList.length > 0" class="ma-0 pa-0" style="height:calc(100vh - 255px); overflow:auto;">
+        <v-row v-if="outputList.length > 0" class="ma-0 pa-0" style="height:calc(100vh - 239px); overflow:auto;">
             <v-col v-for="item in outputList" :key="item.id" cols="12" :lg="isInWorkItem ? 12 : 6" :md="isInWorkItem ? 12 : 6" sm="12">
                 <v-card elevation="10" class="h-100">
                     <v-card-title> {{ item.name }} </v-card-title>

@@ -108,10 +108,10 @@
                                 </v-avatar>
                                 <div>
                                     <v-card-title class="text-primary font-weight-bold pb-1">
-                                        프로세스 컨설팅 시작하기
+                                        {{ $t('processDefinitionMap.consultingButton') }}
                                     </v-card-title>
                                     <div class="text-subtitle-2 text-grey-darken-1">
-                                        AI와 함께 프로세스를 분석하고 개선해보세요
+                                        {{ $t('processDefinitionMap.analyzeAndImproveProcessWithAI') }}
                                     </div>
                                 </div>
                             </div>
@@ -153,7 +153,10 @@
                 </v-col>
             </v-row>
         </v-card>
-        <v-dialog :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'" v-model="openConsultingDialog" :scrim="isSimulateMode ? false : true" persistent>
+        <v-dialog v-model="openConsultingDialog"
+            :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'"
+            :scrim="isSimulateMode ? false : true" persistent
+        >
             <v-card>
                 <v-row class="ma-0 pa-3" style="background-color:rgb(var(--v-theme-primary), 0.2); height:50px;">
                     <v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>
@@ -161,7 +164,7 @@
                     <v-spacer></v-spacer>
                     <v-icon @click="closeConsultingDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
                 </v-row>
-                <ProcessDefinitionChat 
+                <ProcessDefinitionChat class="process-definition-map-chat"
                     ref="processDefinitionChat"
                     :chatMode="'consulting'"
                     @createdBPMN="createdBPMN"
@@ -393,7 +396,7 @@ export default {
                         .substring(1);
                 }
 
-                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+                return s4() + s4() + '-' + s4() + '-' + s4() + s4() + s4();
             };
 
             const addSubProcess = async (majorProc) => {

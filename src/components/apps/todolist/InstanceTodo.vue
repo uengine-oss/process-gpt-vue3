@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10">
-        <v-row class="ma-0 pa-0" style="height:calc(100vh - 255px); overflow:auto;">
+        <v-row class="ma-0 pa-0" style="height:calc(100vh - 239px); overflow:auto;">
             <v-col v-for="column in todolist" :key="column.id" cols="12" lg="3" md="3" sm="6">
                 <TodoTaskColumn
                     :column="column"
