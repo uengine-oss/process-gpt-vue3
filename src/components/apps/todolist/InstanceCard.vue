@@ -259,13 +259,39 @@ export default {
                         result = result.concat(updatedWorklist);
                     }
                     me.tasks = result;
-                    me.dependencies = await backend.getTaskDependencyByInstId(me.id)
+                    let dependencies = await backend.getTaskDependencyByInstId(me.id)
+                    me.dependencies = me.settingTaskDependency(dependencies, me.tasks);
                     // 칸반 컬럼 업데이트
                     me.columns.forEach(column => {
                         column.tasks = me.tasks.filter(task => task.status === column.id);
                     });
                     me.isLoading = false
                 }
+            });
+        },
+        settingTaskDependency(dependencies, tasks){
+            let result = [];
+            result = tasks.reduce((dependencies, task) => {
+                if (task.referenceIds && task.referenceIds.length > 0) {
+                    const taskDeps = task.referenceIds.map(refId => ({
+                        id: this.generateUUID(),
+                        taskId: task.taskId,
+                        dependsId: refId
+                    }));
+                    return [...dependencies, ...taskDeps];
+                }
+                return dependencies;
+            }, []);
+
+            result = [...new Set([...result, ...dependencies])];
+
+            return result;
+        },
+        generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
             });
         },
         delay(time) {

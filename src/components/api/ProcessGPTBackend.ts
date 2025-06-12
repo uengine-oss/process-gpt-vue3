@@ -590,6 +590,7 @@ class ProcessGPTBackend implements Backend {
                     activity_id: workItem.tracingTag || workItem.title,
                     activity_name: workItem.title || workItem.name,
                     description: workItem.description || null,
+                    reference_ids: workItem.referenceIds || null,
                     tool: workItem.tool || null,
                     adhoc: workItem.adhoc || null,
                     project_id: workItem.projectId || null,
