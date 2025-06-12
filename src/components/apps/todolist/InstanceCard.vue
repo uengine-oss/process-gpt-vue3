@@ -67,11 +67,10 @@
                         </div>
                     </v-window-item>
                     <v-window-item value="todo">
-                        <!-- <KanbanBoard :columns="columns" :users="userList"/> -->
                         <v-card elevation="10">
                             <div class="pa-4 todolist-card-box">
                                 <div class="d-flex align-center justify-space-between ml-2">
-                                    <h5 class="text-h5 font-weight-semibold">{{ ($t('todoList.title')) }}</h5>
+                                    <h5 class="text-h5 font-weight-semibold">{{ $t('todoList.title') }}</h5>
 
                                     <v-avatar v-if="mode === 'ProcessGPT'"
                                         size="24" elevation="10" class="bg-surface d-flex align-center cursor-pointer"
