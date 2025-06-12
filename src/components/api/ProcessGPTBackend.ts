@@ -1913,6 +1913,7 @@ class ProcessGPTBackend implements Backend {
             const request = {
                 input: userInfo
             }
+            console.log(request)
             const response = await axios.post('/execution/create-user', request);
             if (response.status === 200) {
                 if (response.data) {

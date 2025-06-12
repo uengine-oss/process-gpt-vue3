@@ -158,7 +158,7 @@ export default {
             return [
                 (value) => !!value || this.$t('organizationChartDefinition.emailRequired'),
                 (value) => /.+@.+\..+/.test(value) || this.$t('organizationChartDefinition.emailInvalid'),
-                (value) => !this.isExistUser(value) || this.$t('organizationChartDefinition.emailAlreadyExists'),
+                // (value) => !this.isExistUser(value) || this.$t('organizationChartDefinition.emailAlreadyExists'),
             ];
         },
         nameRules() {

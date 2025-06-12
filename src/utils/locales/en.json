@@ -821,6 +821,7 @@
         "history": "Work History",
         "chatbot": "Assistant",
         "agent": "Create Agent Draft",
+        "agentMonitor": "Agent Monitor",
         "toggleInputFieldSize": "Toggle Input Field Size",
         "previous": "Previous Step",
         "inputForm": "Input"

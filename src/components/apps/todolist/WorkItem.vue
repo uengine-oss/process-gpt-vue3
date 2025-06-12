@@ -154,6 +154,11 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
+                        <v-window-item value="agent-monitor" class="pa-2">
+                            <v-card elevation="10" class="pa-4">
+                                <AgentMonitor />
+                            </v-card>
+                        </v-window-item>
                         <v-window-item v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
                            <DynamicForm 
                                 v-if="inFormValues[index]?.html" 
@@ -230,6 +235,7 @@ import FormWorkItem from './FormWorkItem.vue'; // FormWorkItem 컴포넌트 임�
 import URLWorkItem from './URLWorkItem.vue';
 import InstanceOutput from './InstanceOutput.vue';
 import BpmnUengine from '@/components/BpmnUengineViewer.vue';
+import AgentMonitor from '@/views/markdown/AgentMonitor.vue';
 
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
@@ -267,7 +273,8 @@ export default {
         BpmnUengine,
         DynamicForm,
         FormDefinition,
-        InstanceOutput
+        InstanceOutput,
+        AgentMonitor
     },
     data: () => ({    
         workItem: null,
@@ -335,7 +342,7 @@ export default {
                     if(this.formData && Object.keys(this.formData).length > 0) {
                         this.selectedTab = 'agent';
                     } else {
-                        this.$emit('agentGenerationFinished', null)
+                        this.agentGenerationFinished(null)
                     }
                 }, 1500);
             }
@@ -393,6 +400,7 @@ export default {
                         // { value: 'history', label: this.$t('WorkItem.history') },
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent', label: this.$t('WorkItem.agent') },
+                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
                     ]
                 } else {
                     return [

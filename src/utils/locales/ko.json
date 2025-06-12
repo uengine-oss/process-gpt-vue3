@@ -821,6 +821,7 @@
         "history": "워크 히스토리",
         "chatbot": "어시스턴트",
         "agent": "Agent 초안 생성",
+        "agentMonitor": "Agent 모니터링",
         "toggleInputFieldSize": "확대 / 축소",
         "previous": "이전 단계",
         "inputForm": "입력 내용"
