@@ -118,18 +118,6 @@
                     <v-row>
                         <v-col cols="12">
                             <v-text-field
-                                v-model="newUser.name"
-                                label="사용자 이름"
-                                prepend-inner-icon="mdi-account"
-                                variant="outlined"
-                                :rules="[v => !!v || '사용자 이름을 입력해주세요']"
-                                required
-                                class="mb-2"
-                            ></v-text-field>
-                        </v-col>
-                        
-                        <v-col cols="12">
-                            <v-text-field
                                 v-model="newUser.email"
                                 label="이메일"
                                 prepend-inner-icon="mdi-email"
@@ -142,20 +130,6 @@
                                 required
                                 class="mb-2"
                             ></v-text-field>
-                        </v-col>
-                        
-                        <v-col cols="12">
-                            <v-select
-                                v-model="newUser.role"
-                                label="역할"
-                                prepend-inner-icon="mdi-account-tie"
-                                variant="outlined"
-                                :items="roleOptions"
-                                item-title="text"
-                                item-value="value"
-                                :rules="[v => !!v || '역할을 선택해주세요']"
-                                required
-                            ></v-select>
                         </v-col>
                     </v-row>
                 </v-form>
@@ -208,9 +182,7 @@ export default {
         inviteFormValid: false,
         currentTenantId: null,
         newUser: {
-            name: '',
-            email: '',
-            role: ''
+            email: ''
         },
         roleOptions: [
             { text: '관리자', value: 'superAdmin' },
@@ -262,12 +234,10 @@ export default {
             me.$try({
                 action: async () => {
                     let userInfo = {
-                        username: user.name,
                         email: user.email,
-                        role: user.role,
                         tenant_id: me.currentTenantId
                     }
-                    const result = await backend.createUser(userInfo);
+                    const result = await backend.inviteUser(userInfo);
                     console.log(result)
                 },
                 successMsg: me.$t('organizationChartDefinition.addUserSuccess'),
@@ -299,9 +269,7 @@ export default {
 
         resetInviteForm() {
             this.newUser = {
-                name: '',
-                email: '',
-                role: ''
+                email: ''
             };
             this.inviteFormValid = false;
             if (this.$refs.inviteForm) {
