@@ -40,16 +40,23 @@
                         </v-col>
                     </v-row>
                 </div>
-                <!-- 세로배치 -->
-                <div class="mt-1">
-                    <div 
+               <!-- 세로배치 -->
+               <div class="mt-1">
+                    <div v-if="mode == 'uEngine'" 
                         class="pa-0"
                         style="font-size:12px; margin-top: 5px;"
                     >
-                        TaskId : {{ task.taskId }} 
-                        <br>InstId: {{ task.instId }}
-                        <br> projectId: {{ task.projectId }}
-                        <br> parent: {{ task.parent }}
+                        TaskId : {{ task.taskId }} / InstId: {{ task.instId }}
+                    </div>
+                    <div v-else-if="isMyTask && isTodolistPath" colos="12" class="pa-0">
+                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
+                            {{ task.procInstName }}
+                        </div>
+                    </div>
+                    <div v-else colos="12" class="pa-0">
+                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
+                            {{ task.instName }}
+                        </div>
                     </div>
                 </div>
                 <v-row v-if="userInfoForTask" class="pa-0 ma-0 mt-1 d-flex align-center">
@@ -167,7 +174,7 @@ export default {
             return dateString;
         },
         category() {
-            if(!this.task.adhoc && this.task.defId){
+            if(!this.task.adhoc && this.task.defId) {
                 return { name: 'BPM', color: 'primary' };
             }
             return null
@@ -187,11 +194,7 @@ export default {
         }
     },
     async created() {
-        if (!this.task.instId) {
-            this.managed = true;
-        } else {
-            this.managed = false;
-        }
+        this.managed = !this.task.instId ? true : false;
         
         try {
             // 인스턴스 목록 가져오기
@@ -204,7 +207,7 @@ export default {
                     inst => inst.instId === this.task.instId
                 );
                 if (matchingInstance) {
-                    this.task.proc_inst_name = matchingInstance.instName;
+                    this.task.procInstName = matchingInstance.instName;
                 }
             }
         } catch (error) {
@@ -214,7 +217,8 @@ export default {
     methods: {
         executeTask() {
             if (!this.managed) {
-                this.$emit('executeTask', this.task);
+                // this.$emit('executeTask', this.task);
+                this.$router.push(`/todolist/${this.task.taskId}`)
             } else {
                 this.dialogType = 'view';
                 this.dialog = true;

@@ -3,7 +3,7 @@
         <Chat :messages="messages" :agentInfo="agentInfo"
             :isAgentMode="isAgentMode" :userInfo="userInfo" 
             :disableChat="disableChat" :type="'instances'" :name="chatName" 
-            :chatRoomId="chatRoomId" :hideInput="!isTaskMode" :initialChatHeight="initialChatHeight"
+            :chatRoomId="chatRoomId" :hideInput="!isTaskMode"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
             @reGenerateAgentAI="reGenerateAgentAI">
@@ -50,7 +50,6 @@ export default {
         currentActivities: null,
         
         isTaskMode: false,
-        initialChatHeight: 325,
 
         // mcp agent
         threadId: '',
@@ -123,13 +122,11 @@ export default {
                     if (!newVal.params.taskId) {
                         this.messages = [];
                     }
-                    this.initialChatHeight = 325;
                     this.isTaskMode = true;
                     await this.init();
                 } else if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
                     this.messages = [];
                     this.isTaskMode = false;
-                    this.initialChatHeight = 240;
                     await this.init();
                 }
             }
