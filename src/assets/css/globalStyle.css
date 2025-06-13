@@ -648,6 +648,12 @@ hr {
     .todo-task-column-box-pc {
         padding-right: 20px !important;
     }
+    .instance-card-title {
+        padding-top: 16px !important;
+    }
+    .instance-card-id {
+        display: none;
+    }
 }
 
 

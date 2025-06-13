@@ -71,6 +71,7 @@
                         :currentActivities="currentActivities"
                         :generateFormTask="generateFormTask"
                         :isPreviewPDFDialog="isPreviewPDFDialog"
+                        :isAIGenerated="isAIGenerated"
                         @closePDFDialog="closePDFDialog"
                         v-on:error="handleError"
                         v-on:shown="handleShown"
@@ -308,6 +309,7 @@ export default {
         isAdmin: Boolean,
         generateFormTask: Object,
         isPreviewPDFDialog: Boolean,
+        isAIGenerated: Boolean,
     },
     data: () => ({
         panel: false,
