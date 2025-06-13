@@ -81,6 +81,9 @@ export default {
         backend.getNotifications(async (data) => {
             if (data && data.new) {
                 this.notifications = await backend.fetchNotifications();
+                if(localStorage.getItem('email') && data.new.user_id === localStorage.getItem('email')) {
+                    this.$emit('newNotification', data.new.type);
+                }
             }
         });
     },

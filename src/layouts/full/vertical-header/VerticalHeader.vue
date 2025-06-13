@@ -19,6 +19,12 @@ const priority = ref(customizer.setHorizontalLayout ? 0 : 0);
 const router = useRouter();
 const stickyHeader = ref(false);
 
+// 알림 뱃지 상태 관리 (localStorage에서 초기값 로드)
+const notificationBadges = ref({
+    chat: localStorage.getItem('notificationBadge_chat') === 'true',
+    workitem: localStorage.getItem('notificationBadge_workitem') === 'true'
+});
+
 interface SidebarItem {
     title: string;
     icon: string;
@@ -125,6 +131,32 @@ function searchbox() {
 function navigateTo(item: SidebarItem) {
     if (!item.disable) {
         router.push(item.to);
+        
+        // 채팅 페이지로 이동 시 채팅 뱃지 제거
+        if (item.to === '/chats') {
+            notificationBadges.value.chat = false;
+            localStorage.setItem('notificationBadge_chat', 'false');
+        }
+        // 할일 목록 페이지로 이동 시 워크아이템 뱃지 제거
+        if (item.to === '/todolist') {
+            notificationBadges.value.workitem = false;
+            localStorage.setItem('notificationBadge_workitem', 'false');
+        }
+    }
+}
+
+// 새 알림 처리 함수
+function newNotification(type: string) {
+    if (type === 'chat') {
+        if(window.location.pathname != '/chats') {
+            notificationBadges.value.chat = true;
+            localStorage.setItem('notificationBadge_chat', 'true');
+        }
+    } else if (type === 'workitem_bpm' || type === 'workitem') {
+        if(window.location.pathname != '/todolist') {
+            notificationBadges.value.workitem = true;
+            localStorage.setItem('notificationBadge_workitem', 'true');
+        }
     }
 }
 </script>
@@ -151,8 +183,14 @@ function navigateTo(item: SidebarItem) {
                     <template v-for="item in sidebarItems" :key="item.title">
                         <v-tooltip v-if="!item.isMobile && item.isVisible" :text="$t(item.title)">
                             <template v-slot:activator="{ props }">
-                                <v-btn icon v-bind="props" @click="navigateTo(item)">
-                                    <Icons :icon="item.icon"/>
+                                <v-btn icon v-bind="props" @click="navigateTo(item)" class="position-relative">
+                                    <Icons 
+                                        :icon="item.icon"
+                                        :class="{
+                                            'icon-heartbit': (item.to === '/chats' && notificationBadges.chat) || 
+                                                           (item.to === '/todolist' && notificationBadges.workitem)
+                                        }"
+                                    />
                                 </v-btn>
                             </template>
                         </v-tooltip>
@@ -177,7 +215,7 @@ function navigateTo(item: SidebarItem) {
                     <Searchbar />
                 </div>
                 <div class="hidden-sm-and-down mr-sm-6 mr-4">
-                    <NotificationDD />
+                    <NotificationDD @newNotification="newNotification" />
                 </div>
                 <div class="hidden-sm-and-down">
                     <ProfileDD />
@@ -191,5 +229,27 @@ function navigateTo(item: SidebarItem) {
     .header-logo {
         display: none;
     }   
+}
+
+/* 아이콘 하트비트 애니메이션 */
+.icon-heartbit {
+    color: rgb(var(--v-theme-primary)) !important;
+    animation: icon-pulse 1.5s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes icon-pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 </style>

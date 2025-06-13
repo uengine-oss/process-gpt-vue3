@@ -1433,7 +1433,7 @@ class ProcessGPTBackend implements Backend {
     async watchNotifications(onNotification?: (notification: any) => void) {
         try {
             await storage.watchNotifications(`notifications`, (payload) => {
-                if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+                if (payload && payload.new && payload.eventType === "INSERT") { // || payload.eventType === "UPDATE"
                     const notification = payload.new;
                     if (onNotification) {
                         onNotification(notification);
