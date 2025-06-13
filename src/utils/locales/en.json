@@ -57,11 +57,12 @@
         "welcome": "Welcome"
     },
     "todoList": {
-        "title": "My Tasks",
+        "title": "Task List",
         "todo": "Upcoming Tasks",
         "inProgress": "In Progress",
         "pending": "Pending",
-        "done": "Done"
+        "done": "Done",
+        "addTask": "Add Task"
     },
     "calendar": {
         "title": "Calendar",
@@ -195,7 +196,10 @@
         "agentName": "Name",
         "agentRole": "Role",
         "agentGoal": "Goal",
-        "agentPersona": "Persona"
+        "agentPersona": "Persona",
+        "agentUrl": "URL",
+        "agentDescription": "Description",
+        "agentTools": "Tools"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",

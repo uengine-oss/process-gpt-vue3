@@ -1,7 +1,8 @@
 <template>
     <div>
         <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 131px)' : 'height:100vh;'"
-            style="overflow: auto;">
+            style="overflow: auto;"
+        >
             <div v-if="componentName != 'SubProcessDetail'" class="pa-0 pl-6 pt-4 pr-6 d-flex align-center"
                 style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>

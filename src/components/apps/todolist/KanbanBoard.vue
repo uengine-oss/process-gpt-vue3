@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="10" style="height: 100%;">
+    <div elevation="10" style="height: 100%;">
         <v-row class="ma-0 pa-0 todo-task-column-box-pc" style="height: 100%;">
             <v-col v-for="column in columns" :key="column.id"
                 class="pa-2"
@@ -17,8 +17,7 @@
                 />
             </v-col>
         </v-row>
-        
-    </v-card>
+    </div>
 </template>
 
 <script>

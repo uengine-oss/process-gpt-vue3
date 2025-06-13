@@ -612,7 +612,11 @@ hr {
     height: 100% !important;
 }
 
-@media only screen and (max-width:1450px) {
+.instance-card-kanban-board .todo-list-card-box {
+    height: calc(100vh - 360px) !important;
+}
+
+@media only screen and (max-width: 1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
         height: 94px !important;
@@ -623,7 +627,7 @@ hr {
     display: none;
 }
 
-@media only screen and (max-width:1279px) {
+@media only screen and (max-width: 1279px) {
     .is-sidebar-pc {
         display: none;
     }
@@ -631,6 +635,21 @@ hr {
         display: block;
     }
 }
+
+@media only screen and (max-width: 768px) {
+    .todo-list-card-box {
+        padding-right: 40px !important;
+    }
+    .todo-list-card-box {
+        max-height: calc(-216px + 100vh) !important;
+        min-height: calc(-556px + 100vh) !important;
+        height: 100% !important;
+    }
+    .todo-task-column-box-pc {
+        padding-right: 20px !important;
+    }
+}
+
 
 @media only screen and (max-width:550px) {
     .vue-bpmn-diagram-container .djs-palette {

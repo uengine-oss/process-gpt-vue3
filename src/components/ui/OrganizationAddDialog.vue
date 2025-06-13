@@ -157,7 +157,8 @@ export default {
             isAgent: true,
             type: 'agent',
             url: '',
-            description: ''
+            description: '',
+            tools: ''
         },
     }),
     computed: {

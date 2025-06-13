@@ -4,19 +4,52 @@
         <v-card class="rounded-lg mb-2" :style="`background-color: ${hexToRgba(themeColor, 0.05)} !important;`" elevation="0" @click="editMarkdown" hover>
             <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
             <v-row class="ma-0 pa-4 align-center">
-                <div :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
+                <div v-if="localModelValue.length > 0 && !previewMenu && !showDialog" >
+                    <SlideComponent
+                        :content="localModelValue"
+                        :isEditMode="false"
+                        style="width: 38px; height: 38px; margin-right: 8px;"
+                    />
+                </div>
+                <div v-else :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
                     <Icons :icon="'slide-show'" color="white" />
                 </div>
                 <div>
                     <div class="font-weight-medium">{{ localAlias ? localAlias : localName }}</div>
                 </div>
                 <v-spacer></v-spacer>
-                <!-- Vuetify의 flex 유틸리티를 사용하여 아이콘을 정중앙 정렬 -->
+                <!-- 드롭다운 미리보기 버튼 추가 -->
+                <v-menu
+                    v-model="previewMenu"
+                    :close-on-content-click="false"
+                    offset-y
+                    min-width="420"
+                >
+                    <template #activator="{ props }">
+                        <div
+                            v-bind="props"
+                            style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px; margin-right: 8px;"
+                            class="d-flex align-center justify-center"
+                        >
+                            <v-icon icon='mdi-eye-outline' :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
+                        </div>
+                    </template>
+                    <div style="padding: 16px; width: 400px; height: 300px; box-sizing: border-box;">
+                        <v-sheet elevation="3" rounded style="width: 100%; height: 100%; padding: 8px; box-sizing: border-box; background: white;">
+                            <SlideComponent
+                                :content="localModelValue"
+                                :isEditMode="false"
+                                style="width: 100%; height: 100%;"
+                            />
+                        </v-sheet>
+                    </div>
+                </v-menu>
+                <!-- 기존 눈 아이콘 -->
                 <div
                     style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px;"
                     class="d-flex align-center justify-center"
                 >
-                    <v-icon icon="mdi-eye-outline" :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
+                    <v-icon icon="mdi-magnify-plus" :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
                 </div>
             </v-row>
         </v-card>
@@ -194,6 +227,7 @@ $e^{i\\pi} + 1 = 0$
             localReadonly: false,
             showDialog: false,
             editorValue: "",
+            previewMenu: false,
 
             settingInfos: [
                 commonSettingInfos["localName"],
