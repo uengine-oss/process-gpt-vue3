@@ -17,12 +17,12 @@
         <div v-if="type === 'a2a'">
             <v-text-field 
                 v-model="agent.url" 
-                label="URL"
+                :label="$t('agentField.agentUrl')"
                 class="mb-2"
             ></v-text-field>
             <v-textarea
                 v-model="agent.description" 
-                label="Description"
+                :label="$t('agentField.agentDescription')"
                 class="mb-2"
                 rows="3"
             ></v-textarea>
@@ -45,11 +45,23 @@
                 class="mb-2"
                 rows="3"
             ></v-textarea>
+            <v-combobox
+                v-model="selectedTools"
+                :items="tools"
+                :label="$t('agentField.agentTools')"
+                multiple
+                chips
+                clearable
+                closable-chips
+                variant="outlined"
+            ></v-combobox>
         </div>
     </div>
 </template>
 
 <script>
+import BackendFactory from '@/components/api/BackendFactory';
+
 export default {
     props: {
         modelValue: {
@@ -75,6 +87,10 @@ export default {
             required: true,
             default: () => []
         },
+        isEdit: {
+            type: Boolean,
+            default: false
+        },
         type: {
             type: String,
             required: true,
@@ -93,7 +109,8 @@ export default {
                 url: '',
                 description: '',
             },
-            isEdit: false
+            tools: [],
+            selectedTools: []
         }
     },
     watch: {
@@ -108,16 +125,30 @@ export default {
                 this.$emit('update:modelValue', newVal);
             },
             deep: true
-        }
+        },
+        selectedTools: {
+            deep: true,
+            handler(newVal) {
+                this.agent.tools = newVal ? newVal.join(',') : '';
+            }
+        },
     },
-    mounted() {
-        console.log(this.modelValue)
+    async mounted() {
+        if (this.type === 'agent') {
+            await this.getTools();
+        }
+
         if (this.modelValue && this.modelValue.isAgent) {
             this.agent = this.modelValue;
-            this.isEdit = true;
         }
     },
     methods: {
+        async getTools() {
+            const backend = BackendFactory.createBackend();
+            const jsonData = await backend.getMCPTools();
+            const tools = Object.keys(jsonData);
+            this.tools = tools;
+        }
     }
 }
 </script>

@@ -195,7 +195,10 @@
         "agentName": "이름",
         "agentRole": "역할",
         "agentGoal": "목표",
-        "agentPersona": "페르소나"
+        "agentPersona": "페르소나",
+        "agentUrl": "URL",
+        "agentDescription": "설명",
+        "agentTools": "도구"
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",

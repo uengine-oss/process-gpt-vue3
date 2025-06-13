@@ -196,7 +196,10 @@
         "agentName": "Name",
         "agentRole": "Role",
         "agentGoal": "Goal",
-        "agentPersona": "Persona"
+        "agentPersona": "Persona",
+        "agentUrl": "URL",
+        "agentDescription": "Description",
+        "agentTools": "Tools"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",

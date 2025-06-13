@@ -2780,6 +2780,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getMCPTools() {
+        try {
+            const response = await axios.get('/execution/mcp-tools');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
     
 }
 

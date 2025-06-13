@@ -103,6 +103,15 @@ export default {
             };
         }
     },
+    watch: {
+        organizationChart: {
+            deep: true,
+            async handler(newVal) {
+                this.userList = await this.backend.getUserList();
+                this.agentList = await this.backend.getAgentList();
+            }
+        }
+    },
     methods: {
         uuid() {
             function s4() {
@@ -252,8 +261,6 @@ export default {
                         await me.updateNode();
                         me.$refs.organizationChart.drawTree();
                     }
-                    me.userList = await me.backend.getUserList();
-                    me.agentList = await me.backend.getAgentList();
                 },
                 successMsg: me.$t('organizationChartDefinition.addUserSuccess'),
                 errorMsg: me.$t('organizationChartDefinition.addUserFailed'),
