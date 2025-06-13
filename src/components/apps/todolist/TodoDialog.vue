@@ -9,7 +9,7 @@
             <v-card-text class="px-6">
                 <div class="mb-3">
                     <span class="text-h6 font-weight-semibold">제목: </span>
-                    <span class="text-h6">{{ task.title }}</span>
+                    <span class="text-h6">{{ task.name }}</span>
                 </div>
                 <div class="mb-3">
                     <span class="text-h6 font-weight-semibold">시작일: </span>
@@ -45,7 +45,7 @@
             </v-card-title>
 
             <v-card-text>
-                <v-text-field v-model="newTask.title" label="할일명" autofocus></v-text-field>
+                <v-text-field v-model="newTask.name" label="할일명" autofocus></v-text-field>
                 <v-text-field v-model="newTask.startDate" label="시작일" type="datetime-local"></v-text-field>
                 <v-text-field v-model="newTask.dueDate" label="마감일" type="datetime-local"></v-text-field>
                 <!-- <v-select v-model="newTask.status" :items="statusList" item-title="text" item-value="value" label="진행 상태" variant="outlined"></v-select> -->
@@ -53,7 +53,7 @@
             </v-card-text>
 
             <v-card-actions class="justify-center pt-0">
-                <v-btn :disabled="newTask.title == ''" color="primary" variant="flat" @click="save">저장</v-btn>
+                <v-btn :disabled="newTask.name == ''" color="primary" variant="flat" @click="save">저장</v-btn>
                 <v-btn color="error" variant="flat" @click="close">닫기</v-btn>
             </v-card-actions>
         </v-card>
@@ -76,7 +76,7 @@ export default {
         newTask: {
             taskId: '',
             endpoint: '',
-            title: '',
+            name: '',
             description: '',
             status: 'TODO',
             startDate: null,
@@ -99,7 +99,7 @@ export default {
             this.newTask = {
                 taskId: '',
                 endpoint: '',
-                title: '',
+                name: '',
                 description: '',
                 status: 'TODO',
                 startDate: null,
@@ -107,6 +107,7 @@ export default {
                 dueDate: null,
                 instId: this.instId || '',
                 defId: this.defId || '',
+                adhoc: true,
             };
         }
     },

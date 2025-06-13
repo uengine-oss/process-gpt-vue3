@@ -590,6 +590,7 @@ class ProcessGPTBackend implements Backend {
                     activity_id: workItem.tracingTag || workItem.title,
                     activity_name: workItem.title || workItem.name,
                     description: workItem.description || null,
+                    reference_ids: workItem.referenceIds || null,
                     tool: workItem.tool || null,
                     adhoc: workItem.adhoc || null,
                     project_id: workItem.projectId || null,
@@ -1699,6 +1700,8 @@ class ProcessGPTBackend implements Backend {
                 role: newAgent.role,
                 goal: newAgent.goal,
                 persona: newAgent.persona,
+                url: newAgent.url,
+                description: newAgent.description,
                 tenant_id: window.$tenantName
             }
             await storage.putObject('agents', putObj);
