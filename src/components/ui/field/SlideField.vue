@@ -1,9 +1,9 @@
 <template>
     <div>
         <!-- <slide-component :key="localModelValue" style="width: 100%; height: 250px;" :content="localModelValue" :isEditMode="false" class="presentation-slide" /> -->
-        <v-card class="rounded-lg mb-2" :style="`background-color: ${hexToRgba(themeColor, 0.05)} !important;`" elevation="0" hover>
+        <v-card class="rounded-lg mb-2" :style="`background-color: ${hexToRgba(themeColor, 0.05)} !important;`" elevation="0" hover @click="editMarkdown">
             <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
-            <v-row class="ma-0 pa-4 align-center" @click="editMarkdown">
+            <v-row class="ma-0 pa-4 align-center" >
                 <div v-if="localModelValue.length > 0 && !previewMenu && !showDialog" >
                     <SlideComponent
                         :content="localModelValue"
@@ -35,7 +35,7 @@
                 </div>
             </v-row>
             <!-- 미리보기 확장 영역 -->
-            <v-row v-if="previewMenu" class="ma-0 pa-0">
+            <v-row v-if="previewMenu" class="ma-0 pa-0" @click.stop>
                 <v-sheet elevation="3" rounded style="width: 100%; min-width: 400px; min-height: 300px; padding: 16px; background: white; position: relative;">
                     <SlideComponent
                         :content="localModelValue"
