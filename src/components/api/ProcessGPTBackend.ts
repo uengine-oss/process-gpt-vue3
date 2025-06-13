@@ -495,9 +495,9 @@ class ProcessGPTBackend implements Backend {
                     status: workitem.status === 'TODO' ? 'NEW' : workitem.status === 'DONE' ? 'COMPLETED' : workitem.status,
                     description: workitem.description || "",
                     tool: workitem.tool || "",
-                    currentActivities: instance && instance.current_activity_ids ? 
-                        instance.current_activity_ids : [ activityInfo.id ],
-                    defVerId: instance && instance.proc_def_version ? instance.proc_def_version : null
+                    currentActivities: instance && instance.currentActivityIds ? 
+                        instance.currentActivityIds : [ activityInfo.id ],
+                    defVerId: instance && instance.defVersion ? instance.defVersion : null
                 },
                 activity: {
                     name: workitem.activity_name,
@@ -1370,6 +1370,7 @@ class ProcessGPTBackend implements Backend {
             return await storage.putObject('bpm_proc_inst', {
                 proc_inst_id: instId || this.uuid(),
                 proc_def_id: instItem.procDefId,
+                proc_def_version: instItem.procDefVersion,
                 proc_inst_name: instItem.name,
                 current_activity_ids: instItem.currentActivityIds || [],
                 current_user_ids: instItem.currentUserIds || [],
@@ -2616,6 +2617,24 @@ class ProcessGPTBackend implements Backend {
     //         throw new Error(error.message);
     //     }
     // }
+    async putProject(project: any) {
+        try {
+            return await storage.putObject('project', {
+                project_id: project.projectId || this.uuid(),
+                name: project.name || 'Untitled Project',
+                start_date: project.startDate || new Date().toISOString(),
+                end_date: project.endDate || null,
+                due_date: project.dueDate || null,
+                status: project.status || "NEW",
+                created_date: project.createdDate || new Date().toISOString(),
+                user_id: project.userId || localStorage.getItem('email'),
+            });
+        } catch (error) {
+            
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
 
     async getProjectList() {
         try {
@@ -2630,6 +2649,7 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
     async getProjectById(projectId: number) {
         try {
             const list = await storage.list('project', {match: { 'project_id': projectId } });
@@ -2743,6 +2763,7 @@ class ProcessGPTBackend implements Backend {
         return {
             instId: item.proc_inst_id,
             defId: item.proc_def_id,
+            defVersion: item.proc_def_version,
             name: item.proc_inst_name,
             projectId: item.project_id,
             currentActivityIds: item.current_activity_ids,
