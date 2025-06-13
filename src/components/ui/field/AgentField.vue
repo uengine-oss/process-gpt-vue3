@@ -140,6 +140,7 @@ export default {
 
         if (this.modelValue && this.modelValue.isAgent) {
             this.agent = this.modelValue;
+            this.selectedTools = this.agent.tools.split(',');
         }
     },
     methods: {

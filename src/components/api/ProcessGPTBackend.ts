@@ -1702,6 +1702,7 @@ class ProcessGPTBackend implements Backend {
                 persona: newAgent.persona,
                 url: newAgent.url,
                 description: newAgent.description,
+                tools: newAgent.tools,
                 tenant_id: window.$tenantName
             }
             await storage.putObject('agents', putObj);
