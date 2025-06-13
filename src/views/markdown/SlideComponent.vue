@@ -87,7 +87,7 @@ export default {
         plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.KaTeX],
         embedded: true,
         margin: 0.1,
-        minScale: 0.2,
+        minScale: 0.05,
         maxScale: 2.0,
         controls: !this.isEditMode,
         progress: !this.isEditMode,
