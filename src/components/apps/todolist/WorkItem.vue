@@ -69,7 +69,7 @@
                         <v-tab v-if="messages" value="agent">{{ $t('WorkItem.agent') }}</v-tab> -->
                     </v-tabs>
                     <v-window v-model="selectedTab"
-                        :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 249px); color: black; overflow: auto'"
+                        :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px); overflow: auto' : 'height: calc(100vh - 249px); color: black; overflow: auto'"
                     >
                         <v-window-item value="progress">
                             <div

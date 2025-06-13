@@ -1,5 +1,5 @@
 <template>
-    <v-card v-if="instance" elevation="10" style="height: calc(100vh - 131px);">
+    <v-card v-if="instance" elevation="10" style="height: calc(100vh - 131px); overflow: auto;">
         <div class="d-flex">
             <div class="px-3 py-3 pb-2 pl-4 align-center">
                 <div class="d-flex">
@@ -79,7 +79,7 @@
                                         <PlusIcon size="24" stroke-width="2" />
                                     </v-avatar>
                                 </div>
-                                <KanbanBoard
+                                <KanbanBoard class="instance-card-kanban-board"
                                     :columns="columns" :users="userList"
                                     :isNotAll="false"
                                     :showAddButton="false"
