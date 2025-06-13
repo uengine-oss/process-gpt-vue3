@@ -283,18 +283,18 @@ create table if not exists public.project (
     constraint project_pkey primary key (project_id)
 ) tablespace pg_default;
 
-create table if not exists public.milestone (
-    id bigserial,
-    impact_type character varying null,
-    impact_desc text null,
-    created_date date null,
-    task_id uuid null,
-    impact_id uuid null,
-    constraint milestone_pkey primary key (id),
-    constraint fk_milestone_task foreign key (task_id) references worklist (task_id),
-    constraint fk_milestone_impact_id foreign key (impact_id) references worklist (task_id),
-    constraint fk_milestone_impact foreign key (impact_id) references worklist (task_id)
-) tablespace pg_default;
+-- create table if not exists public.milestone (
+--     id bigserial,
+--     impact_type character varying null,
+--     impact_desc text null,
+--     created_date date null,
+--     task_id uuid null,
+--     impact_id uuid null,
+--     constraint milestone_pkey primary key (id),
+--     constraint fk_milestone_task foreign key (task_id) references worklist (task_id),
+--     constraint fk_milestone_impact_id foreign key (impact_id) references worklist (task_id),
+--     constraint fk_milestone_impact foreign key (impact_id) references worklist (task_id)
+-- ) tablespace pg_default;
 
 create table if not exists public.task_dependency (
     id bigserial,

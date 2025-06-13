@@ -209,12 +209,12 @@ ALTER TABLE public.project ADD COLUMN IF NOT EXISTS project_id uuid DEFAULT gen_
 ALTER TABLE public.project ADD COLUMN IF NOT EXISTS due_date date;
 
 -- milestone table
-ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS id bigserial;
-ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS impact_type character varying;
-ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS impact_desc text;
-ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS created_date date;
-ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS task_id uuid;
-ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS impact_id uuid;
+-- ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS id bigserial;
+-- ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS impact_type character varying;
+-- ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS impact_desc text;
+-- ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS created_date date;
+-- ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS task_id uuid;
+-- ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS impact_id uuid;
 
 -- task_dependency table
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS id bigserial;
