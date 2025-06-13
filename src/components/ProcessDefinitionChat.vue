@@ -49,6 +49,7 @@
                 <process-definition
                     class="process-definition-resize"
                     :bpmn="bpmn"
+                    :isAIGenerated="isAIGenerated"
                     :processDefinition="processDefinition"
                     :key="definitionChangeCount"
                     :isViewMode="isViewMode"
@@ -296,6 +297,7 @@ export default {
         isConsultingMode: false,
         isPreviewPDFDialog: false,
         marketplaceDialog: false,
+        isAIGenerated: false,
     }),
     async created() {
         $try(async () => {
@@ -976,6 +978,7 @@ export default {
                             if(!this.processDefinition) this.processDefinition = {};
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
                             this.bpmn = this.createBpmnXml(unknown);
+                            this.isAIGenerated = true;
                             this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
                             this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
                             this.projectName = unknown.processDefinitionName

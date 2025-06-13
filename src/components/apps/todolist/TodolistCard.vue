@@ -6,8 +6,9 @@
 
                 <v-avatar v-if="mode === 'ProcessGPT'"
                     size="24" elevation="10" class="bg-surface d-flex align-center cursor-pointer"
-                    @click="openDialog">
-                    <v-tooltip activator="parent" location="left">할 일 등록</v-tooltip>
+                    @click="openDialog"
+                >
+                    <v-tooltip activator="parent" location="left">{{ ($t('todoList.addTask')) }}</v-tooltip>
                     <PlusIcon size="24" stroke-width="2" />
                 </v-avatar>
             </div>

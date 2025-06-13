@@ -2,9 +2,16 @@
 import { ref } from 'vue';
 import axios from 'axios';
 
+const username = ref(localStorage.getItem('userName') || localStorage.getItem('email')?.split('@')[0] || '');
 const password = ref('');
 const confirmPassword = ref('');
 const isLoading = ref(false);
+
+const usernameRules = ref([
+    (v: string) => !!v || '사용자명은 필수입니다',
+    (v: string) => v.length >= 3 || '사용자명은 최소 3자 이상이어야 합니다',
+    (v: string) => /^[a-zA-Z0-9가-힣_]+$/.test(v) || '사용자명은 영문, 한글, 숫자, 언더스코어만 사용 가능합니다',
+]);
 
 const passwordRules = ref([
     (v: string) => !!v || '비밀번호는 필수입니다',
@@ -24,7 +31,7 @@ const getUserId = () => {
     return localStorage.getItem('uid');
 };
 
-async function setPassword() {
+async function setInitialSettings() {
     if (password.value !== confirmPassword.value) {
         alert('비밀번호가 일치하지 않습니다.');
         return;
@@ -33,20 +40,21 @@ async function setPassword() {
     isLoading.value = true;
     
     try {
-        const response = await axios.post('/execution/set-password', {
+        const response = await axios.post('/execution/set-initial-info', {
             input: {
                 user_id: getUserId(),
+                user_name: username.value,
                 password: password.value
             }
         });
         
         // 성공 처리
-        alert('비밀번호가 성공적으로 설정되었습니다.');
-        window.location.href = '/definition-map';
+        alert('초기 설정이 성공적으로 완료되었습니다. 로그인 후 이용 가능합니다.');
+        window.location.href = '/auth/login';
         
     } catch (error) {
-        console.error('비밀번호 설정 실패:', error);
-        alert('비밀번호 설정에 실패했습니다. 다시 시도해주세요.');
+        console.error('초기 설정 실패:', error);
+        alert('초기 설정에 실패했습니다. 다시 시도해주세요.');
     } finally {
         isLoading.value = false;
     }
@@ -55,8 +63,17 @@ async function setPassword() {
 
 <template>
     <div>
-        <v-form ref="form" @submit.prevent="setPassword" lazy-validation class="mt-sm-13 mt-8">
-            <v-label class="text-subtitle-1 font-weight-medium pb-2 text-lightText">새 비밀번호</v-label>
+        <v-form ref="form" @submit.prevent="setInitialSettings" lazy-validation class="mt-sm-13 mt-8">
+            <v-label class="text-subtitle-1 font-weight-medium pb-2 text-lightText">사용자명</v-label>
+            <VTextField 
+                v-model="username" 
+                :rules="usernameRules" 
+                required 
+                type="text"
+                placeholder="사용하실 사용자명을 입력하세요"
+            ></VTextField>
+            
+            <v-label class="text-subtitle-1 font-weight-medium pb-2 text-lightText mt-4">새 비밀번호</v-label>
             <VTextField 
                 v-model="password" 
                 :rules="passwordRules" 
@@ -84,7 +101,7 @@ async function setPassword() {
                 :loading="isLoading"
                 :disabled="isLoading"
             >
-                비밀번호 설정
+                초기 설정 완료
             </v-btn>
         </v-form>
     </div>

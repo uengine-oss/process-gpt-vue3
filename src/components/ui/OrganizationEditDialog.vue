@@ -33,7 +33,7 @@
 
             <!-- edit agent -->
             <div v-if="dialogType == 'edit-agent'">
-                <AgentField v-model="editNode.data" :idRules="idRules" :nameRules="nameRules" :type="editNode.data.type" />
+                <AgentField v-model="editNode.data" :idRules="idRules" :nameRules="nameRules" :type="editNode.data.type" :isEdit="true" />
             </div>
 
             <!-- delete agent -->

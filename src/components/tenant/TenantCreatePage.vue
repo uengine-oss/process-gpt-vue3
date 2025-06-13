@@ -5,7 +5,7 @@
         >mdi-arrow-left
         </v-icon>
 
-        <v-row no-gutters justify="center">
+        <v-row v-if="!tenantCreated" no-gutters justify="center">
             <h1 class="text-grey200">회사 생성</h1>
         </v-row>
         <!-- <v-row no-gutters justify="center">
@@ -19,12 +19,38 @@
             :isLoading='isLoading'
             @stopLoading="stopLoading"
             @beforeCreateTenant="beforeCreateTenant"
+            v-if="!tenantCreated"
         ></TenantInfoField>
+
+        <!-- 테넌트 생성 완료 및 유저 초대 섹션 -->
+        <div v-if="tenantCreated" class="tenant-success-section">
+            <!-- 성공 메시지 -->
+            <v-row justify="center" class="mb-8">
+                <v-col cols="12" md="8" lg="6">
+                    <v-card class="success-card" elevation="3">
+                        <v-card-text class="text-center pa-8">
+                            <v-icon color="success" size="64" class="mb-4">mdi-check-circle</v-icon>
+                            <h2 class="text-h4 text-success mb-3">🎉 회사 생성 완료!</h2>
+                            <p class="text-h6 text-grey-darken-1 mb-4">
+                                <strong>{{ tenantInfo.id }}</strong> 회사가 성공적으로 생성되었습니다.
+                            </p>
+                            <p class="text-body-1 text-grey-darken-2">
+                                이제 팀원들을 초대하여 함께 작업을 시작해보세요.<br>
+                                지금 초대하지 않더라도 언제든 새로운 사용자를 초대할 수 있습니다.
+                            </p>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+            </v-row>
+
+            <InviteUserCard v-if="tenantCreated" :tenantInfo="tenantInfo" type="createTenant" />
+        </div>
     </div>
 </template>
 
 <script>
 import TenantInfoField from '@/components/tenant/TenantInfoField.vue';
+import InviteUserCard from '@/components/tenant/inviteUserCard.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -32,13 +58,15 @@ const backend = BackendFactory.createBackend();
 export default {
     name: 'TenantCreatePage',
     components: {
-        TenantInfoField
+        TenantInfoField,
+        InviteUserCard
     },
     data: () => ({
         tenantInfo: {
             id: '',
         },
         isLoading: false,
+        tenantCreated: false
     }),
     async created() {
         const isLogin = await backend.checkDBConnection();
@@ -64,8 +92,34 @@ export default {
         },
         async createTenant() {
             await backend.putTenant(this.tenantId);
-            await this.$router.push('/tenant/manage');
+            this.isLoading = false;
+            this.tenantCreated = true;
         }
-    },
+    }
 };
 </script>
+
+<style scoped>
+/* 성공 카드 스타일 */
+.success-card {
+    border-radius: 20px !important;
+    border: 3px solid #4caf50 !important;
+    background: linear-gradient(135deg, #f8fff8 0%, #e8f5e8 100%) !important;
+}
+
+/* 테넌트 성공 섹션 */
+.tenant-success-section {
+    padding: 2rem 1rem;
+    min-height: calc(100vh - 100px);
+}
+
+@media only screen and (max-width: 960px) {
+    .tenant-success-section {
+        padding: 1rem 0.5rem;
+    }
+    
+    .mb-8 {
+        margin-bottom: 3rem !important;
+    }
+}
+</style>

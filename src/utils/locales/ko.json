@@ -57,11 +57,12 @@
         "welcome": "환영합니다."
     },
     "todoList": {
-        "title": "나의 업무",
+        "title": "업무 목록",
         "todo": "예정업무",
         "inProgress": "진행 중",
         "pending": "보류 중",
-        "done": "완료됨"
+        "done": "완료됨",
+        "addTask": "업무 등록"
     },
     "calendar": {
         "title": "달력",
@@ -194,7 +195,10 @@
         "agentName": "이름",
         "agentRole": "역할",
         "agentGoal": "목표",
-        "agentPersona": "페르소나"
+        "agentPersona": "페르소나",
+        "agentUrl": "URL",
+        "agentDescription": "설명",
+        "agentTools": "도구"
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
@@ -219,7 +223,7 @@
         "download": "다운로드",
         "uncategorized": "미분류",
         "closeConsulting": "저장하지 않은 정보는 모두 유실됩니다. 컨설팅을 종료하시겠습니까?",
-        "closeConsultingInPreview": "저장하지 않은 정보는 모두 유실됩니다.\n저장하시려면 우측 자물쇠 버튼을 클릭하여 저장하실 수 있습니다.\n\n컨설팅을 종료하시겠습니까?",
+        "closeConsultingInPreview": "저장하지 않은 정보는 모두 유실됩니다.\n저장하시려면 우측 저장 버튼을 클릭하여 저장하실 수 있습니다.\n\n컨설팅을 종료하시겠습니까?",
         "checkInDBError": "DB 연결이 끊어졌습니다. 수정된 데이터를 다운로드하여 저장하고 관리자에게 문의주세요.",
         "checkOutDBError": "DB 연결이 끊어졌습니다. 관리자에게 문의해주세요.",
         "checkInMessage": "수정된 내용을 저장 혹은 잠금 하시겠습니까? \n취소 후 잠금을 진행하는 경우 수정된 내용은 저장되지 않습니다.",
@@ -329,7 +333,8 @@
         "phone": "전화번호",
         "address": "주소",
         "save": "저장",
-        "manageAccess": "역할 관리",
+        "manageAccess": "사용자 관리",
+        "addUser": "사용자 추가",
         "drive": "구글 드라이브 설정",
         "clientId": "클라이언트 ID",
         "clientSecret": "클라이언트 Secret",

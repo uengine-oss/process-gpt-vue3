@@ -7,6 +7,10 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async getMCPTools() {
+        return null;
+    }
+
     async watchNotifications(onNotification?: (notification: any) => void) {
         return null;
     }

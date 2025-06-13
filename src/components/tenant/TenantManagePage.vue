@@ -1,5 +1,5 @@
 <template>
-    <v-container class="bg-surface" style="height: 100%">
+    <v-container v-if="tenantInfos.length > 0" class="bg-surface" style="height: 100%">
         <v-row no-gutters>
             <Logo/>
         </v-row>
@@ -51,19 +51,8 @@
                             <v-col cols="1">
                                 <v-icon size="24">mdi-office-building-outline</v-icon>     
                             </v-col>
-                            <v-col cols="8">
+                            <v-col cols="9">
                                 &nbsp; {{ tenantInfo.id }}
-                            </v-col>
-                            <v-col v-if="isOwner" cols="1">
-                                <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
-                                    <v-tooltip text="사용자 초대">
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn @click.stop="openInviteDialog(tenantInfo.id)" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
-                                                <v-icon size="24">mdi-account-plus</v-icon>
-                                            </v-btn>
-                                        </template>
-                                    </v-tooltip>
-                                </v-sheet>
                             </v-col>
                             <v-col v-if="isOwner" cols="1">
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
@@ -94,6 +83,22 @@
         </div>
     </v-container>
 
+    <v-container v-else>
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: white;"
+            class="main-page-skeleton"
+        >
+            <v-row class="ma-0 pa-0" style="height: 100%;">
+                <v-col cols="2" class="pa-4">
+                    <v-skeleton-loader type="card"></v-skeleton-loader>
+                </v-col>
+                <v-col cols="10" class="pa-4">
+                    <v-skeleton-loader class="main-page-skeleton-right1" type="card"></v-skeleton-loader>
+                    <v-skeleton-loader class="main-page-skeleton-right2" type="card"></v-skeleton-loader>
+                </v-col>
+            </v-row>
+        </div>
+    </v-container>
+
     <v-dialog v-model="deleteDialog" max-width="500">
         <v-card>
             <v-card-text>
@@ -102,61 +107,6 @@
             <v-card-actions class="justify-center pt-0">
                 <v-btn color="primary" variant="flat" @click="deleteTenant(); deleteDialog = false">삭제</v-btn>
                 <v-btn color="error" variant="flat" @click="deleteDialog = false">취소</v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
-
-    <v-dialog v-model="inviteDialog" max-width="600" persistent>
-        <v-card class="pa-4">
-            <v-card-title class="text-center pb-4">
-                <v-icon class="mr-2" size="28" color="primary">mdi-account-plus</v-icon>
-                <span class="text-h5 font-weight-bold">사용자 초대</span>
-            </v-card-title>
-            
-            <v-card-text class="pb-2">
-                <v-form ref="inviteForm" v-model="inviteFormValid">
-                    <v-row>
-                        <v-col cols="12">
-                            <v-text-field
-                                v-model="newUser.email"
-                                label="이메일"
-                                prepend-inner-icon="mdi-email"
-                                variant="outlined"
-                                type="email"
-                                :rules="[
-                                    v => !!v || '이메일을 입력해주세요',
-                                    v => /.+@.+\..+/.test(v) || '올바른 이메일 형식을 입력해주세요'
-                                ]"
-                                required
-                                class="mb-2"
-                            ></v-text-field>
-                        </v-col>
-                    </v-row>
-                </v-form>
-            </v-card-text>
-
-            <v-card-actions class="justify-center pt-4">
-                <v-btn 
-                    color="primary" 
-                    variant="flat" 
-                    size="large"
-                    class="px-8 mr-4"
-                    :disabled="!inviteFormValid"
-                    @click="inviteUser"
-                >
-                    <v-icon class="mr-2">mdi-send</v-icon>
-                    초대하기
-                </v-btn>
-                <v-btn 
-                    color="grey" 
-                    variant="outlined" 
-                    size="large"
-                    class="px-8"
-                    @click="closeInviteDialog"
-                >
-                    <v-icon class="mr-2">mdi-close</v-icon>
-                    닫기
-                </v-btn>
             </v-card-actions>
         </v-card>
     </v-dialog>
@@ -178,16 +128,6 @@ export default {
         deleteDialog: false,
         tenantIdToDelete: null,
         isOwner: false,
-        inviteDialog: false,
-        inviteFormValid: false,
-        currentTenantId: null,
-        newUser: {
-            email: ''
-        },
-        roleOptions: [
-            { text: '관리자', value: 'superAdmin' },
-            { text: '사용자', value: 'user' }
-        ]
     }),
     async created() {
         const isLogin = await backend.checkDBConnection();
@@ -212,11 +152,7 @@ export default {
                         // 유저 정보가 하나의 tenant에만 속해있다면 바로 리다이렉션
                         const tenantId = uniqueTenants[0];
                         if (tenantId) {
-                            if (tenantId == 'localhost') {
-                                this.window.location.href = 'http://localhost:8088/definition-map';
-                            } else {
-                                this.toSelectedTenantPage(tenantId);
-                            }
+                            this.toSelectedTenantPage(tenantId);
                         }
                     } else if (uniqueTenants.length > 1) {
                         // 여러 tenant가 있다면 tenant 목록으로 설정
@@ -229,21 +165,6 @@ export default {
         }
     },
     methods: {
-        async createNewUser(user) {
-            var me = this
-            me.$try({
-                action: async () => {
-                    let userInfo = {
-                        email: user.email,
-                        tenant_id: me.currentTenantId
-                    }
-                    const result = await backend.inviteUser(userInfo);
-                    console.log(result)
-                },
-                successMsg: me.$t('organizationChartDefinition.addUserSuccess'),
-                errorMsg: me.$t('organizationChartDefinition.addUserFailed'),
-            });
-        },
         toAddTenentPage() {
             this.$router.push('/tenant/create')
         },
@@ -255,37 +176,6 @@ export default {
         async deleteTenant() {
             await backend.deleteTenant(this.tenantIdToDelete)
             this.tenantInfos = this.tenantInfos.filter(tenant => tenant.id !== this.tenantIdToDelete)
-        },
-
-        openInviteDialog(tenantId) {
-            this.currentTenantId = tenantId;
-            this.inviteDialog = true;
-        },
-
-        closeInviteDialog() {
-            this.inviteDialog = false;
-            this.resetInviteForm();
-        },
-
-        resetInviteForm() {
-            this.newUser = {
-                email: ''
-            };
-            this.inviteFormValid = false;
-            if (this.$refs.inviteForm) {
-                this.$refs.inviteForm.reset();
-            }
-        },
-
-        async inviteUser() {
-            if (!this.inviteFormValid) return;
-            
-            try {
-                await this.createNewUser(this.newUser);
-                this.closeInviteDialog();
-            } catch (error) {
-                console.error('사용자 초대 중 오류 발생:', error);
-            }
         },
         
         async toSelectedTenantPage(tenantId) {
