@@ -1702,6 +1702,7 @@ class ProcessGPTBackend implements Backend {
                 persona: newAgent.persona,
                 url: newAgent.url,
                 description: newAgent.description,
+                tools: newAgent.tools,
                 tenant_id: window.$tenantName
             }
             await storage.putObject('agents', putObj);
@@ -2780,6 +2781,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getMCPTools() {
+        try {
+            const response = await axios.get('/execution/mcp-tools');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
     
 }
 

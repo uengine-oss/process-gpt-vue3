@@ -321,19 +321,22 @@ export default class StorageBaseSupabase {
                     if (window.$tenantName) {
                         filter.tenant_id = window.$tenantName;
                     }
+                    
+                    // 테넌트가 없는 경우 여러 결과가 나올 수 있으므로 항상 limit(1) 사용
                     var { data, error } = await window.$supabase.from('users')
                         .select()
                         .match(filter)
-                        .maybeSingle();
+                        .limit(1);
                     
-                    if (!error && data) {
+                    if (!error && data && data.length > 0) {
+                        const userData = data[0];
                         return {
-                            email: data.email,
-                            name: data.username,
-                            profile: data.profile,
-                            uid: data.id,
-                            role: data.role,
-                            tenant_id: data.tenant_id
+                            email: userData.email,
+                            name: userData.username,
+                            profile: userData.profile,
+                            uid: userData.id,
+                            role: userData.role,
+                            tenant_id: userData.tenant_id
                         }
                     } else if (error) {
                         throw new StorageBaseError('error in getUserInfo', error, arguments);

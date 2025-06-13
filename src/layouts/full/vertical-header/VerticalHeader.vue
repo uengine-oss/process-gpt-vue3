@@ -161,7 +161,7 @@ function navigateTo(item: SidebarItem) {
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="customizer-btn" icon
                                 @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                                <SettingsIcon />
+                                <v-icon>mdi-view-dashboard</v-icon>
                             </v-btn>
                         </template>
                     </v-tooltip>

@@ -132,7 +132,9 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     }
   
     const childElements = element.children || [];
-    const lanes = childElements.filter(el => el.type === 'bpmn:Lane');
+    const lanes = childElements
+      .filter(el => el.type === 'bpmn:Lane')
+      .sort((a, b) => a.di.bounds.y - b.di.bounds.y);
   
     // ✅ 회전 전에 lane 전체를 감싸는 oldParticipantBounds 생성
     const oldMinX = Math.min(...lanes.map(lane => lane.di.bounds.x));
@@ -302,7 +304,9 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     }
   
     const childElements = element.children || [];
-    const lanes = childElements.filter(el => el.type === 'bpmn:Lane');
+    const lanes = childElements
+      .filter(el => el.type === 'bpmn:Lane')
+      .sort((a, b) => a.di.bounds.x - b.di.bounds.x);
   
     // ✅ 회전 전 lane 기준으로 oldParticipantBounds 생성
     const oldMinX = Math.min(...lanes.map(lane => lane.di.bounds.x));
