@@ -692,6 +692,10 @@ hr {
     .chat-info-message-input-box {
         padding-bottom: 70px;
     } 
+
+    .leftSidebar {
+        width: 300px !important;
+    }
 }
 
 

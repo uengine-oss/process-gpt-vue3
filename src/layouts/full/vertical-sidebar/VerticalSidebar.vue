@@ -18,7 +18,7 @@
         elevation="10"
         :rail="customizer.mini_sidebar"
         expand-on-hover
-        width="300"
+        width="275"
     >
         <v-row class="pa-5 pl-4 ma-0 is-sidebar-pc" >
             <Logo :style="logoPadding"/>
