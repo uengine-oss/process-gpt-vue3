@@ -165,10 +165,6 @@ export default {
     .todo-task-item-card-style:not(:first-of-type) {
         margin-top:8px;
     }
-    .todo-list-card-box > div {
-        width:100%;
-        height:100%;
-    }
     .todo-task-fold-btn {
         cursor: pointer;
         display: none;

@@ -22,8 +22,6 @@
            
         <div v-if="!todoTaskColumnBtnStatus" ref="section"
             class="pa-3 todo-list-card-box"
-            :style="{ height: isNotAll ? 'calc(100vh - 315px)' : 'calc(100vh - 216px)' }"
-            style="overflow:auto;"
         >
             <draggable class="dragArea list-group cursor-move" :list="column.tasks"
                 :animation="200" ghost-class="ghost-card" group="tasks" @add="updateTask"

@@ -1,6 +1,7 @@
 <template>
     <div>
-        <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 131px)' : 'height:100vh;'"
+        <v-card elevation="10" :style="!$globalState.state.isZoomed ? '' : 'height:100vh;'"
+            class="is-work-height"
             style="overflow: auto;"
         >
             <div v-if="componentName != 'SubProcessDetail'" class="pa-0 pl-6 pt-4 pr-6 d-flex align-center"

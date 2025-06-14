@@ -91,7 +91,7 @@
                 </div>
             </div>
 
-            <v-dialog v-model="dialog" max-width="500">
+            <v-dialog v-model="dialog" max-width="500" persistent>
                 <TodoDialog 
                     :type="dialogType"
                     :task="task"

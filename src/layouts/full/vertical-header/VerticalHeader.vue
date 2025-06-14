@@ -3,21 +3,20 @@ import { ref, watch, computed, onBeforeMount, onMounted, onBeforeUnmount } from 
 import { useCustomizerStore } from '../../../stores/customizer';
 import { useEcomStore } from '@/stores/apps/eCommerce';
 import { useRouter } from 'vue-router';
-import { Icon } from '@iconify/vue';
-import LanguageDD from './LanguageDD.vue';
 import NotificationDD from './NotificationDD.vue';
-import MessagesDD from './MessagesDD.vue';
 import ProfileDD from './ProfileDD.vue';
 import Searchbar from './Searchbar.vue';
-import RightMobileSidebar from './RightMobileSidebar.vue';
-import Logo from '../logo/Logo.vue';
 
 const customizer = useCustomizerStore();
 const showSearch = ref(false);
-const appsdrawer = ref(false);
 const priority = ref(customizer.setHorizontalLayout ? 0 : 0);
 const router = useRouter();
 const stickyHeader = ref(false);
+
+// globalIsMobile computed 추가
+const globalIsMobile = computed(() => {
+    return (window as any).$globalIsMobile || false;
+});
 
 // 알림 뱃지 상태 관리 (localStorage에서 초기값 로드)
 const notificationBadges = ref({
@@ -163,15 +162,38 @@ function newNotification(type: string) {
 
 
 <template>
-    <div class="container">
+    <!-- 모바일 헤더 -->
+    <div v-if="globalIsMobile && customizer.Sidebar_drawer" class="mobile-header">
+        <div>
+            <v-container fluid class="pa-2">
+                <!-- 검색, 알림 -->
+                <v-row class="ma-0 mt-2">
+                    <Searchbar />
+                    <NotificationDD @newNotification="newNotification" />
+                </v-row>
+                <!-- 네비게이션 버튼들 - 세로 배치 -->
+                <v-row class="ma-0 mt-2">
+                    <template v-for="item in sidebarItems" :key="item.title">
+                        <v-col v-if="item.isVisible" class="pa-1">
+                            <v-btn 
+                                @click="navigateTo(item)"
+                                class="mobile-nav-btn"
+                            >
+                                <Icons :icon="item.icon" class="mr-2" />
+                                {{ $t(item.title) }}
+                            </v-btn>
+                        </v-col>
+                    </template>
+                </v-row>
+            </v-container>
+        </div>
+    </div>
+
+    <!-- PC 헤더 -->
+    <div v-else class="container">
         <div class="maxWidth">
             <v-app-bar elevation="0" :priority="priority" height="75"  id="top" :class="stickyHeader ? 'sticky' : ''">
                 <v-row class="ma-0 pa-0">
-                    <v-btn class="hidden-lg-and-up" icon
-                        @click.stop="customizer.SET_SIDEBAR_DRAWER"
-                    >
-                        <Icons :icon="'list-bold-duotone'"/>
-                    </v-btn>
                     <v-tooltip :text="$t('headerMenu.sidebar')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="hidden-md-and-down" icon
@@ -226,6 +248,16 @@ function newNotification(type: string) {
     .header-logo {
         display: none;
     }   
+}
+
+/* 모바일 헤더 스타일 */
+.mobile-header {
+    width: 100%;
+}
+
+.mobile-nav-btn {
+    justify-content: flex-start !important;
+    text-align: left;
 }
 
 /* 아이콘 하트비트 애니메이션 */

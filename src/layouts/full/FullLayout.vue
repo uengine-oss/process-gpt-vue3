@@ -2,13 +2,28 @@
 import { RouterView, useRoute } from 'vue-router';
 import VerticalSidebarVue from './vertical-sidebar/VerticalSidebar.vue';
 import VerticalHeaderVue from './vertical-header/VerticalHeader.vue';
-import HorizontalHeader from './horizontal-header/HorizontalHeader.vue';
 import HorizontalSidebar from './horizontal-sidebar/HorizontalSidebar.vue';
 import Customizer from './customizer/Customizer.vue';
 import { useCustomizerStore } from '../../stores/customizer';
 import { pl, zhHans } from 'vuetify/locale'
-import { ref, computed, getCurrentInstance } from 'vue';
+import { ref, computed, getCurrentInstance, onMounted, onBeforeUnmount } from 'vue';
 const customizer = useCustomizerStore();
+
+// globalIsMobile ref로 직접 관리
+const globalIsMobile = ref(window.innerWidth <= 768);
+
+// resize 이벤트 리스너 추가
+const updateMobileState = () => {
+    globalIsMobile.value = window.innerWidth <= 768;
+};
+
+onMounted(() => {
+    window.addEventListener('resize', updateMobileState);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', updateMobileState);
+});
 
 // 캔버스 full 사이즈 관련 코드
 const instance = getCurrentInstance();
@@ -37,13 +52,13 @@ const isModelingTab = computed(() => {
                 <Customizer />
             </v-navigation-drawer>
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
-            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" /></div>
+            <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'"><VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" /></div>
             <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" /></div>
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
 
-            <v-main style="padding-top: 0px;">
+            <v-main>
                 <div class="rtl-lyt mb-3 hr-layout">
-                <v-container fluid class="page-wrapper bg-background px-sm-5 px-4  pt-12 rounded-xl">
+                <v-container fluid :class="globalIsMobile ? 'page-wrapper bg-background' : 'page-wrapper bg-background px-sm-5 px-4  pt-12 rounded-xl'">
                     <div class="">
                         <div :class="customizer.boxed ? 'maxWidth' : ''">
                             <RouterView />
@@ -72,13 +87,13 @@ const isModelingTab = computed(() => {
                 <Customizer />
             </v-navigation-drawer>
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
-            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" /></div>
+            <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'"><VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" /></div>
             <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" /></div>
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
 
-            <v-main>
+            <v-main :style="globalIsMobile ? 'padding-top: 0px;' : ''">
                 <div class="hr-layout">
-                <v-container fluid class="page-wrapper bg-background px-sm-4 pt-9 px-4 rounded-xl">
+                <v-container fluid :class="globalIsMobile ? 'page-wrapper bg-background pa-0' : 'page-wrapper bg-background px-sm-4 pt-9 px-4 rounded-xl'">
                     <!-- 정의관련 maxWidth -->
                     <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize]">
                         <RouterView />

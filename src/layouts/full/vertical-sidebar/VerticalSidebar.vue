@@ -1,4 +1,13 @@
 <template>
+    <v-btn icon
+        v-if="globalIsMobile.value"
+        @click.stop="customizer.SET_SIDEBAR_DRAWER"
+        class="mobile-side-bar-btn"
+        size="40"
+        color="primary"
+    >
+        <Icons :icon="'list-bold-duotone'"/>
+    </v-btn>
     <v-navigation-drawer
         left
         v-model="customizer.Sidebar_drawer"
@@ -28,15 +37,17 @@
                 </template>
             </v-tooltip>
         </v-row>
-        <div class="pa-5 pl-4 is-sidebar-mobile">
+        <div class="pa-5 pl-4 is-sidebar-mobile"
+            :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }"
+        >
             <Logo /> 
         </div>
         <!-- ---------------------------------------------- -->
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
-        <div class="scrollnavbar bg-containerBg overflow-y-hidden">
+        <div class="scrollnavbar bg-containerBg overflow-y-auto">
             <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0"
-                style="display: flex; flex-direction: column; height: 100%;"
+                style="display: flex; flex-direction: column; height: 100%; overflow-y: auto;"
             >
                 <!---Menu Loop -->
                 <template v-for="item in sidebarItem" :key="item.title">
@@ -56,12 +67,13 @@
                     <Icons :icon="'write'" class="mr-2" />
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
+                <VerticalHeader v-if="globalIsMobile.value"/>
                 <div
                     v-if="!pal && isShowProcessInstanceList"
                     style="font-size:14px;"
                     class="text-medium-emphasis cp-menu mt-3 ml-2"
                 >{{ $t('VerticalSidebar.instanceList') }}</div>
-                <v-col v-if="isShowProcessInstanceList && !pal" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                <v-col v-if="isShowProcessInstanceList && !pal" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto; min-height: 150px;">
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
@@ -75,7 +87,7 @@
                     <v-btn @click="openNewProject()" icon style="margin-bottom: 5px;"> <PlusIcon size="15"/> </v-btn>
                     
                 </div>
-                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto; min-height: 150px;">
                     <ProjectList/>
                 </v-col>
                 <div
@@ -83,7 +95,7 @@
                     style="font-size:14px;"
                     class="text-medium-emphasis cp-menu mt-3 ml-2"
                 >{{ $t('VerticalSidebar.instanceList') }}</div>
-                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto; min-height: 150px;">
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
@@ -120,7 +132,7 @@
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
                 </v-col>
-                <v-col class="pa-0" style="flex: 1 1 50%; overflow: auto;">
+                <v-col class="pa-0" style="flex: 1 1 50%; overflow: auto; min-height: 150px;">
                     <template v-if="definitionList">
                         <!-- 정의 목록 리스트 -->
                         <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
@@ -193,6 +205,9 @@ import NavGroup from './NavGroup/index.vue';
 import NavItem from './NavItem/index.vue';
 import ExtraBox from './extrabox/ExtraBox.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+
+import VerticalHeader from '../vertical-header/VerticalHeader.vue';
+
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -204,7 +219,8 @@ export default {
         NavCollapse,
         NavGroup,
         NavItem,
-        ExtraBox
+        ExtraBox,
+        VerticalHeader
     },
     setup() {
         const customizer = useCustomizerStore();
@@ -517,3 +533,9 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.mobile-no-padding-bottom {
+    padding-bottom: 0px !important;
+}
+</style>
