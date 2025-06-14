@@ -15,7 +15,7 @@
             </v-btn>
         </template>
 
-        <v-sheet rounded="lg" width="385" elevation="10" class="mt-5 dropdown-box">
+        <v-sheet rounded="lg" width="310" elevation="10" class="mt-5 dropdown-box">
             <div class="d-flex align-center pa-3">
                 <h6 class="text-h5 font-weight-semibold">{{ $t('NotificationDD.notification') }}</h6>
                 <v-chip color="primary" variant="flat" size="x-small" class="text-white ml-4" rounded="xl">
@@ -23,7 +23,7 @@
                 </v-chip>
             </div>
             <v-divider></v-divider>
-            <perfect-scrollbar style="height:300px">
+            <div style="height: 300px; overflow: auto !important;">
                 <v-list lines="one">
                     <v-list-item v-for="item in notifications" :key="item.id" @click="checkNotification(item)">
                         <template v-slot:prepend>
@@ -38,7 +38,7 @@
                             <div class="ml-auto">{{ item.timeStamp }} ago</div>
                         </v-list-item-subtitle>
                         <v-list-item-title class="d-flex mt-1">
-                            <div>{{ item.title }}</div>
+                            <div style="word-wrap: break-word; white-space: normal; width: 100%;">{{ item.title }}</div>
                             <div class="ml-auto">
                                 <v-badge v-if="item.count > 1" color="primary" :content="item.count" inline></v-badge>
                             </div>
@@ -46,7 +46,7 @@
                         <v-divider class="mt-1"></v-divider>
                     </v-list-item>
                 </v-list>
-            </perfect-scrollbar>
+            </div>
         </v-sheet>
     </v-menu>
 </template>
