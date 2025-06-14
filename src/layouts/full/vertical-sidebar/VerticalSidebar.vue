@@ -1,15 +1,3 @@
-<script setup>
-import { useCustomizerStore } from '@/stores/customizer';
-
-import Logo from '../logo/Logo.vue';
-import NavCollapse from './NavCollapse/NavCollapse.vue';
-import NavGroup from './NavGroup/index.vue';
-import NavItem from './NavItem/index.vue';
-import ExtraBox from './extrabox/ExtraBox.vue';
-
-const customizer = useCustomizerStore();
-</script>
-
 <template>
     <v-navigation-drawer
         left
@@ -197,6 +185,13 @@ import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import ProjectList from '@/components/ui/ProjectList.vue';
 import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.vue';
 
+import { useCustomizerStore } from '@/stores/customizer';
+
+import Logo from '../logo/Logo.vue';
+import NavCollapse from './NavCollapse/NavCollapse.vue';
+import NavGroup from './NavGroup/index.vue';
+import NavItem from './NavItem/index.vue';
+import ExtraBox from './extrabox/ExtraBox.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
@@ -204,7 +199,18 @@ export default {
     components: {
         ProcessInstanceList,
         ProjectList,
-        ProjectCreationForm
+        ProjectCreationForm,
+        Logo,
+        NavCollapse,
+        NavGroup,
+        NavItem,
+        ExtraBox
+    },
+    setup() {
+        const customizer = useCustomizerStore();
+        return {
+            customizer
+        };
     },
     data: () => ({
         sidebarItem: [],

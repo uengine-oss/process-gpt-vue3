@@ -199,7 +199,7 @@ function newNotification(type: string) {
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="customizer-btn" icon
                                 @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                                <v-icon>mdi-view-dashboard</v-icon>
+                                <Icons :icon="'dashboard'"/>
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -208,16 +208,13 @@ function newNotification(type: string) {
                 <!---/Search part -->
                 <v-spacer class="hidden-sm-and-down" />
 
-                <div class="hidden-md-and-up header-logo">
-                    <Logo />
-                </div>
-                <div class="hidden-sm-and-down mr-sm-6 mr-4">
+                <div class="mr-sm-6 mr-4">
                     <Searchbar />
                 </div>
-                <div class="hidden-sm-and-down mr-sm-6 mr-4">
+                <div class="mr-sm-6 mr-4">
                     <NotificationDD @newNotification="newNotification" />
                 </div>
-                <div class="hidden-sm-and-down">
+                <div>
                     <ProfileDD />
                 </div>
             </v-app-bar>

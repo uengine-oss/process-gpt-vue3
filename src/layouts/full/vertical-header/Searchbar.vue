@@ -5,7 +5,7 @@
     <v-menu :close-on-content-click="false" class="search_popup">
         <template v-slot:activator="{ props }">
             <div v-bind="props">
-                <div class="hidden-md-and-down">
+                <div>
                     <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
                         <Icons :icon="'magnifer-linear'" :size="22" />
                         <v-text-field v-model="searchKeyword" variant="plain" density="compact"
@@ -15,9 +15,6 @@
                         ></v-text-field>
                     </div>
                 </div>
-                <v-btn icon variant="text" class="custom-hover-primary ml-sm-3 search hidden-md-and-up" size="small">
-                    <Icons :icon="'magnifer-linear'" :size="22" />
-                </v-btn>
             </div>
         </template>
 

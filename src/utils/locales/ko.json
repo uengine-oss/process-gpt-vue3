@@ -32,7 +32,7 @@
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
     "headerMenu": {
-        "sidebar" : "메뉴 접기 펼치기",
+        "sidebar" : "사이드바 보기",
         "dashboard" : "대시보드",
         "todoList" : "나의 업무",
         "calendar" : "달력",
