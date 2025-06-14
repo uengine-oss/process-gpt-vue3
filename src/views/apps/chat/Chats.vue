@@ -831,7 +831,7 @@ export default {
                     if(responseObj.work == 'CompanyQuery'){
                         try{
                             const token = localStorage.getItem('accessToken');
-                            let mementoRes = await axios.get(`/memento/query`, {
+                            let mementoRes = await axios.post(`/memento/query`, {
                                 params: {
                                     query: responseObj.content,
                                     tenant_id: window.$tenantName
@@ -853,6 +853,7 @@ export default {
                                 }
                             });
                             obj.memento.sources = sources
+                            this.messages[this.messages.length - 1].content = '테이블 생성 중...'
                             const responseTable = await axios.post(`/execution/process-data-query`, {
                                 input: {
                                     query: responseObj.content,

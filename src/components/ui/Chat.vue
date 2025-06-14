@@ -1437,6 +1437,7 @@ export default {
             }
             
             if (index > 0) {
+                if(!message.timeStamp) return false;
                 const prevMessage = this.filteredMessages[index - 1];
                 const currentDate = new Date(message.timeStamp);
                 const prevDate = new Date(prevMessage.timeStamp);
