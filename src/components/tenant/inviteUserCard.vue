@@ -210,7 +210,7 @@ export default {
                     }
                     this.isInviteLoading = false;
                     if(this.type === 'createTenant') {
-                        this.$router.push('/tenant/manage');
+                        window.location.href = `https://${this.tenantInfo.id}.process-gpt.io/definition-map`
                     } else {
                         this.$emit('close', this.inviteUserlist);
                     }
@@ -223,7 +223,7 @@ export default {
             });
         },
         skipInvitation() {
-            this.$router.push('/tenant/manage');
+            window.location.href = `https://${this.tenantInfo.id}.process-gpt.io/definition-map`
         }
     }
 };
