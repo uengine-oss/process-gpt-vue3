@@ -175,7 +175,7 @@ export default {
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
                                 // &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
-                                && (me.messages[me.messages.length - 1].content == '...' || me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, '')))
+                                && (me.messages[me.messages.length - 1].content == '...' || me.messages[me.messages.length - 1].content == '테이블 생성 중...' || me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, '')))
                                 ) {
                                     me.messages[me.messages.length - 1] = data.new.messages
                                     me.messages[me.messages.length - 1].isLoading = false
