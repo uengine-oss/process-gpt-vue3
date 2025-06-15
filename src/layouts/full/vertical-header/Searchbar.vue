@@ -19,9 +19,9 @@
         </template>
 
         <!-- Search Result -->
-        <v-sheet width="360" elevation="10" rounded="md">
+        <v-sheet class="main-search-box" elevation="10" rounded="md">
             <h5 class="text-h5 mt-3 px-5 pb-3">검색 결과</h5>
-            <div style="height: 380px; overflow: auto;">
+            <div style="height: 50vh; max-height: 500px; overflow: auto;">
                 <v-list v-if="searchResult.length == 0 && searchKeyword.length == 0" class="pt-0 pb-5" lines="two">
                     <v-list-item>
                         <v-list-item-title>검색어를 입력해주세요.</v-list-item-title>

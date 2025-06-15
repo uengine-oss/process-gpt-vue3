@@ -128,7 +128,7 @@
             </div>
         </div>
 
-        <v-card-text style="width:100%; height:95%; padding:10px;">
+        <v-card-text style="width: 100%; height: 94%; padding: 10px;">
             <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinitionData" :isViewMode="isViewMode"
                 :isPreviewPDFDialog="isPreviewPDFDialog"
@@ -143,7 +143,9 @@
             </div>
             <div v-else></div>
         </v-card-text>
-        <v-dialog v-model="executeDialog">
+        <v-dialog v-model="executeDialog"
+            :fullscreen="isMobile"
+        >
             <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="processDefinition.id" is-simulate="false"
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
@@ -204,6 +206,9 @@ export default {
         },
         Pal() {
             return window.$pal;
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
         },
     },
     watch: {

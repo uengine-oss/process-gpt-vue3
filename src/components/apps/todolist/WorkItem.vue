@@ -46,7 +46,7 @@
         <v-row :class="isMobile ? 'ma-0 pa-0' : 'ma-0 pa-0'">
             <!-- Left -->
             <v-col :cols="isMobile ? 12 : 5"
-                :class="isMobile ? 'pa-4 pt-3' : 'pa-0 pt-3 pl-4 pb-4'"
+                :class="isMobile ? 'pa-4 pt-3 order-last' : 'pa-0 pt-3 pl-4 pb-4'"
             >
                 <v-alert class="pa-0" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
@@ -182,6 +182,7 @@
             <v-col
                 class="pa-0"
                 :cols="isMobile ? 12 : 7"
+                :class="isMobile ? 'order-first' : ''"
                 :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 190px); overflow: auto')"
             >
                 <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
@@ -392,7 +393,7 @@ export default {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         },
         isMobile() {
-            return this.windowWidth <= 700;
+            return this.windowWidth <= 768;
         },
         tabList() {
             if (this.mode == 'ProcessGPT') {
@@ -429,7 +430,7 @@ export default {
     },
     watch: {
         windowWidth(newWidth) {
-            if (newWidth <= 700) {
+            if (newWidth <= 768) {
                 this.isMobile = true;
             } else {
                 this.isMobile = false;

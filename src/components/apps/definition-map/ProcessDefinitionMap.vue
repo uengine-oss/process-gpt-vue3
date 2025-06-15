@@ -89,11 +89,12 @@
 
 
             <v-row class="ma-0 pa-0">
-                <v-col cols="12" lg="3" md="4" sm="6"
+                <v-col v-if="componentName == 'DefinitionMapList' && isAdmin"
+                    cols="12" lg="3" md="4" sm="6"
                     class="pa-4"
                 >
                     <v-card
-                        v-if="componentName == 'DefinitionMapList' && isAdmin"
+                        
                         @click="openConsultingDialog = true, ProcessPreviewMode = false"
                         class="consulting-card"
                         elevation="3"
@@ -120,12 +121,16 @@
                         </v-card-item>
                     </v-card>
                 </v-col>
-                <v-col cols="12" lg="3" md="4" sm="6"
+                <v-col v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
+                    cols="12"
+                    lg="3"
+                    md="4"
+                    sm="6"
                     class="pa-4"
                 >
                     <!-- @click="addSampleProcess" -->
                     <v-card
-                        v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
+                        
                         @click="openMarketplaceDialog = true"
                         class="consulting-card"
                         elevation="3"
@@ -157,6 +162,7 @@
         </v-card>
         <v-dialog v-model="openConsultingDialog"
             :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'"
+            :fullscreen="isMobile"
             :scrim="isSimulateMode ? false : true" persistent
         >
             <v-card>
@@ -261,7 +267,8 @@ export default {
         openConsultingDialog: false,
         ProcessPreviewMode: false,
         openMarketplaceDialog: false,
-        isSimulateMode: false
+        isSimulateMode: false,
+        windowWidth: window.innerWidth
     }),
     computed: {
         useLock() {
@@ -270,6 +277,9 @@ export default {
             } else {
                 return this.isViewMode;
             }
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
         },
         actionButtons() {
             return [

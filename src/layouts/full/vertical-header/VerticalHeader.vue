@@ -169,23 +169,25 @@ function newNotification(type: string) {
                 <!-- 검색, 알림 -->
                 <v-row class="ma-0 mt-2">
                     <Searchbar />
+                    <v-spacer></v-spacer>
                     <NotificationDD @newNotification="newNotification" />
                 </v-row>
                 <!-- 네비게이션 버튼들 - 세로 배치 -->
                 <v-row class="ma-0 mt-2">
                     <template v-for="item in sidebarItems" :key="item.title">
-                        <v-col v-if="item.isVisible" class="pa-1">
-                            <v-btn 
-                                @click="navigateTo(item)"
-                                class="mobile-nav-btn"
+                        <div v-if="item.isVisible" class="mr-2">
+                            <v-btn @click="navigateTo(item)"
+                                class="mobile-nav-btn pr-2 pl-2"
+                                variant="text"
                             >
                                 <Icons :icon="item.icon" class="mr-2" />
                                 {{ $t(item.title) }}
                             </v-btn>
-                        </v-col>
+                        </div>
                     </template>
                 </v-row>
             </v-container>
+            <v-divider></v-divider>
         </div>
     </div>
 
