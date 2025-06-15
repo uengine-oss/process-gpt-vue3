@@ -5,7 +5,7 @@
     <v-menu :close-on-content-click="false" class="search_popup">
         <template v-slot:activator="{ props }">
             <div v-bind="props">
-                <div class="hidden-md-and-down">
+                <div>
                     <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
                         <Icons :icon="'magnifer-linear'" :size="22" />
                         <v-text-field v-model="searchKeyword" variant="plain" density="compact"
@@ -15,16 +15,13 @@
                         ></v-text-field>
                     </div>
                 </div>
-                <v-btn icon variant="text" class="custom-hover-primary ml-sm-3 search hidden-md-and-up" size="small">
-                    <Icons :icon="'magnifer-linear'" :size="22" />
-                </v-btn>
             </div>
         </template>
 
         <!-- Search Result -->
-        <v-sheet width="360" elevation="10" rounded="md">
+        <v-sheet class="main-search-box" elevation="10" rounded="md">
             <h5 class="text-h5 mt-3 px-5 pb-3">검색 결과</h5>
-            <perfect-scrollbar style="height: 380px">
+            <div style="height: 50vh; max-height: 500px; overflow: auto;">
                 <v-list v-if="searchResult.length == 0 && searchKeyword.length == 0" class="pt-0 pb-5" lines="two">
                     <v-list-item>
                         <v-list-item-title>검색어를 입력해주세요.</v-list-item-title>
@@ -51,7 +48,7 @@
                         <v-list-item-title>검색 결과가 없습니다.</v-list-item-title>
                     </v-list-item>
                 </v-list>
-            </perfect-scrollbar>
+            </div>
         </v-sheet>
     </v-menu>
 </template>

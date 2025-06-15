@@ -154,5 +154,6 @@ const startChat = (type) => {
 
 .lgScroll {
     height: calc(100vh - 360px);
+    overflow: auto !important;
 }
 </style>

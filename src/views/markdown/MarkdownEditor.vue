@@ -1,5 +1,8 @@
 <template>
-  <div class="editor-wrapper">
+  <div v-if="readOnly || isPreview">
+    <div v-html="htmlContent" :class="isOverflow ? 'editor-preview-overflow' : 'editor-preview'"></div>
+  </div>
+  <div v-else class="editor-wrapper">
     <v-card flat>
       <v-card-text>
         <BubbleMenu
@@ -146,6 +149,14 @@ export default {
     readOnly: {
       type: Boolean,
       default: false
+    },
+    isPreview: {
+      type: Boolean,
+      default: false
+    },
+    isOverflow: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -186,6 +197,11 @@ export default {
   },
   beforeUnmount() {
     if (this.editor) this.editor.destroy();
+  },
+  computed: {
+    htmlContent() {
+      return marked(this.modelValue || '');
+    }
   },
   watch: {
     updateKey: {
@@ -455,6 +471,28 @@ export default {
   background-color: #fff;
   border-radius: 12px;
   min-height: 600px;
+}
+
+.editor-preview {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  background-color: #fff;
+  padding: 0;
+  font-size: 8px;
+  line-height: 1.2;
+}
+
+.editor-preview-overflow {
+  overflow: auto;
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  background-color: #fff;
+  padding: 0;
+  font-size: 8px;
+  line-height: 1.2;
 }
 
 .toolbar {

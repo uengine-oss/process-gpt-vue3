@@ -20,9 +20,19 @@ onMounted(() => {
 </script>
 
 <template>
-    <router-link class="custom-hover-primary text-left px-0 cursor-pointer text-decoration-none" variant="text" :to="`/account-settings`">
+    <v-tooltip text="설정">
+        <template v-slot:activator="{ props }">
+            <router-link class="custom-hover-primary text-left px-0 cursor-pointer text-decoration-none" variant="text" :to="`/account-settings`">
+                <div class="d-flex align-center">
+                    <v-btn style="margin-left: -10px;" icon flat size="small" v-bind="props">
+                        <SettingsIcon />
+                    </v-btn>
+                </div>
+            </router-link>
+        </template>
+    </v-tooltip>
+    <!-- <router-link class="custom-hover-primary text-left px-0 cursor-pointer text-decoration-none" variant="text" :to="`/account-settings`">
         <div class="d-flex align-center">
-            <!-- user profile -->
             <v-avatar size="50">
                 <v-img :src="picture" width="50" />
             </v-avatar>
@@ -33,5 +43,5 @@ onMounted(() => {
                 </span>
             </div>
         </div>
-    </router-link>
+    </router-link> -->
 </template>

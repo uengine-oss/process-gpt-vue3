@@ -22,7 +22,7 @@
                     </div>
                 </v-window-item>
                 <v-window-item value="kanbanBoard">
-                    <div style="height: 860px;">
+                    <div style="height: 73vh;">
                         <KanbanBoard 
                             :columns="columns"
                             :users="userList"

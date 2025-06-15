@@ -51,19 +51,8 @@
                             <v-col cols="1">
                                 <v-icon size="24">mdi-office-building-outline</v-icon>     
                             </v-col>
-                            <v-col cols="8">
+                            <v-col cols="9">
                                 &nbsp; {{ tenantInfo.id }}
-                            </v-col>
-                            <v-col v-if="isOwner" cols="1">
-                                <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
-                                    <v-tooltip text="사용자 초대">
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn @click.stop="openInviteDialog(tenantInfo.id)" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
-                                                <v-icon size="24">mdi-account-plus</v-icon>
-                                            </v-btn>
-                                        </template>
-                                    </v-tooltip>
-                                </v-sheet>
                             </v-col>
                             <v-col v-if="isOwner" cols="1">
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
@@ -121,61 +110,6 @@
             </v-card-actions>
         </v-card>
     </v-dialog>
-
-    <v-dialog v-model="inviteDialog" max-width="600" persistent>
-        <v-card class="pa-4">
-            <v-card-title class="text-center pb-4">
-                <v-icon class="mr-2" size="28" color="primary">mdi-account-plus</v-icon>
-                <span class="text-h5 font-weight-bold">사용자 초대</span>
-            </v-card-title>
-            
-            <v-card-text class="pb-2">
-                <v-form ref="inviteForm" v-model="inviteFormValid">
-                    <v-row>
-                        <v-col cols="12">
-                            <v-text-field
-                                v-model="newUser.email"
-                                label="이메일"
-                                prepend-inner-icon="mdi-email"
-                                variant="outlined"
-                                type="email"
-                                :rules="[
-                                    v => !!v || '이메일을 입력해주세요',
-                                    v => /.+@.+\..+/.test(v) || '올바른 이메일 형식을 입력해주세요'
-                                ]"
-                                required
-                                class="mb-2"
-                            ></v-text-field>
-                        </v-col>
-                    </v-row>
-                </v-form>
-            </v-card-text>
-
-            <v-card-actions class="justify-center pt-4">
-                <v-btn 
-                    color="primary" 
-                    variant="flat" 
-                    size="large"
-                    class="px-8 mr-4"
-                    :disabled="!inviteFormValid"
-                    @click="inviteUser"
-                >
-                    <v-icon class="mr-2">mdi-send</v-icon>
-                    초대하기
-                </v-btn>
-                <v-btn 
-                    color="grey" 
-                    variant="outlined" 
-                    size="large"
-                    class="px-8"
-                    @click="closeInviteDialog"
-                >
-                    <v-icon class="mr-2">mdi-close</v-icon>
-                    닫기
-                </v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
 </template>
 
 <script>
@@ -194,16 +128,6 @@ export default {
         deleteDialog: false,
         tenantIdToDelete: null,
         isOwner: false,
-        inviteDialog: false,
-        inviteFormValid: false,
-        currentTenantId: null,
-        newUser: {
-            email: ''
-        },
-        roleOptions: [
-            { text: '관리자', value: 'superAdmin' },
-            { text: '사용자', value: 'user' }
-        ]
     }),
     async created() {
         const isLogin = await backend.checkDBConnection();
@@ -241,21 +165,6 @@ export default {
         }
     },
     methods: {
-        async createNewUser(user) {
-            var me = this
-            me.$try({
-                action: async () => {
-                    let userInfo = {
-                        email: user.email,
-                        tenant_id: me.currentTenantId
-                    }
-                    const result = await backend.inviteUser(userInfo);
-                    console.log(result)
-                },
-                successMsg: me.$t('organizationChartDefinition.addUserSuccess'),
-                errorMsg: me.$t('organizationChartDefinition.addUserFailed'),
-            });
-        },
         toAddTenentPage() {
             this.$router.push('/tenant/create')
         },
@@ -267,37 +176,6 @@ export default {
         async deleteTenant() {
             await backend.deleteTenant(this.tenantIdToDelete)
             this.tenantInfos = this.tenantInfos.filter(tenant => tenant.id !== this.tenantIdToDelete)
-        },
-
-        openInviteDialog(tenantId) {
-            this.currentTenantId = tenantId;
-            this.inviteDialog = true;
-        },
-
-        closeInviteDialog() {
-            this.inviteDialog = false;
-            this.resetInviteForm();
-        },
-
-        resetInviteForm() {
-            this.newUser = {
-                email: ''
-            };
-            this.inviteFormValid = false;
-            if (this.$refs.inviteForm) {
-                this.$refs.inviteForm.reset();
-            }
-        },
-
-        async inviteUser() {
-            if (!this.inviteFormValid) return;
-            
-            try {
-                await this.createNewUser(this.newUser);
-                this.closeInviteDialog();
-            } catch (error) {
-                console.error('사용자 초대 중 오류 발생:', error);
-            }
         },
         
         async toSelectedTenantPage(tenantId) {

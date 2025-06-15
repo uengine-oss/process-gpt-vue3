@@ -316,7 +316,7 @@ export default {
 
 <style>
 .Process-gpt-execute-mobile-layout {
-    height:85vh;
+    height: calc(100vh - 52px);
     overflow: auto;
 }
 </style>
