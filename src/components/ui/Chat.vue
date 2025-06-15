@@ -243,6 +243,7 @@
                                                             <v-divider v-if="message.replyContent"></v-divider>
 
                                                             <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
+                                                            <div v-else-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
                                                             <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
 
                                                             <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp other-timestamp">
@@ -291,6 +292,19 @@
                                                                     </v-card>
                                                                 </v-col>
                                                             </v-row>
+
+                                                            <v-row v-if="message.searchResults" class="my-5">
+                                                                <v-col v-for="(searchResult, index) in message.searchResults" :key="index" cols="4">
+                                                                    <v-card outlined>
+                                                                        <v-card-title class="d-flex justify-space-between">
+                                                                            <span>{{ searchResult.score }}</span>
+                                                                            <span>{{ searchResult.index }}</span>
+                                                                        </v-card-title>
+                                                                        <v-card-text>{{ searchResult.memory }}</v-card-text>
+                                                                    </v-card>
+                                                                </v-col>
+                                                            </v-row>
+                                                            
                                                             <v-row v-if="message.memento && (message.memento.sources && message.memento.sources.length > 0)" class="my-5">
                                                                 <v-col cols="12">
                                                                     <v-card outlined>
@@ -1686,4 +1700,17 @@ pre {
 }
 
 // 기존 스타일은 유지하며 추가적인 스타일만 더함
+
+
+// agent chat
+.search-result {
+    font-weight: bold;
+}
+.search-result-index {
+    font-size: 10px;
+    font-weight: bold;
+    margin: 0 3px;
+    vertical-align: top;
+    line-height: normal;
+}
 </style>
