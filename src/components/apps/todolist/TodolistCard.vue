@@ -21,7 +21,9 @@
             />
         </div>
 
-        <v-dialog v-model="dialog" max-width="500" persistent>
+        <v-dialog v-model="dialog" max-width="500" persistent
+            :fullscreen="isMobile"
+        >
             <TodoDialog :todolist="todolist" @close="closeDialog" />
         </v-dialog>
     </v-card>
@@ -71,6 +73,9 @@ export default {
         currentPage: 0,
     }),
     computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
     },
     mounted() {
         this.mode = window.$mode;

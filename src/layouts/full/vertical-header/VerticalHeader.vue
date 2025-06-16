@@ -198,7 +198,7 @@ function newNotification(type: string) {
                 <v-row class="ma-0 pa-0">
                     <v-tooltip :text="$t('headerMenu.sidebar')">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" class="hidden-md-and-down" icon
+                            <v-btn v-bind="props" icon
                                 @click.stop="customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar)">
                                 <Icons :icon="'list-bold-duotone'"/>
                             </v-btn>
