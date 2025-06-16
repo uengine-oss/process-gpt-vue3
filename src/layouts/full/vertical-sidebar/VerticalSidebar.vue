@@ -347,6 +347,13 @@ export default {
                     disable: true,
                     to: this.openDialog
                 },
+                {
+                    title: 'definitionManagement.defaultForm',
+                    icon: 'document',
+                    BgColor: 'primary',
+                    disable: true,
+                    to: '/ui-definitions/defaultform'
+                },
             ]
             if (this.mode === 'ProcessGPT') {
                 this.definitionItem = this.definitionItem.filter((item) => 
