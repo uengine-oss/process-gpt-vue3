@@ -328,14 +328,21 @@ export default {
     },  
     async mounted() {
         await this.init();
-        if (this.$route.query.id) {
-            this.chatRoomSelected(this.chatRoomList.find(room => room.id === this.$route.query.id));
-        }
-        if (this.currentChatRoom && this.currentChatRoom.id) {
-            this.chatRoomId = this.currentChatRoom.id;
+
+        if (this.isAgentChat) {
+            this.generator = new AgentChatGenerator(this, {
+                isStream: false,
+                preferredLanguage: "Korean",
+            });
+        } else {
+            this.generator = new ChatGenerator(this, {
+                isStream: true,
+                preferredLanguage: "Korean"
+            });
         }
 
         this.userInfo = await this.backend.getUserInfo();
+
         await this.getChatRoomList();
 
         await this.getUserList();
@@ -348,16 +355,11 @@ export default {
             this.chatRenderKey++;
         });
 
-        if (this.isAgentChat) {
-            this.generator = new AgentChatGenerator(this, {
-                isStream: false,
-                preferredLanguage: "Korean",
-            });
-        } else {
-            this.generator = new ChatGenerator(this, {
-                isStream: true,
-                preferredLanguage: "Korean"
-            });
+        if (this.$route.query.id) {
+            this.chatRoomSelected(this.chatRoomList.find(room => room.id === this.$route.query.id));
+        }
+        if (this.currentChatRoom && this.currentChatRoom.id) {
+            this.chatRoomId = this.currentChatRoom.id;
         }
     },
     beforeUnmount() {
@@ -593,6 +595,7 @@ export default {
                 participant.isExistUnReadMessage = false;
             }
             this.putObject(`chat_rooms`, this.chatRoomList[idx]);
+            this.EventBus.emit('clear-notification', this.chatRoomList[idx].id);
         },
         chatRoomSelected(chatRoomInfo){
             this.currentChatRoom = chatRoomInfo

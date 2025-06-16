@@ -79,48 +79,48 @@ export default {
     },
     async mounted() {
         if (window.$mode == 'ProcessGPT') {
-            if (window.location.pathname.includes('external-forms')) {
+            if (window.location.pathname.includes('external-forms') || window.location.pathname.includes('privacy')) {
                 this.loadScreen = true;
                 return;
             }
 
             if (!window.$pal) {
                 this.loadScreen = false;
-                if(window.location.pathname.includes('privacy')) {
-                    this.loadScreen = true;
-                    return;
-                }
                 this.backend = BackendFactory.createBackend();
                 if (window.$isTenantServer) {
                     await this.backend.checkDBConnection();
                     this.loadScreen = true;
                 } else {
                     const isValidTenant = await this.backend.getTenant(window.$tenantName);
-                    if (!isValidTenant && window.$tenantName !== 'localhost') {
-                        alert(window.$tenantName + " 존재하지 않는 경로입니다.");
-                        if (localStorage.getItem('email')) {
-                            window.location.href = 'https://www.process-gpt.io/tenant/manage';
-                        } else {
-                            window.location.href = 'https://www.process-gpt.io/auth/login';
-                        }
-                        return;
-                    } else {
-                        // 루트 페이지인 경우 로그인 체크 건너뛰기 옵션 추가
-                        const skipLoginCheck = window.location.pathname === '/';
-                        const userInfo = await this.backend.getUserInfo();
-                        if(!skipLoginCheck) {
-                            if(userInfo) {
-                                const res = await this.backend.setTenant(window.$tenantName);
-                                if (!res) {
-                                    this.$try({}, null, {
-                                        errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
-                                    })
-                                    window.location.href = 'https://www.process-gpt.io/tenant/manage';
-                                }
+                    if(window.$tenantName !== 'localhost') {
+                        if (!isValidTenant) {
+                            alert(window.$tenantName + " 존재하지 않는 경로입니다.");
+                            if (localStorage.getItem('email')) {
+                                window.location.href = 'https://www.process-gpt.io/tenant/manage';
                             } else {
-                                this.$router.push('/auth/login');
+                                window.location.href = 'https://www.process-gpt.io/auth/login';
                             }
+                            return;
+                        } else {
+                            // 루트 페이지인 경우 로그인 체크 건너뛰기 옵션 추가
+                            const skipLoginCheck = window.location.pathname === '/';
+                            const userInfo = await this.backend.getUserInfo();
+                            if(!skipLoginCheck) {
+                                if(userInfo) {
+                                    const res = await this.backend.setTenant(window.$tenantName);
+                                    if (!res) {
+                                        this.$try({}, null, {
+                                            errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
+                                        })
+                                        window.location.href = 'https://www.process-gpt.io/tenant/manage';
+                                    }
+                                } else {
+                                    this.$router.push('/auth/login');
+                                }
+                            }
+                            this.loadScreen = true;
                         }
+                    } else {
                         this.loadScreen = true;
                     }
                 }

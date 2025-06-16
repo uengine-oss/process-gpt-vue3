@@ -91,7 +91,7 @@
                     </v-window-item>
                     <v-window-item value="todo">
                         <div>
-                            <div class="pa-4 todolist-card-box">
+                            <div class="pa-4 instance-card-kanban-board-box">
                                 <div :class="buttonContainerClass" :style="buttonContainerStyle">
                                     <v-avatar v-if="mode === 'ProcessGPT'"
                                         @click="openDialog"
@@ -110,7 +110,9 @@
                                 />
                             </div>
 
-                            <v-dialog v-model="dialog" max-width="500" persistent>
+                            <v-dialog v-model="dialog" persistent
+                                :fullscreen="isMobile"
+                            >
                                 <TodoDialog :instId="instance.instId" :defId="instance.defId" :todolist="columns" @close="closeDialog" />
                             </v-dialog>
                         </div>
