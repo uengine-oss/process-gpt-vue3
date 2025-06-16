@@ -47,8 +47,8 @@ export default {
             }
         },
         isMobile() {
-            return window.innerWidth <= 1080;
-        }
+            return window.innerWidth <= 768;
+        },
     },
     mounted() {
         var me = this

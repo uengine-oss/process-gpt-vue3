@@ -158,6 +158,15 @@ function newNotification(type: string) {
         }
     }
 }
+
+// 사이드바 토글 함수
+function handleSidebarToggle() {
+    if (window.innerWidth <= 1279) {
+        customizer.SET_SIDEBAR_DRAWER();
+    } else {
+        customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar);
+    }
+}
 </script>
 
 
@@ -198,8 +207,8 @@ function newNotification(type: string) {
                 <v-row class="ma-0 pa-0">
                     <v-tooltip :text="$t('headerMenu.sidebar')">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" class="hidden-md-and-down" icon
-                                @click.stop="customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar)">
+                            <v-btn v-bind="props" icon
+                                @click.stop="handleSidebarToggle">
                                 <Icons :icon="'list-bold-duotone'"/>
                             </v-btn>
                         </template>

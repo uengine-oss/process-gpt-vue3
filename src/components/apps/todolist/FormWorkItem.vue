@@ -108,7 +108,7 @@ export default {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         },
         isMobile() {
-            return this.windowWidth <= 700;
+            return window.innerWidth <= 768;
         },
         mode() {
             return window.$mode;

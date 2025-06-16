@@ -393,7 +393,7 @@ export default {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         },
         isMobile() {
-            return this.windowWidth <= 768;
+            return window.innerWidth <= 768;
         },
         tabList() {
             if (this.mode == 'ProcessGPT') {
