@@ -385,7 +385,9 @@ export default {
         startChat(type){
             let chatRoomInfo
             const selectedUserEmail = this.selectedUserInfo.email;
+            const selectedUserName = this.selectedUserInfo.username || this.selectedUserInfo.name;
             const currentUserEmail = this.userInfo.email;
+            const currentUserName = this.userInfo.username;
 
             if(type == 'work' || type == 'agent-work'){
                 chatRoomInfo = {}
@@ -411,8 +413,9 @@ export default {
                 const chatRoomExists = this.chatRoomList.some(chatRoom => {
                     if(chatRoom.participants.length == 2){
                         const participantEmails = chatRoom.participants.map(participant => participant.email);
+                        const participantNames = chatRoom.participants.map(participant => participant.username);
                         chatRoomInfo = chatRoom
-                        return participantEmails.includes(currentUserEmail) && participantEmails.includes(selectedUserEmail);
+                        return participantEmails.includes(currentUserEmail) && participantEmails.includes(selectedUserEmail) && participantNames.includes(currentUserEmail) && participantNames.includes(selectedUserEmail);
                     } else {
                         return false
                     }
@@ -854,7 +857,7 @@ export default {
                     if(responseObj.work == 'CompanyQuery'){
                         try{
                             const token = localStorage.getItem('accessToken');
-                            let mementoRes = await axios.post(`/memento/query`, {
+                            let mementoRes = await axios.get(`/memento/query`, {
                                 params: {
                                     query: responseObj.content,
                                     tenant_id: window.$tenantName
