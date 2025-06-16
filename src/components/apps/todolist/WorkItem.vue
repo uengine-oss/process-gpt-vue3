@@ -159,7 +159,7 @@
                         </v-window-item>
                         <v-window-item value="agent-monitor" class="pa-2">
                             <v-card elevation="10" class="pa-4">
-                                <AgentMonitor />
+                                <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
                             </v-card>
                         </v-window-item>
                         <v-window-item v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
@@ -464,6 +464,7 @@ export default {
                 // setTimeout(() => {
                 //     this.executeProcess();
                 // }, 2000);
+                
                 this.$emit('agentGenerationFinished', value)
                 this.isFinishedAgentGeneration = true;
                 setTimeout(() => {
@@ -609,7 +610,7 @@ export default {
                     this.tempFormHtml = await backend.getRawDefinition(this.formId, { type: 'form' })
                 }
             }
-        }
+        },
     }
 };
 </script>
