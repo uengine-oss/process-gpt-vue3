@@ -59,7 +59,8 @@ const slotName = computed(() => {
 
 <template>
     <!---/Left chat list -->
-    <div class="d-flex mainbox" :class="chatReSizeDisplay" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 131px)' : 'height:100vh;'"
+    <div class="d-flex mainbox is-work-height" :class="chatReSizeDisplay"
+        :style="!$globalState.state.isRightZoomed ? '' : 'height:100vh;'"
         style="overflow: auto;"
     >
         <div class="left-part" v-if="lgAndUp" :style="canvasReSize">

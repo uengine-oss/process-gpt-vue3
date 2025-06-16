@@ -1,56 +1,43 @@
 <template>
     <div>
         <!-- <slide-component :key="localModelValue" style="width: 100%; height: 250px;" :content="localModelValue" :isEditMode="false" class="presentation-slide" /> -->
-        <v-card class="rounded-lg mb-2" :style="`background-color: ${hexToRgba(themeColor, 0.05)} !important;`" elevation="0" @click="editMarkdown" hover>
+        <v-card class="rounded-lg mb-2" :style="`background-color: ${hexToRgba(themeColor, 0.05)} !important;`" elevation="0" hover @click="editMarkdown">
             <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
-            <v-row class="ma-0 pa-4 align-center">
+            <v-row class="ma-0 pa-4" style="overflow: hidden; max-height: 120px;" >
+                <div>
+                    <div class="font-weight-medium"  style="font-size: 16px;">{{ localAlias ? localAlias : localName }} <span v-if="!localReadonly" class="mdi mdi-pencil"></span></div>
+                    <div class="font-weight-medium">Slide</div>
+                </div>
+                <v-spacer></v-spacer>
+                <!-- 드롭다운 미리보기 버튼 제거, 대신 토글 버튼으로 변경 -->
                 <div v-if="localModelValue.length > 0 && !previewMenu && !showDialog" >
+                    <SlideComponent
+                        @click.stop="previewMenu = !previewMenu"
+                        :content="localModelValue"
+                        :isEditMode="false"
+                        style="width: 120px; height: 120px; transform: rotate(5deg); box-shadow: 0 2px 8px rgba(0,0,0,0.08);"
+                    />
+                </div>
+                <div v-else-if="localModelValue.length == 0" :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
+                    <Icons :icon="'slide-show'" color="white" />
+                </div>
+                <div v-else
+                    @click.stop="previewMenu = !previewMenu"
+                    style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px; margin-right: 8px; cursor: pointer;"
+                    class="d-flex align-center justify-center"
+                >
+                    <v-icon :icon="previewMenu ? 'mdi-chevron-up' : 'mdi-chevron-down'" :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
+                </div>
+            </v-row>
+            <!-- 미리보기 확장 영역 -->
+            <v-row v-if="previewMenu" class="ma-0 pa-0" @click.stop>
+                <v-sheet elevation="3" rounded style="width: 100%; min-width: 400px; min-height: 300px; padding: 16px; background: white; position: relative;">
                     <SlideComponent
                         :content="localModelValue"
                         :isEditMode="false"
-                        style="width: 38px; height: 38px; margin-right: 8px;"
+                        style="width: 100%; height: 100%;"
                     />
-                </div>
-                <div v-else :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
-                    <Icons :icon="'slide-show'" color="white" />
-                </div>
-                <div>
-                    <div class="font-weight-medium">{{ localAlias ? localAlias : localName }}</div>
-                </div>
-                <v-spacer></v-spacer>
-                <!-- 드롭다운 미리보기 버튼 추가 -->
-                <v-menu
-                    v-model="previewMenu"
-                    :close-on-content-click="false"
-                    offset-y
-                    min-width="420"
-                >
-                    <template #activator="{ props }">
-                        <div
-                            v-bind="props"
-                            style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px; margin-right: 8px;"
-                            class="d-flex align-center justify-center"
-                        >
-                            <v-icon icon='mdi-eye-outline' :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
-                        </div>
-                    </template>
-                    <div style="padding: 16px; width: 400px; height: 300px; box-sizing: border-box;">
-                        <v-sheet elevation="3" rounded style="width: 100%; height: 100%; padding: 8px; box-sizing: border-box; background: white;">
-                            <SlideComponent
-                                :content="localModelValue"
-                                :isEditMode="false"
-                                style="width: 100%; height: 100%;"
-                            />
-                        </v-sheet>
-                    </div>
-                </v-menu>
-                <!-- 기존 눈 아이콘 -->
-                <div
-                    style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px;"
-                    class="d-flex align-center justify-center"
-                >
-                    <v-icon icon="mdi-magnify-plus" :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
-                </div>
+                </v-sheet>
             </v-row>
         </v-card>
         <v-dialog 

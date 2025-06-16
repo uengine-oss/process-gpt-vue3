@@ -183,6 +183,7 @@
         </AppBaseCard>
         <v-dialog v-model="executeDialog" max-width="80%"
             :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
+             :fullscreen="isMobile"
         >
             <div v-if="!pal && mode === 'ProcessGPT'">
                 <process-gpt-execute :isSimulate="isSimulate" :processDefinition="processDefinition" :bpmn="bpmn" :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
@@ -401,7 +402,10 @@ export default {
         },
         pal(){
             return window.$pal;
-        }
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
     },
     async beforeRouteLeave(to, from, next) {
         if (this.bpmn && this.bpmn.length > 0) {

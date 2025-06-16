@@ -43,6 +43,15 @@
                                 </v-alert>
                                 
                                 <div v-for="(message, index) in filteredMessages" :key="index" class="px-1 py-1">
+                                    <!-- 날짜 구분선 표시 -->
+                                    <div v-if="shouldDisplayDateSeparator(message, index)" class="date-separator-container">
+                                        <v-divider class="date-separator-line"></v-divider>
+                                        <div class="date-separator-text">
+                                            {{ formatDateSeparator(message.timeStamp) }}
+                                        </div>
+                                        <v-divider class="date-separator-line"></v-divider>
+                                    </div>
+                                    
                                     <AgentsChat v-if="message && message._template === 'agent'" :message="message"
                                         :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index"
                                     />
@@ -243,6 +252,7 @@
                                                             <v-divider v-if="message.replyContent"></v-divider>
 
                                                             <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
+                                                            <div v-else-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
                                                             <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
 
                                                             <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp other-timestamp">
@@ -291,6 +301,19 @@
                                                                     </v-card>
                                                                 </v-col>
                                                             </v-row>
+
+                                                            <v-row v-if="message.searchResults" class="my-5">
+                                                                <v-col v-for="(searchResult, index) in message.searchResults" :key="index" cols="4">
+                                                                    <v-card outlined>
+                                                                        <v-card-title class="d-flex justify-space-between">
+                                                                            <span>{{ searchResult.score }}</span>
+                                                                            <span>{{ searchResult.index }}</span>
+                                                                        </v-card-title>
+                                                                        <v-card-text>{{ searchResult.memory }}</v-card-text>
+                                                                    </v-card>
+                                                                </v-col>
+                                                            </v-row>
+                                                            
                                                             <v-row v-if="message.memento && (message.memento.sources && message.memento.sources.length > 0)" class="my-5">
                                                                 <v-col cols="12">
                                                                     <v-card outlined>
@@ -452,19 +475,19 @@
                                 </v-tooltip>
                                 <v-tooltip text="Draft Agent">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
+                                        <v-btn v-if="(type == 'instances' || type == 'chats') && (agentInfo && !agentInfo.isRunning)"
                                             :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
                                             class="text-medium-emphasis" @click="openChatMenu(); requestDraftAgent()" v-bind="props"
                                             style="width:30px; height:30px; margin:1px 0px 0px 5px;">
                                             <Icons :icon="'document-sparkle'" :size="20"  />
                                         </v-btn>
-                                        <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
+                                        <v-btn v-if="(type == 'instances' || type == 'chats') && (agentInfo && agentInfo.isRunning)" icon variant="text"
                                             class="text-medium-emphasis" style="width:30px; height:30px;">
                                             <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && !agentInfo.isRunning"
+                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && (agentInfo && !agentInfo.isRunning)"
                                     ref="uploadForm" @submit.prevent="openChatMenu(); submitFile()"
                                     style="height:30px;"
                                     class="chat-selected-file"
@@ -1422,6 +1445,55 @@ export default {
                 return true;
             }
         },
+        shouldDisplayDateSeparator(message, index) {
+            if (index === 0) {
+                return true; // 첫 번째 메시지는 항상 날짜 표시
+            }
+            
+            if (index > 0) {
+                if(!message.timeStamp) return false;
+                const prevMessage = this.filteredMessages[index - 1];
+                const currentDate = new Date(message.timeStamp);
+                const prevDate = new Date(prevMessage.timeStamp);
+                
+                // 년, 월, 일이 다르면 날짜 구분선 표시
+                return currentDate.getFullYear() !== prevDate.getFullYear() ||
+                       currentDate.getMonth() !== prevDate.getMonth() ||
+                       currentDate.getDate() !== prevDate.getDate();
+            }
+            return false;
+        },
+        formatDateSeparator(timeStamp) {
+            const date = new Date(timeStamp);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            
+            const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+            const dayName = dayNames[date.getDay()];
+            
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            
+            // 오늘인지 확인
+            if (date.toDateString() === today.toDateString()) {
+                return '오늘';
+            }
+            
+            // 어제인지 확인
+            if (date.toDateString() === yesterday.toDateString()) {
+                return '어제';
+            }
+            
+            // 올해인지 확인
+            if (date.getFullYear() === today.getFullYear()) {
+                return `${month}월 ${day}일 ${dayName}`;
+            }
+            
+            // 다른 해
+            return `${year}년 ${month}월 ${day}일 ${dayName}`;
+        },
     }
 };
 </script>
@@ -1686,4 +1758,41 @@ pre {
 }
 
 // 기존 스타일은 유지하며 추가적인 스타일만 더함
+
+// agent chat
+.search-result {
+    font-weight: bold;
+}
+.search-result-index {
+    font-size: 10px;
+    font-weight: bold;
+    margin: 0 3px;
+    vertical-align: top;
+    line-height: normal;
+}
+
+.date-separator-container {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+  padding: 0 16px;
+}
+
+.date-separator-line {
+  flex: 1;
+  opacity: 0.3;
+}
+
+.date-separator-text {
+  margin: 0 16px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: center;
+  min-width: fit-content;
+}
 </style>

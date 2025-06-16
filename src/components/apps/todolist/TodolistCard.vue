@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10">
-        <div class="pa-4 todolist-card-box">
+        <div class="pa-4" :class="this.globalIsMobile.value ? 'todolist-card-box-is-mobile' : 'todolist-card-box'">
             <div class="d-flex align-center justify-space-between ml-2">
                 <h5 class="text-h5 font-weight-semibold">{{ ($t('todoList.title')) }}</h5>
 
@@ -21,7 +21,9 @@
             />
         </div>
 
-        <v-dialog v-model="dialog" max-width="500">
+        <v-dialog v-model="dialog" max-width="500" persistent
+            :fullscreen="isMobile"
+        >
             <TodoDialog :todolist="todolist" @close="closeDialog" />
         </v-dialog>
     </v-card>
@@ -70,6 +72,11 @@ export default {
         dialog: false,
         currentPage: 0,
     }),
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
+    },
     mounted() {
         this.mode = window.$mode;
     },
@@ -143,9 +150,3 @@ export default {
     }
 }
 </script>
-
-<style>
-.todolist-card-box {
-    padding: 4px !important;
-}
-</style>

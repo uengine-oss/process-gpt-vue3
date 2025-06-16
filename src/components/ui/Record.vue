@@ -6,13 +6,20 @@
             >
                 <v-icon>mdi-close</v-icon>
             </v-btn>
-            <div v-if="isLoading" class="loading-circle">
+            
+            <!-- <div v-if="isLoading" class="loading-circle">
                 <div class="child-circle" v-for="n in 5" :key="n"></div>
             </div>
             <div v-else-if="isAudioPlaying" class="audio-bar-box">
                 <div v-for="n in 4" :key="n" class="audio-bar" :style="{ height: AudioPlayingBarHeight(n) + 'px' }"></div>
             </div>
-            <div v-else class="circle" :style="{ width: circleSize + 'px', height: circleSize + 'px' }"></div>
+            <div v-else class="circle" :style="{ width: circleSize + 'px', height: circleSize + 'px' }"></div> -->
+            
+            <PaintWaveAnimation 
+                :size="250" 
+                :isActive="isLoading" 
+            />
+            
             <AudioStream
                 @update:isLoading="updateLoadingStatus"
                 @audio:start="startAudio"
@@ -45,12 +52,14 @@
 import { Icon } from '@iconify/vue';
 import AudioStream from './AudioStream.vue';
 import { getPrimary } from '@/utils/UpdateColors';
+import PaintWaveAnimation from './PaintWaveAnimation.vue';
 
 
 export default {
     components: {
         Icon,
         AudioStream,
+        PaintWaveAnimation,
     },
     props: {
         recordingMode: Boolean,

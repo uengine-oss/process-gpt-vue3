@@ -1,5 +1,7 @@
 <template>
-    <div id="property-panel" style="height: calc(100vh - 131px); overflow: auto;">
+    <div id="property-panel" style="overflow: auto;"
+        class="is-work-height"
+    >
         <v-row class="ma-0 pa-4 pb-0">
             <v-card-title v-if="isViewMode" class="pa-0">{{ name }}</v-card-title>
             <v-text-field v-else-if="!isPALMode" v-model="name" :label="$t('BpmnPropertyPanel.name')" 

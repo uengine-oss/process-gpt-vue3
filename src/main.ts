@@ -60,6 +60,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import ganttastic from '@infectoone/vue-ganttastic'
+import { ref } from 'vue';
 
 const i18n = createI18n({
     locale: 'ko',
@@ -85,6 +86,7 @@ declare global {
         $tenantName: string;
         _env_: any;
         $themeColor: any; // 테마 색상을 위한 전역 변수 추가
+        $globalIsMobile: boolean; // 모바일 체크를 위한 전역 변수 추가
     }
 }
 
@@ -94,6 +96,22 @@ Object.defineProperty(window, '$pal', {
     configurable: false
 });
 
+// 반응형 모바일 상태 생성
+const globalIsMobile = ref(window.innerWidth <= 768);
+
+// 모바일 체크 전역 변수 설정
+Object.defineProperty(window, '$globalIsMobile', {
+    value: window.innerWidth <= 768,
+    writable: true,
+    configurable: false
+});
+
+// 윈도우 리사이즈 이벤트 리스너 추가
+window.addEventListener('resize', () => {
+    const isMobile = window.innerWidth <= 768;
+    window.$globalIsMobile = isMobile;
+    globalIsMobile.value = isMobile;
+});
 
 Object.defineProperty(window, '$mode', {
     // value: 'uEngine',
@@ -189,6 +207,9 @@ async function initializeApp() {
     app.config.globalProperties.ModelingBus = ModelingEmitter;
     // 전역 상태 관리자를 전역 속성으로 추가
     app.config.globalProperties.$globalState = globalState;
+    
+    // globalIsMobile을 Vue 전역 속성으로 추가 (반응형)
+    app.config.globalProperties.globalIsMobile = globalIsMobile;
 
     app.component('modeler-image-generator', ModelerImageGenerator);
     // modeler-image-generator

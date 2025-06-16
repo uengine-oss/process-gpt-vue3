@@ -1,5 +1,7 @@
 <template>
-    <v-card v-if="instance" elevation="10" style="height: calc(100vh - 131px); overflow: auto;">
+    <v-card v-if="instance" elevation="10" style="overflow: auto;"
+        class="is-work-height"
+    >
         <div>
             <div>
                 <!-- 한글: 세로 기준 중앙정렬을 위해 align-center 클래스 추가 -->
@@ -89,15 +91,14 @@
                     </v-window-item>
                     <v-window-item value="todo">
                         <div>
-                            <div class="pa-4 todolist-card-box">
+                            <div class="pa-4 instance-card-kanban-board-box">
                                 <div :class="buttonContainerClass" :style="buttonContainerStyle">
                                     <v-avatar v-if="mode === 'ProcessGPT'"
-                                        size="24" elevation="10" class="bg-surface d-flex align-center cursor-pointer"
                                         @click="openDialog"
                                         :color="!isMobile ? '' : 'primary'"
                                     >
                                         <v-tooltip activator="parent" location="left">업무 등록</v-tooltip>
-                                        <PlusIcon size="24" stroke-width="2" />
+                                        <PlusIcon stroke-width="2" />
                                     </v-avatar>
                                 </div>
                                 <KanbanBoard class="instance-card-kanban-board"
@@ -109,7 +110,9 @@
                                 />
                             </div>
 
-                            <v-dialog v-model="dialog" max-width="500">
+                            <v-dialog v-model="dialog" persistent
+                                :fullscreen="isMobile"
+                            >
                                 <TodoDialog :instId="instance.instId" :defId="instance.defId" :todolist="columns" @close="closeDialog" />
                             </v-dialog>
                         </div>
@@ -260,7 +263,7 @@ export default {
             return this.isMobile ? '' : 'd-flex align-center justify-end ml-2 mr-2';
         },
         buttonContainerStyle() {
-            return this.isMobile ? 'position: fixed; left: 8px; bottom: 8px;' : '';
+            return this.isMobile ? 'position: fixed; right: 16px; bottom: 32px; z-index: 999;' : '';
         }
     },
     methods: {
