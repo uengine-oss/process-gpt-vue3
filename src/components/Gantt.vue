@@ -379,6 +379,22 @@
                     emit('task-updated', task)
                 } 
             })
+
+            // gantt.attachEvent("onBeforeLinkAdd", function(link) {
+            //     // 자기 자신과의 연결 체크
+            //     if (link.source === link.target) {
+            //         gantt.message({
+            //             type: "error",
+            //             text: "자기 자신과의 연결은 허용되지 않습니다."
+            //         });
+            //         return false;
+            //     }
+                
+            //     console.log(link)
+                
+            //     return true;
+            // });
+
             gantt.attachEvent("onAfterLinkAdd", function(id, link) {
                 // link: { id, source, target, type }
                 // 예: { id: 1, source: 1, target: 2, type: "0" }
