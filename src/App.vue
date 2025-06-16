@@ -79,17 +79,13 @@ export default {
     },
     async mounted() {
         if (window.$mode == 'ProcessGPT') {
-            if (window.location.pathname.includes('external-forms')) {
+            if (window.location.pathname.includes('external-forms') || window.location.pathname.includes('privacy')) {
                 this.loadScreen = true;
                 return;
             }
 
             if (!window.$pal) {
                 this.loadScreen = false;
-                if(window.location.pathname.includes('privacy')) {
-                    this.loadScreen = true;
-                    return;
-                }
                 this.backend = BackendFactory.createBackend();
                 if (window.$isTenantServer) {
                     await this.backend.checkDBConnection();
