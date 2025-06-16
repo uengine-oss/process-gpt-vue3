@@ -97,8 +97,8 @@ export default {
             return xml.xml;
         },
         isMobile() {
-            return window.innerWidth <= 1080;
-        }
+            return window.innerWidth <= 768;
+        },
     },
     mounted() {
         this.currentInstanceId = this.instanceId;

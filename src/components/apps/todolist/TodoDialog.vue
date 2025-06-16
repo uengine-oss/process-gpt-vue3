@@ -35,16 +35,22 @@
         </v-card>
 
         <v-card v-else>
-            <v-card-title v-if="type && type == 'edit'" class="d-flex align-center justify-space-between pt-3 pl-5">
-                <h4 class="text-h4">할 일 수정</h4>
-                <v-icon @click="type = 'view'">mdi-arrow-left</v-icon>
-            </v-card-title>
+            <v-row class="pa-4 pt-2 pb-0 ma-0 align-center">
+                <v-card-title v-if="type && type == 'edit'" class="d-flex align-center justify-space-between pa-0">
+                    <h4 class="text-h4">할 일 수정</h4>
+                    <v-icon @click="type = 'view'">mdi-arrow-left</v-icon>
+                </v-card-title>
 
-            <v-card-title v-else class="pa-4 pb-0">
-                <h4 class="text-h4">업무 등록</h4>
-            </v-card-title>
+                <v-card-title v-else class="pa-0 pb-0">
+                    <h4 class="text-h4">업무 등록</h4>
+                </v-card-title>
+                <v-spacer></v-spacer>
+                <v-btn icon @click="close">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </v-row>
 
-            <v-card-text class="pa-4 pb-0">
+            <v-card-text class="pa-4 pb-0 isMobile-add-todo-dialog">
                 <v-text-field v-model="newTask.name" label="할일명" autofocus></v-text-field>
                 <v-text-field v-model="newTask.startDate" label="시작일" type="datetime-local"></v-text-field>
                 <v-text-field v-model="newTask.dueDate" label="마감일" type="datetime-local"></v-text-field>
@@ -54,9 +60,8 @@
 
             <!-- 버튼을 라운드 스타일로 변경 -->
             <!-- 오른쪽 정렬을 위해 justify-end로 변경 -->
-            <v-card-actions class="justify-end pt-0">
+            <v-card-actions class="justify-end pa-4 pt-0">
                 <v-btn :disabled="newTask.name == ''" color="primary" variant="flat" @click="save" rounded>저장</v-btn>
-                <v-btn color="error" variant="flat" @click="close" rounded>닫기</v-btn>
             </v-card-actions>
         </v-card>
     </div>
@@ -112,6 +117,11 @@ export default {
                 adhoc: true,
             };
         }
+    },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
     },
     methods: {
         close() {
