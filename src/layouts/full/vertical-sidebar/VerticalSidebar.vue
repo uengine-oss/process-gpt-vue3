@@ -1,16 +1,13 @@
-<script setup>
-import { useCustomizerStore } from '@/stores/customizer';
-
-import Logo from '../logo/Logo.vue';
-import NavCollapse from './NavCollapse/NavCollapse.vue';
-import NavGroup from './NavGroup/index.vue';
-import NavItem from './NavItem/index.vue';
-import ExtraBox from './extrabox/ExtraBox.vue';
-
-const customizer = useCustomizerStore();
-</script>
-
 <template>
+    <v-btn icon
+        v-if="globalIsMobile.value"
+        @click.stop="customizer.SET_SIDEBAR_DRAWER"
+        class="mobile-side-bar-btn"
+        size="40"
+        color="primary"
+    >
+        <Icons :icon="'list-bold-duotone'"/>
+    </v-btn>
     <v-navigation-drawer
         left
         v-model="customizer.Sidebar_drawer"
@@ -40,15 +37,17 @@ const customizer = useCustomizerStore();
                 </template>
             </v-tooltip>
         </v-row>
-        <div class="pa-5 pl-4 is-sidebar-mobile">
+        <div class="pa-5 pl-4 is-sidebar-mobile"
+            :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }"
+        >
             <Logo /> 
         </div>
         <!-- ---------------------------------------------- -->
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
-        <div class="scrollnavbar bg-containerBg overflow-y-hidden">
+        <div class="scrollnavbar bg-containerBg overflow-y-auto">
             <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0"
-                style="display: flex; flex-direction: column; height: 100%;"
+                style="display: flex; flex-direction: column; height: 100%; overflow-y: auto;"
             >
                 <!---Menu Loop -->
                 <template v-for="item in sidebarItem" :key="item.title">
@@ -68,12 +67,13 @@ const customizer = useCustomizerStore();
                     <Icons :icon="'write'" class="mr-2" />
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
+                <VerticalHeader v-if="globalIsMobile.value"/>
                 <div
                     v-if="!pal && isShowProcessInstanceList"
                     style="font-size:14px;"
                     class="text-medium-emphasis cp-menu mt-3 ml-2"
                 >{{ $t('VerticalSidebar.instanceList') }}</div>
-                <v-col v-if="isShowProcessInstanceList && !pal" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                <v-col v-if="isShowProcessInstanceList && !pal" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto; min-height: 150px;">
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
@@ -84,9 +84,10 @@ const customizer = useCustomizerStore();
                     class="text-medium-emphasis cp-menu mt-3 ml-2"
                 >
                     {{ $t('VerticalSidebar.projectList') }} 
-                    <!-- <v-btn @click="openNewProject()"> + </v-btn> -->
+                    <v-btn @click="openNewProject()" icon style="margin-bottom: 5px;"> <PlusIcon size="15"/> </v-btn>
+                    
                 </div>
-                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto; min-height: 150px;">
                     <ProjectList/>
                 </v-col>
                 <div
@@ -94,7 +95,7 @@ const customizer = useCustomizerStore();
                     style="font-size:14px;"
                     class="text-medium-emphasis cp-menu mt-3 ml-2"
                 >{{ $t('VerticalSidebar.instanceList') }}</div>
-                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto; min-height: 150px;">
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
@@ -131,7 +132,7 @@ const customizer = useCustomizerStore();
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
                 </v-col>
-                <v-col class="pa-0" style="flex: 1 1 50%; overflow: auto;">
+                <v-col class="pa-0" style="flex: 1 1 50%; overflow: auto; min-height: 150px;">
                     <template v-if="definitionList">
                         <!-- 정의 목록 리스트 -->
                         <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
@@ -162,6 +163,12 @@ const customizer = useCustomizerStore();
             <ExtraBox />
         </div>
     </v-navigation-drawer>
+
+    <v-dialog v-model="isNewProjectOpen" max-width="400" class="delete-input-details">
+        <ProjectCreationForm  @close="closeNewProject" @save="createNewProject" />
+    </v-dialog>
+
+
     <v-dialog v-model="isOpen" max-width="400" class="delete-input-details">
         <v-card class="pa-4 pt-2">
             <v-row class="ma-0 pa-0 pb-2" align="center">
@@ -183,77 +190,43 @@ const customizer = useCustomizerStore();
             </v-row>
         </v-card>
     </v-dialog>
-    <v-dialog v-model="isNewProjectOpen" max-width="400" class="delete-input-details">
-        <v-card class="pa-4 pt-2">
-            <v-card-title> {{ $t('VerticalSidebar.newProject') }} </v-card-title>
-            <v-card-text>
-                <v-text-field v-model="newProjectInfo.name" label="프로젝트 명" required></v-text-field>
-                <v-menu
-                    v-model="startDateMenu"
-                    :close-on-content-click="false"
-                    transition="scale-transition"
-                    offset-y
-                    min-width="auto"
-                >
-                    <template v-slot:activator="{ on, attrs }">
-                        <v-text-field
-                            v-model="newProjectInfo.startDate"
-                            label="프로젝트 시작일"
-                            prepend-icon="mdi-calendar"
-                            readonly
-                            v-bind="attrs"
-                            v-on="on"
-                        ></v-text-field>
-                    </template>
-                    <v-date-picker
-                        v-model="newProjectInfo.startDate"
-                        @input="startDateMenu = false"
-                    ></v-date-picker>
-                </v-menu>
-
-                <v-menu
-                    v-model="dueDateMenu"
-                    :close-on-content-click="false"
-                    transition="scale-transition"
-                    offset-y
-                    min-width="auto"
-                >
-                    <template v-slot:activator="{ on, attrs }">
-                        <v-text-field
-                            v-model="newProjectInfo.dueDate"
-                            label="프로젝트 종료일"
-                            prepend-icon="mdi-calendar"
-                            readonly
-                            v-bind="attrs"
-                            v-on="on"
-                        ></v-text-field>
-                    </template>
-                    <v-date-picker
-                        v-model="newProjectInfo.dueDate"
-                        @input="dueDateMenu = false"
-                    ></v-date-picker>
-                </v-menu>
-            </v-card-text>
-            <v-card-actions class="justify-end">
-                    <v-btn @click="closeNewProject()"> 취소 </v-btn>
-                    <v-btn @click="createNewProject()"> 생성 </v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
 </template>
 
 <script>
-import BackendFactory from '@/components/api/BackendFactory';
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import ProjectList from '@/components/ui/ProjectList.vue';
-// import InstanceList from '@/components/ui/InstanceList.vue';
+import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.vue';
+
+import { useCustomizerStore } from '@/stores/customizer';
+
+import Logo from '../logo/Logo.vue';
+import NavCollapse from './NavCollapse/NavCollapse.vue';
+import NavGroup from './NavGroup/index.vue';
+import NavItem from './NavItem/index.vue';
+import ExtraBox from './extrabox/ExtraBox.vue';
+import BackendFactory from '@/components/api/BackendFactory';
+
+import VerticalHeader from '../vertical-header/VerticalHeader.vue';
+
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
         ProcessInstanceList,
         ProjectList,
-        // InstanceList
+        ProjectCreationForm,
+        Logo,
+        NavCollapse,
+        NavGroup,
+        NavItem,
+        ExtraBox,
+        VerticalHeader
+    },
+    setup() {
+        const customizer = useCustomizerStore();
+        return {
+            customizer
+        };
     },
     data: () => ({
         sidebarItem: [],
@@ -390,11 +363,19 @@ export default {
             }
         },
         openNewProject(){
-            console.log('openNewProject');
             this.isNewProjectOpen = true;
         },
-        createNewProject(){
-
+        async createNewProject(value){
+            await backend.putProject({
+                name: value.name,
+                startDate: value.startDate,
+                dueDate: value.dueDate,
+                endDate: null,
+                status: "NEW",
+                createdDate: new Date().toISOString(),
+                userId: localStorage.getItem('email'),
+            });
+            
             this.closeNewProject();
         },
         closeNewProject(){
@@ -552,3 +533,9 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.mobile-no-padding-bottom {
+    padding-bottom: 0px !important;
+}
+</style>

@@ -321,19 +321,22 @@ export default class StorageBaseSupabase {
                     if (window.$tenantName) {
                         filter.tenant_id = window.$tenantName;
                     }
+                    
+                    // 테넌트가 없는 경우 여러 결과가 나올 수 있으므로 항상 limit(1) 사용
                     var { data, error } = await window.$supabase.from('users')
                         .select()
                         .match(filter)
-                        .maybeSingle();
+                        .limit(1);
                     
-                    if (!error && data) {
+                    if (!error && data && data.length > 0) {
+                        const userData = data[0];
                         return {
-                            email: data.email,
-                            name: data.username,
-                            profile: data.profile,
-                            uid: data.id,
-                            role: data.role,
-                            tenant_id: data.tenant_id
+                            email: userData.email,
+                            name: userData.username,
+                            profile: userData.profile,
+                            uid: userData.id,
+                            role: userData.role,
+                            tenant_id: userData.tenant_id
                         }
                     } else if (error) {
                         throw new StorageBaseError('error in getUserInfo', error, arguments);
@@ -859,50 +862,67 @@ export default class StorageBaseSupabase {
                     .maybeSingle();
 
                 if (!error) {
-                    window.localStorage.setItem('isAdmin', data.is_admin);
-                    window.localStorage.setItem('picture', data.profile);
+                    window.localStorage.setItem('isAdmin', data.is_admin || false);
+                    window.localStorage.setItem('picture', data.profile || '');
                     if (data.role && data.role !== '') {
                         window.localStorage.setItem('role', data.role);
                     }
-                    window.localStorage.setItem('userName', data.username);
-                    window.localStorage.setItem('email', data.email);
-                    window.localStorage.setItem('uid', data.id);
+                    window.localStorage.setItem('userName', data.username || '');
+                    window.localStorage.setItem('email', data.email || '');
+                    window.localStorage.setItem('uid', data.id || '');
 
                     // FCM 토큰 처리 - user_devices 테이블 사용
-                    const fcm_token = localStorage.getItem('fcm_token');
-                    const userEmail = data.email;
+                    let fcm_token;
+                    
+                    // Check if we're in webview mode
+                    if (window.AndroidBridge) {
+                        // Get FCM token from Android bridge
+                        try {
+                            fcm_token = window.AndroidBridge.getFcmToken();
+                        } catch (e) {
+                            console.log('Failed to get FCM token from AndroidBridge:', e);
+                            fcm_token = null;
+                        }
+                    }
+                    
+                    const userEmail = data.email || '';
                     
                     // user_devices 테이블에서 해당 유저 정보 확인
-                    const { data: deviceData, error: deviceError } = await window.$supabase
+                    if(userEmail) {
+                        const { data: deviceData, error: deviceError } = await window.$supabase
                         .from('user_devices')
                         .select('*')
                         .eq('user_email', userEmail)
                         .maybeSingle();
-                    
-                    if (deviceError && deviceError.code !== 'PGRST116') {
-                        console.error('user_devices 테이블 조회 오류:', deviceError);
-                    } else if (!deviceData) {
-                        // 해당 유저 정보가 없으면 새로 생성 (device_token은 null로 설정)
-                        await window.$supabase
-                            .from('user_devices')
-                            .insert({
-                                user_email: userEmail,
-                                device_token: null
-                            });
-                        console.log('user_devices 테이블에 새 유저 정보 생성:', userEmail);
+                        
+                        if (deviceError && deviceError.code !== 'PGRST116') {
+                            console.error('user_devices 테이블 조회 오류:', deviceError);
+                        } else if (!deviceData) {
+                            // 해당 유저 정보가 없으면 새로 생성 (device_token은 null로 설정)
+                            await window.$supabase
+                                .from('user_devices')
+                                .insert({
+                                    user_email: userEmail,
+                                    device_token: null
+                                });
+                            console.log('user_devices 테이블에 새 유저 정보 생성:', userEmail);
+                        }
+                        
+                        // FCM 토큰이 있고, 기존 토큰과 다르면 업데이트
+                        if (fcm_token && (!deviceData?.device_token || deviceData.device_token !== fcm_token)) {
+                            await window.$supabase
+                                .from('user_devices')
+                                .update({ device_token: fcm_token })
+                                .eq('user_email', userEmail);
+                            console.log('user_devices 테이블에 FCM 토큰 업데이트:', fcm_token);
+                        }
                     }
                     
-                    // FCM 토큰이 있고, 기존 토큰과 다르면 업데이트
-                    if (fcm_token && (!deviceData?.device_token || deviceData.device_token !== fcm_token)) {
-                        await window.$supabase
-                            .from('user_devices')
-                            .update({ device_token: fcm_token })
-                            .eq('user_email', userEmail);
-                        console.log('user_devices 테이블에 FCM 토큰 업데이트:', fcm_token);
-                    }
 
-                    const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: data.is_admin } });
-                    window.dispatchEvent(event);
+                    if(data && data.is_admin) {
+                        const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: data.is_admin } });
+                        window.dispatchEvent(event);
+                    }
                 }
             }
         } catch (e) {

@@ -33,11 +33,14 @@ export default {
             let result = await backend.getProjectList();
             if (!result) result = [];
             return result.map((item) => {
+                const title = item.name;
+                const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.projectId)) : item.projectId;
                 item = {
                     // icon: 'ph:cube',
-                    title: item.name,
-                    to: `/project/${item.projectId}`,
-                    BgColor:'primary'
+                    title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
+                    to: `/project/${route}`,
+                    BgColor:'primary',
+                    isNew: item.status == 'NEW'
                 };
                 return item;
             });

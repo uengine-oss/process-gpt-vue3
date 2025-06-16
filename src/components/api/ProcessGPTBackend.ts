@@ -495,9 +495,9 @@ class ProcessGPTBackend implements Backend {
                     status: workitem.status === 'TODO' ? 'NEW' : workitem.status === 'DONE' ? 'COMPLETED' : workitem.status,
                     description: workitem.description || "",
                     tool: workitem.tool || "",
-                    currentActivities: instance && instance.current_activity_ids ? 
-                        instance.current_activity_ids : [ activityInfo.id ],
-                    defVerId: instance && instance.proc_def_version ? instance.proc_def_version : null
+                    currentActivities: instance && instance.currentActivityIds ? 
+                        instance.currentActivityIds : [ activityInfo.id ],
+                    defVerId: instance && instance.defVersion ? instance.defVersion : null
                 },
                 activity: {
                     name: workitem.activity_name,
@@ -590,6 +590,7 @@ class ProcessGPTBackend implements Backend {
                     activity_id: workItem.tracingTag || workItem.title,
                     activity_name: workItem.title || workItem.name,
                     description: workItem.description || null,
+                    reference_ids: workItem.referenceIds || null,
                     tool: workItem.tool || null,
                     adhoc: workItem.adhoc || null,
                     project_id: workItem.projectId || null,
@@ -1369,6 +1370,7 @@ class ProcessGPTBackend implements Backend {
             return await storage.putObject('bpm_proc_inst', {
                 proc_inst_id: instId || this.uuid(),
                 proc_def_id: instItem.procDefId,
+                proc_def_version: instItem.procDefVersion,
                 proc_inst_name: instItem.name,
                 current_activity_ids: instItem.currentActivityIds || [],
                 current_user_ids: instItem.currentUserIds || [],
@@ -1432,7 +1434,7 @@ class ProcessGPTBackend implements Backend {
     async watchNotifications(onNotification?: (notification: any) => void) {
         try {
             await storage.watchNotifications(`notifications`, (payload) => {
-                if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+                if (payload && payload.new && payload.eventType === "INSERT") { // || payload.eventType === "UPDATE"
                     const notification = payload.new;
                     if (onNotification) {
                         onNotification(notification);
@@ -1699,6 +1701,9 @@ class ProcessGPTBackend implements Backend {
                 role: newAgent.role,
                 goal: newAgent.goal,
                 persona: newAgent.persona,
+                url: newAgent.url,
+                description: newAgent.description,
+                tools: newAgent.tools,
                 tenant_id: window.$tenantName
             }
             await storage.putObject('agents', putObj);
@@ -1908,12 +1913,38 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async inviteUser(userInfo: any) {
+        try {
+            const request = {
+                input: userInfo
+            }
+            const response = await axios.post('/execution/invite-user', request);
+            if (response.status === 200) {
+                if (response.data) {
+                    return response.data;
+                } else {
+                    const newUser = await storage.getObject('users', {
+                        match: {
+                            email: userInfo.email,
+                            tenant_id: userInfo.tenant_id
+                        }
+                    });
+                    return { user: newUser };
+                }
+            } else {
+                return { error: true, message: response.data.message };
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async createUser(userInfo: any) {
         try {
             const request = {
                 input: userInfo
             }
-            console.log(request)
             const response = await axios.post('/execution/create-user', request);
             if (response.status === 200) {
                 if (response.data) {
@@ -2587,6 +2618,24 @@ class ProcessGPTBackend implements Backend {
     //         throw new Error(error.message);
     //     }
     // }
+    async putProject(project: any) {
+        try {
+            return await storage.putObject('project', {
+                project_id: project.projectId || this.uuid(),
+                name: project.name || 'Untitled Project',
+                start_date: project.startDate || new Date().toISOString(),
+                end_date: project.endDate || null,
+                due_date: project.dueDate || null,
+                status: project.status || "NEW",
+                created_date: project.createdDate || new Date().toISOString(),
+                user_id: project.userId || localStorage.getItem('email'),
+            });
+        } catch (error) {
+            
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
 
     async getProjectList() {
         try {
@@ -2601,6 +2650,7 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
     async getProjectById(projectId: number) {
         try {
             const list = await storage.list('project', {match: { 'project_id': projectId } });
@@ -2714,6 +2764,7 @@ class ProcessGPTBackend implements Backend {
         return {
             instId: item.proc_inst_id,
             defId: item.proc_def_id,
+            defVersion: item.proc_def_version,
             name: item.proc_inst_name,
             projectId: item.project_id,
             currentActivityIds: item.current_activity_ids,
@@ -2751,6 +2802,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getMCPTools() {
+        try {
+            const response = await axios.get('/execution/mcp-tools');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
     
 }
 

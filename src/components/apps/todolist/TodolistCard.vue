@@ -1,17 +1,17 @@
 <template>
     <v-card elevation="10">
-        <div class="pa-4 todolist-card-box">
+        <div class="pa-4" :class="this.globalIsMobile.value ? 'todolist-card-box-is-mobile' : 'todolist-card-box'">
             <div class="d-flex align-center justify-space-between ml-2">
                 <h5 class="text-h5 font-weight-semibold">{{ ($t('todoList.title')) }}</h5>
 
                 <v-avatar v-if="mode === 'ProcessGPT'"
                     size="24" elevation="10" class="bg-surface d-flex align-center cursor-pointer"
-                    @click="openDialog">
-                    <v-tooltip activator="parent" location="left">할 일 등록</v-tooltip>
+                    @click="openDialog"
+                >
+                    <v-tooltip activator="parent" location="left">{{ ($t('todoList.addTask')) }}</v-tooltip>
                     <PlusIcon size="24" stroke-width="2" />
                 </v-avatar>
             </div>
-
             <KanbanBoard
                 :columns="todolist"
                 :isNotAll="false"
@@ -21,7 +21,7 @@
             />
         </div>
 
-        <v-dialog v-model="dialog" max-width="500">
+        <v-dialog v-model="dialog" max-width="500" persistent>
             <TodoDialog :todolist="todolist" @close="closeDialog" />
         </v-dialog>
     </v-card>
@@ -70,6 +70,8 @@ export default {
         dialog: false,
         currentPage: 0,
     }),
+    computed: {
+    },
     mounted() {
         this.mode = window.$mode;
     },
@@ -143,9 +145,3 @@ export default {
     }
 }
 </script>
-
-<style>
-.todolist-card-box {
-    padding: 4px !important;
-}
-</style>

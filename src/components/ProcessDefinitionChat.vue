@@ -49,6 +49,7 @@
                 <process-definition
                     class="process-definition-resize"
                     :bpmn="bpmn"
+                    :isAIGenerated="isAIGenerated"
                     :processDefinition="processDefinition"
                     :key="definitionChangeCount"
                     :isViewMode="isViewMode"
@@ -182,6 +183,7 @@
         </AppBaseCard>
         <v-dialog v-model="executeDialog" max-width="80%"
             :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
+             :fullscreen="isMobile"
         >
             <div v-if="!pal && mode === 'ProcessGPT'">
                 <process-gpt-execute :isSimulate="isSimulate" :processDefinition="processDefinition" :bpmn="bpmn" :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
@@ -296,6 +298,7 @@ export default {
         isConsultingMode: false,
         isPreviewPDFDialog: false,
         marketplaceDialog: false,
+        isAIGenerated: false,
     }),
     async created() {
         $try(async () => {
@@ -399,7 +402,10 @@ export default {
         },
         pal(){
             return window.$pal;
-        }
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
     },
     async beforeRouteLeave(to, from, next) {
         if (this.bpmn && this.bpmn.length > 0) {
@@ -976,6 +982,7 @@ export default {
                             if(!this.processDefinition) this.processDefinition = {};
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
                             this.bpmn = this.createBpmnXml(unknown);
+                            this.isAIGenerated = true;
                             this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
                             this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
                             this.projectName = unknown.processDefinitionName

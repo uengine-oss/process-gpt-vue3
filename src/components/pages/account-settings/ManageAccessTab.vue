@@ -1,5 +1,18 @@
 <template>
     <v-card elevation="10">
+        <div>
+            <div class="d-flex justify-end mb-4">
+                <v-btn
+                    color="primary"
+                    elevation="2"
+                    @click="openInviteUserCard = true"
+                    class="add-user-btn"
+                >
+                    <v-icon left>mdi-account-plus</v-icon>
+                    {{ $t('accountTab.addUser') }}
+                </v-btn>
+            </div>
+        </div>
         <div class="mt-2 mb-5">
             <v-text-field v-model="search" label="Search User" hide-details prepend-inner-icon="mdi-magnify"></v-text-field>
         </div>
@@ -33,6 +46,25 @@
             </v-data-table>
         </div>
     </v-card>
+
+    <v-dialog
+        v-model="openInviteUserCard"
+        persistent
+    >
+        <v-card>
+            <div class="d-flex justify-end pa-2">
+                <v-btn
+                    icon
+                    @click="openInviteUserCard = false"
+                >
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </div>
+            <v-card-text class="pa-0">
+                <InviteUserCard @close="closeInviteUserCard" type="manageAccess" :userList="users" />
+            </v-card-text>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
@@ -40,10 +72,13 @@ import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 import { VDataTable } from 'vuetify/components/VDataTable';
+import InviteUserCard from '@/components/tenant/inviteUserCard.vue';
 
 export default {
+    name: 'ManageAccessTab',
     components: {
-        VDataTable
+        VDataTable,
+        InviteUserCard
     },
     data: () => ({
         search: '',
@@ -57,12 +92,24 @@ export default {
             { title: 'User', key: 'name' },
             { title: 'Role', key: 'is_admin', sortable: false },
             { title: 'Action', key: 'action', sortable: false, align: 'end' }
-        ]
+        ],
+        openInviteUserCard: false,
     }),
     created() {
         this.getUserList();
     },
     methods: {
+        closeInviteUserCard(userList) {
+            this.openInviteUserCard = false;
+            userList.forEach(user => {
+                if(user.role === 'superAdmin') {
+                    user.is_admin = true;
+                } else {
+                    user.is_admin = false;
+                }
+                this.users.push(user);
+            });
+        },
         async getUserList() {
             this.users  = await backend.getUserList();
             this.users = this.users.map(user => {
@@ -88,3 +135,17 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.add-user-btn {
+    border-radius: 8px;
+    text-transform: none;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.add-user-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+</style>

@@ -46,7 +46,7 @@
         <v-row :class="isMobile ? 'ma-0 pa-0' : 'ma-0 pa-0'">
             <!-- Left -->
             <v-col :cols="isMobile ? 12 : 5"
-                :class="isMobile ? 'pa-4 pt-3' : 'pa-0 pt-3 pl-4 pb-4'"
+                :class="isMobile ? 'pa-4 pt-3 order-last' : 'pa-0 pt-3 pl-4 pb-4'"
             >
                 <v-alert class="pa-0" color="#2196F3" variant="outlined">
                     <v-tabs v-model="selectedTab">
@@ -68,11 +68,14 @@
                         <v-tab v-if="messages && messages.length > 0" value="history">{{ $t('WorkItem.history') }}</v-tab>
                         <v-tab v-if="messages" value="agent">{{ $t('WorkItem.agent') }}</v-tab> -->
                     </v-tabs>
-                    <v-window v-model="selectedTab">
+                    <v-window v-model="selectedTab"
+                        :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px); overflow: auto' : 'height: calc(100vh - 249px); color: black; overflow: auto'"
+                    >
                         <v-window-item value="progress">
                             <div
                                 class="pa-2"
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 210px); color: black; overflow: auto'"
+
                             >
                                 <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%">
@@ -179,6 +182,7 @@
             <v-col
                 class="pa-0"
                 :cols="isMobile ? 12 : 7"
+                :class="isMobile ? 'order-first' : ''"
                 :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 190px); overflow: auto')"
             >
                 <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
@@ -389,7 +393,7 @@ export default {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         },
         isMobile() {
-            return this.windowWidth <= 700;
+            return this.windowWidth <= 768;
         },
         tabList() {
             if (this.mode == 'ProcessGPT') {
@@ -426,7 +430,7 @@ export default {
     },
     watch: {
         windowWidth(newWidth) {
-            if (newWidth <= 700) {
+            if (newWidth <= 768) {
                 this.isMobile = true;
             } else {
                 this.isMobile = false;
@@ -502,8 +506,10 @@ export default {
                             await me.loadRefForm();
                         }
                     }
-                    if(me.workItem.worklist) {
+
+                    if(me.workItem.worklist && me.workItem.worklist.instId) {
                         me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
+                        me.processInstance = await backend.getInstance(me.workItem.worklist.instId);
                     }
 
                     if (me.mode == 'ProcessGPT' && !me.pal) {
@@ -511,12 +517,6 @@ export default {
                     } else {
                         me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
                     }
-
-                    if(me.isSimulate != 'true') {
-                        me.processInstance = await backend.getInstance(me.workItem.worklist.instId);
-                    }
-
-                    
 
                     me.updatedDefKey++;
                 },

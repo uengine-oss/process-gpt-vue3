@@ -59,7 +59,10 @@ const slotName = computed(() => {
 
 <template>
     <!---/Left chat list -->
-    <div class="d-flex mainbox" :class="chatReSizeDisplay" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 131px)' : 'height:100vh;'">
+    <div class="d-flex mainbox is-work-height" :class="chatReSizeDisplay"
+        :style="!$globalState.state.isRightZoomed ? '' : 'height:100vh;'"
+        style="overflow: auto;"
+    >
         <div class="left-part" v-if="lgAndUp" :style="canvasReSize">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>
@@ -70,7 +73,7 @@ const slotName = computed(() => {
         <div class="right-part">
             <!---Toggle Button For mobile-->
             <v-btn block @click="sDrawer = !sDrawer" variant="text" class="d-lg-none d-md-flex d-sm-flex"
-                style="z-index:1; background-color:white;"
+                style="z-index: 1; background-color: white; flex: 0 0 auto;"
                 :style="!$globalState.state.isRightZoomed ? '' : 'display:none;'"    
             >
                 <Menu2Icon size="20" class="mr-2 cp-dialog-open cp-def-menu" /> Menu
@@ -82,7 +85,9 @@ const slotName = computed(() => {
         <!---right chat conversation -->
     </div>
 
-    <v-navigation-drawer temporary v-model="sDrawer" width="320" top v-if="!lgAndUp" style="top:123px;">
+    <v-navigation-drawer temporary v-model="sDrawer" width="320" top v-if="!lgAndUp"
+        class="mobile-menu-nav"
+    >
         <v-card-text class="pa-0">
             <slot name="mobileLeftContent"></slot>
         </v-card-text>
@@ -116,6 +121,9 @@ const slotName = computed(() => {
     width: 100%;
     overflow: auto;
     background: white;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .left-part {

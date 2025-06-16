@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <div style="position: sticky; top:0px; z-index:1; background-color:white;">
+    <div class="chat-info-header">
+        <div>
             <div class="align-right gap-3 justify-space-between" 
                 :style="modelValueStyle ? 'padding: 12px 16px 2px 16px;' : 'padding: 9px 16px 9px 16px;'"
             >
@@ -78,7 +78,7 @@
                             <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold, .csv, .xlsx" style="display: none" />
                     
                             <div v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map'">
-                                <!-- 자물쇠 아이콘 -->
+                                <!-- 저장 아이콘 -->
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
                                         <div v-bind="props">

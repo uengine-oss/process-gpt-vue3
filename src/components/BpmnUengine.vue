@@ -22,6 +22,7 @@ import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
 import BackendFactory from '@/components/api/BackendFactory';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
+import '@/components/autoLayout/bpmn-auto-layout.js';
 
 
 const backend = BackendFactory.createBackend();
@@ -62,6 +63,9 @@ export default {
         },
         isPreviewPDFDialog: {
             type: Boolean
+        },
+        isAIGenerated: {
+            type: Boolean
         }
     },
     components: {
@@ -74,7 +78,8 @@ export default {
             openPanel: false,
             moddle: null,
             bpmnStore: null,
-            bpmnViewer: null
+            bpmnViewer: null,
+            _layoutTimeout: null
         };
     },
     computed: {
@@ -139,9 +144,15 @@ export default {
             if(!val) {
                 this.$emit('closePDFDialog');
             }
-        }
+        },
     },
     methods: {
+        applyAutoLayout() {
+            const elementRegistry = this.bpmnViewer.get('elementRegistry');
+            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            const horizontal = participant[0].di.isHorizontal;
+            window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal: horizontal });
+        },
         debounce(func, timeout) {
             let timer;
             return (...args) => {
@@ -300,6 +311,15 @@ export default {
                 // events.forEach(function (event) {
 
                 // });
+                if(self.isAIGenerated) {
+                    if(self._layoutTimeout) {
+                        clearTimeout(self._layoutTimeout);
+                    }
+                    self._layoutTimeout = setTimeout(() => {
+                        self.applyAutoLayout();
+                    }, 500); // 500ms 안 변하면 실행
+                }
+
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
             });

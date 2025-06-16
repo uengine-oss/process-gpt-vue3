@@ -45,7 +45,9 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <div :key="chatRenderKey">
+                <div :key="chatRenderKey"
+                    class="chat-info-view-wrapper-chats"
+                >
                     <Chat
                         :messages="messages"
                         :userInfo="userInfo"
@@ -58,8 +60,6 @@
                         :isSystemChat="isSystemChat"
                         :chatRoomId="chatRoomId"
                         :newMessageInfo="newMessageInfo"
-                        :initialChatHeight="250"
-                        :maxAllowedBase="460"
                         @requestDraftAgent="requestDraftAgent"
                         @requestFile="requestFile"
                         @beforeReply="beforeReply"
@@ -229,6 +229,7 @@ import AssistantChats from "../chat/AssistantChats.vue";
 import Attachments from "./Attachments.vue";
 import ChatModule from "@/components/ChatModule.vue";
 import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
+import AgentChatGenerator from "@/components/ai/AgentChatGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import UserListing from '@/components/apps/chats/UserListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
@@ -284,7 +285,8 @@ export default {
 
         // agent
         agentList: [],
-        isAgentChat: false
+        isAgentChat: false,
+        agentInfo: null
     }),
     computed: {
         filteredChatRoomList() {
@@ -294,13 +296,16 @@ export default {
     watch: {
         currentChatRoom: {
             async handler(newVal) {
-                if(this.generator && newVal && newVal.id) {
+                if (newVal && newVal.id) {
                     if (newVal.participants.length > 0) {
                         this.isAgentChat = newVal.participants.some(participant => participant.is_agent);
+                        this.agentInfo = newVal.participants.find(participant => participant.is_agent);
                     }
-                    this.chatRoomId = newVal.id;
-                    this.generator.setChatRoomData(newVal);
-                    await this.getAttachments();
+                    if(this.generator) {
+                        this.chatRoomId = newVal.id;
+                        this.generator.setChatRoomData(newVal);
+                        await this.getAttachments();
+                    }
                 }
             },
             deep: true
@@ -308,10 +313,9 @@ export default {
         isAgentChat: {
             async handler(newVal) {
                 if (newVal) {
-                    this.generator = new ChatGenerator(this, {
+                    this.generator = new AgentChatGenerator(this, {
                         isStream: false,
                         preferredLanguage: "Korean",
-                        agent: true
                     });
                 } else {
                     this.generator = new ChatGenerator(this, {
@@ -322,21 +326,15 @@ export default {
             }
         }
     },  
-    async created() {
-        this.init();
-        this.generator = new ChatGenerator(this, {
-            isStream: true,
-            preferredLanguage: "Korean"
-        });
-
+    async mounted() {
+        await this.init();
         if (this.$route.query.id) {
             this.chatRoomSelected(this.chatRoomList.find(room => room.id === this.$route.query.id));
         }
         if (this.currentChatRoom && this.currentChatRoom.id) {
             this.chatRoomId = this.currentChatRoom.id;
         }
-    },
-    async mounted() {
+
         this.userInfo = await this.backend.getUserInfo();
         await this.getChatRoomList();
 
@@ -349,6 +347,18 @@ export default {
         this.EventBus.on('messages-updated', () => {
             this.chatRenderKey++;
         });
+
+        if (this.isAgentChat) {
+            this.generator = new AgentChatGenerator(this, {
+                isStream: false,
+                preferredLanguage: "Korean",
+            });
+        } else {
+            this.generator = new ChatGenerator(this, {
+                isStream: true,
+                preferredLanguage: "Korean"
+            });
+        }
     },
     beforeUnmount() {
         this.EventBus.emit('chat-room-unselected');
@@ -389,7 +399,8 @@ export default {
                         is_agent: true,
                         goal: this.selectedUserInfo.goal,
                         role: this.selectedUserInfo.role,
-                        persona: this.selectedUserInfo.persona
+                        persona: this.selectedUserInfo.persona,
+                        url: this.selectedUserInfo.url
                     }
                     chatRoomInfo.participants.push(agentInfo)
                 } else {
@@ -414,6 +425,7 @@ export default {
                     chatRoomInfo.name = type == 'agent-chat' ? this.selectedUserInfo.name : this.selectedUserInfo.username
                     chatRoomInfo.participants = []
                     if (type == 'agent-chat') {
+                        this.agentInfo = this.selectedUserInfo
                         const agentInfo = {
                             email: 'system@uengine.org',
                             id: this.selectedUserInfo.id,
@@ -421,7 +433,8 @@ export default {
                             is_agent: true,
                             goal: this.selectedUserInfo.goal,
                             role: this.selectedUserInfo.role,
-                            persona: this.selectedUserInfo.persona
+                            persona: this.selectedUserInfo.persona,
+                            url: this.selectedUserInfo.url
                         }
                         chatRoomInfo.participants.push(agentInfo)
                     } else {
@@ -637,14 +650,18 @@ export default {
         async beforeSendMessage(newMessage) {
             if (newMessage && (newMessage.text != '' || newMessage.image != null)) {
                 this.putMessage(this.createMessageObj(newMessage))
-                if(!this.generator.contexts) {
-                    let contexts = await this.backend.listDefinition();
-                    this.generator.setContexts(contexts);
+                if (this.isAgentChat) {
+                    this.generator.beforeGenerate(newMessage);
+                } else {
+                    if(!this.generator.contexts) {
+                        let contexts = await this.backend.listDefinition();
+                        this.generator.setContexts(contexts);
+                    }
+                    
+                    let instanceList = await this.backend.getAllInstanceList(); 
+                    this.generator.setWorkList(instanceList);
+                    newMessage.callType = 'chats'
                 }
-                
-                let instanceList = await this.backend.getAllInstanceList(); 
-                this.generator.setWorkList(instanceList);
-                newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
             }
         },
@@ -665,6 +682,14 @@ export default {
             })
         },
         afterModelCreated(response) {
+            if (response.work == 'A2AResponse') {
+                let messageWriting = this.messages[this.messages.length - 1];
+                if (messageWriting && messageWriting.isLoading) {
+                    messageWriting.content += response.content
+                    let content = response.content.replaceAll('\n', '<br>')
+                    messageWriting.htmlContent += content
+                }
+            }
         },
         deleteSystemMessage(response){
             this.storage.delete(`chats/${response.uuid}`, {key: 'uuid'});
@@ -797,9 +822,7 @@ export default {
                     me.$router.push(`/definitions/${responseObj.processId}`);
                 }
 
-                if (!this.isAgentChat) {
-                    systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
-                }
+                systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
 
                 const systemMsgObj = me.createMessageObj(systemMsg, 'system')
                 if(this.messages[this.messages.length - 1].content === '...' && this.messages[this.messages.length - 1].isLoading){
@@ -831,7 +854,7 @@ export default {
                     if(responseObj.work == 'CompanyQuery'){
                         try{
                             const token = localStorage.getItem('accessToken');
-                            let mementoRes = await axios.get(`/memento/query`, {
+                            let mementoRes = await axios.post(`/memento/query`, {
                                 params: {
                                     query: responseObj.content,
                                     tenant_id: window.$tenantName
@@ -853,6 +876,7 @@ export default {
                                 }
                             });
                             obj.memento.sources = sources
+                            this.messages[this.messages.length - 1].content = '테이블 생성 중...'
                             const responseTable = await axios.post(`/execution/process-data-query`, {
                                 input: {
                                     query: responseObj.content,
@@ -875,11 +899,30 @@ export default {
                         }
                     } else if(responseObj.work == 'ScheduleQuery'){
                         console.log(responseObj)
+                    } else if (responseObj.work == 'Mem0AgentQuery') {
+                        if (responseObj.searchResults) {
+                            obj.content = responseObj.content
+                            obj.htmlContent = responseObj.htmlContent
+                            obj.searchResults = responseObj.searchResults
+                        }
+                    } else if (responseObj.work == 'Mem0AgentInformation' || responseObj.work == 'Mem0AgentResponse') {
+                        obj.content = responseObj.content
+                    } else if (responseObj.work == 'A2AResponse') {
+                        let content = responseObj.content
+                        content = content.replaceAll('undefined', '')
+                        obj.content = content
+                        obj.htmlContent = content.replaceAll('\n', '<br>')
+
+                        this.messages.forEach((message) => {
+                            if (message.role == 'system') {
+                                delete message.isLoading;
+                            }
+                        });
                     } else {
                         startProcess = true;
                     }
                     obj.uuid = this.uuid()
-                    if(startProcess){
+                    if(startProcess) {
                         this.startProcess(obj)
                     } else {
                         this.putMessage(obj)

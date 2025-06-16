@@ -57,11 +57,12 @@
         "welcome": "Welcome"
     },
     "todoList": {
-        "title": "My Tasks",
+        "title": "Task List",
         "todo": "Upcoming Tasks",
         "inProgress": "In Progress",
         "pending": "Pending",
-        "done": "Done"
+        "done": "Done",
+        "addTask": "Add Task"
     },
     "calendar": {
         "title": "Calendar",
@@ -195,7 +196,10 @@
         "agentName": "Name",
         "agentRole": "Role",
         "agentGoal": "Goal",
-        "agentPersona": "Persona"
+        "agentPersona": "Persona",
+        "agentUrl": "URL",
+        "agentDescription": "Description",
+        "agentTools": "Tools"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
@@ -208,6 +212,7 @@
         "downloadImage": "Download definition diagram as an image",
         "consultingAI": "Process Consulting AI",
         "consultingButton": "Start Process Consulting",
+        "analyzeAndImproveProcessWithAI": "Start process consulting with AI",
         "editingUser": "is editing.",
         "checkIn": "Check In",
         "checkOut": "Check Out",

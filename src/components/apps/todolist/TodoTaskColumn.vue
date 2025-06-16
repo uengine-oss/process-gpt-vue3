@@ -18,8 +18,10 @@
                 style="text-align: center;"
             >{{ $t(column.title) }}</h6>
         </div>
-        <div v-if="!todoTaskColumnBtnStatus" ref="section" class="pa-3 todo-list-card-box" :style="{ height: isNotAll ? 'calc(100vh - 315px)' : 'calc(100vh - 240px)' }"
-            style="overflow:auto;">
+        <div v-if="!todoTaskColumnBtnStatus"
+            ref="section" class="pa-3 todo-list-card-box"
+            style="overflow:auto;"
+        >
             <draggable class="dragArea list-group cursor-move" :list="column.tasks"
                 :animation="200" ghost-class="ghost-card" group="tasks" @add="updateTask"
                 :component-data="getComponentData()" :move="checkDraggable">
@@ -162,10 +164,6 @@ export default {
 <style>
     .todo-task-item-card-style:not(:first-of-type) {
         margin-top:8px;
-    }
-    .todo-list-card-box > div {
-        width:100%;
-        height:100%;
     }
     .todo-task-fold-btn {
         cursor: pointer;

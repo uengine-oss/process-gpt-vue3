@@ -75,6 +75,10 @@
                 <v-window-item value="agent" class="py-2">
                     <AgentField v-model="newAgent" :idRules="idRules" :nameRules="nameRules" />
                 </v-window-item>
+
+                <v-window-item value="a2a" class="py-2">
+                    <AgentField v-model="newAgent" :idRules="idRules" :nameRules="nameRules" :type="tab" />
+                </v-window-item>
             </v-window>
         </v-card-text>
 
@@ -122,6 +126,11 @@ export default {
                 text: 'organizationChartDefinition.addNewAgent',
                 value: 'agent',
             },
+            {
+                // text: 'organizationChartDefinition.addNewA2A',
+                text: 'A2A 에이전트 추가',
+                value: 'a2a',
+            },
         ],
         
         selectedList: [],
@@ -145,7 +154,11 @@ export default {
             persona: '',
             pid: '',
             img: '/images/chat-icon.png',
-            isAgent: true
+            isAgent: true,
+            type: 'agent',
+            url: '',
+            description: '',
+            tools: ''
         },
     }),
     computed: {
@@ -158,7 +171,7 @@ export default {
             return [
                 (value) => !!value || this.$t('organizationChartDefinition.emailRequired'),
                 (value) => /.+@.+\..+/.test(value) || this.$t('organizationChartDefinition.emailInvalid'),
-                // (value) => !this.isExistUser(value) || this.$t('organizationChartDefinition.emailAlreadyExists'),
+                (value) => !this.isExistUser(value) || this.$t('organizationChartDefinition.emailAlreadyExists'),
             ];
         },
         nameRules() {
@@ -236,10 +249,14 @@ export default {
                     this.$emit('addUser', this.selectedList, null)
                 }
             } else {
+                this.newAgent.type = this.tab
                 this.$emit('addAgent', this.newAgent)
             }
             this.closeDialog()
         },
+        isExistUser(email) {
+            return this.userList.some(user => user.email === email)
+        }
     }
 }
 </script>

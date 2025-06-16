@@ -40,16 +40,23 @@
                         </v-col>
                     </v-row>
                 </div>
-                <!-- 세로배치 -->
-                <div class="mt-1">
-                    <div 
+               <!-- 세로배치 -->
+               <div class="mt-1">
+                    <div v-if="mode == 'uEngine'" 
                         class="pa-0"
                         style="font-size:12px; margin-top: 5px;"
                     >
-                        TaskId : {{ task.taskId }} 
-                        <br>InstId: {{ task.instId }}
-                        <br> projectId: {{ task.projectId }}
-                        <br> parent: {{ task.parent }}
+                        TaskId : {{ task.taskId }} / InstId: {{ task.instId }}
+                    </div>
+                    <div v-else-if="isMyTask && isTodolistPath" colos="12" class="pa-0">
+                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
+                            {{ task.procInstName }}
+                        </div>
+                    </div>
+                    <div v-else colos="12" class="pa-0">
+                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
+                            {{ task.instName }}
+                        </div>
                     </div>
                 </div>
                 <v-row v-if="userInfoForTask" class="pa-0 ma-0 mt-1 d-flex align-center">
@@ -84,7 +91,7 @@
                 </div>
             </div>
 
-            <v-dialog v-model="dialog" max-width="500">
+            <v-dialog v-model="dialog" max-width="500" persistent>
                 <TodoDialog 
                     :type="dialogType"
                     :task="task"
@@ -167,10 +174,27 @@ export default {
             return dateString;
         },
         category() {
-            if(!this.task.adhoc && this.task.defId){
+            if(!this.task.adhoc && this.task.defId) {
                 return { name: 'BPM', color: 'primary' };
             }
             return null
+        },
+        allTaskDependencies() {
+            if (!this.tasks || !Array.isArray(this.tasks)) {
+                return [];
+            }
+            
+            return this.tasks.reduce((dependencies, task) => {
+                if (task.referenceIds && task.referenceIds.length > 0) {
+                    const taskDeps = task.referenceIds.map(refId => ({
+                        id: this.generateUUID(),
+                        taskId: task.taskId,
+                        depends_id: refId
+                    }));
+                    return [...dependencies, ...taskDeps];
+                }
+                return dependencies;
+            }, []);
         },
         userInfoForTask() {
             if (!this.userInfo || !this.task || !this.task.endpoint) return null;
@@ -186,12 +210,8 @@ export default {
             return this.$route.path.includes('/todolist');
         }
     },
-    async created() {
-        if (!this.task.instId) {
-            this.managed = true;
-        } else {
-            this.managed = false;
-        }
+    async mounted() {
+        this.managed = this.task.adhoc;
         
         try {
             // 인스턴스 목록 가져오기
@@ -204,7 +224,7 @@ export default {
                     inst => inst.instId === this.task.instId
                 );
                 if (matchingInstance) {
-                    this.task.proc_inst_name = matchingInstance.instName;
+                    this.task.procInstName = matchingInstance.name;
                 }
             }
         } catch (error) {
@@ -212,9 +232,16 @@ export default {
         }
     },
     methods: {
+        generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        },
         executeTask() {
             if (!this.managed) {
-                this.$emit('executeTask', this.task);
+                this.$router.push(`/todolist/${this.task.taskId}`)
             } else {
                 this.dialogType = 'view';
                 this.dialog = true;

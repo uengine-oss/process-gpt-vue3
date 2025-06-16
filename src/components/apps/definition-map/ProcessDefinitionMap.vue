@@ -1,7 +1,9 @@
 <template>
     <div>
-        <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 131px)' : 'height:100vh;'"
-            style="overflow: auto;">
+        <v-card elevation="10" :style="!$globalState.state.isZoomed ? '' : 'height:100vh;'"
+            class="is-work-height"
+            style="overflow: auto;"
+        >
             <div v-if="componentName != 'SubProcessDetail'" class="pa-0 pl-6 pt-4 pr-6 d-flex align-center"
                 style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
@@ -87,11 +89,12 @@
 
 
             <v-row class="ma-0 pa-0">
-                <v-col cols="12" lg="3" md="4" sm="6"
+                <v-col v-if="componentName == 'DefinitionMapList' && isAdmin"
+                    cols="12" lg="3" md="4" sm="6"
                     class="pa-4"
                 >
                     <v-card
-                        v-if="componentName == 'DefinitionMapList' && isAdmin"
+                        
                         @click="openConsultingDialog = true, ProcessPreviewMode = false"
                         class="consulting-card"
                         elevation="3"
@@ -108,22 +111,26 @@
                                 </v-avatar>
                                 <div>
                                     <v-card-title class="text-primary font-weight-bold pb-1">
-                                        프로세스 컨설팅 시작하기
+                                        {{ $t('processDefinitionMap.consultingButton') }}
                                     </v-card-title>
                                     <div class="text-subtitle-2 text-grey-darken-1">
-                                        AI와 함께 프로세스를 분석하고 개선해보세요
+                                        {{ $t('processDefinitionMap.analyzeAndImproveProcessWithAI') }}
                                     </div>
                                 </div>
                             </div>
                         </v-card-item>
                     </v-card>
                 </v-col>
-                <v-col cols="12" lg="3" md="4" sm="6"
+                <v-col v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
+                    cols="12"
+                    lg="3"
+                    md="4"
+                    sm="6"
                     class="pa-4"
                 >
                     <!-- @click="addSampleProcess" -->
                     <v-card
-                        v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
+                        
                         @click="openMarketplaceDialog = true"
                         class="consulting-card"
                         elevation="3"
@@ -153,7 +160,11 @@
                 </v-col>
             </v-row>
         </v-card>
-        <v-dialog :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'" v-model="openConsultingDialog" :scrim="isSimulateMode ? false : true" persistent>
+        <v-dialog v-model="openConsultingDialog"
+            :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'"
+            :fullscreen="isMobile"
+            :scrim="isSimulateMode ? false : true" persistent
+        >
             <v-card>
                 <v-row class="ma-0 pa-3" style="background-color:rgb(var(--v-theme-primary), 0.2); height:50px;">
                     <v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>
@@ -161,7 +172,7 @@
                     <v-spacer></v-spacer>
                     <v-icon @click="closeConsultingDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
                 </v-row>
-                <ProcessDefinitionChat 
+                <ProcessDefinitionChat class="process-definition-map-chat"
                     ref="processDefinitionChat"
                     :chatMode="'consulting'"
                     @createdBPMN="createdBPMN"
@@ -256,7 +267,8 @@ export default {
         openConsultingDialog: false,
         ProcessPreviewMode: false,
         openMarketplaceDialog: false,
-        isSimulateMode: false
+        isSimulateMode: false,
+        windowWidth: window.innerWidth
     }),
     computed: {
         useLock() {
@@ -265,6 +277,9 @@ export default {
             } else {
                 return this.isViewMode;
             }
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
         },
         actionButtons() {
             return [
@@ -393,7 +408,7 @@ export default {
                         .substring(1);
                 }
 
-                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+                return s4() + s4() + '-' + s4() + '-' + s4() + s4() + s4();
             };
 
             const addSubProcess = async (majorProc) => {

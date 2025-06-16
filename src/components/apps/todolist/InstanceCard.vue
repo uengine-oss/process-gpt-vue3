@@ -1,14 +1,17 @@
 <template>
-    <v-card v-if="instance" elevation="10" style="height: calc(100vh - 131px);">
-        <div class="d-flex">
-            <div class="px-3 py-3 pb-2 pl-4 align-center">
-                <div class="d-flex">
-                    <h5 class="text-h5 font-weight-semibold">
-                        {{ instanceName }}
-                    </h5>
+    <v-card v-if="instance" elevation="10" style="overflow: auto;"
+        class="is-work-height"
+    >
+        <div>
+            <div>
+                <!-- 한글: 세로 기준 중앙정렬을 위해 align-center 클래스 추가 -->
+                <v-row class="ma-0 pa-4 pb-0 pt-0 align-center instance-card-title">
+                    <!-- 한글: 인스턴스 이름이 길 경우 줄바꿈이 가능하도록 스타일 추가 -->
+                    <div class="text-h5 font-weight-semibold align-center"
+                        style="word-break: break-all; white-space: normal;"
+                    >{{ instanceName }}</div>
 
-                    <v-chip v-if="instance.status" size="x-small" variant="outlined"
-                        style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center">
+                    <v-chip v-if="instance.status" size="x-small" variant="outlined" class="align-center">
                         {{ instance.status }}
                     </v-chip>
                     <div v-for="event in eventList" :key="event.tracingTag">
@@ -21,14 +24,14 @@
                         > {{  $t('InstanceCard.sendEvent', {event: event.name ? event.name : event.type}) }}
                         </v-btn>
                     </div>
-                </div>
-                <div v-if="instance.instId" class="font-weight-medium" style="color:gray; font-size:14px;">
+                    <v-btn v-if="deletable" @click="deleteInstance" variant="plain" icon class="ml-auto">
+                        <Icons :icon="'trash'" />
+                    </v-btn>
+                </v-row>
+                <div v-if="instance.instId && !isMobile" class="font-weight-medium pl-4 pr-4" style="color:gray; font-size:14px;">
                     ID: {{ instance.instId }}
                 </div>
             </div>
-            <v-btn v-if="deletable" @click="deleteInstance" variant="plain" icon class="ml-auto">
-                <Icons :icon="'trash'" />
-            </v-btn>
         </div>
 
         <div :key="updatedKey">
@@ -36,22 +39,42 @@
                 <ProcessInstanceRunning :instance="instance" @updated="handleInstanceUpdated" />
             </div>
             <div v-else style="height: 100%;">
-                <v-tabs v-model="tab" color="primary">
-                    <v-tab
-                        v-for="item in filteredTabItems"
-                        :key="item.value"
-                        :value="item.value"
-                    >
-                        {{ $t(item.label) }}
-                    </v-tab>
-                </v-tabs>
-                <v-window v-model="tab">
+                <!-- 데스크톱: 기존 탭 -->
+                <div v-if="!isMobile">
+                    <v-tabs v-model="tab" color="primary">
+                        <v-tab
+                            v-for="item in filteredTabItems"
+                            :key="item.value"
+                            :value="item.value"
+                        >
+                            {{ $t(item.label) }}
+                        </v-tab>
+                    </v-tabs>
+                </div>
+                
+                <!-- 모바일: 버튼 형태 -->
+                <div v-else class="pa-2">
+                    <div class="d-flex flex-wrap ga-2">
+                        <v-btn
+                            v-for="item in filteredTabItems"
+                            :key="item.value"
+                            :variant="tab === item.value ? 'flat' : 'text'"
+                            :color="tab === item.value ? 'primary' : 'default'"
+                            size="small"
+                            @click="tab = item.value"
+                        >
+                            {{ $t(item.label) }}
+                        </v-btn>
+                    </div>
+                </div>
+                
+                <v-window v-model="tab" :class="isMobile ? 'mt-0' : ''">
                     <v-window-item value="gantt">
                         <div class="gantt-area" v-if="!isLoading">
                             <GanttChart 
                                 :tasks="tasks" 
                                 :dependencies="dependencies"
-                                :users="[]" 
+                                :users="userList" 
                                 @task-updated="handleTaskUpdated" 
                                 @task-added="handleTaskAdded"
                                 @task-clicked="handleTaskClicked"
@@ -62,12 +85,35 @@
                         </div>
                     </v-window-item>
                     <v-window-item value="progress">
-                        <div style="height: 860px;">
+                        <div style="height: 73vh;">
                             <InstanceProgress :instance="instance"/>
                         </div>
                     </v-window-item>
                     <v-window-item value="todo">
-                        <KanbanBoard  :columns="columns"/>
+                        <div>
+                            <div class="pa-4 todolist-card-box">
+                                <div :class="buttonContainerClass" :style="buttonContainerStyle">
+                                    <v-avatar v-if="mode === 'ProcessGPT'"
+                                        @click="openDialog"
+                                        :color="!isMobile ? '' : 'primary'"
+                                    >
+                                        <v-tooltip activator="parent" location="left">업무 등록</v-tooltip>
+                                        <PlusIcon stroke-width="2" />
+                                    </v-avatar>
+                                </div>
+                                <KanbanBoard class="instance-card-kanban-board"
+                                    :columns="columns" :users="userList"
+                                    :isNotAll="false"
+                                    :showAddButton="false"
+                                    @loadMore="handleLoadMore"
+                                    @updateStatus="updateStatus"
+                                />
+                            </div>
+
+                            <v-dialog v-model="dialog" max-width="500" persistent>
+                                <TodoDialog :instId="instance.instId" :defId="instance.defId" :todolist="columns" @close="closeDialog" />
+                            </v-dialog>
+                        </div>
                     </v-window-item>
                     <v-window-item value="workhistory">
                         <InstanceWorkHistory :instance="instance"/>
@@ -85,19 +131,21 @@
 </template>
 
 <script>
-import BackendFactory from '@/components/api/BackendFactory';
-const backend = BackendFactory.createBackend();
-
-import InstanceTodo from './InstanceTodo.vue';
+// import InstanceTodo from './InstanceTodo.vue';
 import InstanceProgress from './InstanceProgress.vue';
 import InstanceWorkHistory from './InstanceWorkHistory.vue';
 import InstanceOutput from './InstanceOutput.vue';
 import ProcessInstanceRunning from '@/components/ProcessInstanceRunning.vue';
 import GanttChart from '@/components/apps/todolist/GanttChart.vue';
 import KanbanBoard from '@/components/apps/todolist/KanbanBoard.vue';
+import KanbanColumnConfig from './KanbanColumnConfig.vue';
+import TodoDialog from './TodoDialog.vue';
+
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 export default {
-    mixins: [InstanceTodo],
+    mixins: [KanbanColumnConfig],
     components: {
         InstanceProgress,
         InstanceWorkHistory,
@@ -105,19 +153,21 @@ export default {
         ProcessInstanceRunning,
         GanttChart,
         KanbanBoard,
+        TodoDialog
     },
     data: () => ({
+        mode: window.$mode,
         isLoading: true,
         instance: null,
         eventList: [],
         // tab
         tab: "progress",
         tabItems: [
-            { value: 'progress', label: 'InstanceCard.progress'},
-            { value: 'todo', label: 'InstanceCard.kanbanBoard'},
-            { value: 'workhistory', label: 'InstanceCard.workHistory'},
-            { value: 'gantt', label: 'InstanceCard.ganttChart'},
-            { value: 'output', label: 'InstanceCard.output'}
+            { value: 'progress', label: 'InstanceCard.progress', mobile: true},
+            { value: 'todo', label: 'InstanceCard.kanbanBoard', mobile: true},
+            { value: 'workhistory', label: 'InstanceCard.workHistory', mobile: true},
+            { value: 'gantt', label: 'InstanceCard.ganttChart', mobile: false},
+            { value: 'output', label: 'InstanceCard.output', mobile: true}
         ],
 
         updatedKey: 0,
@@ -167,11 +217,18 @@ export default {
             }
         },
         filteredTabItems() {
+            let items = this.tabItems;
+            
             if (this.instance && !this.instance.defId) {
                 this.tab = 'todo';
-                return this.tabItems.filter(item => item.value !== 'progress');
+                items = items.filter(item => item.value !== 'progress');
             }
-            return this.tabItems;
+            
+            if (this.isMobile) {
+                items = items.filter(item => item.mobile !== false);
+            }
+            
+            return items;
         },
         isCompleted() {
             return this.instance.status == "COMPLETED"
@@ -196,6 +253,15 @@ export default {
             } else {
                 return '';
             }
+        },
+        isMobile() {
+            return this.$vuetify.display.width <= 768;
+        },
+        buttonContainerClass() {
+            return this.isMobile ? '' : 'd-flex align-center justify-end ml-2 mr-2';
+        },
+        buttonContainerStyle() {
+            return this.isMobile ? 'position: fixed; right: 16px; bottom: 32px; z-index: 999;' : '';
         }
     },
     methods: {
@@ -233,13 +299,39 @@ export default {
                         result = result.concat(updatedWorklist);
                     }
                     me.tasks = result;
-                    me.dependencies = await backend.getTaskDependencyByInstId(me.id)
+                    let dependencies = await backend.getTaskDependencyByInstId(me.id)
+                    me.dependencies = me.settingTaskDependency(dependencies, me.tasks);
                     // 칸반 컬럼 업데이트
                     me.columns.forEach(column => {
                         column.tasks = me.tasks.filter(task => task.status === column.id);
                     });
                     me.isLoading = false
                 }
+            });
+        },
+        settingTaskDependency(dependencies, tasks){
+            let result = [];
+            result = tasks.reduce((dependencies, task) => {
+                if (task.referenceIds && task.referenceIds.length > 0) {
+                    const taskDeps = task.referenceIds.map(refId => ({
+                        id: this.generateUUID(),
+                        taskId: task.taskId,
+                        dependsId: refId
+                    }));
+                    return [...dependencies, ...taskDeps];
+                }
+                return dependencies;
+            }, []);
+
+            result = [...new Set([...result, ...dependencies])];
+
+            return result;
+        },
+        generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
             });
         },
         delay(time) {
@@ -272,8 +364,11 @@ export default {
         },
         async handleTaskAdded(task){
             task.projectId = this.instance.projectId;
-            task.parent = this.instance.instId;
-
+            if(task.parent == 0){
+                task.instId = this.instance.instId;
+            } else {
+                task.instId = task.parent;
+            }
             await backend.putWorklist(null, task);
         },
         async handleTaskClicked(event){
@@ -323,6 +418,12 @@ export default {
 
             rootTask.isOpened = true;
         },
+        openDialog() {
+            this.dialog = true;
+        },
+        closeDialog() {
+            this.dialog = false;
+        }
     }
 };
 </script>
@@ -357,5 +458,16 @@ export default {
         flex: 1;
         min-height: 400px;      /* Gantt 차트 영역 최소 높이 */
         height: 500px;          /* 필요시 고정 높이 */
+    }
+
+    /* Vuetify 3 반응형 탭 스타일 */
+    .v-tabs--vertical {
+        align-items: stretch;
+    }
+
+    .v-tabs--vertical .v-tab {
+        justify-content: flex-start !important;
+        text-align: left;
+        min-height: 48px;
     }
 </style>

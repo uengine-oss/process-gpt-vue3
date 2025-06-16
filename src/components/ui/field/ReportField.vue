@@ -1,23 +1,44 @@
 <template>
     <div>
         <!-- <slide-component :key="localModelValue" style="width: 100%; height: 250px;" :content="localModelValue" :isEditMode="false" class="presentation-slide" /> -->
-        <v-card class="rounded-lg mb-2" :style="`background-color: ${hexToRgba(themeColor, 0.05)} !important;`" elevation="0" @click="editMarkdown" hover>
+        <v-card class="rounded-lg mb-2" :style="`background-color: ${hexToRgba(themeColor, 0.05)} !important;`" elevation="0" hover @click="editMarkdown">
             <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
-            <v-row class="ma-0 pa-4 align-center">
-                <div :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
-                    <Icons :icon="'report'" color="white" />
-                </div>
+            <v-row class="ma-0 pa-4" style="overflow: hidden; max-height: 120px;">
                 <div>
-                    <div class="font-weight-medium">{{ localAlias ? localAlias : localName }}</div>
+                    <div class="font-weight-medium" style="font-size: 16px;">{{ localAlias ? localAlias : localName }} <span v-if="!localReadonly" class="mdi mdi-pencil"></span></div>
+                    <div class="font-weight-medium">Report</div>
                 </div>
                 <v-spacer></v-spacer>
-                <!-- Vuetify의 flex 유틸리티를 사용하여 아이콘을 정중앙 정렬 -->
-                <div
-                    style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px;"
+                <!-- 드롭다운 미리보기 버튼 제거, 대신 토글 버튼으로 변경 -->
+                <div v-if="localModelValue.length > 0 && !previewMenu && !showDialog" >
+                    <MarkdownEditor 
+                    @click.stop="previewMenu = !previewMenu"
+                    style="width: 120px; height: 120px; transform: rotate(5deg); box-shadow: 0 2px 8px rgba(0,0,0,0.08);"
+                    v-model="localModelValue" :readOnly="true" 
+                    :isPreview="true" />
+                </div>
+                <div v-else-if="localModelValue.length == 0" :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
+                    <Icons :icon="'report'" color="white" />
+                </div>
+                <div v-else
+                    @click.stop="previewMenu = !previewMenu"
+                    style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px; margin-right: 8px; cursor: pointer;"
                     class="d-flex align-center justify-center"
                 >
-                    <v-icon icon="mdi-eye-outline" :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
+                    <v-icon :icon="previewMenu ? 'mdi-chevron-up' : 'mdi-chevron-down'" :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
                 </div>
+            </v-row>
+            <!-- 미리보기 확장 영역 -->
+            <v-row v-if="previewMenu" class="ma-0 pa-0" @click.stop>
+                <v-sheet elevation="3" rounded style="width: 100%; min-width: 400px; min-height: 300px; padding: 16px; background: white;">
+                    <MarkdownEditor
+                        :style="'width: 100%; height: 100%;'"
+                        v-model="localModelValue"
+                        :readOnly="true"
+                        :isPreview="true"
+                        :isOverflow="true"
+                    />
+                </v-sheet>
             </v-row>
         </v-card>
         <v-dialog 
@@ -177,6 +198,7 @@ $e^{i\\pi} + 1 = 0$
             localReadonly: false,
             showDialog: false,
             editorValue: "",
+            previewMenu: false,
 
             settingInfos: [
                 commonSettingInfos["localName"],
