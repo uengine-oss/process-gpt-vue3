@@ -335,19 +335,6 @@ export default {
             this.chatRoomId = this.currentChatRoom.id;
         }
 
-        this.userInfo = await this.backend.getUserInfo();
-        await this.getChatRoomList();
-
-        await this.getUserList();
-        await this.getAgentList();
-        
-        await this.getCalendar();
-        await this.getAttachments();
-
-        this.EventBus.on('messages-updated', () => {
-            this.chatRenderKey++;
-        });
-
         if (this.isAgentChat) {
             this.generator = new AgentChatGenerator(this, {
                 isStream: false,
@@ -359,6 +346,20 @@ export default {
                 preferredLanguage: "Korean"
             });
         }
+
+        this.userInfo = await this.backend.getUserInfo();
+        
+        await this.getChatRoomList();
+
+        await this.getUserList();
+        await this.getAgentList();
+        
+        await this.getCalendar();
+        await this.getAttachments();
+
+        this.EventBus.on('messages-updated', () => {
+            this.chatRenderKey++;
+        });
     },
     beforeUnmount() {
         this.EventBus.emit('chat-room-unselected');
