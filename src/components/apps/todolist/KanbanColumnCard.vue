@@ -30,6 +30,9 @@
                                     />
                                     <v-menu activator="parent">
                                         <v-list density="compact">
+                                            <v-list-item @click="editTask">
+                                                <v-list-item-title>수정</v-list-item-title>
+                                            </v-list-item>
                                             <v-list-item @click="deleteTask">
                                                 <v-list-item-title>삭제</v-list-item-title>
                                             </v-list-item>
@@ -240,19 +243,24 @@ export default {
             });
         },
         executeTask() {
-            if (!this.managed) {
-                this.$router.push(`/todolist/${this.task.taskId}`)
-            } else {
-                this.dialogType = 'view';
-                this.dialog = true;
-            }
+            this.$router.push(`/todolist/${this.task.taskId}`)
+            // if (!this.managed) {
+            //     this.$router.push(`/todolist/${this.task.taskId}`)
+            // } else {
+            //     this.dialogType = 'view';
+            //     this.dialog = true;
+            // }
         },
         closeDialog() {
             this.dialog = false;
         },
         deleteTask() {
             this.$emit('deleteTask', this.task);
-        }
+        },
+        editTask(){
+            this.dialogType = 'edit';
+            this.dialog = true;
+        },
     },
 }
 </script>

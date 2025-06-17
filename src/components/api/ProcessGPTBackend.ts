@@ -174,8 +174,8 @@ class ProcessGPTBackend implements Backend {
                     await storage.putObject('form_def', {
                         id: defId.replace(/\//g, "#"),
                         html: xml,
-                        proc_def_id: options.proc_def_id,
-                        activity_id: options.activity_id,
+                        proc_def_id: defId == 'defaultform' ? 'default' : options.proc_def_id,
+                        activity_id: defId == 'defaultform' ? 'default' : options.activity_id,
                         fields_json: fieldsJson
                     });
                 }
@@ -482,6 +482,7 @@ class ProcessGPTBackend implements Backend {
                     parameterValues[item.argument.text] = item.variable.defaultValue
                 })
             }
+
             const newWorkItem = {
                 worklist: {
                     defId: workitem.proc_def_id,
@@ -495,8 +496,8 @@ class ProcessGPTBackend implements Backend {
                     status: workitem.status === 'TODO' ? 'NEW' : workitem.status === 'DONE' ? 'COMPLETED' : workitem.status,
                     description: workitem.description || "",
                     tool: workitem.tool || "",
-                    currentActivities: instance && instance.currentActivityIds ? 
-                        instance.currentActivityIds : [ activityInfo.id ],
+                    adhoc: workitem.adhoc || false,
+                    currentActivities: workitem.adhoc ? [] : (instance && instance.currentActivityIds ? instance.currentActivityIds : [ activityInfo.id ]),
                     defVerId: instance && instance.defVersion ? instance.defVersion : null
                 },
                 activity: {
@@ -578,6 +579,7 @@ class ProcessGPTBackend implements Backend {
         try {
             let result: any = null;
             if (!workItem.instId || workItem.status != "DONE") {
+                if(workItem.adhoc && !workItem.tool) workItem.tool = 'formHandler:defaultform'; // adhoc 작업인 경우 tool을 defaultform으로 설정
                 const putObj = {
                     id: taskId || this.uuid(),
                     proc_def_id: workItem.defId || workItem.defId,
@@ -1002,9 +1004,12 @@ class ProcessGPTBackend implements Backend {
             let varData: any = null;
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
             if (workItem) {
+                if(workItem.adhoc && !workItem.tool) workItem.tool = 'formHandler:defaultform';
                 const formId = workItem.tool.replace('formHandler:', '');
                 if (formId) {
-                    varData = workItem.output[formId];
+                    if(!workItem.output) workItem.output = {}
+                    if(!workItem.output[formId]) workItem.output[formId] = {}
+                    varData = workItem.output[formId]
                 }
             }
             if (varData) {
@@ -1069,8 +1074,11 @@ class ProcessGPTBackend implements Backend {
 
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
             if (workItem) {
+                if(workItem.adhoc && !workItem.tool) workItem.tool = 'formHandler:defaultform';
                 const formId = workItem.tool.replace('formHandler:', '');
                 if (formId) {
+                    if(!workItem.output) workItem.output = {}
+                    if(!workItem.output[formId]) workItem.output[formId] = {}
                     workItem.output[formId] = varValue;
                 }
             }

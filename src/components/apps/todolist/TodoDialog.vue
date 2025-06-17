@@ -54,8 +54,19 @@
                 <v-text-field v-model="newTask.name" label="할일명" autofocus></v-text-field>
                 <v-text-field v-model="newTask.startDate" label="시작일" type="datetime-local"></v-text-field>
                 <v-text-field v-model="newTask.dueDate" label="마감일" type="datetime-local"></v-text-field>
+                <v-autocomplete
+                    v-model="formDefId"
+                    :items="formList"
+                    :label="$t('UserTaskPanel.form')" 
+                    variant="outlined"
+                    hide-details
+                    class="align-center"
+                    @focus="loadForms"
+                    style="margin-bottom: 10px;"
+                ></v-autocomplete>
                 <!-- <v-select v-model="newTask.status" :items="statusList" item-title="text" item-value="value" label="진행 상태" variant="outlined"></v-select> -->
                 <v-textarea v-model="newTask.description" label="설명" outlined></v-textarea>
+               
             </v-card-text>
 
             <!-- 버튼을 라운드 스타일로 변경 -->
@@ -98,6 +109,8 @@ export default {
             { text: '보류 중', value: 'PENDING' },
             { text: '완료됨', value: 'DONE' },
         ],
+        formDefId: null,
+        formList: [],
     }),
     async created() {
         if (this.task && this.task.taskId) {
@@ -115,8 +128,11 @@ export default {
                 instId: this.instId || '',
                 defId: this.defId || '',
                 adhoc: true,
+                tool: 'formHandler:defaultform',
             };
         }
+
+        this.formDefId = this.newTask.tool.replace('formHandler:', '');
     },
     computed: {
         isMobile() {
@@ -143,6 +159,9 @@ export default {
                     this.todolist[statusIndex].tasks.push(this.newTask);
                 }
             }
+            if(!this.formDefId) this.formDefId = 'defaultform';
+            this.newTask.tool = `formHandler:${this.formDefId}`;
+
             await backend.putWorklist(this.newTask.taskId, this.newTask);
             this.close();
         },
@@ -154,6 +173,18 @@ export default {
             }
 
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+        },
+        async loadForms() {
+            const backend = BackendFactory.createBackend();
+            try {
+                const forms = await backend.listDefinition('form_def');
+                this.formList = forms.map(form => ({
+                    title: form.name,
+                    value: form.id
+                }));
+            } catch (error) {
+                console.error('폼 목록을 가져오는데 실패했습니다:', error);
+            }
         },
     },
 }
