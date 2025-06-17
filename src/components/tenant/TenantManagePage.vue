@@ -151,7 +151,7 @@ export default {
                     if (uniqueTenants.length === 1) {
                         // 유저 정보가 하나의 tenant에만 속해있다면 바로 리다이렉션
                         const tenantId = uniqueTenants[0];
-                        if (tenantId) {
+                        if (tenantId && tenantId !== 'process-gpt') {
                             this.toSelectedTenantPage(tenantId);
                         }
                     } else if (uniqueTenants.length > 1) {
