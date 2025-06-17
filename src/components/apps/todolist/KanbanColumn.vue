@@ -23,6 +23,7 @@
         <div v-if="!todoTaskColumnBtnStatus" ref="section"
             class="pa-3 todo-list-card-box"
         >
+            <!-- 기존 draggable 코드 (드래그 기능 테스트를 위해 주석처리)
             <draggable class="dragArea list-group cursor-move" :list="column.tasks"
                 :animation="200" ghost-class="ghost-card" group="tasks" @add="updateTask"
                 :move="checkDraggable">
@@ -32,6 +33,16 @@
                         </div>
                     </transition-group>
             </draggable>
+            -->
+            
+            <!-- 드래그 기능 제거된 단순 구조 -->
+            <div class="list-group">
+                <transition-group>
+                    <div v-for="task in column.tasks" :key="task.id" class="todo-task-item-card-style">
+                        <KanbanColumnCard :task="task" @deleteTask="deleteTask" :userInfo="users" />
+                    </div>
+                </transition-group>
+            </div>
         </div>
          <!-- workItem dialog -->
          <v-dialog v-model="dialog" max-width="500">

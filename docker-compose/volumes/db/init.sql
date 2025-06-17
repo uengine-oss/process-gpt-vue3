@@ -166,6 +166,7 @@ create table if not exists public.todolist (
     consumer text null,
     log text null,
     project_id uuid null,
+    draft jsonb null,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -324,6 +325,19 @@ create table if not exists public.documents (
     metadata jsonb,
     embedding vector(1536)
 );
+
+create table if not exists public.events (
+  id text not null,
+  run_id text not null,
+  job_id text not null,
+  todo_id text null,
+  proc_inst_id text null,
+  event_type text not null,
+  crew_type text null,
+  data jsonb not null,
+  timestamp timestamp with time zone null default now(),
+  constraint events_pkey primary key (id)
+) TABLESPACE pg_default;
 
 -- Create indexes
 create index if not exists idx_processed_files_tenant_id on public.processed_files using btree (tenant_id) tablespace pg_default;

@@ -495,34 +495,37 @@ export default {
         initializeViewer() {
             var container = this.$refs.container;
             var self = this;
+            var Blocker = function(eventBus) {
+                const ignoreEvent = (event) => {
+                    event.preventDefault();
+                };
+
+                eventBus.on('shape.move.start', ignoreEvent);
+                eventBus.on('shape.move.move', ignoreEvent);
+                eventBus.on('shape.move.end', ignoreEvent);
+
+                eventBus.on('connect.start', ignoreEvent);
+                eventBus.on('connect.move', ignoreEvent);
+                eventBus.on('connect.end', ignoreEvent);
+
+                eventBus.on('resize.start', ignoreEvent);
+
+                eventBus.on('dragger.create', ignoreEvent);
+                eventBus.on('preview.move', ignoreEvent);
+
+                eventBus.on('drag.start', ignoreEvent);
+                eventBus.on('drag.move', ignoreEvent);
+                eventBus.on('drag.end', ignoreEvent);
+
+                eventBus.on('directEditing.activate', ignoreEvent);
+                eventBus.on('directEditing.deactivate', ignoreEvent);
+                eventBus.on('directEditing.cancel', ignoreEvent);
+            }
+
+            Blocker.$inject = ['eventBus'];
             const blockEditingInteractions = {
                     __init__: ['blocker'],
-                    blocker: ['type', function(eventBus) {
-                        const ignoreEvent = (event) => {
-                            event.preventDefault();
-                        };
-
-                        eventBus.on('shape.move.start', ignoreEvent);
-                        eventBus.on('shape.move.move', ignoreEvent);
-                        eventBus.on('shape.move.end', ignoreEvent);
-
-                        eventBus.on('connect.start', ignoreEvent);
-                        eventBus.on('connect.move', ignoreEvent);
-                        eventBus.on('connect.end', ignoreEvent);
-
-                        eventBus.on('resize.start', ignoreEvent);
-
-                        eventBus.on('dragger.create', ignoreEvent);
-                        eventBus.on('preview.move', ignoreEvent);
-
-                        eventBus.on('drag.start', ignoreEvent);
-                        eventBus.on('drag.move', ignoreEvent);
-                        eventBus.on('drag.end', ignoreEvent);
-
-                        eventBus.on('directEditing.activate', ignoreEvent);
-                        eventBus.on('directEditing.deactivate', ignoreEvent);
-                        eventBus.on('directEditing.cancel', ignoreEvent);
-                    }]
+                    blocker: ['type', Blocker]
                 };
 
                 var viewerOptions = Object.assign(

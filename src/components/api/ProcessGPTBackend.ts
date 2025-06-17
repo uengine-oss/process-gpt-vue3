@@ -1004,14 +1004,20 @@ class ProcessGPTBackend implements Backend {
             let varData: any = null;
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
             if (workItem) {
-                if(workItem.adhoc && !workItem.tool) workItem.tool = 'formHandler:defaultform';
-                const formId = workItem.tool.replace('formHandler:', '');
-                if (formId) {
+                // const formId = workItem.tool.replace('formHandler:', '');
+                if (formDefId) {
                     if(!workItem.output) workItem.output = {}
-                    if(!workItem.output[formId]) workItem.output[formId] = {}
-                    varData = workItem.output[formId]
+
+                    if(formDefId == 'user_input_text') {
+                        if(!workItem.output[formDefId]) workItem.output[formDefId] = ''
+                        varData = workItem.output
+                    } else {
+                        if(!workItem.output[formDefId]) workItem.output[formDefId] = {}
+                        varData = workItem.output[formDefId]
+                    }
                 }
             }
+
             if (varData) {
                 var fields: any = [];
                 const formObject: any = await storage.getObject(`form_def/${formDefId}`, { key: 'id' });
@@ -1029,6 +1035,10 @@ class ProcessGPTBackend implements Backend {
                     });
                 }
             }
+
+            // if(formDefId == 'user_input_text') { 
+            //     if(!varData['user_input_text']) varData['user_input_text'] = varData;
+            // }
 
             const result = {
                 valueMap: varData
@@ -1074,12 +1084,18 @@ class ProcessGPTBackend implements Backend {
 
             const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
             if (workItem) {
-                if(workItem.adhoc && !workItem.tool) workItem.tool = 'formHandler:defaultform';
-                const formId = workItem.tool.replace('formHandler:', '');
-                if (formId) {
+                if(varName == 'user_input_text') {
                     if(!workItem.output) workItem.output = {}
-                    if(!workItem.output[formId]) workItem.output[formId] = {}
-                    workItem.output[formId] = varValue;
+                    if(!workItem.output[varName]) workItem.output[varName] = ''
+                    workItem.output[varName] = varValue[varName]
+                } else {
+                    if(workItem.adhoc && !workItem.tool) workItem.tool = 'formHandler:defaultform';
+                    const formId = workItem.tool.replace('formHandler:', '')
+                    if (formId) {
+                        if(!workItem.output) workItem.output = {}
+                        if(!workItem.output[formId]) workItem.output[formId] = {}
+                        workItem.output[formId] = varValue;
+                    }    
                 }
             }
             await storage.putObject('todolist', workItem);
