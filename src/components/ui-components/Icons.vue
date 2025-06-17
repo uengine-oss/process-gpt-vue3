@@ -1,5 +1,13 @@
 <template>
-    <div v-html="svgContent" :icon="`'${icon}'`" :style="{ width: computedWidth + 'px', height: computedHeight + 'px' }"></div>
+    <div v-html="svgContent" :icon="`'${icon}'`" 
+        :style="{ 
+            width: computedWidth + 'px', 
+            height: computedHeight + 'px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        }">
+    </div>
 </template>
 
 <script>

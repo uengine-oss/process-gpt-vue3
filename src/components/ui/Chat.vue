@@ -580,7 +580,7 @@
                     <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                         class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
                         auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
-                        style="font-size: 20px !important; max-height: 200px; overflow: auto; width: 100%;" @input="handleTextareaInput"
+                        @input="handleTextareaInput"
                         @paste="handlePaste"
                     >
                     </v-textarea>

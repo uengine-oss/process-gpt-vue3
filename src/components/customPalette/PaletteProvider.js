@@ -15,7 +15,8 @@ export default function PaletteProvider(palette,
    commandStack, 
    eventBus,
    modeling,
-   injector) {
+   injector,
+   viewModeFlag) {
 
   this._create = create;
   this._elementFactory = elementFactory;
@@ -29,6 +30,7 @@ export default function PaletteProvider(palette,
   this._eventBus = eventBus;
   this._modeling = modeling;
   this._injector = injector;
+  this._isViewMode = viewModeFlag ?? false; 
   palette.registerProvider(this);
 }
 
@@ -44,10 +46,415 @@ PaletteProvider.$inject = [
   'commandStack',
   'eventBus',
   'modeling',
-  'injector'
+  'injector',
+  'viewModeFlag'
 ];
 
+PaletteProvider.prototype.adjustParticipantBoundsByLanes = function(participant, lanes, isHorizontal) {
+  var modeling = this._modeling;
+  if (!lanes.length) return;
+  const paddingX = isHorizontal ? 30 : 0;
+  const paddingY = isHorizontal ? 0 : 30;
+
+  const minX = Math.min(...lanes.map(l => l.di.bounds.x));
+  const maxX = Math.max(...lanes.map(l => l.di.bounds.x + l.di.bounds.width));
+  const minY = Math.min(...lanes.map(l => l.di.bounds.y));
+  const maxY = Math.max(...lanes.map(l => l.di.bounds.y + l.di.bounds.height));
+
+  const newWidth = maxX - minX;
+  const newHeight = maxY - minY;
+
+  const currentBounds = participant.di.bounds;
+
+  modeling.resizeShape(participant, {
+    x: currentBounds.x - paddingX,
+    y: currentBounds.y - paddingY,
+    width: newWidth + paddingX,
+    height: newHeight + paddingY
+  });
+
+  modeling.updateProperties(participant, {
+    di: { isHorizontal }
+  });
+}
+
+// 함수 정의를 getPaletteEntries 바깥으로 옮긴다
+PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event, element) {
+  var actions = {},
+      create = this._create,
+      elementFactory = this._elementFactory,
+      spaceTool = this._spaceTool,
+      lassoTool = this._lassoTool,
+      handTool = this._handTool,
+      globalConnect = this._globalConnect,
+      translate = this._translate,
+      commandStack = this._commandStack,
+      isMac = this._isMac,
+      eventBus = this._eventBus,
+      modeling = this._modeling,
+      injector = this._injector;
+  const logPrefix = '[changeParticipantOrientation]';
+  const SCALE_FIX = 1 / 0.96;
+
+  if (element.type !== 'bpmn:Participant') {
+    console.warn(`${logPrefix} participant가 아닙니다.`);
+    return;
+  }
+
+  const childElements = element.children || [];
+  const lanes = childElements
+    .filter(el => el.type === 'bpmn:Lane')
+    .sort((a, b) => a.di.bounds.y - b.di.bounds.y);
+
+  // ✅ 회전 전에 lane 전체를 감싸는 oldParticipantBounds 생성
+  const oldMinX = Math.min(...lanes.map(lane => lane.di.bounds.x));
+  const oldMaxX = Math.max(...lanes.map(lane => lane.di.bounds.x + lane.di.bounds.width));
+  const oldMinY = Math.min(...lanes.map(lane => lane.di.bounds.y));
+  const oldMaxY = Math.max(...lanes.map(lane => lane.di.bounds.y + lane.di.bounds.height));
+
+  const oldParticipantBounds = {
+    x: oldMinX,
+    y: oldMinY,
+    width: oldMaxX - oldMinX,
+    height: oldMaxY - oldMinY
+  };
+
+  // 💡 lane 회전 전 bounds 저장 → 회전 후 bounds 계산에 사용
+  const laneNewBoundsMap = new Map();
+  let currentX = oldParticipantBounds.x;
+  const currentY = oldParticipantBounds.y;
+
+  lanes.forEach(lane => {
+    const oldLaneBounds = lane.di.bounds;
+
+    const laneWidth = oldLaneBounds.width * 0.8 * SCALE_FIX;
+    const laneHeight = oldLaneBounds.height * 1.2 * SCALE_FIX;
+
+    const newLaneBounds = {
+      x: currentX,
+      y: currentY,
+      width: laneHeight,
+      height: laneWidth
+    };
+
+    currentX += laneHeight;
+
+    modeling.resizeShape(lane, newLaneBounds);
+    modeling.updateProperties(lane, {
+      di: { isHorizontal: false }
+    });
+
+    laneNewBoundsMap.set(lane.id, newLaneBounds);
+  });
+
+  // ✅ lane 회전 이후 기준으로 participant bounds 계산
+  const laneBoundsList = Array.from(laneNewBoundsMap.values());
+
+  const minX = Math.min(...laneBoundsList.map(b => b.x));
+  const maxX = Math.max(...laneBoundsList.map(b => b.x + b.width));
+  const minY = Math.min(...laneBoundsList.map(b => b.y));
+  const maxY = Math.max(...laneBoundsList.map(b => b.y + b.height));
+
+  const newParticipantBounds = {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY
+  };
+
+  modeling.resizeShape(element, newParticipantBounds);
+  modeling.updateProperties(element, {
+    di: { isHorizontal: false }
+  });
+
+  // 🧭 SequenceFlow waypoint 보정
+  const originalSequenceFlows = childElements.filter(child => child.type === 'bpmn:SequenceFlow');
+  const originalWaypoints = {};
+
+  originalSequenceFlows.forEach(sequenceFlow => {
+    const waypoints = sequenceFlow.waypoints;
+    const newWaypoints = [];
+
+    waypoints.forEach(waypoint => {
+      const waypointX = newParticipantBounds.y + (waypoint.x - oldParticipantBounds.x) * 0.8 * SCALE_FIX;
+      const waypointY = newParticipantBounds.x + (waypoint.y - oldParticipantBounds.y) * 1.2 * SCALE_FIX;
+
+      const newWaypoint = { x: waypointY, y: waypointX };
+
+      if (waypoint.original) {
+        newWaypoint.original = { x: waypoint.original.x, y: waypoint.original.y };
+      }
+
+      newWaypoints.push(newWaypoint);
+    });
+
+    originalWaypoints[sequenceFlow.id] = newWaypoints;
+  });
+
+  let rotatedLabelBounds = [];
+  childElements.forEach(child => {
+    if (child.type === 'bpmn:SequenceFlow') {
+      const label = child.labels[0];
+      if(label) {
+        const labelBounds = label.di.label.bounds;
+
+        const originalCenterX = labelBounds.x + (labelBounds.width / 2);
+        const originalCenterY = labelBounds.y + (labelBounds.height / 2);
+
+        const relativeX = originalCenterX - oldParticipantBounds.x;
+        const relativeY = originalCenterY - oldParticipantBounds.y;
+
+        const rotatedX = relativeY * 1.2 * SCALE_FIX;
+        const rotatedY = relativeX * 0.8 * SCALE_FIX;
+
+        const newLabelBounds = {
+          x: newParticipantBounds.x + rotatedX - (labelBounds.width / 2),
+          y: newParticipantBounds.y + rotatedY - (labelBounds.height / 2),
+          width: labelBounds.width,
+          height: labelBounds.height
+        };
+        rotatedLabelBounds.push({label: label, bounds: newLabelBounds});
+      }
+    }
+  });
+
+  // 🧭 기타 노드 위치 보정
+  childElements.forEach(child => {
+    if (
+      child.type !== 'bpmn:Lane' &&
+      child.type !== 'bpmn:LaneSet' &&
+      child.type !== 'bpmn:Participant'
+    ) {
+      if (child.type !== 'bpmn:SequenceFlow') {
+        const originalCenterX = child.di.bounds.x + (child.di.bounds.width / 2);
+        const originalCenterY = child.di.bounds.y + (child.di.bounds.height / 2);
+
+        const relativeX = originalCenterX - oldParticipantBounds.x;
+        const relativeY = originalCenterY - oldParticipantBounds.y;
+
+        const rotatedX = relativeY * 1.2 * SCALE_FIX;
+        const rotatedY = relativeX * 0.8 * SCALE_FIX;
+
+        const newChildBounds = {
+          x: newParticipantBounds.x + rotatedX - (child.di.bounds.width / 2),
+          y: newParticipantBounds.y + rotatedY - (child.di.bounds.height / 2),
+          width: child.di.bounds.width,
+          height: child.di.bounds.height
+        };
+
+        modeling.resizeShape(child, newChildBounds);
+      }
+    }
+
+    rotatedLabelBounds.forEach(label => {
+      modeling.resizeShape(label.label, label.bounds);
+    });
+  });
+
+  this.adjustParticipantBoundsByLanes(element, lanes, false);
+
+  // 💡 SequenceFlow 최종 waypoint 반영
+  originalSequenceFlows.forEach(sequenceFlow => {
+    sequenceFlow.waypoints = originalWaypoints[sequenceFlow.id];
+    modeling.updateProperties(sequenceFlow, {
+      waypoints: originalWaypoints[sequenceFlow.id]
+    });
+  });
+
+};
+
+PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event, element) {
+  var actions = {},
+      create = this._create,
+      elementFactory = this._elementFactory,
+      spaceTool = this._spaceTool,
+      lassoTool = this._lassoTool,
+      handTool = this._handTool,
+      globalConnect = this._globalConnect,
+      translate = this._translate,
+      commandStack = this._commandStack,
+      isMac = this._isMac,
+      eventBus = this._eventBus,
+      modeling = this._modeling,
+      injector = this._injector;
+  const logPrefix = '[changeParticipantOrientation]';
+  
+  if (element.type !== 'bpmn:Participant') {
+    console.warn(`${logPrefix} participant가 아닙니다.`);
+    return;
+  }
+
+  const childElements = element.children || [];
+  const lanes = childElements
+    .filter(el => el.type === 'bpmn:Lane')
+    .sort((a, b) => a.di.bounds.x - b.di.bounds.x);
+
+  // ✅ 회전 전 lane 기준으로 oldParticipantBounds 생성
+  const oldMinX = Math.min(...lanes.map(lane => lane.di.bounds.x));
+  const oldMaxX = Math.max(...lanes.map(lane => lane.di.bounds.x + lane.di.bounds.width));
+  const oldMinY = Math.min(...lanes.map(lane => lane.di.bounds.y));
+  const oldMaxY = Math.max(...lanes.map(lane => lane.di.bounds.y + lane.di.bounds.height));
+
+  const oldParticipantBounds = {
+    x: oldMinX,
+    y: oldMinY,
+    width: oldMaxX - oldMinX,
+    height: oldMaxY - oldMinY
+  };
+
+  // 💡 lane 회전 전 bounds 저장 → 회전 후 bounds 계산에 사용
+  const laneNewBoundsMap = new Map();
+  let currentY = oldParticipantBounds.y;
+  const currentX = oldParticipantBounds.x;
+
+  lanes.forEach(lane => {
+    const oldLaneBounds = lane.di.bounds;
+
+    const laneWidth = oldLaneBounds.width * 0.8;   // Scale Fix 없음
+    const laneHeight = oldLaneBounds.height * 1.2; // Scale Fix 없음
+
+    const newLaneBounds = {
+      x: currentX,
+      y: currentY,
+      width: laneHeight,
+      height: laneWidth
+    };
+
+    currentY += laneWidth;
+
+    modeling.resizeShape(lane, newLaneBounds);
+    modeling.updateProperties(lane, {
+      di: { isHorizontal: true }
+    });
+
+    laneNewBoundsMap.set(lane.id, newLaneBounds);
+  });
+
+  // ✅ lane 회전 이후 기준으로 participant bounds 계산
+  const laneBoundsList = Array.from(laneNewBoundsMap.values());
+
+  const minX = Math.min(...laneBoundsList.map(b => b.x));
+  const maxX = Math.max(...laneBoundsList.map(b => b.x + b.width));
+  const minY = Math.min(...laneBoundsList.map(b => b.y));
+  const maxY = Math.max(...laneBoundsList.map(b => b.y + b.height));
+
+  const newParticipantBounds = {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY
+  };
+
+  modeling.resizeShape(element, newParticipantBounds);
+  modeling.updateProperties(element, {
+    di: { isHorizontal: true }
+  });
+
+  // 🧭 SequenceFlow waypoint 보정
+  const originalSequenceFlows = childElements.filter(child => child.type === 'bpmn:SequenceFlow');
+  const originalWaypoints = {};
+
+  originalSequenceFlows.forEach(sequenceFlow => {
+    const waypoints = sequenceFlow.waypoints;
+    const newWaypoints = [];
+
+    waypoints.forEach(waypoint => {
+      const waypointX = newParticipantBounds.y + (waypoint.x - oldParticipantBounds.x) * 0.8;
+      const waypointY = newParticipantBounds.x + (waypoint.y - oldParticipantBounds.y) * 1.2;
+
+      const newWaypoint = { x: waypointY, y: waypointX };
+
+      if (waypoint.original) {
+        newWaypoint.original = { x: waypoint.original.x, y: waypoint.original.y };
+      }
+
+      newWaypoints.push(newWaypoint);
+    });
+
+    originalWaypoints[sequenceFlow.id] = newWaypoints;
+  });
+
+  let rotatedLabelBounds = [];
+
+
+  childElements.forEach(child => {
+    if (child.type === 'bpmn:SequenceFlow') {
+      const label = child.labels[0];
+      if(label) {
+        const labelBounds = label.di.label.bounds;
+
+        const originalCenterX = labelBounds.x + (labelBounds.width / 2);
+        const originalCenterY = labelBounds.y + (labelBounds.height / 2);
+        
+        const relativeX = originalCenterX - oldParticipantBounds.x;
+        const relativeY = originalCenterY - oldParticipantBounds.y;
+
+        const rotatedX = relativeY * 1.2;
+        const rotatedY = relativeX * 0.8;
+
+        const newLabelBounds = {
+          x: newParticipantBounds.x + rotatedX - (labelBounds.width / 2),
+          y: newParticipantBounds.y + rotatedY - (labelBounds.height / 2),
+          width: labelBounds.width,
+          height: labelBounds.height
+        };
+        rotatedLabelBounds.push({label: label, bounds: newLabelBounds});
+      }
+    }
+  });
+
+  // 🧭 기타 노드 보정
+  childElements.forEach(child => {
+    if (
+      child.type !== 'bpmn:Lane' &&
+      child.type !== 'bpmn:LaneSet' &&
+      child.type !== 'bpmn:Participant'
+    ) {
+      if (child.type !== 'bpmn:SequenceFlow') {
+        const originalCenterX = child.di.bounds.x + (child.di.bounds.width / 2);
+        const originalCenterY = child.di.bounds.y + (child.di.bounds.height / 2);
+
+        const relativeX = originalCenterX - oldParticipantBounds.x;
+        const relativeY = originalCenterY - oldParticipantBounds.y;
+
+        const rotatedX = relativeY * 1.2;
+        const rotatedY = relativeX * 0.8;
+
+        const newChildBounds = {
+          x: newParticipantBounds.x + rotatedX - (child.di.bounds.width / 2),
+          y: newParticipantBounds.y + rotatedY - (child.di.bounds.height / 2),
+          width: child.di.bounds.width,
+          height: child.di.bounds.height
+        };
+
+        modeling.resizeShape(child, newChildBounds);
+      }
+    }
+  });
+
+  this.adjustParticipantBoundsByLanes(element, lanes, true);
+
+  // 💡 SequenceFlow 최종 waypoint 반영
+  originalSequenceFlows.forEach(sequenceFlow => {
+    sequenceFlow.waypoints = originalWaypoints[sequenceFlow.id];
+    modeling.updateProperties(sequenceFlow, {
+      waypoints: originalWaypoints[sequenceFlow.id]
+    });
+  });
+
+
+  
+  rotatedLabelBounds.forEach(label => {
+    modeling.resizeShape(label.label, label.bounds);
+  });
+};
+
+
 PaletteProvider.prototype.getPaletteEntries = function(element) {
+  if (this._isViewMode) {
+    return {};
+  }
+  let me = this;
   var actions = {},
       create = this._create,
       elementFactory = this._elementFactory,
@@ -95,382 +502,6 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     }
   }
   
-  function adjustParticipantBoundsByLanes(participant, lanes, isHorizontal) {
-    if (!lanes.length) return;
-    const paddingX = isHorizontal ? 30 : 0;
-    const paddingY = isHorizontal ? 0 : 30;
-  
-    const minX = Math.min(...lanes.map(l => l.di.bounds.x));
-    const maxX = Math.max(...lanes.map(l => l.di.bounds.x + l.di.bounds.width));
-    const minY = Math.min(...lanes.map(l => l.di.bounds.y));
-    const maxY = Math.max(...lanes.map(l => l.di.bounds.y + l.di.bounds.height));
-  
-    const newWidth = maxX - minX;
-    const newHeight = maxY - minY;
-  
-    const currentBounds = participant.di.bounds;
-  
-    modeling.resizeShape(participant, {
-      x: currentBounds.x - paddingX,
-      y: currentBounds.y - paddingY,
-      width: newWidth + paddingX,
-      height: newHeight + paddingY
-    });
-  
-    modeling.updateProperties(participant, {
-      di: { isHorizontal }
-    });
-  }
-  
-  function changeParticipantHorizontalToVertical(event, element) {
-    const logPrefix = '[changeParticipantOrientation]';
-    const SCALE_FIX = 1 / 0.96;
-  
-    if (element.type !== 'bpmn:Participant') {
-      console.warn(`${logPrefix} participant가 아닙니다.`);
-      return;
-    }
-  
-    const childElements = element.children || [];
-    const lanes = childElements
-      .filter(el => el.type === 'bpmn:Lane')
-      .sort((a, b) => a.di.bounds.y - b.di.bounds.y);
-  
-    // ✅ 회전 전에 lane 전체를 감싸는 oldParticipantBounds 생성
-    const oldMinX = Math.min(...lanes.map(lane => lane.di.bounds.x));
-    const oldMaxX = Math.max(...lanes.map(lane => lane.di.bounds.x + lane.di.bounds.width));
-    const oldMinY = Math.min(...lanes.map(lane => lane.di.bounds.y));
-    const oldMaxY = Math.max(...lanes.map(lane => lane.di.bounds.y + lane.di.bounds.height));
-  
-    const oldParticipantBounds = {
-      x: oldMinX,
-      y: oldMinY,
-      width: oldMaxX - oldMinX,
-      height: oldMaxY - oldMinY
-    };
-  
-    // 💡 lane 회전 전 bounds 저장 → 회전 후 bounds 계산에 사용
-    const laneNewBoundsMap = new Map();
-    let currentX = oldParticipantBounds.x;
-    const currentY = oldParticipantBounds.y;
-  
-    lanes.forEach(lane => {
-      const oldLaneBounds = lane.di.bounds;
-  
-      const laneWidth = oldLaneBounds.width * 0.8 * SCALE_FIX;
-      const laneHeight = oldLaneBounds.height * 1.2 * SCALE_FIX;
-  
-      const newLaneBounds = {
-        x: currentX,
-        y: currentY,
-        width: laneHeight,
-        height: laneWidth
-      };
-  
-      currentX += laneHeight;
-  
-      modeling.resizeShape(lane, newLaneBounds);
-      modeling.updateProperties(lane, {
-        di: { isHorizontal: false }
-      });
-  
-      laneNewBoundsMap.set(lane.id, newLaneBounds);
-    });
-  
-    // ✅ lane 회전 이후 기준으로 participant bounds 계산
-    const laneBoundsList = Array.from(laneNewBoundsMap.values());
-  
-    const minX = Math.min(...laneBoundsList.map(b => b.x));
-    const maxX = Math.max(...laneBoundsList.map(b => b.x + b.width));
-    const minY = Math.min(...laneBoundsList.map(b => b.y));
-    const maxY = Math.max(...laneBoundsList.map(b => b.y + b.height));
-  
-    const newParticipantBounds = {
-      x: minX,
-      y: minY,
-      width: maxX - minX,
-      height: maxY - minY
-    };
-  
-    modeling.resizeShape(element, newParticipantBounds);
-    modeling.updateProperties(element, {
-      di: { isHorizontal: false }
-    });
-  
-    // 🧭 SequenceFlow waypoint 보정
-    const originalSequenceFlows = childElements.filter(child => child.type === 'bpmn:SequenceFlow');
-    const originalWaypoints = {};
-  
-    originalSequenceFlows.forEach(sequenceFlow => {
-      const waypoints = sequenceFlow.waypoints;
-      const newWaypoints = [];
-  
-      waypoints.forEach(waypoint => {
-        const waypointX = newParticipantBounds.y + (waypoint.x - oldParticipantBounds.x) * 0.8 * SCALE_FIX;
-        const waypointY = newParticipantBounds.x + (waypoint.y - oldParticipantBounds.y) * 1.2 * SCALE_FIX;
-  
-        const newWaypoint = { x: waypointY, y: waypointX };
-  
-        if (waypoint.original) {
-          newWaypoint.original = { x: waypoint.original.x, y: waypoint.original.y };
-        }
-  
-        newWaypoints.push(newWaypoint);
-      });
-  
-      originalWaypoints[sequenceFlow.id] = newWaypoints;
-    });
-
-    let rotatedLabelBounds = [];
-    childElements.forEach(child => {
-      if (child.type === 'bpmn:SequenceFlow') {
-        const label = child.labels[0];
-        if(label) {
-          const labelBounds = label.di.label.bounds;
-
-          const originalCenterX = labelBounds.x + (labelBounds.width / 2);
-          const originalCenterY = labelBounds.y + (labelBounds.height / 2);
-  
-          const relativeX = originalCenterX - oldParticipantBounds.x;
-          const relativeY = originalCenterY - oldParticipantBounds.y;
-  
-          const rotatedX = relativeY * 1.2 * SCALE_FIX;
-          const rotatedY = relativeX * 0.8 * SCALE_FIX;
-  
-          const newLabelBounds = {
-            x: newParticipantBounds.x + rotatedX - (labelBounds.width / 2),
-            y: newParticipantBounds.y + rotatedY - (labelBounds.height / 2),
-            width: labelBounds.width,
-            height: labelBounds.height
-          };
-          rotatedLabelBounds.push({label: label, bounds: newLabelBounds});
-        }
-      }
-    });
-  
-    // 🧭 기타 노드 위치 보정
-    childElements.forEach(child => {
-      if (
-        child.type !== 'bpmn:Lane' &&
-        child.type !== 'bpmn:LaneSet' &&
-        child.type !== 'bpmn:Participant'
-      ) {
-        if (child.type !== 'bpmn:SequenceFlow') {
-          const originalCenterX = child.di.bounds.x + (child.di.bounds.width / 2);
-          const originalCenterY = child.di.bounds.y + (child.di.bounds.height / 2);
-  
-          const relativeX = originalCenterX - oldParticipantBounds.x;
-          const relativeY = originalCenterY - oldParticipantBounds.y;
-  
-          const rotatedX = relativeY * 1.2 * SCALE_FIX;
-          const rotatedY = relativeX * 0.8 * SCALE_FIX;
-  
-          const newChildBounds = {
-            x: newParticipantBounds.x + rotatedX - (child.di.bounds.width / 2),
-            y: newParticipantBounds.y + rotatedY - (child.di.bounds.height / 2),
-            width: child.di.bounds.width,
-            height: child.di.bounds.height
-          };
-  
-          modeling.resizeShape(child, newChildBounds);
-        }
-      }
-
-      rotatedLabelBounds.forEach(label => {
-        modeling.resizeShape(label.label, label.bounds);
-      });
-    });
-
-    adjustParticipantBoundsByLanes(element, lanes, false);
-  
-    // 💡 SequenceFlow 최종 waypoint 반영
-    originalSequenceFlows.forEach(sequenceFlow => {
-      sequenceFlow.waypoints = originalWaypoints[sequenceFlow.id];
-      modeling.updateProperties(sequenceFlow, {
-        waypoints: originalWaypoints[sequenceFlow.id]
-      });
-    });
-
-  }
-  
-  
-
-  function changeParticipantVerticalToHorizontal(event, element) {
-    const logPrefix = '[changeParticipantOrientation]';
-    
-    if (element.type !== 'bpmn:Participant') {
-      console.warn(`${logPrefix} participant가 아닙니다.`);
-      return;
-    }
-  
-    const childElements = element.children || [];
-    const lanes = childElements
-      .filter(el => el.type === 'bpmn:Lane')
-      .sort((a, b) => a.di.bounds.x - b.di.bounds.x);
-  
-    // ✅ 회전 전 lane 기준으로 oldParticipantBounds 생성
-    const oldMinX = Math.min(...lanes.map(lane => lane.di.bounds.x));
-    const oldMaxX = Math.max(...lanes.map(lane => lane.di.bounds.x + lane.di.bounds.width));
-    const oldMinY = Math.min(...lanes.map(lane => lane.di.bounds.y));
-    const oldMaxY = Math.max(...lanes.map(lane => lane.di.bounds.y + lane.di.bounds.height));
-  
-    const oldParticipantBounds = {
-      x: oldMinX,
-      y: oldMinY,
-      width: oldMaxX - oldMinX,
-      height: oldMaxY - oldMinY
-    };
-  
-    // 💡 lane 회전 전 bounds 저장 → 회전 후 bounds 계산에 사용
-    const laneNewBoundsMap = new Map();
-    let currentY = oldParticipantBounds.y;
-    const currentX = oldParticipantBounds.x;
-  
-    lanes.forEach(lane => {
-      const oldLaneBounds = lane.di.bounds;
-  
-      const laneWidth = oldLaneBounds.width * 0.8;   // Scale Fix 없음
-      const laneHeight = oldLaneBounds.height * 1.2; // Scale Fix 없음
-  
-      const newLaneBounds = {
-        x: currentX,
-        y: currentY,
-        width: laneHeight,
-        height: laneWidth
-      };
-  
-      currentY += laneWidth;
-  
-      modeling.resizeShape(lane, newLaneBounds);
-      modeling.updateProperties(lane, {
-        di: { isHorizontal: true }
-      });
-  
-      laneNewBoundsMap.set(lane.id, newLaneBounds);
-    });
-  
-    // ✅ lane 회전 이후 기준으로 participant bounds 계산
-    const laneBoundsList = Array.from(laneNewBoundsMap.values());
-  
-    const minX = Math.min(...laneBoundsList.map(b => b.x));
-    const maxX = Math.max(...laneBoundsList.map(b => b.x + b.width));
-    const minY = Math.min(...laneBoundsList.map(b => b.y));
-    const maxY = Math.max(...laneBoundsList.map(b => b.y + b.height));
-  
-    const newParticipantBounds = {
-      x: minX,
-      y: minY,
-      width: maxX - minX,
-      height: maxY - minY
-    };
-  
-    modeling.resizeShape(element, newParticipantBounds);
-    modeling.updateProperties(element, {
-      di: { isHorizontal: true }
-    });
-  
-    // 🧭 SequenceFlow waypoint 보정
-    const originalSequenceFlows = childElements.filter(child => child.type === 'bpmn:SequenceFlow');
-    const originalWaypoints = {};
-  
-    originalSequenceFlows.forEach(sequenceFlow => {
-      const waypoints = sequenceFlow.waypoints;
-      const newWaypoints = [];
-  
-      waypoints.forEach(waypoint => {
-        const waypointX = newParticipantBounds.y + (waypoint.x - oldParticipantBounds.x) * 0.8;
-        const waypointY = newParticipantBounds.x + (waypoint.y - oldParticipantBounds.y) * 1.2;
-  
-        const newWaypoint = { x: waypointY, y: waypointX };
-  
-        if (waypoint.original) {
-          newWaypoint.original = { x: waypoint.original.x, y: waypoint.original.y };
-        }
-  
-        newWaypoints.push(newWaypoint);
-      });
-  
-      originalWaypoints[sequenceFlow.id] = newWaypoints;
-    });
-
-    let rotatedLabelBounds = [];
-
-
-    childElements.forEach(child => {
-      if (child.type === 'bpmn:SequenceFlow') {
-        const label = child.labels[0];
-        if(label) {
-          const labelBounds = label.di.label.bounds;
-  
-          const originalCenterX = labelBounds.x + (labelBounds.width / 2);
-          const originalCenterY = labelBounds.y + (labelBounds.height / 2);
-          
-          const relativeX = originalCenterX - oldParticipantBounds.x;
-          const relativeY = originalCenterY - oldParticipantBounds.y;
-  
-          const rotatedX = relativeY * 1.2;
-          const rotatedY = relativeX * 0.8;
-  
-          const newLabelBounds = {
-            x: newParticipantBounds.x + rotatedX - (labelBounds.width / 2),
-            y: newParticipantBounds.y + rotatedY - (labelBounds.height / 2),
-            width: labelBounds.width,
-            height: labelBounds.height
-          };
-          rotatedLabelBounds.push({label: label, bounds: newLabelBounds});
-        }
-      }
-    });
-  
-    // 🧭 기타 노드 보정
-    childElements.forEach(child => {
-      if (
-        child.type !== 'bpmn:Lane' &&
-        child.type !== 'bpmn:LaneSet' &&
-        child.type !== 'bpmn:Participant'
-      ) {
-        if (child.type !== 'bpmn:SequenceFlow') {
-          const originalCenterX = child.di.bounds.x + (child.di.bounds.width / 2);
-          const originalCenterY = child.di.bounds.y + (child.di.bounds.height / 2);
-  
-          const relativeX = originalCenterX - oldParticipantBounds.x;
-          const relativeY = originalCenterY - oldParticipantBounds.y;
-  
-          const rotatedX = relativeY * 1.2;
-          const rotatedY = relativeX * 0.8;
-  
-          const newChildBounds = {
-            x: newParticipantBounds.x + rotatedX - (child.di.bounds.width / 2),
-            y: newParticipantBounds.y + rotatedY - (child.di.bounds.height / 2),
-            width: child.di.bounds.width,
-            height: child.di.bounds.height
-          };
-  
-          modeling.resizeShape(child, newChildBounds);
-        }
-      }
-    });
-  
-    adjustParticipantBoundsByLanes(element, lanes, true);
-
-    // 💡 SequenceFlow 최종 waypoint 반영
-    originalSequenceFlows.forEach(sequenceFlow => {
-      sequenceFlow.waypoints = originalWaypoints[sequenceFlow.id];
-      modeling.updateProperties(sequenceFlow, {
-        waypoints: originalWaypoints[sequenceFlow.id]
-      });
-    });
-
-
-    
-    rotatedLabelBounds.forEach(label => {
-      modeling.resizeShape(label.label, label.bounds);
-    });
-  }
-  
-  
-  
-
   function createAction(type, group, className, title, options) {
 
     function createListener(event) {
@@ -649,9 +680,9 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
           participant.forEach(element => {
             const horizontal = element.di.isHorizontal;
             if(horizontal) {
-              changeParticipantHorizontalToVertical(event, element);
+              me.changeParticipantHorizontalToVertical(event, element);
             } else {
-              changeParticipantVerticalToHorizontal(event, element);
+              me.changeParticipantVerticalToHorizontal(event, element);
             }
           });
         }
