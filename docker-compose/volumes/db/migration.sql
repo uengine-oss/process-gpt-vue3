@@ -187,6 +187,7 @@ ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS tenant_id text;
 ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS url text;
 ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS description text;
 ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS tools text;
+ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS profile text;
 
 -- tenant_oauth table
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS id UUID DEFAULT uuid_generate_v4();

@@ -34,7 +34,7 @@
                             <div v-html="message.content.data" class="mt-2"></div>
                         </div>
                         <div v-else>
-                            <div v-for="item of message.content.data">
+                            <div v-for="item of message.content.data" :key="item.title || item.link">
                                 <div v-if="item.link" style="marin-top:20px;">
                                 <!-- File 링크인 경우 -->
                                     <div v-if="isFileLink(item.link)" style="align-items: center;">

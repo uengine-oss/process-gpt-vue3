@@ -1,11 +1,12 @@
 <template>
     <!-- <div> -->
-    <div style="height: 100%; position: relative;" ref="container" class="vue-bpmn-diagram-container">
+    <div style="height: 100%; position: relative;" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }">
         <div :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
+                <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 0px; left: 20px; pointer-events: auto; z-index: 10;">
@@ -33,11 +34,14 @@
 <script>
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
 import 'bpmn-js/dist/assets/diagram-js.css';
+import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import ZoomScroll from './customZoomScroll';
 // import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
 import MoveCanvas from './customMoveCanvas';
 // import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
+import customBpmnModule from './customBpmn';
+import paletteProvider from './customPalette/PaletteProvider';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -88,7 +92,8 @@ export default {
             previewersXMLLists: [],
             activityStatus: null,
             currentInstanceId: null,
-            subProcessInstances: {}
+            subProcessInstances: {},
+            isViewMode: true
         };
     },
     computed: {
@@ -103,186 +108,7 @@ export default {
     mounted() {
         this.currentInstanceId = this.instanceId;
         this.initializeViewer();
-        var self = this;
-        var eventBus = this.bpmnViewer.get('eventBus');
-        eventBus.on('import.render.complete', async function (event) {
-            let startTime = performance.now();
-
-            var canvas = self.bpmnViewer.get('canvas');
-            var elementRegistry = self.bpmnViewer.get('elementRegistry');
-            var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-            
-            self.resetZoom();
-
-            if (window.$mode == "ProcessGPT") {
-                if (self.currentActivities && self.currentActivities.length > 0) {
-                    self.currentActivities.forEach((actId) => {
-                        if (actId) canvas.addMarker(actId, 'highlight');
-                    });
-                }
-            } 
-
-            var overlays = self.bpmnViewer.get('overlays');
-
-            if (self.adminMode) {
-                // add marker to current activity elements
-
-                if (self.currentActivities && self.currentActivities.length > 0) {
-                    self.currentActivities.forEach((actId) => {
-                        const element = elementRegistry.get(actId);
-                        if (element) {
-                            if (element.type != 'bpmn:SubProcess' && element.type != 'bpmn:CallActivity') {
-                                var overlayHtml = $(
-                                    `<img src="/assets/images/icon/tdesign-rollback.svg" style="width: 20px; height: 20px;" alt="rollback">`
-                                );
-                                overlayHtml.click(function (e) {
-                                    // alert('someone clicked ' + actId);
-                                    self.$emit('rollback', element);
-                                });
-                                if (actId)
-                                    overlays.add(actId, 'note', {
-                                        position: {
-                                            bottom: 10,
-                                            right: 0
-                                        },
-                                        html: overlayHtml
-                                    });
-                            }
-                        }
-                    });
-                }
-                if (self.executionScopeActivities && Object.keys(self.executionScopeActivities).length > 0) {
-                    Object.keys(self.executionScopeActivities).forEach((activity) => {
-                        // console.log(activity);
-                        let idx = 0;
-                        Object.keys(self.executionScopeActivities[activity]).forEach((executionScope) => {
-                            if (self.executionScopeActivities[activity][executionScope].parent) {
-                                if (self.selectedExecutionScope) {
-                                    if (
-                                        self.selectedExecutionScope.executionScope ==
-                                        self.executionScopeActivities[activity][executionScope].parent
-                                    ) {
-                                        let list = `<button class="v-btn v-btn--block v-btn--elevated v-theme--light rounded-xl  v-btn--variant-elevated">${executionScope}</buton>\n`;
-                                        let overlayHtml = $(`<div >${list}</div>`);
-                                        overlayHtml.click(function (e) {
-                                            let obj = {
-                                                executionScope: executionScope,
-                                                parent: self.executionScopeActivities[activity][executionScope].parent
-                                            };
-                                            self.$emit('selectedExecutionScope', obj);
-                                        });
-                                        overlays.add(activity, 'note', {
-                                            position: {
-                                                bottom: 80 - idx * 30,
-                                                right: -10
-                                            },
-                                            html: overlayHtml
-                                        });
-                                        idx = idx + 1;
-                                    } else if (
-                                        self.selectedExecutionScope.parent == self.executionScopeActivities[activity][executionScope].parent
-                                    ) {
-                                        let list = `<button class="v-btn v-btn--block v-btn--elevated v-theme--light rounded-xl  v-btn--variant-elevated">${executionScope}</buton>\n`;
-                                        let overlayHtml = $(`<div >${list}</div>`);
-                                        overlayHtml.click(function (e) {
-                                            let obj = {
-                                                executionScope: executionScope,
-                                                parent: self.executionScopeActivities[activity][executionScope].parent
-                                            };
-                                            self.$emit('selectedExecutionScope', obj);
-                                        });
-                                        overlays.add(activity, 'note', {
-                                            position: {
-                                                bottom: 80 - idx * 30,
-                                                right: -10
-                                            },
-                                            html: overlayHtml
-                                        });
-                                        idx = idx + 1;
-                                    }
-                                }
-                            } else {
-                                let list = `<button class="v-btn v-btn--block v-btn--elevated v-theme--light rounded-xl  v-btn--variant-elevated">${executionScope}</buton>\n`;
-                                let overlayHtml = $(`<div >${list}</div>`);
-                                overlayHtml.click(function (e) {
-                                    let obj = {
-                                        executionScope: executionScope,
-                                        parent: null
-                                    };
-                                    self.$emit('selectedExecutionScope', obj);
-                                });
-                                overlays.add(activity, 'note', {
-                                    position: {
-                                        bottom: 80 - idx * 30,
-                                        right: -10
-                                    },
-                                    html: overlayHtml
-                                });
-                                idx = idx + 1;
-                            }
-                        });
-                    });
-                } 
-                
-               
-            }
-
-            // 차이점 시각화 처리 추가
-            if (self.diffActivities && Object.keys(self.diffActivities).length > 0) {
-                Object.keys(self.diffActivities).forEach(activityId => {
-                    const changeType = self.diffActivities[activityId];
-                    if (activityId && changeType) {
-                        canvas.addMarker(activityId, changeType);
-                    }
-                });
-            }
-
-            await self.setSubProcessInstance(self.currentInstanceId);
-            if(self.subProcessInstances && Object.keys(self.subProcessInstances).length > 0) {
-                Object.keys(self.subProcessInstances).forEach((key) => {
-                    const element = elementRegistry.get(key);
-                    if (element) {
-                        let dropdownHtml = `<select class="instance-select-box">`;
-                            dropdownHtml += `<option value=""hidden style="text-align: center;">인스턴스 선택 ▼</option>\n`; // 기본값으로 아무것도 선택되지 않음
-                        self.subProcessInstances[key].forEach((subProcessId, idx) => {
-                            dropdownHtml += `<option class="instance-select-list" value="${subProcessId}">${subProcessId}</option>\n`;
-                        });
-                        dropdownHtml += `</select>`;
-                        let overlayHtml = $(`<div>${dropdownHtml}</div>`);
-                        overlayHtml.find('select').change(async function (e) {
-                            let selectedSubProcessId = $(this).val();
-                            await self.openCallActivity(element);
-                            self.currentInstanceId = selectedSubProcessId;
-                            const activityStatus = await backend.getActivitiesStatus(self.currentInstanceId);
-                            self.activityStatus = activityStatus;
-                        });
-                        overlays.add(key, 'note', {
-                            position: {
-                                bottom: 79,
-                                right: 98
-                            },
-                            html: overlayHtml
-                        });
-                    }
-                });
-            }
-            eventBus.on('element.dblclick', async function (e) {
-                if (e.element.type.includes('CallActivity')) {
-                    self.$emit('openDefinition', e.element.businessObject);
-                } 
-                // if (e.element.type.includes('CallActivity')) {
-                //     self.openCallActivity(e.element);
-                // }
-            });
-            
-            if(!self.activityStatus) {
-                self.activityStatus = self.taskStatus;
-            }
-            self.setTaskStatus(self.activityStatus);
-
-            let endTime = performance.now();
-            console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
-        });
+        this.setDiagramEvent();
         if (this.url) {
             this.fetchDiagram(this.url);
         } else if (this.bpmn) {
@@ -481,33 +307,254 @@ export default {
             this.currentInstanceId = this.previewersXMLLists[index].instanceId;
             this.previewersXMLLists = this.previewersXMLLists.slice(0, index);
         },
+        setDiagramEvent() {
+            var self = this;
+            var eventBus = this.bpmnViewer.get('eventBus');
+            eventBus.on('import.done', async function (evt) {
+                self.initDefaultOrientation();
+            });
+            eventBus.on('import.render.complete', async function (event) {
+                let startTime = performance.now();
+
+                var canvas = self.bpmnViewer.get('canvas');
+                var elementRegistry = self.bpmnViewer.get('elementRegistry');
+                var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+                
+                self.resetZoom();
+
+                if (window.$mode == "ProcessGPT") {
+                    if (self.currentActivities && self.currentActivities.length > 0) {
+                        self.currentActivities.forEach((actId) => {
+                            if (actId) canvas.addMarker(actId, 'highlight');
+                        });
+                    }
+                } 
+
+                var overlays = self.bpmnViewer.get('overlays');
+
+                if (self.adminMode) {
+                    // add marker to current activity elements
+
+                    if (self.currentActivities && self.currentActivities.length > 0) {
+                        self.currentActivities.forEach((actId) => {
+                            const element = elementRegistry.get(actId);
+                            if (element) {
+                                if (element.type != 'bpmn:SubProcess' && element.type != 'bpmn:CallActivity') {
+                                    var overlayHtml = $(
+                                        `<img src="/assets/images/icon/tdesign-rollback.svg" style="width: 20px; height: 20px;" alt="rollback">`
+                                    );
+                                    overlayHtml.click(function (e) {
+                                        // alert('someone clicked ' + actId);
+                                        self.$emit('rollback', element);
+                                    });
+                                    if (actId)
+                                        overlays.add(actId, 'note', {
+                                            position: {
+                                                bottom: 10,
+                                                right: 0
+                                            },
+                                            html: overlayHtml
+                                        });
+                                }
+                            }
+                        });
+                    }
+                    if (self.executionScopeActivities && Object.keys(self.executionScopeActivities).length > 0) {
+                        Object.keys(self.executionScopeActivities).forEach((activity) => {
+                            // console.log(activity);
+                            let idx = 0;
+                            Object.keys(self.executionScopeActivities[activity]).forEach((executionScope) => {
+                                if (self.executionScopeActivities[activity][executionScope].parent) {
+                                    if (self.selectedExecutionScope) {
+                                        if (
+                                            self.selectedExecutionScope.executionScope ==
+                                            self.executionScopeActivities[activity][executionScope].parent
+                                        ) {
+                                            let list = `<button class="v-btn v-btn--block v-btn--elevated v-theme--light rounded-xl  v-btn--variant-elevated">${executionScope}</buton>\n`;
+                                            let overlayHtml = $(`<div >${list}</div>`);
+                                            overlayHtml.click(function (e) {
+                                                let obj = {
+                                                    executionScope: executionScope,
+                                                    parent: self.executionScopeActivities[activity][executionScope].parent
+                                                };
+                                                self.$emit('selectedExecutionScope', obj);
+                                            });
+                                            overlays.add(activity, 'note', {
+                                                position: {
+                                                    bottom: 80 - idx * 30,
+                                                    right: -10
+                                                },
+                                                html: overlayHtml
+                                            });
+                                            idx = idx + 1;
+                                        } else if (
+                                            self.selectedExecutionScope.parent == self.executionScopeActivities[activity][executionScope].parent
+                                        ) {
+                                            let list = `<button class="v-btn v-btn--block v-btn--elevated v-theme--light rounded-xl  v-btn--variant-elevated">${executionScope}</buton>\n`;
+                                            let overlayHtml = $(`<div >${list}</div>`);
+                                            overlayHtml.click(function (e) {
+                                                let obj = {
+                                                    executionScope: executionScope,
+                                                    parent: self.executionScopeActivities[activity][executionScope].parent
+                                                };
+                                                self.$emit('selectedExecutionScope', obj);
+                                            });
+                                            overlays.add(activity, 'note', {
+                                                position: {
+                                                    bottom: 80 - idx * 30,
+                                                    right: -10
+                                                },
+                                                html: overlayHtml
+                                            });
+                                            idx = idx + 1;
+                                        }
+                                    }
+                                } else {
+                                    let list = `<button class="v-btn v-btn--block v-btn--elevated v-theme--light rounded-xl  v-btn--variant-elevated">${executionScope}</buton>\n`;
+                                    let overlayHtml = $(`<div >${list}</div>`);
+                                    overlayHtml.click(function (e) {
+                                        let obj = {
+                                            executionScope: executionScope,
+                                            parent: null
+                                        };
+                                        self.$emit('selectedExecutionScope', obj);
+                                    });
+                                    overlays.add(activity, 'note', {
+                                        position: {
+                                            bottom: 80 - idx * 30,
+                                            right: -10
+                                        },
+                                        html: overlayHtml
+                                    });
+                                    idx = idx + 1;
+                                }
+                            });
+                        });
+                    } 
+                    
+                
+                }
+
+                // 차이점 시각화 처리 추가
+                if (self.diffActivities && Object.keys(self.diffActivities).length > 0) {
+                    Object.keys(self.diffActivities).forEach(activityId => {
+                        const changeType = self.diffActivities[activityId];
+                        if (activityId && changeType) {
+                            canvas.addMarker(activityId, changeType);
+                        }
+                    });
+                }
+
+                await self.setSubProcessInstance(self.currentInstanceId);
+                if(self.subProcessInstances && Object.keys(self.subProcessInstances).length > 0) {
+                    Object.keys(self.subProcessInstances).forEach((key) => {
+                        const element = elementRegistry.get(key);
+                        if (element) {
+                            let dropdownHtml = `<select class="instance-select-box">`;
+                                dropdownHtml += `<option value=""hidden style="text-align: center;">인스턴스 선택 ▼</option>\n`; // 기본값으로 아무것도 선택되지 않음
+                            self.subProcessInstances[key].forEach((subProcessId, idx) => {
+                                dropdownHtml += `<option class="instance-select-list" value="${subProcessId}">${subProcessId}</option>\n`;
+                            });
+                            dropdownHtml += `</select>`;
+                            let overlayHtml = $(`<div>${dropdownHtml}</div>`);
+                            overlayHtml.find('select').change(async function (e) {
+                                let selectedSubProcessId = $(this).val();
+                                await self.openCallActivity(element);
+                                self.currentInstanceId = selectedSubProcessId;
+                                const activityStatus = await backend.getActivitiesStatus(self.currentInstanceId);
+                                self.activityStatus = activityStatus;
+                            });
+                            overlays.add(key, 'note', {
+                                position: {
+                                    bottom: 79,
+                                    right: 98
+                                },
+                                html: overlayHtml
+                            });
+                        }
+                    });
+                }
+                eventBus.on('element.dblclick', async function (e) {
+                    if (e.element.type.includes('CallActivity')) {
+                        self.$emit('openDefinition', e.element.businessObject);
+                    } 
+                    // if (e.element.type.includes('CallActivity')) {
+                    //     self.openCallActivity(e.element);
+                    // }
+                });
+                
+                if(!self.activityStatus) {
+                    self.activityStatus = self.taskStatus;
+                }
+                self.setTaskStatus(self.activityStatus);
+
+                let endTime = performance.now();
+                console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
+            });
+        },
         initializeViewer() {
             var container = this.$refs.container;
             var self = this;
-            var _options = Object.assign(
-                {
-                    container: container,
-                    keyboard: {
-                        bindTo: window
-                    },
-                    moddleExtensions: {
-                        // uengine: uEngineModdleDescriptor,
-                        phase: phaseModdle
+            const blockEditingInteractions = {
+                    __init__: ['blocker'],
+                    blocker: ['type', function(eventBus) {
+                        const ignoreEvent = (event) => {
+                            event.preventDefault();
+                        };
+
+                        eventBus.on('shape.move.start', ignoreEvent);
+                        eventBus.on('shape.move.move', ignoreEvent);
+                        eventBus.on('shape.move.end', ignoreEvent);
+
+                        eventBus.on('connect.start', ignoreEvent);
+                        eventBus.on('connect.move', ignoreEvent);
+                        eventBus.on('connect.end', ignoreEvent);
+
+                        eventBus.on('resize.start', ignoreEvent);
+
+                        eventBus.on('dragger.create', ignoreEvent);
+                        eventBus.on('preview.move', ignoreEvent);
+
+                        eventBus.on('drag.start', ignoreEvent);
+                        eventBus.on('drag.move', ignoreEvent);
+                        eventBus.on('drag.end', ignoreEvent);
+
+                        eventBus.on('directEditing.activate', ignoreEvent);
+                        eventBus.on('directEditing.deactivate', ignoreEvent);
+                        eventBus.on('directEditing.cancel', ignoreEvent);
+                    }]
+                };
+
+                var viewerOptions = Object.assign(
+                    {
+                        container: container,
+                        keyboard: {
+                            bindTo: window
+                        },
+                        additionalModules: [
+                            customBpmnModule,
+                            {
+                                __init__: ['paletteProvider'],
+                                paletteProvider: ['type', paletteProvider],
+                                viewModeFlag: ['value', true] 
+                            },
+                            {
+                                __init__: ['contextPadProvider'],
+                                contextPadProvider: ['value', {}]
+                            },
+                            blockEditingInteractions,
+                            ZoomScroll,
+                            MoveCanvas
+                        ],
+                        moddleExtensions: {
+                            uengine: uEngineModdleDescriptor,
+                            phase: phaseModdle
+                        },
+                        propertiesPanel: {}
                     }
-                },
-                self.options
-            );
+                );
 
-            var viewerOptions = {
-                ..._options,
-                additionalModules: [
-                    ...(Array.isArray(_options.additionalModules) ? _options.additionalModules : []),
-                    ZoomScroll,
-                    MoveCanvas
-                ]
-            };
-
-            self.bpmnViewer = new BpmnViewer(viewerOptions);
+            self.bpmnViewer = new BpmnModeler(viewerOptions);
         },
         setTaskStatus(val) {
             let self = this;
@@ -543,6 +590,50 @@ export default {
                 .catch((err) => {
                     self.$emit('error', err);
                 });
+        },
+        changeOrientation() {
+            var self = this;
+            const palleteProvider = self.bpmnViewer.get('paletteProvider');
+            const elementRegistry = self.bpmnViewer.get('elementRegistry');
+            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            participant.forEach(element => {
+                const horizontal = element.di.isHorizontal;
+                if(horizontal) {
+                    palleteProvider.changeParticipantHorizontalToVertical(event, element);
+                    element.di.isHorizontal = false;
+                } else {
+                    palleteProvider.changeParticipantVerticalToHorizontal(event, element);
+                    element.di.isHorizontal = true;
+                }
+            });
+        },
+        initDefaultOrientation() {
+            if(!this.isViewMode) return;
+            let self = this;
+            const elementRegistry = self.bpmnViewer.get('elementRegistry');
+            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            const palleteProvider = self.bpmnViewer.get('paletteProvider');
+            let isHorizontal = false;
+            if(self.isMobile) {
+                isHorizontal = false;
+            } else {
+                isHorizontal = true;
+            }
+            
+            participant.forEach(element => {
+                const horizontal = element.di.isHorizontal;
+                if(isHorizontal && !horizontal) {
+                    palleteProvider.changeParticipantVerticalToHorizontal(event, element);
+                    self.isHorizontal = true;
+                    element.di.isHorizontal = true;
+                } else if(!isHorizontal && horizontal) {
+                    palleteProvider.changeParticipantHorizontalToVertical(event, element);
+                    self.isHorizontal = false;
+                    element.di.isHorizontal = false;
+                }
+            });
+
+            self.resetZoom();
         }
     }
 };
@@ -597,5 +688,9 @@ export default {
     stroke: #2ecc71 !important; /* 초록색 - 추가된 항목 */
     /* stroke: #3498db !important; 파란색 - 수정된 항목 */
     stroke-width: 3px !important;
+}
+
+.view-mode .djs-palette {
+  display: none !important;
 }
 </style>

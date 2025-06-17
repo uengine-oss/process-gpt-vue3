@@ -387,23 +387,17 @@ export default {
         startChat(type){
             let chatRoomInfo
             const selectedUserEmail = this.selectedUserInfo.email;
+            const selectedUserName = this.selectedUserInfo.username || this.selectedUserInfo.name;
             const currentUserEmail = this.userInfo.email;
+            const currentUserName = this.userInfo.username;
 
             if(type == 'work' || type == 'agent-work'){
                 chatRoomInfo = {}
                 chatRoomInfo.name = type == 'agent-work' ? this.selectedUserInfo.name : this.selectedUserInfo.username
                 chatRoomInfo.participants = []
                 if (type == 'agent-work') {
-                    const agentInfo = {
-                        email: 'system@uengine.org',
-                        id: this.selectedUserInfo.id,
-                        username: this.selectedUserInfo.name,
-                        is_agent: true,
-                        goal: this.selectedUserInfo.goal,
-                        role: this.selectedUserInfo.role,
-                        persona: this.selectedUserInfo.persona,
-                        url: this.selectedUserInfo.url
-                    }
+                    const agentInfo = this.selectedUserInfo
+                    agentInfo.is_agent = true
                     chatRoomInfo.participants.push(agentInfo)
                 } else {
                     chatRoomInfo.participants.push(this.selectedUserInfo)
@@ -413,8 +407,9 @@ export default {
                 const chatRoomExists = this.chatRoomList.some(chatRoom => {
                     if(chatRoom.participants.length == 2){
                         const participantEmails = chatRoom.participants.map(participant => participant.email);
+                        const participantNames = chatRoom.participants.map(participant => participant.username);
                         chatRoomInfo = chatRoom
-                        return participantEmails.includes(currentUserEmail) && participantEmails.includes(selectedUserEmail);
+                        return participantEmails.includes(currentUserEmail) && participantEmails.includes(selectedUserEmail) && participantNames.includes(currentUserEmail) && participantNames.includes(selectedUserEmail);
                     } else {
                         return false
                     }
@@ -428,16 +423,9 @@ export default {
                     chatRoomInfo.participants = []
                     if (type == 'agent-chat') {
                         this.agentInfo = this.selectedUserInfo
-                        const agentInfo = {
-                            email: 'system@uengine.org',
-                            id: this.selectedUserInfo.id,
-                            username: this.selectedUserInfo.name,
-                            is_agent: true,
-                            goal: this.selectedUserInfo.goal,
-                            role: this.selectedUserInfo.role,
-                            persona: this.selectedUserInfo.persona,
-                            url: this.selectedUserInfo.url
-                        }
+                        const agentInfo = this.selectedUserInfo
+                        agentInfo.is_agent = true
+                        console.log(agentInfo.profile)
                         chatRoomInfo.participants.push(agentInfo)
                     } else {
                         chatRoomInfo.participants.push(this.selectedUserInfo)
@@ -561,9 +549,9 @@ export default {
         createChatRoom(chatRoomInfo){
             if(!chatRoomInfo.id){
                 chatRoomInfo.id = this.uuid();
-                chatRoomInfo.participants.forEach(participant => {
-                    delete participant.profile;
-                });
+                // chatRoomInfo.participants.forEach(participant => {
+                //     delete participant.profile;
+                // });
                 let userInfo = {
                     "id": this.userInfo.uid,
                     "username": this.userInfo.name,
@@ -857,7 +845,7 @@ export default {
                     if(responseObj.work == 'CompanyQuery'){
                         try{
                             const token = localStorage.getItem('accessToken');
-                            let mementoRes = await axios.post(`/memento/query`, {
+                            let mementoRes = await axios.get(`/memento/query`, {
                                 params: {
                                     query: responseObj.content,
                                     tenant_id: window.$tenantName

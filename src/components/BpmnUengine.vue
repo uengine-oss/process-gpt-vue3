@@ -1,6 +1,14 @@
 <template>
-    <div ref="container" class="vue-bpmn-diagram-container">
+    <div ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }"> 
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
+        <div v-if="isViewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
+            <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
+                <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
+                <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
+                <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
+                <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
+            </div>
+        </div>
     </div>
     <v-dialog v-model="isPreviewPDFDialog" max-width="1160px">
         <v-card >
@@ -17,9 +25,17 @@ import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import BpmnModdle from 'bpmn-moddle';
-import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
-import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
+import ZoomScroll from './customZoomScroll';
+// import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
+import MoveCanvas from './customMoveCanvas';
+// import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
 import BackendFactory from '@/components/api/BackendFactory';
+import customBpmnModule from './customBpmn';
+import customPaletteModule from './customPalette';
+import paletteProvider from './customPalette/PaletteProvider';
+import customContextPadModule from './customContextPad';
+import customReplaceElement from './customReplaceElement';
+import customPopupMenu from './customPopupMenu';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import '@/components/autoLayout/bpmn-auto-layout.js';
@@ -79,7 +95,8 @@ export default {
             moddle: null,
             bpmnStore: null,
             bpmnViewer: null,
-            _layoutTimeout: null
+            bpmnModeler: null,
+            _layoutTimeout: null,
         };
     },
     computed: {
@@ -89,6 +106,9 @@ export default {
         },
         mode() {
             return window.$mode;
+        },
+        isMobile() {
+            return window.innerWidth <= 1080;
         }
     },
     mounted() {
@@ -196,6 +216,50 @@ export default {
             }
             self.$emit('changeElement', self.bpmnXML);
         },
+        changeOrientation() {
+            var self = this;
+            const palleteProvider = self.bpmnViewer.get('paletteProvider');
+            const elementRegistry = self.bpmnViewer.get('elementRegistry');
+            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            participant.forEach(element => {
+                const horizontal = element.di.isHorizontal;
+                if(horizontal) {
+                    palleteProvider.changeParticipantHorizontalToVertical(event, element);
+                    element.di.isHorizontal = false;
+                } else {
+                    palleteProvider.changeParticipantVerticalToHorizontal(event, element);
+                    element.di.isHorizontal = true;
+                }
+            });
+        },
+        initDefaultOrientation() {
+            if(!this.isViewMode) return;
+            let self = this;
+            const elementRegistry = self.bpmnViewer.get('elementRegistry');
+            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            const palleteProvider = self.bpmnViewer.get('paletteProvider');
+            let isHorizontal = false;
+            if(self.isMobile) {
+                isHorizontal = false;
+            } else {
+                isHorizontal = true;
+            }
+            
+            participant.forEach(element => {
+                const horizontal = element.di.isHorizontal;
+                if(isHorizontal && !horizontal) {
+                    palleteProvider.changeParticipantVerticalToHorizontal(event, element);
+                    self.isHorizontal = true;
+                    element.di.isHorizontal = true;
+                } else if(!isHorizontal && horizontal) {
+                    palleteProvider.changeParticipantHorizontalToVertical(event, element);
+                    self.isHorizontal = false;
+                    element.di.isHorizontal = false;
+                }
+            });
+
+            self.resetZoom();
+        },
         setDiagramEvent() {
             var self = this;
             var eventBus = this.bpmnViewer.get('eventBus');
@@ -205,6 +269,7 @@ export default {
             //     self.$emit('openPanel', e.element.id);
             // });
             eventBus.on('import.done', async function (evt) {
+                self.initDefaultOrientation();
                 console.log('import.done');
                 self.$emit('done');
                 
@@ -327,35 +392,99 @@ export default {
         initializeViewer() {
             var container = this.$refs.container;
             var self = this;
-            var _options = Object.assign(
-                {
-                    container: container,
-                    keyboard: {
-                        bindTo: window
-                    },
-                    moddleExtensions: {
-                        uengine: uEngineModdleDescriptor,
-                        phase: phaseModdle
-                    }
-                },
-                self.options
-            );
-
             if (self.isViewMode) {
-                var viewerOptions = {
-                    ..._options,
-                    additionalModules: [
-                        ...(Array.isArray(_options.additionalModules) ? _options.additionalModules : []),
-                        ZoomScroll,
-                        MoveCanvas
-                    ],
-                    moddleExtensions: {
-                        phase: phaseModdle
-                    }
+                const blockEditingInteractions = {
+                    __init__: ['blocker'],
+                    blocker: ['type', function(eventBus) {
+                        const ignoreEvent = (event) => {
+                            event.preventDefault();
+                        };
+
+                        eventBus.on('shape.move.start', ignoreEvent);
+                        eventBus.on('shape.move.move', ignoreEvent);
+                        eventBus.on('shape.move.end', ignoreEvent);
+
+                        eventBus.on('connect.start', ignoreEvent);
+                        eventBus.on('connect.move', ignoreEvent);
+                        eventBus.on('connect.end', ignoreEvent);
+
+                        eventBus.on('resize.start', ignoreEvent);
+
+                        eventBus.on('dragger.create', ignoreEvent);
+                        eventBus.on('preview.move', ignoreEvent);
+
+                        eventBus.on('drag.start', ignoreEvent);
+                        eventBus.on('drag.move', ignoreEvent);
+                        eventBus.on('drag.end', ignoreEvent);
+
+                        eventBus.on('directEditing.activate', ignoreEvent);
+                        eventBus.on('directEditing.deactivate', ignoreEvent);
+                        eventBus.on('directEditing.cancel', ignoreEvent);
+
+                        /*const fireOriginal = eventBus.fire;
+                        eventBus.fire = function(event, data) {
+                            console.log('[EVENT]', event, data);
+                            return fireOriginal.call(this, event, data);
+                        };*/
+
+                    }]
                 };
 
-                self.bpmnViewer = new BpmnViewer(viewerOptions);
+                var viewerOptions = Object.assign(
+                    {
+                        container: container,
+                        keyboard: {
+                            bindTo: window
+                        },
+                        additionalModules: [
+                            customBpmnModule,
+                            {
+                                __init__: ['paletteProvider'],
+                                paletteProvider: ['type', paletteProvider],
+                                viewModeFlag: ['value', true] 
+                            },
+                            {
+                                __init__: ['contextPadProvider'],
+                                contextPadProvider: ['value', {}]
+                            },
+                            blockEditingInteractions,
+                            ZoomScroll,
+                            MoveCanvas
+                        ],
+                        moddleExtensions: {
+                            uengine: uEngineModdleDescriptor,
+                            phase: phaseModdle
+                        }
+                    },
+                    self.options
+                );
+                self.bpmnViewer = new BpmnModeler(viewerOptions);
             } else {
+                var _options = Object.assign(
+                    {
+                        container: container,
+                        keyboard: {
+                            bindTo: window
+                        },
+                        moddleExtensions: {
+                            uengine: uEngineModdleDescriptor,
+                            phase: phaseModdle
+                        },
+                        additionalModules: [
+                            customBpmnModule,
+                            {
+                                __init__: ['paletteProvider'],
+                                paletteProvider: ['type', paletteProvider],
+                                viewModeFlag: ['value', false] 
+                            },
+                            customContextPadModule,
+                            customReplaceElement,
+                            customPopupMenu,
+                            ZoomScroll,
+                            MoveCanvas
+                        ]
+                    },
+                );
                 self.bpmnViewer = new BpmnModeler(_options);
             }
             
@@ -581,9 +710,120 @@ export default {
         },
         closePDFDialog() {
             this.$emit('closePDFDialog');
-        }
+        },
+        resetZoom() {
+            var self = this;
+            var canvas = self.bpmnViewer.get('canvas');
+            var elementRegistry = self.bpmnViewer.get('elementRegistry');
+            var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            const zoomScroll = self.bpmnViewer.get('zoomScroll');
+            const moveCanvas = self.bpmnViewer.get('MoveCanvas');
+            zoomScroll.reset();
+
+
+            canvas._eventBus.on('zoom', function(event) {
+                let zoomLevel = event.scale;
+
+                // 줌 범위를 0.2 ~ 2로 제한
+                if (zoomLevel < 0.2) {
+                    zoomLevel = 0.2;
+                } else if (zoomLevel > 2) {
+                    zoomLevel = 2;
+                }
+
+                // 줌 레벨을 제한된 값으로 설정
+                canvas.zoom(zoomLevel, {
+                    x: canvas._cachedViewbox.inner.width / 2,
+                    y: canvas._cachedViewbox.inner.height / 2
+                });
+            });
+
+            var x = 0;
+            var y = 0;
+            var width = 0;
+            var height = 0;
+                
+            if (allPools.length > 1) {
+                var firstPool = allPools[0];
+                var lastPool = allPools[allPools.length - 1];
+                var firstBbox = canvas.getAbsoluteBBox(firstPool);
+                var lastBbox = canvas.getAbsoluteBBox(lastPool);
+                x = firstBbox.x;
+                y = firstBbox.y;
+                width = lastBbox.x + lastBbox.width + 100;
+                height = lastBbox.y + lastBbox.height + 100;
+            } 
+            // else if(allPools.length == 1){
+            //     var firstPool = allPools[0];
+            //     var firstBbox = canvas.getAbsoluteBBox(firstPool);
+            //     x = firstBbox.x - 50;
+            //     y = firstBbox.y - 50;
+            //     width = firstBbox.x + firstBbox.width + 100;
+            //     height = firstBbox.y + firstBbox.height + 100;
+            // }
+             else {
+                var viewbox = canvas.viewbox();
+                x = viewbox.x - 50;
+                y = viewbox.y - 50;
+                width = viewbox.x + viewbox.width + 100;
+                height = viewbox.y + viewbox.height + 100;
+            }
+
+            canvas.viewbox({
+                x: x,
+                y: y,
+                width: width,
+                height: height
+            });
+
+            
+            moveCanvas.canvasSize = {
+                height: height,
+                width: width,
+                x: x,
+                y: y
+            }
+            moveCanvas.scaleOffset = canvas.viewbox().scale;
+            moveCanvas.resetMovedDistance();
+
+            zoomScroll.canvasSize = {
+                height: height,
+                width: width,
+                x: x,
+                y: y
+            }
+            zoomScroll.scaleOffset = canvas.viewbox().scale;
+            zoomScroll.resetMovedDistance();
+        },
+        zoomIn() {
+            const zoomScroll = this.bpmnViewer.get('zoomScroll');
+            zoomScroll.stepZoom(1);
+        },
+        zoomOut() {
+            const zoomScroll = this.bpmnViewer.get('zoomScroll');
+            zoomScroll.stepZoom(-1);
+        },
     }
 };
 </script>
 
-<style></style>
+<style>
+
+.mobile-position {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    pointer-events: auto;
+    z-index: 10;
+}
+.desktop-position {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    pointer-events: auto;
+    z-index: 10;
+}
+.view-mode .djs-palette {
+  display: none !important;
+}
+</style>
