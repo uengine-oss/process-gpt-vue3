@@ -607,6 +607,7 @@ export default {
             });
         },
         initDefaultOrientation() {
+            if(!this.isViewMode) return;
             let self = this;
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');

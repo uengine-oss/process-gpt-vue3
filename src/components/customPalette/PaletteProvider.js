@@ -195,7 +195,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
   childElements.forEach(child => {
     if (child.type === 'bpmn:SequenceFlow') {
       const label = child.labels[0];
-      if(label) {
+      if(label && label.di.label) {
         const labelBounds = label.di.label.bounds;
 
         const originalCenterX = labelBounds.x + (labelBounds.width / 2);
@@ -380,7 +380,7 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
   childElements.forEach(child => {
     if (child.type === 'bpmn:SequenceFlow') {
       const label = child.labels[0];
-      if(label) {
+      if(label && label.di.label) {
         const labelBounds = label.di.label.bounds;
 
         const originalCenterX = labelBounds.x + (labelBounds.width / 2);
