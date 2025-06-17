@@ -153,6 +153,7 @@ export default {
             }
             if(!me.html) {
                 me.useTextAudio = true;
+                me.formDefId = 'user_input_text' // default form 이 없는 경우 자유롭게 입력 가능하도록 설정
             }
             if(!me.isDryRun) {
                 me.loadForm()
@@ -175,14 +176,15 @@ export default {
         },
         async loadForm(){
             var me = this;
-
             if(!me.workItem || !me.workItem.activity || !me.workItem.activity.outParameterContext) return;
-           
-            let outFormName = me.workItem.activity.outParameterContext.variable.name || me.formDefId;
+        
+            let outFormName = me.workItem.activity.outParameterContext.variable.name || me.formDefId
             let outVariable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, outFormName);
 
             if (outVariable && outVariable.valueMap) {
                 me.formData = outVariable.valueMap;
+
+                if(outVariable.valueMap['user_input_text']) me.newMessage = outVariable.valueMap['user_input_text']
             }
             
             if(me.workItem?.parameterValues){
@@ -224,7 +226,7 @@ export default {
             let me = this;
 
             let varName = me.workItem.activity.outParameterContext.variable.name;
-            if(!varName && me.workItem.worklist.adhoc) varName = 'defaultform';
+            if(!varName && me.workItem.worklist.adhoc) varName = me.formDefId;
             // let varName = me.workItem.activity.variableForHtmlFormContext.name;
             let variable = {};
             if(!me.isDryRun){
@@ -244,6 +246,11 @@ export default {
                 }
             });
             variable.valueMap._type = 'java.util.HashMap';
+
+            // 자유롭게 입력 가능한 경우 입력한 값을 저장
+            if(varName == 'user_input_text'){
+                variable.valueMap['user_input_text'] = me.newMessage
+            }
 
             if(me.isDryRun) {
                 if(!variables) variables = {}
