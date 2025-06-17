@@ -549,7 +549,8 @@ export default {
                         moddleExtensions: {
                             uengine: uEngineModdleDescriptor,
                             phase: phaseModdle
-                        }
+                        },
+                        propertiesPanel: {}
                     }
                 );
 
