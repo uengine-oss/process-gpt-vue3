@@ -3,6 +3,13 @@
         <!-- organization chart -->
         <div id="tree" ref="tree" class="h-100"></div>
         
+        <!-- Agent Badges Diagram -->
+        <AgentBadgesDiagram 
+            :show="showBadgesDiagram" 
+            :agentData="selectedAgent" 
+            @close="closeBadgesDiagram"
+        />
+        
         <!-- dialogs -->
         <v-dialog v-model="teamDialog" max-width="500">
             <OrganizationTeamDialog 
@@ -27,11 +34,13 @@
 import ApexTree from 'apextree';
 import OrganizationTeamDialog from './OrganizationTeamDialog.vue';
 import OrganizationEditDialog from './OrganizationEditDialog.vue';
+import AgentBadgesDiagram from './AgentBadgesDiagram.vue';
 
 export default {
     components: {
         OrganizationTeamDialog,
-        OrganizationEditDialog
+        OrganizationEditDialog,
+        AgentBadgesDiagram
     },
     props: {
         node: {
@@ -46,6 +55,10 @@ export default {
         editNode: null,
         teamDialog: false,
         editDialog: false,
+        
+        // badges diagram
+        showBadgesDiagram: false,
+        selectedAgent: null,
     }),
     watch: {
         node(newVal) {
@@ -150,6 +163,14 @@ export default {
                 const foundNode = this.findNodeById(this.node, target.id);
                 if (foundNode && foundNode.data) {
                     this.editNode = foundNode;
+                    
+                    // Agent 클릭 시 뱃지 다이어그램 표시, 아닌 경우 닫기
+                    if (foundNode.data.isAgent) {
+                        this.selectedAgent = foundNode.data;
+                        this.showBadgesDiagram = true;
+                    } else {
+                        this.closeBadgesDiagram();
+                    }
                 }
                 const textBox = target.querySelector('.node-content-text-box');
                 if (textBox) {
@@ -160,7 +181,13 @@ export default {
                 if (this.previousTarget) {
                     this.previousTarget.style.backgroundColor = '';
                 }
+                // 빈 공간 클릭 시에도 뱃지 다이어그램 닫기
+                this.closeBadgesDiagram();
             }
+        },
+        closeBadgesDiagram() {
+            this.showBadgesDiagram = false;
+            this.selectedAgent = null;
         },
         openTeamDialog(type) {
             this.teamDialog = true;
