@@ -85,10 +85,10 @@ const slotName = computed(() => {
         <!---right chat conversation -->
     </div>
 
-    <v-navigation-drawer temporary v-model="sDrawer" width="320" top v-if="!lgAndUp"
+    <v-navigation-drawer temporary v-model="sDrawer" top v-if="!lgAndUp"
         class="mobile-menu-nav"
     >
-        <v-card-text class="pa-0">
+        <v-card-text class="pa-0 mobile-left-menu">
             <slot name="mobileLeftContent"></slot>
         </v-card-text>
     </v-navigation-drawer>
