@@ -140,6 +140,7 @@ export default {
         if (tenants && tenants.length > 0) {
             this.tenantInfos = tenants;
             this.isOwner = true;
+            this.isLoading = false;
         } else {
             // tenantInfos가 없다면 users 테이블에서 유저 정보를 가져온다
             try {
