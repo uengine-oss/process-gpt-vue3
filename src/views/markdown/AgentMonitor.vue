@@ -174,7 +174,7 @@ export default {
       
       filtered.forEach(event => {
         const data = this.parseData(event)
-        const jobId = data?.job_id || event.job_id || event.id
+        const jobId = event.job_id || data?.job_id || event.id
         
         if (event.event_type === 'task_started') {
           const task = {
@@ -210,6 +210,9 @@ export default {
         }
       })
       
+      // tasks 배열이 바뀔 때마다 로그
+      console.log('tasks computed 실행됨:', tasks.length, '개의 작업, events 개수:', this.events.length);
+      console.log('tasks computed:', tasks);
       return tasks
     }
   },
@@ -493,14 +496,17 @@ export default {
           schema: 'public', 
           table: 'events'
         }, ({ new: row }) => {
-          const data = this.parseData(row);
           const taskId = this.getTaskIdFromWorkItem();
-          
-          // 중복 체크: 이미 존재하는 이벤트인지 확인
+          const todoId = row.todo_id;
           const exists = this.events.some(e => e.id === row.id);
-          
-          if (!exists && data && ['report', 'slide', 'text'].includes(data.crew_type) && data.todo_id === taskId) {
-            this.events.push(row);
+
+          console.log('[실시간 콜백] row:', row, 'row.todo_id:', row.todo_id, 'taskId:', taskId, '같은가?', row.todo_id === taskId);
+          console.log('[디버깅] exists:', exists, 'crew_type:', row.crew_type, 'includes:', ['report', 'slide', 'text'].includes(row.crew_type));
+
+          if (!exists && ['report', 'slide', 'text'].includes(row.crew_type) && todoId === taskId) {
+            this.events = [...this.events, row];
+            console.log('실시간 추가 후 this.events:', this.events);
+            console.log('tasks computed 트리거 예상');
           }
         })
         .subscribe();
