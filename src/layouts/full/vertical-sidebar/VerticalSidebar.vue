@@ -37,10 +37,17 @@
                 </template>
             </v-tooltip>
         </v-row>
-        <div class="pa-5 pl-4 is-sidebar-mobile"
+        <div class="pa-4 is-sidebar-mobile"
             :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }"
         >
-            <Logo /> 
+            <v-row class="ma-0 pa-0" align="center">
+                <Logo />
+                <v-spacer></v-spacer>
+                <Icons @click.stop="customizer.SET_SIDEBAR_DRAWER"
+                    style="margin-top: -8px;"
+                    :icon="'close'" :size="16"
+                />
+            </v-row>
         </div>
         <!-- ---------------------------------------------- -->
         <!---Navigation -->

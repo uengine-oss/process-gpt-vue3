@@ -375,6 +375,13 @@ hr {
     display: block !important;
 }
 
+.message-input-box {
+    font-size: 20px !important;
+    max-height: 180px;
+    overflow: auto;
+    width: 100%;
+}
+
 .message-input-box .v-field__prepend-inner {
     height:40px;
 }
@@ -572,6 +579,12 @@ hr {
     min-height: 0; /* 중요! 안 주면 flexbox에서 스크롤 안 생기는 경우 있음 */
 }
 
+.mobile-left-menu {
+    display: flex;
+    flex-direction: column;
+    height: 100%
+}
+
 .chat-info-view-wrapper {
     display: flex;
     flex-direction: column;
@@ -603,11 +616,7 @@ hr {
 /* 채팅 레이아웃 관련 UI 끝  */
 
 
-.mobile-menu-nav {
-    top:111px !important;
-    height: calc(100% - 111px) !important;
-    border-radius: 10px !important;
-}
+
 
 .no-scrollbar {
     height: 100% !important;
@@ -624,12 +633,12 @@ hr {
 .mobile-side-bar-btn {
     position: fixed;
     left: 16px;
-    bottom: 32px;
+    bottom: 16px;
     z-index: 999;
 }
 .todolist-card-box {
     padding: 4px !important;
-    height: calc(100vh - 131px);
+    height: calc(100vh - 130px);
     overflow: auto;
 }
 .todolist-card-box-is-mobile {
@@ -659,6 +668,13 @@ hr {
 .notification-dd-box {
     max-width: 400px;
     width: 90vw;
+}
+
+.mobile-menu-nav {
+    top: 111px !important;
+    width: 300px !important;
+    height: calc(100% - 111px) !important;
+    border-radius: 10px !important;
 }
 
 @media only screen and (max-width: 1450px) {
@@ -707,7 +723,7 @@ hr {
 
     .chat-info-view-wrapper-chats
     .chat-info-message-input-box {
-        padding-bottom: 70px;
+        padding-bottom: 60px;
     } 
 
     .leftSidebar {
@@ -724,6 +740,12 @@ hr {
     .isMobile-add-todo-dialog {
         height: calc(100vh - 108px);
         overflow: auto;
+    }
+    .mobile-menu-nav {
+        top:0px !important;
+        height: calc(100% - 60px) !important;
+        border-radius: 10px !important;
+        width: 100vw !important;
     }
 }
 
