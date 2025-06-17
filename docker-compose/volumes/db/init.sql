@@ -575,6 +575,98 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION duplicate_definition_from_marketplace(
+    p_definition_id TEXT,
+    p_definition_name TEXT,
+    p_author_uid TEXT
+)
+RETURNS JSONB AS $$
+DECLARE
+    v_proc_def_record RECORD;
+    v_form_def_record RECORD;
+    v_result JSONB := '{}';
+    v_proc_def_uuid UUID;
+    v_form_def_uuid UUID;
+BEGIN
+    -- 프로세스 정의를 marketplace에서 복사
+    SELECT * INTO v_proc_def_record
+    FROM proc_def_marketplace
+    WHERE id = p_definition_id AND name = p_definition_name;
+    
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('error', 'Process definition not found in marketplace');
+    END IF;
+    
+    -- proc_def에 복사
+    INSERT INTO proc_def (
+        id,
+        name,
+        definition,
+        bpmn,
+        tenant_id
+    ) VALUES (
+        v_proc_def_record.id,
+        v_proc_def_record.name,
+        v_proc_def_record.definition,
+        v_proc_def_record.bpmn,
+        public.tenant_id()
+    )
+    ON CONFLICT (id, tenant_id) DO UPDATE SET
+        name = EXCLUDED.name,
+        definition = EXCLUDED.definition,
+        bpmn = EXCLUDED.bpmn
+    RETURNING uuid INTO v_proc_def_uuid;
+    
+    -- form_def_marketplace에서 관련 폼들을 찾아서 form_def로 복사
+    FOR v_form_def_record IN
+        SELECT *
+        FROM form_def_marketplace
+        WHERE proc_def_id = p_definition_id AND author_uid = p_author_uid
+    LOOP
+        INSERT INTO form_def (
+            html,
+            proc_def_id,
+            activity_id,
+            tenant_id,
+            id,
+            fields_json
+        ) VALUES (
+            v_form_def_record.html,
+            v_form_def_record.proc_def_id,
+            v_form_def_record.activity_id,
+            public.tenant_id(),
+            v_form_def_record.id,
+            NULL
+        )
+        ON CONFLICT (id, tenant_id) DO UPDATE SET
+            html = EXCLUDED.html,
+            proc_def_id = EXCLUDED.proc_def_id,
+            activity_id = EXCLUDED.activity_id
+        RETURNING uuid INTO v_form_def_uuid;
+    END LOOP;
+    
+    -- import_count 증가
+    UPDATE proc_def_marketplace
+    SET import_count = import_count + 1
+    WHERE id = p_definition_id AND name = p_definition_name;
+    
+    v_result := jsonb_build_object(
+        'success', true,
+        'proc_def_uuid', v_proc_def_uuid,
+        'message', 'Definition duplicated successfully'
+    );
+    
+    RETURN v_result;
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN jsonb_build_object(
+            'error', SQLERRM,
+            'success', false
+        );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Create triggers
 CREATE TRIGGER encrypt_credentials_trigger
     BEFORE INSERT OR UPDATE ON public.users
