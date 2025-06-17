@@ -1,5 +1,7 @@
 <template>
     <div>
+        <ProfileField v-model="agent.img" />
+
         <v-text-field 
             v-model="agent.id" 
             :label="$t('agentField.agentId')" 
@@ -61,8 +63,12 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import ProfileField from '@/components/ui/field/ProfileField.vue';
 
 export default {
+    components: {
+        ProfileField
+    },
     props: {
         modelValue: {
             type: Object,
@@ -107,10 +113,11 @@ export default {
                 persona: '',
                 isAgent: true,
                 url: '',
+                img: '',
                 description: '',
             },
             tools: [],
-            selectedTools: []
+            selectedTools: [],
         }
     },
     watch: {

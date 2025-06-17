@@ -63,25 +63,38 @@ const filteredChats = computed(() => {
     });
 });
 
-const getProfile = (email) => {
+const getProfile = (participant) => {
     let basePath = window.location.port == '' ? window.location.origin:'' 
-    if(email == "system@uengine.org"){
+    if(participant.email == "system@uengine.org"){
         return `${basePath}/images/chat-icon.png`;
     } else {
-        const user = props.userList.find(user => user.email === email);
-        if (user && user.profile) {
-            if(user.profile.includes("defaultUser.png")){
+        if (participant.profile) {
+            if(participant.profile.includes("defaultUser.png")){
                 return `${basePath}/images/defaultUser.png`;
             } else {
                 const img = new Image();
-                img.src = user.profile;
+                img.src = participant.profile;
                 img.onerror = () => {
                     return `${basePath}/images/defaultUser.png`;
                 };
-                return user.profile;
+                return participant.profile;
             }
         } else {
-            return `${basePath}/images/defaultUser.png`;
+            const user = props.userList.find(user => user.email === participant.email);
+            if (user && user.profile) {
+                if(user.profile.includes("defaultUser.png")){
+                    return `${basePath}/images/defaultUser.png`;
+                } else {
+                    const img = new Image();
+                    img.src = user.profile;
+                    img.onerror = () => {
+                        return `${basePath}/images/defaultUser.png`;
+                    };
+                    return user.profile;
+                }
+            } else {
+                return `${basePath}/images/defaultUser.png`;
+            }
         }
     }
 };
@@ -255,7 +268,7 @@ const deleteChatRoom = () => {
                             <template
                                 v-if="chat.participants.filter(participant => participant.email !== userInfo.email).length === 1">
                                 <!-- 참가자가 나 이외 한 명만 있는 경우 -->
-                                <img :src="getProfile(chat.participants.find(participant => participant.email !== userInfo.email).email)"
+                                <img :src="getProfile(chat.participants.find(participant => participant.email !== userInfo.email))"
                                     :alt="chat.participants.find(participant => participant.email !== userInfo.email).username"
                                     style="width: 100%; height: 100%; object-fit: cover;" />
                             </template>
@@ -263,7 +276,7 @@ const deleteChatRoom = () => {
                                 <!-- 참가자가 여러 명이며 본인을 제외한 경우 -->
                                 <div v-for="(participant, index) in chat.participants.filter(participant => participant.email !== userInfo.email).slice(0, 4)"
                                     :key="participant.id" style="width: 50%; height: 50%; position: relative;">
-                                    <img :src="getProfile(participant.email)" :alt="participant.username"
+                                    <img :src="getProfile(participant)" :alt="participant.username"
                                         style="width: 100%; height: 100%; object-fit: cover;" />
                                 </div>
                             </template>

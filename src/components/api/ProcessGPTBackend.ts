@@ -1239,9 +1239,6 @@ class ProcessGPTBackend implements Backend {
         try {
             const list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
             const worklist: any[] = list.map((item: any) => {
-                if (item.status == 'SUBMITTED') {
-                    item.status = 'IN_PROGRESS';
-                }
                 return this.returnWorkItemObject(item);
             })
             return worklist;
@@ -1712,6 +1709,7 @@ class ProcessGPTBackend implements Backend {
                 url: newAgent.url,
                 description: newAgent.description,
                 tools: newAgent.tools,
+                profile: newAgent.img,
                 tenant_id: window.$tenantName
             }
             await storage.putObject('agents', putObj);

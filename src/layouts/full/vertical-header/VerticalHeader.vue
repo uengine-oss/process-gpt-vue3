@@ -129,7 +129,18 @@ function searchbox() {
 // 네비게이션 함수
 function navigateTo(item: SidebarItem) {
     if (!item.disable) {
-        router.push(item.to);
+        const currentPath = router.currentRoute.value.path;
+        const isSamePath = currentPath === item.to;
+        
+        if (isSamePath) {
+            // 같은 경로일 때는 모바일에서 사이드바만 닫기
+            if (window.innerWidth <= 768) {
+                customizer.SET_SIDEBAR_DRAWER();
+            }
+        } else {
+            // 다른 경로일 때만 라우터 이동
+            router.push(item.to);
+        }
         
         // 채팅 페이지로 이동 시 채팅 뱃지 제거
         if (item.to === '/chats') {

@@ -23,29 +23,11 @@
 
             <!-- edit team -->
             <div v-else-if="dialogType == 'edit'">
-                <!-- team icon -->                
-                <v-dialog width="650" v-model="teamIconDialog">
-                    <template v-slot:activator="{ props }">
-                        <div class="text-center mb-6">
-                            <v-avatar size="64" v-bind="props" class="cursor-pointer">
-                                <v-img :src="editNode.data.img"></v-img>
-                            </v-avatar>
-                        </div>
-                    </template>
-                    <v-card style="padding:30px;">
-                        <v-row>
-                            <v-col>
-                                <v-row>
-                                    <img v-for="(icon, index) in iconList" :key="index"
-                                        :src="icon"
-                                        @click="() => iconChange(icon)" 
-                                        class="change-team-icon"
-                                        width="100" height="100" />
-                                </v-row>
-                            </v-col>
-                        </v-row>
-                    </v-card>
-                </v-dialog>
+                <div class="text-center mb-6">
+                    <v-avatar size="64" class="cursor-pointer">
+                        <v-img :src="editNode.data.img"></v-img>
+                    </v-avatar>
+                </div>
                 
                 <v-text-field 
                     v-model="editNode.data.name" 
@@ -88,18 +70,6 @@ export default {
             isTeam: true,
             img: '/images/chat-icon.png',
         },
-
-        // team icon
-        teamIconDialog: false,
-        iconList: [
-            '/images/chat-icon.png',
-            '/images/chat-icon.png',
-            '/images/chat-icon.png',
-            '/images/chat-icon.png',
-            '/images/chat-icon.png',
-            '/images/chat-icon.png'
-        ],
-
     }),
     computed: {
         idRules() {
@@ -155,10 +125,6 @@ export default {
         update() {
             this.$emit('updateTeam', this.dialogType, this.editNode, this.newTeam)
         },
-        iconChange(icon) {
-            this.editNode.data.img = icon
-            this.teamIconDialog = false
-        }
     }
 }
 </script>

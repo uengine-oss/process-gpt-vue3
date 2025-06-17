@@ -2,8 +2,8 @@
     <div elevation="10">
         <v-row class="ma-0 pa-0 todo-task-column-box-pc">
             <v-col v-for="column in columns" :key="column.id"
-                class="pa-2"
-                cols="12" md="3" sm="3"
+                class="pa-2 kanban-column"
+                cols="3"
             >
                 <KanbanColumn 
                     :column="column" 
@@ -50,5 +50,11 @@ export default {
             display: block;
         }
     }
-
+    
+    @media (max-width: 768px) {
+        .kanban-column {
+            flex: 0 0 100% !important;
+            max-width: 100% !important;
+        }
+    }
 </style>

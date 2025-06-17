@@ -256,6 +256,7 @@ create table if not exists public.agents (
     url text null,
     description text null,
     tools text null,
+    profile text null,
     constraint agents_pkey primary key (id)
 ) tablespace pg_default;
 

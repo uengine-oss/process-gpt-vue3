@@ -17,7 +17,7 @@
             <v-list-item v-for="user in filteredUsers" :key="user.id" class="text-no-wrap user-item" @click="selectedUser(user)">
                 <template v-slot:prepend>
                     <v-avatar color="#f0f5f9" size="large" style="width: 50px; height: 50px;">
-                        <img :src="getProfile(user.email)" :alt="user.username" style="width: 100%; height: 100%; object-fit: cover;" />
+                        <img :src="getProfile(user)" :alt="user.username" style="width: 100%; height: 100%; object-fit: cover;" />
                     </v-avatar>
                 </template>
                 <v-list-item-content>
@@ -56,7 +56,7 @@
             <v-list-item v-for="agent in agentList" :key="agent.id" class="text-no-wrap user-item" @click="selectedUser(agent)">
                 <template v-slot:prepend>
                     <v-avatar color="#f0f5f9" size="large" style="width: 50px; height: 50px;">
-                        <img :src="getProfile()" :alt="agent.name" style="width: 100%; height: 100%; object-fit: cover;" />
+                        <img :src="getProfile(agent)" :alt="agent.name" style="width: 100%; height: 100%; object-fit: cover;" />
                     </v-avatar>
                 </template>
                 <v-list-item-content>
@@ -113,25 +113,38 @@ const filteredUsers = computed(() => {
     });
 });
 
-const getProfile = (email) => {
+const getProfile = (participant) => {
     let basePath = window.location.port == '' ? window.location.origin:'' 
-    if(!email || email == "system@uengine.org"){
+    if(participant.email == "system@uengine.org"){
         return `${basePath}/images/chat-icon.png`;
     } else {
-        const user = props.userList.find(user => user.email === email);
-        if (user && user.profile) {
-            if(user.profile.includes("defaultUser.png")){
+        if (participant.profile) {
+            if(participant.profile.includes("defaultUser.png")){
                 return `${basePath}/images/defaultUser.png`;
             } else {
                 const img = new Image();
-                img.src = user.profile;
+                img.src = participant.profile;
                 img.onerror = () => {
                     return `${basePath}/images/defaultUser.png`;
                 };
-                return user.profile;
+                return participant.profile;
             }
         } else {
-            return `${basePath}/images/defaultUser.png`;
+            const user = props.userList.find(user => user.email === participant.email);
+            if (user && user.profile) {
+                if(user.profile.includes("defaultUser.png")){
+                    return `${basePath}/images/defaultUser.png`;
+                } else {
+                    const img = new Image();
+                    img.src = user.profile;
+                    img.onerror = () => {
+                        return `${basePath}/images/defaultUser.png`;
+                    };
+                    return user.profile;
+                }
+            } else {
+                return `${basePath}/images/defaultUser.png`;
+            }
         }
     }
 };
