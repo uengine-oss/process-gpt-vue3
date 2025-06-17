@@ -2464,66 +2464,47 @@ class ProcessGPTBackend implements Backend {
     }
     async duplicateDefinition(definition: any) {
         try {
-            // 프로세스 정의 복사
-            const putObj = {
-                id: definition.id,
-                name: definition.name,
-                definition: definition.definition,
-                bpmn: definition.bpmn,
-            }
-            const response = await storage.putObject('proc_def', putObj);
-
-            // 프로세스 폼 정의 복사
-            const formList = await storage.list('form_def_marketplace', {
-                match: {
-                    proc_def_id: definition.id,
-                    author_uid: definition.author_uid
-                }
+            // Supabase function을 사용하여 프로세스 정의 복사
+            const result = await storage.callProcedure('duplicate_definition_from_marketplace', {
+                p_definition_id: definition.id,
+                p_definition_name: definition.name,
+                p_author_uid: definition.author_uid
             });
-            if (formList && formList.length > 0) {
-                for (const form of formList) {
-                    const formObj = {
-                        type: 'form',
-                        proc_def_id: form.proc_def_id,
-                        activity_id: form.activity_id
+
+            if (result && result.length > 0) {
+                const functionResult = result[0];
+                
+                if (functionResult.error) {
+                    throw new Error(functionResult.error);
+                }
+                
+                if (functionResult.success) {
+                    // 프로세스 정의 체계도 업데이트
+                    const megaId = definition.category.split('/')[0];
+                    const majorId = definition.category.split('/')[1];
+                    const newProcessMap = {
+                        mega_proc_list: [{
+                            id: megaId,
+                            name: megaId,
+                            major_proc_list: [{
+                                id: majorId,
+                                name: majorId,
+                                sub_proc_list: [{
+                                    id: definition.id,
+                                    name: definition.name,
+                                }]
+                            }]
+                        }]
                     }
-                    await this.putRawDefinition(form.html, form.id, formObj);
+                    const existed = await this.getProcessDefinitionMap();
+                    const merged = await this.mergeProcessMaps(existed, newProcessMap);
+                    await this.putProcessDefinitionMap(merged);
+
+                    return functionResult;
                 }
             }
             
-            if (!response.error) {
-                // 프로세스 정의 체계도 업데이트
-                const megaId = definition.category.split('/')[0];
-                const majorId = definition.category.split('/')[1];
-                const newProcessMap = {
-                    mega_proc_list: [{
-                        id: megaId,
-                        name: megaId,
-                        major_proc_list: [{
-                            id: majorId,
-                            name: majorId,
-                            sub_proc_list: [{
-                                id: definition.id,
-                                name: definition.name,
-                            }]
-                        }]
-                    }]
-                }
-                const existed = await this.getProcessDefinitionMap();
-                const merged = await this.mergeProcessMaps(existed, newProcessMap);
-                await this.putProcessDefinitionMap(merged);
-
-                // 프로세스 템플릿 카운트 증가
-                await storage.putObject('proc_def_marketplace', {
-                    uuid: definition.uuid,
-                    id: definition.id,
-                    import_count: definition.import_count + 1
-                });
-
-                return response;
-            } else {
-                throw new Error(response.error.message);
-            }
+            throw new Error('Failed to duplicate definition');
         } catch (error) {
             if (error && error.cause && error.cause.message && error.cause.message.includes('409 Conflict')) {
                 throw new Error('이미 추가된 프로세스입니다.');
