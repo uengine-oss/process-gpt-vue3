@@ -1,5 +1,5 @@
 <template>
-    <v-container v-if="tenantInfos.length > 0" class="bg-surface" style="height: 100%">
+    <v-container v-if="!isLoading" class="bg-surface" style="height: 100%">
         <v-row no-gutters>
             <Logo/>
         </v-row>
@@ -128,6 +128,7 @@ export default {
         deleteDialog: false,
         tenantIdToDelete: null,
         isOwner: false,
+        isLoading: true,
     }),
     async created() {
         const isLogin = await backend.checkDBConnection();
@@ -161,6 +162,8 @@ export default {
                 }
             } catch (error) {
                 console.error('Error fetching user list:', error);
+            } finally {
+                this.isLoading = false;
             }
         }
     },
