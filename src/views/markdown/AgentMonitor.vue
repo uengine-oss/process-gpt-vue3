@@ -4,7 +4,10 @@
       <div v-for="(task, index) in tasks" :key="task.id" class="task-card">
         <div class="task-header">
           <div class="task-left">
-            <div class="task-avatar">{{ index + 1 }}</div>
+            <div class="task-avatar">
+              <img v-if="task.agentProfile" :src="task.agentProfile" alt="Agent" class="avatar-image" />
+              <span v-else>{{ index + 1 }}</span>
+            </div>
             <div class="task-info">
               <h3 class="task-title">{{ task.role }}</h3>
               <p class="task-description">{{ task.goal }}</p>
@@ -115,7 +118,7 @@
           </div>
         </div>
 
-        <div v-else-if="!task.isCompleted && isLatestIncomplete(task)" class="task-progress">
+        <div v-else-if="!task.isCompleted" class="task-progress">
           <div class="progress-dots">
             <div class="dot"></div>
             <div class="dot"></div>
@@ -174,7 +177,7 @@ export default {
       
       filtered.forEach(event => {
         const data = this.parseData(event)
-        const jobId = data?.job_id || event.job_id || event.id
+        const jobId = event.job_id || data?.job_id || event.id
         
         if (event.event_type === 'task_started') {
           const task = {
@@ -186,7 +189,8 @@ export default {
             startTime: event.timestamp,
             isCompleted: false,
             output: null,
-            isCrewCompleted: false
+            isCrewCompleted: false,
+            agentProfile: data?.agent_profile
           }
           tasks.push(task)
           taskMap.set(jobId, task)
@@ -210,6 +214,9 @@ export default {
         }
       })
       
+      // tasks 배열이 바뀔 때마다 로그
+      console.log('tasks computed 실행됨:', tasks.length, '개의 작업, events 개수:', this.events.length);
+      console.log('tasks computed:', tasks);
       return tasks
     }
   },
@@ -493,14 +500,17 @@ export default {
           schema: 'public', 
           table: 'events'
         }, ({ new: row }) => {
-          const data = this.parseData(row);
           const taskId = this.getTaskIdFromWorkItem();
-          
-          // 중복 체크: 이미 존재하는 이벤트인지 확인
+          const todoId = row.todo_id;
           const exists = this.events.some(e => e.id === row.id);
-          
-          if (!exists && data && ['report', 'slide', 'text'].includes(data.crew_type) && data.todo_id === taskId) {
-            this.events.push(row);
+
+          console.log('[실시간 콜백] row:', row, 'row.todo_id:', row.todo_id, 'taskId:', taskId, '같은가?', row.todo_id === taskId);
+          console.log('[디버깅] exists:', exists, 'crew_type:', row.crew_type, 'includes:', ['report', 'slide', 'text'].includes(row.crew_type));
+
+          if (!exists && ['report', 'slide', 'text'].includes(row.crew_type) && todoId === taskId) {
+            this.events = [...this.events, row];
+            console.log('실시간 추가 후 this.events:', this.events);
+            console.log('tasks computed 트리거 예상');
           }
         })
         .subscribe();
@@ -609,6 +619,14 @@ export default {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
 .task-info {

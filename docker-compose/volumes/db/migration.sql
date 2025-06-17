@@ -118,6 +118,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS retry integer DEFAULT 0;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS consumer text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS log text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS project_id uuid;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft jsonb;
 
 -- chat_rooms table
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS id text;
