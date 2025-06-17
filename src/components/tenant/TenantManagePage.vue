@@ -1,5 +1,5 @@
 <template>
-    <v-container v-if="tenantInfos.length > 0" class="bg-surface" style="height: 100%">
+    <v-container v-if="!isLoading" class="bg-surface" style="height: 100%">
         <v-row no-gutters>
             <Logo/>
         </v-row>
@@ -128,6 +128,7 @@ export default {
         deleteDialog: false,
         tenantIdToDelete: null,
         isOwner: false,
+        isLoading: true,
     }),
     async created() {
         const isLogin = await backend.checkDBConnection();
@@ -139,6 +140,7 @@ export default {
         if (tenants && tenants.length > 0) {
             this.tenantInfos = tenants;
             this.isOwner = true;
+            this.isLoading = false;
         } else {
             // tenantInfos가 없다면 users 테이블에서 유저 정보를 가져온다
             try {
@@ -151,7 +153,7 @@ export default {
                     if (uniqueTenants.length === 1) {
                         // 유저 정보가 하나의 tenant에만 속해있다면 바로 리다이렉션
                         const tenantId = uniqueTenants[0];
-                        if (tenantId) {
+                        if (tenantId && tenantId !== 'process-gpt') {
                             this.toSelectedTenantPage(tenantId);
                         }
                     } else if (uniqueTenants.length > 1) {
@@ -161,6 +163,8 @@ export default {
                 }
             } catch (error) {
                 console.error('Error fetching user list:', error);
+            } finally {
+                this.isLoading = false;
             }
         }
     },

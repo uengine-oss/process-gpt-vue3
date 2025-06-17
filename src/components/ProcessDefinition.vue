@@ -264,11 +264,6 @@ import { VDataTable } from 'vuetify/components/VDataTable';
 import { useBpmnStore } from '@/stores/bpmn';
 import BpmnLLM from './BpmnLLM.vue';
 import BpmnuEngine from './BpmnUengine.vue';
-import customBpmnModule from './customBpmn';
-import customPaletteModule from './customPalette';
-import customContextPadModule from './customContextPad';
-import customReplaceElement from './customReplaceElement';
-import customPopupMenu from './customPopupMenu';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 // import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
@@ -386,12 +381,6 @@ export default {
                 height: this.isAdmin ? '100%' : 'calc(100% - 50px)'
             };
         },
-        options() {
-            let result = {
-                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule, customContextPadModule, customReplaceElement, customPopupMenu]
-            };
-            return result;
-        }
     },
     watch: {
         isViewMode(newVal, oldVal) {

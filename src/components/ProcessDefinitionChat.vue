@@ -438,72 +438,61 @@ export default {
                     return jsonData;
                 }
 
-                // 시퀀스로부터 그래프 구조 생성
-                const graph = {};
-                const inDegree = {};
+                // 모든 노드의 등장 횟수를 카운트
+                const nodeCount = new Map();
                 
-                // 모든 노드 초기화
-                [...jsonData.events, ...jsonData.activities, ...jsonData.gateways].forEach(node => {
-                    graph[node.id] = [];
-                    inDegree[node.id] = 0;
+                // source와 target에서의 등장 횟수를 각각 카운트
+                jsonData.sequences.forEach(seq => {
+                    nodeCount.set(seq.source, (nodeCount.get(seq.source) || 0) + 1);
+                    nodeCount.set(seq.target, (nodeCount.get(seq.target) || 0) + 1);
                 });
 
-                // 시퀀스로부터 그래프 간선 추가
+                // source에만 한 번 등장하는 노드를 찾음 (시작점)
+                let startNode = null;
                 jsonData.sequences.forEach(seq => {
-                    if (graph[seq.source] && inDegree.hasOwnProperty(seq.target)) {
-                        graph[seq.source].push(seq.target);
-                        inDegree[seq.target]++;
+                    const sourceCount = nodeCount.get(seq.source) || 0;
+                    if (sourceCount === 1 && !jsonData.sequences.some(s => s.target === seq.source)) {
+                        startNode = seq.source;
                     }
                 });
 
-                // 시작 노드 찾기 (보통 start_event이지만 inDegree가 0인 노드들 중에서)
-                let startNodes = Object.keys(inDegree).filter(node => inDegree[node] === 0);
-                
-                if (startNodes.length === 0) {
-                    // 순환이 있는 경우 원래 순서 유지
+                if (!startNode) {
+                    console.warn("시작점을 찾을 수 없습니다.");
                     return jsonData;
                 }
 
-                // BFS를 통한 순서 결정
-                const visitedOrder = [];
+                // 시작점부터 순서대로 노드를 따라가며 activities 순서 결정
+                const orderedNodes = [];
                 const visited = new Set();
-                const queue = [...startNodes];
-
-                while (queue.length > 0) {
-                    const currentNode = queue.shift();
-                    
-                    if (visited.has(currentNode)) {
-                        continue;
-                    }
-                    
+                
+                function traverseNodes(currentNode) {
+                    if (visited.has(currentNode)) return;
                     visited.add(currentNode);
-                    visitedOrder.push(currentNode);
-                    
-                    // 다음 노드들을 큐에 추가 (inDegree 감소시키면서)
-                    graph[currentNode].forEach(nextNode => {
-                        inDegree[nextNode]--;
-                        if (inDegree[nextNode] === 0 && !visited.has(nextNode)) {
-                            queue.push(nextNode);
-                        }
+                    orderedNodes.push(currentNode);
+
+                    // 현재 노드에서 시작하는 모든 시퀀스를 찾아서 순서대로 처리
+                    const nextSequences = jsonData.sequences.filter(seq => seq.source === currentNode);
+                    nextSequences.forEach(seq => {
+                        traverseNodes(seq.target);
                     });
                 }
 
-                // activities만 추출하여 순서대로 재정렬
-                const activityIds = jsonData.activities.map(activity => activity.id);
-                const orderedActivityIds = visitedOrder.filter(id => activityIds.includes(id));
-                
-                // 순서대로 activities 재배열
+                traverseNodes(startNode);
+
+                // activities 배열 재정렬
+                const activityMap = new Map(jsonData.activities.map(act => [act.id, act]));
                 const reorderedActivities = [];
-                orderedActivityIds.forEach(id => {
-                    const activity = jsonData.activities.find(act => act.id === id);
-                    if (activity) {
-                        reorderedActivities.push(activity);
+
+                // 순서가 결정된 노드들 중 activity인 것들만 순서대로 추가
+                orderedNodes.forEach(nodeId => {
+                    if (activityMap.has(nodeId)) {
+                        reorderedActivities.push(activityMap.get(nodeId));
                     }
                 });
 
-                // 혹시 누락된 activities가 있다면 마지막에 추가
+                // 혹시 순서가 결정되지 않은 activity가 있다면 마지막에 추가
                 jsonData.activities.forEach(activity => {
-                    if (!reorderedActivities.find(act => act.id === activity.id)) {
+                    if (!reorderedActivities.some(act => act.id === activity.id)) {
                         reorderedActivities.push(activity);
                     }
                 });
@@ -513,7 +502,6 @@ export default {
                 
             } catch (error) {
                 console.error('Error reordering activities:', error);
-                // 에러 발생 시 원래 데이터 반환
                 return jsonData;
             }
         },
