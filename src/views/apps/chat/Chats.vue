@@ -395,16 +395,8 @@ export default {
                 chatRoomInfo.name = type == 'agent-work' ? this.selectedUserInfo.name : this.selectedUserInfo.username
                 chatRoomInfo.participants = []
                 if (type == 'agent-work') {
-                    const agentInfo = {
-                        email: 'system@uengine.org',
-                        id: this.selectedUserInfo.id,
-                        username: this.selectedUserInfo.name,
-                        is_agent: true,
-                        goal: this.selectedUserInfo.goal,
-                        role: this.selectedUserInfo.role,
-                        persona: this.selectedUserInfo.persona,
-                        url: this.selectedUserInfo.url
-                    }
+                    const agentInfo = this.selectedUserInfo
+                    agentInfo.is_agent = true
                     chatRoomInfo.participants.push(agentInfo)
                 } else {
                     chatRoomInfo.participants.push(this.selectedUserInfo)
@@ -430,16 +422,9 @@ export default {
                     chatRoomInfo.participants = []
                     if (type == 'agent-chat') {
                         this.agentInfo = this.selectedUserInfo
-                        const agentInfo = {
-                            email: 'system@uengine.org',
-                            id: this.selectedUserInfo.id,
-                            username: this.selectedUserInfo.name,
-                            is_agent: true,
-                            goal: this.selectedUserInfo.goal,
-                            role: this.selectedUserInfo.role,
-                            persona: this.selectedUserInfo.persona,
-                            url: this.selectedUserInfo.url
-                        }
+                        const agentInfo = this.selectedUserInfo
+                        agentInfo.is_agent = true
+                        console.log(agentInfo.profile)
                         chatRoomInfo.participants.push(agentInfo)
                     } else {
                         chatRoomInfo.participants.push(this.selectedUserInfo)
@@ -563,9 +548,9 @@ export default {
         createChatRoom(chatRoomInfo){
             if(!chatRoomInfo.id){
                 chatRoomInfo.id = this.uuid();
-                chatRoomInfo.participants.forEach(participant => {
-                    delete participant.profile;
-                });
+                // chatRoomInfo.participants.forEach(participant => {
+                //     delete participant.profile;
+                // });
                 let userInfo = {
                     "id": this.userInfo.uid,
                     "username": this.userInfo.name,
