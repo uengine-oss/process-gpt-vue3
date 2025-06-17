@@ -475,19 +475,19 @@
                                 </v-tooltip>
                                 <v-tooltip text="Draft Agent">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
+                                        <v-btn v-if="(type == 'instances' || type == 'chats') && (agentInfo && !agentInfo.isRunning)"
                                             :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
                                             class="text-medium-emphasis" @click="openChatMenu(); requestDraftAgent()" v-bind="props"
                                             style="width:30px; height:30px; margin:1px 0px 0px 5px;">
                                             <Icons :icon="'document-sparkle'" :size="20"  />
                                         </v-btn>
-                                        <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
+                                        <v-btn v-if="(type == 'instances' || type == 'chats') && (agentInfo && agentInfo.isRunning)" icon variant="text"
                                             class="text-medium-emphasis" style="width:30px; height:30px;">
                                             <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && !agentInfo.isRunning"
+                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && (agentInfo && !agentInfo.isRunning)"
                                     ref="uploadForm" @submit.prevent="openChatMenu(); submitFile()"
                                     style="height:30px;"
                                     class="chat-selected-file"

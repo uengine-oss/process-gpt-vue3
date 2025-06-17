@@ -140,13 +140,13 @@ export default {
             }
             if(!me.formDefId) {
                 if (this.mode == 'ProcessGPT') {
-                    me.formDefId = `${me.workItem.worklist.defId}_${me.workItem.activity.tracingTag}_form`
+                    me.formDefId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.workItem.worklist.defId}_${me.workItem.activity.tracingTag}_form`
                 } else {
                     return;
                 }
             }
             if(me.isSimulate == 'true' && !window.location.pathname.includes('/definitions/')) {
-                const formId = `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag}_form`;
+                const formId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag}_form`;
                 me.html = localStorage.getItem(formId);    
             } else {
                 me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
@@ -224,6 +224,7 @@ export default {
             let me = this;
 
             let varName = me.workItem.activity.outParameterContext.variable.name;
+            if(!varName && me.workItem.worklist.adhoc) varName = 'defaultform';
             // let varName = me.workItem.activity.variableForHtmlFormContext.name;
             let variable = {};
             if(!me.isDryRun){

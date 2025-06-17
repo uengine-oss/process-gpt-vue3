@@ -216,7 +216,6 @@ export default {
   methods: {
     getTaskIdFromWorkItem() {
       if (this.workItem && this.workItem.worklist) {
-        console.log('workItem.worklist.taskId', this.workItem.worklist.taskId)
         return this.workItem.worklist.taskId
       }
       return null
@@ -314,38 +313,53 @@ export default {
       }
     },
 
-    // 마크다운 출력 포맷팅
+    // 마크다운 출력 포맷팅 - 코드블록 완전 제거
+    sanitizeMarkdownOutput(output) {
+      if (typeof output === 'string') {
+        let trimmed = output.trim();
+        // 여러 번 감싸진 경우도 반복적으로 제거
+        let loopCount = 0;
+        while (true) {
+          const beforeTrim = trimmed;
+          loopCount++;
+          // ``` 또는 ~~~ 또는 """로 감싸진 코드블록 전체 제거 (언어명 포함 가능)
+          trimmed = trimmed.replace(/^(```|~~~|""")[a-zA-Z0-9]*\s*\n([\s\S]*?)\n\1\s*$/gm, '$2').trim();
+          if (beforeTrim === trimmed || loopCount > 10) break;
+        }
+        return trimmed;
+      }
+      return output;
+    },
+
     formatMarkdownOutput(output) {
-      if (!output) return ''
-      
-      const outputStr = typeof output === 'object' 
-        ? JSON.stringify(output, null, 2) 
-        : String(output)
-      
-      const clean = this.cleanString(outputStr)
-      
+      if (!output) return '';
+      const sanitized = this.sanitizeMarkdownOutput(output);
+      const outputStr = typeof sanitized === 'object'
+        ? JSON.stringify(sanitized, null, 2)
+        : String(sanitized);
+      const clean = this.cleanString(outputStr);
       try {
-        return marked(clean, { breaks: true, gfm: true })
+        return marked(clean, { breaks: true, gfm: true });
       } catch {
-        return clean.replace(/\n/g, '<br>')
+        return clean.replace(/\n/g, '<br>');
       }
     },
 
     // 슬라이드 관련 메서드들
     getSlides(output) {
-      if (!output) return []
-      
-      return String(output)
+      if (!output) return [];
+      const sanitized = this.sanitizeMarkdownOutput(output);
+      return String(sanitized)
         .split(/^---$/gm)
         .filter(slide => slide.trim().length > 0)
         .map(slide => {
-          const clean = this.cleanString(slide.trim())
+          const clean = this.cleanString(slide.trim());
           try {
-            return marked(clean, { breaks: true, gfm: true })
+            return marked(clean, { breaks: true, gfm: true });
           } catch {
-            return clean.replace(/\n/g, '<br>')
+            return clean.replace(/\n/g, '<br>');
           }
-        })
+        });
     },
 
     getCurrentSlideIndex(taskId) {
@@ -407,38 +421,46 @@ export default {
         }
       });
 
-      console.log('Extracted field names from HTML:', fieldNames);
       return fieldNames;
     },
 
     submitTask(task) {
-      const fieldNames = this.extractFieldNamesFromHtml(this.html);
-      const formValues = {};
-      console.log('task', task)
-      console.log('type', task.crewType)
-      console.log('fieldNames', fieldNames)
-      alert('작업 결과가 채택되었습니다.')
 
-      // crew_type에 따라 매칭
-      Object.keys(fieldNames).forEach(name => {
-        const type = fieldNames[name];
-        if (type === 'report-field' && task.crewType === 'report') {
-          formValues[name] = task.output;
-        } else if (type === 'slide-field' && task.crewType === 'slide') {
-          formValues[name] = task.output;
-        } else if (type === 'text-field' && task.crewType === 'text') {
-          formValues[name] = task.output;
+      // HTML에서 모든 필드 name과 태그명 추출
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(this.html, 'text/html');
+      const fields = Array.from(doc.querySelectorAll('text-field, textarea-field, report-field, slide-field'))
+        .map(field => ({
+          name: field.getAttribute('name'),
+          tag: field.tagName.toLowerCase()
+        }))
+        .filter(field => field.name);
+
+      const formValues = {};
+
+      fields.forEach(field => {
+        // crewType과 태그명 매칭
+        if (
+          (task.crewType === 'report' && field.tag === 'report-field') ||
+          (task.crewType === 'slide' && field.tag === 'slide-field')
+        ) {
+          formValues[field.name] = this.sanitizeMarkdownOutput(task.output);
+        } else if (
+          task.crewType === 'text' && (field.tag === 'text-field' || field.tag === 'textarea-field')
+        ) {
+          formValues[field.name] = task.output;
         }
       });
 
-      console.log('formValues', formValues);
-      this.EventBus.emit('form-values-updated', formValues);
+      console.log('submitTask - formValues:', formValues);
 
+      this.EventBus.emit('form-values-updated', formValues);
     },
 
     // Supabase 로직 (건드리지 않음)
     async loadData() {
       try {
+        this.events = [];
         const taskId = this.getTaskIdFromWorkItem()
         if (!taskId) {
           console.error('taskId를 찾을 수 없습니다.')
@@ -455,6 +477,9 @@ export default {
         if (error) throw error
         if (data) {
           this.events = data
+          // 가져온 모든 id의 todo_id를 출력
+          data.forEach(event => {
+          });
         }
       } catch (error) {
         console.error('Failed to load data from Supabase:', error)
@@ -471,7 +496,10 @@ export default {
           const data = this.parseData(row);
           const taskId = this.getTaskIdFromWorkItem();
           
-          if (data && ['report', 'slide', 'text'].includes(data.crew_type) && data.todo_id === taskId) {
+          // 중복 체크: 이미 존재하는 이벤트인지 확인
+          const exists = this.events.some(e => e.id === row.id);
+          
+          if (!exists && data && ['report', 'slide', 'text'].includes(data.crew_type) && data.todo_id === taskId) {
             this.events.push(row);
           }
         })
@@ -509,8 +537,6 @@ export default {
   },
   async created() {
       try {
-        console.log('html', this.html)
-        console.log('workItem', this.workItem)
         this.supabase = await window.$supabase.auth.getSession();
       } catch (error) {
         console.error('Supabase 세션 오류:', error);
