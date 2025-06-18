@@ -139,7 +139,12 @@
                             {{ getCategoryLabel(definition) }}
                         </div>
                         <v-card variant="outlined">
-                            <v-img class="marketplace-image" height="140px" cover>
+                            <v-img 
+                                class="marketplace-image" 
+                                height="140px" 
+                                cover
+                                :src="definition.image || ''"
+                            >
                                 <div class="chip-container pb-2">
                                     <v-chip
                                         v-for="tag in definition.tags"
@@ -532,6 +537,19 @@ export default {
                     this.isSearching = false;
                 }
             }, 500); // 0.5초 후에 검색 실행
+        },
+        // 16진수 이스케이프 문자열을 base64로 변환
+        hexToBase64(hexString) {
+            try {
+                // \x 형식의 이스케이프된 16진수 문자열을 실제 문자로 변환
+                const decoded = hexString.replace(/\\x([0-9A-Fa-f]{2})/g, 
+                    (match, p1) => String.fromCharCode(parseInt(p1, 16))
+                );
+                return decoded;
+            } catch (error) {
+                console.error('이미지 디코딩 중 오류 발생:', error);
+                return '';
+            }
         }
     }
 };

@@ -2470,6 +2470,7 @@ class ProcessGPTBackend implements Backend {
                     tags: definition.tags,
                     author_name: user.name,
                     author_uid: user.uid,
+                    image: definition.image
                 }
                 const response = await storage.putObject('proc_def_marketplace', putObj);
 
@@ -2670,7 +2671,6 @@ class ProcessGPTBackend implements Backend {
             return list.map((item: any) => {
                 return this.returnProjectObject(item);
             });
-            
         } catch (error) {
             
             //@ts-ignore
@@ -2693,11 +2693,15 @@ class ProcessGPTBackend implements Backend {
 
     async getTaskDependencyByProjectId(projectId: number) {
         try {
-            return await storage.list('v_task_dependency', {
+            let list = await storage.list('v_task_dependency', {
                 key: `*`,
                 orderBy: 'project_id',
                 startAt: projectId,
                 endAt: projectId,
+            });
+
+            return list.map((item: any) => {
+                return this.returnDependencyObject(item);
             });
         } catch (e) {
             //@ts-ignore
@@ -2707,11 +2711,15 @@ class ProcessGPTBackend implements Backend {
 
     async getTaskDependencyByInstId(instId: number) {
         try {
-            return await storage.list('v_task_dependency', {
+            let list = await storage.list('v_task_dependency', {
                 key: `*`,
                 orderBy: 'proc_inst_id',
                 startAt: instId,
                 endAt: instId,
+            });
+
+            return list.map((item: any) => {
+                return this.returnDependencyObject(item);
             });
         } catch (e) {
             //@ts-ignore
@@ -2827,6 +2835,19 @@ class ProcessGPTBackend implements Backend {
             referenceIds: item.reference_ids || [],
             projectId: item.project_id || null,
             task: item
+        }
+    }
+
+    private returnDependencyObject(item: any) {
+        return {
+           ...item,
+           lagTime: item.lag_time,
+           leadTime: item.lead_time,
+           createdDate: item.created_date,
+           taskId: item.task_id,
+           dependsId: item.depends_id,
+           projectId: item.project_id,
+           procInstId: item.proce_inst_id
         }
     }
 

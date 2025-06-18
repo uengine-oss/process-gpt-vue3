@@ -119,7 +119,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS consumer text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS log text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS project_id uuid;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft jsonb;
-ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS is_agent text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_mode text;
 
 -- chat_rooms table
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS id text;
@@ -169,6 +169,7 @@ ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS category text;
 ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS tags text;
 ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS author_name text;
 ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS author_uid text;
+ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS image text;
 ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS import_count integer DEFAULT 0;
 
 -- form_def_marketplace table

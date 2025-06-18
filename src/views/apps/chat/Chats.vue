@@ -1,23 +1,17 @@
 <template>
     <v-card elevation="10">
         <AppBaseCard>
-            <template v-slot:leftpart>
+            <template v-slot:leftpart="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab" grow color="primary">
-                        <v-tooltip location="top" :text="$t('chat.user')">
-                            <template v-slot:activator="{ props }">
-                                <v-tab v-bind="props">
-                                    <v-icon>mdi-account</v-icon>
-                                </v-tab>
-                            </template>
-                        </v-tooltip>
-                        <v-tooltip location="top" :text="$t('chat.chatRoom')">
-                            <template v-slot:activator="{ props }">
-                                <v-tab v-bind="props">
-                                    <v-icon>mdi-message</v-icon>
-                                </v-tab>
-                            </template>
-                        </v-tooltip>
+                        <v-tab>
+                            <v-icon class="mt-1 mr-2">mdi-account</v-icon>
+                            {{ $t('chat.user') }}
+                        </v-tab>
+                        <v-tab>
+                            <v-icon class="mt-1 mr-2">mdi-message</v-icon>
+                            {{ $t('chat.chatRoom') }}
+                        </v-tab>
                     </v-tabs>
                     <v-tabs-items v-model="activeTab">
                         <v-tab-item v-if="activeTab == 0">
@@ -36,6 +30,7 @@
                                 :userList="userList" 
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
+                                :closeDrawer="closeDrawer"
                                 @chat-selected="chatRoomSelected" 
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
@@ -94,7 +89,7 @@
                 </div>
             </template>
 
-            <template v-slot:mobileLeftContent>
+            <template v-slot:mobileLeftContent="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab">
                         <v-tab>
@@ -121,6 +116,7 @@
                                 :userList="userList" 
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
+                                :closeDrawer="closeDrawer"
                                 @chat-selected="chatRoomSelected" 
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"

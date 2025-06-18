@@ -1449,12 +1449,13 @@ export default {
             }
         },
         shouldDisplayDateSeparator(message, index) {
+            if(!message.timeStamp) return false;
+            
             if (index === 0) {
-                return true; // 첫 번째 메시지는 항상 날짜 표시
+                return true;
             }
             
             if (index > 0) {
-                if(!message.timeStamp) return false;
                 const prevMessage = this.filteredMessages[index - 1];
                 const currentDate = new Date(message.timeStamp);
                 const prevDate = new Date(prevMessage.timeStamp);
