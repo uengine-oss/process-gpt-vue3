@@ -13,7 +13,8 @@
                 </v-chip>
                 <v-tooltip :text="$t('processDefinition.zoom')">
                     <template v-slot:activator="{ props }">
-                        <v-btn @click="$globalState.methods.toggleZoom()"
+                        <v-btn v-if="!isMobile" 
+                            @click="$globalState.methods.toggleZoom()"
                             class="ml-1"
                             size="x-small"
                             icon="$vuetify" variant="text"

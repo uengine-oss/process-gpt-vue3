@@ -37,7 +37,8 @@ export default {
                 const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.projectId)) : item.projectId;
                 item = {
                     // icon: 'ph:cube',
-                    title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
+                    // title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
+                    title: title,
                     to: `/project/${route}`,
                     BgColor:'primary',
                     isNew: item.status == 'NEW'

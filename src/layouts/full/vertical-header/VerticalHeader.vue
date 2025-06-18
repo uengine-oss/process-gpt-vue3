@@ -37,7 +37,7 @@ const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
 const sidebarItems = ref<SidebarItem[]>([
     {
-        title: 'processDefinitionMap.title',
+        title: globalIsMobile.value ? 'processDefinitionMap.mobileTitle' : 'processDefinitionMap.title',
         icon: 'write',
         to: '/definition-map',
         disable: false,
