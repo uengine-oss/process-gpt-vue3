@@ -209,6 +209,7 @@ ALTER TABLE public.project ADD COLUMN IF NOT EXISTS end_date date;
 ALTER TABLE public.project ADD COLUMN IF NOT EXISTS created_date date;
 ALTER TABLE public.project ADD COLUMN IF NOT EXISTS status character varying;
 ALTER TABLE public.project ADD COLUMN IF NOT EXISTS project_id uuid DEFAULT gen_random_uuid();
+ALTER TABLE public.project ADD COLUMN IF NOT EXISTS user_id TEXT;
 ALTER TABLE public.project ADD COLUMN IF NOT EXISTS due_date date;
 
 -- milestone table
