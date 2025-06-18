@@ -2661,7 +2661,10 @@ class ProcessGPTBackend implements Backend {
 
     async getProjectList() {
         try {
-            const list = await storage.list('project', { match: { status: "RUNNING" } });
+            const newList = await storage.list('project', { match: { status: "NEW" } });
+            const runningList = await storage.list('project', { match: { status: "RUNNING" } });
+            
+            const list = [...newList, ...runningList]
             return list.map((item: any) => {
                 return this.returnProjectObject(item);
             });
