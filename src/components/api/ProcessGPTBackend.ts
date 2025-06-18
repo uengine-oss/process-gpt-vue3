@@ -2487,37 +2487,29 @@ class ProcessGPTBackend implements Backend {
                 p_author_uid: definition.author_uid
             });
 
-            if (result && result.length > 0) {
-                const functionResult = result[0];
-                
-                if (functionResult.error) {
-                    throw new Error(functionResult.error);
-                }
-                
-                if (functionResult.success) {
-                    // 프로세스 정의 체계도 업데이트
-                    const megaId = definition.category.split('/')[0];
-                    const majorId = definition.category.split('/')[1];
-                    const newProcessMap = {
-                        mega_proc_list: [{
-                            id: megaId,
-                            name: megaId,
-                            major_proc_list: [{
-                                id: majorId,
-                                name: majorId,
-                                sub_proc_list: [{
-                                    id: definition.id,
-                                    name: definition.name,
-                                }]
+            if (result && result.success) {
+                // 프로세스 정의 체계도 업데이트
+                const megaId = definition.category.split('/')[0];
+                const majorId = definition.category.split('/')[1];
+                const newProcessMap = {
+                    mega_proc_list: [{
+                        id: megaId,
+                        name: megaId,
+                        major_proc_list: [{
+                            id: majorId,
+                            name: majorId,
+                            sub_proc_list: [{
+                                id: definition.id,
+                                name: definition.name,
                             }]
                         }]
-                    }
-                    const existed = await this.getProcessDefinitionMap();
-                    const merged = await this.mergeProcessMaps(existed, newProcessMap);
-                    await this.putProcessDefinitionMap(merged);
-
-                    return functionResult;
+                    }]
                 }
+                const existed = await this.getProcessDefinitionMap();
+                const merged = await this.mergeProcessMaps(existed, newProcessMap);
+                await this.putProcessDefinitionMap(merged);
+
+                return result;
             }
             
             throw new Error('Failed to duplicate definition');
@@ -2642,7 +2634,10 @@ class ProcessGPTBackend implements Backend {
 
     async getProjectList() {
         try {
-            const list = await storage.list('project', { match: { status: "RUNNING" } });
+            const newList = await storage.list('project', { match: { status: "NEW" } });
+            const runningList = await storage.list('project', { match: { status: "RUNNING" } });
+            
+            const list = [...newList, ...runningList]
             return list.map((item: any) => {
                 return this.returnProjectObject(item);
             });

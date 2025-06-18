@@ -283,6 +283,7 @@ create table if not exists public.project (
     status character varying not null,
     project_id uuid not null default gen_random_uuid (),
     due_date date null,
+    user_id text null,
     constraint project_pkey primary key (project_id)
 ) tablespace pg_default;
 
