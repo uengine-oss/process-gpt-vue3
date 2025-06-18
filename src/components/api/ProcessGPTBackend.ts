@@ -2149,6 +2149,7 @@ class ProcessGPTBackend implements Backend {
 
     async saveDriveInfo(driveInfo: any) {
         try {
+            driveInfo.id = driveInfo.provider + '_' + driveInfo.tenant_id;
             const response = await storage.putObject('tenant_oauth', driveInfo);
             return response;
         } catch (error) {

@@ -37,6 +37,7 @@ export default {
         // consulting
         isMentoMode: false,
         newMessageInfo: null,
+        isAgentChat: false,
     }),
     computed: {
         useLock() {
@@ -424,7 +425,7 @@ export default {
             }
         },
         async startGenerate() {
-            if(!this.ProcessGPTActive || this.isSystemChat){
+            if((!this.ProcessGPTActive || this.isSystemChat) && !this.isAgentChat){
                 this.messages.push({
                     role: 'system',
                     content: '...',

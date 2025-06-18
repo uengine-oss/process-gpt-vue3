@@ -285,7 +285,6 @@ export default {
 
         // agent
         agentList: [],
-        isAgentChat: false,
         agentInfo: null
     }),
     computed: {
@@ -425,7 +424,6 @@ export default {
                         this.agentInfo = this.selectedUserInfo
                         const agentInfo = this.selectedUserInfo
                         agentInfo.is_agent = true
-                        console.log(agentInfo.profile)
                         chatRoomInfo.participants.push(agentInfo)
                     } else {
                         chatRoomInfo.participants.push(this.selectedUserInfo)
@@ -587,7 +585,7 @@ export default {
         },
         chatRoomSelected(chatRoomInfo){
             this.currentChatRoom = chatRoomInfo
-            if(chatRoomInfo.participants.find(p => p.id === "system_id" || p.is_agent)){
+            if(chatRoomInfo.participants.find(p => p.id === "system_id")){
                 this.ProcessGPTActive = true
                 if(chatRoomInfo.participants.length == 2){
                     this.isSystemChat = true
@@ -832,11 +830,12 @@ export default {
         async afterGenerationFinished(responseObj) {
             if(responseObj){
                 let startProcess = false;
-                let obj = this.createMessageObj(responseObj, 'system')
+                let role = this.isAgentChat ? 'agent' : 'system';
+                let obj = this.createMessageObj(responseObj, role)
                 if(responseObj.messageForUser){
                     obj.messageForUser = responseObj.messageForUser
                 }
-                if(responseObj.work == 'CompanyQuery' || responseObj.work == 'ScheduleQuery' || this.isSystemChat){
+                if(responseObj.work || this.isSystemChat) {
                     // this.messages.push({
                     //     role: 'system',
                     //     content: '...',
@@ -903,12 +902,6 @@ export default {
                         content = content.replaceAll('undefined', '')
                         obj.content = content
                         obj.htmlContent = content.replaceAll('\n', '<br>')
-
-                        this.messages.forEach((message) => {
-                            if (message.role == 'system') {
-                                delete message.isLoading;
-                            }
-                        });
                     } else {
                         startProcess = true;
                     }
@@ -916,6 +909,10 @@ export default {
                     if(startProcess) {
                         this.startProcess(obj)
                     } else {
+                        if (this.isAgentChat) {
+                            obj.profile = this.agentInfo.profile
+                            obj.name = this.agentInfo.name
+                        }
                         this.putMessage(obj)
                     }
                 } else {

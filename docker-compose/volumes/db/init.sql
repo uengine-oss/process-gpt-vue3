@@ -264,16 +264,16 @@ create table if not exists public.agents (
 ) tablespace pg_default;
 
 create table if not exists public.tenant_oauth (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    provider VARCHAR(50) NOT NULL,
-    client_id VARCHAR(255) NOT NULL,
-    client_secret TEXT NOT NULL,
-    redirect_uri VARCHAR(255),
-    drive_folder_id TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(tenant_id, provider)
+    id text not null,
+    tenant_id text not null,
+    provider text not null,
+    client_id text not null,
+    client_secret text not null,
+    redirect_uri text null,
+    drive_folder_id text null,
+    created_at timestamp with time zone null default now(),
+    updated_at timestamp with time zone null default now(),
+    constraint tenant_oauth_pkey primary key (id)
 ) tablespace pg_default;
 
 create table if not exists public.project (
@@ -831,7 +831,7 @@ CREATE POLICY form_def_marketplace_delete_policy ON form_def_marketplace FOR DEL
 
 -- Tenant oauth policies
 CREATE POLICY tenant_oauth_insert_policy ON tenant_oauth FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
-CREATE POLICY tenant_oauth_select_policy ON tenant_oauth FOR SELECT TO service_role USING (true);
+CREATE POLICY tenant_oauth_select_policy ON tenant_oauth FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
 CREATE POLICY tenant_oauth_update_policy ON tenant_oauth FOR UPDATE TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
 CREATE POLICY tenant_oauth_delete_policy ON tenant_oauth FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));
 

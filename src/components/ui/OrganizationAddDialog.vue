@@ -222,7 +222,7 @@ export default {
                     data: {
                         id: member.id,
                         name: member.name,
-                        img: '/images/chat-icon.png',
+                        img: member.profile || '/images/chat-icon.png',
                         role: member.role || '',
                         goal: member.goal || '',
                         persona: member.persona || '',
@@ -239,7 +239,7 @@ export default {
                     data: {
                         id: member.id,
                         name: member.name,
-                        img: '/images/chat-icon.png',
+                        img: member.profile || '/images/chat-icon.png',
                         role: member.role || '',
                         url: member.url || '',
                         description: member.description || '',
