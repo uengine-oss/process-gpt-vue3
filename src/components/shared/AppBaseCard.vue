@@ -30,6 +30,7 @@ const instance = getCurrentInstance();
 
 // 인스턴스의 context를 통해 전역 속성에 접근합니다.
 const globalState = instance?.appContext.config.globalProperties.$globalState;
+const { proxy } = getCurrentInstance();
 
 const chatReSizeDisplay = computed(() => {
     // globalState를 사용하여 계산된 속성을 정의합니다.
@@ -47,8 +48,12 @@ const canvasReSize = computed(() => {
 // 조건에 따라 슬롯 이름을 결정하는 계산된 속성
 const slotName = computed(() => {
     const path = route.path;
-    // /definitions/로 시작하는 모든 경로
-    if (/^\/definitions\//.test(path) && isWidthUnder1279.value) {
+    // /definition-map에서 모바일일 때는 leftpart를 right-part에 표시
+    if (path === '/definition-map' && isWidthUnder1279.value) {
+        return 'leftpart';
+    }
+    // /definitions/로 시작하는 다른 경로들
+    else if (/^\/definitions\//.test(path) && isWidthUnder1279.value) {
         return 'leftpart';
     } 
     else {
@@ -65,6 +70,17 @@ const closeDrawer = () => {
 const handleCloseDrawer = () => {
     closeDrawer();
 };
+
+// 경로별 메뉴 이름을 결정하는 계산된 속성
+const menuName = computed(() => {
+    const path = route.path;
+    if (path === '/chats') {
+        return proxy.$t('AppBaseCard.friends');
+    } else if (path === '/definition-map') {
+        return proxy.$t('AppBaseCard.progress');
+    }
+    return proxy.$t('AppBaseCard.menu');
+});
 </script>
 
 <template>
@@ -86,7 +102,7 @@ const handleCloseDrawer = () => {
                 style="z-index: 1; background-color: white; flex: 0 0 auto;"
                 :style="!$globalState.state.isRightZoomed ? '' : 'display:none;'"    
             >
-                <Menu2Icon size="20" class="mr-2 cp-dialog-open cp-def-menu" /> Menu
+                <Menu2Icon size="20" class="mr-2 cp-dialog-open cp-def-menu" /> {{ menuName }}
             </v-btn>
             <v-divider class="d-lg-none d-block" />
             <slot :name="slotName"></slot>
@@ -99,7 +115,10 @@ const handleCloseDrawer = () => {
         class="mobile-menu-nav"
     >
         <v-card-text class="pa-0 mobile-left-menu">
-            <slot name="mobileLeftContent" :closeDrawer="handleCloseDrawer"></slot>
+            <slot 
+                :name="route.path === '/definition-map' ? 'rightpart' : 'mobileLeftContent'" 
+                :closeDrawer="handleCloseDrawer"
+            ></slot>
         </v-card-text>
     </v-navigation-drawer>
 </template>

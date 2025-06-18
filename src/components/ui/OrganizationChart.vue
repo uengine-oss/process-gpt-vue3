@@ -121,6 +121,7 @@ export default {
                     this.openEditDialog('edit-user');
                 } else if (event.target.classList.contains('edit-agent-btn')) {
                     event.stopPropagation();
+                    this.closeBadgesDiagram();
                     this.openEditDialog('edit-agent');
                 } else if (event.target.classList.contains('delete-agent-btn')) {
                     event.stopPropagation();

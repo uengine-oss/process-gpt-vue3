@@ -1006,5 +1006,10 @@
     "ProjectCreationForm": {
         "title": "Create Project",
         "create": "Create"
+    },
+    "AppBaseCard": {
+        "friends": "Friends",
+        "progress": "Progress",
+        "menu": "Menu"
     }
 }

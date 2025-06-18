@@ -39,7 +39,7 @@
 
             <!-- delete team -->
             <div v-else-if="dialogType == 'delete'">
-                <div>'{{ editNode.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }}</div>
+                <div>'{{ editNode.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }} 1111</div>
             </div>
         </v-card-text>
 
