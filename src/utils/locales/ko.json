@@ -199,7 +199,8 @@
         "agentPersona": "페르소나",
         "agentUrl": "URL",
         "agentDescription": "설명",
-        "agentTools": "도구"
+        "agentTools": "도구",
+        "agentSkills": "기술"
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",

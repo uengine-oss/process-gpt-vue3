@@ -1204,6 +1204,23 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async fetchInstances(callback: (payload: any) => void) {
+        try {
+            await storage.watch('bpm_proc_inst', 'bpm_proc_inst', (payload) => {
+                if (payload && payload.new && payload.eventType) {
+                    const instance = payload.new;
+                    if (callback) {
+                        callback(this.returnInstanceObject(instance));
+                    }
+                }
+            });
+
+            return true;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
     async fetchInstanceListByStatus(status: string): Promise<any[]> {
         var me = this
         const list = await storage.list('bpm_proc_inst', { match: { status: status } });
@@ -1726,6 +1743,7 @@ class ProcessGPTBackend implements Backend {
                 description: newAgent.description,
                 tools: newAgent.tools,
                 profile: newAgent.img,
+                skills: newAgent.skills,
                 tenant_id: window.$tenantName
             }
             await storage.putObject('agents', putObj);
@@ -1738,6 +1756,16 @@ class ProcessGPTBackend implements Backend {
     async deleteAgent(agentId: string) {
         try {
             await storage.delete('agents', { match: { id: agentId } });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async fetchAgentData(url: string) {
+        try {
+            const response = await axios.get(`/execution/multi-agent/fetch-data?agent_url=${encodeURIComponent(url)}`);
+            return response.data;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2759,6 +2787,7 @@ class ProcessGPTBackend implements Backend {
     }
 
     private returnInstanceObject(item: any) {
+        if (!item || !item.proc_inst_id) return null;
         return {
             instId: item.proc_inst_id,
             defId: item.proc_def_id,

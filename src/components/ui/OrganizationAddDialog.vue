@@ -215,7 +215,7 @@ export default {
                         pid: this.teamInfo.id || ''
                     }
                 }
-            } else if (member.name && 'persona' in member) {
+            } else if (member.name && 'persona' in member && member.persona !== '') {
                 return {
                     id: member.id,
                     name: member.name,
@@ -226,7 +226,26 @@ export default {
                         role: member.role || '',
                         goal: member.goal || '',
                         persona: member.persona || '',
+                        tools: member.tools || '',
                         isAgent: true,
+                        type: 'agent',
+                        pid: this.teamInfo.id || ''
+                    }
+                }
+            } else if (member.name && 'url' in member && member.url !== '') {
+                return {
+                    id: member.id,
+                    name: member.name,
+                    data: {
+                        id: member.id,
+                        name: member.name,
+                        img: '/images/chat-icon.png',
+                        role: member.role || '',
+                        url: member.url || '',
+                        description: member.description || '',
+                        skills: member.skills || '',
+                        isAgent: true,
+                        type: 'a2a',
                         pid: this.teamInfo.id || ''
                     }
                 }
