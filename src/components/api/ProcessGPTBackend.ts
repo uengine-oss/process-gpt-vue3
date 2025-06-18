@@ -2441,6 +2441,7 @@ class ProcessGPTBackend implements Backend {
                     tags: definition.tags,
                     author_name: user.name,
                     author_uid: user.uid,
+                    image: definition.image
                 }
                 const response = await storage.putObject('proc_def_marketplace', putObj);
 

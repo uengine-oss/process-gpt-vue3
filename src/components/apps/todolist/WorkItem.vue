@@ -480,7 +480,7 @@ export default {
                     if (me.isDryRun) {
                         me.workItem = me.dryRunWorkItem
                         me.currentActivities = [me.workItem.activity.tracingTag];
-                        if(me.isSimulate == 'true') {
+                        if(me.isSimulate == 'true' && me.processDefinition.bpmn) {
                             me.bpmn = me.processDefinition.bpmn;
                         } else {
                             me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });

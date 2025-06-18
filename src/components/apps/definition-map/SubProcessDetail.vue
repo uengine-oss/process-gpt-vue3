@@ -47,7 +47,15 @@
                 <div v-if="onLoad && bpmn" class="d-flex align-center">
                     <div class="sub-process-start-btn">
                         <v-btn v-if="!JMS && !Pal"
-                            @click="executeProcess"
+                            @click="executeProcess('simulate')"
+                            rounded
+                            density="comfortable"
+                            style="background-color: #808080; color: white; margin-right: 5px;"
+                        >
+                            시뮬레이션
+                        </v-btn>
+                        <v-btn v-if="!JMS && !Pal"
+                            @click="executeProcess('execute')"
                             color="primary"
                             rounded
                             density="comfortable"
@@ -146,7 +154,7 @@
         <v-dialog v-model="executeDialog"
             :fullscreen="isMobile"
         >
-            <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="processDefinition.id" is-simulate="false"
+            <process-gpt-execute v-if="mode === 'ProcessGPT'" :processDefinition="processDefinitionData" :definitionId="processDefinition.id" :isSimulate="isSimulate"
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
                 <!-- <process-execute-dialog :definitionId="processDefinition.id" @close="executeDialog = false"></process-execute-dialog> -->
@@ -195,7 +203,8 @@ export default {
         executeDialog: false,
         isPreviewPDFDialog: false,
         //
-        isEditable: false
+        isEditable: false,
+        isSimulate: false
     }),
     computed: {
         mode() {
@@ -342,8 +351,13 @@ export default {
             this.isPreviewPDFDialog = false;
             this.isPreviewPDFDialog = true;
         },
-        executeProcess() {
-            this.executeDialog = true
+        executeProcess(mode) {
+            if(mode == 'simulate') {
+                this.isSimulate = 'true';
+            } else {
+                this.isSimulate = 'false';
+            }
+            this.executeDialog = true;
         },
         startProcess() {
             var me = this;

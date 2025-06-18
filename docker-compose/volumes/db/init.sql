@@ -234,6 +234,7 @@ create table if not exists public.proc_def_marketplace (
     tags text null,
     author_name text null,
     author_uid text null,
+    image text null,
     import_count integer not null default 0,
     constraint proc_def_marketplace_pkey primary key (uuid)
 ) tablespace pg_default;
