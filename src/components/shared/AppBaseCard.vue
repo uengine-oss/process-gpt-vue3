@@ -55,6 +55,16 @@ const slotName = computed(() => {
         return 'rightpart';
     }
 });
+
+// drawer를 닫는 함수
+const closeDrawer = () => {
+    sDrawer.value = false;
+};
+
+// close-drawer 이벤트 핸들러
+const handleCloseDrawer = () => {
+    closeDrawer();
+};
 </script>
 
 <template>
@@ -89,7 +99,7 @@ const slotName = computed(() => {
         class="mobile-menu-nav"
     >
         <v-card-text class="pa-0 mobile-left-menu">
-            <slot name="mobileLeftContent"></slot>
+            <slot name="mobileLeftContent" :closeDrawer="handleCloseDrawer"></slot>
         </v-card-text>
     </v-navigation-drawer>
 </template>
