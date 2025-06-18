@@ -15,7 +15,7 @@
                   rel="noopener"
                   variant="flat"
                 >
-                  시작하기
+                  베타 테스트하기
               </v-btn>
               <!-- '문의하기' 버튼: 클릭 시 폼 오픈 -->
               <!-- Vuetify3의 라운드 설정은 rounded 속성에 값을 지정하여 사용합니다. -->

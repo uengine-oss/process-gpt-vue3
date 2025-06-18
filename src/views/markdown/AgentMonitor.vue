@@ -4,7 +4,10 @@
       <div v-for="(task, index) in tasks" :key="task.id" class="task-card">
         <div class="task-header">
           <div class="task-left">
-            <div class="task-avatar">{{ index + 1 }}</div>
+            <div class="task-avatar">
+              <img v-if="task.agentProfile" :src="task.agentProfile" alt="Agent" class="avatar-image" />
+              <span v-else>{{ index + 1 }}</span>
+            </div>
             <div class="task-info">
               <h3 class="task-title">{{ task.role }}</h3>
               <p class="task-description">{{ task.goal }}</p>
@@ -115,7 +118,7 @@
           </div>
         </div>
 
-        <div v-else-if="!task.isCompleted && isLatestIncomplete(task)" class="task-progress">
+        <div v-else-if="!task.isCompleted" class="task-progress">
           <div class="progress-dots">
             <div class="dot"></div>
             <div class="dot"></div>
@@ -186,7 +189,8 @@ export default {
             startTime: event.timestamp,
             isCompleted: false,
             output: null,
-            isCrewCompleted: false
+            isCrewCompleted: false,
+            agentProfile: data?.agent_profile
           }
           tasks.push(task)
           taskMap.set(jobId, task)
@@ -615,6 +619,14 @@ export default {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
 .task-info {

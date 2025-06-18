@@ -12,14 +12,14 @@
               color="primary"
               class="rounded-pill"
               height="48"
-          >지금 시작하기</v-btn>
-          <v-btn 
+          >베타 테스트하기</v-btn>
+          <!-- <v-btn 
               to="/marketplace"
               color="secondary"
               class="rounded-pill"
               height="48"
               @click="scrollToTop"
-          >마켓플레이스</v-btn>
+          >마켓플레이스</v-btn> -->
           <!-- <a href="#" class="btn btn-secondary">마켓플레이스</a> -->
         </div>
         <div class="mt-6">
