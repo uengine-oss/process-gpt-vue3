@@ -204,6 +204,7 @@
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
+        "mobileTitle": "Get Started",
         "lock": "Click the save icon to save.",
         "unlock": "Click the pencil icon to edit.",
         "addMega": "Mega Process",
@@ -1001,5 +1002,9 @@
         "separateFragments": "Split fragments into separate slides",
         "prepareButton": "Prepare PDF",
         "cancelButton": "Cancel"
+    },
+    "ProjectCreationForm": {
+        "title": "Create Project",
+        "create": "Create"
     }
 }
