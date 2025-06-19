@@ -200,7 +200,8 @@
         "agentPersona": "Persona",
         "agentUrl": "URL",
         "agentDescription": "Description",
-        "agentTools": "Tools"
+        "agentTools": "Tools",
+        "agentSkills": "Skills"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
@@ -1006,5 +1007,10 @@
     "ProjectCreationForm": {
         "title": "Create Project",
         "create": "Create"
+    },
+    "AppBaseCard": {
+        "friends": "Friends",
+        "progress": "Progress",
+        "menu": "Menu"
     }
 }

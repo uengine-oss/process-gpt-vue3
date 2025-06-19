@@ -118,7 +118,9 @@ export default {
             me.$try({
                 action: async () => {
                     if(me.isSimulate == 'true') {
-                        me.processDefinition.bpmn = me.bpmn;
+                        if(me.bpmn) {
+                            me.processDefinition.bpmn = me.bpmn;
+                        }
                         me.definition = me.processDefinition;
                     } else {
                         const defInfo = await backend.getRawDefinition(me.definitionId);
