@@ -8,7 +8,6 @@
                 :label="$t('agentField.agentUrl')"
                 class="mb-2"
                 @click:append-inner="fetchAgentData"
-                :disabled="isLoading || !agent.url"
             >
                 <template v-slot:append-inner>
                     <v-btn
@@ -194,7 +193,6 @@ export default {
             if (this.agent.tools) this.selectedTools = this.agent.tools.split(',');
             if (this.agent.skills) this.selectedSkills = this.agent.skills.split(',');
         }
-        console.log(this.type);
         if (this.type === 'agent') {
             await this.getTools();
         }
