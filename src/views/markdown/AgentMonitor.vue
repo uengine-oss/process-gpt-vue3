@@ -1,5 +1,38 @@
 <template>
   <div class="agent-monitor">
+    <div v-if="false" class="task-list">
+      <div v-for="event in feedbackEventsSorted" :key="event.id" class="task-card">
+        <div class="task-header">
+          <div class="task-left">
+            <div class="task-avatar">
+              <span>FB</span>
+            </div>
+            <div class="task-info">
+              <h3 class="task-title">
+                {{ event.event_type === 'feedback_started' ? '피드백 시작' : '피드백 완료' }}
+              </h3>
+              <p class="task-description">
+                {{ event.event_type === 'feedback_started' ? '에이전트 피드백 단계: 사용자가 수정된 내용을 기반으로 학습하는 중' : '' }}
+              </p>
+            </div>
+          </div>
+          <div class="task-header-right">
+            <div :class="['task-status', event.event_type === 'feedback_completed' ? 'completed' : 'running']">
+              <div class="status-dot"></div>
+              <span>{{ event.event_type === 'feedback_started' ? '진행중' : '작업완료' }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="event.event_type === 'feedback_completed'" class="task-result">
+          <div class="result-header">
+            <h4 class="result-title">피드백 결과</h4>
+          </div>
+          <div class="result-content json-output">
+            <pre>{{ formatJsonOutput(parseData(event).feedbacks) }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
     <div v-if="tasks.length > 0" class="task-list">
       <div v-for="(task, index) in tasks" :key="task.id" class="task-card">
         <div class="task-header">
@@ -155,6 +188,55 @@
       <h3>진행중인 작업이 없습니다</h3>
       <p>새로운 작업이 시작되면 여기에 표시됩니다.</p>
     </div>
+
+    <div v-if="feedbackTasks.length" class="task-list feedback-list">
+      <div v-for="fb in feedbackTasks" :key="fb.jobId" class="task-card">
+        <div class="task-header">
+          <div class="task-left">
+            <div class="task-avatar"><span>FB</span></div>
+            <div class="task-info">
+              <h3 class="task-title">{{ fb.role }}</h3>
+              <p class="task-description">{{ fb.goal }}</p>
+            </div>
+          </div>
+          <div class="task-header-right">
+            <div :class="['task-status', fb.isCompleted ? 'completed' : 'running']">
+              <div class="status-dot"></div>
+              <span>{{ fb.isCompleted ? '작업완료' : '진행중' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="task-meta">
+          <div class="meta-item">
+            <span class="meta-label">시작시간</span>
+            <span class="meta-value">{{ formatTime(fb.startTime) }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">유형</span>
+            <span class="meta-value">{{ fb.crewType }}</span>
+          </div>
+        </div>
+        <div v-if="fb.isCompleted" class="task-result">
+          <div class="result-header">
+            <h4 class="result-title">작업 결과</h4>
+            <div class="result-type-badge">
+              <span class="type-label">JSON 객체</span>
+            </div>
+          </div>
+          <div class="result-content json-output">
+            <pre>{{ formatJsonOutput(fb.output) }}</pre>
+          </div>
+        </div>
+        <div v-else-if="!fb.isCompleted" class="task-progress">
+          <div class="progress-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+          <span>작업을 진행하고 있습니다...</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -270,6 +352,36 @@ export default {
       });
       
       return result;
+    },
+    feedbackTasks() {
+      // 피드백 이벤트를 시작/완료로 묶어서 하나의 카드로 관리
+      const started = this.events.filter(e => e.event_type === 'feedback_started');
+      const completed = this.events.filter(e => e.event_type === 'feedback_completed');
+      const map = new Map();
+      started.forEach(e => {
+        const data = this.parseData(e);
+        const jobId = e.job_id || data?.job_id || e.id;
+        map.set(jobId, { 
+          id: e.id,
+          jobId, 
+          role: '에이전트 피드백 처리',
+          goal: '사용자가 수정된 내용을 바탕으로 에이전트들의 피드백을 수집하여 학습합니다',
+          crewType: 'feedback',
+          startTime: e.timestamp, 
+          isCompleted: false, 
+          output: null 
+        });
+      });
+      completed.forEach(e => {
+        const data = this.parseData(e);
+        const jobId = e.job_id || data?.job_id || e.id;
+        if (map.has(jobId)) {
+          const task = map.get(jobId);
+          task.isCompleted = true;
+          task.output = data?.feedbacks || null;
+        }
+      });
+      return [...map.values()].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
     }
   },
   methods: {
@@ -595,7 +707,7 @@ export default {
           .from('events')
           .select('*')
           .eq('todo_id', taskId)
-          .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'])
+          .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'feedback_started', 'feedback_completed'])
           .order('timestamp', { ascending: true })
           
         if (error) throw error
@@ -621,7 +733,7 @@ export default {
           const todoId = row.todo_id;
           const exists = this.events.some(e => e.id === row.id);
 
-          if (!exists && ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'].includes(row.event_type) && todoId === taskId) {
+          if (!exists && ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'feedback_started', 'feedback_completed'].includes(row.event_type) && todoId === taskId) {
             this.events = [...this.events, row];
             console.log('실시간 추가 후 this.events:', this.events);
             console.log('tasks computed 트리거 예상');
@@ -1445,5 +1557,9 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.feedback-list {
+  margin-top: 24px;
 }
 </style>
