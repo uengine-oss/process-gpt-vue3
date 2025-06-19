@@ -113,6 +113,7 @@ export default {
         async generateForm(generateMsg, activity) {
             var me = this;
             return new Promise((resolve, reject) => {
+                let retryCount = 0;
                 let formHtml = null;
                 const formGenerator = new FormGenerator(me, {
                     isStream: true,
@@ -139,7 +140,6 @@ export default {
                     } catch (error) {
                         console.log(error);
                         const maxRetries = 3;
-                        let retryCount = 0;
 
                         const retry = async () => {
                             if (retryCount < maxRetries) {
@@ -147,6 +147,13 @@ export default {
                                 retryCount++;
                                 formGenerator.generate();
                             } else {
+                                messageWriting = me.messages[me.messages.length - 1];
+                                messageWriting.isLoading = false;
+                                me.messages.push({
+                                    "role": "system",
+                                    "content": `${activity.name} 활동의 폼 생성이 실패했습니다. 다시 시도해주세요.`,
+                                    "timeStamp": Date.now()
+                                });
                                 reject(error);
                             }
                         };
