@@ -485,6 +485,7 @@ export default {
 
     submitTask(task) {
       // HTML에서 모든 필드 name과 태그명 추출
+      console.log('html', this.html);
       const parser = new DOMParser();
       const doc = parser.parseFromString(this.html, 'text/html');
       const fields = Array.from(doc.querySelectorAll('text-field, textarea-field, report-field, slide-field'))
@@ -518,8 +519,37 @@ export default {
 
       if (task.crewType === 'text') {
         let parsed = deepParseJson(task.output);
-        // 만약 최종적으로도 객체가 아니면, "필드명: 값" 형태로 파싱 시도
-        if (typeof parsed !== 'object' || parsed === null) {
+        if (typeof parsed === 'object' && parsed !== null) {
+          // row-layout 요소 name으로 그룹핑 매핑
+          const rowLayouts = Array.from(doc.querySelectorAll('row-layout[name]'));
+          rowLayouts.forEach(rl => {
+            const groupName = rl.getAttribute('name');
+            const isMulti = rl.getAttribute('is_multidata_mode') === 'true';
+            if (isMulti) {
+              // 해당 그룹의 필드들 추출 후 단일 아이템 배열로 설정
+              const fieldEls = Array.from(
+                rl.querySelectorAll('text-field[name], textarea-field[name]')
+              );
+              const item = {};
+              fieldEls.forEach(el => {
+                const fname = el.getAttribute('name');
+                item[fname] = parsed[fname] !== undefined ? parsed[fname] : '';
+              });
+              formValues[groupName] = [item];
+            } else {
+              // 단일 필드 매핑
+              const fieldEls = Array.from(
+                rl.querySelectorAll('text-field[name], textarea-field[name], select-field[name]')
+              );
+              fieldEls.forEach(el => {
+                const fname = el.getAttribute('name');
+                if (parsed[fname] !== undefined) {
+                  formValues[fname] = parsed[fname];
+                }
+              });
+            }
+          });
+        } else {
           parsed = {};
           const lines = String(task.output).split('\n');
           lines.forEach(line => {
@@ -528,15 +558,15 @@ export default {
               parsed[match[1]] = match[2];
             }
           });
+          // 필드 매핑 (매칭된 경우에만 설정)
+          fields.forEach(field => {
+            if (parsed[field.name] !== undefined) {
+              formValues[field.name] = parsed[field.name];
+            }
+          });
         }
-        fields.forEach(field => {
-          if (parsed && parsed[field.name] !== undefined) {
-            formValues[field.name] = parsed[field.name];
-          } else {
-            formValues[field.name] = '';
-          }
-        });
       } else {
+        // report/slide 그룹 값 매핑 (기존 값은 초기화하지 않음)
         fields.forEach(field => {
           if (
             (task.crewType === 'report' && field.tag === 'report-field') ||
