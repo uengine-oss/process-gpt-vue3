@@ -299,6 +299,7 @@ export default {
         isPreviewPDFDialog: false,
         marketplaceDialog: false,
         isAIGenerated: false,
+        organizationChart: [],
     }),
     async created() {
         $try(async () => {
@@ -349,6 +350,14 @@ export default {
     
                 if (this.fullPath && this.fullPath != '') {
                     this.chatRoomId = this.fullPath;
+                }
+            }
+
+            const data = await this.getData(`configuration`, { match: { key: 'organization' } });
+            if (data && data.value) {
+                // this.organizationChartId = data.uuid;
+                if (data.value.chart) {
+                    this.organizationChart = data.value.chart;
                 }
             }
         });
@@ -431,6 +440,18 @@ export default {
         }
     },
     methods: {
+        setProcessDefinitionPrompt(){
+            if (this.processDefinitionMap) {
+                this.generator.setProcessDefinitionMap(this.processDefinitionMap);
+            }
+            if (this.processDefinition) {
+                this.generator.setProcessDefinition(this.processDefinition);
+            }
+
+            if (this.organizationChart) {
+                this.generator.setOrganizationChart(JSON.stringify(this.organizationChart));
+            }
+        },
         // 시퀀스 정보를 활용하여 activities 순서를 재정렬하는 함수
         reorderActivitiesBySequence(jsonData) {
             try {
@@ -535,6 +556,11 @@ export default {
                 this.generator.model = "gpt-4o";
             }
             this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
+
+            if(!this.isConsultingMode){
+                this.setProcessDefinitionPrompt();
+            }
+
             this.startGenerate();
         },
         async beforeSaveDefinition(info){
@@ -919,12 +945,7 @@ export default {
                     preferredLanguage: 'Korean'
                 });
                 this.generator.client.genType = 'proc_def'
-                if (this.processDefinitionMap) {
-                    this.generator.setProcessDefinitionMap(this.processDefinitionMap);
-                }
-                if (this.processDefinition) {
-                    this.generator.setProcessDefinition(this.processDefinition);
-                }
+                this.setProcessDefinitionPrompt();
             }
             this.sendMessage(newMessage);
         },

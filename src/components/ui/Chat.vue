@@ -249,180 +249,185 @@
                                                                 :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5"
                                                                 :key="n"></div>
                                                         </template>
-                                                        <v-sheet v-if="message.content" class="chat-message-bubble rounded-md px-3 py-2"
+                                                        <v-sheet v-if="message.content" class="chat-message-bubble rounded-md pa-0"
                                                             :class="'other-message'"
-                                                            @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
-                                                            <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                                            <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                                            <v-divider v-if="message.replyContent"></v-divider>
+                                                            @mouseover="replyIndex = index" @mouseleave="replyIndex = -1"
+                                                        >
+                                                            <div class="pa-2">
+                                                                <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                                                <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
+                                                                <v-divider v-if="message.replyContent"></v-divider>
 
-                                                            <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
-                                                            <div v-else-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
-                                                            <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
+                                                                <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
+                                                                <div v-else-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
+                                                                <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
 
-                                                            <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp other-timestamp">
-                                                                {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
-                                                            </div>
-
-                                                            <v-row class="pa-0 ma-0 message-actions">
-                                                                <div v-if="isMobile || replyIndex === index" class="d-flex">
-                                                                    <v-btn v-if="type != 'AssistantChats' && message.specific" 
-                                                                        @click="viewWork(index)"
-                                                                        variant="text" size="x-small" icon
-                                                                        class="action-btn"
-                                                                    >
-                                                                        <Icons :icon="'document'" :size="20" />
-                                                                    </v-btn>
-                                                                    <v-btn @click="beforeReply(message)"
-                                                                        variant="text" size="x-small" icon
-                                                                        class="action-btn"
-                                                                    >
-                                                                        <Icons :icon="'reply'" :size="20" />
-                                                                    </v-btn>
-                                                                    <v-btn @click="viewJSON(index)"
-                                                                        variant="text" size="x-small" icon
-                                                                        class="action-btn"
-                                                                    >
-                                                                        <Icons v-if="message.jsonContent && isviewJSONStatus"
-                                                                            :icon="'arrow-up-2'" :size="20"
-                                                                        />
-                                                                        <Icons v-else
-                                                                            :icon="'arrow-down-2'" :size="20"
-                                                                        />
-                                                                    </v-btn>
+                                                                <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp other-timestamp">
+                                                                    {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
                                                                 </div>
-                                                            </v-row>
 
-                                                            <v-row v-if="message.tableData" class="my-5">
-                                                                <v-col cols="12">
-                                                                    <v-card outlined>
-                                                                        <v-card-title>{{ setTableName(message.content)
-                                                                            }}</v-card-title>
-                                                                        <v-card-text>
-                                                                            <div v-html="message.tableData"
-                                                                                class="table-responsive">
-                                                                            </div>
-                                                                        </v-card-text>
-                                                                    </v-card>
-                                                                </v-col>
-                                                            </v-row>
-
-                                                            <v-row v-if="message.searchResults" class="my-5">
-                                                                <v-col v-for="(searchResult, index) in message.searchResults" :key="index" cols="4">
-                                                                    <v-card outlined>
-                                                                        <v-card-title class="d-flex justify-space-between">
-                                                                            <span>{{ searchResult.score }}</span>
-                                                                            <span>{{ searchResult.index }}</span>
-                                                                        </v-card-title>
-                                                                        <v-card-text>{{ searchResult.memory }}</v-card-text>
-                                                                    </v-card>
-                                                                </v-col>
-                                                            </v-row>
-                                                            
-                                                            <v-row v-if="message.memento && (message.memento.sources && message.memento.sources.length > 0)" class="my-5">
-                                                                <v-col cols="12">
-                                                                    <v-card outlined>
-                                                                        <v-card-title>Memento</v-card-title>
-                                                                        <v-card-text>
-                                                                            <v-textarea hide-details
-                                                                                v-model="message.memento.response" auto-grow
-                                                                                readonly variant="solo-filled"></v-textarea>
-                                                                            <div class="chips-container" style="margin-top: 5px;">
-                                                                                <v-chip
-                                                                                    v-for="(source, index) in message.memento.sources"
-                                                                                    :key="index" variant="outlined" size="x-small"
-                                                                                    text-color="primary"
-                                                                                    style="margin-bottom: 1px;"
-                                                                                    @click="downloadFile(source)"
-                                                                                >
-                                                                                    <v-icon start icon="mdi-label" x-small></v-icon>
-                                                                                    {{source.file_name }}
-                                                                                </v-chip>
-                                                                            </div>
-                                                                        </v-card-text>
-                                                                    </v-card>
-                                                                </v-col>
-                                                            </v-row>
-                                                            <pre v-if="isViewJSON.includes(index)"
-                                                                class="text-body-1"
-                                                                >{{ message.jsonContent }}
-                                                            </pre>
-                                                            <v-card v-if="(type == 'AssistantChats' && isMobile && index === filteredMessages.length - 1) || isViewWork == index">
-                                                                <div v-if="message.specific">
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Title:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-textarea readonly rows="1" v-model="message.title" auto-grow></v-textarea>
-                                                                    </v-card-text>
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Specific:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-textarea readonly rows="1" v-model="message.specific" auto-grow></v-textarea>
-                                                                    </v-card-text>
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Measurable:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-textarea readonly rows="1" v-model="message.measurable" auto-grow></v-textarea>
-                                                                    </v-card-text>
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Attainable:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-textarea readonly rows="1" v-model="message.attainable" auto-grow></v-textarea>
-                                                                    </v-card-text>
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Relevant:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-textarea readonly rows="1" v-model="message.relevant" auto-grow></v-textarea>
-                                                                    </v-card-text>
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Time-bound:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-col style="max-width: 100%;" cols="12" sm="6" md="4">
-                                                                            <v-menu
-                                                                                v-model="timeBoundMenu"
-                                                                                :close-on-content-click="false"
-                                                                                :nudge-right="40"
-                                                                                transition="scale-transition"
-                                                                                offset-y
-                                                                                min-width="auto"
-                                                                            >
-                                                                                <template v-slot:activator="{ on, attrs }">
-                                                                                    <v-text-field
-                                                                                        v-model="message.time_bound"
-                                                                                        prepend-icon="mdi-calendar"
-                                                                                        readonly
-                                                                                        v-bind="attrs"
-                                                                                        v-on="on"
-                                                                                    ></v-text-field>
-                                                                                </template>
-                                                                                <v-date-picker
-                                                                                    v-model="message.time_bound"
-                                                                                    @input="timeBoundMenu = false"
-                                                                                ></v-date-picker>
-                                                                            </v-menu>
-                                                                        </v-col>
-                                                                    </v-card-text>
-                                                                    <v-card-title>Descriptions</v-card-title>
-                                                                    <v-card-text>
-                                                                        <div v-for="(desc, index) in message.descriptions" :key="index">
-                                                                            <h3>{{ desc.word }}</h3>
-                                                                            <p>{{ desc.description }}</p>
-                                                                        </div>
-                                                                    </v-card-text>
-                                                                    <v-card-title>CheckList</v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-checkbox
-                                                                            v-for="(check, index) in message.checkPoints"
-                                                                            :key="index"
-                                                                            :label="check"
-                                                                            readonly
-                                                                            v-model="checked"
-                                                                        ></v-checkbox>
-                                                                    </v-card-text>
-                                                                    <div v-if="type == 'AssistantChats' && isMobile" class="d-flex justify-center" style="margin-bottom: 10px;">
-                                                                        <v-btn
-                                                                            @click="clickedWorkOrder" color="primary">업무 지시하기</v-btn>
+                                                                <v-row class="pa-0 ma-0 message-actions">
+                                                                    <div v-if="isMobile || replyIndex === index" class="d-flex">
+                                                                        <v-btn v-if="type != 'AssistantChats' && message.specific" 
+                                                                            @click="viewWork(index)"
+                                                                            variant="text" size="x-small" icon
+                                                                            class="action-btn"
+                                                                        >
+                                                                            <Icons :icon="'document'" :size="20" />
+                                                                        </v-btn>
+                                                                        <v-btn @click="beforeReply(message)"
+                                                                            variant="text" size="x-small" icon
+                                                                            class="action-btn"
+                                                                        >
+                                                                            <Icons :icon="'reply'" :size="20" />
+                                                                        </v-btn>
+                                                                        <v-btn @click="viewJSON(index)"
+                                                                            variant="text" size="x-small" icon
+                                                                            class="action-btn"
+                                                                        >
+                                                                            <Icons v-if="message.jsonContent && isviewJSONStatus"
+                                                                                :icon="'arrow-up-2'" :size="20"
+                                                                            />
+                                                                            <Icons v-else
+                                                                                :icon="'arrow-down-2'" :size="20"
+                                                                            />
+                                                                        </v-btn>
                                                                     </div>
-                                                                </div>
-                                                            </v-card>
+                                                                </v-row>
+
+                                                                <v-row v-if="message.tableData" class="my-5">
+                                                                    <v-col cols="12">
+                                                                        <v-card outlined>
+                                                                            <v-card-title>{{ setTableName(message.content)
+                                                                                }}</v-card-title>
+                                                                            <v-card-text>
+                                                                                <div v-html="message.tableData"
+                                                                                    class="table-responsive">
+                                                                                </div>
+                                                                            </v-card-text>
+                                                                        </v-card>
+                                                                    </v-col>
+                                                                </v-row>
+
+                                                                <v-row v-if="message.searchResults" class="my-5">
+                                                                    <v-col v-for="(searchResult, index) in message.searchResults" :key="index" cols="4">
+                                                                        <v-card outlined>
+                                                                            <v-card-title class="d-flex justify-space-between">
+                                                                                <span>{{ searchResult.score }}</span>
+                                                                                <span>{{ searchResult.index }}</span>
+                                                                            </v-card-title>
+                                                                            <v-card-text>{{ searchResult.memory }}</v-card-text>
+                                                                        </v-card>
+                                                                    </v-col>
+                                                                </v-row>
+                                                                
+                                                                <v-row v-if="message.memento && (message.memento.sources && message.memento.sources.length > 0)" class="my-5">
+                                                                    <v-col cols="12">
+                                                                        <v-card outlined>
+                                                                            <v-card-title>Memento</v-card-title>
+                                                                            <v-card-text>
+                                                                                <v-textarea hide-details
+                                                                                    v-model="message.memento.response" auto-grow
+                                                                                    readonly variant="solo-filled"></v-textarea>
+                                                                                <div class="chips-container" style="margin-top: 5px;">
+                                                                                    <v-chip
+                                                                                        v-for="(source, index) in message.memento.sources"
+                                                                                        :key="index" variant="outlined" size="x-small"
+                                                                                        text-color="primary"
+                                                                                        style="margin-bottom: 1px;"
+                                                                                        @click="downloadFile(source)"
+                                                                                    >
+                                                                                        <v-icon start icon="mdi-label" x-small></v-icon>
+                                                                                        {{source.file_name }}
+                                                                                    </v-chip>
+                                                                                </div>
+                                                                            </v-card-text>
+                                                                        </v-card>
+                                                                    </v-col>
+                                                                </v-row>
+                                                                <pre v-if="isViewJSON.includes(index)"
+                                                                    class="text-body-1"
+                                                                    >{{ message.jsonContent }}
+                                                                </pre>
+                                                                <v-card v-if="(type == 'AssistantChats' && isMobile && index === filteredMessages.length - 1) || isViewWork == index">
+                                                                    <div v-if="message.specific">
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Title:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-textarea readonly rows="1" v-model="message.title" auto-grow></v-textarea>
+                                                                        </v-card-text>
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Specific:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-textarea readonly rows="1" v-model="message.specific" auto-grow></v-textarea>
+                                                                        </v-card-text>
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Measurable:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-textarea readonly rows="1" v-model="message.measurable" auto-grow></v-textarea>
+                                                                        </v-card-text>
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Attainable:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-textarea readonly rows="1" v-model="message.attainable" auto-grow></v-textarea>
+                                                                        </v-card-text>
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Relevant:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-textarea readonly rows="1" v-model="message.relevant" auto-grow></v-textarea>
+                                                                        </v-card-text>
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Time-bound:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-col style="max-width: 100%;" cols="12" sm="6" md="4">
+                                                                                <v-menu
+                                                                                    v-model="timeBoundMenu"
+                                                                                    :close-on-content-click="false"
+                                                                                    :nudge-right="40"
+                                                                                    transition="scale-transition"
+                                                                                    offset-y
+                                                                                    min-width="auto"
+                                                                                >
+                                                                                    <template v-slot:activator="{ on, attrs }">
+                                                                                        <v-text-field
+                                                                                            v-model="message.time_bound"
+                                                                                            prepend-icon="mdi-calendar"
+                                                                                            readonly
+                                                                                            v-bind="attrs"
+                                                                                            v-on="on"
+                                                                                        ></v-text-field>
+                                                                                    </template>
+                                                                                    <v-date-picker
+                                                                                        v-model="message.time_bound"
+                                                                                        @input="timeBoundMenu = false"
+                                                                                    ></v-date-picker>
+                                                                                </v-menu>
+                                                                            </v-col>
+                                                                        </v-card-text>
+                                                                        <v-card-title>Descriptions</v-card-title>
+                                                                        <v-card-text>
+                                                                            <div v-for="(desc, index) in message.descriptions" :key="index">
+                                                                                <h3>{{ desc.word }}</h3>
+                                                                                <p>{{ desc.description }}</p>
+                                                                            </div>
+                                                                        </v-card-text>
+                                                                        <v-card-title>CheckList</v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-checkbox
+                                                                                v-for="(check, index) in message.checkPoints"
+                                                                                :key="index"
+                                                                                :label="check"
+                                                                                readonly
+                                                                                v-model="checked"
+                                                                            ></v-checkbox>
+                                                                        </v-card-text>
+                                                                        <div v-if="type == 'AssistantChats' && isMobile" class="d-flex justify-center" style="margin-bottom: 10px;">
+                                                                            <v-btn
+                                                                                @click="clickedWorkOrder" color="primary">업무 지시하기</v-btn>
+                                                                        </div>
+                                                                    </div>
+                                                                </v-card>
+                                                            </div>
+                                                            <!--   -->
+                                                            <v-progress-linear v-if="filteredMessages.length - 1 == index && isLoading"
+                                                                style="margin-top: -4px; border-radius: 0 0 10px 10px; width: 99%;"
+                                                                indeterminate class="my-progress-linear">
+                                                            </v-progress-linear>
                                                         </v-sheet>
-                                                        <v-progress-linear
-                                                            v-if="filteredMessages.length - 1 == index && isLoading"
-                                                            indeterminate class="my-progress-linear"></v-progress-linear>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1695,7 +1700,7 @@ pre {
 .other-message {
   margin-right: auto;
   background-color: #f1f1f1 !important;
-  border-radius: 3px 15px 15px 15px !important;
+  border-radius: 8px !important;
 }
 
 .message-timestamp {

@@ -8,7 +8,7 @@ export default class OrganizationChartGenerator extends AIGenerator{
         this.contexts = null;
 
         const companyName = window.$tenantName || window.$mode;
-        const organizaionChart = JSON.stringify(client.organizaionChart);
+        const organizationChart = JSON.stringify(client.organizationChart);
         const users = JSON.stringify(client.userList);
 
         this.previousMessages = [{
@@ -57,7 +57,7 @@ export default class OrganizationChartGenerator extends AIGenerator{
             \`\`\`
             
             - 기존 조직도: 
-            ${organizaionChart}
+            ${organizationChart}
             
             - 가입된 직원 목록:
             ${users}
