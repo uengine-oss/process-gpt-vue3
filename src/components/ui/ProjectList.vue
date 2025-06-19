@@ -20,10 +20,19 @@ export default {
     },
     data: () => ({
         projectLists: [],
-       
+        intervalId: null
     }),
     async created() {
         await this.init();
+    },
+    mounted() {
+        this.EventBus.on('project-updated', async () => {
+            await this.init();
+        });
+        
+        this.intervalId = setInterval(() => {
+            this.init();
+        }, 10000);
     },
     methods: {
         async init() {
