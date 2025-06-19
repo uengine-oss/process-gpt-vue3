@@ -229,11 +229,11 @@ class ProcessGPTBackend implements Backend {
 
     async getRawDefinition(defId: string, options: any) {
         try {
-            if (defId) {
-                defId = defId.toLowerCase();
-            } else {
-                return;
-            }
+            // if (defId) {
+            //     defId = defId.toLowerCase();
+            // } else {
+            //     return;
+            // }
 
             if (options) {
                 // 폼 정보를 불러오기 위해서
@@ -731,6 +731,49 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async getBSCard() {
+        try {
+            const options = {
+                match: {
+                    key: 'strategy',
+                },
+                column: 'uuid'
+            };
+            const card = await storage.getObject(`configuration`, options);
+            return card;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    async putBSCard(card: any) {
+        try {
+            const options = {
+                match: {
+                    key: 'strategy'
+                },
+                column: 'uuid'
+            };
+    
+            const existing = await storage.getString('configuration', options);
+    
+            const uuid = typeof existing === 'string' ? existing : this.uuid();
+    
+            const putObj = {
+                uuid,
+                key: 'strategy',
+                value: card,
+                tenant_id: window.$tenantName
+            };
+    
+            await storage.putObject('configuration', putObj);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
 
     async filterProcDefMap(map: any) {
         // 사용자 권한에 따라 필터링

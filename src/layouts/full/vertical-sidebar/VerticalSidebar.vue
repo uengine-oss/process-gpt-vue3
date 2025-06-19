@@ -323,6 +323,13 @@ export default {
                     disable: true
                 },
                 {
+                    title: 'BSCard.title',
+                    icon: 'strategy-map',
+                    BgColor: 'primary',
+                    to: '/bscard',
+                    disable: true
+                },
+                {
                     title: 'systemDefinition.title',
                     icon: 'server-line-duotone',
                     BgColor: 'primary',
