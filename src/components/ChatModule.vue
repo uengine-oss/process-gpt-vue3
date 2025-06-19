@@ -37,6 +37,7 @@ export default {
         // consulting
         isMentoMode: false,
         newMessageInfo: null,
+        isAgentChat: false,
     }),
     computed: {
         useLock() {
@@ -424,7 +425,7 @@ export default {
             }
         },
         async startGenerate() {
-            if(!this.ProcessGPTActive || this.isSystemChat){
+            if((!this.ProcessGPTActive || this.isSystemChat) && !this.isAgentChat){
                 this.messages.push({
                     role: 'system',
                     content: '...',
@@ -666,6 +667,7 @@ export default {
                     }
                 }
                 // jsonData = this.removeComments(jsonData);
+                console.log('formValues 에이전트 생성으로 전달', jsonData['formValues']);
                 if(this.isAgentMode) {
                     if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
                         this.EventBus.emit('form-values-updated', jsonData['formValues']);

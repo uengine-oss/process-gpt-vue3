@@ -484,7 +484,6 @@ export default {
     },
 
     submitTask(task) {
-
       // HTML에서 모든 필드 name과 태그명 추출
       const parser = new DOMParser();
       const doc = parser.parseFromString(this.html, 'text/html');
@@ -497,22 +496,58 @@ export default {
 
       const formValues = {};
 
-      fields.forEach(field => {
-        // crewType과 태그명 매칭
-        if (
-          (task.crewType === 'report' && field.tag === 'report-field') ||
-          (task.crewType === 'slide' && field.tag === 'slide-field')
-        ) {
-          formValues[field.name] = this.sanitizeMarkdownOutput(task.output);
-        } else if (
-          task.crewType === 'text' && (field.tag === 'text-field' || field.tag === 'textarea-field')
-        ) {
-          formValues[field.name] = task.output;
+      // text 타입 output 파싱 함수 (재귀적 JSON 파싱 + key:value 파싱)
+      function deepParseJson(str) {
+        let result = str;
+        let count = 0;
+        while (typeof result === 'string' && count < 5) {
+          try {
+            const parsed = JSON.parse(result);
+            if (typeof parsed === 'object' && parsed !== null) {
+              result = parsed;
+            } else {
+              break;
+            }
+          } catch {
+            break;
+          }
+          count++;
         }
-      });
+        return result;
+      }
+
+      if (task.crewType === 'text') {
+        let parsed = deepParseJson(task.output);
+        // 만약 최종적으로도 객체가 아니면, "필드명: 값" 형태로 파싱 시도
+        if (typeof parsed !== 'object' || parsed === null) {
+          parsed = {};
+          const lines = String(task.output).split('\n');
+          lines.forEach(line => {
+            const match = line.match(/^([\w\-]+)\s*:\s*(.+)$/);
+            if (match) {
+              parsed[match[1]] = match[2];
+            }
+          });
+        }
+        fields.forEach(field => {
+          if (parsed && parsed[field.name] !== undefined) {
+            formValues[field.name] = parsed[field.name];
+          } else {
+            formValues[field.name] = '';
+          }
+        });
+      } else {
+        fields.forEach(field => {
+          if (
+            (task.crewType === 'report' && field.tag === 'report-field') ||
+            (task.crewType === 'slide' && field.tag === 'slide-field')
+          ) {
+            formValues[field.name] = this.sanitizeMarkdownOutput(task.output);
+          }
+        });
+      }
 
       console.log('submitTask - formValues:', formValues);
-
       this.EventBus.emit('form-values-updated', formValues);
     },
 

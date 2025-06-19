@@ -22,10 +22,10 @@
             <p>{{ tab.description }}</p>
             <ul>
               <li v-for="(item, i) in tab.listItems" :key="i">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                {{ item }}
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                      <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  {{ item }}
               </li>
               <!-- <li v-for="(item, i) in tab.listItems" :key="i">{{ item }}</li> -->
             </ul>
@@ -128,11 +128,11 @@ export default {
 }
 
 .tab-btn:hover {
-  color: #4a6cf7;
+  color: #1976D2;
 }
 
 .tab-btn.active {
-  border-bottom: 2px solid #4a6cf7;
+  border-bottom: 2px solid #1976D2;
 }
 
 .tab-content {

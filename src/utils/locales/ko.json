@@ -199,7 +199,8 @@
         "agentPersona": "페르소나",
         "agentUrl": "URL",
         "agentDescription": "설명",
-        "agentTools": "도구"
+        "agentTools": "도구",
+        "agentSkills": "기술"
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
@@ -828,7 +829,7 @@
         "progress": "진행 상황",
         "history": "워크 히스토리",
         "chatbot": "어시스턴트",
-        "agent": "Agent 초안 생성",
+        "agent": "빠른 초안 생성",
         "agentMonitor": "Agent 모니터링",
         "toggleInputFieldSize": "확대 / 축소",
         "previous": "이전 단계",
