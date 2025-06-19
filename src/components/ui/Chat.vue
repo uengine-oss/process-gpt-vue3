@@ -229,7 +229,12 @@
                                                 </v-row>
 
                                                 <div v-if="message.contentType && message.contentType == 'html'" style="margin-bottom: 15px;">
-                                                    <DynamicForm ref="dynamicForm" :formHTML="message.htmlContent" v-model="message.jsonContent"></DynamicForm>
+                                                    <DynamicForm 
+                                                        ref="dynamicForm" 
+                                                        :formHTML="message.htmlContent" 
+                                                        v-model="message.jsonContent"
+                                                        :readonly="true"
+                                                    ></DynamicForm>
                                                 </div>
 
                                                 <div v-else class="w-100 pb-3">

@@ -59,7 +59,7 @@ export default {
                 this.$emit('updated');
                 this.EventBus.emit('instances-updated');
 
-                if (task.description && task.description.length > 0 && task.description.includes("WorkItem Error")) {
+                if (task.log && task.log.length > 0 && task.log.includes("[WorkItem Error]")) {
                     const retry = window.confirm("워크아이템 실행 중 오류가 발생했습니다. 다시 시도하시겠습니까?");
                     if (retry) {
                         await backend.putWorkItemComplete(this.taskId, this.workItem);

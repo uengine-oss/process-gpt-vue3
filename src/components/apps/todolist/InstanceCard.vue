@@ -120,9 +120,6 @@
                     <v-window-item value="workhistory">
                         <InstanceWorkHistory :instance="instance"/>
                     </v-window-item>
-                    <v-window-item value="output">
-                        <InstanceOutput :instance="instance"/>
-                    </v-window-item>
                 </v-window>
             </div>
         </div>
@@ -136,7 +133,6 @@
 // import InstanceTodo from './InstanceTodo.vue';
 import InstanceProgress from './InstanceProgress.vue';
 import InstanceWorkHistory from './InstanceWorkHistory.vue';
-import InstanceOutput from './InstanceOutput.vue';
 import ProcessInstanceRunning from '@/components/ProcessInstanceRunning.vue';
 import GanttChart from '@/components/apps/todolist/GanttChart.vue';
 import KanbanBoard from '@/components/apps/todolist/KanbanBoard.vue';
@@ -151,7 +147,6 @@ export default {
     components: {
         InstanceProgress,
         InstanceWorkHistory,
-        InstanceOutput,
         ProcessInstanceRunning,
         GanttChart,
         KanbanBoard,
@@ -169,7 +164,6 @@ export default {
             { value: 'todo', label: 'InstanceCard.kanbanBoard', mobile: true},
             { value: 'workhistory', label: 'InstanceCard.workHistory', mobile: true},
             { value: 'gantt', label: 'InstanceCard.ganttChart', mobile: false},
-            { value: 'output', label: 'InstanceCard.output', mobile: true}
         ],
 
         updatedKey: 0,

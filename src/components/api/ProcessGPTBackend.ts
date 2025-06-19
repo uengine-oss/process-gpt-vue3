@@ -318,7 +318,8 @@ class ProcessGPTBackend implements Backend {
         try {
             const email = localStorage.getItem('email');
             input.email = email;
-        
+            input['tenant_id'] = window.$tenantName;
+
             let url = `/execution/complete`;
             if (input.answer && input.answer.image != null) {
                 url = `/execution/vision-complete`;
