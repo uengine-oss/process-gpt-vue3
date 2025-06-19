@@ -349,7 +349,7 @@ export default {
                 },
                 {
                     title: 'BSCard.title',
-                    icon: 'strategy-map',
+                    icon: 'strategy',
                     BgColor: 'primary',
                     to: '/bscard',
                     disable: true
