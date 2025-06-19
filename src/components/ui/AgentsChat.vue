@@ -84,7 +84,9 @@
                     <div v-else-if="message.content.type =='system'">
                         <div v-html="message.content.data"></div>
                     </div>
-                    <v-progress-linear v-if="false" class="my-progress-linear" indeterminate></v-progress-linear>
+                    <v-progress-linear v-if="false" class="my-progress-linear" indeterminate
+                        style="margin-top: -4px; border-radius: 0 0 10px 10px; width: 99%;"
+                    ></v-progress-linear>
                 </v-sheet>
             </div>
         </div>
