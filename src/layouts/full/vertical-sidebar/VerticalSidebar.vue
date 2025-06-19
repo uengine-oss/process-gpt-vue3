@@ -80,23 +80,7 @@
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
                 <VerticalHeader v-if="globalIsMobile.value"/>
-                <div
-                    v-if="!pal && isShowProcessInstanceList"
-                    style="font-size:14px;"
-                    class="text-medium-emphasis cp-menu mt-0 ml-2"
-                >{{ $t('VerticalSidebar.instanceList') }}</div>
-                <v-col v-if="isShowProcessInstanceList && !pal" class="pa-0"
-                    style="flex: 1 1 auto;
-                    overflow-y: auto;
-                    max-height: 350px;"
-                >
-                    <ProcessInstanceList
-                        @update:instanceLists="handleInstanceListUpdate" 
-                    />
-                </v-col>
-                <v-row v-if="isShowProject"
-                    class="ma-0 pa-0 ml-2 align-center"
-                >
+                <v-row v-if="isShowProject" class="ma-0 pa-0 ml-2 align-center">
                     <div class="text-medium-emphasis cp-menu">
                         {{ $t('VerticalSidebar.projectList') }}
                     </div>
@@ -107,19 +91,15 @@
                         <PlusIcon size="15"/>
                     </v-btn>
                 </v-row>
-                <v-col v-if="isShowProject" class="pa-0" 
-                    style="flex: 1 1 auto;
-                    overflow-y: auto;
-                    max-height: 350px;"
-                >
+                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 auto; overflow-y: auto; max-height: 350px;">
                     <ProjectList/>
                 </v-col>
                 <div
-                    v-if="isShowProject"
+                    v-if="!pal"
                     style="font-size:14px;"
-                    class="text-medium-emphasis cp-menu mt-3 ml-2"
+                    class="text-medium-emphasis cp-menu mt-0 ml-2"
                 >{{ $t('VerticalSidebar.instanceList') }}</div>
-                <v-col v-if="isShowProject" class="pa-0" 
+                <v-col v-if="!pal" class="pa-0"
                     style="flex: 1 1 auto;
                     overflow-y: auto;
                     max-height: 350px;"
@@ -128,7 +108,7 @@
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
                 </v-col>
-
+               
                 <v-col class="pa-0" style="flex: 0 0 auto;">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
@@ -291,7 +271,7 @@ export default {
             return this.instanceLists.length > 0;
         },
         isShowProject(){
-            return true;
+            return false;
         },
     },
     created() {
