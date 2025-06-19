@@ -97,8 +97,8 @@ export default {
         renderKey: 0,
         simulationInstances: [],
     }),
-    created() {
-        this.init();
+    async mounted() {
+        await this.init();
         this.checkIfMobile();
         window.addEventListener('resize', this.checkIfMobile);
     },
@@ -113,108 +113,104 @@ export default {
             }
             return this.definition.activities[0];
         },
-        init() {
+        async init() {
             var me = this;
-            me.$try({
-                action: async () => {
-                    if(me.isSimulate == 'true') {
-                        if(me.bpmn) {
-                            me.processDefinition.bpmn = me.bpmn;
-                        }
-                        me.definition = me.processDefinition;
-                    } else {
-                        const defInfo = await backend.getRawDefinition(me.definitionId);
-                        me.definition = defInfo.definition;
-                    }
-                    
-                    me.roleMappings = me.definition.roles.map((role) => {
-                        return {
-                            name: role.name,
-                            endpoint: role.endpoint || "",
-                            resolutionRule: role.resolutionRule
-                        };
-                    });
+            if(me.isSimulate == 'true') {
+                if(me.bpmn) {
+                    me.processDefinition.bpmn = me.bpmn;
+                }
+                me.definition = me.processDefinition;
+            } else {
+                const defInfo = await backend.getRawDefinition(me.definitionId);
+                me.definition = defInfo.definition;
+            }
+            
+            me.roleMappings = me.definition.roles.map((role) => {
+                return {
+                    name: role.name,
+                    endpoint: role.endpoint || "",
+                    resolutionRule: role.resolutionRule
+                };
+            });
 
-                    const roleBindings = await backend.bindRole(me.definition.roles);
-                    if (roleBindings && roleBindings.length > 0) {
-                        roleBindings.forEach((roleBinding) => {
-                            let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
-                            if(role) {
-                                role['endpoint'] = roleBinding.userId;
-                            }
+            const roleBindings = await backend.bindRole(me.definition.roles);
+            if (roleBindings && roleBindings.length > 0) {
+                roleBindings.forEach((roleBinding) => {
+                    let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
+                    if(role) {
+                        role['endpoint'] = roleBinding.userId;
+                    }
+                })
+            }
+
+            let startActivity = null;
+            if(me.isSimulate == 'true') {
+                if(!me.processDefinition.activities) {
+                    me.processDefinition.activities = this.processDefinition.elements.filter(element => 
+                        element.elementType === 'Activity' && 
+                        element.type === 'UserActivity'
+                    );
+                }
+                startActivity = me.processDefinition.activities[me.activityIndex];
+            } else {
+                startActivity = this.findStartActivity();
+            }
+            if (startActivity) {
+                let parameters = [];
+                let variableForHtmlFormContext = {};
+                if (startActivity.properties) {
+                    const properties = JSON.parse(startActivity.properties);
+                    if (properties.parameters) {
+                        parameters = properties.parameters;
+                        parameters.forEach((item) => {
+                            item.variable.defaultValue = "";
                         })
                     }
-
-                    let startActivity = null;
-                    if(me.isSimulate == 'true') {
-                        if(!me.processDefinition.activities) {
-                            me.processDefinition.activities = this.processDefinition.elements.filter(element => 
-                                element.elementType === 'Activity' && 
-                                element.type === 'UserActivity'
-                            );
-                        }
-                        startActivity = me.processDefinition.activities[me.activityIndex];
-                    } else {
-                        startActivity = this.findStartActivity();
-                    }
-                    if (startActivity) {
-                        let parameters = [];
-                        let variableForHtmlFormContext = {};
-                        if (startActivity.properties) {
-                            const properties = JSON.parse(startActivity.properties);
-                            if (properties.parameters) {
-                                parameters = properties.parameters;
-                                parameters.forEach((item) => {
-                                    item.variable.defaultValue = "";
-                                })
-                            }
-                            if (properties.variableForHtmlFormContext) {
-                                variableForHtmlFormContext = properties.variableForHtmlFormContext;
-                            }
-                        }
-                        
-                        let parameterValues = {};
-                        if (parameters.length > 0) {
-                            parameters.forEach((item) => {
-                                parameterValues[item.argument.text] = item.variable.defaultValue
-                            })
-                        }
-
-                        if(startActivity.tool && startActivity.tool.includes("formHandler:definition-map_")){
-                            startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.definitionId + '_')
-                        }
-
-                        me.workItem = {
-                            worklist: {
-                                defId: me.definitionId,
-                                role: startActivity.role,
-                                endpoint: "",
-                                instId: "",
-                                rootInstId: null,
-                                taskId: this.uuid(),
-                                startDate: new Date(),
-                                dueDate: null,
-                                status: 'TODO',
-                                description: startActivity.description || "",
-                                tool: startActivity.tool || ""
-                            },
-                            activity: {
-                                name: startActivity.name,
-                                tracingTag: startActivity.id || '',
-                                parameters: parameters || [],
-                                variableForHtmlFormContext: variableForHtmlFormContext || {},
-                                tool: startActivity.tool || "",
-                                type: startActivity.type || "",
-                                instruction: startActivity.instruction ? startActivity.instruction : "",
-                                checkpoints: startActivity.checkpoints ? startActivity.checkpoints : [],
-                                pythonCode: startActivity.pythonCode ? startActivity.pythonCode : ""
-                            },
-                            parameterValues: parameterValues || {}
-                        }
-                        me.renderKey++;
+                    if (properties.variableForHtmlFormContext) {
+                        variableForHtmlFormContext = properties.variableForHtmlFormContext;
                     }
                 }
-            });
+                
+                let parameterValues = {};
+                if (parameters.length > 0) {
+                    parameters.forEach((item) => {
+                        parameterValues[item.argument.text] = item.variable.defaultValue
+                    })
+                }
+
+                if(startActivity.tool && startActivity.tool.includes("formHandler:definition-map_")){
+                    startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.definitionId + '_')
+                }
+
+                me.workItem = {
+                    worklist: {
+                        defId: me.definitionId,
+                        role: startActivity.role,
+                        endpoint: "",
+                        instId: "",
+                        rootInstId: null,
+                        taskId: this.uuid(),
+                        startDate: new Date(),
+                        dueDate: null,
+                        status: 'TODO',
+                        description: startActivity.description || "",
+                        tool: startActivity.tool || ""
+                    },
+                    activity: {
+                        name: startActivity.name,
+                        tracingTag: startActivity.id || '',
+                        parameters: parameters || [],
+                        variableForHtmlFormContext: variableForHtmlFormContext || {},
+                        tool: startActivity.tool || "",
+                        type: startActivity.type || "",
+                        instruction: startActivity.instruction ? startActivity.instruction : "",
+                        checkpoints: startActivity.checkpoints ? startActivity.checkpoints : [],
+                        pythonCode: startActivity.pythonCode ? startActivity.pythonCode : ""
+                    },
+                    parameterValues: parameterValues || {}
+                }
+                me.renderKey++;
+            }
         },
         closeDialog() {
             this.$emit('close');
