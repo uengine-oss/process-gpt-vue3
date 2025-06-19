@@ -2,8 +2,6 @@
      <div>
         <v-card elevation="10" class="cursor-pointer pa-2 pt-1" @click="executeTask"
             :class="[
-                { 'border-primary': isDueTodayOrTomorrow },
-                { 'border-purple': isPastDue },
                 { 'choice-background-color': isMyTask && !isTodolistPath &&  task.status !== 'DONE'}
             ]"
         >
@@ -51,14 +49,30 @@
                     >
                         TaskId : {{ task.taskId }} / InstId: {{ task.instId }}
                     </div>
-                    <div v-else-if="isMyTask && isTodolistPath" colos="12" class="pa-0">
+                    <div v-else-if="isMyTask && isTodolistPath" class="pa-0">
                         <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
                             {{ task.procInstName }}
                         </div>
                     </div>
-                    <div v-else colos="12" class="pa-0">
+                    <div v-else class="pa-0">
                         <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
                             {{ task.instName }}
+                        </div>
+                    </div>
+                    <div class="d-flex align-center justify-between mt-1">
+                        <div class="d-flex align-center">
+                            <v-icon size="16" icon="mdi-calendar" />
+                            <div class="body-text-1 text-dark ml-1">
+                                {{ formattedDate }}
+                            </div>
+                        </div>
+                        <div v-if="isDueTodayOrTomorrow" class="d-flex align-center ml-auto">
+                            <v-icon size="16" icon="mdi-alert" style="color: #FF9800;" />
+                            <span class="text-caption ml-1" style="color: #FF9800;">기한 임박</span>
+                        </div>
+                        <div v-else-if="isPastDue" class="d-flex align-center ml-auto">
+                            <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
+                            <span class="text-caption ml-1" style="color: #F44336;">기한 지남</span>
                         </div>
                     </div>
                 </div>

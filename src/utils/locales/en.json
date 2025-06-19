@@ -828,7 +828,7 @@
         "progress": "Progress",
         "history": "Work History",
         "chatbot": "Assistant",
-        "agent": "Create Agent Draft",
+        "agent": "Quick Draft Generation",
         "agentMonitor": "Agent Monitor",
         "toggleInputFieldSize": "Toggle Input Field Size",
         "previous": "Previous Step",
