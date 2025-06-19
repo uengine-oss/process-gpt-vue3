@@ -194,7 +194,7 @@
             </div>
         </v-dialog>
 
-        <v-dialog v-model="marketplaceDialog" max-width="400">
+        <v-dialog v-model="marketplaceDialog" max-width="400" persistent>
             <process-definition-market-place-dialog :processDefinition="processDefinition" 
                 :bpmn="bpmn" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
         </v-dialog>

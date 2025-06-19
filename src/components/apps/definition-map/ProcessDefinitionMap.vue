@@ -210,7 +210,7 @@
             </v-card>
         </v-dialog>
 
-        <v-dialog v-model="openMarketplaceDialog" max-width="1200">
+        <v-dialog v-model="openMarketplaceDialog" max-width="1200" persistent>
             <process-definition-market-place @closeMarketplaceDialog="closeMarketplaceDialog" />
         </v-dialog>
     </div>
