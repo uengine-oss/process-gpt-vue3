@@ -53,8 +53,13 @@
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
         <div class="scrollnavbar bg-containerBg overflow-y-auto">
-            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0"
-                style="display: flex; flex-direction: column; height: 100%; overflow-y: auto;"
+            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0 pr-2"
+                :class="globalIsMobile.value ? 'pr-4' : ''"
+                style="display: flex;
+                    flex-direction: column;
+                    flex: 1 1 auto;
+                    gap: 8px;
+                    overflow: hidden;"
             >
                 <!---Menu Loop -->
                 <template v-for="item in sidebarItem" :key="item.title">
@@ -78,23 +83,35 @@
                 <div
                     v-if="!pal && isShowProcessInstanceList"
                     style="font-size:14px;"
-                    class="text-medium-emphasis cp-menu mt-3 ml-2"
+                    class="text-medium-emphasis cp-menu mt-0 ml-2"
                 >{{ $t('VerticalSidebar.instanceList') }}</div>
-                <v-col v-if="isShowProcessInstanceList && !pal" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto; min-height: 150px;">
+                <v-col v-if="isShowProcessInstanceList && !pal" class="pa-0"
+                    style="flex: 1 1 auto;
+                    overflow-y: auto;
+                    max-height: 350px;"
+                >
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
                 </v-col>
-                <div
-                    v-if="isShowProject"
-                    style="font-size:14px;"
-                    class="text-medium-emphasis cp-menu mt-3 ml-2"
+                <v-row v-if="isShowProject"
+                    class="ma-0 pa-0 ml-2 align-center"
                 >
-                    {{ $t('VerticalSidebar.projectList') }} 
-                    <v-btn @click="openNewProject()" icon style="margin-bottom: 5px;"> <PlusIcon size="15"/> </v-btn>
-                    
-                </div>
-                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto; min-height: 150px;">
+                    <div class="text-medium-emphasis cp-menu">
+                        {{ $t('VerticalSidebar.projectList') }}
+                    </div>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="openNewProject()" icon text style="margin-bottom: 2px;"
+                        :size="32"
+                    >
+                        <PlusIcon size="15"/>
+                    </v-btn>
+                </v-row>
+                <v-col v-if="isShowProject" class="pa-0" 
+                    style="flex: 1 1 auto;
+                    overflow-y: auto;
+                    max-height: 350px;"
+                >
                     <ProjectList/>
                 </v-col>
                 <div
@@ -102,7 +119,11 @@
                     style="font-size:14px;"
                     class="text-medium-emphasis cp-menu mt-3 ml-2"
                 >{{ $t('VerticalSidebar.instanceList') }}</div>
-                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto; min-height: 150px;">
+                <v-col v-if="isShowProject" class="pa-0" 
+                    style="flex: 1 1 auto;
+                    overflow-y: auto;
+                    max-height: 350px;"
+                >
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
@@ -139,7 +160,11 @@
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
                 </v-col>
-                <v-col class="pa-0" style="flex: 1 1 50%; overflow: auto; min-height: 150px;">
+                <v-col class="pa-0" 
+                    style="flex: 1 1 auto;
+                    overflow-y: auto;
+                    max-height: 350px;"
+                >
                     <template v-if="definitionList">
                         <!-- 정의 목록 리스트 -->
                         <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
@@ -151,7 +176,7 @@
                         />
                     </template>
                 </v-col>
-                <v-col class="pa-0" style="flex: 1 1; overflow: auto;">
+                <!-- <v-col class="pa-0" style="flex: 1 1; overflow: auto;">
                     <div class="text-medium-emphasis cp-menu mt-3 ml-2">{{ $t('VerticalSidebar.trash') }}</div>
                         <template v-if="deletedDefinitionList">
                             <NavCollapse v-for="(deletedDefinition, i) in deletedDefinitionList.children" :key="i"
@@ -162,7 +187,7 @@
                                 :type="'definition-list'" 
                             />
                         </template>
-                </v-col>
+                </v-col> -->
             </v-list>
         </div>
 
@@ -171,7 +196,7 @@
         </div>
     </v-navigation-drawer>
 
-    <v-dialog v-model="isNewProjectOpen" max-width="400" class="delete-input-details">
+    <v-dialog v-model="isNewProjectOpen" max-width="400" class="delete-input-details" persistent>
         <ProjectCreationForm  @close="closeNewProject" @save="createNewProject" />
     </v-dialog>
 

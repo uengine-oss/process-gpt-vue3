@@ -1,23 +1,17 @@
 <template>
     <v-card elevation="10">
         <AppBaseCard>
-            <template v-slot:leftpart>
+            <template v-slot:leftpart="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab" grow color="primary">
-                        <v-tooltip location="top" :text="$t('chat.user')">
-                            <template v-slot:activator="{ props }">
-                                <v-tab v-bind="props">
-                                    <v-icon>mdi-account</v-icon>
-                                </v-tab>
-                            </template>
-                        </v-tooltip>
-                        <v-tooltip location="top" :text="$t('chat.chatRoom')">
-                            <template v-slot:activator="{ props }">
-                                <v-tab v-bind="props">
-                                    <v-icon>mdi-message</v-icon>
-                                </v-tab>
-                            </template>
-                        </v-tooltip>
+                        <v-tab>
+                            <v-icon class="mt-1 mr-2">mdi-account</v-icon>
+                            {{ $t('chat.user') }}
+                        </v-tab>
+                        <v-tab>
+                            <v-icon class="mt-1 mr-2">mdi-message</v-icon>
+                            {{ $t('chat.chatRoom') }}
+                        </v-tab>
                     </v-tabs>
                     <v-tabs-items v-model="activeTab">
                         <v-tab-item v-if="activeTab == 0">
@@ -36,6 +30,7 @@
                                 :userList="userList" 
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
+                                :closeDrawer="closeDrawer"
                                 @chat-selected="chatRoomSelected" 
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
@@ -94,7 +89,7 @@
                 </div>
             </template>
 
-            <template v-slot:mobileLeftContent>
+            <template v-slot:mobileLeftContent="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab">
                         <v-tab>
@@ -121,6 +116,7 @@
                                 :userList="userList" 
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
+                                :closeDrawer="closeDrawer"
                                 @chat-selected="chatRoomSelected" 
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
@@ -285,7 +281,6 @@ export default {
 
         // agent
         agentList: [],
-        isAgentChat: false,
         agentInfo: null
     }),
     computed: {
@@ -425,7 +420,6 @@ export default {
                         this.agentInfo = this.selectedUserInfo
                         const agentInfo = this.selectedUserInfo
                         agentInfo.is_agent = true
-                        console.log(agentInfo.profile)
                         chatRoomInfo.participants.push(agentInfo)
                     } else {
                         chatRoomInfo.participants.push(this.selectedUserInfo)
@@ -587,7 +581,7 @@ export default {
         },
         chatRoomSelected(chatRoomInfo){
             this.currentChatRoom = chatRoomInfo
-            if(chatRoomInfo.participants.find(p => p.id === "system_id" || p.is_agent)){
+            if(chatRoomInfo.participants.find(p => p.id === "system_id")){
                 this.ProcessGPTActive = true
                 if(chatRoomInfo.participants.length == 2){
                     this.isSystemChat = true
@@ -832,11 +826,12 @@ export default {
         async afterGenerationFinished(responseObj) {
             if(responseObj){
                 let startProcess = false;
-                let obj = this.createMessageObj(responseObj, 'system')
+                let role = this.isAgentChat ? 'agent' : 'system';
+                let obj = this.createMessageObj(responseObj, role)
                 if(responseObj.messageForUser){
                     obj.messageForUser = responseObj.messageForUser
                 }
-                if(responseObj.work == 'CompanyQuery' || responseObj.work == 'ScheduleQuery' || this.isSystemChat){
+                if(responseObj.work || this.isSystemChat) {
                     // this.messages.push({
                     //     role: 'system',
                     //     content: '...',
@@ -903,12 +898,6 @@ export default {
                         content = content.replaceAll('undefined', '')
                         obj.content = content
                         obj.htmlContent = content.replaceAll('\n', '<br>')
-
-                        this.messages.forEach((message) => {
-                            if (message.role == 'system') {
-                                delete message.isLoading;
-                            }
-                        });
                     } else {
                         startProcess = true;
                     }
@@ -916,6 +905,10 @@ export default {
                     if(startProcess) {
                         this.startProcess(obj)
                     } else {
+                        if (this.isAgentChat) {
+                            obj.profile = this.agentInfo.profile
+                            obj.name = this.agentInfo.name
+                        }
                         this.putMessage(obj)
                     }
                 } else {

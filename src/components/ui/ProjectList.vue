@@ -20,10 +20,19 @@ export default {
     },
     data: () => ({
         projectLists: [],
-       
+        intervalId: null
     }),
     async created() {
         await this.init();
+    },
+    mounted() {
+        this.EventBus.on('project-updated', async () => {
+            await this.init();
+        });
+        
+        this.intervalId = setInterval(() => {
+            this.init();
+        }, 10000);
     },
     methods: {
         async init() {
@@ -37,7 +46,8 @@ export default {
                 const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.projectId)) : item.projectId;
                 item = {
                     // icon: 'ph:cube',
-                    title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
+                    // title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
+                    title: title,
                     to: `/project/${route}`,
                     BgColor:'primary',
                     isNew: item.status == 'NEW'

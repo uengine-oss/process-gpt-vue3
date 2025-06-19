@@ -7,6 +7,10 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async fetchAgentData(url: string) {
+        return null;
+    }
+
     async getMCPTools() {
         return null;
     }

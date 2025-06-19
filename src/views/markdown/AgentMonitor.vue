@@ -126,6 +126,27 @@
           </div>
           <span>작업을 진행하고 있습니다...</span>
         </div>
+        <div v-if="!task.isCompleted && toolUsageStatusByTask[task.jobId] && toolUsageStatusByTask[task.jobId].length" class="tool-usage-status-list">
+          <div
+            v-for="tool in toolUsageStatusByTask[task.jobId]"
+            :key="tool.tool_name + tool.query"
+            class="tool-usage-status-item"
+          >
+            <div class="tool-status-indicator">
+              <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
+              <div v-else class="check-mark">✓</div>
+            </div>
+            <span v-if="tool.tool_name && tool.tool_name.includes('mem0')">
+              {{ tool.tool_name }}로 {{ tool.query }} 정보{{ tool.status === 'done' ? ' 검색 완료' : '를 찾는중' }}
+            </span>
+            <span v-else-if="tool.tool_name && tool.tool_name.includes('perplexity')">
+              {{ tool.tool_name }}로 {{ tool.query }}를 {{ tool.status === 'done' ? '검색 완료' : '검색중' }}
+            </span>
+            <span v-else>
+              {{ tool.tool_name }}({{ tool.query }}) {{ tool.status === 'done' ? '작업 완료' : '작업중' }}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -218,6 +239,37 @@ export default {
       console.log('tasks computed 실행됨:', tasks.length, '개의 작업, events 개수:', this.events.length);
       console.log('tasks computed:', tasks);
       return tasks
+    },
+    toolUsageStatusByTask() {
+      // jobId별로 [{tool_name, query, status: 'searching'|'done'}] 배열
+      const started = {};
+      const finished = {};
+      this.events.forEach(e => {
+        if (e.event_type === 'tool_usage_started') {
+          const data = this.parseData(e);
+          const jobId = e.job_id || data?.job_id || e.id;
+          if (!started[jobId]) started[jobId] = [];
+          started[jobId].push({ tool_name: data.tool_name, query: data.query });
+        }
+        if (e.event_type === 'tool_usage_finished') {
+          const data = this.parseData(e);
+          const jobId = e.job_id || data?.job_id || e.id;
+          if (!finished[jobId]) finished[jobId] = [];
+          finished[jobId].push({ tool_name: data.tool_name, query: data.query });
+        }
+      });
+      
+      
+      // 매칭해서 상태 부여 (tool_name과 jobId만으로 매칭, query는 finished에서 null이 올 수 있음)
+      const result = {};
+      Object.keys(started).forEach(jobId => {
+        result[jobId] = started[jobId].map(s => {
+          const isDone = (finished[jobId] || []).some(f => f.tool_name === s.tool_name);
+          return { ...s, status: isDone ? 'done' : 'searching' };
+        });
+      });
+      
+      return result;
     }
   },
   methods: {
@@ -432,7 +484,6 @@ export default {
     },
 
     submitTask(task) {
-
       // HTML에서 모든 필드 name과 태그명 추출
       const parser = new DOMParser();
       const doc = parser.parseFromString(this.html, 'text/html');
@@ -445,22 +496,58 @@ export default {
 
       const formValues = {};
 
-      fields.forEach(field => {
-        // crewType과 태그명 매칭
-        if (
-          (task.crewType === 'report' && field.tag === 'report-field') ||
-          (task.crewType === 'slide' && field.tag === 'slide-field')
-        ) {
-          formValues[field.name] = this.sanitizeMarkdownOutput(task.output);
-        } else if (
-          task.crewType === 'text' && (field.tag === 'text-field' || field.tag === 'textarea-field')
-        ) {
-          formValues[field.name] = task.output;
+      // text 타입 output 파싱 함수 (재귀적 JSON 파싱 + key:value 파싱)
+      function deepParseJson(str) {
+        let result = str;
+        let count = 0;
+        while (typeof result === 'string' && count < 5) {
+          try {
+            const parsed = JSON.parse(result);
+            if (typeof parsed === 'object' && parsed !== null) {
+              result = parsed;
+            } else {
+              break;
+            }
+          } catch {
+            break;
+          }
+          count++;
         }
-      });
+        return result;
+      }
+
+      if (task.crewType === 'text') {
+        let parsed = deepParseJson(task.output);
+        // 만약 최종적으로도 객체가 아니면, "필드명: 값" 형태로 파싱 시도
+        if (typeof parsed !== 'object' || parsed === null) {
+          parsed = {};
+          const lines = String(task.output).split('\n');
+          lines.forEach(line => {
+            const match = line.match(/^([\w\-]+)\s*:\s*(.+)$/);
+            if (match) {
+              parsed[match[1]] = match[2];
+            }
+          });
+        }
+        fields.forEach(field => {
+          if (parsed && parsed[field.name] !== undefined) {
+            formValues[field.name] = parsed[field.name];
+          } else {
+            formValues[field.name] = '';
+          }
+        });
+      } else {
+        fields.forEach(field => {
+          if (
+            (task.crewType === 'report' && field.tag === 'report-field') ||
+            (task.crewType === 'slide' && field.tag === 'slide-field')
+          ) {
+            formValues[field.name] = this.sanitizeMarkdownOutput(task.output);
+          }
+        });
+      }
 
       console.log('submitTask - formValues:', formValues);
-
       this.EventBus.emit('form-values-updated', formValues);
     },
 
@@ -478,7 +565,7 @@ export default {
           .from('events')
           .select('*')
           .eq('todo_id', taskId)
-          .in('crew_type', ['report', 'slide', 'text'])
+          .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'])
           .order('timestamp', { ascending: true })
           
         if (error) throw error
@@ -504,10 +591,7 @@ export default {
           const todoId = row.todo_id;
           const exists = this.events.some(e => e.id === row.id);
 
-          console.log('[실시간 콜백] row:', row, 'row.todo_id:', row.todo_id, 'taskId:', taskId, '같은가?', row.todo_id === taskId);
-          console.log('[디버깅] exists:', exists, 'crew_type:', row.crew_type, 'includes:', ['report', 'slide', 'text'].includes(row.crew_type));
-
-          if (!exists && ['report', 'slide', 'text'].includes(row.crew_type) && todoId === taskId) {
+          if (!exists && ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'].includes(row.event_type) && todoId === taskId) {
             this.events = [...this.events, row];
             console.log('실시간 추가 후 this.events:', this.events);
             console.log('tasks computed 트리거 예상');
@@ -696,8 +780,6 @@ export default {
   background: currentColor;
 }
 
-
-
 .task-meta {
   display: flex;
   gap: 24px;
@@ -801,8 +883,6 @@ export default {
 .result-content {
   padding: 16px;
 }
-
-
 
 /* JSON 출력 스타일 */
 .json-output {
@@ -1156,8 +1236,6 @@ export default {
   margin: 0;
 }
 
-
-
 /* 마크다운 출력 스타일 */
 .markdown-output {
   position: relative;
@@ -1276,5 +1354,66 @@ export default {
   font-size: 10px;
   color: #adb5bd;
   font-style: italic;
+}
+
+.tool-usage-status-list {
+  margin-top: 8px;
+  padding-left: 20px;
+  border-left: 2px solid #e9ecef;
+}
+.tool-usage-status-item {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #adb5bd;
+  font-weight: 400;
+  margin-bottom: 4px;
+  padding-left: 8px;
+  letter-spacing: -0.2px;
+  position: relative;
+}
+.tool-usage-status-item::before {
+  content: '—';
+  position: absolute;
+  left: -6px;
+  color: #dee2e6;
+  font-weight: bold;
+}
+
+.tool-status-indicator {
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.loading-spinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid #e9ecef;
+  border-top-color: #60A5FA;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.check-mark {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #4caf50;
+  color: white;
+  font-size: 8px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

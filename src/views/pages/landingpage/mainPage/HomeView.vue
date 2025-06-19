@@ -12,6 +12,7 @@
                 <TechSection />
                 <ExtensibilitySection />
                 <CTASection />
+                <DownloadSection />
                 <!-- <v-card>
                     <v-card-title>Vue 3 + Vuetify 3</v-card-title>
                     <v-card-text>
@@ -42,6 +43,7 @@ import CasesSection from './sections/CasesSection.vue'
 import TechSection from './sections/TechSection.vue'
 import ExtensibilitySection from './sections/ExtensibilitySection.vue'
 import CTASection from './sections/CTASection.vue'
+import DownloadSection from './sections/DownloadSection.vue'
 
 export default {
     name: 'HomeView',
@@ -56,6 +58,7 @@ export default {
         TechSection,
         ExtensibilitySection,
         CTASection,
+        DownloadSection
     }
 }
 </script> 

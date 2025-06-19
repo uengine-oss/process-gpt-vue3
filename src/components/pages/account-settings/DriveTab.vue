@@ -44,7 +44,7 @@ export default {
             client_secret: '',
             drive_folder_id: '',
             provider: 'google',
-            redirect_uri: `${window.location.origin}/oauth/google`,
+            redirect_uri: `${window.location.origin}/chats`,
         },
     }),
     async mounted() {
@@ -60,6 +60,7 @@ export default {
                 action: async () => {
                     await backend.saveDriveInfo(this.driveInfo);
                     this.driveInfo = await backend.getDriveInfo();
+                    this.isEditMode = false;
                 },
                 successMsg: "구글 드라이브 연동 정보가 저장되었습니다."
             });

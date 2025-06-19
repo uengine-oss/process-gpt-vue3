@@ -86,6 +86,7 @@ export interface Backend {
     getMCPTools(): Promise<any>;
     getBSCard(): Promise<any>;
     putBSCard(card: any): Promise<any>;
+    fetchAgentData(agentUrl: string): Promise<any>;
 }
 
 // export type { Backend }

@@ -15,7 +15,7 @@
                   rel="noopener"
                   variant="flat"
                 >
-                  시작하기
+                  베타 테스트하기
               </v-btn>
               <!-- '문의하기' 버튼: 클릭 시 폼 오픈 -->
               <!-- Vuetify3의 라운드 설정은 rounded 속성에 값을 지정하여 사용합니다. -->
@@ -68,7 +68,7 @@ export default {
 
 .cta-box {
   padding: 80px 0;
-  background-color: #4a6cf7;
+  background-color: #1976D2;
   /* background-color: rgb(37 99 235/var(--tw-bg-opacity,1)); */
   position: relative;
   overflow: hidden;
@@ -114,9 +114,9 @@ export default {
 }
 
 .btn-primary-cta {
-  /* background-color: #4a6cf7; */
+  /* background-color: #1976D2; */
   background-color: white;
-  color: #4a6cf7;
+  color: #1976D2;
   /* color: white; */
 }
 
@@ -127,8 +127,8 @@ export default {
 
 .btn-secondary-cta {
   background-color: transparent;
-  /* color: #4a6cf7;
-  border: 1px solid #4a6cf7; */
+  /* color: #1976D2;
+  border: 1px solid #1976D2; */
   color: white;
   border: 1px solid white;
 }

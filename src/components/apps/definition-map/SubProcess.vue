@@ -6,7 +6,7 @@
                     <v-row class="ma-0 pa-0 align-center">
                         <div>{{ value.name }}</div>
                         <!-- v-if="value.new" -->
-                        <v-chip class="ml-auto"
+                        <v-chip v-if="isNew(value.id)" class="ml-auto"
                             color="primary"
                             variant="outlined"
                             size="x-small"
@@ -61,15 +61,24 @@ export default {
     data: () => ({
         type: 'sub',
         definition: null,
+        checkedProcess: [],
     }),
     async created() {
+        this.checkedProcess = JSON.parse(localStorage.getItem('checkedProcess')) || [];
     },
     methods: {
+        isNew(id) {
+            return !this.checkedProcess.includes(id);
+        },
         handleClick() {
             if (window.$mode == 'ProcessGPT') {
                 this.goProcess(this.value.id, 'sub');
             } else {
                 this.$emit('clickProcess', this.value.path);
+            }
+            if(!this.checkedProcess.includes(this.value.id)) {
+                this.checkedProcess.push(this.value.id);
+                localStorage.setItem('checkedProcess', JSON.stringify(this.checkedProcess));
             }
         },
         deleteProcess() {

@@ -27,7 +27,7 @@
         "pricing": "가격",
         "documentation": "사용 설명서",
         "support": "고객 지원",
-        "start": "시작하기",
+        "start": "베타 테스트하기",
         "title": "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
@@ -199,10 +199,12 @@
         "agentPersona": "페르소나",
         "agentUrl": "URL",
         "agentDescription": "설명",
-        "agentTools": "도구"
+        "agentTools": "도구",
+        "agentSkills": "기술"
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
+        "mobileTitle": "시작하기",
         "lock": "저장하려면 저장 아이콘을 누르십시오.",
         "unlock": "편집하려면 연필 아이콘을 누르십시오.",
         "addMega": "Mega 프로세스",
@@ -827,7 +829,7 @@
         "progress": "진행 상황",
         "history": "워크 히스토리",
         "chatbot": "어시스턴트",
-        "agent": "Agent 초안 생성",
+        "agent": "빠른 초안 생성",
         "agentMonitor": "Agent 모니터링",
         "toggleInputFieldSize": "확대 / 축소",
         "previous": "이전 단계",
@@ -1015,5 +1017,14 @@
         "title": "전략 맵",
         "cardTitle": "전략 맵",
         "description": "조직의 전략 목표를 4가지 관점(재무, 고객, 내부 프로세스, 학습 및 성장)으로 정리하고 시각화된 전략 맵을 생성합니다."
+    },
+    "ProjectCreationForm": {
+        "title": "프로젝트 생성",
+        "create": "생성"
+    },
+    "AppBaseCard": {
+        "friends": "친구",
+        "progress": "진행 상황",
+        "menu": "메뉴"
     }
 }

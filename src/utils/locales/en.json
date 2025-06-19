@@ -200,10 +200,12 @@
         "agentPersona": "Persona",
         "agentUrl": "URL",
         "agentDescription": "Description",
-        "agentTools": "Tools"
+        "agentTools": "Tools",
+        "agentSkills": "Skills"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
+        "mobileTitle": "Get Started",
         "lock": "Click the save icon to save.",
         "unlock": "Click the pencil icon to edit.",
         "addMega": "Mega Process",
@@ -826,7 +828,7 @@
         "progress": "Progress",
         "history": "Work History",
         "chatbot": "Assistant",
-        "agent": "Create Agent Draft",
+        "agent": "Quick Draft Generation",
         "agentMonitor": "Agent Monitor",
         "toggleInputFieldSize": "Toggle Input Field Size",
         "previous": "Previous Step",
@@ -1006,5 +1008,14 @@
         "title": "Strategy Map",
         "cardTitle": "Strategy Map",
         "description": "Organize the organization's strategic goals into four perspectives (financial, customer, internal process, and learning and growth) and create a visualized strategy map."
+    },
+    "ProjectCreationForm": {
+        "title": "Create Project",
+        "create": "Create"
+    },
+    "AppBaseCard": {
+        "friends": "Friends",
+        "progress": "Progress",
+        "menu": "Menu"
     }
 }

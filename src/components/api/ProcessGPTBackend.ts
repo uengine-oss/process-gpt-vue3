@@ -1247,6 +1247,23 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async fetchInstances(callback: (payload: any) => void) {
+        try {
+            await storage.watch('bpm_proc_inst', 'bpm_proc_inst', (payload) => {
+                if (payload && payload.new && payload.eventType) {
+                    const instance = payload.new;
+                    if (callback) {
+                        callback(this.returnInstanceObject(instance));
+                    }
+                }
+            });
+
+            return true;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
     async fetchInstanceListByStatus(status: string): Promise<any[]> {
         var me = this
         const list = await storage.list('bpm_proc_inst', { match: { status: status } });
@@ -1769,6 +1786,7 @@ class ProcessGPTBackend implements Backend {
                 description: newAgent.description,
                 tools: newAgent.tools,
                 profile: newAgent.img,
+                skills: newAgent.skills,
                 tenant_id: window.$tenantName
             }
             await storage.putObject('agents', putObj);
@@ -1781,6 +1799,16 @@ class ProcessGPTBackend implements Backend {
     async deleteAgent(agentId: string) {
         try {
             await storage.delete('agents', { match: { id: agentId } });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async fetchAgentData(url: string) {
+        try {
+            const response = await axios.get(`/execution/multi-agent/fetch-data?agent_url=${encodeURIComponent(url)}`);
+            return response.data;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2164,6 +2192,7 @@ class ProcessGPTBackend implements Backend {
 
     async saveDriveInfo(driveInfo: any) {
         try {
+            driveInfo.id = driveInfo.provider + '_' + driveInfo.tenant_id;
             const response = await storage.putObject('tenant_oauth', driveInfo);
             return response;
         } catch (error) {
@@ -2484,6 +2513,7 @@ class ProcessGPTBackend implements Backend {
                     tags: definition.tags,
                     author_name: user.name,
                     author_uid: user.uid,
+                    image: definition.image
                 }
                 const response = await storage.putObject('proc_def_marketplace', putObj);
 
@@ -2530,37 +2560,29 @@ class ProcessGPTBackend implements Backend {
                 p_author_uid: definition.author_uid
             });
 
-            if (result && result.length > 0) {
-                const functionResult = result[0];
-                
-                if (functionResult.error) {
-                    throw new Error(functionResult.error);
-                }
-                
-                if (functionResult.success) {
-                    // 프로세스 정의 체계도 업데이트
-                    const megaId = definition.category.split('/')[0];
-                    const majorId = definition.category.split('/')[1];
-                    const newProcessMap = {
-                        mega_proc_list: [{
-                            id: megaId,
-                            name: megaId,
-                            major_proc_list: [{
-                                id: majorId,
-                                name: majorId,
-                                sub_proc_list: [{
-                                    id: definition.id,
-                                    name: definition.name,
-                                }]
+            if (result && result.success) {
+                // 프로세스 정의 체계도 업데이트
+                const megaId = definition.category.split('/')[0];
+                const majorId = definition.category.split('/')[1];
+                const newProcessMap = {
+                    mega_proc_list: [{
+                        id: megaId,
+                        name: megaId,
+                        major_proc_list: [{
+                            id: majorId,
+                            name: majorId,
+                            sub_proc_list: [{
+                                id: definition.id,
+                                name: definition.name,
                             }]
                         }]
-                    }
-                    const existed = await this.getProcessDefinitionMap();
-                    const merged = await this.mergeProcessMaps(existed, newProcessMap);
-                    await this.putProcessDefinitionMap(merged);
-
-                    return functionResult;
+                    }]
                 }
+                const existed = await this.getProcessDefinitionMap();
+                const merged = await this.mergeProcessMaps(existed, newProcessMap);
+                await this.putProcessDefinitionMap(merged);
+
+                return result;
             }
             
             throw new Error('Failed to duplicate definition');
@@ -2685,11 +2707,13 @@ class ProcessGPTBackend implements Backend {
 
     async getProjectList() {
         try {
-            const list = await storage.list('project', { match: { status: "RUNNING" } });
+            const newList = await storage.list('project', { match: { status: "NEW" } });
+            const runningList = await storage.list('project', { match: { status: "RUNNING" } });
+            
+            const list = [...newList, ...runningList]
             return list.map((item: any) => {
                 return this.returnProjectObject(item);
             });
-            
         } catch (error) {
             
             //@ts-ignore
@@ -2712,11 +2736,15 @@ class ProcessGPTBackend implements Backend {
 
     async getTaskDependencyByProjectId(projectId: number) {
         try {
-            return await storage.list('v_task_dependency', {
+            let list = await storage.list('v_task_dependency', {
                 key: `*`,
                 orderBy: 'project_id',
                 startAt: projectId,
                 endAt: projectId,
+            });
+
+            return list.map((item: any) => {
+                return this.returnDependencyObject(item);
             });
         } catch (e) {
             //@ts-ignore
@@ -2726,11 +2754,15 @@ class ProcessGPTBackend implements Backend {
 
     async getTaskDependencyByInstId(instId: number) {
         try {
-            return await storage.list('v_task_dependency', {
+            let list = await storage.list('v_task_dependency', {
                 key: `*`,
                 orderBy: 'proc_inst_id',
                 startAt: instId,
                 endAt: instId,
+            });
+
+            return list.map((item: any) => {
+                return this.returnDependencyObject(item);
             });
         } catch (e) {
             //@ts-ignore
@@ -2807,6 +2839,7 @@ class ProcessGPTBackend implements Backend {
     }
 
     private returnInstanceObject(item: any) {
+        if (!item || !item.proc_inst_id) return null;
         return {
             instId: item.proc_inst_id,
             defId: item.proc_def_id,
@@ -2845,6 +2878,19 @@ class ProcessGPTBackend implements Backend {
             referenceIds: item.reference_ids || [],
             projectId: item.project_id || null,
             task: item
+        }
+    }
+
+    private returnDependencyObject(item: any) {
+        return {
+           ...item,
+           lagTime: item.lag_time,
+           leadTime: item.lead_time,
+           createdDate: item.created_date,
+           taskId: item.task_id,
+           dependsId: item.depends_id,
+           projectId: item.project_id,
+           procInstId: item.proce_inst_id
         }
     }
 

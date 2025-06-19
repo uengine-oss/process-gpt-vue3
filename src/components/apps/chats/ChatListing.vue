@@ -9,7 +9,8 @@ const props = defineProps({
     chatRoomList: Array,
     userList: Array,
     userInfo: Object,
-    chatRoomId: String
+    chatRoomId: String,
+    closeDrawer: Function
 });
 
 const emit = defineEmits(['chat-selected', 'create-chat-room', 'delete-chat-room']);
@@ -47,6 +48,9 @@ const selectedChatId = ref(null);
 const selectChatRoom = (chat) => {
     selectedChatId.value = chat.id;
     emit('chat-selected', chat);
+    if (props.closeDrawer) {
+        props.closeDrawer();
+    }
 };
 
 watch(() => props.chatRoomId, (newVal) => {
@@ -166,7 +170,11 @@ const deleteChatRoom = () => {
                         single-line hide-details
                     ></v-text-field>
                 </div>
-                <v-btn density="comfortable" icon @click="openDialog" style="margin-left: 10px;">
+                <v-btn @click="openDialog"
+                    density="comfortable" 
+                    icon
+                    class="ml-auto"
+                >
                     <v-icon>mdi-chat-plus</v-icon>
                 </v-btn>
             </div>

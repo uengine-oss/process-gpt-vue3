@@ -219,7 +219,7 @@
                                                             <img v-if="message.role == 'system'"
                                                                 src="@/assets/images/chat/chat-icon.png" height="40"
                                                                 width="40" />
-                                                            <v-img v-else :src="getProfile(message.email)" :alt="message.name"
+                                                            <v-img v-else :src="getProfile(message)" :alt="message.name"
                                                                 height="40" width="40" />
                                                         </v-avatar>
                                                         <div class="user-name">
@@ -416,7 +416,7 @@
                                                             </v-card>
                                                         </v-sheet>
                                                         <v-progress-linear
-                                                            v-if="message.role == 'system' && filteredMessages.length - 1 == index && isLoading"
+                                                            v-if="filteredMessages.length - 1 == index && isLoading"
                                                             indeterminate class="my-progress-linear"></v-progress-linear>
                                                     </div>
                                                 </div>
@@ -1155,16 +1155,19 @@ export default {
                 }
             }
         },
-        getProfile(email) {
+        getProfile(message) {
+            if (message.role == 'agent') {
+                return message.profile ? message.profile : '/images/chat-icon.png';
+            }
             if (!this.userList) return '/images/defaultUser.png';
-            const user = this.userList.find(user => user.email === email);
+            const user = this.userList.find(user => user.email === message.email);
             return user && user.profile ? (user.profile.includes('defaultUser.png') ? '/images/defaultUser.png' : user.profile) : '/images/defaultUser.png';
         },
         requestDraftAgent() {
             this.$emit('requestDraftAgent', this.newMessage);
         },
         setMessageForUser(content) {
-            if(content){
+            if(content && typeof content == 'string'){
                 if (content.includes(`"messageForUser":`)) {
                     let contentObj = partialParse(content);
                     let messageForUserContent = contentObj.messageForUser || content;
@@ -1446,12 +1449,13 @@ export default {
             }
         },
         shouldDisplayDateSeparator(message, index) {
+            if(!message.timeStamp) return false;
+            
             if (index === 0) {
-                return true; // 첫 번째 메시지는 항상 날짜 표시
+                return true;
             }
             
             if (index > 0) {
-                if(!message.timeStamp) return false;
                 const prevMessage = this.filteredMessages[index - 1];
                 const currentDate = new Date(message.timeStamp);
                 const prevDate = new Date(prevMessage.timeStamp);
