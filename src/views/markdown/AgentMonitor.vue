@@ -496,44 +496,59 @@ export default {
 
       const formValues = {};
 
-      // text 타입일 때만 output이 JSON이면 각 필드에 맞게 분리해서 넣기
-      if (task.crewType === 'text') {
-        let outputObj = null;
-        if (typeof task.output === 'object') {
-          outputObj = task.output;
-        } else if (typeof task.output === 'string') {
+      // text 타입 output 파싱 함수 (재귀적 JSON 파싱 + key:value 파싱)
+      function deepParseJson(str) {
+        let result = str;
+        let count = 0;
+        while (typeof result === 'string' && count < 5) {
           try {
-            outputObj = JSON.parse(task.output);
+            const parsed = JSON.parse(result);
+            if (typeof parsed === 'object' && parsed !== null) {
+              result = parsed;
+            } else {
+              break;
+            }
           } catch {
-            outputObj = null;
+            break;
           }
+          count++;
+        }
+        return result;
+      }
+
+      if (task.crewType === 'text') {
+        let parsed = deepParseJson(task.output);
+        // 만약 최종적으로도 객체가 아니면, "필드명: 값" 형태로 파싱 시도
+        if (typeof parsed !== 'object' || parsed === null) {
+          parsed = {};
+          const lines = String(task.output).split('\n');
+          lines.forEach(line => {
+            const match = line.match(/^([\w\-]+)\s*:\s*(.+)$/);
+            if (match) {
+              parsed[match[1]] = match[2];
+            }
+          });
         }
         fields.forEach(field => {
-          if ((field.tag === 'text-field' || field.tag === 'textarea-field') && outputObj && typeof outputObj === 'object' && outputObj[field.name] !== undefined) {
-            formValues[field.name] = outputObj[field.name];
-          } else if (field.tag === 'text-field' || field.tag === 'textarea-field') {
-            formValues[field.name] = task.output;
+          if (parsed && parsed[field.name] !== undefined) {
+            formValues[field.name] = parsed[field.name];
+          } else {
+            formValues[field.name] = '';
           }
         });
       } else {
-        // 기존 로직 유지
         fields.forEach(field => {
           if (
             (task.crewType === 'report' && field.tag === 'report-field') ||
             (task.crewType === 'slide' && field.tag === 'slide-field')
           ) {
             formValues[field.name] = this.sanitizeMarkdownOutput(task.output);
-          } else if (
-            task.crewType === 'text' && (field.tag === 'text-field' || field.tag === 'textarea-field')
-          ) {
-            formValues[field.name] = task.output;
           }
         });
       }
 
       console.log('submitTask - formValues:', formValues);
-
-      this.EventBus.emit('form-values-updated', {formValues});
+      this.EventBus.emit('form-values-updated', formValues);
     },
 
     // Supabase 로직 (건드리지 않음)
