@@ -484,7 +484,6 @@ export default {
     },
 
     submitTask(task) {
-
       // HTML에서 모든 필드 name과 태그명 추출
       const parser = new DOMParser();
       const doc = parser.parseFromString(this.html, 'text/html');
@@ -497,23 +496,44 @@ export default {
 
       const formValues = {};
 
-      fields.forEach(field => {
-        // crewType과 태그명 매칭
-        if (
-          (task.crewType === 'report' && field.tag === 'report-field') ||
-          (task.crewType === 'slide' && field.tag === 'slide-field')
-        ) {
-          formValues[field.name] = this.sanitizeMarkdownOutput(task.output);
-        } else if (
-          task.crewType === 'text' && (field.tag === 'text-field' || field.tag === 'textarea-field')
-        ) {
-          formValues[field.name] = task.output;
+      // text 타입일 때만 output이 JSON이면 각 필드에 맞게 분리해서 넣기
+      if (task.crewType === 'text') {
+        let outputObj = null;
+        if (typeof task.output === 'object') {
+          outputObj = task.output;
+        } else if (typeof task.output === 'string') {
+          try {
+            outputObj = JSON.parse(task.output);
+          } catch {
+            outputObj = null;
+          }
         }
-      });
+        fields.forEach(field => {
+          if ((field.tag === 'text-field' || field.tag === 'textarea-field') && outputObj && typeof outputObj === 'object' && outputObj[field.name] !== undefined) {
+            formValues[field.name] = outputObj[field.name];
+          } else if (field.tag === 'text-field' || field.tag === 'textarea-field') {
+            formValues[field.name] = task.output;
+          }
+        });
+      } else {
+        // 기존 로직 유지
+        fields.forEach(field => {
+          if (
+            (task.crewType === 'report' && field.tag === 'report-field') ||
+            (task.crewType === 'slide' && field.tag === 'slide-field')
+          ) {
+            formValues[field.name] = this.sanitizeMarkdownOutput(task.output);
+          } else if (
+            task.crewType === 'text' && (field.tag === 'text-field' || field.tag === 'textarea-field')
+          ) {
+            formValues[field.name] = task.output;
+          }
+        });
+      }
 
       console.log('submitTask - formValues:', formValues);
 
-      this.EventBus.emit('form-values-updated', formValues);
+      this.EventBus.emit('form-values-updated', {formValues});
     },
 
     // Supabase 로직 (건드리지 않음)
