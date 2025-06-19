@@ -3,7 +3,7 @@
         <v-row class="ma-0 pa-0 todo-task-column-box-pc">
             <v-col v-for="column in columns" :key="column.id"
                 class="pa-2 kanban-column"
-                cols="3"
+                :cols="columnCols"
             >
                 <KanbanColumn 
                     :column="column" 
@@ -30,6 +30,11 @@ export default {
     props: {
         columns: Array,
         users: Array,
+    },
+    computed: {
+        columnCols() {
+            return Math.floor(12 / this.columns.length);
+        }
     },
     methods: {
         
