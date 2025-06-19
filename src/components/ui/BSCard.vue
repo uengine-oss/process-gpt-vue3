@@ -15,14 +15,42 @@
           </template>
 
           <template v-slot:rightpart>
-            <div class="pa-3 mb-4 d-flex flex-wrap gap-2">
-              <v-btn color="primary" @click="addDialog = true">전략 추가</v-btn>
-              <v-btn @click="editDialog = true">전략 수정</v-btn>
-              <v-btn @click="deleteDialog = true">전략 삭제</v-btn>
-              <v-btn @click="connectionDialog = true">연결 추가</v-btn>
-              <v-btn @click="onZoomIn">확대</v-btn>
+            <div class="pa-3 mb-4 d-flex flex-wrap gap-2 justify-end">
+                <v-tooltip bottom>
+                    <template v-slot:activator="{ props }">
+                        <v-btn color="primary" size="30" elevation="2" v-bind="props" @click="addDialog = true">
+                            <v-icon size="small">mdi-plus</v-icon>
+                        </v-btn>
+                    </template>
+                    <span>전략 추가</span>
+                </v-tooltip>
+                <v-tooltip bottom>
+                    <template v-slot:activator="{ props }">
+                        <v-btn size="30" elevation="2" v-bind="props" @click="editDialog = true">
+                            <v-icon size="small">mdi-pencil</v-icon>
+                        </v-btn>
+                    </template>
+                    <span>전략 수정</span>
+                </v-tooltip>
+                <v-tooltip bottom>
+                    <template v-slot:activator="{ props }">
+                        <v-btn size="30" elevation="2" v-bind="props" @click="deleteDialog = true">
+                            <v-icon size="small">mdi-delete</v-icon>
+                        </v-btn>
+                    </template>
+                    <span>전략 삭제</span>
+                </v-tooltip>
+                <v-tooltip bottom>
+                    <template v-slot:activator="{ props }">
+                        <v-btn size="30" elevation="2" v-bind="props" @click="connectionDialog = true">
+                            <v-icon size="small">mdi-link</v-icon>
+                        </v-btn>
+                    </template>
+                    <span>연결 추가</span>
+                </v-tooltip>
+                <!-- <v-btn @click="onZoomIn">확대</v-btn>
               <v-btn @click="onZoomOut">축소</v-btn>
-              <v-btn @click="onResetView">초기화</v-btn>
+              <v-btn @click="onResetView">초기화</v-btn> -->
             </div>
             <div class="d-flex flex-wrap gap-2" style="width: 100%; height: 100%;">
               <div ref="container" class="strategy-map-container" style="width: 100%; height: 100%;"></div>
