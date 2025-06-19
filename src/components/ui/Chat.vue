@@ -419,10 +419,10 @@
                                                                     </div>
                                                                 </div>
                                                             </v-card>
+                                                            <v-progress-linear v-if="filteredMessages.length - 1 == index && isLoading" 
+                                                                indeterminate class="my-progress-linear">
+                                                            </v-progress-linear>
                                                         </v-sheet>
-                                                        <v-progress-linear
-                                                            v-if="filteredMessages.length - 1 == index && isLoading"
-                                                            indeterminate class="my-progress-linear"></v-progress-linear>
                                                     </div>
                                                 </div>
                                             </div>
