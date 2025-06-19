@@ -6,7 +6,7 @@
                 <Icons :icon="'close'" :size="16" />
             </v-btn>
         </v-card-title>
-        <v-card-text>
+        <v-card-text class="add-marketplace-dialog-input-box">
             <v-text-field v-model="newDefinition.id" :label="$t('ProcessDefinitionMarketPlaceDialog.processId')"
                 disabled
             />
@@ -33,41 +33,40 @@
             <div class="mt-4">
                 <div class="text-subtitle-1 mb-2">프로세스 대표 이미지</div>
                 <div class="image-preview-container d-flex flex-column align-center">
-                    <div v-if="imagePreview" class="image-preview mb-2">
+                    <div v-if="imagePreview" 
+                         class="image-preview mb-2 clickable" 
+                         :class="{ 'drag-over': isDragOver }"
+                         @click="handleImageUpload"
+                         @dragover.prevent="handleDragOver"
+                         @dragleave.prevent="handleDragLeave"
+                         @drop.prevent="handleDrop">
                         <img :src="imagePreview" alt="프로세스 이미지" class="preview-image"/>
+                        <div class="image-overlay">
+                            <v-icon size="24" color="white">mdi-image-edit</v-icon>
+                            <span class="overlay-text">클릭 또는 드래그하여 변경</span>
+                        </div>
                     </div>
-                    <div v-else class="no-image-placeholder mb-2 d-flex align-center justify-center">
-                        <span class="text-medium-emphasis">이미지가 없습니다</span>
+                    <div v-else 
+                         class="no-image-placeholder mb-2 d-flex flex-column align-center justify-center clickable" 
+                         :class="{ 'drag-over': isDragOver }"
+                         @click="handleImageUpload"
+                         @dragover.prevent="handleDragOver"
+                         @dragleave.prevent="handleDragLeave"
+                         @drop.prevent="handleDrop">
+                        <v-icon size="48" color="primary" class="mb-2">mdi-image-plus</v-icon>
+                        <span class="text-medium-emphasis">클릭 또는 드래그하여 이미지 추가</span>
                     </div>
-                    <div class="d-flex gap-2">
-                        <v-btn 
-                            color="primary" 
-                            variant="outlined" 
-                            @click="handleImageUpload"
-                            :prepend-icon="imagePreview ? 'mdi-image-refresh' : 'mdi-image-plus'"
-                        >
-                            {{ imagePreview ? '이미지 변경' : '이미지 추가' }}
-                        </v-btn>
-                        <!-- <v-btn 
-                            color="primary" 
-                            variant="outlined" 
-                            @click="generateImage"
-                            :prepend-icon="imagePreview ? 'mdi-refresh' : 'mdi-image-edit'"
-                        >
-                            {{ imagePreview ? '이미지 재생성' : '이미지 생성' }}
-                        </v-btn> -->
-                        <input
-                            type="file"
-                            ref="fileInput"
-                            accept="image/*"
-                            style="display: none"
-                            @change="onFileSelected"
-                        />
-                    </div>
+                    <input
+                        type="file"
+                        ref="fileInput"
+                        accept="image/*"
+                        style="display: none"
+                        @change="onFileSelected"
+                    />
                 </div>
             </div>
         </v-card-text>
-        <v-card-actions class="d-flex justify-center">
+        <v-card-actions class="d-flex justify-end">
             <v-btn @click="addDefinition" color="primary" rounded variant="flat" :disabled="!isFormValid">
                 {{ $t('ProcessDefinitionMarketPlaceDialog.register') }}
             </v-btn>
@@ -106,6 +105,7 @@ export default {
         imagePreview: null,
         isGeneratingImage: false,
         generator: null,
+        isDragOver: false,
     }),
     computed: {
         isFormValid() {
@@ -163,10 +163,23 @@ export default {
         handleImageUpload() {
             this.$refs.fileInput.click();
         },
-        async onFileSelected(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
+        handleDragOver(event) {
+            event.preventDefault();
+            this.isDragOver = true;
+        },
+        handleDragLeave(event) {
+            event.preventDefault();
+            this.isDragOver = false;
+        },
+        handleDrop(event) {
+            event.preventDefault();
+            this.isDragOver = false;
+            const file = event.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                this.processImageFile(file);
+            }
+        },
+        async processImageFile(file) {
             try {
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -178,6 +191,11 @@ export default {
             } catch (error) {
                 console.error('이미지 로드 중 오류 발생:', error);
             }
+        },
+        async onFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            await this.processImageFile(file);
         },
         async generateImage() {
             if (this.isGeneratingImage) return;
@@ -209,19 +227,70 @@ export default {
 
 .image-preview, .no-image-placeholder {
     width: 100%;
-    height: 256px;
+    height: 150px;
     border: 2px dashed #ccc;
-    border-radius: 8px;
+    border-radius: 12px;
     overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-preview:hover, .no-image-placeholder:hover {
+    border-color: rgb(var(--v-theme-primary));
+    box-shadow: 0 4px 16px rgba(var(--v-theme-primary), 0.2);
+    transform: translateY(-2px);
+}
+
+.no-image-placeholder {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    transition: all 0.3s ease;
+}
+
+.no-image-placeholder:hover {
+    background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.1) 0%, rgba(var(--v-theme-primary), 0.2) 100%);
+}
+
+.drag-over {
+    border-color: #4CAF50 !important;
+    background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%) !important;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3);
 }
 
 .preview-image {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
 }
 
-.no-image-placeholder {
-    background-color: #f5f5f5;
+.clickable {
+    cursor: pointer;
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.image-preview:hover .image-overlay {
+    opacity: 1;
+}
+
+.overlay-text {
+    color: white;
+    font-size: 12px;
+    text-align: center;
+    margin-top: 8px;
+    font-weight: 500;
 }
 </style>

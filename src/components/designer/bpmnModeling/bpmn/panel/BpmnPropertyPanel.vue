@@ -43,7 +43,7 @@
                 <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
             </v-btn>
         </v-row>
-        <v-card-text class="delete-input-details pa-0" style="overflow: auto; width: 50vw; min-width: 370px; height:calc(100% - 80px);">
+        <v-card-text class="delete-input-details pa-0 pr-4 pl-4" style="overflow: auto; width: 50vw; min-width: 370px; height:calc(100% - 80px);">
             <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="pa-4 pb-0">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
                 <div class="mb-3" v-if="!panelName.includes('sequence-flow')">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>

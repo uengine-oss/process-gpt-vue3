@@ -678,6 +678,11 @@ hr {
     border-radius: 10px !important;
 }
 
+.add-marketplace-dialog-input-box {
+    max-height: 70vh;
+    overflow: auto;
+}
+
 @media only screen and (max-width: 1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
