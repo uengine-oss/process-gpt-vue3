@@ -84,6 +84,8 @@ export interface Backend {
     getTaskList(): Promise<any>;
     watchNotifications(onNotification?: (notification: any) => void): Promise<any>;
     getMCPTools(): Promise<any>;
+    getBSCard(): Promise<any>;
+    putBSCard(card: any): Promise<any>;
     fetchAgentData(agentUrl: string): Promise<any>;
 }
 

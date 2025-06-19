@@ -112,8 +112,10 @@
 
                             <v-dialog v-model="dialog" persistent
                                 :fullscreen="isMobile"
+                                width="90vw"
+                                max-width="400px"
                             >
-                                <TodoDialog :instId="instance.instId" :defId="instance.defId" :todolist="columns" @close="closeDialog" />
+                                <TodoDialog  :instId="instance.instId" :defId="instance.defId" :todolist="columns" @close="closeDialog" />
                             </v-dialog>
                         </div>
                     </v-window-item>

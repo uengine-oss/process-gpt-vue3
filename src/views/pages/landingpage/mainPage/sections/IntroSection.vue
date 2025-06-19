@@ -122,7 +122,7 @@ export default {
 .value-card div {
    width: 15rem; /* 작은 아이콘 하나일땐 3rem */
   /* font-size: 2rem; */
-  color: #4a6cf7;
+  color: #1976D2;
   margin: 0 auto;
   margin-bottom: 20px;
 }

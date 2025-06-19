@@ -125,6 +125,11 @@ const MainRoutes = {
             path: '/privacy',
             component: () => import('@/views/pages/privacy/Privacy.vue')
         },
+        {
+            name: 'BSCard',
+            path: '/bscard',
+            component: () => import('@/components/ui/BSCard.vue')
+        },
 
         // {
         //     name: 'Email',

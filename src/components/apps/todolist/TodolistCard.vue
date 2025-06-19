@@ -4,16 +4,17 @@
             <div class="d-flex align-center justify-space-between ml-2">
                 <h5 class="text-h5 font-weight-semibold">{{ ($t('todoList.title')) }}</h5>
 
-                <v-avatar v-if="mode === 'ProcessGPT'"
+                <!-- '나의 업무'에서 기존 TODO였던 '예정 업무' 부분에 업무를 등록하던 버튼은 '예정 업무'가 제거되면서 주석 처리됨 -->
+                <!-- <v-avatar v-if="mode === 'ProcessGPT'"
                     size="24" elevation="10" class="bg-surface d-flex align-center cursor-pointer"
                     @click="openDialog"
                 >
                     <v-tooltip activator="parent" location="left">{{ ($t('todoList.addTask')) }}</v-tooltip>
                     <PlusIcon size="24" stroke-width="2" />
-                </v-avatar>
+                </v-avatar> -->
             </div>
             <KanbanBoard
-                :columns="todolist"
+                :columns="filteredTodolist"
                 :isNotAll="false"
                 :showAddButton="false"
                 @loadMore="handleLoadMore"
@@ -76,6 +77,9 @@ export default {
         isMobile() {
             return window.innerWidth <= 768;
         },
+        filteredTodolist() {
+            return this.todolist.filter(column => column.id !== 'TODO');
+        }
     },
     mounted() {
         this.mode = window.$mode;

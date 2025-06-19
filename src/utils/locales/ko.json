@@ -829,7 +829,7 @@
         "progress": "진행 상황",
         "history": "워크 히스토리",
         "chatbot": "어시스턴트",
-        "agent": "Agent 초안 생성",
+        "agent": "빠른 초안 생성",
         "agentMonitor": "Agent 모니터링",
         "toggleInputFieldSize": "확대 / 축소",
         "previous": "이전 단계",
@@ -1012,6 +1012,11 @@
         "separateFragments": "프래그먼트를 다른 슬라이드로 분리",
         "prepareButton": "PDF 준비하기",
         "cancelButton": "취소"
+    },
+    "BSCard": {
+        "title": "전략 맵",
+        "cardTitle": "전략 맵",
+        "description": "조직의 전략 목표를 4가지 관점(재무, 고객, 내부 프로세스, 학습 및 성장)으로 정리하고 시각화된 전략 맵을 생성합니다."
     },
     "ProjectCreationForm": {
         "title": "프로젝트 생성",

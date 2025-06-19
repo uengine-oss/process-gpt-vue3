@@ -828,7 +828,7 @@
         "progress": "Progress",
         "history": "Work History",
         "chatbot": "Assistant",
-        "agent": "Create Agent Draft",
+        "agent": "Quick Draft Generation",
         "agentMonitor": "Agent Monitor",
         "toggleInputFieldSize": "Toggle Input Field Size",
         "previous": "Previous Step",
@@ -1003,6 +1003,11 @@
         "separateFragments": "Split fragments into separate slides",
         "prepareButton": "Prepare PDF",
         "cancelButton": "Cancel"
+    },
+    "BSCard": {
+        "title": "Strategy Map",
+        "cardTitle": "Strategy Map",
+        "description": "Organize the organization's strategic goals into four perspectives (financial, customer, internal process, and learning and growth) and create a visualized strategy map."
     },
     "ProjectCreationForm": {
         "title": "Create Project",
