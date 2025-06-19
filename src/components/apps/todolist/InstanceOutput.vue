@@ -5,7 +5,8 @@
                 <v-card elevation="10" class="h-100">
                     <v-card-title> {{ item.name }} </v-card-title>
                     <v-card-text>
-                        <DynamicForm :formHTML="item.html" v-model="item.output" :readonly="true" class="dynamic-form" />
+                        <DynamicForm v-if="item.type === 'form'" :formHTML="item.html" v-model="item.output" :readonly="true" class="dynamic-form" />
+                        <div v-else-if="item.type === 'html'" v-html="item.html" class="border border-1 border-gray-300 rounded-md pa-2"></div>
                     </v-card-text>
                 </v-card>
             </v-col>
@@ -73,12 +74,22 @@ export default {
             const outputList = [];
             sortedTaskList.forEach(async (item) => {
                 if (item.status !== 'DONE') return;
+                if (item.task.agent_mode === 'A2A') {
+                    outputList.push({
+                        id: item.id,
+                        type: 'html',
+                        name: item.task.activity_name,
+                        html: item.task.output['html'],
+                        output: item.task.output['table_data'],
+                    });
+                }
                 const formId = item.tool.replace('formHandler:', '');
                 const form = formList.find(form => form.id === formId);
                 if (form) {
                     if (item.task.output && item.task.output[formId]) {
                         outputList.push({
                             id: formId,
+                            type: 'form',
                             name: item.title,
                             html: form.html,
                             output: item.task.output[formId],
@@ -90,6 +101,7 @@ export default {
                         })
                         outputList.push({
                             id: formId,
+                            type: 'form',
                             name: item.title,
                             html: form.html,
                             output: formData,

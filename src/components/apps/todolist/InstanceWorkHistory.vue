@@ -54,6 +54,16 @@ export default {
             return this.instance.status == "COMPLETED"
         },
     },
+    watch: {
+        '$route': {
+            deep: true,
+            async handler(newVal, oldVal) {
+                if (newVal.params.instId !== oldVal.params.instId) {
+                    await this.init();
+                }
+            }
+        },
+    },
     methods: {
         init() {
             var me = this;

@@ -168,6 +168,7 @@ create table if not exists public.todolist (
     project_id uuid null,
     draft jsonb null,
     agent_mode text null,
+    feedback jsonb null,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;

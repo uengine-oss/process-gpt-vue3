@@ -471,6 +471,7 @@ export default {
   background-color: #fff;
   border-radius: 12px;
   min-height: 600px;
+  font-family: 'Plus Jakarta Sans' !important
 }
 
 .editor-preview {
