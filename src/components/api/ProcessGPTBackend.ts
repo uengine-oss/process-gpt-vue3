@@ -229,11 +229,11 @@ class ProcessGPTBackend implements Backend {
 
     async getRawDefinition(defId: string, options: any) {
         try {
-            if (defId) {
-                defId = defId.toLowerCase();
-            } else {
-                return;
-            }
+            // if (defId) {
+            //     defId = defId.toLowerCase();
+            // } else {
+            //     return;
+            // }
 
             if (options) {
                 // 폼 정보를 불러오기 위해서
@@ -732,6 +732,49 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getBSCard() {
+        try {
+            const options = {
+                match: {
+                    key: 'strategy',
+                },
+                column: 'uuid'
+            };
+            const card = await storage.getObject(`configuration`, options);
+            return card;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    async putBSCard(card: any) {
+        try {
+            const options = {
+                match: {
+                    key: 'strategy'
+                },
+                column: 'uuid'
+            };
+    
+            const existing = await storage.getString('configuration', options);
+    
+            const uuid = typeof existing === 'string' ? existing : this.uuid();
+    
+            const putObj = {
+                uuid,
+                key: 'strategy',
+                value: card,
+                tenant_id: window.$tenantName
+            };
+    
+            await storage.putObject('configuration', putObj);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
+
     async filterProcDefMap(map: any) {
         // 사용자 권한에 따라 필터링
         const uid = localStorage.getItem('uid');
@@ -968,15 +1011,18 @@ class ProcessGPTBackend implements Backend {
         function extractFieldAttributes(elements: any) {
             elements.forEach((element: any) => {
                 const alias = element.getAttribute('alias');
-                const vModel = element.getAttribute('v-model');
-                const match = vModel.match(/slotProps\.modelValue\['(.*?)'\]/);
+                const nameAttr = element.getAttribute('name') || '';
+                const vModel = element.getAttribute('v-model') || '';
+                // v-model 바인딩에서 bracket 표기법으로 키를 추출, 없으면 name 속성을 기본으로 사용
+                const bracketMatch = vModel.match(/\[['"](.+?)['"]\]/);
+                const key = bracketMatch && bracketMatch[1] ? bracketMatch[1] : nameAttr;
                 const tagName = element.tagName.toLowerCase();
                 const disabled = element.getAttribute('disabled');
                 const readonly = element.getAttribute('readonly');
 
                 let field: any = {
                     text: alias || '',
-                    key: match ? (match[1] || '') : '',
+                    key: key,
                     type: tagName.replace('-field', '') || '',
                     disabled: disabled ? disabled : false,
                     readonly: readonly ? readonly : false
