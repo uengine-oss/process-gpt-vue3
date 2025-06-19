@@ -169,6 +169,7 @@ ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS category text;
 ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS tags text;
 ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS author_name text;
 ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS author_uid text;
+ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS image text;
 ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS import_count integer DEFAULT 0;
 
 -- form_def_marketplace table
@@ -190,6 +191,7 @@ ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS url text;
 ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS description text;
 ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS tools text;
 ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS profile text;
+ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS skills text;
 
 -- tenant_oauth table
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS id UUID DEFAULT uuid_generate_v4();

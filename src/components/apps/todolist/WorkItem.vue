@@ -13,7 +13,8 @@
                 </v-chip>
                 <v-tooltip :text="$t('processDefinition.zoom')">
                     <template v-slot:activator="{ props }">
-                        <v-btn @click="$globalState.methods.toggleZoom()"
+                        <v-btn v-if="!isMobile" 
+                            @click="$globalState.methods.toggleZoom()"
                             class="ml-1"
                             size="x-small"
                             icon="$vuetify" variant="text"
@@ -480,7 +481,7 @@ export default {
                     if (me.isDryRun) {
                         me.workItem = me.dryRunWorkItem
                         me.currentActivities = [me.workItem.activity.tracingTag];
-                        if(me.isSimulate == 'true') {
+                        if(me.isSimulate == 'true' && me.processDefinition.bpmn) {
                             me.bpmn = me.processDefinition.bpmn;
                         } else {
                             me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });

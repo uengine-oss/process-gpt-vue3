@@ -11,6 +11,7 @@ export default class AgentChatGenerator extends AIGenerator {
 
     beforeGenerate(message) {
         this.message = message.text;
+        this.agentInfo = this.client.agentInfo;
         if (this.client.agentInfo && this.client.agentInfo.url && this.client.agentInfo.url !== '') {
             this.type = 'a2a';
             this.options = {
@@ -34,6 +35,17 @@ export default class AgentChatGenerator extends AIGenerator {
                 chat_room_id: this.chatRoomId,
                 options: this.options
             }
+
+            if (this.client.messages) {
+                this.client.messages.push({
+                    role: 'agent',
+                    name: this.agentInfo.name,
+                    profile: this.agentInfo.profile,
+                    content: '답변을 생성 중입니다...',
+                    isLoading: true
+                });
+            }
+            
             const response = await fetch('/execution/multi-agent/chat', {
                 method: 'POST',
                 headers: {
@@ -104,13 +116,15 @@ export default class AgentChatGenerator extends AIGenerator {
                     let responseObj = this.createModelJson(this.type, result);
                     this.modelJson = JSON.stringify(responseObj);
                     const model = this.createModel(this.modelJson);
-                    
                     this.state = 'end';
-                    if (this.client.onModelCreated) {
-                        this.client.onModelCreated(model);
+                    if (this.client.afterModelCreated) {
+                        this.client.afterModelCreated(model);
                     }
-                    if (this.client.onGenerationFinished) {
-                        this.client.onGenerationFinished(model);
+                    this.client.messages = this.client.messages.filter((message) => {
+                        return !message.isLoading;  
+                    });
+                    if (this.client.afterGenerationFinished) {
+                        this.client.afterGenerationFinished(model);
                     }
                 }
             } else {

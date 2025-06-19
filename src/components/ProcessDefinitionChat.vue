@@ -1310,16 +1310,64 @@ export default {
                                 // this.bpmn = this.createBpmnXml(this.processDefinition);
                                 // console.log('done');
                             } else if (modification.action == 'delete') {
-                                if(this.processDefinition[targetJsonPath]) {
-                                    let deleteIdx = this.processDefinition[targetJsonPath].findIndex(x => x.id == modification.value.id)
-                                    if(deleteIdx != -1) this.processDefinition[targetJsonPath].splice(deleteIdx, 1)
-                                } else {
-                                    let deleteIdx = this.processDefinition['elements'].findIndex(x => x.id == modification.value.id)
-                                    if(deleteIdx != -1) this.processDefinition['elements'].splice(deleteIdx, 1)
+                                const elementToDelete = modification.value;
+                                const elementId = elementToDelete.id;
+                                
+                                // 1. 먼저 sequences에서 해당 요소와 관련된 모든 연결 제거
+                                if (this.processDefinition.sequences) {
+                                    this.processDefinition.sequences = this.processDefinition.sequences.filter(seq => 
+                                        seq.source !== elementId && seq.target !== elementId
+                                    );
                                 }
-                                // this.modificationRemove(modification, modeler);
-                                // let xml = await modeler.saveXML({ format: true, preamble: true });
-                                // this.bpmn = xml.xml;
+                                
+                                // 2. elements 배열에서 sequence 요소들 제거
+                                if (this.processDefinition.elements) {
+                                    this.processDefinition.elements = this.processDefinition.elements.filter(element => {
+                                        if (element.elementType === 'Sequence') {
+                                            return element.source !== elementId && element.target !== elementId;
+                                        }
+                                        return element.id !== elementId;
+                                    });
+                                }
+                                
+                                // 3. 타겟 경로에서 요소 제거
+                                if (this.processDefinition[targetJsonPath]) {
+                                    this.processDefinition[targetJsonPath] = this.processDefinition[targetJsonPath].filter(
+                                        item => item.id !== elementId
+                                    );
+                                }
+                                
+                                // 4. 다른 요소들의 참조 정리
+                                const cleanupReferences = (items) => {
+                                    if (!items) return;
+                                    items.forEach(item => {
+                                        if (item.source === elementId) {
+                                            item.source = '';
+                                        }
+                                        if (item.target === elementId) {
+                                            item.target = '';
+                                        }
+                                    });
+                                };
+                                
+                                cleanupReferences(this.processDefinition.elements);
+                                cleanupReferences(this.processDefinition.sequences);
+                                
+                                // 5. 프로세스 정의 정리 및 변환
+                                if (this.processDefinition.activities && this.processDefinition.sequences) {
+                                    this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
+                                }
+                                
+                                // 6. BPMN XML 재생성
+                                try {
+                                    this.bpmn = this.createBpmnXml(this.processDefinition);
+                                } catch (error) {
+                                    console.error('Error creating BPMN XML:', error);
+                                    // 오류 발생 시 기본 BPMN 구조 유지
+                                    if (!this.bpmn) {
+                                        this.bpmn = '<?xml version="1.0" encoding="UTF-8"?>\n<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"></bpmn:definitions>';
+                                    }
+                                }
                             }
                             if(this.processDefinition['activities'] && this.processDefinition['sequences']) {
                                 this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);

@@ -109,6 +109,7 @@ export default {
                         this.$emit('updated');
                         this.EventBus.emit('instances-updated');
                         await this.getChatList(this.chatRoomId);
+                        this.streamingText = '';
                     }
                 });
             }

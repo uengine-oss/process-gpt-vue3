@@ -259,7 +259,7 @@ export default {
 }
 
 .btn-privacy-modal {
-  background-color: #4a6cf7;
+  background-color: #1976D2;
   color: white;
 }
 

@@ -84,6 +84,7 @@ export interface Backend {
     getTaskList(): Promise<any>;
     watchNotifications(onNotification?: (notification: any) => void): Promise<any>;
     getMCPTools(): Promise<any>;
+    fetchAgentData(agentUrl: string): Promise<any>;
 }
 
 // export type { Backend }

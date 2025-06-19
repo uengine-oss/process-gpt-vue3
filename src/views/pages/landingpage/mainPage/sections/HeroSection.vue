@@ -9,7 +9,7 @@
           <!-- '시작하기' 버튼과 동일한 구조로 마켓플레이스 버튼 정렬 (to, color, class, height 순서로 통일) -->
           <v-btn @click="gotoStart()"
               to="/definition-map"
-              color="primary"
+              color="#1976D2"
               class="rounded-pill"
               height="48"
           >베타 테스트하기</v-btn>
@@ -24,15 +24,15 @@
         </div>
         <div class="mt-6">
             <a
-                class="text-primary font-medium text-decoration-none"
+                class="font-medium text-decoration-none"
                 href="/assets/images/mainPages/process_gpt_presentation.pdf"
                 target="_blank"
                 rel="noopener"
-                style="width: fit-content; display: block;"
+                style="width: fit-content; display: block; color: #1976D2;"
             >
               <v-row>
                 <div>Technical Report 보기</div>
-                <v-icon class="ml-1" style="margin-top: 1px;" size="18" color="primary">mdi-open-in-new</v-icon>
+                <v-icon class="ml-1" style="margin-top: 1px;" size="18" color="#1976D2">mdi-open-in-new</v-icon>
               </v-row>
             </a>
         </div>

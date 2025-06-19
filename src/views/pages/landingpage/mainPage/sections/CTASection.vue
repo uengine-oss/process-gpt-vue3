@@ -68,7 +68,7 @@ export default {
 
 .cta-box {
   padding: 80px 0;
-  background-color: #4a6cf7;
+  background-color: #1976D2;
   /* background-color: rgb(37 99 235/var(--tw-bg-opacity,1)); */
   position: relative;
   overflow: hidden;
@@ -114,9 +114,9 @@ export default {
 }
 
 .btn-primary-cta {
-  /* background-color: #4a6cf7; */
+  /* background-color: #1976D2; */
   background-color: white;
-  color: #4a6cf7;
+  color: #1976D2;
   /* color: white; */
 }
 
@@ -127,8 +127,8 @@ export default {
 
 .btn-secondary-cta {
   background-color: transparent;
-  /* color: #4a6cf7;
-  border: 1px solid #4a6cf7; */
+  /* color: #1976D2;
+  border: 1px solid #1976D2; */
   color: white;
   border: 1px solid white;
 }
