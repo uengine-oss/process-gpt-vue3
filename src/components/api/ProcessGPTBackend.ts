@@ -968,15 +968,18 @@ class ProcessGPTBackend implements Backend {
         function extractFieldAttributes(elements: any) {
             elements.forEach((element: any) => {
                 const alias = element.getAttribute('alias');
-                const vModel = element.getAttribute('v-model');
-                const match = vModel.match(/slotProps\.modelValue\['(.*?)'\]/);
+                const nameAttr = element.getAttribute('name') || '';
+                const vModel = element.getAttribute('v-model') || '';
+                // v-model 바인딩에서 bracket 표기법으로 키를 추출, 없으면 name 속성을 기본으로 사용
+                const bracketMatch = vModel.match(/\[['"](.+?)['"]\]/);
+                const key = bracketMatch && bracketMatch[1] ? bracketMatch[1] : nameAttr;
                 const tagName = element.tagName.toLowerCase();
                 const disabled = element.getAttribute('disabled');
                 const readonly = element.getAttribute('readonly');
 
                 let field: any = {
                     text: alias || '',
-                    key: match ? (match[1] || '') : '',
+                    key: key,
                     type: tagName.replace('-field', '') || '',
                     disabled: disabled ? disabled : false,
                     readonly: readonly ? readonly : false
