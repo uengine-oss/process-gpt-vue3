@@ -66,6 +66,14 @@ export default {
         },
     },
     watch: {
+        '$route': {
+            deep: true,
+            async handler(newVal, oldVal) {
+                if (newVal.params.instId !== oldVal.params.instId) {
+                    await this.init();
+                }
+            }
+        },
         instance: {
             deep: true,
             async handler(newVal, oldVal) {
