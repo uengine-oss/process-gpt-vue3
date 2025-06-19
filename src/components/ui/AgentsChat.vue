@@ -84,8 +84,8 @@
                     <div v-else-if="message.content.type =='system'">
                         <div v-html="message.content.data"></div>
                     </div>
+                    <v-progress-linear v-if="false" class="my-progress-linear" indeterminate></v-progress-linear>
                 </v-sheet>
-                <v-progress-linear v-if="false" class="my-progress-linear" indeterminate></v-progress-linear>
             </div>
         </div>
         <div v-if="totalSize == (currentIndex+1) && agentInfo.isRunning">
