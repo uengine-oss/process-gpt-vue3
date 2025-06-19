@@ -245,12 +245,6 @@
       Chat
     },
     computed: {
-      strategyOptions() {
-        return this.jsonData.strategies.map(strategy => ({
-          id: strategy.id,
-          name: strategy.name
-        }));
-      }
     },
     data() {
       return {
@@ -319,15 +313,21 @@
         newMessage: null,
         userList: [],
         agentList: [],
+        strategyOptions :[],
       };
     },
     watch: {
-      // strategyScale: {
-      //   handler(newVal) {
-      //     this.init();
-      //   },
-      //   immediate: true
-      // }
+      'jsonData.strategies': {
+        handler(newVal) {
+          if(newVal) {
+            this.strategyOptions = newVal.map(strategy => ({
+                id: strategy.id,
+                name: strategy.name
+              }));
+          }
+        },
+        deep: true
+      }
     },
     mounted() {
       this.generator = new ChatGenerator(this, {
@@ -532,30 +532,30 @@
 
         let sourcePoint, targetPoint;
 
-        if (Math.abs(dx) > Math.abs(dy)) {
-          // 좌우 연결
-          if (dx > 0) {
-            // 오른쪽
-            sourcePoint = {
-              x: source.x + source.width,
-              y: srcCenter.y
-            };
-            targetPoint = {
-              x: target.x,
-              y: tgtCenter.y
-            };
-          } else {
-            // 왼쪽
-            sourcePoint = {
-              x: source.x,
-              y: srcCenter.y
-            };
-            targetPoint = {
-              x: target.x + target.width,
-              y: tgtCenter.y
-            };
-          }
-        } else {
+        // if (Math.abs(dx) > Math.abs(dy)) {
+        //   // 좌우 연결
+        //   if (dx > 0) {
+        //     // 오른쪽
+        //     sourcePoint = {
+        //       x: source.x + source.width,
+        //       y: srcCenter.y
+        //     };
+        //     targetPoint = {
+        //       x: target.x,
+        //       y: tgtCenter.y
+        //     };
+        //   } else {
+        //     // 왼쪽
+        //     sourcePoint = {
+        //       x: source.x,
+        //       y: srcCenter.y
+        //     };
+        //     targetPoint = {
+        //       x: target.x + target.width,
+        //       y: tgtCenter.y
+        //     };
+        //   }
+        // } else {
           // 상하 연결
           if (dy > 0) {
             // 아래
@@ -578,7 +578,7 @@
               y: target.y + target.height
             };
           }
-        }
+        // }
 
         modeling.connect(source, target, {
           type: 'custom:connection',
@@ -685,6 +685,7 @@
           this.agentList = await this.backend.getAgentList();
       },
       beforeSendMessage(newMessage) {
+          this.generator.initPreviousMessages();
           this.sendMessage(newMessage);
           const msgObj = this.createMessageObj(newMessage);
           const putObj =  {
@@ -725,7 +726,7 @@
                         }
                     }
 
-                    if (unknown && unknown.modifications) {
+                    /*if (unknown && unknown.modifications) {
                         unknown.modifications.forEach(modification => {
                             if (modification.action == "replace") {
                                 this.jsonPathReplace(this, modification.targetJsonPath, modification.value)
@@ -735,8 +736,9 @@
                                 this.jsonPathDelete(this, modification.targetJsonPath)
                             }
                         });
-                    }
+                    }*/
                     
+                    this.jsonData = unknown;
                     this.initializeFromData(unknown);
 
                     await backend.putBSCard(unknown);
