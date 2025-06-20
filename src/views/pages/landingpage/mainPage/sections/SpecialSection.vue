@@ -4,7 +4,7 @@
       <div class="section-header">
         <h2 style="color: #fff;">영상 갤러리</h2>
       </div>
-      <div class="bg-white p-6 rounded-md shadow-md mb-8" style="max-width: 630px; margin: 0 auto;">
+      <div class="bg-white rounded-md shadow-md mb-8" style="max-width: 630px; margin: 0 auto; padding: 8px 8px 20px 8px;">
         <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
           <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
             src="https://www.youtube.com/embed/kd6_hKSQDYc" 
@@ -15,15 +15,14 @@
       </div>
 
       <div class="movie-gallery-box-3 mb-8">
-        <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
+        <div class="movie-gallery-item bg-white rounded-md shadow-md">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
             <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
               src="https://www.youtube.com/embed/B5s2z35-yMg" 
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
           </div>
-          <h3 class="movie-gallery-h3 text-center font-bold mt-4">
-            에이전트 지식의 자동 관리</h3>
+          <h3 class="movie-gallery-h3 txt-vertical-center text-center font-bold mt-4">에이전트 지식의 자동 관리</h3>
         </div>
         <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
@@ -41,7 +40,7 @@
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
           </div>
-          <h3 class="movie-gallery-h3 text-center font-bold mt-4">에이전트가 초안 생성</h3>
+          <h3 class="movie-gallery-h3 txt-vertical-center text-center font-bold mt-4">에이전트가 초안 생성</h3>
         </div>
       </div>
 
@@ -204,6 +203,7 @@ export default {
 }
 .movie-gallery-item {
   width: 32%;
+  padding: 8px 8px 20px 8px;
 }
 .movie-gallery-box-2 > .movie-gallery-item:first-child {
   margin-right: 2%;
@@ -211,6 +211,9 @@ export default {
 .movie-gallery-h3 {
     font-size: 1.25rem;
     line-height: 1.75rem;
+}
+.movie-gallery-h3.txt-vertical-center {
+  line-height: 3.3rem;
 }
 
 @media (max-width: 1279px) {
@@ -239,6 +242,9 @@ export default {
   }
   .movie-gallery-box-2 > .movie-gallery-item:first-child {
     margin: 0 0 32px 0;
+  }
+  .movie-gallery-h3.txt-vertical-center {
+    line-height: 1.5rem;
   }
 }
 </style>
