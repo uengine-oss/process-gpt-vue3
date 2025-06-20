@@ -1,4 +1,4 @@
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default class AIGenerator {
     constructor(client, options) {
@@ -167,8 +167,10 @@ export default class AIGenerator {
             let response = await fetch(`${this.backendUrl}/sanity-check`);
             if(response.status == 401){
                 // access_token이 만료되어서 접속이 안되는 경우가 있기 때문에 이런 경우, 강재로 세션을 갱신 후, 재시도
-                const storage = StorageBaseFactory.getStorage();
-                await storage.refreshSession();
+                const backend = BackendFactory.createBackend();
+                const tenantId = window.$tenantName;
+                await backend.setTenant(tenantId)
+                
                 response = await fetch(`${this.backendUrl}/sanity-check`);
             }
 
