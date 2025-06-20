@@ -53,9 +53,6 @@ export default {
 
         // mcp agent
         threadId: '',
-        
-        // 워크아이템 모니터링을 위한 interval ID
-        workItemIntervalId: null,
     }),
     computed: {
         chatName() {
@@ -92,14 +89,30 @@ export default {
         }
 
         if (!this.isAgentMode && !this.isTaskMode) {
-            this.startWorkItemMonitoring();
-        }
-    },
-    beforeDestroy() {
-        // 컴포넌트가 제거될 때 interval 정리
-        if (this.workItemIntervalId) {
-            clearInterval(this.workItemIntervalId);
-            this.workItemIntervalId = null;
+            const worklist = await backend.getWorkListByInstId(this.chatRoomId);
+            const workItem = worklist.find(item => item.task.status == 'SUBMITTED');
+            this.streamingText = '';
+            if (workItem) {
+                const taskId = workItem.taskId;
+                await backend.getTaskLog(taskId, async (task) => {
+                    if (this.streamingText == '') {
+                        this.streamingText = task.log;
+                        this.messages.push({
+                            role: 'system',
+                            content: this.streamingText,
+                        });
+                    } else if (this.streamingText != '') {
+                        this.streamingText = task.log;
+                        this.messages[this.messages.length - 1].content = this.streamingText;
+                    }
+                    if (task.status == "DONE") {
+                        this.$emit('updated');
+                        this.EventBus.emit('instances-updated');
+                        await this.getChatList(this.chatRoomId);
+                        this.streamingText = '';
+                    }
+                });
+            }
         }
     },
     watch: {
@@ -431,80 +444,6 @@ export default {
                 
             }
         },
-        startWorkItemMonitoring() {
-            this.checkWorkItem();
-            this.workItemIntervalId = setInterval(() => {
-                this.checkWorkItem();
-            }, 3000);
-        },
-        
-        async checkWorkItem() {
-            try {
-                const worklist = await backend.getWorkListByInstId(this.chatRoomId);
-                const workItem = worklist.find(item => item.task.status == 'SUBMITTED' || item.task.status == 'IN_PROGRESS');
-                
-                if (workItem) {
-                    if (this.workItemIntervalId) {
-                        clearInterval(this.workItemIntervalId);
-                        this.workItemIntervalId = null;
-                        // this.messages.push({
-                        //     role: 'system',
-                        //     content: '...',
-                        // });
-                    }
-
-                    const lastMessage = this.messages[this.messages.length - 1];
-                    const taskId = workItem.taskId;
-                    let runningTask = false;
-                    let messageUpdated = false;
-                    
-                    await backend.getTaskLog(taskId, async (task) => {
-                        if (task.log && task.log.length > 0) runningTask = true;
-                        if (runningTask && lastMessage.role == 'system') {
-                            lastMessage.content = task.log;
-                        }
-
-                        if (task.status == "DONE") {
-                            this.$emit('updated');
-                            this.EventBus.emit('instances-updated');
-
-                            if (!messageUpdated) {
-                                const message = {
-                                    "role": "system",
-                                    "content": `${task.activity_name} 활동이 완료되었습니다.`,
-                                    "timeStamp": Date.now()
-                                }
-                                let formHtml = '';
-                                let formJson = {};
-                                if (task.agent_mode !== 'A2A') {
-                                    const formId = task.tool.replace("formHandler:", "");
-                                    formHtml = await backend.getRawDefinition(formId, { type: "form"});
-                                    formJson = task.output[formId] || {};
-                                } else {
-                                    if (task.output && task.output['html'] && task.output['table_data']) {
-                                        formHtml = task.output['html'];
-                                        formJson = task.output['table_data'];
-                                    }
-                                }
-                                if (formHtml !== '' && Object.keys(formJson).length > 0) {
-                                    message.contentType = "html";
-                                    message.htmlContent = formHtml;
-                                    message.jsonContent = formJson;
-                                }
-                                await this.putMessage(message);
-                                this.messages.push(message);
-                                messageUpdated = true;
-                            }
-                            await this.getChatList(this.chatRoomId);
-                            // this.streamingText = '';
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('워크아이템 확인 중 오류 발생:', error);
-            }
-        },
-        
     }
 };
 </script>
