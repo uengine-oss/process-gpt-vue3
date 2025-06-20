@@ -113,7 +113,7 @@
         />
 
         <v-select
-          v-model="editForm.parents"
+          v-model="strategyForm.parents"
           :items="upperStrategyOptions(null, strategyForm.perspective)"
           item-title="name"
           item-value="id"
@@ -333,13 +333,15 @@
         strategyForm: {
           name: '',
           perspective: '',
-          description: ''
+          description: '',
+          parents: []
         },
         editDialog: false,
         editForm: {
           id: null,
           name: '',
-          description: ''
+          description: '',
+          parents: []
         },
         connectionDialog: false,
         selectedConnectionSource: null,
@@ -493,25 +495,6 @@
           modeling.removeElements(allElements);
         }
       },
-      removeStrategy(id) {
-        const elementRegistry = this.diagram.get('elementRegistry');
-        const modeling = this.diagram.get('modeling');
-
-        const target = elementRegistry.get(id);
-
-        if (!target) {
-          console.warn(`삭제할 strategy (${id}) 없음`);
-          return;
-        }
-
-        if (target.type !== 'custom:strategy') {
-          console.warn(`id ${id}는 strategy가 아님`);
-          return;
-        }
-
-        this.jsonData.strategies = this.jsonData.strategies.filter(s => s.id !== id);
-        modeling.removeElements([target]);
-      },
       addStrategyLane(name, perspective, index, totalLanes) {
         const elementFactory = this.diagram.get('elementFactory');
         const canvas = this.diagram.get('canvas');
@@ -637,13 +620,15 @@
         const zoomScroll = this.diagram.get('zoomScroll');
         zoomScroll.reset();
       },
-      confirmDeleteStrategy() {
-        this.removeStrategy(this.selectedStrategy.id);
+      async confirmDeleteStrategy() {
+        this.jsonData.strategies = this.jsonData.strategies.filter(s => s.id !== this.selectedStrategy.id);
+        this.initializeFromData(this.jsonData);
+        await backend.putBSCard(this.jsonData);
         this.deleteDialog = false;
         this.selectedStrategy = null;
       },
-      saveStrategy() {
-        const { name, perspective, description } = this.strategyForm;
+      async saveStrategy() {
+        const { name, perspective, description, parents } = this.strategyForm;
         if (!name || !perspective) return;
 
         // ID 생성
@@ -666,18 +651,17 @@
           name,
           perspective,
           description,
-          index: newIndex
+          parents: parents
         });
 
-        // 2. 다이어그램에 반영
-        this.addStrategy(name, perspective, newId);
+        this.initializeFromData(this.jsonData);
 
-        // 3. 폼 리셋 & 닫기
+        await backend.putBSCard(this.jsonData);
         this.addDialog = false;
-        this.strategyForm = { name: '', perspective: '', description: '' };
+        this.strategyForm = { name: '', perspective: '', description: '', parents: [] };
       },
-      saveEditedStrategy() {
-        const { name, description } = this.editForm;
+      async saveEditedStrategy() {
+        const { name, description, parents } = this.editForm;
         const { id } = this.selectedStrategy;
         const strategy = this.jsonData.strategies.find(s => s.id === id);
         if (!strategy) return;
@@ -685,18 +669,14 @@
         // 업데이트
         strategy.name = name;
         strategy.description = description;
+        strategy.parents = parents;
 
-        // 뷰어 업데이트는 생략 (name만 변경이면 별도 적용 필요 시 구현)
-        const elementRegistry = this.diagram.get('elementRegistry');
-        const eventBus = this.diagram.get('eventBus');
-        const element = elementRegistry.get(id);
-        if (element) {
-          element.di.name = name;
-          eventBus.fire('element.changed', { element });
-        }
+        this.initializeFromData(this.jsonData);
+
+        await backend.putBSCard(this.jsonData);
 
         this.editDialog = false;
-        this.editForm = { id: null, name: '', description: '' };
+        this.editForm = { id: null, name: '', description: '', parents: [] };
         this.selectedStrategy = null;
       },
       confirmAddConnection() {

@@ -1,5 +1,8 @@
 <template>
   <div class="agent-monitor">
+    <div v-if="errorMessage" class="error-banner">
+      {{ errorMessage }}
+    </div>
     <div v-if="false" class="task-list">
       <div v-for="event in feedbackEventsSorted" :key="event.id" class="task-card">
         <div class="task-header">
@@ -259,7 +262,8 @@ export default {
       events: [],
       channel: null,
       slideIndexes: {}, // task별 현재 슬라이드 인덱스 관리
-      expandedTasks: {} // task별 확장/축소 상태 관리
+      expandedTasks: {}, // task별 확장/축소 상태 관리
+      errorMessage: null // 에러 메시지 상태 추가
     }
   },
   computed: {
@@ -696,12 +700,17 @@ export default {
     // Supabase 로직 (건드리지 않음)
     async loadData() {
       try {
+        this.errorMessage = null;
         this.events = [];
         const taskId = this.getTaskIdFromWorkItem()
         if (!taskId) {
+          this.errorMessage = 'taskId를 찾을 수 없습니다.';
           console.error('taskId를 찾을 수 없습니다.')
           return
         }
+
+        console.group('🔄 초기 데이터 로드');
+        console.log('작업 ID:', taskId);
 
         const { data, error } = await window.$supabase
           .from('events')
@@ -710,36 +719,73 @@ export default {
           .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'feedback_started', 'feedback_completed'])
           .order('timestamp', { ascending: true })
           
-        if (error) throw error
+        if (error) {
+          this.errorMessage = '이벤트 데이터를 불러오는 중 오류가 발생했습니다: ' + error.message;
+          throw error
+        }
         if (data) {
           this.events = data
-          // 가져온 모든 id의 todo_id를 출력
-          data.forEach(event => {
-          });
+          console.log('로드된 이벤트 수:', data.length);
+          console.table(data.map(event => ({
+            이벤트_ID: event.id,
+            할일_ID: event.todo_id,
+            이벤트_타입: event.event_type,
+            타임스탬프: new Date(event.timestamp).toLocaleString('ko-KR')
+          })));
         }
+        console.groupEnd();
       } catch (error) {
+        this.errorMessage = '이벤트 데이터를 불러오는 중 오류가 발생했습니다: ' + (error.message || error);
         console.error('Failed to load data from Supabase:', error)
       }
     },
     setupRealtimeSubscription() {
-      this.channel = window.$supabase
-        .channel('events')
-        .on('postgres_changes', { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'events'
-        }, ({ new: row }) => {
-          const taskId = this.getTaskIdFromWorkItem();
-          const todoId = row.todo_id;
-          const exists = this.events.some(e => e.id === row.id);
+      try {
+        this.channel = window.$supabase
+          .channel('events')
+          .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'events'
+          }, ({ new: row }) => {
+            const taskId = this.getTaskIdFromWorkItem();
+            const todoId = row.todo_id;
+            const exists = this.events.some(e => e.id === row.id);
 
-          if (!exists && ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'feedback_started', 'feedback_completed'].includes(row.event_type) && todoId === taskId) {
-            this.events = [...this.events, row];
-            console.log('실시간 추가 후 this.events:', this.events);
-            console.log('tasks computed 트리거 예상');
-          }
-        })
-        .subscribe();
+            console.group('📥 실시간 이벤트 수신');
+            console.log('수신된 이벤트:', {
+              이벤트_ID: row.id,
+              작업_ID: taskId,
+              할일_ID: todoId,
+              이벤트_타입: row.event_type,
+              타임스탬프: new Date(row.timestamp).toLocaleString('ko-KR'),
+              ID_일치여부: todoId === taskId ? '✅ 일치' : '❌ 불일치'
+            });
+
+            if (!exists && ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'feedback_started', 'feedback_completed'].includes(row.event_type) && todoId === taskId) {
+              this.events = [...this.events, row];
+              console.log('✅ 이벤트가 추가되었습니다');
+              console.log('현재 총 이벤트 수:', this.events.length);
+            } else {
+              console.log('❌ 이벤트가 추가되지 않았습니다', {
+                이미존재: exists,
+                유효한이벤트타입: ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'feedback_started', 'feedback_completed'].includes(row.event_type),
+                ID일치: todoId === taskId
+              });
+              if (todoId !== taskId) {
+                console.warn('[ID 불일치] 이벤트 todo_id:', todoId, 'vs 현재 taskId:', taskId, '이벤트 전체:', row);
+              }
+            }
+            console.groupEnd();
+          })
+          .subscribe((status) => {
+            if (status === 'SUBSCRIPTION_ERROR') {
+              this.errorMessage = '실시간 이벤트 구독에 실패했습니다.';
+            }
+          });
+      } catch (error) {
+        this.errorMessage = '실시간 구독 중 오류가 발생했습니다: ' + (error.message || error);
+      }
     },
     cleanup() {
       if (this.channel) {
@@ -797,6 +843,17 @@ export default {
   max-height: 70vh;
   overflow-y: auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.error-banner {
+  background: #ffe0e0;
+  color: #b71c1c;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  text-align: center;
+  border: 1px solid #ffbdbd;
 }
 
 .task-list {
