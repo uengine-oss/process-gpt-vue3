@@ -1,13 +1,78 @@
 <template>
-  <section class="special bg-blue-50" id="special">
+  <section class="movie-gallery" id="movie-gallery">
+    <div class="container mx-auto pb-12">
+      <div class="section-header">
+        <h2 style="color: #fff;">영상 갤러리</h2>
+      </div>
+      <div class="bg-white p-6 rounded-md shadow-md mb-8" style="max-width: 630px; margin: 0 auto;">
+        <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
+          <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            src="https://www.youtube.com/embed/kd6_hKSQDYc" 
+            frameborder="0" crolling="no" allowfullscreen="">
+          </iframe>
+        </div>
+        <h3 class="movie-gallery-h3 text-center font-bold mt-4">Process GPT - 나의 친구, 나의 AI 에이전트</h3>
+      </div>
+
+      <div class="movie-gallery-box-3 mb-8">
+        <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
+          <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+              src="https://www.youtube.com/embed/B5s2z35-yMg" 
+              frameborder="0" crolling="no" allowfullscreen="">
+            </iframe>
+          </div>
+          <h3 class="movie-gallery-h3 text-center font-bold mt-4">
+            에이전트 지식의 자동 관리</h3>
+        </div>
+        <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
+          <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+              src="https://www.youtube.com/embed/pNqZdzavOb4" 
+              frameborder="0" crolling="no" allowfullscreen="">
+            </iframe>
+          </div>
+          <h3 class="movie-gallery-h3 text-center font-bold mt-4">조직 목표를 달성을 위한 자동화된 휴먼-에이전트 팀 프로세스 정의</h3>
+        </div>
+        <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
+          <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+              src="https://www.youtube.com/embed/IOhX6h9ox1Q" 
+              frameborder="0" crolling="no" allowfullscreen="">
+            </iframe>
+          </div>
+          <h3 class="movie-gallery-h3 text-center font-bold mt-4">에이전트가 초안 생성</h3>
+        </div>
+      </div>
+
+      <div class="movie-gallery-box-2">
+        <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
+          <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+              src="https://www.youtube.com/embed/dBNDa18JQZc" 
+              frameborder="0" crolling="no" allowfullscreen="">
+            </iframe>
+          </div>
+          <h3 class="movie-gallery-h3 text-center font-bold mt-4">A2A 에이전트 등록</h3>
+        </div>
+        <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
+          <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+              src="https://www.youtube.com/embed/qYEpj1B3FmE" 
+              frameborder="0" crolling="no" allowfullscreen="">
+            </iframe>
+          </div>
+          <h3 class="movie-gallery-h3 text-center font-bold mt-4">A2A 호출 & 서비스 노출</h3>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="special bg-blue-50" id="special"> 
     <div class="container mx-auto pb-12">
       <div class="section-header">
         <h2>Process GPT의 핵심 차별점</h2>
       </div>
-      <!-- <h2 class="text-3xl font-bold text-center mb-16">Process GPT의 핵심 차별점</h2> -->
-      <!-- <div class="intro-text">
-        <p>Process GPT는 기존 AI 에이전트 시스템과 달리 비즈니스 프로세스를 자동으로 식별하고 구현하는 혁신적인 접근 방식을 제공합니다. 사용자는 코딩 지식 없이도 자연어 대화만으로 복잡한 비즈니스 프로세스를 정의하고 실행할 수 있습니다.</p>
-      </div> -->
       <p class="text-lg text-gray-700 text-center max-w-4xl mx-auto mb-12">Process GPT는 기존 AI 에이전트 시스템과 달리 비즈니스 프로세스를 자동으로 식별하고 구현하는 혁신적인 접근 방식을 제공합니다. 사용자는 코딩 지식 없이도 자연어 대화만으로 복잡한 비즈니스 프로세스를 정의하고 실행할 수 있습니다.</p>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div class="bg-white p-8 rounded-lg shadow-md">
@@ -100,12 +165,15 @@ export default {
 </script>
 
 <style scoped>
-.special {
+.movie-gallery {
   padding: 80px 0;
-  background-color: rgb(#1976D2, 0.1) !important;
+  background-color: #1976D2;
+  /* background-color: var(--bg-color-light); */
 }
 
-
+.special {
+  padding: 80px 0;
+}
 
 .section-header {
   text-align: center;
@@ -126,25 +194,51 @@ export default {
   margin: 0 auto;
 }
 
-.intro-text {
-  max-width: 800px;
-  margin: 0 auto;
-  text-align: center;
+.movie-gallery-box-3 {
+  display: flex; 
+  justify-content: space-between;
+}
+.movie-gallery-box-2 {
+  display: flex; 
+  justify-content: center;
+}
+.movie-gallery-item {
+  width: 32%;
+}
+.movie-gallery-box-2 > .movie-gallery-item:first-child {
+  margin-right: 2%;
+}
+.movie-gallery-h3 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
 }
 
-.intro-text p {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: var(--text-color);
+@media (max-width: 1279px) {
+  .movie-gallery-h3 {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
 }
 
 @media (max-width: 768px) {
   .special {
     padding: 60px 0;
   }
-  
   .section-header h2 {
     font-size: 1.8rem;
+  }
+   
+  .movie-gallery-box-3, .movie-gallery-box-2 {
+    display: block;
+  }
+  .movie-gallery-item {
+    width: 100%;
+  }
+  .movie-gallery-box-3 > .movie-gallery-item:first-child, .movie-gallery-box-3 > .movie-gallery-item:nth-child(2) {
+    margin-bottom: 32px;
+  }
+  .movie-gallery-box-2 > .movie-gallery-item:first-child {
+    margin: 0 0 32px 0;
   }
 }
 </style>
