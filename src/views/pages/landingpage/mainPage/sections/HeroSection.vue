@@ -14,12 +14,12 @@
               height="48"
           >베타 테스트하기</v-btn>
           <v-btn 
-              to="https://www.youtube.com/watch?v=kd6_hKSQDYc&list=PLEr96Fo5umW9KIzFLelvN4pc8jsdcEl65"
-              target="_blank"
               color="secondary"
               class="rounded-pill"
               height="48"
-          >갤러리 보기</v-btn>
+          >
+            <a href="https://www.youtube.com/watch?v=kd6_hKSQDYc&list=PLEr96Fo5umW9KIzFLelvN4pc8jsdcEl65" target="_blank">갤러리 보기</a>
+          </v-btn>
           <!-- <v-btn 
               to="/marketplace"
               color="secondary"
