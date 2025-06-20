@@ -1,11 +1,9 @@
 import axios from '@/utils/axios';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
-
 import type { Backend } from './Backend';
 
 import { formatDistanceToNowStrict } from 'date-fns';
-import messages from '@/utils/locales/messages';
 
 enum ErrorCode {
     TableNotFound = "42P01"
@@ -41,18 +39,24 @@ class ProcessGPTBackend implements Backend {
         return false;
     }
 
-    async listDefinition(path: string) {
+    async listDefinition(path: string, options?: any) {
         try {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
             if (path == 'form_def') {
-                let formDefs = await storage.list('form_def');
+                let formDefs = await storage.list('form_def', options);
                 formDefs.map((item: any) => {
                     item.path = `${item.id}`
                     item.name = item.name || item.path 
                 });
                 return formDefs
             } else {
-                let procDefs = await storage.list('proc_def', (path ? { like: `${path}%` } : undefined));
+                if (options) {
+                    options.match = { isdeleted: false }
+                    if (path) {
+                        options.like = `${path}%`
+                    }
+                }
+                let procDefs = await storage.list('proc_def', options);
                 procDefs.map((item: any) => {
                     item.path = `${item.id}`
                     item.name = item.name || item.path 
@@ -103,19 +107,22 @@ class ProcessGPTBackend implements Backend {
                     await storage.delete(`lock/${defId}`, { key: 'id' });
                 }
 
-                // const instList = await storage.list(defId);
-                // if (instList && instList.length > 0) {
-                //     await Promise.all([
-                //         await storage.delete('todolist', { match: { proc_def_id: defId } }),
-                //         await storage.delete('proc_inst', { match: { proc_def_id: defId } }),
-                //     ]);
-                // }
                 await Promise.all([
                     await storage.delete('todolist', { match: { proc_def_id: defId } }),
                     await storage.delete('bpm_proc_inst', { match: { proc_def_id: defId } }),
                 ]);
                 
-                await storage.delete(`proc_def/${defId}`, { key: 'id' });
+                return await storage.delete(`proc_def/${defId}`, { key: 'id' });
+                
+                // var procDef: any = await storage.getObject('proc_def', {
+                //     match: {
+                //         id: defId,
+                //     }
+                // });
+                // if (procDef) {
+                //     procDef.isdeleted = true;
+                //     await storage.putObject('proc_def', procDef);
+                // }
             }
         } catch (e) {
             
@@ -125,9 +132,22 @@ class ProcessGPTBackend implements Backend {
     }
 
     
-    async restoreDefinition(defId: string, options: any): Promise<boolean | undefined> {
-        if (defId.includes('.bpmn')) defId = defId.replace('.bpmn', '')
-        return false;
+    async restoreDefinition(defId: string, options: any) {
+        try {
+            if (defId.includes('.bpmn')) defId = defId.replace('.bpmn', '');
+
+            var procDef: any = await storage.getObject('proc_def', {
+                match: {
+                    id: defId,
+                }
+            });
+            if (procDef) {
+                procDef.isdeleted = false;
+                return await storage.putObject('proc_def', procDef);
+            }
+        } catch (e) {
+            throw new Error(e.message);
+        }
     }
     
     async putRawDefinition(xml: any, defId: string, options: any) {
@@ -154,8 +174,8 @@ class ProcessGPTBackend implements Backend {
                     await storage.putObject('form_def', {
                         id: defId.replace(/\//g, "#"),
                         html: xml,
-                        proc_def_id: options.proc_def_id,
-                        activity_id: options.activity_id,
+                        proc_def_id: defId == 'defaultform' ? 'default' : options.proc_def_id,
+                        activity_id: defId == 'defaultform' ? 'default' : options.activity_id,
                         fields_json: fieldsJson
                     });
                 }
@@ -209,11 +229,11 @@ class ProcessGPTBackend implements Backend {
 
     async getRawDefinition(defId: string, options: any) {
         try {
-            if (defId) {
-                defId = defId.toLowerCase();
-            } else {
-                return;
-            }
+            // if (defId) {
+            //     defId = defId.toLowerCase();
+            // } else {
+            //     return;
+            // }
 
             if (options) {
                 // 폼 정보를 불러오기 위해서
@@ -226,10 +246,15 @@ class ProcessGPTBackend implements Backend {
                     return data;
                 } else if(options.type === "bpmn") {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "_")
-                    const data = await storage.getString(`proc_def/${defId}`, { key: 'id', column: 'bpmn' });
-                    if(!data) {
-                        return null;
-                    }
+                    let data = null;
+                    // ::TODO: 개정된 프로세스 실행에 대한 작업 완료 후 사용
+                    // if (options.version && options.version != '') {
+                    //     data = await storage.getString(`proc_def_arcv`, { column: 'snapshot', match: {
+                    //         proc_def_id: defId, arcv_id: options.version
+                    //     } });
+                    // } else {
+                        data = await storage.getString(`proc_def`, { column: 'bpmn', match: { id: defId } });
+                    // }
                     return data;
                 }
             } else {
@@ -293,41 +318,30 @@ class ProcessGPTBackend implements Backend {
         try {
             const email = localStorage.getItem('email');
             input.email = email;
+            input['tenant_id'] = window.$tenantName;
 
-            var url = `/execution/complete`;
+            let url = `/execution/complete`;
             if (input.answer && input.answer.image != null) {
                 url = `/execution/vision-complete`;
             }
-            
-            var req = {
-                input: input
-            };
-            
-            var result: any = null;
-            await axios.post(url, req).then(res => {
-                if (res.data) {
-                    const data = JSON.parse(res.data);
-                    if (data) {
-                        result = data;
-                        if (result.cannotProceedErrors && result.cannotProceedErrors.length > 0) {
-                            result.errors = result.cannotProceedErrors;
-                        }   
-                    }
+
+            const request = { input };
+            const response = await axios.post(url, request, {
+                headers: {
+                    'Content-Type': 'application/json'
                 }
-            })
-            .catch(error => {
-                if (error.detail && error.detail.status_code && error.detail.status_code == 401) {
-                    alert('토큰이 만료되었습니다. 다시 로그인 해주세요.');
-                }
-                result.error = error;
             });
 
-            return result;
-        } catch (error) {
-            //@ts-ignore
-            return error;
+            if (response && response.data) {
+                return response.data;
+            } else {
+                return null;
+            }
+
+        } catch (error: any) {
+            return { error: error.message || error };
         }
-    }
+    } 
 
     async getInstance(instanceId: string) {
         try {
@@ -337,12 +351,29 @@ class ProcessGPTBackend implements Backend {
                 }
             };
             const instance = await storage.getObject('bpm_proc_inst', options);
-            if (instance) {
-                instance.defId = instance.proc_def_id;
-                instance.instanceId = instanceId;
-                instance.name = instance.proc_inst_name;
-            }
-            return instance;
+            // const instance = await storage.getObject('instance', { match: { 'instance_id': instanceId } });
+            // if (instance) {
+            //     instance.defId = instance.proc_def_id;
+            //     instance.instanceId = instanceId;
+            //     instance.name = instance.proc_inst_name;
+            //     instance.defVer = instance.proc_def_version;
+            // }
+            return this.returnInstanceObject(instance);
+            // return  {
+            //     instId: instance.proc_inst_id,
+            //     defId: instance.proc_def_id,
+            //     name: instance.proc_inst_name,
+            //     projectId: instance.project_id,
+            //     currentActivityIds: instance.current_activity_ids,
+            //     currentUserIds: instance.current_user_ids,
+            //     roleBindings: instance.role_bindings,
+            //     variables_data: instance.variables_data,
+            //     status: instance.status,
+            //     tenantId: instance.tenant_id,
+            //     startDate: instance.start_date,
+            //     endDate: instance.end_date,
+            //     dueDate: instance.due_date,
+            // };
         } catch (e) {
             
             //@ts-ignore
@@ -353,20 +384,76 @@ class ProcessGPTBackend implements Backend {
     async getAllInstanceList(page: any, size: any) {
         try {
             const list = await storage.list('bpm_proc_inst');
-            return list;
+            return list.map((item: any) => {
+                return this.returnInstanceObject(item);
+                // return {
+                //     instId: item.proc_inst_id,
+                //     defId: item.proc_def_id,
+                //     name: item.proc_inst_name,
+                //     projectId: item.project_id,
+                //     currentActivityIds: item.current_activity_ids,
+                //     currentUserIds: item.current_user_ids,
+                //     roleBindings: item.role_bindings,
+                //     variables_data: item.variables_data,
+                //     status: item.status,
+                //     tenantId: item.tenant_id,
+                //     startDate: item.start_date,
+                //     endDate: item.end_date,
+                //     dueDate: item.due_date,
+                // }
+            })
         } catch (e) {
             //@ts-ignore
             throw new Error(e.message);
         }
     }
 
+    async getInstanceByProjectId(projectId: number) {
+        try {
+            const list = await storage.list('bpm_proc_inst', {match: { 'project_id': projectId } });
+
+            return list.map((item: any) => {
+                return this.returnInstanceObject(item);
+                // return {
+                //     instId: item.proc_inst_id,
+                //     defId: item.proc_def_id,
+                //     name: item.proc_inst_name,
+                //     projectId: item.project_id,
+                //     currentActivityIds: item.current_activity_ids,
+                //     currentUserIds: item.current_user_ids,
+                //     roleBindings: item.role_bindings,
+                //     variables_data: item.variables_data,
+                //     status: item.status,
+                //     tenantId: item.tenant_id,
+                //     startDate: item.start_date,
+                //     endDate: item.end_date,
+                //     dueDate: item.due_date,
+                // }
+            })
+        } catch (error) {
+            
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getWorkItem(taskId: string) {
         try {
             if (!taskId) return
+            
             const workitem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
-            const defInfo = await this.getRawDefinition(workitem.proc_def_id, null);
-            const inst = await this.getInstance(workitem.proc_inst_id);
+            let definition: any = null;
+            let instance: any = null;
 
+            if (!workitem) {
+                return;
+            } else if (workitem.proc_def_id) {
+                definition = await this.getRawDefinition(workitem.proc_def_id, null);
+                if (workitem.proc_inst_id) {
+                    instance = await this.getInstance(workitem.proc_inst_id);
+                }
+            }
+            
             let parameters: any[] = [];
             let outParameterContext: any = {
                 variable: {
@@ -375,14 +462,14 @@ class ProcessGPTBackend implements Backend {
             };
             let activityInfo: any = null;
 
-            if (defInfo && defInfo.definition) {
-                activityInfo = defInfo.definition.activities.find((activity: any) => activity.id === workitem.activity_id);
+            if (definition && definition.definition) {
+                activityInfo = definition.definition.activities.find((activity: any) => activity.id === workitem.activity_id);
                 if (activityInfo && activityInfo.properties) {
                     const properties = JSON.parse(activityInfo.properties);
-                    if (properties.parameters) {
+                    if (properties.parameters && instance) {
                         parameters = properties.parameters;
                         parameters.forEach((item: any) => {
-                            item.variable.defaultValue = inst[item.variable.name.toLowerCase().replace(/ /g, '_')] || "";
+                            item.variable.defaultValue = instance[item.variable.name.toLowerCase().replace(/ /g, '_')] || "";
                         })
                     }
                     if (properties.variableForHtmlFormContext && properties.variableForHtmlFormContext.name) {
@@ -396,6 +483,7 @@ class ProcessGPTBackend implements Backend {
                     parameterValues[item.argument.text] = item.variable.defaultValue
                 })
             }
+
             const newWorkItem = {
                 worklist: {
                     defId: workitem.proc_def_id,
@@ -409,7 +497,9 @@ class ProcessGPTBackend implements Backend {
                     status: workitem.status === 'TODO' ? 'NEW' : workitem.status === 'DONE' ? 'COMPLETED' : workitem.status,
                     description: workitem.description || "",
                     tool: workitem.tool || "",
-                    currentActivities: inst.current_activity_ids || []
+                    adhoc: workitem.adhoc || false,
+                    currentActivities: workitem.adhoc ? [] : (instance && instance.currentActivityIds ? instance.currentActivityIds : [ activityInfo.id ]),
+                    defVerId: instance && instance.defVersion ? instance.defVersion : null
                 },
                 activity: {
                     name: workitem.activity_name,
@@ -436,6 +526,11 @@ class ProcessGPTBackend implements Backend {
             if (options && options.status) {
                 filter.match.status = options.status;
             }
+             
+            if(options && options.projectId) {
+                filter.match.project_id = options.projectId;
+            }
+
             if (options && options.instId) {
                 filter.match.proc_inst_id = options.instId;
             } else {
@@ -443,29 +538,29 @@ class ProcessGPTBackend implements Backend {
                 filter.match.user_id = email;
             }
             const list = await storage.list('todolist', filter);
-            const worklist: any[] = [];
-            if (list && list.length > 0) {
-                for (const item of list) {
-                    const workItem: any = {
-                        defId: item.proc_def_id,
-                        endpoint: item.user_id,
-                        instId: item.proc_inst_id,
-                        rootInstId: null,
-                        taskId: item.id,
-                        startDate: item.start_date,
-                        endDate: item.end_date,
-                        dueDate: item.due_date,
-                        status: item.status,
-                        title: item.activity_name || "",
-                        tracingTag: item.activity_id || "",
-                        description: item.description || "",
-                        tool: item.tool || "",
-                        instName: item.proc_inst_name || ""
-                    };
-                    worklist.push(workItem);
-                }
-            }
-            return worklist;
+
+            return list.map((item: any) => {
+                return this.returnWorkItemObject(item);
+                // return {
+                //     taskId: item.id,
+                //     defId: item.proc_def_id,
+                //     endpoint: item.user_id,
+                //     instId: item.proc_inst_id,
+                //     rootInstId: null,
+                //     startDate: item.start_date,
+                //     endDate: item.end_date,
+                //     dueDate: item.due_date,
+                //     status: item.status,
+                //     name: item.activity_name || "",
+                //     tracingTag: item.activity_id || "",
+                //     description: item.description || "",
+                //     tool: item.tool || "",
+                //     instName: item.proc_inst_name || "",
+                //     projectId: item.project_id || null,
+                //     adhoc: item.adhoc || false,
+                //     output: item.output || ""
+                // }
+            });
         } catch (error) {
             
             //@ts-ignore
@@ -485,20 +580,23 @@ class ProcessGPTBackend implements Backend {
         try {
             let result: any = null;
             if (!workItem.instId || workItem.status != "DONE") {
+                if(workItem.adhoc && !workItem.tool) workItem.tool = 'formHandler:defaultform'; // adhoc 작업인 경우 tool을 defaultform으로 설정
                 const putObj = {
-                    id: taskId,
+                    id: taskId || this.uuid(),
                     proc_def_id: workItem.defId || workItem.defId,
-                    user_id: workItem.endpoint || workItem.endpoint,
-                    proc_inst_id: workItem.instId || workItem.instId,
+                    user_id: workItem.endpoint || localStorage.getItem('email'),
+                    proc_inst_id: workItem.instId || workItem.parent,
                     start_date: workItem.startDate || workItem.startDate,
                     end_date: workItem.endDate || workItem.endDate,
                     due_date: workItem.dueDate || workItem.dueDate,
                     status: workItem.status || workItem.status,
                     activity_id: workItem.tracingTag || workItem.title,
-                    activity_name: workItem.title || workItem.title,
-                    description: workItem.description || workItem.description,
-                    tool: workItem.tool || workItem.tool,
-                    adhoc: workItem.adhoc || workItem.adhoc
+                    activity_name: workItem.title || workItem.name,
+                    description: workItem.description || null,
+                    reference_ids: workItem.referenceIds || null,
+                    tool: workItem.tool || null,
+                    adhoc: workItem.adhoc || null,
+                    project_id: workItem.projectId || null,
                 }
                 await storage.putObject('todolist', putObj);
 
@@ -635,6 +733,49 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getBSCard() {
+        try {
+            const options = {
+                match: {
+                    key: 'strategy',
+                },
+                column: 'uuid'
+            };
+            const card = await storage.getObject(`configuration`, options);
+            return card;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    async putBSCard(card: any) {
+        try {
+            const options = {
+                match: {
+                    key: 'strategy'
+                },
+                column: 'uuid'
+            };
+    
+            const existing = await storage.getString('configuration', options);
+    
+            const uuid = typeof existing === 'string' ? existing : this.uuid();
+    
+            const putObj = {
+                uuid,
+                key: 'strategy',
+                value: card,
+                tenant_id: window.$tenantName
+            };
+    
+            await storage.putObject('configuration', putObj);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
+
     async filterProcDefMap(map: any) {
         // 사용자 권한에 따라 필터링
         const uid = localStorage.getItem('uid');
@@ -746,7 +887,7 @@ class ProcessGPTBackend implements Backend {
                     existingMap.push(item);
                 }
             }
-            console.log("변경된 프로세스 정의 체계도", existingMap);
+            // console.log("변경된 프로세스 정의 체계도", existingMap);
             return {
                 mega_proc_list: existingMap
             };
@@ -871,15 +1012,18 @@ class ProcessGPTBackend implements Backend {
         function extractFieldAttributes(elements: any) {
             elements.forEach((element: any) => {
                 const alias = element.getAttribute('alias');
-                const vModel = element.getAttribute('v-model');
-                const match = vModel.match(/slotProps\.modelValue\['(.*?)'\]/);
+                const nameAttr = element.getAttribute('name') || '';
+                const vModel = element.getAttribute('v-model') || '';
+                // v-model 바인딩에서 bracket 표기법으로 키를 추출, 없으면 name 속성을 기본으로 사용
+                const bracketMatch = vModel.match(/\[['"](.+?)['"]\]/);
+                const key = bracketMatch && bracketMatch[1] ? bracketMatch[1] : nameAttr;
                 const tagName = element.tagName.toLowerCase();
                 const disabled = element.getAttribute('disabled');
                 const readonly = element.getAttribute('readonly');
 
                 let field: any = {
                     text: alias || '',
-                    key: match ? (match[1] || '') : '',
+                    key: key,
                     type: tagName.replace('-field', '') || '',
                     disabled: disabled ? disabled : false,
                     readonly: readonly ? readonly : false
@@ -891,7 +1035,7 @@ class ProcessGPTBackend implements Backend {
         const fieldTags = [
             'text-field', 'select-field', 'checkbox-field', 'radio-field', 
             'file-field', 'label-field', 'boolean-field', 'textarea-field', 
-            'user-select-field'
+            'user-select-field', 'report-field', 'slide-field'
         ];
     
         fieldTags.forEach(tag => {
@@ -905,16 +1049,23 @@ class ProcessGPTBackend implements Backend {
     async getVariableWithTaskId(instId: string, taskId: string, formDefId: string) {
         try {
             let varData: any = null;
-            const instance: any = await this.getInstance(instId);
-            if (instance && instance.variables_data && instance.variables_data.length > 0) {
-                instance.variables_data.forEach((item: any) => {
-                    if (item.key === formDefId) {
-                        varData = item.value;
+            const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            if (workItem) {
+                // const formId = workItem.tool.replace('formHandler:', '');
+                if (formDefId) {
+                    if(!workItem.output) workItem.output = {}
+
+                    if(formDefId == 'user_input_text') {
+                        if(!workItem.output[formDefId]) workItem.output[formDefId] = ''
+                        varData = workItem.output
+                    } else {
+                        if(!workItem.output[formDefId]) workItem.output[formDefId] = {}
+                        varData = workItem.output[formDefId]
                     }
-                })
+                }
             }
 
-            if (!varData) {
+            if (varData) {
                 var fields: any = [];
                 const formObject: any = await storage.getObject(`form_def/${formDefId}`, { key: 'id' });
                 if (formObject) {
@@ -932,10 +1083,13 @@ class ProcessGPTBackend implements Backend {
                 }
             }
 
+            // if(formDefId == 'user_input_text') { 
+            //     if(!varData['user_input_text']) varData['user_input_text'] = varData;
+            // }
+
             const result = {
                 valueMap: varData
             }
-
             return result;
         } catch (error) {
             //@ts-ignore
@@ -967,33 +1121,31 @@ class ProcessGPTBackend implements Backend {
                 return;
             }
 
-            const columnName: any = varName.toLowerCase().replace(/ /g, '_');
-            const instance: any = await this.getInstance(instId);
-            if (instance && instance.variables_data && instance.variables_data.length > 0) {
-                let existed = false;
-                instance.variables_data.forEach((item: any) => {
-                    if (item.key === columnName) {
-                        item.value = varValue.valueMap ? varValue.valueMap : varValue;
-                        existed = true;
-                    }
-                })
-                if (!existed) { 
-                    instance.variables_data.push({
-                        key: columnName,
-                        value: varValue.valueMap ? varValue.valueMap : varValue
-                    })
+            if (varValue.valueMap) {
+                varValue = varValue.valueMap;
+            }
+
+            if (varValue._type) {
+                delete varValue._type;
+            }
+
+            const workItem = await storage.getObject(`todolist/${taskId}`, { key: 'id' });
+            if (workItem) {
+                if(varName == 'user_input_text') {
+                    if(!workItem.output) workItem.output = {}
+                    if(!workItem.output[varName]) workItem.output[varName] = ''
+                    workItem.output[varName] = varValue[varName]
+                } else {
+                    if(workItem.adhoc && !workItem.tool) workItem.tool = 'formHandler:defaultform';
+                    const formId = workItem.tool.replace('formHandler:', '')
+                    if (formId) {
+                        if(!workItem.output) workItem.output = {}
+                        if(!workItem.output[formId]) workItem.output[formId] = {}
+                        workItem.output[formId] = varValue;
+                    }    
                 }
-            } else {
-                instance.variables_data = [{
-                    key: columnName,
-                    value: varValue.valueMap ? varValue.valueMap : varValue
-                }]
             }
-            const putObj: any = {
-                proc_inst_id: instId,
-                variables_data: instance.variables_data
-            }
-            await storage.putObject('bpm_proc_inst', putObj);
+            await storage.putObject('todolist', workItem);
         } catch (error) {
             
             //@ts-ignore
@@ -1099,28 +1251,43 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async fetchInstances(callback: (payload: any) => void) {
+        try {
+            await storage.watch('bpm_proc_inst', 'bpm_proc_inst', (payload) => {
+                if (payload && payload.new && payload.eventType) {
+                    const instance = payload.new;
+                    if (callback) {
+                        callback(this.returnInstanceObject(instance));
+                    }
+                }
+            });
+
+            return true;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
     async fetchInstanceListByStatus(status: string): Promise<any[]> {
+        var me = this
         const list = await storage.list('bpm_proc_inst', { match: { status: status } });
         const email = window.localStorage.getItem("email");
         const filteredData = list.filter((item: any) => item.current_user_ids.includes(email));
 
         if (filteredData && filteredData.length > 0) {
-            const result = filteredData.map((item: any) => {
-                return {
-                    instId: item.proc_inst_id,
-                    instName: item.proc_inst_name,
-                    status: item.status,
-                    defId: item.proc_def_id
-                }
+            return filteredData.map((item: any) => {
+                return me.returnInstanceObject(item);
             });
-            return result;
         }
         return [];
     }
 
     async getInstanceList() {
         try {
-            let instList: any[] = await this.fetchInstanceListByStatus("RUNNING");
+            let instList: any[] = [];
+            const runningList = await this.fetchInstanceListByStatus("RUNNING");
+            const newList = await this.fetchInstanceListByStatus("NEW");
+            instList = [...runningList, ...newList];
             return instList;
         } catch (error) {
             
@@ -1152,25 +1319,7 @@ class ProcessGPTBackend implements Backend {
         try {
             const list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
             const worklist: any[] = list.map((item: any) => {
-                return {
-                    defId: item.proc_def_id,
-                    instId: item.proc_inst_id,
-                    rootInstId: item.proc_inst_id,
-                    taskId: item.id,
-                    startDate: item.start_date,
-                    endDate: item.end_date,
-                    dueDate: item.due_date,
-                    status: item.status,
-                    title: item.activity_name,
-                    tool: item.tool || '',
-                    tracingTag: item.activity_id || '',
-                    description: item.description || '',
-                    endpoint: item.user_id,
-                    assignees: item.assignees || [],
-                    adhoc: item.adhoc || false,
-                    reference_ids: item.reference_ids || [],
-                    task: item
-                }
+                return this.returnWorkItemObject(item);
             })
             return worklist;
         } catch (e) {
@@ -1201,7 +1350,7 @@ class ProcessGPTBackend implements Backend {
             list.forEach((item: any) => {
                 if(item.status == 'DONE') {
                     result[item.activity_id] = 'Completed';
-                } else if(item.status == 'IN_PROGRESS') {
+                } else if(item.status == 'IN_PROGRESS' || item.status == 'SUBMITTED') {
                     result[item.activity_id] = 'Running';
                 } else if(item.status == 'PENDING') {
                     result[item.activity_id] = 'Pending';
@@ -1301,6 +1450,31 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async putInstance(instId: string, instItem: any) {
+        try {
+            return await storage.putObject('bpm_proc_inst', {
+                proc_inst_id: instId || this.uuid(),
+                proc_def_id: instItem.procDefId,
+                proc_def_version: instItem.procDefVersion,
+                proc_inst_name: instItem.name,
+                current_activity_ids: instItem.currentActivityIds || [],
+                current_user_ids: instItem.currentUserIds || [],
+                role_bindings: instItem.roleBindings || [],
+                variables_data: instItem.variablesData || [],
+                status: instItem.status,
+                tenant_id: instItem.tenantId || 'localhost',
+                start_date: instItem.startDate,
+                end_date: instItem.endDate,
+                due_date: instItem.dueDate,
+                project_id: instItem.projectId,
+            });
+                
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async deleteInstance(instId: string) {
         try {
             await Promise.all([
@@ -1341,11 +1515,11 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
-
+    
     async watchNotifications(onNotification?: (notification: any) => void) {
         try {
             await storage.watchNotifications(`notifications`, (payload) => {
-                if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+                if (payload && payload.new && payload.eventType === "INSERT") { // || payload.eventType === "UPDATE"
                     const notification = payload.new;
                     if (onNotification) {
                         onNotification(notification);
@@ -1360,22 +1534,21 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getNotifications() {
+    async getNotifications(callback: (data: any) => void) {
         try {
-            await storage.watch('notifications', async (data: any) => {
+            const uid = localStorage.getItem('uid');
+            await storage.watch('notifications', `notifications-${uid}`, (data: any) => {
                 if(data && data.new) {
-                    await this.fetchNotifications();
+                    callback(data);
                 }
             });
-
-            return await this.fetchNotifications();
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
         }
     }
 
-    private async fetchNotifications() {
+    async fetchNotifications() {
         try {
             let notifications: any[] = [];
             const userId = localStorage.getItem('email');
@@ -1404,6 +1577,8 @@ class ProcessGPTBackend implements Backend {
                     return acc;
                 }, {}));
             }
+
+            notifications = notifications.filter((item: any) => !item.is_checked);
             return notifications;
         } catch (error) {
             //@ts-ignore
@@ -1414,7 +1589,7 @@ class ProcessGPTBackend implements Backend {
     async setNotifications(value: any) {
         try {
             if (value.count > 1) {
-                const notifications = await this.getNotifications();
+                const notifications = await this.fetchNotifications();
                 notifications.forEach(async (item: any) => {
                     if (item.url === value.url && item.user_id === value.user_id) {
                         const putObj = { id: item.id, is_checked: true };
@@ -1431,9 +1606,105 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async search(keyword: string) {
+    async search(keyword: string, callback?: (results: any[]) => void) {
         try {
-            return await storage.search(keyword);
+            let results: any[] = [];
+
+            const dbPromise = storage.search(keyword);
+            const vectorPromise = this.searchVector(keyword);
+
+            results.push({
+                type: 'loading',
+                header: '유사한 결과 검색 중...',
+                list: []
+            });
+            const dbResult = await dbPromise;
+            results = [...results, ...dbResult];
+            
+            if (callback) {
+                callback(results);
+            }
+
+            vectorPromise.then(async (vectorResult) => {
+                if (vectorResult && vectorResult.length > 0) {
+                    const procDefs = await storage.list('proc_def', { match: { isdeleted: false } });
+                    let list = procDefs.filter((item: any) => vectorResult.includes(item.id));
+                    list = list.map((item: any) => {
+                        return {
+                            title: item.name,
+                            href: `/definitions/${item.id}`,
+                            matches: [item.bpmn]
+                        }
+                    });
+                    if (list.length > 0) {
+                        const loadingIndex = results.findIndex(item => item.type === 'loading');
+                        if (loadingIndex !== -1) {
+                            results.splice(loadingIndex, 1, {
+                                type: 'similar-definition',
+                                header: '유사한 프로세스 정의',
+                                list: list
+                            });
+                        }
+                    }
+                }
+                const newResults = results.filter((item: any) => item.type !== 'loading');
+                if (callback) {
+                    callback(newResults);
+                }
+            }).catch(error => {
+                console.error('Vector search error:', error);
+                const newResults = results.filter((item: any) => item.type !== 'loading');
+                if (callback) {
+                    callback(newResults);
+                }
+            });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async searchVector(keyword: string) {
+        try {
+            let list = [];
+            const response = await axios.post('/execution/process-search', {
+                query: keyword
+            });
+            let vectorResult = response.data;
+            if (vectorResult && vectorResult.length > 0) {
+                vectorResult = vectorResult.map((item: any) => {
+                    const matchingColumns = item.page_content.split(": ");
+                    const content = JSON.parse(matchingColumns[1]);
+                    return content.processDefinitionId;
+                });
+            }
+
+            const uniqueList = vectorResult.filter((item, index, self) => {
+                if (item) {
+                    return index === self.findIndex((t) => (
+                        t === item
+                    ))
+                }
+            });
+            return uniqueList;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getUserAllTenants() {
+        try {
+            const uid: string = localStorage.getItem('uid') || '';
+            const options = {
+                orderBy: 'username',
+                sort: 'asc',
+                match: {
+                    id: uid
+                }
+            }
+            const users = await storage.list('users', options);
+            return users
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1444,7 +1715,10 @@ class ProcessGPTBackend implements Backend {
         try {
             const options = {
                 orderBy: 'username',
-                sort: 'asc'
+                sort: 'asc',
+                match: {
+                    tenant_id: window.$tenantName
+                }
             }
             const users = await storage.list('users', options);
             return users
@@ -1473,6 +1747,78 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async getAgentList() {
+        try {
+            const options = {
+                match: {
+                    tenant_id: window.$tenantName
+                }
+            }
+            const list = await storage.list('agents', options);
+            return list;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getAgent(agentId: string) {
+        try {
+            const options = {
+                match: {
+                    id: agentId
+                }
+            }
+            const agent = await storage.getObject('agents', options);
+            return agent;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async putAgent(newAgent: any) {
+        try {
+            const putObj: any = {
+                id: newAgent.id,
+                name: newAgent.name,
+                role: newAgent.role,
+                goal: newAgent.goal,
+                persona: newAgent.persona,
+                url: newAgent.url,
+                description: newAgent.description,
+                tools: newAgent.tools,
+                profile: newAgent.img,
+                skills: newAgent.skills,
+                tenant_id: window.$tenantName
+            }
+            await storage.putObject('agents', putObj);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteAgent(agentId: string) {
+        try {
+            await storage.delete('agents', { match: { id: agentId } });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async fetchAgentData(url: string) {
+        try {
+            const response = await axios.get(`/execution/multi-agent/fetch-data?agent_url=${encodeURIComponent(url)}`);
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getUserInfo() {
         try {
             const user = await storage.getUserInfo();
@@ -1486,7 +1832,7 @@ class ProcessGPTBackend implements Backend {
     async updateUserInfo(value: any) {
         try {
             if (value.type === 'update') {
-                value.user.current_tenant = window.$tenantName;
+                value.user.tenant_id = window.$tenantName;
                 await storage.putObject('users', value.user);
                 const user: any = await this.getUserInfo();
                 if (user && value.user.id === user.uid) {
@@ -1612,19 +1958,18 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.post('/execution/set-tenant', request);
             if (response.status === 200) {
                 const isOwner = await storage.checkTenantOwner(tenantId);
-                const role = isOwner ? 'superAdmin' : 'user';
-                const isAdmin = isOwner ? true : false;
-                await storage.putObject('users', {
+                const putObj: any = {
                     id: user_id,
-                    role: role,
-                    is_admin: isAdmin,
-                    current_tenant: tenantId
-                }, { onConflict: 'id' });
-
+                    role: isOwner ? 'superAdmin' : 'user',
+                    tenant_id: tenantId
+                }
+                if (isOwner) {
+                    putObj.is_admin = true;
+                }
+                await storage.putObject('users', putObj, { onConflict: 'id' });
                 await storage.refreshSession();
                 return await storage.isConnection();
             } else {
-                console.log(response);
                 return false;
             }
         } catch (error) {
@@ -1642,16 +1987,13 @@ class ProcessGPTBackend implements Backend {
             }
             await storage.putObject('tenants', { id: tenantId });
             const user: any = await this.getUserInfo();
-            const tenantList = user?.tenants || [];
-            if (!tenantList.includes(tenantId)) {
-                tenantList.push(tenantId);
-            }
             await storage.putObject('users', {
                 id: user.uid,
+                email: user.email,
+                username: user.name,
                 role: 'superAdmin',
                 is_admin: true,
-                tenants: tenantList,
-                current_tenant: tenantId
+                tenant_id: tenantId
             });
         } catch (error) {
             //@ts-ignore
@@ -1668,6 +2010,33 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async inviteUser(userInfo: any) {
+        try {
+            const request = {
+                input: userInfo
+            }
+            const response = await axios.post('/execution/invite-user', request);
+            if (response.status === 200) {
+                if (response.data) {
+                    return response.data;
+                } else {
+                    const newUser = await storage.getObject('users', {
+                        match: {
+                            email: userInfo.email,
+                            tenant_id: userInfo.tenant_id
+                        }
+                    });
+                    return { user: newUser };
+                }
+            } else {
+                return { error: true, message: response.data.message };
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async createUser(userInfo: any) {
         try {
             const request = {
@@ -1675,9 +2044,19 @@ class ProcessGPTBackend implements Backend {
             }
             const response = await axios.post('/execution/create-user', request);
             if (response.status === 200) {
-                return response.data;
+                if (response.data) {
+                    return response.data;
+                } else {
+                    const newUser = await storage.getObject('users', {
+                        match: {
+                            email: userInfo.email,
+                            tenant_id: window.$tenantName
+                        }
+                    });
+                    return { user: newUser };
+                }
             } else {
-                throw new Error(response.data.message);
+                return { error: true, message: response.data.message };
             }
         } catch (error) {
             //@ts-ignore
@@ -1733,42 +2112,182 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadFile(fileName: string, file: File) {
+    async uploadFile(fileName: string, file: File, storageType: string, options?: any) {
         try {
-            const res = await storage.uploadFile(fileName, file);
-            if (!res.error && res.fullPath) {
-                const indexRes = await this.indexFile(res.fullPath);
-                console.log(indexRes);
+            let response: any;
+            if (storageType === 'drive') {
+                response = await this.uploadFileToDrive(fileName, file, options);
+            } else {
+                storageType = 'storage';
+                response = await this.uploadFileToStorage(fileName, file);
             }
-            return res;
+
+            if (!response.error) {
+                const indexRes = await this.processFile(response, storageType);
+                console.log(indexRes);
+                return response;
+            } else {
+                return response;
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
         }
     }
 
-    async getFileUrl(path: string) {
+    async uploadFileToStorage(fileName: string, file: File) {
         try {
-            return await storage.getFileUrl(path);
+            const response = await storage.uploadFile(fileName, file);
+            return response;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async uploadFileToDrive(fileName: string, file: File, options?: any) {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('file_name', fileName);
+            formData.append('tenant_id', window.$tenantName);
+
+            const token = localStorage.getItem('accessToken');
+            const response = await axios.post('/memento/save-to-drive', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.status === 200) {
+                if (options && options.chat_room_id) {
+                    const putObj = {
+                        id: response.data.file_id,
+                        file_name: response.data.file_name,
+                        file_path: response.data.download_link,
+                        chat_room_id: options.chat_room_id,
+                        user_name: options.user_name,
+                        tenant_id: window.$tenantName
+                    }
+                    await storage.putObject('chat_attachments', putObj);
+                }
+                return response.data;
+            } else {
+                throw new Error(response.data.message);
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
         }
     }
 
-    async indexFile(filePath: string) {
+    async getDriveInfo() {
         try {
-            const response = await axios.post('/memento/index', JSON.stringify({
-                path: filePath
-            }), {
+            const response = await storage.getObject('tenant_oauth', {
+                match: {
+                    tenant_id: window.$tenantName
+                }
+            });
+            return response;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async saveDriveInfo(driveInfo: any) {
+        try {
+            driveInfo.id = driveInfo.provider + '_' + driveInfo.tenant_id;
+            const response = await storage.putObject('tenant_oauth', driveInfo);
+            return response;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getFileUrl(path: string, options?: any) {
+        try {
+            if (options && options.storageType == 'drive') {
+                const filePath = await storage.getString('chat_attachments', {
+                    column: 'file_path',
+                    match: {
+                        id: path,
+                        tenant_id: window.$tenantName
+                    }
+                });
+                if (filePath) {
+                    return filePath;
+                } else {
+                    return null;
+                }
+            } else {
+                return await storage.getFileUrl(path);
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async downloadFile(path: string) {
+        try {
+            return await storage.downloadFile(path);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async processFile(file: any, storageType: string) {
+        try {
+            let file_path = '';
+            let original_filename = '';
+            if (storageType == 'storage') {
+                file_path = file.fullPath.replace('files/', '');
+                original_filename = file.original_filename;
+            } else {
+                file_path = file.file_name;
+                original_filename = file.file_name;
+            }
+
+            const token = localStorage.getItem('accessToken');
+            const response = await axios.post('/memento/process', {
+                file_path: file_path,
+                original_filename: original_filename,
+                storage_type: storageType,
+                tenant_id: window.$tenantName
+            }, {
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 }
             });
             return response.data;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    async getAttachments(chatRoomId: string, callback: (attachment: any) => void) {
+        await storage.watch('chat_attachments', chatRoomId, (payload) => {
+            if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+                const attachment = payload.new;
+                if (callback) {
+                    callback(attachment);
+                }
+            }
+        });
+
+        if (callback) {
+            const attachments = await storage.list('chat_attachments', {
+                match: {
+                    chat_room_id: chatRoomId
+                }
+            });
+            if (attachments && attachments.length > 0) {
+                for (const attachment of attachments) {
+                    callback(attachment);
+                }
+            }
         }
     }
 
@@ -1943,7 +2462,451 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async listMarketplaceDefinition(tagOrKeyword?: string, isSearch: boolean = false) {
+        try {
+            const options = {
+                orderBy: 'import_count',
+                sort: 'desc',
+            }
+            const list = await storage.list('proc_def_marketplace', options);
+            
+            // 검색 기능이 활성화된 경우
+            if (isSearch && tagOrKeyword && tagOrKeyword.trim() !== '') {
+                const keyword = tagOrKeyword.toLowerCase().trim();
+                return list.filter(item => {
+                    // 이름, 작성자, 태그 검색
+                    const nameMatch = item.name && item.name.toLowerCase().includes(keyword);
+                    const authorMatch = item.author_name && item.author_name.toLowerCase().includes(keyword);
+                    
+                    // 태그 검색
+                    let tagMatch = false;
+                    if (item.tags) {
+                        const tags = item.tags.split(',').map((t: string) => t.trim().toLowerCase());
+                        tagMatch = tags.some(tag => tag.includes(keyword));
+                    }
+                    
+                    return nameMatch || authorMatch || tagMatch;
+                });
+            }
+            // 태그 필터링
+            else if (tagOrKeyword && tagOrKeyword !== 'all') {
+                return list.filter(item => {
+                    if (!item.tags) return false;
+                    const tags = item.tags.split(',').map((t: string) => t.trim());
+                    return tags.includes(tagOrKeyword);
+                });
+            }
+            
+            return list;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
 
+    async putTemplateDefinition(definition: any) {
+        try {
+            const user = await this.getUserInfo();
+            if (user && user.uid) {
+                const putObj = {
+                    id: definition.id,
+                    name: definition.name,
+                    definition: definition.definition,
+                    bpmn: definition.bpmn,
+                    description: definition.description,
+                    category: definition.category,
+                    tags: definition.tags,
+                    author_name: user.name,
+                    author_uid: user.uid,
+                    image: definition.image
+                }
+                const response = await storage.putObject('proc_def_marketplace', putObj);
+
+                if (!response.error) {
+                    const formList = await storage.list('form_def', {
+                        match: {
+                            proc_def_id: definition.id,
+                            tenant_id: window.$tenantName
+                        }
+                    });
+                    if (formList && formList.length > 0) {
+                        for (const form of formList) {
+                            const formObj = {
+                                id: form.id,
+                                proc_def_id: definition.id,
+                                activity_id: form.activity_id,
+                                html: form.html,
+                                author_uid: user.uid
+                            }
+                            const formResponse = await storage.putObject('form_def_marketplace', formObj);
+                            if (formResponse.error) {
+                                console.log(formResponse.error);
+                            }
+                        }
+                    }
+
+                    return response;
+                } else {
+                    throw new Error('User not found');
+                }
+            } else {
+                throw new Error('User not found');
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+    async duplicateDefinition(definition: any) {
+        try {
+            // Supabase function을 사용하여 프로세스 정의 복사
+            const result = await storage.callProcedure('duplicate_definition_from_marketplace', {
+                p_definition_id: definition.id,
+                p_definition_name: definition.name,
+                p_author_uid: definition.author_uid
+            });
+
+            if (result && result.success) {
+                // 프로세스 정의 체계도 업데이트
+                const megaId = definition.category.split('/')[0];
+                const majorId = definition.category.split('/')[1];
+                const newProcessMap = {
+                    mega_proc_list: [{
+                        id: megaId,
+                        name: megaId,
+                        major_proc_list: [{
+                            id: majorId,
+                            name: majorId,
+                            sub_proc_list: [{
+                                id: definition.id,
+                                name: definition.name,
+                            }]
+                        }]
+                    }]
+                }
+                const existed = await this.getProcessDefinitionMap();
+                const merged = await this.mergeProcessMaps(existed, newProcessMap);
+                await this.putProcessDefinitionMap(merged);
+
+                return result;
+            }
+            
+            throw new Error('Failed to duplicate definition');
+        } catch (error) {
+            if (error && error.cause && error.cause.message && error.cause.message.includes('409 Conflict')) {
+                throw new Error('이미 추가된 프로세스입니다.');
+            } else {
+                throw new Error(error.message);
+            }
+        }
+    }
+
+    async getTaskLog(taskId: string, callback: (payload: any) => void) {
+        try {
+            await storage.watch('todolist', taskId, (payload) => {
+                if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+                    const task = payload.new;
+                    if (callback) {
+                        callback(task);
+                    }
+                }
+            });
+
+            return true;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async saveTask(id: string, name: string, type: string, json: any) {
+        console.warn("method is not implemented only use PalModeBackend");
+        return null;
+    }
+    
+    async getRefForm(taskId: string) {
+        try {
+            const refForms = [];
+            const workItem = await storage.getObject('todolist', { match: { id: taskId } });
+
+            if (workItem && workItem.proc_def_id && workItem.reference_ids && workItem.reference_ids.length > 0) {
+                const formPromises = workItem.reference_ids.map(async (referenceId: string) => {
+                    const prevWorkItem = await storage.getObject('todolist', {
+                        match: {
+                            proc_inst_id: workItem.proc_inst_id,
+                            activity_id: referenceId
+                        }
+                    });
+                    
+                    if (prevWorkItem && prevWorkItem.proc_inst_id && prevWorkItem.activity_id) {
+                        const formId = prevWorkItem.tool.split('formHandler:')[1];
+                        const [form, formData] = await Promise.all([
+                            this.getRawDefinition(formId, { type: 'form' }),
+                            this.getVariableWithTaskId(workItem.proc_inst_id, prevWorkItem.id, formId)
+                        ]);
+                        return {
+                            name: prevWorkItem.activity_name,
+                            html: form,
+                            formData: formData.valueMap
+                        };
+                    }
+                    return null;
+                });
+
+                const results = await Promise.all(formPromises);
+                refForms.push(...results.filter(result => result !== null));
+            }
+            
+            return refForms;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getTaskList() {
+        console.warn("method is not implemented only use PalModeBackend");
+        return null;
+    }
+
+    //////////////////////////////////////////////////////// PROJECT ////////////////////////////////////////////////////////
+    async fetchProjectByStatus(status: string): Promise<any[]> {
+        var me = this
+        const list = await storage.list('project', { match: { status: status } });
+
+        if(!list) return [];
+        if(!Array.isArray(list)) return [];
+
+        return list.map((item: any) => {
+            return me.returnProjectObject(item);
+        });
+    }
+
+    // async getInstanceList() {
+    //     try {
+    //         // const list = await storage.list('bpm_proc_inst',  { orderBy: "status", startAt: "RUNNING", endAt: "RUNNING", not: { key: "definition_id", operator: "is", value: null } });
+    //         const list = await storage.list('bpm_proc_inst');
+    //         return list.map((item: any) => {
+    //             return this.returnInstanceObject(item);
+    //         });
+    //     } catch (error) {
+    //         //@ts-ignore
+    //         throw new Error(error.message);
+    //     }
+    // }
+    async putProject(project: any) {
+        try {
+            return await storage.putObject('project', {
+                project_id: project.projectId || this.uuid(),
+                name: project.name || 'Untitled Project',
+                start_date: project.startDate || new Date().toISOString(),
+                end_date: project.endDate || null,
+                due_date: project.dueDate || null,
+                status: project.status || "NEW",
+                created_date: project.createdDate || new Date().toISOString(),
+                user_id: project.userId || localStorage.getItem('email'),
+            });
+        } catch (error) {
+            
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getProjectList() {
+        try {
+            const newList = await storage.list('project', { match: { status: "NEW" } });
+            const runningList = await storage.list('project', { match: { status: "RUNNING" } });
+            
+            const list = [...newList, ...runningList]
+            return list.map((item: any) => {
+                return this.returnProjectObject(item);
+            });
+        } catch (error) {
+            
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getProjectById(projectId: number) {
+        try {
+            const list = await storage.list('project', {match: { 'project_id': projectId } });
+            let project = list && list.length > 0 ? list[0] : null;
+            if(!project) return null;
+            return this.returnProjectObject(project)
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+
+    async getTaskDependencyByProjectId(projectId: number) {
+        try {
+            let list = await storage.list('v_task_dependency', {
+                key: `*`,
+                orderBy: 'project_id',
+                startAt: projectId,
+                endAt: projectId,
+            });
+
+            return list.map((item: any) => {
+                return this.returnDependencyObject(item);
+            });
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getTaskDependencyByInstId(instId: number) {
+        try {
+            let list = await storage.list('v_task_dependency', {
+                key: `*`,
+                orderBy: 'proc_inst_id',
+                startAt: instId,
+                endAt: instId,
+            });
+
+            return list.map((item: any) => {
+                return this.returnDependencyObject(item);
+            });
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+
+    async putTaskDependency(item: any) {
+        try {
+            return await storage.putObject('task_dependency', item);     
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteTaskDependency(id: string) {
+        try {
+            return await storage.delete('task_dependency', { match: { id: id } });     
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    // 백엔드로 보낼 날짜 포맷 함수
+    formatDateForBackend(date, isEndDate) {
+        if (!date) return;
+        let year, month, day;
+
+        if (typeof date === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(date)) {
+            // '일-월-연도' 형식
+            const [d, m, y] = date.split('-');
+            year = y;
+            month = m.padStart(2, '0');
+            day = d.padStart(2, '0');
+        } else {
+            // Date 객체 또는 ISO 문자열 등
+            const d = new Date(date);
+            year = d.getFullYear();
+            month = String(d.getMonth() + 1).padStart(2, '0');
+            day = String(d.getDate()).padStart(2, '0');
+        }
+
+        const time = isEndDate ? '23:59:59' : '00:00:00';
+        return `${year}-${month}-${day}T${time}.000Z`;
+    }
+
+    async isColumnValueExists(table: string, key: string, value: string) {
+        try {
+            return !!await storage.list(table, {
+                orderBy: key,
+                startAt: value,
+                endAt: value,
+                maybeSingle: true
+            });     
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
+    private returnProjectObject(item: any) {
+        return {
+            projectId: item.project_id,
+            name: item.name,
+            startDate: item.start_date,
+            endDate: item.end_date,
+            dueDate: item.due_date,
+            createdDate: item.created_date,
+            status: item.status
+        }
+    }
+
+    private returnInstanceObject(item: any) {
+        if (!item || !item.proc_inst_id) return null;
+        return {
+            instId: item.proc_inst_id,
+            defId: item.proc_def_id,
+            defVersion: item.proc_def_version,
+            name: item.proc_inst_name,
+            projectId: item.project_id,
+            currentActivityIds: item.current_activity_ids,
+            currentUserIds: item.current_user_ids,
+            roleBindings: item.role_bindings,
+            variables_data: item.variables_data,
+            status: item.status,
+            tenantId: item.tenant_id,
+            startDate: item.start_date,
+            endDate: item.end_date,
+            dueDate: item.due_date,
+        }
+    }
+
+    private returnWorkItemObject(item: any) {
+        return {
+            defId: item.proc_def_id,
+            instId: item.proc_inst_id,
+            rootInstId: item.proc_inst_id,
+            taskId: item.id,
+            startDate: item.start_date,
+            endDate: item.end_date,
+            dueDate: item.due_date,
+            status: item.status,
+            name: item.activity_name,
+            tool: item.tool || '',
+            tracingTag: item.activity_id || '',
+            description: item.description || '',
+            endpoint: item.user_id,
+            assignees: item.assignees || [],
+            adhoc: item.adhoc || false,
+            referenceIds: item.reference_ids || [],
+            projectId: item.project_id || null,
+            task: item
+        }
+    }
+
+    private returnDependencyObject(item: any) {
+        return {
+           ...item,
+           lagTime: item.lag_time,
+           leadTime: item.lead_time,
+           createdDate: item.created_date,
+           taskId: item.task_id,
+           dependsId: item.depends_id,
+           projectId: item.project_id,
+           procInstId: item.proce_inst_id
+        }
+    }
+
+    async getMCPTools() {
+        try {
+            const response = await axios.get('/execution/mcp-tools');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+    
 }
 
 export default ProcessGPTBackend;

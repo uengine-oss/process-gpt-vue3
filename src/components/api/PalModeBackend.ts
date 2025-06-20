@@ -120,6 +120,109 @@ class PalModeBackend extends ProcessGPTBackend  {
         }
     }
 
+    async saveTask(id: string, name: string, type: string, json: any) {
+        try {
+            // Prepare data object for storing in the process_tasks table
+            const taskData = {
+                name: name,
+                type: type,
+                json_ko: typeof json === 'string' ? json : JSON.stringify(json),
+                ...(id ? { id: id } : {}) // Use provided UUID if available
+            };
+            
+            // Use the StorageBase to store data in Supabase
+            const result = await storage.putObject('process_tasks', taskData, {
+                onConflict: id ? 'id' : 'id' // Use UUID for conflict resolution if provided, otherwise use task_id
+            });
+            
+            // 저장 후 데이터를 다시 조회하여 생성된 UUID를 포함한 최신 데이터 반환
+            if (result && result.statusText === 'Created') {
+                // 새로 생성된 경우 id를 가져옴
+                const savedTask = await storage.getObject('process_tasks',
+                     { 
+                        match: {
+                            name: taskData.name
+                        } 
+                    });
+                return savedTask;
+            } else {
+                // 기존 데이터 업데이트인 경우
+                const savedTask = await storage.getObject('process_tasks', {
+                    match: {
+                        id: taskData.id
+                    }
+                });
+                return savedTask;
+            }
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(e.message);
+        }
+    }
+
+    async getTaskList() {
+        try {
+            // Retrieve all tasks from the process_tasks table
+            const tasks = await storage.list('process_tasks', {
+                orderBy: 'created_at',
+                sort: 'desc'
+            });
+            
+            // Process the returned data to parse JSON strings if needed
+            if (tasks && tasks.length > 0) {
+                return tasks.map(task => {
+                    // Parse JSON data if it's stored as a string
+                    if (task.json_ko && typeof task.json_ko === 'string') {
+                        try {
+                            task.json_ko = JSON.parse(task.json_ko);
+                        } catch (e) {
+                            // If parsing fails, keep the original string
+                            console.warn(`Failed to parse JSON data for task ${task.name}`);
+                        }
+                    }
+                    return task;
+                });
+            }
+            
+            return [];
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(e.message);
+        }
+    }
+
+    async getTask(options: any) {
+        try {
+            // options이 객체인지 확인
+            if (!options || typeof options !== 'object') {
+                throw new Error('Invalid options parameter');
+            }
+
+            // id 필드가 있는지 확인
+            if (!options.id) {
+                throw new Error('Task ID is required');
+            }
+
+            // id로 명확하게 하나의 레코드만 조회
+            const task = await storage.getObject('process_tasks', { 
+                match: options
+            });
+            
+            // JSON 문자열 파싱
+            if (task && task.json_ko && typeof task.json_ko === 'string') {
+                try {
+                    task.json_ko = JSON.parse(task.json_ko);
+                } catch (e) {
+                    console.warn(`Failed to parse JSON data for task ${task.name}`);
+                }
+            }
+            
+            return task;
+        } catch (e) {
+            //@ts-ignore    
+            throw new Error(e.message);
+        }
+    }
 }
 
 export default PalModeBackend;

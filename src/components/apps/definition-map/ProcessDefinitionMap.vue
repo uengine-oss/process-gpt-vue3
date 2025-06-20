@@ -1,10 +1,17 @@
 <template>
     <div>
-        <v-card elevation="10" :style="!$globalState.state.isZoomed ? 'height:calc(100vh - 143px)' : 'height:100vh;'"
-            style="overflow: auto;">
+        <v-card elevation="10" :style="!$globalState.state.isZoomed ? '' : 'height:100vh;'"
+            class="is-work-height"
+            style="overflow: auto;"
+        >
             <div v-if="componentName != 'SubProcessDetail'" class="pa-0 pl-6 pt-4 pr-6 d-flex align-center"
                 style="position: sticky; top: 0; z-index:2; background-color:white">
-                <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
+                <h5 v-if="!globalIsMobile.value" class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
+                <v-row v-else class="ma-0 pa-0">
+                    <!-- 수정: public 경로부터 시작하는 favicon 이미지 추가 -->
+                    <img src="/process-gpt-favicon.png" alt="Process GPT Favicon" style="height:24px; margin-right:8px;" />
+                    <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.mobileTitle') }}</h5>
+                </v-row>
                 <v-btn v-if="$route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" 
                     size="24" @click="goProcessMap">
                     <Icons :icon="'arrow-go-back'" />
@@ -14,8 +21,8 @@
                 <div class="ml-auto d-flex">
                     <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode" >
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-3 cp-unlock" @click="openAlertDialog">
-                                <LockIcon width="24" height="24" />
+                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-2 cp-unlock" @click="openAlertDialog">
+                                <Icons :icon="'pencil'" :size="18" />
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.unlock') }}</span>
@@ -23,8 +30,8 @@
 
                     <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName == editUser">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
-                                <LockOpenIcon width="24" height="24" />
+                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-2 cp-lock" @click="openAlertDialog">
+                                <Icons :icon="'save'" :size="24" />
                             </v-btn>
                         </template>
                         <span>{{ $t('processDefinitionMap.lock') }}</span>
@@ -32,7 +39,7 @@
 
                     <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName != editUser">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" @click="openAlertDialog">
+                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-2" @click="openAlertDialog">
                                 <LockIcon width="24" height="24" />
                             </v-btn>
                         </template>
@@ -60,7 +67,7 @@
                     </v-tooltip>
 
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
-                    <v-tooltip v-if="componentName != 'SubProcessDetail'" :text="$t('processDefinition.zoom')">
+                    <v-tooltip v-if="componentName != 'SubProcessDetail' && !globalIsMobile.value" :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="ml-3"
                                 @click="$globalState.methods.toggleZoom()" icon variant="text" :size="24">
@@ -85,49 +92,84 @@
                 </div>
             </div>
 
-            <v-card
-                v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
-                @click="addSampleProcess"
-                class="consulting-card ma-4"
-                elevation="3"
-                rounded="lg"
-            >
-                <v-card-item class="pa-3">
-                    <v-card-title class="text-primary font-weight-bold pb-1">
-                        샘플 프로세스 추가
-                    </v-card-title>
-                </v-card-item>
-            </v-card>
 
-            <v-card
-                v-if="componentName == 'DefinitionMapList'"
-                @click="openConsultingDialog = true, ProcessPreviewMode = false"
-                class="consulting-card ma-4"
-                elevation="3"
-                rounded="lg"
-            >
-                <v-card-item class="pa-5">
-                    <div class="d-flex align-center">
-                        <v-avatar
-                            color="primary"
-                            size="42"
-                            class="mr-4"
-                        >
-                            <Icons :icon="'magic'" :size="24" color="white" />
-                        </v-avatar>
-                        <div>
-                            <v-card-title class="text-primary font-weight-bold pb-1">
-                                프로세스 컨설팅 시작하기
-                            </v-card-title>
-                            <v-card-subtitle>
-                                AI와 함께 프로세스를 분석하고 개선해보세요
-                            </v-card-subtitle>
-                        </div>
-                    </div>
-                </v-card-item>
-            </v-card>
+            <v-row class="ma-0 pa-0">
+                <v-col v-if="componentName == 'DefinitionMapList' && isAdmin"
+                    cols="12" lg="3" md="4" sm="6"
+                    class="pa-4"
+                >
+                    <v-card
+                        
+                        @click="openConsultingDialog = true, ProcessPreviewMode = false"
+                        class="consulting-card"
+                        elevation="3"
+                        rounded="lg"
+                    >
+                        <v-card-item class="pa-5">
+                            <div class="d-flex align-center">
+                                <v-avatar
+                                    color="primary"
+                                    size="42"
+                                    class="mr-4"
+                                >
+                                    <Icons :icon="'magic'" :size="24" color="white" />
+                                </v-avatar>
+                                <div>
+                                    <v-card-title class="text-primary font-weight-bold pb-1">
+                                        {{ $t('processDefinitionMap.consultingButton') }}
+                                    </v-card-title>
+                                    <div class="text-subtitle-2 text-grey-darken-1">
+                                        {{ $t('processDefinitionMap.analyzeAndImproveProcessWithAI') }}
+                                    </div>
+                                </div>
+                            </div>
+                        </v-card-item>
+                    </v-card>
+                </v-col>
+                <v-col v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
+                    cols="12"
+                    lg="3"
+                    md="4"
+                    sm="6"
+                    class="pa-4"
+                >
+                    <!-- @click="addSampleProcess" -->
+                    <v-card
+                        
+                        @click="openMarketplaceDialog = true"
+                        class="consulting-card"
+                        elevation="3"
+                        rounded="lg"
+                    >
+                        <v-card-item class="pa-5">
+                            <div class="d-flex align-center">
+                                <v-avatar
+                                    color="primary"
+                                    size="42"
+                                    class="mr-4"
+                                >
+                                    <Icons :icon="'market'" :size="24" color="white" />
+                                </v-avatar>
+                                <div>
+                                    <v-card-title class="text-primary font-weight-bold pb-1">
+                                        {{ $t('processDefinitionMap.marketplace') }}
+                                    </v-card-title>
+                                    <!-- div로 변경, Vuetify3의 서브타이틀 스타일 클래스 적용 (text-subtitle-2) -->
+                                    <div class="text-subtitle-2 text-grey-darken-1">
+                                        비즈니스 프로세스 템플릿을 찾아보세요
+                                    </div>
+                                </div>
+                            </div>
+                        </v-card-item>
+                    </v-card>
+                </v-col>
+            </v-row>
         </v-card>
-        <v-dialog :style="ProcessPreviewMode ? '' : 'max-width: 1000px;'" v-model="openConsultingDialog" persistent>
+        <v-dialog v-model="openConsultingDialog"
+            :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'"
+            :fullscreen="isMobile"
+            :scrim="isSimulateMode ? false : true" persistent
+        >
             <v-card>
                 <v-row class="ma-0 pa-3" style="background-color:rgb(var(--v-theme-primary), 0.2); height:50px;">
                     <v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>
@@ -135,11 +177,14 @@
                     <v-spacer></v-spacer>
                     <v-icon @click="closeConsultingDialog()" small style="margin-right: 5px; float: right;">mdi-close</v-icon>
                 </v-row>
-                <ProcessDefinitionChat 
+                <ProcessDefinitionChat class="process-definition-map-chat"
                     ref="processDefinitionChat"
                     :chatMode="'consulting'"
                     @createdBPMN="createdBPMN"
                     @openProcessPreview="openProcessPreview" 
+                    @executeSimulate="executeSimulate"
+                    @closeExecuteDialog="closeExecuteDialog"
+                    @closeConsultingDialog="closeConsultingDialog"
                 />
             </v-card>
         </v-dialog>
@@ -164,6 +209,10 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <v-dialog v-model="openMarketplaceDialog" max-width="1200" persistent>
+            <process-definition-market-place @closeMarketplaceDialog="closeMarketplaceDialog" />
+        </v-dialog>
     </div>
 </template>
 
@@ -174,6 +223,7 @@ import ProcessMenu from './ProcessMenu.vue';
 import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
+import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPlace.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -191,7 +241,8 @@ export default {
         ViewProcessDetails,
         SubProcessDetail,
         DefinitionMapList,
-        ProcessDefinitionChat
+        ProcessDefinitionChat,
+        ProcessDefinitionMarketPlace
     },
     props: {
         componentName: {
@@ -220,6 +271,9 @@ export default {
         versionHistory: [],
         openConsultingDialog: false,
         ProcessPreviewMode: false,
+        openMarketplaceDialog: false,
+        isSimulateMode: false,
+        windowWidth: window.innerWidth
     }),
     computed: {
         useLock() {
@@ -228,6 +282,9 @@ export default {
             } else {
                 return this.isViewMode;
             }
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
         },
         actionButtons() {
             return [
@@ -307,6 +364,13 @@ export default {
             },
         });
     },
+    mounted() {
+        window.addEventListener('localStorageChange', (event) => {
+            if (event.detail.key === 'isAdmin') {
+                this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
+            }
+        });
+    },
     beforeRouteLeave(to, from, next) {
         if (this.lock && this.enableEdit) {
             this.openAlertDialog().then((proceed) => {
@@ -321,6 +385,10 @@ export default {
         }
     },
     methods: {
+        async closeMarketplaceDialog() {
+            await this.getProcessMap();
+            this.openMarketplaceDialog = false;
+        },
         async addSampleProcess() {
             if (this.mode == "ProcessGPT") {
                 await backend.addSampleProcess();
@@ -331,6 +399,12 @@ export default {
         openProcessPreview(){
             this.ProcessPreviewMode = true
         },
+        executeSimulate(){
+            this.isSimulateMode = true
+        },
+        closeExecuteDialog(){
+            this.isSimulateMode = false
+        },
         createdBPMN(res){
             const generateUniqueMegaProcessId = () => {
                 function s4() {
@@ -339,7 +413,7 @@ export default {
                         .substring(1);
                 }
 
-                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+                return s4() + s4() + '-' + s4() + '-' + s4() + s4() + s4();
             };
 
             const addSubProcess = async (majorProc) => {
@@ -412,8 +486,8 @@ export default {
 
             addSubProcess(majorProc);
         },
-        closeConsultingDialog() {
-            if (this.ProcessPreviewMode && this.$refs.processDefinitionChat && this.$refs.processDefinitionChat.lock) {
+        closeConsultingDialog(option) {
+            if (option || (this.ProcessPreviewMode && this.$refs.processDefinitionChat && this.$refs.processDefinitionChat.lock)) {
                 this.openConsultingDialog = false;
             } else {
                 const confirmMessage = this.ProcessPreviewMode ? this.$t('processDefinitionMap.closeConsultingInPreview') : this.$t('processDefinitionMap.closeConsulting');
@@ -549,8 +623,6 @@ export default {
             await backend.deleteUserPermission({ user_id: userId, proc_def_id: process.id });
         },
         async saveProcess() {
-            const diff = jsondiffpatch.diff(this.copyValue, this.value);
-            this.updatePermissionsFromDiff(diff);
             await backend.putProcessDefinitionMap(this.value);
             await this.getProcessMap();
             this.closeAlertDialog();
@@ -669,7 +741,6 @@ export default {
 .consulting-card {
     cursor: pointer;
     transition: transform 0.2s;
-    width: fit-content;
 }
 
 .consulting-card:hover {

@@ -50,6 +50,7 @@ export default class AIGenerator {
         }
 
         this.forced_vendor = "openai";
+        // this.forced_model = options && options.model ? options.model : "gpt-4.1-2025-04-14";
         this.forced_model = "gpt-4.1-2025-04-14";
         this.forced_model_config = {
             temperature: 1,

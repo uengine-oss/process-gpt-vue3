@@ -64,8 +64,9 @@ export default {
             isStream: true,
             preferredLanguage: "Korean"
         });
-
-        this.userInfo = await this.storage.getUserInfo();
+    },
+    async mounted() {
+        this.userInfo = await this.backend.getUserInfo();
         await this.getUserList();
 
         this.EventBus.on('messages-updated', () => {
@@ -78,7 +79,7 @@ export default {
         },
         async getUserList(){
             var me = this
-            await me.storage.list(`users`).then(function (users) {
+            await me.backend.getUserList().then(function (users) {
                 if (users) {
                     users = users.filter(user => user.email !== me.userInfo.email);
                     const systemUser = {

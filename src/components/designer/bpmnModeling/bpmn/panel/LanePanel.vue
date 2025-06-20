@@ -1,35 +1,14 @@
 <template>
     <div>
-        <div class="included" style="margin-bottom: 22px">
+        <div class="included pa-4 pt-0" style="margin-bottom: 22px">
             <div class="mt-4">{{$t('LanePanel.selectRoleType')}}</div>
             <v-card variant="outlined" class="pa-2" style="border-radius:8px !important;">
                 <v-radio-group v-model="type" row style="margin-top: 0px !important">
                     <v-radio
-                        id="roleResolution"
-                        name="roleResolution"
-                        value="None"
-                        :label="$t('LanePanel.none')"
-                        style="margin-right: 8px !important; font-size: 15px"
-                    ></v-radio>
-                    <v-radio
-                        id="roleResolution"
-                        name="roleResolution"
-                        value="org.uengine.five.overriding.IAMRoleResolutionContext"
-                        :label="$t('LanePanel.IAMScope')"
-                        style="margin-right: 8px !important; font-size: 15px"
-                    ></v-radio>
-                    <v-radio
-                        id="roleResolution"
-                        name="roleResolution"
-                        value="org.uengine.kernel.DirectRoleResolutionContext"
-                        :label="$t('LanePanel.DirecUser')"
-                        style="margin-right: 8px !important; font-size: 15px"
-                    ></v-radio>
-                    <v-radio
-                        id="roleResolution"
-                        name="roleResolution"
-                        value="org.uengine.kernel.ExternalCustomerRoleResolutionContext"
-                        :label="$t('LanePanel.externalCustomer')"
+                        v-for="option in roleOptions"
+                        :key="option.value"
+                        :value="option.value"
+                        :label="$t(option.label)"
                         style="margin-right: 8px !important; font-size: 15px"
                     ></v-radio>
                 </v-radio-group>
@@ -47,12 +26,27 @@
                     class="mt-4"
                 ></v-text-field>
 
-                <v-text-field
-                    v-if="type == 'org.uengine.kernel.DirectRoleResolutionContext'"
-                    v-model="copyUengineProperties.roleResolutionContext.endpoint"
-                    :label="$t('LanePanel.userID')"
-                    class="mt-4"
-                ></v-text-field>
+
+                <div v-if="isDirectUser">
+                    <div v-if="isProcessGPT">
+                        <user-select-field
+                            v-model="copyUengineProperties.roleResolutionContext.endpoint"
+                            :name="$t('LanePanel.userID')"
+                            :item-value="'email'"
+                            :hide-details="true"
+                            :use-agent="true"
+                            class="mt-4"
+                        ></user-select-field>
+                    </div>
+                    <div v-else>
+                        <v-text-field
+                            v-model="copyUengineProperties.roleResolutionContext.endpoint"
+                            :label="$t('LanePanel.userID')"
+                            class="mt-4"
+                        ></v-text-field>
+                    </div>
+                </div>
+
                 <DetailComponent
                     :title="$t('LanePanel.radioDescriptionTitle')"
                     :details="radioDescription"
@@ -64,9 +58,13 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
+import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 
 export default {
     name: 'lane-panel',
+    components: {
+        UserSelectField
+    },
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
@@ -115,11 +113,19 @@ export default {
             definitionCnt: 0,
             type: 'None',
             role: null,
+            roleOptions: [
+                { value: 'None', label: 'LanePanel.none' },
+                { value: 'org.uengine.five.overriding.IAMRoleResolutionContext', label: 'LanePanel.IAMScope' },
+                { value: 'org.uengine.kernel.DirectRoleResolutionContext', label: 'LanePanel.DirecUser' },
+                { value: 'org.uengine.kernel.ExternalCustomerRoleResolutionContext', label: 'LanePanel.externalCustomer' }
+            ],
             radioDescription: [
                 {
                     title: 'LanePanel.radioDescriptionSubTitle'
                 }
-            ]
+            ],
+
+            isDirectUser: false,
         };
     },
     async mounted() {
@@ -148,14 +154,20 @@ export default {
             this.definitions = value;
         }
     },
-    computed: {},
+    computed: {
+        isProcessGPT() {
+            return window.$mode == 'ProcessGPT'
+        }
+    },
     watch: {
         type(after, before) {
+            this.isDirectUser = false;
             if (after == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
                 if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
                 if(!this.copyUengineProperties.roleResolutionContext.scope) this.copyUengineProperties.roleResolutionContext.scope = ''
             } else if (after == 'org.uengine.kernel.DirectRoleResolutionContext') {
+                this.isDirectUser = true;
                 if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.kernel.DirectRoleResolutionContext';
                 if(!this.copyUengineProperties.roleResolutionContext.endpoint) this.copyUengineProperties.roleResolutionContext.endpoint = ''

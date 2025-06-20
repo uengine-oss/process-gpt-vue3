@@ -1,5 +1,5 @@
 <template>
-    <v-container class="bg-surface" style="height: 100%">
+    <v-container v-if="!isLoading" class="bg-surface" style="height: 100%">
         <v-row no-gutters>
             <Logo/>
         </v-row>
@@ -8,8 +8,11 @@
             <h1 class="text-grey200" style="font-size: 40px;">{{ $t('tenantManagePage.title') }}</h1>
         </v-row>
         <v-row no-gutters justify="center">
-            <p class="font-weight-semibold text-grey100 text-h5" style="text-align: center;">
+            <p v-if="isOwner" class="font-weight-semibold text-grey100 text-h5" style="text-align: center;">
                 {{ $t('tenantManagePage.subTitle1') }}
+            </p>
+            <p v-else class="font-weight-semibold text-grey100 text-h5" style="text-align: center;">
+                {{ $t('tenantManagePage.subTitle3') }}
             </p>
         </v-row>
 
@@ -51,7 +54,7 @@
                             <v-col cols="9">
                                 &nbsp; {{ tenantInfo.id }}
                             </v-col>
-                            <v-col cols="1">
+                            <v-col v-if="isOwner" cols="1">
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                     <v-tooltip text="수정">
                                         <template v-slot:activator="{ props }">
@@ -62,7 +65,7 @@
                                     </v-tooltip>
                                 </v-sheet>
                             </v-col>
-                            <v-col cols="1">
+                            <v-col v-if="isOwner" cols="1">
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                     <v-tooltip text="삭제">
                                         <template v-slot:activator="{ props }">
@@ -77,6 +80,22 @@
                     </v-card>
                 </v-row>
             </div>
+        </div>
+    </v-container>
+
+    <v-container v-else>
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: white;"
+            class="main-page-skeleton"
+        >
+            <v-row class="ma-0 pa-0" style="height: 100%;">
+                <v-col cols="2" class="pa-4">
+                    <v-skeleton-loader type="card"></v-skeleton-loader>
+                </v-col>
+                <v-col cols="10" class="pa-4">
+                    <v-skeleton-loader class="main-page-skeleton-right1" type="card"></v-skeleton-loader>
+                    <v-skeleton-loader class="main-page-skeleton-right2" type="card"></v-skeleton-loader>
+                </v-col>
+            </v-row>
         </div>
     </v-container>
 
@@ -108,15 +127,46 @@ export default {
         tenantInfos: [],
         deleteDialog: false,
         tenantIdToDelete: null,
+        isOwner: false,
+        isLoading: true,
     }),
     async created() {
         const isLogin = await backend.checkDBConnection();
         if(!isLogin) {
-            alert("로그인이 필요합니다.")
             this.$router.push('/auth/login')
         }
         const tenants = await backend.getTenants();
-        this.tenantInfos = tenants;
+        
+        if (tenants && tenants.length > 0) {
+            this.tenantInfos = tenants;
+            this.isOwner = true;
+            this.isLoading = false;
+        } else {
+            // tenantInfos가 없다면 users 테이블에서 유저 정보를 가져온다
+            try {
+                const users = await backend.getUserAllTenants();
+                
+                if (users && users.length > 0) {
+                    // tenant_id를 추출하여 고유한 tenant 목록을 만든다
+                    const uniqueTenants = [...new Set(users.map(user => user.tenant_id))];
+                    
+                    if (uniqueTenants.length === 1) {
+                        // 유저 정보가 하나의 tenant에만 속해있다면 바로 리다이렉션
+                        const tenantId = uniqueTenants[0];
+                        if (tenantId && tenantId !== 'process-gpt') {
+                            this.toSelectedTenantPage(tenantId);
+                        }
+                    } else if (uniqueTenants.length > 1) {
+                        // 여러 tenant가 있다면 tenant 목록으로 설정
+                        this.tenantInfos = uniqueTenants.map(tenantId => ({ id: tenantId }));
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching user list:', error);
+            } finally {
+                this.isLoading = false;
+            }
+        }
     },
     methods: {
         toAddTenentPage() {
@@ -134,10 +184,19 @@ export default {
         
         async toSelectedTenantPage(tenantId) {
             await backend.setTenant(tenantId);
+            
+            // Android 웹뷰 브릿지 체크
+            if (window.AndroidBridge) {
+                // 네이티브 앱에 테넌트 변경 요청
+                window.AndroidBridge.changeTenant(tenantId);
+                return;
+            }
+
+            // 일반 웹 브라우저인 경우 기존 로직 실행
             if(!location.port || location.port == '') {
-                location.href = `https://${tenantId}.process-gpt.io`
+                location.href = `https://${tenantId}.process-gpt.io/definition-map`;
             } else {
-                location.href = `http://${tenantId}.process-gpt.io:${location.port}`
+                location.href = `http://${tenantId}.process-gpt.io:${location.port}/definition-map`;
             }
         }
     },

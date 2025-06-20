@@ -37,6 +37,7 @@ export default {
         // consulting
         isMentoMode: false,
         newMessageInfo: null,
+        isAgentChat: false,
     }),
     computed: {
         useLock() {
@@ -47,8 +48,8 @@ export default {
             }
         },
         isMobile() {
-            return window.innerWidth <= 1080;
-        }
+            return window.innerWidth <= 768;
+        },
     },
     mounted() {
         var me = this
@@ -92,6 +93,7 @@ export default {
     },
     async created() {
         // var me = this;
+        this.backend = BackendFactory.createBackend();
         this.storage = StorageBaseFactory.getStorage();
         this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
@@ -149,8 +151,6 @@ export default {
             if (this.useLock) {
                 this.userInfo = await this.storage.getUserInfo();
             }
-            this.backend = BackendFactory.createBackend();
-
             await this.loadData(this.getDataPath());
             // await this.loadMessages(this.getDataPath());
         },
@@ -158,7 +158,7 @@ export default {
             var me = this;
             me.userInfo = await this.storage.getUserInfo();
            
-            await this.storage.watch(`db://chats/${chatRoomIds.join(',')}`, async (data) => {
+            await this.storage.watch(`db://chats/${chatRoomIds.join(',')}`, "chat_channel", async (data) => {
                 if(data && data.new){
                     if(data.eventType == "DELETE"){
                         let messageIndex = me.messages.findIndex(msg => msg.uuid === data.old.uuid);
@@ -176,7 +176,7 @@ export default {
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
                                 // &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
-                                && (me.messages[me.messages.length - 1].content == '...' || me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, '')))
+                                && (me.messages[me.messages.length - 1].content == '...' || me.messages[me.messages.length - 1].content == '테이블 생성 중...' || me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, '')))
                                 ) {
                                     me.messages[me.messages.length - 1] = data.new.messages
                                     me.messages[me.messages.length - 1].isLoading = false
@@ -425,7 +425,7 @@ export default {
             }
         },
         async startGenerate() {
-            if(!this.ProcessGPTActive || this.isSystemChat){
+            if((!this.ProcessGPTActive || this.isSystemChat) && !this.isAgentChat){
                 this.messages.push({
                     role: 'system',
                     content: '...',
@@ -667,16 +667,23 @@ export default {
                     }
                 }
                 // jsonData = this.removeComments(jsonData);
-                if(jsonData != null) {
-                    if(jsonData['formValues']){
+                if(this.isAgentMode) {
+                    if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
                         this.EventBus.emit('form-values-updated', jsonData['formValues']);
                         this.messages[this.messages.length - 1].content = '초안 생성을 완료하였습니다.'
+                        this.afterAgentGeneration(jsonData);
                     } else {
-                        this.afterGenerationFinished(jsonData);
+                        this.messages[this.messages.length - 1].content = '초안 생성을 실패하였습니다. 잠시 후 다시 시도해주세요.'
+                        this.afterAgentGeneration(null);
                     }
                 } else {
-                    this.afterGenerationFinished(response);
+                    if(jsonData){
+                        this.afterGenerationFinished(jsonData);
+                    } else {
+                        this.afterGenerationFinished(response);
+                    }
                 }
+
                 this.EventBus.emit('scroll_update');
             }
         },

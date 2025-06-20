@@ -38,7 +38,7 @@ ContextPadProvider.$inject = [
   'translate'
 ];
 
-ContextPadProvider.prototype.getContextPadEntries = function(element) {
+ContextPadProvider.prototype.getContextPadEntries = function (element) {
   const {
     _modeling: modeling,
     _translate: translate,
@@ -87,7 +87,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
   function adjustParticipantSize(element, newLane) {
     const participant = element.type === 'bpmn:Participant' ? element : element.parent;
     if (participant && participant.type === 'bpmn:Participant') {
-      const participantBounds = participant.getBounds? participant.getBounds() : participant.di.bounds;
+      const participantBounds = participant.getBounds ? participant.getBounds() : participant.di.bounds;
       const newLaneBounds = newLane.getBounds ? newLane.getBounds() : newLane.di.bounds;
       modeling.resizeShape(participant, {
         x: participantBounds.x,
@@ -116,27 +116,27 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
     if (!element) return null;
     return element.di || (element.businessObject && element.businessObject.$parent && element.businessObject.$parent.di);
   }
-  
+
   function splitPhaseContainer(phaseContainer, numPhases) {
     const laneSet = phaseContainer.businessObject.laneSets[0];
     if (!laneSet) {
-        console.error("🚨 LaneSet을 찾을 수 없습니다.");
-        return;
+      console.error("🚨 LaneSet을 찾을 수 없습니다.");
+      return;
     }
 
     for (let i = 0; i < numPhases; i++) {
-        // ✅ Phase 생성 (Lane 대신 Phase 사용)
-        const phase = elementFactory._moddle.create('phase:Phase', {
-            id: `Phase_${Math.random().toString(36).substr(2, 9)}`,
-            name: `Phase ${i + 1}`
-        });
+      // ✅ Phase 생성 (Lane 대신 Phase 사용)
+      const phase = elementFactory._moddle.create('phase:Phase', {
+        id: `Phase_${Math.random().toString(36).substr(2, 9)}`,
+        name: `Phase ${i + 1}`
+      });
 
-        laneSet.lanes.push(phase);
+      laneSet.lanes.push(phase);
     }
 
     // ✅ LaneSet 업데이트
     modeling.updateProperties(phaseContainer, {
-        laneSets: [laneSet]
+      laneSets: [laneSet]
     });
 
     console.log(`✅ ${numPhases}개의 Phase 추가 완료.`);
@@ -155,23 +155,23 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
     // ✅ Participant의 부모 요소 가져오기
     const parentElement = participantElement.parent;
     if (!parentElement) {
-        console.error("🚨 Participant의 부모 요소를 찾을 수 없습니다.", participantElement);
-        return;
+      console.error("🚨 Participant의 부모 요소를 찾을 수 없습니다.", participantElement);
+      return;
     }
 
     // ✅ DI 정보 가져오기
     const participantDi = getDi(participantElement);
     if (!participantDi) {
-        console.error("🚨 Participant의 DI 정보가 없습니다.", participantElement);
-        return;
+      console.error("🚨 Participant의 DI 정보가 없습니다.", participantElement);
+      return;
     }
 
     // ✅ BusinessObject 생성
     const phaseContainerBO = elementFactory._moddle.create('phase:PhaseContainer', {
-        id: `PhaseContainer_${Math.random().toString(36).substr(2, 9)}`,
-        numPhases: 0,
-        processRef: processBo,
-        isHorizontal: false
+      id: `PhaseContainer_${Math.random().toString(36).substr(2, 9)}`,
+      numPhases: 0,
+      processRef: processBo,
+      isHorizontal: false
     });
 
     // ✅ LaneSet 추가 (splitLane()을 위해 필요)
@@ -183,17 +183,17 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
 
     // ✅ DI 정보 생성
     const phaseContainerDI = elementFactory._moddle.create('bpmndi:BPMNShape', {
-        id: `DI_${phaseContainerBO.id}`,
-        bpmnElement: phaseContainerBO,
-        isHorizontal: false,
-        bounds: {
-            x: participantElement.x + participantElement.width / 2,
-            y: participantElement.y - 30, // ✅ Participant 위쪽에 배치
-            width: participantElement.width,
-            height: 90
-        }
+      id: `DI_${phaseContainerBO.id}`,
+      bpmnElement: phaseContainerBO,
+      isHorizontal: false,
+      bounds: {
+        x: participantElement.x + participantElement.width / 2,
+        y: participantElement.y - 30, // ✅ Participant 위쪽에 배치
+        width: participantElement.width,
+        height: 90
+      }
     });
-    
+
     phaseContainerDI.isHorizontal = false
 
     // ✅ 반드시 $parent를 설정
@@ -203,32 +203,32 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
     const parentBO = parentElement.businessObject;
 
     if (!Array.isArray(parentBO.children)) {
-        parentBO.children = [];
+      parentBO.children = [];
     }
     parentBO.children.push(phaseContainerBO);
 
     // ✅ planeElement 배열이 맞는지 확인 후 push
     let planeElement = participantDi.$parent.get('planeElement');
     if (!Array.isArray(planeElement)) {
-        planeElement = [planeElement];
-        participantDi.$parent.set('planeElement', planeElement);
+      planeElement = [planeElement];
+      participantDi.$parent.set('planeElement', planeElement);
     }
     planeElement.push(phaseContainerDI);
 
     // ✅ PhaseContainer 생성
     const phaseContainer = elementFactory.createShape({
-        type: 'phase:PhaseContainer',
-        businessObject: phaseContainerBO,
-        width: participantElement.width,
-        height: 90,
-        isHorizontal: false
+      type: 'phase:PhaseContainer',
+      businessObject: phaseContainerBO,
+      width: participantElement.width,
+      height: 90,
+      isHorizontal: false
     });
 
 
     // ✅ PhaseContainer의 위치 설정
     const position = {
-        x: participantElement.x + participantElement.width / 2,
-        y: participantElement.y - 45
+      x: participantElement.x + participantElement.width / 2,
+      y: participantElement.y - 45
     };
 
     // ✅ PhaseContainer를 `Participant`의 부모에 추가
@@ -237,54 +237,9 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
     console.log("✅ PhaseContainer 생성 완료:", phaseContainer);
     return phaseContainer;
   }
-  
-  function changeParticipantOrientation(event, element) {
-    if (element.type !== 'bpmn:Participant') {
-      return;
-    }
 
-    const isCurrentlyHorizontal = element.di.isHorizontal;
-    const participantBounds = element.getBounds ? element.getBounds() : element.di.bounds;
-    const childElements = element.children || [];
 
-    // 참가자의 새로운 크기 계산
-    const newBounds = {
-      x: participantBounds.x,
-      y: participantBounds.y,
-      width: isCurrentlyHorizontal ? participantBounds.height : participantBounds.width,
-      height: isCurrentlyHorizontal ? participantBounds.width : participantBounds.height
-    };
-
-    // 참가자의 방향 변경 및 크기 조정
-    modeling.resizeShape(element, newBounds);
-    modeling.toggleCollapse(element);
-
-    childElements.forEach(child => {
-      if (child.type === 'bpmn:Lane') {
-        const childBounds = child.getBounds ? child.getBounds() : child.di.bounds;
-        const newChildBounds = {
-          x: isCurrentlyHorizontal ? newBounds.x + (newBounds.height - childBounds.y - childBounds.height) : childBounds.x,
-          y: isCurrentlyHorizontal ? childBounds.x : newBounds.y + (newBounds.width - childBounds.x - childBounds.width),
-          width: isCurrentlyHorizontal ? childBounds.height : childBounds.width,
-          height: isCurrentlyHorizontal ? childBounds.width : childBounds.height
-        };
-        modeling.resizeShape(child, newChildBounds);
-      } else {
-        const childBounds = child.getBounds ? child.getBounds() : child.di.bounds;
-        const newPosition = {
-          x: isCurrentlyHorizontal ? newBounds.x + (newBounds.height - childBounds.y - childBounds.height) : childBounds.x,
-          y: isCurrentlyHorizontal ? childBounds.x : newBounds.y + (newBounds.width - childBounds.x - childBounds.width)
-        };
-        modeling.moveShape(child, { x: newPosition.x - childBounds.x, y: newPosition.y - childBounds.y });
-      }
-    });
-
-    modeling.updateProperties(element, {
-      di: { isHorizontal: !isCurrentlyHorizontal }
-    });
-  }
-
-  const actions =  this._originalGetContextPadEntries(element);
+  const actions = this._originalGetContextPadEntries(element);
 
   if (element.type === 'bpmn:Participant' || element.type === 'bpmn:Lane' || element.type === 'phase:PhaseContainer') {
     const isHorizontal = element.di.isHorizontal
@@ -294,9 +249,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
         className: isHorizontal ? 'bpmn-icon-lane-insert-above' : 'bpmn-icon-lane-insert-above icon-rotate-270',
         title: isHorizontal ? i18n.global.t('customContextPad.laneAbove') : i18n.global.t('customContextPad.laneToTheLeft'),
         action: {
-          click: function(event2, element2) {
-            modeling.addLane(element2, "top");
-          }
+          click: actions['lane-insert-above'].action.click
         }
       },
       'lane-insert-below': {
@@ -304,9 +257,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
         className: isHorizontal ? 'bpmn-icon-lane-insert-below' : 'bpmn-icon-lane-insert-below icon-rotate-270',
         title: isHorizontal ? i18n.global.t('customContextPad.laneBelow') : i18n.global.t('customContextPad.laneToTheRight'),
         action: {
-          click: function(event2, element2) {
-            modeling.addLane(element2, "bottom");
-          }
+          click: actions['lane-insert-below'].action.click
         }
       },
       'lane-divide-two': {
@@ -330,7 +281,7 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
         className: isHorizontal ? 'bpmn-icon-participant' : 'bpmn-icon-participant icon-rotate-90',
         title: isHorizontal ? i18n.global.t('customContextPad.lane') : i18n.global.t('customContextPad.laneToTheLeft'),
         action: {
-          click: function(event, element) {
+          click: function (event, element) {
             const laneCount = element.children.filter(child => child.type === 'bpmn:Lane').length;
             insertLanes(1);
           }
@@ -350,65 +301,65 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
     if (element.type === 'bpmn:Participant') {
       assign(actions, {
         'append.phase.container': {
-            group: 'model',
-            className: 'mdi mdi-label-outline',
-            title: i18n.global.t('customContextPad.phase'),
-            action: {
-                click: function(event, element) {
-                  const phaseContainer = addPhaseContainer(element);
-                  
-                  modeling.splitLane(phaseContainer, 3);
-                }
+          group: 'model',
+          className: 'mdi mdi-label-outline',
+          title: i18n.global.t('customContextPad.phase'),
+          action: {
+            click: function (event, element) {
+              const phaseContainer = addPhaseContainer(element);
+
+              modeling.splitLane(phaseContainer, 3);
             }
+          }
         }
       });
     }
 
     if (element.type === 'phase:PhaseContainer') {
       assign(actions, {
-          'append.phase': {
-              group: 'model',
-              className: 'bpmn-icon-phase',
-              title: i18n.global.t('customContextPad.phase'),
-              action: {
-                  click: function(event, element) {
-                      splitPhaseContainer(element, 3); // 기본 2개로 나누기
-                  }
-              }
+        'append.phase': {
+          group: 'model',
+          className: 'bpmn-icon-phase',
+          title: i18n.global.t('customContextPad.phase'),
+          action: {
+            click: function (event, element) {
+              splitPhaseContainer(element, 3); // 기본 2개로 나누기
+            }
           }
+        }
       });
     }
   }
-    
-  if(actions['append.end-event']) {
+
+  if (actions['append.end-event']) {
     actions['append.end-event'].title = i18n.global.t('customContextPad.endEvent');
   }
-  if(actions['append.gateway']) {
+  if (actions['append.gateway']) {
     actions['append.gateway'].title = i18n.global.t('customContextPad.gateway');
   }
-  if(actions['append.append-task']) {
+  if (actions['append.append-task']) {
     actions['append.append-task'].title = i18n.global.t('customContextPad.task');
   }
-  if(actions['append.intermediate-event']) {
+  if (actions['append.intermediate-event']) {
     actions['append.intermediate-event'].title = i18n.global.t('customContextPad.intermediateEvent');
   }
-  if(actions['append.text-annotation']) {
+  if (actions['append.text-annotation']) {
     actions['append.text-annotation'].title = i18n.global.t('customContextPad.textAnnotation');
   }
-  if(actions['replace']) {
+  if (actions['replace']) {
     actions['replace'] = {
       group: 'edit',
       className: 'bpmn-icon-screw-wrench',
       title: i18n.global.t('customContextPad.replace'),
       action: {
-        click: function(event, element) {
+        click: function (event, element) {
           var position = assign({
             x: event.x,
             y: event.y
-          }, 
-          {
-            cursor: { x: event.x, y: event.y }
-          });
+          },
+            {
+              cursor: { x: event.x, y: event.y }
+            });
 
           popupMenu.open(element, 'bpmn-replace', position, {
             title: i18n.global.t('customContextPad.replace'),
@@ -419,12 +370,12 @@ ContextPadProvider.prototype.getContextPadEntries = function(element) {
       }
     }
   }
-  if(actions['connect']) {
+  if (actions['connect']) {
     actions['connect'].title = i18n.global.t('customContextPad.connect');
   }
-  if(actions['delete']) {
+  if (actions['delete']) {
     actions['delete'].title = i18n.global.t('customContextPad.delete');
   }
-  
+
   return actions;
 };

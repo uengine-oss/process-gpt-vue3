@@ -54,10 +54,13 @@ import loadbpmnComponents from './components/designer/bpmnModeling/bpmn';
 import loadOpengraphComponents from './opengraph';
 import DetailComponent from './components/ui-components/details/DetailComponent.vue'
 
+import BackendFactory from '@/components/api/BackendFactory';
+
 // vue-
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import ganttastic from '@infectoone/vue-ganttastic'
+import { ref } from 'vue';
 
 const i18n = createI18n({
     locale: 'ko',
@@ -82,6 +85,8 @@ declare global {
         $isTenantServer: boolean;
         $tenantName: string;
         _env_: any;
+        $themeColor: any; // 테마 색상을 위한 전역 변수 추가
+        $globalIsMobile: boolean; // 모바일 체크를 위한 전역 변수 추가
     }
 }
 
@@ -91,6 +96,22 @@ Object.defineProperty(window, '$pal', {
     configurable: false
 });
 
+// 반응형 모바일 상태 생성
+const globalIsMobile = ref(window.innerWidth <= 768);
+
+// 모바일 체크 전역 변수 설정
+Object.defineProperty(window, '$globalIsMobile', {
+    value: window.innerWidth <= 768,
+    writable: true,
+    configurable: false
+});
+
+// 윈도우 리사이즈 이벤트 리스너 추가
+window.addEventListener('resize', () => {
+    const isMobile = window.innerWidth <= 768;
+    window.$globalIsMobile = isMobile;
+    globalIsMobile.value = isMobile;
+});
 
 Object.defineProperty(window, '$mode', {
     // value: 'uEngine',
@@ -129,9 +150,48 @@ async function setupSupabase() {
     });
 }
 
+async function setupTenant() {
+    const subdomain = window.location.hostname.split('.')[0];
+
+    if(subdomain == 'www' || subdomain == 'process-gpt') {
+        Object.defineProperty(window, '$isTenantServer', {
+            value: true,
+            writable: false,
+            configurable: true
+        });
+    } else if(window.location.host.includes('localhost') || 
+        window.location.host.includes('192.168') || 
+        window.location.host.includes('127.0.0.1')
+    ) {
+        Object.defineProperty(window, '$isTenantServer', {
+            value: false,
+            writable: false,
+            configurable: true
+        });
+        Object.defineProperty(window, '$tenantName', {
+            value: 'localhost',
+            writable: false,
+            configurable: false
+        });
+    } else {
+        Object.defineProperty(window, '$isTenantServer', {
+            value: false,
+            writable: false,
+            configurable: true
+        });
+        Object.defineProperty(window, '$tenantName', {
+            value: subdomain,
+            writable: false,
+            configurable: false
+        });
+    }
+}
+
 async function initializeApp() {
     await setupSupabase();
+    await setupTenant();
     const app = createApp(App);
+    
     app.use(VueMonacoEditorPlugin, {
         paths: {
             vs: '/node_modules/monaco-editor/min/vs'
@@ -147,6 +207,9 @@ async function initializeApp() {
     app.config.globalProperties.ModelingBus = ModelingEmitter;
     // 전역 상태 관리자를 전역 속성으로 추가
     app.config.globalProperties.$globalState = globalState;
+    
+    // globalIsMobile을 Vue 전역 속성으로 추가 (반응형)
+    app.config.globalProperties.globalIsMobile = globalIsMobile;
 
     app.component('modeler-image-generator', ModelerImageGenerator);
     // modeler-image-generator
@@ -208,40 +271,43 @@ async function initializeApp() {
         componentName: 'vuediff'
     });
 
-    (async () => {
-        try {
-            let initOptions = {
-                url: window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || `http://localhost:9090/`,
-                realm: window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || `uengine`,
-                clientId: window._env_?.VITE_KEYCLOAK_CLIENT_ID || import.meta.env.VITE_KEYCLOAK_CLIENT_ID || `uengine`,
-                onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
-            };
-            const keycloak = new Keycloak(initOptions);
-            const authenticated = await keycloak.init({
-                onLoad: initOptions.onLoad
-            });
-            console.log(`User is ${authenticated ? 'authenticated' : 'not authenticated'}`);
-            if (authenticated) {
-                localStorage.setItem('keycloak', `${keycloak.token}`);
-                console.log(keycloak.tokenParsed);
-                if (keycloak.token && keycloak.tokenParsed) {
-                    localStorage.setItem('accessToken', `${keycloak.token}`);
-                    localStorage.setItem('author', `${keycloak.tokenParsed.email}`);
-                    localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
-                    localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
-                    localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
-                    localStorage.setItem('groups', `${keycloak.tokenParsed.groups}`);
-                    localStorage.setItem('roles', `${keycloak.tokenParsed.realm_access?.roles}`);
-                    localStorage.setItem('isAdmin', 'true');
-                    const defaultPicture = '/images/defaultUser.png';
-                    localStorage.setItem('picture', localStorage.getItem('picture') || defaultPicture);
+
+    if (window.$mode == 'uEngine') {
+        (async () => {
+            try {
+                let initOptions = {
+                    url: window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || `http://localhost:9090/`,
+                    realm: window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || `uengine`,
+                    clientId: window._env_?.VITE_KEYCLOAK_CLIENT_ID || import.meta.env.VITE_KEYCLOAK_CLIENT_ID || `uengine`,
+                    onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
+                };
+                const keycloak = new Keycloak(initOptions);
+                const authenticated = await keycloak.init({
+                    onLoad: initOptions.onLoad
+                });
+                console.log(`User is ${authenticated ? 'authenticated' : 'not authenticated'}`);
+                if (authenticated) {
+                    localStorage.setItem('keycloak', `${keycloak.token}`);
+                    console.log(keycloak.tokenParsed);
+                    if (keycloak.token && keycloak.tokenParsed) {
+                        localStorage.setItem('accessToken', `${keycloak.token}`);
+                        localStorage.setItem('author', `${keycloak.tokenParsed.email}`);
+                        localStorage.setItem('userName', `${keycloak.tokenParsed.preferred_username}`);
+                        localStorage.setItem('email', `${keycloak.tokenParsed.email}`);
+                        localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
+                        localStorage.setItem('groups', `${keycloak.tokenParsed.groups}`);
+                        localStorage.setItem('roles', `${keycloak.tokenParsed.realm_access?.roles}`);
+                        localStorage.setItem('isAdmin', 'true');
+                        const defaultPicture = '/images/defaultUser.png';
+                        localStorage.setItem('picture', localStorage.getItem('picture') || defaultPicture);
+                    }
                 }
+        
+            } catch (error) {
+                console.error(`Failed to initialize adapter: ${error}`);
             }
-       
-        } catch (error) {
-            console.error(`Failed to initialize adapter: ${error}`);
-        }
-    })();
+        })();
+    }
 }
 export { i18n };
 initializeApp();

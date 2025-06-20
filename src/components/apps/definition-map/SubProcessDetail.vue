@@ -1,6 +1,8 @@
 <template>
     <v-card elevation="10"
-        :style="$globalState.state.isZoomed ? 'height: 100vh' : 'height:calc(100vh - 143px);'"
+        :style="$globalState.state.isZoomed ? 'height: 100vh' : ''"
+        style="overflow: auto;"
+        class="is-work-height"
     >
         <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center">
             <div class="d-flex">
@@ -45,7 +47,15 @@
                 <div v-if="onLoad && bpmn" class="d-flex align-center">
                     <div class="sub-process-start-btn">
                         <v-btn v-if="!JMS && !Pal"
-                            @click="executeProcess"
+                            @click="executeProcess('simulate')"
+                            rounded
+                            density="comfortable"
+                            style="background-color: #808080; color: white; margin-right: 5px;"
+                        >
+                            시뮬레이션
+                        </v-btn>
+                        <v-btn v-if="!JMS && !Pal"
+                            @click="executeProcess('execute')"
                             color="primary"
                             rounded
                             density="comfortable"
@@ -126,7 +136,7 @@
             </div>
         </div>
 
-        <v-card-text style="width:100%; height:95%; padding:10px;">
+        <v-card-text style="width: 100%; height: 94%; padding: 10px;">
             <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinitionData" :isViewMode="isViewMode"
                 :isPreviewPDFDialog="isPreviewPDFDialog"
@@ -141,8 +151,10 @@
             </div>
             <div v-else></div>
         </v-card-text>
-        <v-dialog v-model="executeDialog">
-            <process-gpt-execute v-if="mode === 'ProcessGPT'" :definitionId="processDefinition.id" 
+        <v-dialog v-model="executeDialog"
+            :fullscreen="isMobile"
+        >
+            <process-gpt-execute v-if="mode === 'ProcessGPT'" :processDefinition="processDefinitionData" :definitionId="processDefinition.id" :isSimulate="isSimulate"
                 @close="executeDialog = false"></process-gpt-execute>
             <div v-else>
                 <!-- <process-execute-dialog :definitionId="processDefinition.id" @close="executeDialog = false"></process-execute-dialog> -->
@@ -160,6 +172,8 @@ import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecut
 import BaseProcess from './BaseProcess.vue'
 
 import BackendFactory from '@/components/api/BackendFactory';
+
+const backend = BackendFactory.createBackend();
 
 export default {
     components: {
@@ -189,7 +203,8 @@ export default {
         executeDialog: false,
         isPreviewPDFDialog: false,
         //
-        isEditable: false
+        isEditable: false,
+        isSimulate: false
     }),
     computed: {
         mode() {
@@ -200,6 +215,9 @@ export default {
         },
         Pal() {
             return window.$pal;
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
         },
     },
     watch: {
@@ -250,15 +268,30 @@ export default {
         },
         async openSubProcess(e) {
             let me = this;
-            if (e.extensionElements?.values[0]?.definition) {
-                const backend = BackendFactory.createBackend();
-                const defId = e.extensionElements.values[0].definition;
-                const defInfo = await backend.getRawDefinition(defId, null);
-                if (defInfo) {
-                    let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
-                    me.subProcessBreadCrumb.push(obj)
-                    me.selectedSubProcess = e.extensionElements.values[0].definition
-                    me.updateBpmn(defInfo.bpmn)
+            if(this.Pal) {
+                if(e.extensionElements?.values[0]) {
+                    const json = JSON.parse(e.extensionElements.values[0].$children[0].$body);
+                    if(json.definitionId) {
+                        const defInfo = await backend.getRawDefinition(json.definitionId, null);
+                        if (defInfo) {
+                            let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
+                            me.subProcessBreadCrumb.push(obj)
+                            me.selectedSubProcess = e.extensionElements.values[0].definition
+                            me.updateBpmn(defInfo.bpmn)
+                        }
+                    }
+                }
+            } else {
+                if (e.extensionElements?.values[0]?.definition) {
+                    const backend = BackendFactory.createBackend();
+                    const defId = e.extensionElements.values[0].definition;
+                    const defInfo = await backend.getRawDefinition(defId, null);
+                    if (defInfo) {
+                        let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
+                        me.subProcessBreadCrumb.push(obj)
+                        me.selectedSubProcess = e.extensionElements.values[0].definition
+                        me.updateBpmn(defInfo.bpmn)
+                    }
                 }
             }
         },
@@ -318,8 +351,13 @@ export default {
             this.isPreviewPDFDialog = false;
             this.isPreviewPDFDialog = true;
         },
-        executeProcess() {
-            this.executeDialog = true
+        executeProcess(mode) {
+            if(mode == 'simulate') {
+                this.isSimulate = 'true';
+            } else {
+                this.isSimulate = 'false';
+            }
+            this.executeDialog = true;
         },
         startProcess() {
             var me = this;

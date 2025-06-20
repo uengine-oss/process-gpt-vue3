@@ -30,6 +30,7 @@ const instance = getCurrentInstance();
 
 // 인스턴스의 context를 통해 전역 속성에 접근합니다.
 const globalState = instance?.appContext.config.globalProperties.$globalState;
+const { proxy } = getCurrentInstance();
 
 const chatReSizeDisplay = computed(() => {
     // globalState를 사용하여 계산된 속성을 정의합니다.
@@ -47,19 +48,47 @@ const canvasReSize = computed(() => {
 // 조건에 따라 슬롯 이름을 결정하는 계산된 속성
 const slotName = computed(() => {
     const path = route.path;
-    // /definitions/로 시작하는 모든 경로
-    if (/^\/definitions\//.test(path) && isWidthUnder1279.value) {
+    // /definition-map에서 모바일일 때는 leftpart를 right-part에 표시
+    if (path === '/definition-map' && isWidthUnder1279.value) {
+        return 'leftpart';
+    }
+    // /definitions/로 시작하는 다른 경로들
+    else if (/^\/definitions\//.test(path) && isWidthUnder1279.value) {
         return 'leftpart';
     } 
     else {
         return 'rightpart';
     }
 });
+
+// drawer를 닫는 함수
+const closeDrawer = () => {
+    sDrawer.value = false;
+};
+
+// close-drawer 이벤트 핸들러
+const handleCloseDrawer = () => {
+    closeDrawer();
+};
+
+// 경로별 메뉴 이름을 결정하는 계산된 속성
+const menuName = computed(() => {
+    const path = route.path;
+    if (path === '/chats') {
+        return proxy.$t('AppBaseCard.friends');
+    } else if (path === '/definition-map') {
+        return proxy.$t('AppBaseCard.progress');
+    }
+    return proxy.$t('AppBaseCard.menu');
+});
 </script>
 
 <template>
     <!---/Left chat list -->
-    <div class="d-flex mainbox" :class="chatReSizeDisplay" :style="!$globalState.state.isRightZoomed ? 'height:calc(100vh - 143px)' : 'height:100vh;'">
+    <div class="d-flex mainbox is-work-height" :class="chatReSizeDisplay"
+        :style="!$globalState.state.isRightZoomed ? '' : 'height:100vh;'"
+        style="overflow: auto;"
+    >
         <div class="left-part" v-if="lgAndUp" :style="canvasReSize">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>
@@ -70,10 +99,10 @@ const slotName = computed(() => {
         <div class="right-part">
             <!---Toggle Button For mobile-->
             <v-btn block @click="sDrawer = !sDrawer" variant="text" class="d-lg-none d-md-flex d-sm-flex"
-                style="z-index:1; background-color:white;"
+                style="z-index: 1; background-color: white; flex: 0 0 auto;"
                 :style="!$globalState.state.isRightZoomed ? '' : 'display:none;'"    
             >
-                <Menu2Icon size="20" class="mr-2 cp-dialog-open cp-def-menu" /> Menu
+                <Menu2Icon size="20" class="mr-2 cp-dialog-open cp-def-menu" /> {{ menuName }}
             </v-btn>
             <v-divider class="d-lg-none d-block" />
             <slot :name="slotName"></slot>
@@ -82,9 +111,14 @@ const slotName = computed(() => {
         <!---right chat conversation -->
     </div>
 
-    <v-navigation-drawer temporary v-model="sDrawer" width="320" top v-if="!lgAndUp" style="top:123px;">
-        <v-card-text class="pa-0">
-            <slot name="mobileLeftContent"></slot>
+    <v-navigation-drawer temporary v-model="sDrawer" top v-if="!lgAndUp"
+        class="mobile-menu-nav"
+    >
+        <v-card-text class="pa-0 mobile-left-menu">
+            <slot 
+                :name="route.path === '/definition-map' ? 'rightpart' : 'mobileLeftContent'" 
+                :closeDrawer="handleCloseDrawer"
+            ></slot>
         </v-card-text>
     </v-navigation-drawer>
 </template>
@@ -115,6 +149,10 @@ const slotName = computed(() => {
 .right-part {
     width: 100%;
     overflow: auto;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .left-part {

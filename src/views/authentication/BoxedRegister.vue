@@ -2,6 +2,9 @@
 import Logo from '@/layouts/full/logo/Logo.vue';
 /* Register form */
 import RegisterForm from '@/components/auth/RegisterForm.vue';
+import { defineProps, ref } from 'vue';
+
+const { isTenantRegister } = defineProps<{ isTenantRegister: boolean }>();
 </script>
 
 <template>
@@ -15,7 +18,7 @@ import RegisterForm from '@/components/auth/RegisterForm.vue';
                                 <div class="d-flex justify-center mb-5">
                                     <Logo />
                                 </div>
-                                <RegisterForm />
+                                <RegisterForm :isTenantRegister="isTenantRegister" />
                                 <h6 class="text-subtitle-1  text-grey100 d-flex justify-center align-center mt-3">
                                     {{ $t('createAccount.already') }}
                                     <v-btn variant="plain" to="/auth/login2"

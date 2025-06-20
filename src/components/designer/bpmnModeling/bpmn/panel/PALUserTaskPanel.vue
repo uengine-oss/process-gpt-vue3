@@ -112,6 +112,9 @@ export default {
     created() {
         var me = this;
         this.backend = BackendFactory.createBackend();
+    },
+    async mounted() {
+        let me = this;
         me.copyUengineProperties = JSON.parse(JSON.stringify(this.uengineProperties));
         if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
             const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
@@ -121,9 +124,6 @@ export default {
                 console.log('Activity not found');
             }
         }
-    },
-    async mounted() {
-        let me = this;
         await me.init();
     },
     computed: {
@@ -134,7 +134,21 @@ export default {
             return {
                 // placeholder: this.$t('PALUserTaskPanel.insertDescription'),
                 readOnly: this.isViewMode,
-                modules: this.isViewMode ? {toolbar: false} : {},
+                modules: this.isViewMode ? {toolbar:false} : {toolbar: [
+                    [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
+                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                    [{ 'font': [] }],
+                    ['bold', 'italic', 'underline'],        // toggled buttons
+                    ['link', 'image', 'video'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'list': 'check' }],
+                    // [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
+                    // [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
+                    // [{ 'direction': 'rtl' }],                         // text direction
+
+
+                    [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+                    [{ 'align': [] }]
+                ]},
                 theme: 'snow'
             }
         }
@@ -143,10 +157,21 @@ export default {
         activity: {
             deep: true,
             handler(newVal, oldVal) {
-                console.log(this.processDefinition)
                 this.EventBus.emit('process-definition-updated', this.processDefinition);
             }
         },
+        // processDefinition: {
+        //     deep: true,
+        //     handler(newVal, oldVal) {
+        //         this.updateActivity();
+        //     }
+        // },
+        // element: {
+        //     deep: true,
+        //     handler() {
+        //         this.updateActivity();
+        //     }
+        // }
     },
     methods: {
         async init() {
@@ -168,8 +193,7 @@ export default {
             }
             if (files && files.length > 0) {
                 files.forEach(async (file) => {
-                    const fileName = `uploads/${Date.now()}_${file.name}`;
-                    const data = await me.backend.uploadFile(fileName, file);
+                    const data = await me.backend.uploadFile(file.name, file);
                     if (data && data.path) {
                         me.activity.attachments.push(data.path);
                     }

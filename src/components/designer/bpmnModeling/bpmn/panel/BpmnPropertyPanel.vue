@@ -1,18 +1,50 @@
 <template>
-    <div id="property-panel" style="height: calc(100vh - 143px)">
+    <div id="property-panel" style="overflow: auto;"
+        class="is-work-height"
+    >
         <v-row class="ma-0 pa-4 pb-0">
             <v-card-title v-if="isViewMode" class="pa-0">{{ name }}</v-card-title>
-            <v-text-field v-else v-model="name" :label="$t('BpmnPropertyPanel.name')" 
+            <v-text-field v-else-if="!isPALMode" v-model="name" :label="$t('BpmnPropertyPanel.name')" 
                 :disabled="isViewMode" ref="cursor" 
                 class="bpmn-property-panel-name mb-3 delete-input-details"
             ></v-text-field>
+            <div v-if="!isViewMode && isPALMode" style="position: relative; width: 200px;">
+                <v-text-field
+                    v-model="name"
+                    :label="$t('BpmnPropertyPanel.name')"
+                    class="ml-2 mb-3 delete-input-details"
+                    @focus="menu = true"
+                    @input="onInput"
+                    ref="inputRef"
+                    autocomplete="off"
+                />
+                <v-menu
+                    v-if="menu && filteredTemplateOptions.length > 0"
+                    v-model="menu"
+                    :activator="$refs.inputRef"
+                    offset-y
+                    transition="scale-transition"
+                    min-height="0"
+                    max-height="200"
+                >
+                    <v-list>
+                        <v-list-item
+                            v-for="(item, index) in filteredTemplateOptions"
+                            :key="index"
+                            @click="selectItem(item)"
+                        >
+                        <v-list-item-title>{{ item }}</v-list-item-title>
+                        </v-list-item>
+                    </v-list>
+                </v-menu>
+            </div>
             <v-spacer></v-spacer>
             <v-btn @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
                 <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
             </v-btn>
         </v-row>
-        <v-card-text class="delete-input-details pa-4 pt-0" style="overflow: auto; width: 700px; height:calc(100% - 80px);">
-            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="mt-4">
+        <v-card-text class="delete-input-details pa-0 pr-4 pl-4" style="overflow: auto; width: 50vw; min-width: 370px; height:calc(100% - 80px);">
+            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="pa-4 pb-0">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
                 <div class="mb-3" v-if="!panelName.includes('sequence-flow')">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
             </div>
@@ -33,6 +65,7 @@
                 :processDefinitionId="processDefinitionId"
                 :processDefinition="processDefinition"
                 @addUengineVariable="(val) => $emit('addUengineVariable', val)"
+                :key="componentKey"
             ></component>
             <v-dialog v-if="isViewMode" v-model="printDialog" max-width="800px">
                 <template v-slot:activator="{ on, attrs }">
@@ -54,6 +87,8 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import ValidationField from '@/components/designer/bpmnModeling/bpmn/panel/ValidationField.vue';
 import PDFPreviewer from '@/components/PDFPreviewer.vue';
+import BackendFactory from '@/components/api/BackendFactory';
+
 
 export default {
     name: 'bpmn-property-panel',
@@ -86,7 +121,10 @@ export default {
             this.name = this.element.name;
             this.text = this.element.text;
         }
-        this.uengineProperties = JSON.parse(this.element.extensionElements.values[0].json);
+        const json = this.element.extensionElements.values[0].json;
+        if( json ) {
+            this.uengineProperties = JSON.parse(json);
+        }
         if (this.element.lanes?.length > 0) {
             this.role = this.element.lanes[0];
         }
@@ -130,7 +168,10 @@ export default {
             paramValue: '',
             role: {},
             printDialog: false,
-            html: ''
+            html: '',
+            templateOptions: [],
+            taskList: [],
+            componentKey: 0
         };
     },
     async mounted() {
@@ -139,9 +180,18 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
 
+        // 템플릿 목록 불러오기
+        if (this.isPALMode) {
+            await this.loadTaskList();
+        }
+
         // this.$refs.cursor.focus();
     },
     computed: {
+        filteredTemplateOptions() {
+            const filtered = this.templateOptions.filter(option => option.includes(this.name));
+            return filtered? filtered : [];
+        },
         mode() {
             return window.$mode;
         },
@@ -256,13 +306,13 @@ export default {
                     modeling.updateProperties(task, { text: text });
                 }
                 if(originTaskX && originTaskY && originTaskWidth && originTaskHeight) {
-                modeling.resizeShape(task, {
-                    x: originTaskX,
-                    y: originTaskY,
-                    width: originTaskWidth,
-                    height: originTaskHeight 
-                });
-            }
+                    modeling.resizeShape(task, {
+                        x: originTaskX,
+                        y: originTaskY,
+                        width: originTaskWidth,
+                        height: originTaskHeight 
+                    });
+                }
             }
 
            
@@ -291,6 +341,57 @@ export default {
                 return this.validationList[key];
             }
             return null;
+        },
+        async loadTaskList() {
+            try {
+                const backend = BackendFactory.createBackend();
+                this.taskList = await backend.getTaskList();
+
+                // task_name만 추출해서 templateOptions에 저장
+                this.templateOptions = (this.taskList || [])
+                .map(task => task.name)
+                .filter(Boolean); // null/undefined 제거
+            } catch (error) {
+                console.error('템플릿 목록을 불러오는데 실패했습니다:', error);
+            }
+        },
+        onInput() {
+            this.menu = true;
+        },
+        selectItem(item) {
+            this.name = item;
+            this.menu = false;
+            this.applyTask(); // 원래 있던 동작 유지
+        },
+        applyTask() {
+            // 선택된 값이 템플릿 ID가 아닌 경우 (사용자 직접 입력) 종료
+            const selectedTemplate = this.taskList.find(t => t.name === this.name);
+            if (!selectedTemplate || !selectedTemplate.json_ko) return;
+            
+            try {
+                const json = selectedTemplate.json_ko;
+                let activity = this.processDefinition.activities.find(a => a.id === this.element.id);
+                
+                if (activity) {
+                    // 대상 activity가 존재하면 속성을 복사합니다 (참조를 유지)
+                    // 직접 대입하지 않고 개별 속성을 복사
+                    Object.keys(json).forEach(key => {
+                        activity[key] = json[key];
+                    });
+                    activity.uuid = json.uuid || activity.uuid;
+                    activity.type = selectedTemplate.type || activity.type;
+                    
+                    // processDefinition 갱신을 위한 이벤트 발생
+                    this.$forceUpdate();
+                    this.$emit('update:processDefinition', this.processDefinition);
+                    this.$emit('process-definition-updated');
+                    
+                    // 자식 컴포넌트 재렌더링을 위한 트리거
+                    this.componentKey++;
+                }
+            } catch (error) {
+                console.error('템플릿 적용 중 오류 발생:', error);
+            }
         }
     }
 };

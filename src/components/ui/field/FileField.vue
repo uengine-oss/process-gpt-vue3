@@ -8,6 +8,7 @@
             :variant="localReadonly ? 'filled' : 'outlined'"
             :hide-details="hideDetails"
             :density="density"
+            @change="handleFileChange"
         ></v-file-input>
         <div v-if="selectedFiles && selectedFiles.length > 0 && imgBaseUrl && imgBaseUrl.includes('data:image/')">
             <p style="margin-top: -10px; margin-bottom: 10px;">* 해상도가 낮거나 이미지가 너무 작은 경우 GPT 모델이 인식하지 못할 수 있습니다.</p>
@@ -18,6 +19,8 @@
 
 <script>
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
+import BackendFactory from '@/components/api/BackendFactory';
+const backend = BackendFactory.createBackend();
 
 export default {
     props: {
@@ -60,7 +63,7 @@ export default {
     },
 
     watch: {
-        selectedFiles() {
+        selectedFiles(val) {
             if (!this.selectedFiles || this.selectedFiles.length <= 0) {
                 this.$emit('update:modelValue', "")
                 return
@@ -68,7 +71,7 @@ export default {
 
             const reader = new FileReader();
             reader.onload = (e) => {
-                this.$emit('update:modelValue', e.target.result)
+                // this.$emit('update:modelValue', e.target.result)
                 this.imgBaseUrl = e.target.result
             }
             reader.readAsDataURL(this.selectedFiles[0])
@@ -80,8 +83,32 @@ export default {
         this.localAlias = this.alias ?? ""
         this.localDisabled = this.disabled === "true"
         this.localReadonly = this.readonly === "true"
-        
-        this.$emit('update:modelValue', "")
+
+        // this.$emit('update:modelValue', "")
+    },
+
+    async mounted() {
+        if (this.modelValue) {
+            const response = await backend.downloadFile(this.modelValue);
+            if (response.error) {
+                this.$emit('update:modelValue', "");
+            } else {
+                this.selectedFiles = [response.file];
+            }
+        }
+    },
+
+    methods: {
+        async handleFileChange(event) {
+            const file = event.target.files[0];
+            const fileName = file.name;
+            const res = await backend.uploadFile(fileName, file);
+            if (res.error) {
+                this.$emit('update:modelValue', "");
+            } else {
+                this.$emit('update:modelValue', res.path);
+            }
+        }
     }
 };
 </script>

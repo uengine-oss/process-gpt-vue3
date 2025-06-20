@@ -11,24 +11,6 @@
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
                 ></Chat>
-
-                <v-dialog v-model="userDialog" max-width="500">
-                    <v-card>
-                        <v-card-title>신규 입사자 가입</v-card-title>
-                        <v-card-text class="overflow-y-auto">
-                            <div v-for="(user, index) in newUserList" :key="index" class="py-2">
-                                <v-text-field v-model="user.name" label="이름"></v-text-field>
-                                <v-text-field v-model="user.email" label="이메일"></v-text-field>
-                                <v-divider></v-divider>
-                            </div>
-                        </v-card-text>
-                        <v-card-actions>
-                            <v-spacer></v-spacer>
-                            <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
-                            <v-btn color="error" @click="userDialog = false">닫기</v-btn>
-                        </v-card-actions>
-                    </v-card>
-                </v-dialog>
             </template>
 
             <template v-slot:rightpart>
@@ -37,6 +19,9 @@
                         :key="organizationChart.id"
                         :userList="userList"
                         @updateNode="updateNode"
+                        @updateAgent="updateAgent"
+                        @addMember="openAddDialog"
+                        ref="organizationChart"
                 ></OrganizationChart>
             </template>
 
@@ -50,26 +35,18 @@
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
                 ></Chat>
-
-                <v-dialog v-model="userDialog" max-width="500">
-                    <v-card>
-                        <v-card-title>신규 입사자 가입</v-card-title>
-                        <v-card-text>
-                            <div v-for="(user, index) in newUserList" :key="index" class="py-2">
-                                <v-text-field v-model="user.name" label="이름"></v-text-field>
-                                <v-text-field v-model="user.email" label="이메일"></v-text-field>
-                                <v-divider></v-divider>
-                            </div>
-                        </v-card-text>
-                        <v-card-actions>
-                            <v-spacer></v-spacer>
-                            <v-btn color="primary" @click="createNewUser(newUserList)">가입</v-btn>
-                            <v-btn color="error" @click="userDialog = false">닫기</v-btn>
-                        </v-card-actions>
-                    </v-card>
-                </v-dialog>
             </template>
         </AppBaseCard>
+        <v-dialog v-model="addDialog" max-width="500">
+            <OrganizationAddDialog
+                :teamInfo="editNode"
+                :userList="userList"
+                :agentList="agentList"
+                @addUser="addUser"
+                @addAgent="addAgent"
+                @closeDialog="closeAddDialog"
+            ></OrganizationAddDialog>
+        </v-dialog>
     </v-card>
 </template>
 
@@ -83,6 +60,7 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
 import Chat from "@/components/ui/Chat.vue";
 import OrganizationChart from "@/components/ui/OrganizationChart.vue";
+import OrganizationAddDialog from "@/components/ui/OrganizationAddDialog.vue";
 
 export default {
     mixins: [ChatModule],
@@ -90,19 +68,21 @@ export default {
         AppBaseCard,
         Chat,
         OrganizationChart,
+        OrganizationAddDialog,
     },
     data: () => ({
         organizationChart: {},
-        userList: [],
+        organizationChartId: null,
         chatInfo: {
             title: "organizationChartDefinition.cardTitle",
             text: "organizationChartDefinition.organizationChartExplanation"
         },
-        userDialog: false,
-        newUserList: [],
-        organizationChartId: null,
+        addDialog: false,
+        userList: [],
+        agentList: [],
+        editNode: null,
     }),
-    async created() {
+    async mounted() {
         await this.init();
         const defaultName = window.$tenantName || window.$mode;
 
@@ -121,6 +101,15 @@ export default {
                 },
                 children: []
             };
+        }
+    },
+    watch: {
+        organizationChart: {
+            deep: true,
+            async handler(newVal) {
+                this.userList = await this.backend.getUserList();
+                this.agentList = await this.backend.getAgentList();
+            }
         }
     },
     methods: {
@@ -144,11 +133,11 @@ export default {
                     }
                 }
             }
-
-            await this.getChatList('organization_chart_chat');
-
-            this.userList = await this.storage.list("users");
             this.chatRoomId = 'organization_chart_chat';
+            await this.getChatList(this.chatRoomId);
+
+            this.userList = await this.backend.getUserList();
+            this.agentList = await this.backend.getAgentList();
         },
         beforeSendMessage(newMessage) {
             this.sendMessage(newMessage);
@@ -212,24 +201,18 @@ export default {
                         });
                     }
 
-                    if (unknown && unknown.newUsers) {
-                        this.newUserList = unknown.newUsers;
-                        this.userDialog = true;
-                    } else if (unknown && unknown.deleteUsers) {
-                        this.deleteUser(unknown.deleteUsers);
-                    } else {
-                        var putObj =  {
-                            key: 'organization',
-                            value: {
-                                chart: this.organizationChart,
-                            },
-                        };
-                        this.drawChart(this.organizationChart);
-                        if (this.organizationChartId) {
-                            putObj.uuid = this.organizationChartId;
-                        }
-                        await this.putObject("configuration", putObj);
+                    
+                    var putObj =  {
+                        key: 'organization',
+                        value: {
+                            chart: this.organizationChart,
+                        },
+                    };
+                    this.drawChart(this.organizationChart);
+                    if (this.organizationChartId) {
+                        putObj.uuid = this.organizationChartId;
                     }
+                    await this.putObject("configuration", putObj);
                 }
 
                 const newMessage = this.messages[this.messages.length - 1];
@@ -252,42 +235,36 @@ export default {
             };
             this.putObject("chats", putObj);
         },
-        async createNewUser(users) {
-            if (users && users.length > 0) {
-                users.forEach(async user => {
+        async createNewUser(user) {
+            var me = this
+            me.$try({
+                action: async () => {
                     let userInfo = {
                         username: user.name,
                         email: user.email,
-                        password: '000000',
+                        role: user.role
                     }
-                    const result = await this.backend.createUser(userInfo);
-                    if (result.user) {
-                        userInfo = {
+                    const result = await me.backend.createUser(userInfo);
+                    if (!result.error) {
+                        me.editNode.children.push({
                             id: result.user.id,
-                            username: user.name,
-                            email: user.email,
-                        }
-                        await this.putObject('users', userInfo);
+                            data: {
+                                id: result.user.id,
+                                img: "/images/defaultUser.png",
+                                name: user.name,
+                                email: user.email,
+                                role: user.role,
+                                pid: me.editNode.id,
+                            },
+                            name: user.name,
+                        });
+                        await me.updateNode();
+                        me.$refs.organizationChart.drawTree();
                     }
-                });
-                this.userList = await this.storage.list("users");
-            }
-            this.newUserList = [];
-            this.userDialog = false;
-        },
-        async deleteUser(users) {
-            if (users && users.length > 0) {
-                users.forEach(async user => {
-                    const options = {
-                        match: {
-                            email: user.email,
-                            username: user.name,
-                        }
-                    }
-                    await this.storage.delete('users', options);
-                });
-                this.userList = await this.storage.list("users");
-            }
+                },
+                successMsg: me.$t('organizationChartDefinition.addUserSuccess'),
+                errorMsg: me.$t('organizationChartDefinition.addUserFailed'),
+            });
         },
         async updateNode() {
             var putObj =  {
@@ -300,6 +277,43 @@ export default {
                 putObj.uuid = this.organizationChartId;
             }
             await this.putObject("configuration", putObj);
+        },
+
+        // dialog 관련
+        openAddDialog(value) {
+            this.editNode = value;
+            this.addDialog = true;
+        },
+        closeAddDialog() {
+            this.addDialog = false;
+        },
+        async addUser(addUserList, newUser) {
+            if (newUser) {
+                await this.createNewUser(newUser);
+            }
+            if (addUserList && addUserList.length > 0) {
+                this.editNode.children = addUserList;
+            }
+            await this.updateNode();
+            this.$refs.organizationChart.drawTree();
+        },
+        async addAgent(newAgent) {
+            const agent = {
+                id: newAgent.id,
+                name: newAgent.name,
+                data: newAgent
+            }
+            this.editNode.children.push(agent);
+            await this.backend.putAgent(newAgent);
+            await this.updateNode();
+            this.$refs.organizationChart.drawTree();
+        },
+        async updateAgent(type, editAgent) {
+            if (type == 'edit-agent') {
+                await this.backend.putAgent(editAgent.data);
+            } else if (type == 'delete') {
+                await this.backend.deleteAgent(editAgent.id);
+            }
         },
     }
 }

@@ -1,193 +1,71 @@
 <template>
     <div style="height:100%;">
-        <!-- 기존 조직도를 클릭하면 우측 상단에 나타나던 버튼 -->
-        <!-- <div v-if="openMenu" style="position: absolute; right: 20px; z-index: 1000; top: 60px;">
-            <v-row class="ma-0 pa-0">
-                <v-spacer></v-spacer>
-                <v-btn v-if="isRoot" color="primary" class="ml-2" variant="flat" density="comfortable"
-                    @click="openDialog('addTeam')">
-                    <template v-slot:prepend>
-                        <Icons :icon="'users-plus'" :size="20" />
-                    </template>
-                    팀 추가
-                </v-btn>
-                <div v-else class="d-flex">
-                    <v-btn color="primary" class="ml-2" variant="flat" density="comfortable" @click="openDialog('edit')">
-                        <template v-slot:prepend>
-                            <Icons :icon="'user-edit'" :size="20" />
-                        </template>
-                        수정
-                    </v-btn>
-                    <v-btn color="error" class="ml-2" variant="flat" density="comfortable" @click="openDialog('delete')">
-                        <template v-slot:prepend>
-                            <Icons :icon="'user-minus'" :size="20" />
-                        </template>
-                        삭제
-                    </v-btn>
-                </div>
-            </v-row>
-        </div> -->
         <!-- organization chart -->
         <div id="tree" ref="tree" class="h-100"></div>
+        
+        <!-- Agent Badges Diagram -->
+        <AgentBadgesDiagram 
+            :show="showBadgesDiagram" 
+            :agentData="selectedAgent" 
+            @close="closeBadgesDiagram"
+        />
+        
         <!-- dialogs -->
-        <v-dialog v-model="dialog" max-width="500">
-            <v-card v-if="dialogType == 'addTeam'">
-                <v-row class="ma-0 pa-4 pb-0">
-                    <v-card-title>{{ $t('organizationChartDefinition.addTeam') }}</v-card-title>
-                    <v-spacer></v-spacer>
-                    <v-btn @click="dialog = false"
-                        icon variant="text" density="comfortable"
-                    >
-                        <Icons :icon="'close'" :size="16"/>
-                    </v-btn>
-                </v-row>
-                
-                <v-card-text class="text-center">
-                    <v-text-field v-model="newTeam.id" :label="$t('organizationChartDefinition.teamId')"></v-text-field>
-                    <v-text-field v-model="newTeam.name" :label="$t('organizationChartDefinition.teamName')"></v-text-field>
-                </v-card-text>
-                <v-row class="ma-0 pa-4">
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" rounded @click="updateNode">{{ $t('organizationChartDefinition.add') }}</v-btn>
-                </v-row>
-            </v-card>
-
-            <v-card v-if="dialogType == 'edit'" class="pa-4">
-                <template v-if="editUser.data.isTeam">
-                    <v-row class="ma-0 pa-0 mb-2">
-                        <v-spacer></v-spacer>
-                        <v-btn @click="dialog = false"
-                            icon variant="text" density="comfortable"
-                        >
-                            <Icons :icon="'close'" :size="16"/>
-                        </v-btn>
-                    </v-row>
-                    <v-text-field v-model="editUser.data.name" :label="$t('organizationChartDefinition.teamName')"></v-text-field>
-
-                    <v-autocomplete v-model="editUser.children" :items="allUsers" chips 
-                        closable-chips color="blue-grey-lighten-2" item-title="data.name" :item-value="item => item" 
-                        multiple :label="$t('organizationChartDefinition.selectTeamMember')" small-chips>
-                        <template v-slot:chip="{ props, item }">
-                            <v-chip v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" :text="item.raw.data.name"></v-chip>
-                            <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.data.name"></v-chip>
-                        </template>
-                        <template v-slot:item="{ props, item }">
-                            <v-list-item v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" 
-                                :title="item.raw.data.name" :subtitle="item.raw.data.email"></v-list-item>
-                            <v-list-item v-else v-bind="props" :title="item.raw.data.name" :subtitle="item.raw.data.email">
-                                <template v-slot:prepend>
-                                    <v-icon style="position: relative; margin-right: 10px; margin-left: -3px;" size="48">mdi-account-circle</v-icon>
-                                </template>
-                            </v-list-item>
-                        </template>
-                    </v-autocomplete>
-                </template>
-                
-                <v-card-text v-else class="text-center mt-5">
-                    <div class="d-flex mb-2">
-                        <v-avatar v-if="!editUser.data.isTeam" color="grey" rounded="0" size="100" class="mb-5">
-                            <v-img v-if="editUser.data.img" :src="editUser.data.img"></v-img>
-                        </v-avatar>
-                        <div class="text-start align-self-center ml-4">
-                            <h6 class="text-h6 font-weight-bold">{{ editUser.data.name }}</h6>
-                            <div class="text-body-1">{{ editUser.data.email }}</div>
-                        </div>
-                    </div>
-                    
-                    <v-select v-model="editUser.data.pid" :items="allTeams" item-title="name"
-                        item-value="id" :label="$t('organizationChartDefinition.team')"></v-select>
-                    <v-text-field v-model="editUser.data.role" :label="$t('organizationChartDefinition.role')"></v-text-field>
-                </v-card-text>
-
-                <v-row class="ma-0 pa-4">
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" rounded @click="updateNode">{{ $t('organizationChartDefinition.edit') }}</v-btn>
-                </v-row>
-            </v-card>
-
-            <v-card v-if="dialogType == 'delete'">
-                <v-row class="ma-0 pa-2">
-                    <v-card-title>{{ editUser.data.isTeam ? $t('organizationChartDefinition.team') : $t('organizationChartDefinition.teamMember') }} {{ $t('organizationChartDefinition.delete') }}</v-card-title>
-                    <v-spacer></v-spacer>
-                    <v-btn @click="dialog = false"
-                        icon variant="text" density="comfortable"
-                    >
-                        <Icons :icon="'close'" :size="16"/>
-                    </v-btn>
-                </v-row>
-                <v-card-text>
-                    <div v-if="editUser.data.isTeam">'{{ editUser.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }}</div>
-                    <div v-else>'{{ currentTeam.name }}' {{ $t('organizationChartDefinition.from') }} '{{ editUser.data.name }}' {{ $t('organizationChartDefinition.deleteMessage1') }}</div>
-                </v-card-text>
-                <v-row class="ma-0 pa-4">
-                    <v-spacer></v-spacer>
-                    <v-btn color="primary" rounded  @click="updateNode">{{ $t('organizationChartDefinition.delete') }}</v-btn>
-                </v-row>
-            </v-card>
+        <v-dialog v-model="teamDialog" max-width="500">
+            <OrganizationTeamDialog 
+                :dialogType="teamDialogType" 
+                :editNode="editNode"
+                @updateTeam="updateTeam"
+                @closeDialog="closeTeamDialog"
+            ></OrganizationTeamDialog>
+        </v-dialog>
+        <v-dialog v-model="editDialog" max-width="500">
+            <OrganizationEditDialog
+                :dialogType="editDialogType"
+                :editNode="editNode"
+                @updateNode="updateNode"
+                @closeDialog="closeEditDialog"
+            ></OrganizationEditDialog>
         </v-dialog>
     </div>
 </template>
 
 <script>
 import ApexTree from 'apextree';
+import OrganizationTeamDialog from './OrganizationTeamDialog.vue';
+import OrganizationEditDialog from './OrganizationEditDialog.vue';
+import AgentBadgesDiagram from './AgentBadgesDiagram.vue';
 
 export default {
+    components: {
+        OrganizationTeamDialog,
+        OrganizationEditDialog,
+        AgentBadgesDiagram
+    },
     props: {
         node: {
             type: Object,
             default: {},
         },
-        userList: {
-            type: Array,
-            default: [],
-        }
     },
     data: () => ({
         tree: null,
-        openMenu: false,
-        editUser: null,
-        dialog: false,
-        dialogType: '',
-        allTeams: [],
-        allUsers: [],
-        newTeam: {
-            id: '',
-            name: '',
-            isTeam: true,
-            img: '/src/assets/images/chat/chat-icon.png',
-        },
+        
+        // dialog
+        editNode: null,
+        teamDialog: false,
+        editDialog: false,
+        
+        // badges diagram
+        showBadgesDiagram: false,
+        selectedAgent: null,
     }),
-    computed: {
-        isRoot() {
-            return this.editUser.id === 'root';
-        },
-        currentTeam() {
-            return this.allTeams.find(team => team.id === this.editUser.data.pid);
-        },
-    },
     watch: {
         node(newVal) {
             if (newVal && newVal.id && newVal.data) {
                 this.drawTree()
-                this.allTeams = newVal.children.filter(c => c.data.isTeam).map(t => ({
-                    id: t.id,
-                    name: t.data.name
-                }))
             }
         },
-        userList(newVal) {
-            this.allUsers = newVal.map(user => ({
-                id: user.id,
-                name: user.username,
-                data: {
-                    name: user.username,
-                    img: user.profile,
-                    email: user.email,
-                    role: user.role || '',
-                    pid: user.pid || ''
-                }
-            }))
-        }
     },
     async mounted() {
         if (this.node && this.node.id && this.node.data) {
@@ -203,15 +81,19 @@ export default {
                 enableExpandCollapse: true,
                 nodeTemplate: (content) =>`
                 <div class='node-content' id='${content.id}' style='display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;'>
-                    ${content.id == 'root' ? '' : (content.img ? `<img class="node-content-img" src='${content.img}' />` : `<img class="node-content-img" src='src/assets/images/profile/defaultUser.png' />`)}
+                    ${content.id == 'root' ? '' : (content.img ? `<img class="node-content-img" src='${content.img}' />` : `<img class="node-content-img" src='/images/defaultUser.png' />`)}
                     <div class="node-content-text-box">
                         <div style="font-weight: bold; font-family: Arial; font-size: 14px;">${content.name}</div>
                         ${content.email ? `<div style="font-family: Arial; font-size: 12px">${content.email}</div>` : ''}
                         ${content.role ? `<div style="font-family: Arial; color:gray; font-size: 11px">${content.role}</div>` : ''}
                         <div class="node-content-btn-box">
-                            ${content.id == 'root' ? `<img class="node-content-btn add-team-btn" src="/assets/images/icon/plus.svg" alt="Add Team">` : ''}
-                            ${content.isTeam == true ? `<img class="node-content-btn edit-team-btn" src="/assets/images/icon/pencil.svg" alt="Edit Team">` : ''}
-                            ${content.isTeam == true ? `<img class="node-content-btn delete-team-btn" src="/assets/images/icon/trash.svg" alt="Delete Team">` : ''}
+                            ${content.id == 'root' ? `<img class="node-content-btn add-team-btn" src="/assets/images/icon/plus.svg">` : ''}
+                            ${content.isTeam == true ? `<img class="node-content-btn add-member-btn" src="/assets/images/icon/plus.svg">` : ''}
+                            ${content.isTeam == true ? `<img class="node-content-btn edit-team-btn" src="/assets/images/icon/pencil.svg">` : ''}
+                            ${content.isTeam == true ? `<img class="node-content-btn delete-team-btn" src="/assets/images/icon/trash.svg">` : ''}
+                            ${content.isAgent == true ? `<img class="node-content-btn edit-agent-btn" src="/assets/images/icon/pencil.svg">` : ''}
+                            ${content.isAgent == true ? `<img class="node-content-btn delete-agent-btn" src="/assets/images/icon/trash.svg">` : ''}
+                            ${!content.isAgent && !content.isTeam && content.id != 'root' ? `<img class="node-content-btn edit-member-btn" src="/assets/images/icon/pencil.svg">` : ''}
                         </div>
                     </div>
                 </div>
@@ -224,21 +106,28 @@ export default {
             document.addEventListener('click', (event) => {
                 if (event.target.classList.contains('add-team-btn')) {
                     event.stopPropagation();
-                    this.openDialog('addTeam');
+                    this.openTeamDialog('add');
                 } else if (event.target.classList.contains('edit-team-btn')) {
                     event.stopPropagation();
-                    this.openDialog('edit');
+                    this.openTeamDialog('edit');
                 } else if (event.target.classList.contains('delete-team-btn')) {
                     event.stopPropagation();
-                    this.openDialog('delete');
+                    this.openTeamDialog('delete');
+                } else if (event.target.classList.contains('add-member-btn')) {
+                    event.stopPropagation();
+                    this.$emit('addMember', this.editNode);
+                } else if (event.target.classList.contains('edit-member-btn')) {
+                    event.stopPropagation();
+                    this.openEditDialog('edit-user');
+                } else if (event.target.classList.contains('edit-agent-btn')) {
+                    event.stopPropagation();
+                    this.closeBadgesDiagram();
+                    this.openEditDialog('edit-agent');
+                } else if (event.target.classList.contains('delete-agent-btn')) {
+                    event.stopPropagation();
+                    this.openEditDialog('delete');
                 }
             });
-
-
-            this.allTeams = this.node.children.filter(c => c.data.isTeam).map(t => ({
-                id: t.id,
-                name: t.data.name
-            }));
         }
 
         this.$refs.tree.addEventListener('click', this.handleNodeClick);
@@ -274,9 +163,14 @@ export default {
                 }
                 const foundNode = this.findNodeById(this.node, target.id);
                 if (foundNode && foundNode.data) {
-                    this.editUser = foundNode;
-                    if (!this.openMenu) {
-                        this.openMenu = true;
+                    this.editNode = foundNode;
+                    
+                    // Agent 클릭 시 뱃지 다이어그램 표시, 아닌 경우 닫기
+                    if (foundNode.data.isAgent) {
+                        this.selectedAgent = foundNode.data;
+                        this.showBadgesDiagram = true;
+                    } else {
+                        this.closeBadgesDiagram();
                     }
                 }
                 const textBox = target.querySelector('.node-content-text-box');
@@ -288,42 +182,43 @@ export default {
                 if (this.previousTarget) {
                     this.previousTarget.style.backgroundColor = '';
                 }
-                this.openMenu = false;
+                // 빈 공간 클릭 시에도 뱃지 다이어그램 닫기
+                this.closeBadgesDiagram();
             }
         },
-        openDialog(type) {
-            this.dialog = true;
-            this.dialogType = type;
-            if (type == 'addTeam') {
-                this.newTeam = {
-                    id: '',
-                    name: '',
-                    isTeam: true,
-                    img: '/src/assets/images/chat/chat-icon.png',
-                }
-            }
+        closeBadgesDiagram() {
+            this.showBadgesDiagram = false;
+            this.selectedAgent = null;
         },
-        async updateNode() {
-            if (this.dialogType == 'addTeam') {
+        openTeamDialog(type) {
+            this.teamDialog = true;
+            this.teamDialogType = type;
+        },
+        closeTeamDialog() {
+            this.teamDialog = false;
+            this.teamDialogType = '';
+        },
+        async updateTeam(type, editNode, newTeam) {
+            if (type == 'add') {
                 this.node.children.push({
-                    id: this.newTeam.id,
-                    data: this.newTeam,
+                    id: newTeam.id,
+                    data: newTeam,
                     children: []
                 })
-            } else if (this.dialogType == 'delete') {
-                this.node.children = await this.deleteNode(this.editUser, this.node.children);
-            } else if (this.dialogType == 'edit') {
-                if (this.editUser.data.isTeam) {
-                    this.editUser.children.forEach(user => {
-                        user.data.pid = this.editUser.id;
+            } else if (type == 'delete') {
+                this.node.children = await this.deleteNode(editNode, this.node.children);
+            } else if (type == 'edit') {
+                if (editNode.data.isTeam) {
+                    this.node.children.forEach(team => {
+                        if (team.id == editNode.id) {
+                            team = editNode
+                        }
                     })
                 }
             }
             await this.drawTree();
-            
             this.$emit('updateNode');
-            this.dialog = false;
-            this.dialogType = '';
+            this.closeTeamDialog();
         },
         deleteNode(obj, children) {
             if (children && children.some(item => item.id == obj.id)) {
@@ -334,7 +229,30 @@ export default {
                 })
             }
             return children;
-        }
+        },
+        openEditDialog(type) {
+            this.editDialog = true;
+            this.editDialogType = type;
+        },
+        closeEditDialog() {
+            this.editDialog = false;
+            this.editDialogType = '';
+        },
+        async updateNode(type, editNode) {
+            if (type == 'edit') {
+                this.node.children.forEach(team => {
+                    if (team.id == editNode.id) {
+                        team = editNode
+                    }
+                })
+            } else if (type == 'delete') {
+                this.node.children = await this.deleteNode(editNode, this.node.children);
+            }
+            this.$emit('updateAgent', type, editNode);
+            await this.drawTree();
+            this.$emit('updateNode');
+            this.closeEditDialog();
+        },
     },
 }
 </script>

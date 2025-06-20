@@ -1,23 +1,17 @@
 <template>
     <v-card elevation="10">
         <AppBaseCard>
-            <template v-slot:leftpart>
+            <template v-slot:leftpart="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab" grow color="primary">
-                        <v-tooltip location="top" :text="$t('chat.user')">
-                            <template v-slot:activator="{ props }">
-                                <v-tab v-bind="props">
-                                    <v-icon>mdi-account</v-icon>
-                                </v-tab>
-                            </template>
-                        </v-tooltip>
-                        <v-tooltip location="top" :text="$t('chat.chatRoom')">
-                            <template v-slot:activator="{ props }">
-                                <v-tab v-bind="props">
-                                    <v-icon>mdi-message</v-icon>
-                                </v-tab>
-                            </template>
-                        </v-tooltip>
+                        <v-tab>
+                            <v-icon class="mt-1 mr-2">mdi-account</v-icon>
+                            {{ $t('chat.user') }}
+                        </v-tab>
+                        <v-tab>
+                            <v-icon class="mt-1 mr-2">mdi-message</v-icon>
+                            {{ $t('chat.chatRoom') }}
+                        </v-tab>
                     </v-tabs>
                     <v-tabs-items v-model="activeTab">
                         <v-tab-item v-if="activeTab == 0">
@@ -25,6 +19,7 @@
                             <v-divider class="my-2"></v-divider>
                             <UserListing 
                                 :userList="userList" 
+                                :agentList="agentList"
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
@@ -35,6 +30,7 @@
                                 :userList="userList" 
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
+                                :closeDrawer="closeDrawer"
                                 @chat-selected="chatRoomSelected" 
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
@@ -44,7 +40,9 @@
                 </div>
             </template>
             <template v-slot:rightpart>
-                <div :key="chatRenderKey">
+                <div :key="chatRenderKey"
+                    class="chat-info-view-wrapper-chats"
+                >
                     <Chat
                         :messages="messages"
                         :userInfo="userInfo"
@@ -69,11 +67,29 @@
                         @stopMessage="stopMessage"
                         @toggleProcessGPTActive="toggleProcessGPTActive"
                         @startWorkOrder="startWorkOrder"
-                    ></Chat>
+                    >
+                        <template #attachments-area>
+                            <div class="attachment-container">
+                                <div class="position-fixed">
+                                    <div v-if="attachments.length > 0">
+                                        <v-tooltip text="Attachments" location="right">
+                                            <template v-slot:activator="{ props }">
+                                                <v-btn v-bind="props" @click="toggleAttachments" icon variant="text" class="text-medium-emphasis">
+                                                    <v-icon v-if="isAttachmentsOpen">mdi-close</v-icon>
+                                                    <v-icon v-else>mdi-chevron-down</v-icon>
+                                                </v-btn>
+                                            </template>
+                                        </v-tooltip>
+                                    </div>
+                                    <Attachments :isOpen="isAttachmentsOpen" :attachments="attachments" />
+                                </div>
+                            </div>
+                        </template>
+                    </Chat>
                 </div>
             </template>
 
-            <template v-slot:mobileLeftContent>
+            <template v-slot:mobileLeftContent="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab">
                         <v-tab>
@@ -89,6 +105,7 @@
                             <v-divider class="my-2"></v-divider>
                             <UserListing 
                                 :userList="userList" 
+                                :agentList="agentList"
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
@@ -99,6 +116,7 @@
                                 :userList="userList" 
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
+                                :closeDrawer="closeDrawer"
                                 @chat-selected="chatRoomSelected" 
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
@@ -204,8 +222,10 @@
 
 <script>
 import AssistantChats from "../chat/AssistantChats.vue";
+import Attachments from "./Attachments.vue";
 import ChatModule from "@/components/ChatModule.vue";
 import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
+import AgentChatGenerator from "@/components/ai/AgentChatGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import UserListing from '@/components/apps/chats/UserListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
@@ -226,8 +246,8 @@ export default {
         UserListing,
         ChatProfile,
         VDataTable,
-        AssistantChats
-
+        AssistantChats,
+        Attachments
     },
     data: () => ({
         headers: [
@@ -253,6 +273,15 @@ export default {
         assistantRes: null,
         selectedUserInfo: null,
         timeBoundMenu: false,
+        myChatRoomIds: [],
+
+        // attachments
+        isAttachmentsOpen: false,
+        attachments: [],
+
+        // agent
+        agentList: [],
+        agentInfo: null
     }),
     computed: {
         filteredChatRoomList() {
@@ -261,26 +290,61 @@ export default {
     },
     watch: {
         currentChatRoom: {
-            handler(newVal) {
-                if(this.generator && newVal && newVal.id){
-                    this.chatRoomId = newVal.id;
-                    this.generator.setChatRoomData(newVal);
+            async handler(newVal) {
+                if (newVal && newVal.id) {
+                    if (newVal.participants.length > 0) {
+                        this.isAgentChat = newVal.participants.some(participant => participant.is_agent);
+                        this.agentInfo = newVal.participants.find(participant => participant.is_agent);
+                    }
+                    if(this.generator) {
+                        this.chatRoomId = newVal.id;
+                        this.generator.setChatRoomData(newVal);
+                        await this.getAttachments();
+                    }
                 }
             },
             deep: true
+        },
+        isAgentChat: {
+            async handler(newVal) {
+                if (newVal) {
+                    this.generator = new AgentChatGenerator(this, {
+                        isStream: false,
+                        preferredLanguage: "Korean",
+                    });
+                } else {
+                    this.generator = new ChatGenerator(this, {
+                        isStream: true,
+                        preferredLanguage: "Korean"
+                    });
+                }
+            }
         }
     },  
-    async created() {
-        this.init();
-        this.generator = new ChatGenerator(this, {
-            isStream: true,
-            preferredLanguage: "Korean"
-        });
+    async mounted() {
+        await this.init();
 
-        this.userInfo = await this.storage.getUserInfo();
+        if (this.isAgentChat) {
+            this.generator = new AgentChatGenerator(this, {
+                isStream: false,
+                preferredLanguage: "Korean",
+            });
+        } else {
+            this.generator = new ChatGenerator(this, {
+                isStream: true,
+                preferredLanguage: "Korean"
+            });
+        }
+
+        this.userInfo = await this.backend.getUserInfo();
+
         await this.getChatRoomList();
+
         await this.getUserList();
+        await this.getAgentList();
+        
         await this.getCalendar();
+        await this.getAttachments();
 
         this.EventBus.on('messages-updated', () => {
             this.chatRenderKey++;
@@ -297,26 +361,50 @@ export default {
         this.EventBus.emit('chat-room-unselected');
     },
     methods: {
+        toggleAttachments() {
+            this.isAttachmentsOpen = !this.isAttachmentsOpen;
+        },
+        async getAttachments() {
+            await this.backend.getAttachments(this.chatRoomId, (attachment) => {
+                if (this.attachments.find(a => a.id == attachment.id)) {
+                    return;
+                } else {
+                    this.attachments.push(attachment);
+                }
+            });
+        },
+        async getAgentList(){
+            this.agentList = await this.backend.getAgentList();
+        },
         selectedUser(user){
             this.selectedUserInfo = user
         },
         startChat(type){
             let chatRoomInfo
             const selectedUserEmail = this.selectedUserInfo.email;
+            const selectedUserName = this.selectedUserInfo.username || this.selectedUserInfo.name;
             const currentUserEmail = this.userInfo.email;
+            const currentUserName = this.userInfo.username;
 
-            if(type == 'work'){
+            if(type == 'work' || type == 'agent-work'){
                 chatRoomInfo = {}
-                chatRoomInfo.name = this.selectedUserInfo.username
+                chatRoomInfo.name = type == 'agent-work' ? this.selectedUserInfo.name : this.selectedUserInfo.username
                 chatRoomInfo.participants = []
-                chatRoomInfo.participants.push(this.selectedUserInfo)
+                if (type == 'agent-work') {
+                    const agentInfo = this.selectedUserInfo
+                    agentInfo.is_agent = true
+                    chatRoomInfo.participants.push(agentInfo)
+                } else {
+                    chatRoomInfo.participants.push(this.selectedUserInfo)
+                }
                 this.createChatRoom(chatRoomInfo)
             } else {
                 const chatRoomExists = this.chatRoomList.some(chatRoom => {
                     if(chatRoom.participants.length == 2){
                         const participantEmails = chatRoom.participants.map(participant => participant.email);
+                        const participantNames = chatRoom.participants.map(participant => participant.username);
                         chatRoomInfo = chatRoom
-                        return participantEmails.includes(currentUserEmail) && participantEmails.includes(selectedUserEmail);
+                        return participantEmails.includes(currentUserEmail) && participantEmails.includes(selectedUserEmail) && participantNames.includes(currentUserEmail) && participantNames.includes(selectedUserEmail);
                     } else {
                         return false
                     }
@@ -326,9 +414,16 @@ export default {
                     this.chatRoomSelected(chatRoomInfo)
                 } else {
                     chatRoomInfo = {}
-                    chatRoomInfo.name = this.selectedUserInfo.username
+                    chatRoomInfo.name = type == 'agent-chat' ? this.selectedUserInfo.name : this.selectedUserInfo.username
                     chatRoomInfo.participants = []
-                    chatRoomInfo.participants.push(this.selectedUserInfo)
+                    if (type == 'agent-chat') {
+                        this.agentInfo = this.selectedUserInfo
+                        const agentInfo = this.selectedUserInfo
+                        agentInfo.is_agent = true
+                        chatRoomInfo.participants.push(agentInfo)
+                    } else {
+                        chatRoomInfo.participants.push(this.selectedUserInfo)
+                    }
                     this.createChatRoom(chatRoomInfo)
                 }
             }
@@ -381,7 +476,7 @@ export default {
         },
         async getUserList(){
             var me = this
-            await me.storage.list(`users`).then(function (users) {
+            await me.backend.getUserList().then(function (users) {
                 if (users) {
                     users = users.filter(user => user.email !== me.userInfo.email);
                     const systemUser = {
@@ -400,17 +495,17 @@ export default {
             var me = this
             await me.storage.list(`chat_rooms`).then(function (chatRooms) {
                 if (chatRooms) {
-                    let myChatRoomIds = []
+                    me.myChatRoomIds = []
                     chatRooms.forEach(function (chatRoom) {
                         if(chatRoom.participants.find(x => x.email === me.userInfo.email)){
                             me.chatRoomList.push(chatRoom)
-                            myChatRoomIds.push(chatRoom.id)
+                            me.myChatRoomIds.push(chatRoom.id)
                         }
                     });
                     if(me.chatRoomList.length > 0){
                         me.currentChatRoom = me.filteredChatRoomList[0];
                         me.chatRoomSelected(me.currentChatRoom)
-                        me.setWatchChatList(myChatRoomIds);
+                        me.setWatchChatList(me.myChatRoomIds);
                         me.setReadMessage(0);
                     } else {
                         let systemChatRoom = {
@@ -448,9 +543,9 @@ export default {
         createChatRoom(chatRoomInfo){
             if(!chatRoomInfo.id){
                 chatRoomInfo.id = this.uuid();
-                chatRoomInfo.participants.forEach(participant => {
-                    delete participant.profile;
-                });
+                // chatRoomInfo.participants.forEach(participant => {
+                //     delete participant.profile;
+                // });
                 let userInfo = {
                     "id": this.userInfo.uid,
                     "username": this.userInfo.name,
@@ -473,6 +568,8 @@ export default {
             
             this.putObject(`chat_rooms`, chatRoomInfo);
             this.chatRoomSelected(chatRoomInfo)
+            this.myChatRoomIds.push(chatRoomInfo.id);
+            this.setWatchChatList(this.myChatRoomIds);
         },
         setReadMessage(idx){
             let participant = this.chatRoomList[idx].participants.find(participant => participant.email === this.userInfo.email);
@@ -480,6 +577,7 @@ export default {
                 participant.isExistUnReadMessage = false;
             }
             this.putObject(`chat_rooms`, this.chatRoomList[idx]);
+            this.EventBus.emit('clear-notification', this.chatRoomList[idx].id);
         },
         chatRoomSelected(chatRoomInfo){
             this.currentChatRoom = chatRoomInfo
@@ -537,14 +635,18 @@ export default {
         async beforeSendMessage(newMessage) {
             if (newMessage && (newMessage.text != '' || newMessage.image != null)) {
                 this.putMessage(this.createMessageObj(newMessage))
-                if(!this.generator.contexts) {
-                    let contexts = await this.storage.list(`proc_def`);
-                    this.generator.setContexts(contexts);
+                if (this.isAgentChat) {
+                    this.generator.beforeGenerate(newMessage);
+                } else {
+                    if(!this.generator.contexts) {
+                        let contexts = await this.backend.listDefinition();
+                        this.generator.setContexts(contexts);
+                    }
+                    
+                    let instanceList = await this.backend.getAllInstanceList(); 
+                    this.generator.setWorkList(instanceList);
+                    newMessage.callType = 'chats'
                 }
-                
-                let instanceList = await this.storage.list(`bpm_proc_inst`); 
-                this.generator.setWorkList(instanceList);
-                newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
             }
         },
@@ -565,6 +667,14 @@ export default {
             })
         },
         afterModelCreated(response) {
+            if (response.work == 'A2AResponse') {
+                let messageWriting = this.messages[this.messages.length - 1];
+                if (messageWriting && messageWriting.isLoading) {
+                    messageWriting.content += response.content
+                    let content = response.content.replaceAll('\n', '<br>')
+                    messageWriting.htmlContent += content
+                }
+            }
         },
         deleteSystemMessage(response){
             this.storage.delete(`chats/${response.uuid}`, {key: 'uuid'});
@@ -716,11 +826,12 @@ export default {
         async afterGenerationFinished(responseObj) {
             if(responseObj){
                 let startProcess = false;
-                let obj = this.createMessageObj(responseObj, 'system')
+                let role = this.isAgentChat ? 'agent' : 'system';
+                let obj = this.createMessageObj(responseObj, role)
                 if(responseObj.messageForUser){
                     obj.messageForUser = responseObj.messageForUser
                 }
-                if(responseObj.work == 'CompanyQuery' || responseObj.work == 'ScheduleQuery' || this.isSystemChat){
+                if(responseObj.work || this.isSystemChat) {
                     // this.messages.push({
                     //     role: 'system',
                     //     content: '...',
@@ -728,9 +839,16 @@ export default {
                     // });
                     if(responseObj.work == 'CompanyQuery'){
                         try{
-                            let mementoRes = await axios.post(`/memento/query`, {
-                                query: responseObj.content,
-                                tenant_id: window.$tenantName
+                            const token = localStorage.getItem('accessToken');
+                            let mementoRes = await axios.get(`/memento/query`, {
+                                params: {
+                                    query: responseObj.content,
+                                    tenant_id: window.$tenantName
+                                },
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                }
                             });
                             console.log(mementoRes)
                             obj.memento = {}
@@ -744,10 +862,11 @@ export default {
                                 }
                             });
                             obj.memento.sources = sources
-                            const token = localStorage.getItem('accessToken');
+                            this.messages[this.messages.length - 1].content = '테이블 생성 중...'
                             const responseTable = await axios.post(`/execution/process-data-query`, {
                                 input: {
-                                    query: responseObj.content
+                                    query: responseObj.content,
+                                    user_id: this.userInfo.email
                                 }
                             },
                             {
@@ -757,7 +876,7 @@ export default {
                                 }
                             });
                             if(responseTable.data) {
-                                obj.tableData = responseTable.data.output
+                                obj.tableData = responseTable.data
                             } else {
                                 obj.tableData = null
                             }
@@ -766,13 +885,30 @@ export default {
                         }
                     } else if(responseObj.work == 'ScheduleQuery'){
                         console.log(responseObj)
+                    } else if (responseObj.work == 'Mem0AgentQuery') {
+                        if (responseObj.searchResults) {
+                            obj.content = responseObj.content
+                            obj.htmlContent = responseObj.htmlContent
+                            obj.searchResults = responseObj.searchResults
+                        }
+                    } else if (responseObj.work == 'Mem0AgentInformation' || responseObj.work == 'Mem0AgentResponse') {
+                        obj.content = responseObj.content
+                    } else if (responseObj.work == 'A2AResponse') {
+                        let content = responseObj.content
+                        content = content.replaceAll('undefined', '')
+                        obj.content = content
+                        obj.htmlContent = content.replaceAll('\n', '<br>')
                     } else {
                         startProcess = true;
                     }
                     obj.uuid = this.uuid()
-                    if(startProcess){
+                    if(startProcess) {
                         this.startProcess(obj)
                     } else {
+                        if (this.isAgentChat) {
+                            obj.profile = this.agentInfo.profile
+                            obj.name = this.agentInfo.name
+                        }
                         this.putMessage(obj)
                     }
                 } else {
@@ -797,5 +933,14 @@ export default {
 .description-card {
     height:81.6vh;
     overflow: auto;
+}
+
+.attachment-container {
+    position: relative;
+    z-index: 1000;
+}
+
+.attachment-container .v-btn {
+    background-color: white;
 }
 </style>

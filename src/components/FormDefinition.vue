@@ -1,8 +1,13 @@
 <template>
-    <v-card flat>
-        <div :class="{'d-flex': !isMobile}">
-            <div v-if="type === 'edit'" class="w-100 d-flex justify-center">
-                <div v-if="isShowMashup" class="overflow-y-auto">
+    <div>
+        <v-row class="ma-0 pa-0"
+            style="height: calc(100vh - 260px);"
+        >
+            <v-col v-if="type === 'edit'"
+                class="pa-0 pl-10 overflow-y-auto"
+                style="height: calc(100vh - 260px);"
+            >
+                <div v-if="isShowMashup">
                     <mashup ref="mashup" v-model="kEditorInput" :key="mashupKey"  
                         @onInitKEditorContent="updateKEditorContentBeforeSave"
                         @onChangeKEditorContent="changedKEditorContent"
@@ -11,9 +16,14 @@
                 <div v-else class="align-self-center">
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
                 </div>
-            </div>
+            </v-col>
+            <!-- 오른쪽 세로선 추가 (한글 주석) -->
+            <v-divider vertical v-if="type !== 'preview'"></v-divider>
 
-            <div v-if="type === 'preview'" class="w-100 mt-5">
+            <v-col v-if="type === 'preview'" 
+                class="pa-0 pl-4 overflow-y-auto"
+                style="height: calc(100vh - 260px);"
+            >
                 <template v-if="isShowPreview">
                     <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
                     <!-- <template v-if="dev.isDevMode">
@@ -29,17 +39,27 @@
                 <div v-else class="align-self-center">
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
                 </div>
-            </div>
-            <div v-if="!isMobile && type != 'preview'" class="ml-auto" style="max-width: 250px;">
-                <Chat :chatInfo="chatInfo" :messages="messages" :userInfo="userInfo" type="form"
-                    @sendMessage="beforeSendMessage" @sendEditedMessage="sendEditedMessage" @stopMessage="stopMessage">
+            </v-col>
+            <v-col v-if="!isMobile && type != 'preview'"
+                :class="type == 'simulation' ? '':'ml-auto'"
+                :style="type == 'simulation' ? '' : 'max-width: 250px; height: calc(100vh - 260px) !important; overflow: auto;'"
+                class="pa-0"
+            >
+                <Chat :chatInfo="chatInfo"
+                    :messages="messages"
+                    :userInfo="userInfo"
+                    :type="type == 'simulation' ? 'form_simulation':'form'"
+                    @sendMessage="beforeSendMessage"
+                    @sendEditedMessage="sendEditedMessage"
+                    @stopMessage="stopMessage"
+                >
                     <template v-slot:custom-title>
                         <div></div>
                     </template>
                 </Chat>
-            </div>
-        </div>
-    </v-card>
+            </v-col>
+        </v-row>
+    </div>
 </template>
 
 <script>
@@ -66,6 +86,10 @@ export default {
         modelValue: {
             type: String,
             default: ''
+        },
+        simulation_data: {
+            type: Object,
+            default: {}
         }
     },
     components: {
@@ -130,7 +154,7 @@ export default {
     },
     computed: {
         isMobile() {
-            return window.innerWidth <= 1080;
+            return window.innerWidth <= 768;
         },
     },
     watch: {
@@ -252,13 +276,19 @@ export default {
          * 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장하기 위해서
          */
         async saveFormDefinition() {
-            const DynamicFormHTML = this.keditorContentHTMLToDynamicFormHTML(this.modelValue);
+            // const DynamicFormHTML = this.keditorContentHTMLToDynamicFormHTML(this.modelValue);
 
             if (this.formId !== '' && this.formId !== null) {
                 const options = {
                     type: 'form',
+                    proc_def_id: this.simulation_data.proc_def_id ? this.simulation_data.proc_def_id : null,
+                    activity_id: this.simulation_data.element_id ? this.simulation_data.element_id : null
                 }
-                await this.backend.putRawDefinition(DynamicFormHTML, this.formId, options);
+                if(window.location.pathname == '/definition-map'){
+                    localStorage.setItem(this.formId, this.previewHTML);
+                } else {
+                    await this.backend.putRawDefinition(this.previewHTML, this.formId, options);
+                }
             } else {
                 //
             }
@@ -302,7 +332,11 @@ export default {
          * @param {*} newMessage
          */
         beforeSendMessage(newMessage) {
-            this.prevFormOutput = this.$refs.mashup.getKEditorContentHtml();
+            if(this.type == 'simulation'){
+                this.prevFormOutput = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);
+            } else {
+                this.prevFormOutput = this.$refs.mashup.getKEditorContentHtml();
+            }
             newMessage.mentionedUsers = null;
             this.generator.sendMessageWithPrevFormOutput(newMessage);
         },
@@ -321,6 +355,9 @@ export default {
          */
         afterGenerationFinished(response) {
             this.processResponse(response);
+            if(this.type == 'simulation'){
+                this.saveFormDefinition('afterGenerationFinished');
+            }
         },
 
         /**
@@ -347,11 +384,14 @@ export default {
                         const modifiedPrevFormOutput = this.getModifiedPrevFormOutput(messageWriting.jsonContent.modifications);
                         this.applyNewSrcToMashup(this.loadHTMLToKEditorContent(modifiedPrevFormOutput));
                         this.previewHTML = this.keditorContentHTMLToDynamicFormHTML(modifiedPrevFormOutput);
+                        messageWriting.content = "요청하신 폼 수정이 완료되었습니다."
                     } else console.error('알 수 없는 JSON 결과: ', JSON.stringify(messageWriting.jsonContent));
                     this.isAIUpdated = true;
                 }
             } catch (error) {
                 console.log(error);
+                let messageWriting = this.messages[this.messages.length - 1];
+                messageWriting.content = "폼 수정중 오류가 발생하였습니다. 잠시 후 다시 시도해주세요."
             }
         },
 
@@ -584,7 +624,7 @@ export default {
          */
         getModifiedPrevFormOutput(modifications) {
             const dom = new DOMParser().parseFromString(this.prevFormOutput, 'text/html');
-
+            
             modifications.forEach((modification) => {
                 if (modification.action === 'addAsChild') {
                     const parent = dom.querySelector(modification.targetCSSSelector);
@@ -601,6 +641,10 @@ export default {
                 } else if (modification.action === 'delete') {
                     const target = dom.querySelector(modification.targetCSSSelector);
                     target.parentNode.removeChild(target);
+                }
+
+                if(modification.action === 'addAsChild' || modification.action === 'addAfter'){
+                    this.$emit('addedNewForm')
                 }
             });
 

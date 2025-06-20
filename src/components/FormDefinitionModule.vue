@@ -299,7 +299,7 @@ export default {
             const fieldTags = [
                 'text-field', 'select-field', 'checkbox-field', 'radio-field', 
                 'file-field', 'label-field', 'boolean-field', 'textarea-field', 
-                'user-select-field'
+                'user-select-field', 'report-field', 'slide-field'
             ];
         
             fieldTags.forEach(tag => {

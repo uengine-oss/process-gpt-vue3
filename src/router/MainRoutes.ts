@@ -33,6 +33,16 @@ const MainRoutes = {
             component: () => import('@/components/apps/todolist/InstanceCard.vue'),
         },
         {
+            name: 'Project',
+            path: '/project/:projectId',
+            component: () => import('@/components/apps/todolist/ProjectCard.vue'),
+        },
+        {
+            name: 'InstanceRunning',
+            path: '/instancelist/running',
+            component: () => import('@/components/ProcessInstanceRunning.vue'),
+        },
+        {
             name: 'Chats',
             path: '/chats',
             component: () => import('@/views/apps/chat/Chats.vue')
@@ -103,12 +113,22 @@ const MainRoutes = {
         {
             name: 'dashboard',
             path: '/dashboard',
-            component: () => import('@/views/dashboard/dashboard2.vue')
+            component: () => window.$pal?  import('@/views/dashboard/dashboard2-pal.vue'): import('@/views/dashboard/dashboard2.vue')
         },
         {
             name: 'Account Setting',
             path: '/account-settings',
             component: () => import('@/views/pages/account-settings/AccountSettings.vue')
+        },
+        {
+            name: 'privacy',
+            path: '/privacy',
+            component: () => import('@/views/pages/privacy/Privacy.vue')
+        },
+        {
+            name: 'BSCard',
+            path: '/bscard',
+            component: () => import('@/components/ui/BSCard.vue')
         },
 
         // {

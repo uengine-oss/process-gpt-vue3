@@ -15,7 +15,10 @@
             </v-btn>
         </template>
 
-        <v-sheet rounded="lg" width="385" elevation="10" class="mt-5 dropdown-box">
+        <v-sheet class="mt-5 dropdown-box notification-dd-box"
+            rounded="lg"
+            elevation="10" 
+        >
             <div class="d-flex align-center pa-3">
                 <h6 class="text-h5 font-weight-semibold">{{ $t('NotificationDD.notification') }}</h6>
                 <v-chip color="primary" variant="flat" size="x-small" class="text-white ml-4" rounded="xl">
@@ -23,7 +26,7 @@
                 </v-chip>
             </div>
             <v-divider></v-divider>
-            <perfect-scrollbar style="height:300px">
+            <div style="height: 300px; overflow: auto !important;">
                 <v-list lines="one">
                     <v-list-item v-for="item in notifications" :key="item.id" @click="checkNotification(item)">
                         <template v-slot:prepend>
@@ -38,7 +41,7 @@
                             <div class="ml-auto">{{ item.timeStamp }} ago</div>
                         </v-list-item-subtitle>
                         <v-list-item-title class="d-flex mt-1">
-                            <div>{{ item.title }}</div>
+                            <div style="word-wrap: break-word; white-space: normal; width: 100%;">{{ item.title }}</div>
                             <div class="ml-auto">
                                 <v-badge v-if="item.count > 1" color="primary" :content="item.count" inline></v-badge>
                             </div>
@@ -46,7 +49,7 @@
                         <v-divider class="mt-1"></v-divider>
                     </v-list-item>
                 </v-list>
-            </perfect-scrollbar>
+            </div>
         </v-sheet>
     </v-menu>
 </template>
@@ -75,18 +78,19 @@ export default {
             }
         }
     },
-    async created() {
-        await this.getNotifications();
-    },
-    mounted() {
-        this.intervalId = setInterval(() => {
-            this.getNotifications();
-        }, 3000);
+    async mounted() {
+        this.notifications = await backend.fetchNotifications();
+
+        backend.getNotifications(async (data) => {
+            if (data && data.new) {
+                this.notifications = await backend.fetchNotifications();
+                if(localStorage.getItem('email') && data.new.user_id === localStorage.getItem('email')) {
+                    this.$emit('newNotification', data.new.type);
+                }
+            }
+        });
     },
     methods: {
-        async getNotifications() {
-            this.notifications = await backend.getNotifications();
-        },
         async checkNotification(value) {
             if (value.type == 'workitem') {
                 this.$router.push('/todolist');
@@ -94,7 +98,7 @@ export default {
                 this.$router.push(value.url);
             }
             await backend.setNotifications(value);
-            await this.getNotifications();
+            this.notifications = await backend.fetchNotifications();
         }
     }
 }

@@ -56,7 +56,6 @@
                             </template>
                         </v-tooltip>
                     </v-row>
-
                     <div v-if="isXmlMode" style="height: calc(100% - 50px); margin-top: 50px; overflow: auto; padding: 10px">
                         <XmlViewer v-if="isViewMode" :xml="bpmn"/>
                         <XMLEditor v-else :xml="bpmn" @changeBpmn="changeBpmn"/>
@@ -64,6 +63,7 @@
                     <BpmnuEngine
                         v-else
                         ref="bpmnVue"
+                        :key="bpmnKey"
                         :bpmn="bpmn"
                         :options="options"
                         :isViewMode="isViewMode"
@@ -71,6 +71,7 @@
                         :currentActivities="currentActivities"
                         :generateFormTask="generateFormTask"
                         :isPreviewPDFDialog="isPreviewPDFDialog"
+                        :isAIGenerated="isAIGenerated"
                         @closePDFDialog="closePDFDialog"
                         v-on:error="handleError"
                         v-on:shown="handleShown"
@@ -253,17 +254,6 @@
                 </v-card-text>
             </v-card>
         </v-dialog>
-
-        <!-- <v-dialog v-model="executeDialog" max-width="80%">
-            <process-gpt-execute v-if="mode === 'LLM'" :definitionId="definitionPath" 
-                @close="executeDialog = false"></process-gpt-execute>
-            <div v-else>
-                <test-process v-if="isSimulate == 'true'" :definitionId="definitionPath" @close="executeDialog = false" />
-                <dry-run-process v-else :is-simulate="isSimulate" :definitionId="definitionPath" @close="executeDialog = false"></dry-run-process>
-            </div>
-        </v-dialog> -->
-
-        <!-- <v-navigation-drawer permanent location="right" :width="400"> {{ panelId }} </v-navigation-drawer> -->
     </div>
 </template>
 
@@ -274,11 +264,6 @@ import { VDataTable } from 'vuetify/components/VDataTable';
 import { useBpmnStore } from '@/stores/bpmn';
 import BpmnLLM from './BpmnLLM.vue';
 import BpmnuEngine from './BpmnUengine.vue';
-import customBpmnModule from './customBpmn';
-import customPaletteModule from './customPalette';
-import customContextPadModule from './customContextPad';
-import customReplaceElement from './customReplaceElement';
-import customPopupMenu from './customPopupMenu';
 import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable.vue';
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 // import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
@@ -319,6 +304,7 @@ export default {
         isAdmin: Boolean,
         generateFormTask: Object,
         isPreviewPDFDialog: Boolean,
+        isAIGenerated: Boolean,
     },
     data: () => ({
         panel: false,
@@ -360,6 +346,8 @@ export default {
         currentActivities: [],
         validationList: {},
         // definitionPath: null
+
+        bpmnKey: 0,
     }),
     computed: {
         mode() {
@@ -393,14 +381,11 @@ export default {
                 height: this.isAdmin ? '100%' : 'calc(100% - 50px)'
             };
         },
-        options() {
-            let result = {
-                additionalModules: this.isViewMode ? [customBpmnModule] : [customBpmnModule, customPaletteModule, customContextPadModule, customReplaceElement, customPopupMenu]
-            };
-            return result;
-        }
     },
     watch: {
+        isViewMode(newVal, oldVal) {
+            this.bpmnKey++;
+        },
         processDefinition: {
             deep: true,
             handler(newVal) {
@@ -775,6 +760,7 @@ export default {
         createParticipant(element) {
             let participant = {
                 name: element.name,
+                endpoint: element.endpoint || null,
                 resolutionRule: '',
                 pos: {
                     x: element.x,
@@ -788,6 +774,7 @@ export default {
         createRole(element) {
             let role = {
                 name: element.name,
+                endpoint: element.endpoint || null,
                 resolutionRule: '',
                 pos: {
                     x: element.x,

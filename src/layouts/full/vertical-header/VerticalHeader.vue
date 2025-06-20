@@ -3,21 +3,26 @@ import { ref, watch, computed, onBeforeMount, onMounted, onBeforeUnmount } from 
 import { useCustomizerStore } from '../../../stores/customizer';
 import { useEcomStore } from '@/stores/apps/eCommerce';
 import { useRouter } from 'vue-router';
-import { Icon } from '@iconify/vue';
-import LanguageDD from './LanguageDD.vue';
 import NotificationDD from './NotificationDD.vue';
-import MessagesDD from './MessagesDD.vue';
 import ProfileDD from './ProfileDD.vue';
 import Searchbar from './Searchbar.vue';
-import RightMobileSidebar from './RightMobileSidebar.vue';
-import Logo from '../logo/Logo.vue';
 
 const customizer = useCustomizerStore();
 const showSearch = ref(false);
-const appsdrawer = ref(false);
 const priority = ref(customizer.setHorizontalLayout ? 0 : 0);
 const router = useRouter();
 const stickyHeader = ref(false);
+
+// globalIsMobile computed 추가
+const globalIsMobile = computed(() => {
+    return (window as any).$globalIsMobile || false;
+});
+
+// 알림 뱃지 상태 관리 (localStorage에서 초기값 로드)
+const notificationBadges = ref({
+    chat: localStorage.getItem('notificationBadge_chat') === 'true',
+    workitem: localStorage.getItem('notificationBadge_workitem') === 'true'
+});
 
 interface SidebarItem {
     title: string;
@@ -32,7 +37,7 @@ const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
 const sidebarItems = ref<SidebarItem[]>([
     {
-        title: 'processDefinitionMap.title',
+        title: globalIsMobile.value ? 'processDefinitionMap.mobileTitle' : 'processDefinitionMap.title',
         icon: 'write',
         to: '/definition-map',
         disable: false,
@@ -60,13 +65,13 @@ const sidebarItems = ref<SidebarItem[]>([
         disable: false,
         isVisible: isAdmin // Only visible if isAdmin is true
     },
-    {
-        title: 'headerMenu.calendar',
-        icon: 'calendar-line-duotone',
-        to: '/calendar',
-        disable: false,
-        isVisible: window.$mode === 'ProcessGPT' && !window.$pal
-    }
+    // {
+    //     title: 'headerMenu.calendar',
+    //     icon: 'calendar-line-duotone',
+    //     to: '/calendar',
+    //     disable: false,
+    //     isVisible: window.$mode === 'ProcessGPT' && !window.$pal
+    // }
 ]);
 
 // 생명주기 훅 사용
@@ -124,26 +129,97 @@ function searchbox() {
 // 네비게이션 함수
 function navigateTo(item: SidebarItem) {
     if (!item.disable) {
-        router.push(item.to);
+        const currentPath = router.currentRoute.value.path;
+        const isSamePath = currentPath === item.to;
+        
+        if (isSamePath) {
+            // 같은 경로일 때는 모바일에서 사이드바만 닫기
+            if (window.innerWidth <= 768) {
+                customizer.SET_SIDEBAR_DRAWER();
+            }
+        } else {
+            // 다른 경로일 때만 라우터 이동
+            router.push(item.to);
+        }
+        
+        // 채팅 페이지로 이동 시 채팅 뱃지 제거
+        if (item.to === '/chats') {
+            notificationBadges.value.chat = false;
+            localStorage.setItem('notificationBadge_chat', 'false');
+        }
+        // 할일 목록 페이지로 이동 시 워크아이템 뱃지 제거
+        if (item.to === '/todolist') {
+            notificationBadges.value.workitem = false;
+            localStorage.setItem('notificationBadge_workitem', 'false');
+        }
+    }
+}
+
+// 새 알림 처리 함수
+function newNotification(type: string) {
+    if (type === 'chat') {
+        if(window.location.pathname != '/chats') {
+            notificationBadges.value.chat = true;
+            localStorage.setItem('notificationBadge_chat', 'true');
+        }
+    } else if (type === 'workitem_bpm' || type === 'workitem') {
+        if(window.location.pathname != '/todolist') {
+            notificationBadges.value.workitem = true;
+            localStorage.setItem('notificationBadge_workitem', 'true');
+        }
+    }
+}
+
+// 사이드바 토글 함수
+function handleSidebarToggle() {
+    if (window.innerWidth <= 1279) {
+        customizer.SET_SIDEBAR_DRAWER();
+    } else {
+        customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar);
     }
 }
 </script>
 
 
 <template>
-    <div class="container">
+    <!-- 모바일 헤더 -->
+    <div v-if="globalIsMobile && customizer.Sidebar_drawer" class="mobile-header">
+        <div>
+            <v-container fluid class="pa-2">
+                <!-- 검색, 알림 -->
+                <v-row class="ma-0 mt-2">
+                    <Searchbar />
+                    <v-spacer></v-spacer>
+                    <NotificationDD @newNotification="newNotification" />
+                </v-row>
+                <!-- 네비게이션 버튼들 - 세로 배치 -->
+                <v-row class="ma-0 mt-2">
+                    <template v-for="item in sidebarItems" :key="item.title">
+                        <div v-if="item.isVisible" class="mr-2">
+                            <v-btn @click="navigateTo(item)"
+                                class="mobile-nav-btn pr-2 pl-2"
+                                variant="text"
+                            >
+                                <Icons :icon="item.icon" class="mr-2" />
+                                {{ $t(item.title) }}
+                            </v-btn>
+                        </div>
+                    </template>
+                </v-row>
+            </v-container>
+            <v-divider></v-divider>
+        </div>
+    </div>
+
+    <!-- PC 헤더 -->
+    <div v-else class="container">
         <div class="maxWidth">
             <v-app-bar elevation="0" :priority="priority" height="75"  id="top" :class="stickyHeader ? 'sticky' : ''">
                 <v-row class="ma-0 pa-0">
-                    <v-btn class="hidden-lg-and-up" icon
-                        @click.stop="customizer.SET_SIDEBAR_DRAWER"
-                    >
-                        <Icons :icon="'list-bold-duotone'"/>
-                    </v-btn>
                     <v-tooltip :text="$t('headerMenu.sidebar')">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" class="hidden-md-and-down" icon
-                                @click.stop="customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar)">
+                            <v-btn v-bind="props" icon
+                                @click.stop="handleSidebarToggle">
                                 <Icons :icon="'list-bold-duotone'"/>
                             </v-btn>
                         </template>
@@ -151,8 +227,14 @@ function navigateTo(item: SidebarItem) {
                     <template v-for="item in sidebarItems" :key="item.title">
                         <v-tooltip v-if="!item.isMobile && item.isVisible" :text="$t(item.title)">
                             <template v-slot:activator="{ props }">
-                                <v-btn icon v-bind="props" @click="navigateTo(item)">
-                                    <Icons :icon="item.icon"/>
+                                <v-btn icon v-bind="props" @click="navigateTo(item)" class="position-relative">
+                                    <Icons 
+                                        :icon="item.icon"
+                                        :class="{
+                                            'icon-heartbit': (item.to === '/chats' && notificationBadges.chat) || 
+                                                           (item.to === '/todolist' && notificationBadges.workitem)
+                                        }"
+                                    />
                                 </v-btn>
                             </template>
                         </v-tooltip>
@@ -161,7 +243,7 @@ function navigateTo(item: SidebarItem) {
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="customizer-btn" icon
                                 @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                                <SettingsIcon />
+                                <Icons :icon="'dashboard'"/>
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -170,16 +252,13 @@ function navigateTo(item: SidebarItem) {
                 <!---/Search part -->
                 <v-spacer class="hidden-sm-and-down" />
 
-                <div class="hidden-md-and-up header-logo">
-                    <Logo />
-                </div>
-                <div class="hidden-sm-and-down mr-sm-6 mr-4">
+                <div class="mr-sm-6 mr-4">
                     <Searchbar />
                 </div>
-                <div class="hidden-sm-and-down mr-sm-6 mr-4">
-                    <NotificationDD />
+                <div class="mr-sm-6 mr-4">
+                    <NotificationDD @newNotification="newNotification" />
                 </div>
-                <div class="hidden-sm-and-down">
+                <div>
                     <ProfileDD />
                 </div>
             </v-app-bar>
@@ -191,5 +270,37 @@ function navigateTo(item: SidebarItem) {
     .header-logo {
         display: none;
     }   
+}
+
+/* 모바일 헤더 스타일 */
+.mobile-header {
+    width: 100%;
+}
+
+.mobile-nav-btn {
+    justify-content: flex-start !important;
+    text-align: left;
+}
+
+/* 아이콘 하트비트 애니메이션 */
+.icon-heartbit {
+    color: rgb(var(--v-theme-primary)) !important;
+    animation: icon-pulse 1.5s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes icon-pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 </style>

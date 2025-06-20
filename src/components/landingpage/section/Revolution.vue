@@ -7,7 +7,7 @@ const backend = BackendFactory.createBackend();
 const isLogin = ref(false);
 
 onMounted(async () => {
-    if (window.$isTenantServer) {
+    if (window.$isTenantServer && !window.$pal) {
         const tenantId = window.$tenantName;
         if (tenantId) {
             isLogin.value = await backend.setTenant(tenantId) ?? false;
@@ -21,7 +21,6 @@ const router = useRouter()
 const gotoDashboard = async () => {
     const checkIsLogin = async () => {
         if(!isLogin) {
-            alert("로그인이 필요합니다.")
             await router.push('/auth/login')
             return false
         }

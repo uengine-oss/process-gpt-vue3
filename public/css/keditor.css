@@ -55,7 +55,7 @@ body.highlighted-container-content .keditor-container-content:before {
 .keditor-content-area {
   height: calc(100vh - 300px);
   width: auto;
-  margin:20px 0px 0px 0px;
+  margin:8px 0px 0px 0px;
 }
 /* ==================================================================================
    Sidebar
@@ -64,7 +64,7 @@ body.highlighted-container-content .keditor-container-content:before {
   position: fixed;
   z-index: 100;
   top: 123px;
-  height:calc(100vh - 143px);
+  height: calc(100vh - 131px);
   right: -300px;
   bottom: 0;
   background: white;
@@ -86,13 +86,12 @@ body.highlighted-container-content .keditor-container-content:before {
   width: 25px;
   height: 30px;
   left: -25px;
-  background: white;
   text-align: center;
   line-height: 30px;
   border-right: 0;
   cursor: pointer;
   border-radius: 8px 0 0 8px;
-  color: #666;
+  color: white;
   box-shadow: -1px 0 5px rgba(0, 0, 0, 0.15);
 }
 #keditor-sidebar-toggler > i.fa {
@@ -486,8 +485,7 @@ body.highlighted-container-content .keditor-container-content:before {
 /* 화면정의 오른쪽 편집창에서 끌어다 넣는 영역 */
 .mashup-hover {
   position: relative;
-  top: -65px;
-  margin:0px 40px;
+  top: -64px;
 }
 
 .keditor-ui .v-text-field .v-input__details {

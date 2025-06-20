@@ -18,14 +18,16 @@
                 style="text-align: center;"
             >{{ $t(column.title) }}</h6>
         </div>
-        <div v-if="!todoTaskColumnBtnStatus" ref="section" class="pa-3 todo-list-card-box" :style="{ height: isNotAll ? 'calc(100vh - 332px)' : 'calc(100vh - 300px)' }"
-            style="overflow:auto;">
+        <div v-if="!todoTaskColumnBtnStatus"
+            ref="section" class="pa-3 todo-list-card-box"
+            style="overflow:auto;"
+        >
             <draggable class="dragArea list-group cursor-move" :list="column.tasks"
                 :animation="200" ghost-class="ghost-card" group="tasks" @add="updateTask"
                 :component-data="getComponentData()" :move="checkDraggable">
                     <transition-group>
                         <div v-for="task in column.tasks" :key="task.taskId" class="cursor-move todo-task-item-card-style">
-                            <TodoTaskItemCard :task="task" @deleteTask="deleteTask" @executeTask="executeTask" />
+                            <TodoTaskItemCard :task="task" @deleteTask="deleteTask" @executeTask="executeTask" :userInfo="userInfo" />
                         </div>
                     </transition-group>
             </draggable>
@@ -56,6 +58,10 @@ export default {
             type: Boolean, 
             default: false
         },
+        userInfo: {
+            type: Array,
+            default: () => []
+        }
     },
     data: () => ({
         dialog: false,
@@ -106,36 +112,15 @@ export default {
         },
         updateWorkItem(task) {
             var me = this;
-            if (window.$mode == 'ProcessGPT') {
-                backend.putWorklist(task.taskId, task)
-                    .then(async (result) => {
-                        if (result && result.errors && result.errors.length > 0) {
-                            me.taskId = task.taskId;
-                            me.workItem = await backend.getWorkItem(me.taskId);
-                            me.dialog = true;
-                        } else if (result && result.completedActivities && result.completedActivities.length > 0) {
-                            const status = result.completedActivities.find(
-                                item => item.completedActivityId == task.tracingTag
-                            ).result;
-                            this.$emit('updateStatus', this.taskId, status);
-                        }
-                        me.EventBus.emit('workitem-completed');
-                    })
-                    .catch((err) => {
-                        console.log(err);
-                    });
-                me.EventBus.emit('workitem-running', task.instId);
-            } else {
-                me.$try({
-                    action: async () => {
-                        await backend.putWorklist(task.taskId, task);
-                    },
-                    onFail: (e) => {
-                        me.$emit('updateStatus', task.taskId, me.originColumnId);
-                    },
-                    successMsg: task.status == 'DONE' ? this.$t('successMsg.workCompleted') : null
-                });
-            }
+            me.$try({
+                action: async () => {
+                    await backend.putWorklist(task.taskId, task);
+                },
+                onFail: (e) => {
+                    me.$emit('updateStatus', task.taskId, me.originColumnId);
+                },
+                successMsg: task.status == 'DONE' ? this.$t('successMsg.workCompleted') : null
+            });
         },
         closeDialog(isUpdated) {
             this.dialog = false;
@@ -179,10 +164,6 @@ export default {
 <style>
     .todo-task-item-card-style:not(:first-of-type) {
         margin-top:8px;
-    }
-    .todo-list-card-box > div {
-        width:100%;
-        height:100%;
     }
     .todo-task-fold-btn {
         cursor: pointer;

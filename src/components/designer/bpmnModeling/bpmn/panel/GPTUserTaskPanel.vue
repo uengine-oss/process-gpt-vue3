@@ -1,7 +1,9 @@
 <template>
     
-    <div class="gpt-user-task-panel">
-        <v-tabs v-model="activeTab" class="ma-3">
+    <div>
+        <v-tabs v-model="activeTab"
+            class="pl-4 pr-4"
+        >
             <v-tab value="setting">설정</v-tab>
             <v-tab value="edit">폼 편집</v-tab>
             <v-tab value="preview">폼 미리보기</v-tab>
@@ -9,9 +11,9 @@
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
                 <div class="mb-4">{{ $t('BpmnPropertyPanel.role') }}: {{ copyUengineProperties.role ? copyUengineProperties.role.name : '' }}</div>
-                <v-text-field v-model="name" label="이름" autofocus class="mb-4"></v-text-field>
+                <!-- <v-text-field v-model="name" label="이름" autofocus class="mb-4"></v-text-field> -->
                 <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
-                <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
+                <Instruction v-model="activity.description" class="mb-4"></Instruction>
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
                 <div>
                     <v-file-input
@@ -209,8 +211,7 @@ export default {
             }
             if (files && files.length > 0) {
                 files.forEach(async (file) => {
-                    const fileName = `uploads/${Date.now()}_${file.name}`;
-                    const data = await me.backend.uploadFile(fileName, file);
+                    const data = await me.backend.uploadFile(file.name, file);
                     if (data && data.path) {
                         me.activity.attachments.push(data.path);
                     }

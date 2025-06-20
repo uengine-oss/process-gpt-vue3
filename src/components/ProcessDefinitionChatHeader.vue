@@ -1,10 +1,12 @@
 <template>
-    <div>
-        <div style="position: sticky; top:0px; z-index:1; background-color:white;">
+    <div class="chat-info-header">
+        <div>
             <div class="align-right gap-3 justify-space-between" 
                 :style="modelValueStyle ? 'padding: 12px 16px 2px 16px;' : 'padding: 9px 16px 9px 16px;'"
             >
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0"
+                    style="height: 48px;"
+                >
                     <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center"
                         style="max-width:80%;"
                     >
@@ -22,31 +24,33 @@
                     <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
                     <v-spacer></v-spacer>
                     <!-- 삭제 아이콘 -->
-                    <v-tooltip v-if="isDeleted" location="bottom">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                density="comfortable" @click="beforeRestore"
-                            >   
-                            <div class="mdi mdi-refresh" style="font-size: 24px;"></div>
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinition.restoreProcess') }}</span>
-                    </v-tooltip>
-                    <v-tooltip v-else location="bottom">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                density="comfortable" @click="beforeDelete"
-                            >
-                                <TrashIcon size="24" style="color:#FB977D"/>
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinition.deleteProcess') }}</span>
-                    </v-tooltip>
+                    <div v-if="chatMode != 'consulting' && fullPath != 'chat'">
+                        <v-tooltip v-if="isDeleted" location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                    density="comfortable" @click="beforeRestore"
+                                >   
+                                <div class="mdi mdi-refresh" style="font-size: 24px;"></div>
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('processDefinition.restoreProcess') }}</span>
+                        </v-tooltip>
+                        <v-tooltip v-else location="bottom">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                    density="comfortable" @click="beforeDelete"
+                                >
+                                    <TrashIcon size="24" style="color:#FB977D"/>
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('processDefinition.deleteProcess') }}</span>
+                        </v-tooltip>
+                    </div>
                 </v-row>
                 
                 <div class="custom-tools">
-                    <v-row class="ma-0 pa-0 pt-3"
-                        :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : 'margin-top: 12px;'"
+                    <v-row class="ma-0 pa-0 pt-1"
+                        :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : ''"
                     >
                     
                         <div class="mr-0 d-flex" v-if="Pal">
@@ -71,26 +75,25 @@
                                 </template>
                                 <span>{{ $t('chat.import') }}</span>
                             </v-tooltip>
-                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold" style="display: none" />
+                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold, .csv, .xlsx" style="display: none" />
                     
                             <div v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map'">
-                                <!-- 자물쇠 아이콘 -->
+                                <!-- 저장 아이콘 -->
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
                                         <div v-bind="props">
                                             <v-btn icon variant="text" type="file" class="text-medium-emphasis" 
-                                                density="comfortable" @click="toggleLock" :disabled="!isEditable">
-                                                <Icons :icon="lock ? 'lock' : 'unLock'"/>
+                                                density="comfortable" @click="toggleLock">
+                                                <!-- lock 값에 따라 아이콘과 사이즈를 분리하여 통일성 있게 처리 -->
+                                                <Icons v-if="lock" :icon="'pencil'" :size="18"/>
+                                                <Icons v-else :icon="'save'" :size="24"/>
                                             </v-btn>
                                         </div>
                                     </template>
-                                    <span v-if="lock && isEditable">
+                                    <span v-if="lock">
                                         {{ editUser != '' && editUser != userInfo.name
                                             ? `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?`
                                             : $t('chat.unlock') }}
-                                    </span>
-                                    <span v-else-if="!isEditable">
-                                        권한이 없습니다.
                                     </span>
                                     <span v-else>{{ $t('chat.lock') }}</span>
                                 </v-tooltip>
@@ -167,6 +170,19 @@
                                 </template>
                             </v-tooltip>
                         </div>
+
+                        <!-- 마켓플레이스 -->
+                        <div class="mr-4 d-flex" v-if="bpmn && useMarketplace">
+                            <v-tooltip location="bottom" :text="$t('ProcessDefinitionChatHeader.addMarketplace')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                        density="comfortable" @click="openMarketplaceDialog"
+                                    >
+                                        <Icons :icon="'addMarketplace'" style="margin-top: 4px;" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </div>
                     </v-row>
                 </div>
             </div>
@@ -187,7 +203,8 @@ export default {
         userInfo: Object,
         isXmlMode: Boolean,
         isEditable: Boolean,
-        isDeleted: Boolean
+        isDeleted: Boolean,
+        chatMode: String
     },
     data() {
         return {
@@ -227,20 +244,24 @@ export default {
             return this.bpmn.includes('ExternalCustomer') || this.bpmn.includes('externalCustomer');
         },
         useSimulate() {
-            if (!this.Pal && this.fullPath != 'definition-map' && this.mode != 'ProcessGPT') {
+            // if (!this.Pal && this.fullPath != 'definition-map' && this.mode != 'ProcessGPT') {
+            //     return true;
+            // } else {
+            //     return false;
+            // }
+            return true
+        },
+        useExecute() {
+            if (this.mode == 'ProcessGPT') {
+                return false;
+            } else if (!this.Pal && this.fullPath != 'definition-map' && this.fullPath != 'chat') {
                 return true;
             } else {
                 return false;
             }
         },
-        useExecute() {
-            if (!this.Pal && this.fullPath != 'definition-map' && 
-                (this.mode !== 'ProcessGPT' || (this.mode == 'ProcessGPT' && this.fullPath != 'chat'))
-            ) {
-                return true;
-            } else {
-                return false;
-            }
+        useMarketplace() {
+            return this.mode == 'ProcessGPT';
         }
     },
     methods: {
@@ -277,6 +298,9 @@ export default {
         },
         createFormUrl() {
             this.$emit('createFormUrl');
+        },
+        openMarketplaceDialog() {
+            this.$emit('toggleMarketplaceDialog', true);
         }
     }
 };

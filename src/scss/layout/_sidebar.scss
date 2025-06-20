@@ -38,6 +38,10 @@
 }
 .v-navigation-drawer__content{
     overflow-y: hidden !important;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 /*This is for the Vertical sidebar*/
@@ -381,7 +385,7 @@
 
 @media only screen and (max-width:1279px) {
     .scrollnavbar {
-        height: calc(100vh - 210px);
+        height: calc(100vh - 180px);
     }
 }
 

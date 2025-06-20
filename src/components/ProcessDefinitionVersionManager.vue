@@ -28,7 +28,7 @@
                 </v-btn>
             </div>
 
-            <v-card-text style="height: 500px;">
+            <v-card-text style="height: 100vh;">
                 <div v-if="showXML" style="height: 100%; overflow-y: scroll;">
                     <div class="diff-titles">
                         <div class="diff-title" v-if="currentXML && beforeXML">Previous XML
@@ -50,14 +50,22 @@
                         <pre><code class="xml">{{ currentXML }}</code></pre>
                     </div>
                 </div>
-                <div v-else style="height: 100%; border-bottom: 1px solid #E0E0E0;">
+                <div v-else style="height: 100%; border-bottom: 1px solid #E0E0E0; display: flex;">
                     <BpmnUengine
-                        ref="bpmnVue"
-                        :key="key"
+                        :key="key + '_left'"
+                        :bpmn="currentSelectedXML"
+                        :options="options"
+                        :isViewMode="false"
+                        :diffActivities="leftDiffActivities"
+                        style="height: 100%; width: 50%;"
+                    ></BpmnUengine>
+                    <BpmnUengine
+                        :key="key + '_right'"
                         :bpmn="currentXML"
                         :options="options"
                         :isViewMode="false"
-                        style="height: 100%;"
+                        :diffActivities="rightDiffActivities"
+                        style="height: 100%; width: 50%;"
                     ></BpmnUengine>
                 </div>
             </v-card-text>
@@ -104,12 +112,17 @@ export default {
         lists: [],
         loading: false,
         currentInfo: null,
+        currentXML: null,
         options: {
             additionalModules: [customBpmnModule]
         },
         currentVersionName: null,
         currentVersion: null,
         currentVersionMessage: null,
+
+        lastProcessInfo: null,
+        leftDiffActivities: {},
+        rightDiffActivities: {}
     }),
     computed: {
         beforeXML() {
@@ -118,9 +131,15 @@ export default {
             }
             return null;
         },
-        currentXML() {
+        currentSelectedXML() {
             if (this.lists.length > 0 && this.lists[this.currentIndex]) {
                 return this.lists[this.currentIndex].xml
+            }
+            return null;
+        },
+        currentXML() {
+            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
+                return this.lists[this.lists.length - 1].xml
             }
             return null;
         },
@@ -162,6 +181,15 @@ export default {
             if (!me.lists[index]) return;
             if (!me.lists[index].xml) me.lists[index].xml = await me.loadXMLOfVer(me.lists[index].version)
             await me.setCurrentInfo(me.lists[index].xml);
+            if(index == me.lists.length - 1){
+                me.lastProcessInfo = JSON.parse(JSON.stringify(me.currentInfo))
+                me.leftDiffActivities = {};
+                me.rightDiffActivities = {};
+            } else {    
+                if(!me.lists[me.lists.length - 1].xml) me.lists[me.lists.length - 1].xml = await me.loadXMLOfVer(me.lists[me.lists.length - 1].version)
+                if(!me.lastProcessInfo) await me.setLastVersionInfo(me.lists[me.lists.length - 1].xml);
+                me.calculateDifferences();
+            }
             me.loading = false
             me.key++
         },
@@ -187,7 +215,14 @@ export default {
             const currentInfo = await me.convertXMLToJSON(xml);
             me.currentVersionName = currentInfo.processDefinitionName;
             me.currentVersion = currentInfo.version;
-            me.currentVersionMessage = currentInfo.shortDescription.text;
+            if(currentInfo.shortDescription){
+                me.currentVersionMessage = currentInfo.shortDescription.text;
+            }
+            me.currentInfo = currentInfo;
+        },
+        async setLastVersionInfo(xml) {
+            let me = this;
+            me.lastProcessInfo = await me.convertXMLToJSON(xml);
         },
         async loadXMLOfVer(version) {
             var me = this
@@ -226,7 +261,50 @@ export default {
         close() {
             this.$emit('close', false)
         },
-
+        calculateDifferences() {
+            const me = this;
+            me.leftDiffActivities = {};
+            me.rightDiffActivities = {};
+            
+            if (!me.currentInfo || !me.lastProcessInfo) return;
+            
+            const currentActivities = me.currentInfo.activities || [];
+            const lastActivities = me.lastProcessInfo.activities || [];
+            
+            // 현재 액티비티 ID 목록
+            const currentActivityIds = currentActivities.map(act => act.id);
+            // 다음 버전 액티비티 ID 목록
+            const lastActivityIds = lastActivities.map(act => act.id);
+            
+            // 삭제된 액티비티 찾기 (현재에는 있지만 다음에는 없는 것)
+            currentActivities.forEach(activity => {
+                if (!lastActivityIds.includes(activity.id)) {
+                    me.leftDiffActivities[activity.id] = 'deleted';
+                }
+            });
+            
+            // 추가된 액티비티 찾기 (다음에는 있지만 현재에는 없는 것)
+            lastActivities.forEach(activity => {
+                if (!currentActivityIds.includes(activity.id)) {
+                    me.rightDiffActivities[activity.id] = 'added';
+                }
+            });
+            
+            // 수정된 액티비티 찾기 (양쪽 다 있지만 내용이 변경된 것)
+            currentActivities.forEach(currentActivity => {
+                const lastActivity = lastActivities.find(act => act.id === currentActivity.id);
+                if (lastActivity) {
+                    // 속성 비교를 위해 JSON 문자열로 변환하여 비교
+                    const currentJson = JSON.stringify(currentActivity);
+                    const lastJson = JSON.stringify(lastActivity);
+                    
+                    if (currentJson !== lastJson) {
+                        me.leftDiffActivities[currentActivity.id] = 'modified';
+                        me.rightDiffActivities[lastActivity.id] = 'modified';
+                    }
+                }
+            });
+        },
     }
 };
 </script>

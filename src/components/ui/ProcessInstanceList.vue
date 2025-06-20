@@ -32,34 +32,21 @@ export default {
         NavItem
     },
     data: () => ({
+        instanceList: [],
+        //
+        myGroupInstanceList: [],
+        intervalId: null,
         runningInstances: {
             header: 'runningInstance.title',
         },
-        instanceList: [],
-        myGroupInstanceList: [],
-        intervalId: null,
+        
     }),
     async created() {
         await this.init();
     },
     mounted() {
-        this.EventBus.on('instances-running', (processName) => {
-            clearInterval(this.intervalId);
-
-            this.instanceList.push({
-                title: processName + this.$t('runningInstance.running'),
-                to: '',
-                BgColor: 'grey',
-                isNew: true
-            });            
-        });
-
         this.EventBus.on('instances-updated', async () => {
             await this.init();
-            
-            this.intervalId = setInterval(() => {
-                this.init();
-            }, 10000);
         });
         
         this.intervalId = setInterval(() => {
@@ -84,13 +71,14 @@ export default {
             let result = await backend.getInstanceList();
             if (!result) result = [];
             this.instanceList = result.map((item) => {
+                const title = item.name;
                 const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
-                const title = item.instName;
                 item = {
                     // icon: 'ph:cube',
-                    title: title,
+                    title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
                     to: `/instancelist/${route}`,
-                    BgColor:'primary'
+                    BgColor:'primary',
+                    isNew: item.status == 'NEW'
                 };
                 return item;
             });
@@ -125,6 +113,8 @@ export default {
                 };
             });
         }
+        
+        
     }
 };
 </script>

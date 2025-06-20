@@ -7,6 +7,25 @@ class UEngineBackend implements Backend {
     //     super();
     // }
 
+    async fetchAgentData(url: string) {
+        return null;
+    }
+
+    async getMCPTools() {
+        return null;
+    }
+
+    async watchNotifications(onNotification?: (notification: any) => void) {
+        return null;
+    }
+
+    async getRefForm(taskId: string) {
+        return null;
+    }
+    async listMarketplaceDefinition() {
+        return null;
+    }
+
     async updateUser(userInfo: any) {
         return null;
     }
@@ -27,7 +46,7 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    async uploadFile(fileName: string, file: File) {
+    async uploadFile(fileName: string, file: File, storageType: string) {
         return null;
     }
 
@@ -66,7 +85,7 @@ class UEngineBackend implements Backend {
     }
     
 
-    async getNotifications() {
+    async getNotifications(callback: (data: any) => void) {
         // Placeholder implementation
         return [];
     }
@@ -468,7 +487,8 @@ class UEngineBackend implements Backend {
             title: task.title,
             tool: task.tool,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
-            task: task
+            adhoc: task.adhoc,
+            task: task,
         }));
 
         return mappedResult;
@@ -493,6 +513,7 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            adhoc: task.adhoc,
             task: task
         }));
 
@@ -517,6 +538,7 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            adhoc: task.adhoc,
             task: task
         }));
 
@@ -547,6 +569,7 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            adhoc: task.adhoc,
             task: task
         }));
     }
@@ -569,6 +592,7 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            adhoc: task.adhoc,
             task: task
         }));
 
@@ -592,6 +616,7 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             tracingTag: task.trcTag,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
+            adhoc: task.adhoc,
             task: task
         }));
 
@@ -886,6 +911,31 @@ class UEngineBackend implements Backend {
 
     async checkDBConnection() {
         return true;
+    }
+    
+    async saveTask(id: string, name: string, type: string, json: any) {
+        console.warn("method is not implemented only use PalModeBackend");
+        return null;
+    }
+
+    async getTaskList() {
+        console.warn("method is not implemented only use PalModeBackend");
+        return null;
+    }
+
+    
+    async fetchNotifications() {
+        console.warn("method is not implemented only use Process-GPT Mode");
+        return [];
+    }
+
+    async getBSCard() {
+        console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
+    }
+
+    async putBSCard(card: any) {
+        console.warn("method is not implemented only use Process-GPT Mode");
     }
 }
 

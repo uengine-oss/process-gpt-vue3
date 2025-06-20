@@ -2,7 +2,10 @@
     "message": "en",
     "changePath": "You have unsaved changes. Are you sure you want to leave?",
     "successMsg": {
+        "simulatedProcess": "Simulated process completed",
         "runningTheProcess": "Running the process",
+        "formGenerationCompleted": "Form generation completed",
+        "processGenerationCompleted": "Process generation completed",
         "processExecutionCompleted": "Process execution completed",
         "workCompleted": "Completion of work",
         "save": "Saved successfully.",
@@ -31,13 +34,13 @@
     "headerMenu": {
         "sidebar": "Sidebar",
         "dashboard": "Dashboard",
-        "todoList": "Todo List",
+        "todoList" : "My Task List",
         "calendar": "Calendar",
         "layoutSetting": "Layout Setting",
         "admin" : "Admin Page"
     },
     "DashboardTodoList": {
-        "todo": "Todo",
+        "todo": "My Task List",
         "inProgress": "In Progess",
         "done": "Done"
     },
@@ -54,11 +57,12 @@
         "welcome": "Welcome"
     },
     "todoList": {
-        "title": "ToDoList",
-        "todo": "ToDo",
+        "title": "Task List",
+        "todo": "Upcoming Tasks",
         "inProgress": "In Progress",
         "pending": "Pending",
-        "done": "Done"
+        "done": "Done",
+        "addTask": "Add Task"
     },
     "calendar": {
         "title": "Calendar",
@@ -147,7 +151,8 @@
     "definitionManagement": {
         "title": "Definition Management",
         "upload": "Upload definition list",
-        "release": "Definition Export"
+        "release": "Definition Export",
+        "defaultForm": "Default Form Management"
     },
     "systemDefinition": {
         "title": "System Definition"
@@ -168,12 +173,41 @@
         "from": "From",
         "add": "Add",
         "edit": "Edit",
-        "delete": "Delete"
+        "save": "Save",
+        "delete": "Delete",
+        "close": "Close",
+        "addNewUser": "Add New User(Team Member)",
+        "addNewAgent": "Add New Agent",
+        "userName": "Name",
+        "userEmail": "Email",
+        "idRequired": "Please enter your ID.",
+        "nameRequired": "Please enter your name.",
+        "emailRequired": "Please enter your email.",
+        "emailInvalid": "Invalid email format.",
+        "emailAlreadyExists": "Email already exists.",
+        "addUserSuccess": "User added successfully.",
+        "addUserFailed": "Failed to add user.",
+        "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000.",
+        "agent": "Agent",
+        "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member.",
+        "oauth": "OAuth Settings"
+    },
+    "agentField": {
+        "agentId": "Agent ID",
+        "agentName": "Name",
+        "agentRole": "Role",
+        "agentGoal": "Goal",
+        "agentPersona": "Persona",
+        "agentUrl": "URL",
+        "agentDescription": "Description",
+        "agentTools": "Tools",
+        "agentSkills": "Skills"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
-        "lock": "Please press the lock to lock it in order to save.",
-        "unlock": "Please press the lock to unlock it in order to edit.",
+        "mobileTitle": "Get Started",
+        "lock": "Click the save icon to save.",
+        "unlock": "Click the pencil icon to edit.",
         "addMega": "Mega Process",
         "addMajor": "Major Process",
         "addSub": "Sub Process",
@@ -181,6 +215,7 @@
         "downloadImage": "Download definition diagram as an image",
         "consultingAI": "Process Consulting AI",
         "consultingButton": "Start Process Consulting",
+        "analyzeAndImproveProcessWithAI": "Start process consulting with AI",
         "editingUser": "is editing.",
         "checkIn": "Check In",
         "checkOut": "Check Out",
@@ -200,7 +235,8 @@
         "forcedCheckOutMessage": "Currently, {name} is editing. If you proceed with editing, the content modified by {name} will be damaged and not saved. \nDo you want to proceed with editing?",
         "settingPermission": "Setting Permission",
         "isReadable": "Readable",
-        "isWritable": "Writable"
+        "isWritable": "Writable",
+        "marketplace": "Marketplace"
     },
     "uiDefinition": {
         "title": "Screen Definition",
@@ -265,8 +301,8 @@
     },
     "chat": {
         "inputMessage": "Type a Message",
-        "lock": "Please press the lock to lock it in order to check in (save).",
-        "unlock": "Please press the lock to unlock it in order to check out (edit).",
+        "lock": "Click the save icon to save.",
+        "unlock": "Click the pencil icon to edit.",
         "processDefinitionSave": "Save",
         "history": "history button",
         "import": "Import BPMN File",
@@ -301,7 +337,13 @@
         "phone": "Phone",
         "address": "Address",
         "save": "Save",
-        "manageAccess": "Manage Access"
+        "manageAccess": "Manage Access",
+        "drive": "Google Drive Settings",
+        "clientId": "Client ID",
+        "clientSecret": "Client Secret",
+        "folderId": "Folder ID",
+        "edit": "Edit",
+        "cancel": "Cancel"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -345,6 +387,7 @@
         "title": "Company Management",
         "subTitle1": "Create a new company or go to a page managed by the selected company.",
         "subTitle2": "(* Sign-up is not possible on mobile devices.)",
+        "subTitle3": "Select a company to go to the page managed by the selected company.",
         "createCompany": "Create a company"
     },
     "tenantInfoField": {
@@ -520,6 +563,11 @@
     },
     "UserTaskPanel": {
         "default": "Default",
+        "defaultInfo": "All users with the role of the current task can view this task. The user who first selects the task will be designated as the assignee.",
+        "sharedGroupInfo": "All users in the selected shared group can view this task. The user who first selects the task will be designated as the assignee.",
+        "assigneeInfo": "Only the designated user can view this task. Other users cannot view it.",
+        "loadBalancingInfo": "The task is automatically assigned to users within the designated group. You can select a distribution strategy.",
+        "expressionInfo": "The assignee is determined dynamically based on the expression. ex) ${initiatorManager}",
         "form": "Form",
         "external": "External Application",
         "formCreateDialog": "Do you want to create a form?",
@@ -527,11 +575,11 @@
         "no": "No",
         "radioSelectDescriptionTitle": "Select data processing method: Basic data processing, Custom screen creation, External system integration.",
         "radioSelectDescriptionSubTitle1": "1. Basic: Use basic data \n2. Form: Screen created in screen definition \n3. External Application: Generates a field for entering a business screen URL",
-        "assignmentType": "Assignment Type",
-        "defaultAssignment": "Default Assignment",
-        "competitionAssignment": "Competition Assignment",
-        "directAssignment": "Direct Assignment",
-        "automaticAssignment": "Automatic Assignment",
+        "assignmentType": "Task Assignment Type",
+        "assignee": "Single Assignment",
+        "sharedGroup": "Shared Group",
+        "loadBalancing": "Load Balancing",
+        "expression": "Expression-based",
         "taskType": "Task Type",
         "descriptionTo": "Assignment Target",
         "descriptionToTitle": "Assignment Target Input",
@@ -539,7 +587,11 @@
         "inputForm": "Reference Form",
         "outputForm": "Write Form",
         "addFormParameter": "Add Form Parameter",
-        "removeFormParameter": "Remove Form Parameter"
+        "removeFormParameter": "Remove Form Parameter",
+        "loadBalancingGroup": "Load Balancing Group",
+        "loadBalancingStrategy": "Load Balancing Strategy",
+        "leastTasks": "Least Tasks",
+        "idle": "Idle"
     },
     "Mapper": {
         "mapper": "Mapper"
@@ -662,7 +714,9 @@
         "Participant": "Create Participant",
         "expandedSubProcess": "Create expanded SubProcess",
         "dataStore": "Create Data Store",
-        "dataObject": "Create Data Object"
+        "dataObject": "Create Data Object",
+        "autoLayout": "Auto Layout",
+        "changeOrientation": "Change layout orientation"
     },
     "chatListing": {
         "title": "Chat Room Settings",
@@ -774,8 +828,11 @@
         "progress": "Progress",
         "history": "Work History",
         "chatbot": "Assistant",
-        "agent": "Create Agent Draft",
-        "toggleInputFieldSize": "Toggle Input Field Size"
+        "agent": "Quick Draft Generation",
+        "agentMonitor": "Agent Monitor",
+        "toggleInputFieldSize": "Toggle Input Field Size",
+        "previous": "Previous Step",
+        "inputForm": "Input"
     },
     "TestProcess": {
         "title": "Testing Process",
@@ -808,13 +865,13 @@
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Definition Export",
         "save": "Save",
-        "trash": "휴지통"
+        "trash": "Trash"
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "Process Execution Performance",
         "startDate": "Start Date",
         "endDate": "End Date",
-        "toDo": "To Do",
+        "toDo": "Upcoming Tasks",
         "inProcess": "In Progress",
         "done": "Completed",
         "all": "All",
@@ -826,7 +883,8 @@
         "workItem": "Work Item",
         "workHistory": "Work History",
         "ganttChart": "Gantt Chart",
-        "sendEvent": "Send {event} event"
+        "sendEvent": "Send {event} event",
+        "output": "Output"
     },
     "DryRunProcess": {
         "notFound": "Work item not found."
@@ -841,7 +899,8 @@
     },
     "ProcessGPTExecute": {
         "roleMapping": "Role Mapping",
-        "processStart": "Process Start"
+        "processStart": "Process Start",
+        "processSimulate": "Process Simulation"
     },
     "Checkpoints": {
         "checkpoints": "Checkpoints"
@@ -859,6 +918,104 @@
         "wrongPassword": "The password is incorrect.",
         "wrongId": "The ID is incorrect.",
         "notRegisteredEmail": "This email address is not registered.",
-        "loginRequired": "Login is required."
+        "loginRequired": "Login is required.",
+        "unRegisteredTenant": "This tenant is not registered."
+    },
+    "TodoTaskItemCard": {
+        "assignee": "Assignee",
+        "myTask": "My task"
+    },
+    "ExternalForms": {
+        "submit": "Submit",
+        "submitted": "Submitted",
+        "submittedMessage": "Submitted successfully."
+    },
+    "ProcessDefinitionChatHeader": {
+        "addMarketplace": "Register to Marketplace"
+    },
+    "ProcessDefinitionMarketPlaceDialog": {
+        "title": "Register to Marketplace",
+        "processId": "Process ID",
+        "processName": "Process Name",
+        "description": "Description",
+        "category1": "Category 1",
+        "category2": "Category 2",
+        "tags": "Tags",
+        "register": "Register",
+        "requiredField": "This field is required"
+    },
+    "ProcessDefinitionMarketPlace": {
+        "searchPlaceholder": "Search by process name, author, or tag",
+        "allCategory": "All",
+        "searchResultTitle": "Search Results",
+        "searchingTitle": "Searching...",
+        "relatedTemplates": "Related Templates",
+        "addedButton": "Added",
+        "addButton": "Add",
+        "otherCategory": "Other",
+        "countUnit": "items",
+        "allTemplates": "All Templates"
+    },
+    "ContentEditorField": {
+        "contentEditor": "Content Editor",
+        "editContent": "Edit Content",
+        "mode": "Mode"
+    },
+    "PptxExportHelper": {
+        "title": "Export to PowerPoint",
+        "configureOptions": "Set PowerPoint export options:",
+        "includeSpeakerNotes": "Include speaker notes",
+        "presentationName": "Presentation name",
+        "exportButton": "Export as PowerPoint",
+        "cancelButton": "Cancel"
+    },
+    "SlideEditor": {
+        "title": "Slide Presentation Editor",
+        "addSlide": "Add Slide",
+        "exportMarkdown": "Export as MD",
+        "exportPdf": "Export as PDF",
+        "exportPptx": "Export as PowerPoint",
+        "exportWord": "Export as Word",
+        "import": "Import",
+        "presentation": "Presentation",
+        "preview": "This is a preview."
+    },
+    "WordExportHelper": {
+        "title": "Export to Word",
+        "configureOptions": "Set Word export options:",
+        "documentName": "Document name",
+        "exportButton": "Export as Word",
+        "cancelButton": "Cancel"
+    },
+    "PdfExportHelper": {
+        "title": "Export to PDF",
+        "instructions": "PDF Export Instructions",
+        "step1": "Click the \"Prepare PDF\" button below.",
+        "step2": "When the page reloads, press CTRL/CMD+P in your browser.",
+        "step3": "In the print dialog, set the destination to Save as PDF.",
+        "step4": "Set the layout to Landscape.",
+        "step5": "Set the margins to None.",
+        "step6": "Enable the background graphics option.",
+        "step7": "Click Save.",
+        "includeNotes": "Include speaker notes",
+        "overlayNotes": "Overlay notes",
+        "separatePage": "Separate page",
+        "separateFragments": "Split fragments into separate slides",
+        "prepareButton": "Prepare PDF",
+        "cancelButton": "Cancel"
+    },
+    "BSCard": {
+        "title": "Strategy Map",
+        "cardTitle": "Strategy Map",
+        "description": "Organize the organization's strategic goals into four perspectives (financial, customer, internal process, and learning and growth) and create a visualized strategy map."
+    },
+    "ProjectCreationForm": {
+        "title": "Create Project",
+        "create": "Create"
+    },
+    "AppBaseCard": {
+        "friends": "Friends",
+        "progress": "Progress",
+        "menu": "Menu"
     }
 }

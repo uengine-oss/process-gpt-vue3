@@ -49,6 +49,7 @@
                 <process-definition
                     class="process-definition-resize"
                     :bpmn="bpmn"
+                    :isAIGenerated="isAIGenerated"
                     :processDefinition="processDefinition"
                     :key="definitionChangeCount"
                     :isViewMode="isViewMode"
@@ -140,12 +141,13 @@
                             <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                                 :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                                 :isEditable="isEditable"
+                                :chatMode="chatMode"
                                 :isDeleted="isDefinitionDeleted"
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
                                 @beforeRestore="beforeRestore" @savePDF="savePDF"
-                                @createFormUrl="createFormUrl" />
+                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
                         </template>
                     </Chat>
                 </div>
@@ -170,24 +172,31 @@
                         <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
                             :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
                             :isEditable="isEditable"
+                            :chatMode="chatMode"
                             @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                             @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                             @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                            @createFormUrl="createFormUrl" />
+                            @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
                     </template>
                 </Chat>
             </template>
         </AppBaseCard>
         <v-dialog v-model="executeDialog" max-width="80%"
             :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
+             :fullscreen="isMobile"
         >
             <div v-if="!pal && mode === 'ProcessGPT'">
-                <process-gpt-execute :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
+                <process-gpt-execute :isSimulate="isSimulate" :processDefinition="processDefinition" :bpmn="bpmn" :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
             </div>
             <div v-else>
                 <test-process v-if="isSimulate == 'true'" :executeDialog="executeDialog" :definitionId="fullPath" @close="executeDialog = false" />
                 <dry-run-process v-else :is-simulate="isSimulate" :definitionId="fullPath" @close="executeDialog = false"></dry-run-process>
             </div>
+        </v-dialog>
+
+        <v-dialog v-model="marketplaceDialog" max-width="400" persistent>
+            <process-definition-market-place-dialog :processDefinition="processDefinition" 
+                :bpmn="bpmn" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
         </v-dialog>
     </v-card>
 </template>
@@ -221,6 +230,8 @@ import BackendFactory from '@/components/api/BackendFactory';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
+import ProcessDefinitionMarketPlaceDialog from '@/components/ProcessDefinitionMarketPlaceDialog.vue';
+
 const backend = BackendFactory.createBackend();
 
 // import BpmnModelingCanvas from '@/components/designer/bpmnModeling/BpmnModelCanvas.vue';
@@ -249,7 +260,8 @@ export default {
         ProcessExecuteDialog,
         'process-gpt-execute': ProcessGPTExecute,
         DryRunProcess,
-        TestProcess
+        TestProcess,
+        ProcessDefinitionMarketPlaceDialog
     },
     props: {
         chatMode: {
@@ -285,6 +297,9 @@ export default {
         waitForCustomer: false,
         isConsultingMode: false,
         isPreviewPDFDialog: false,
+        marketplaceDialog: false,
+        isAIGenerated: false,
+        organizationChart: [],
     }),
     async created() {
         $try(async () => {
@@ -294,7 +309,7 @@ export default {
                 this.isEditable = true;
             } 
             if(this.isConsultingMode){
-                this.userInfo = await this.storage.getUserInfo();
+                this.userInfo = await this.backend.getUserInfo();
 
                 this.processDefinitionMap = await backend.getProcessDefinitionMap();
 
@@ -337,6 +352,14 @@ export default {
                     this.chatRoomId = this.fullPath;
                 }
             }
+
+            const data = await this.getData(`configuration`, { match: { key: 'organization' } });
+            if (data && data.value) {
+                // this.organizationChartId = data.uuid;
+                if (data.value.chart) {
+                    this.organizationChart = data.value.chart;
+                }
+            }
         });
     },
     watch: {
@@ -349,6 +372,17 @@ export default {
                     if (newVal.params.pathMatch) {
                         this.init();
                     }
+                }
+            }
+        },
+        executeDialog(newVal) {
+            if(newVal == false){
+                if(this.isSimulate == 'true'){
+                    this.isSimulate = 'false'
+                    this.processDefinition.activities.forEach(activity => {
+                        activity.inputFormData = null
+                    })
+                    this.$emit('closeExecuteDialog')
                 }
             }
         }
@@ -377,7 +411,10 @@ export default {
         },
         pal(){
             return window.$pal;
-        }
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
     },
     async beforeRouteLeave(to, from, next) {
         if (this.bpmn && this.bpmn.length > 0) {
@@ -403,6 +440,95 @@ export default {
         }
     },
     methods: {
+        setProcessDefinitionPrompt(){
+            if (this.processDefinitionMap) {
+                this.generator.setProcessDefinitionMap(this.processDefinitionMap);
+            }
+            if (this.processDefinition) {
+                this.generator.setProcessDefinition(this.processDefinition);
+            }
+
+            if (this.organizationChart) {
+                this.generator.setOrganizationChart(JSON.stringify(this.organizationChart));
+            }
+        },
+        // 시퀀스 정보를 활용하여 activities 순서를 재정렬하는 함수
+        reorderActivitiesBySequence(jsonData) {
+            try {
+                if (!jsonData.sequences || !jsonData.activities || jsonData.activities.length === 0) {
+                    return jsonData;
+                }
+
+                // 모든 노드의 등장 횟수를 카운트
+                const nodeCount = new Map();
+                
+                // source와 target에서의 등장 횟수를 각각 카운트
+                jsonData.sequences.forEach(seq => {
+                    nodeCount.set(seq.source, (nodeCount.get(seq.source) || 0) + 1);
+                    nodeCount.set(seq.target, (nodeCount.get(seq.target) || 0) + 1);
+                });
+
+                // source에만 한 번 등장하는 노드를 찾음 (시작점)
+                let startNode = null;
+                jsonData.sequences.forEach(seq => {
+                    const sourceCount = nodeCount.get(seq.source) || 0;
+                    if (sourceCount === 1 && !jsonData.sequences.some(s => s.target === seq.source)) {
+                        startNode = seq.source;
+                    }
+                });
+
+                if (!startNode) {
+                    console.warn("시작점을 찾을 수 없습니다.");
+                    return jsonData;
+                }
+
+                // 시작점부터 순서대로 노드를 따라가며 activities 순서 결정
+                const orderedNodes = [];
+                const visited = new Set();
+                
+                function traverseNodes(currentNode) {
+                    if (visited.has(currentNode)) return;
+                    visited.add(currentNode);
+                    orderedNodes.push(currentNode);
+
+                    // 현재 노드에서 시작하는 모든 시퀀스를 찾아서 순서대로 처리
+                    const nextSequences = jsonData.sequences.filter(seq => seq.source === currentNode);
+                    nextSequences.forEach(seq => {
+                        traverseNodes(seq.target);
+                    });
+                }
+
+                traverseNodes(startNode);
+
+                // activities 배열 재정렬
+                const activityMap = new Map(jsonData.activities.map(act => [act.id, act]));
+                const reorderedActivities = [];
+
+                // 순서가 결정된 노드들 중 activity인 것들만 순서대로 추가
+                orderedNodes.forEach(nodeId => {
+                    if (activityMap.has(nodeId)) {
+                        reorderedActivities.push(activityMap.get(nodeId));
+                    }
+                });
+
+                // 혹시 순서가 결정되지 않은 activity가 있다면 마지막에 추가
+                jsonData.activities.forEach(activity => {
+                    if (!reorderedActivities.some(act => act.id === activity.id)) {
+                        reorderedActivities.push(activity);
+                    }
+                });
+
+                jsonData.activities = reorderedActivities;
+                return jsonData;
+                
+            } catch (error) {
+                console.error('Error reordering activities:', error);
+                return jsonData;
+            }
+        },
+        toggleMarketplaceDialog(value) {
+            this.marketplaceDialog = value;
+        },
         executeProcess() {
             this.isSimulate = 'false'
             this.executeDialog = !this.executeDialog;
@@ -411,6 +537,7 @@ export default {
             console.log("simulate")
             this.isSimulate = 'true'
             this.executeDialog = !this.executeDialog;
+            this.$emit('executeSimulate')
         },
         beforeStartGenerate(){
             let chatMsgs = [];
@@ -429,6 +556,11 @@ export default {
                 this.generator.model = "gpt-4o";
             }
             this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
+
+            if(!this.isConsultingMode){
+                this.setProcessDefinitionPrompt();
+            }
+
             this.startGenerate();
         },
         async beforeSaveDefinition(info){
@@ -436,7 +568,45 @@ export default {
                 await this.$emit("createdBPMN", this.processDefinition)
                 info.skipSaveProcMap = true
             } 
+            if(window.$pal){
+                await this.beforeSavePALUserTasks(info);
+            }
             this.saveDefinition(info);
+        },
+        async beforeSavePALUserTasks(info) {
+            var me = this;
+            if (!me.processDefinition || !me.processDefinition.activities) {
+                console.warn('프로세스 정의가 없거나 activities가 정의되지 않았습니다.');
+                return;
+            }
+            
+            try {
+                for (let activity of me.processDefinition.activities) {
+                    const taskId = activity.uuid;
+                    
+                    const task = await backend.saveTask(
+                        taskId,                
+                        activity.name,         
+                        activity.type,        
+                        JSON.stringify({       
+                            description: activity.description,
+                            instruction: activity.instruction,
+                            role: activity.role,
+                            process: activity.process,
+                            inputData: activity.inputData || [],
+                            outputData: activity.outputData || [],
+                            properties: activity.properties,
+                            duration: activity.duration,
+                            tool: activity.tool
+                        })
+                    );
+                    activity.uuid = task.id;
+                }
+                
+                console.log('모든 PAL 태스크가 저장되었습니다.');
+            } catch (error) {
+                console.error('PAL 태스크 저장 중 오류가 발생했습니다:', error);
+            }
         },
         showXmlMode() {
             this.isXmlMode = !this.isXmlMode;
@@ -462,7 +632,7 @@ export default {
                     // me.isDeleted = true;
                     me.EventBus.emit('definitions-updated');
                     me.EventBus.emit('instances-updated');
-                    me.$router.go(0);
+                    me.$router.push('/definitions/chat');
                 }
             });
         },
@@ -498,8 +668,19 @@ export default {
                     jsonContent = me.convertOldJson(JSON.parse(content));
                     convertedBpmn = me.createBpmnXml(jsonContent);
                 }
-                // 파일 내용 처리
-                me.loadBPMN(convertedBpmn);
+                if(file.name.indexOf('.csv') != -1 || file.name.indexOf('.xlsx') != -1) {
+                    jsonContent = me.convertCSVToJSON(content);
+                    console.log("convertCSVToJSON", jsonContent);
+                    if(jsonContent) {
+                        convertedBpmn = me.createBpmnXml(jsonContent);
+                    }
+                }
+
+                if(convertedBpmn) {
+                    me.loadBPMN(convertedBpmn);
+                } else {
+                    alert('BPMN 파일 변환 중 오류가 발생했습니다.');
+                }
             };
             reader.readAsText(file);
         },
@@ -650,6 +831,8 @@ export default {
                             me.processDefinition.processDefinitionId = value.id;
                             me.processDefinition.processDefinitionName = value.name;
                             me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
+                            me.oldProcDefId = me.processDefinition.processDefinitionId;
+                            me.afterLoadBpmn();
                         }
 
                         const role = localStorage.getItem('role');
@@ -688,6 +871,7 @@ export default {
                             me.projectName = me.$route.query.name.replace('.bpmn', '');
                             me.processDefinition.processDefinitionName = me.projectName;
                         }
+                        me.oldProcDefId = me.processDefinition.processDefinitionId;
                     }
 
                     me.isEditable = true;
@@ -705,6 +889,29 @@ export default {
             } catch (e) {
                 console.log(e);
                 alert(e);
+            }
+        },
+        async afterLoadBpmn(){
+            if(!this.pal) return;
+            if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
+                Object.keys(this.processDefinition.activities).forEach(async (actId) => {
+                    const activity = this.processDefinition.activities[actId];
+
+                    if (activity) {
+                        if (activity.uuid) {
+                            const task = await this.backend.getTask({ id: activity.uuid });
+                            const json = task.json_ko;
+
+                            this.activity = json;
+                            this.activity.uuid = task.id;
+                            this.activity.type = task.type;
+                        }
+
+                        console.log('Activity updated:', activity);
+                    } else {
+                        console.log('Activity not found:', actId);
+                    }
+                });
             }
         },
         async onLoadBpmn() {
@@ -738,12 +945,7 @@ export default {
                     preferredLanguage: 'Korean'
                 });
                 this.generator.client.genType = 'proc_def'
-                if (this.processDefinitionMap) {
-                    this.generator.setProcessDefinitionMap(this.processDefinitionMap);
-                }
-                if (this.processDefinition) {
-                    this.generator.setProcessDefinition(this.processDefinition);
-                }
+                this.setProcessDefinitionPrompt();
             }
             this.sendMessage(newMessage);
         },
@@ -789,8 +991,11 @@ export default {
                             if(!this.processDefinition) this.processDefinition = {};
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
                             this.bpmn = this.createBpmnXml(unknown);
+                            this.isAIGenerated = true;
                             this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
                             this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
+                            this.projectName = unknown.processDefinitionName
+                            this.oldProcDefId = unknown.processDefinitionId;
                             this.definitionChangeCount++;
                         }
                     }
@@ -825,7 +1030,159 @@ export default {
                 }
             })
         },
-
+        async convertOldFormatToElements(oldObj) {
+            oldObj.elements = []
+            // Type mapping to convert from old activity types to new element types
+            const typeMapping = {
+                'startEvent': 'StartEvent',
+                'endEvent': 'EndEvent',
+                'userTask': 'UserActivity',
+                'serviceTask': 'ServiceActivity',
+                'scriptTask': 'ScriptActivity',
+                'sendTask': 'EmailActivity',
+                'exclusiveGateway': 'ExclusiveGateway',
+                'parallelGateway': 'ParallelGateway',
+                'task': 'Activity'
+            };
+            
+            // Convert old activities to elements format
+            if (oldObj.activities && Array.isArray(oldObj.activities)) {
+                oldObj.activities.forEach(activity => {
+                const elementType = activity.type === 'userTask' ? 'Activity' : 'Activity';
+                const type = typeMapping[activity.type] || 'Activity';
+                
+                // Parse properties if they exist
+                let checkpoints = [];
+                let duration = activity.duration || "5";
+                try {
+                    if (activity.properties) {
+                    const props = JSON.parse(activity.properties);
+                    if (props.checkpoints) {
+                        checkpoints = props.checkpoints;
+                    }
+                    if (props.duration) {
+                        duration = props.duration;
+                    }
+                    }
+                } catch (e) {
+                    console.error("Error parsing properties:", e);
+                }
+                
+                const newElement = {
+                    elementType: elementType,
+                    id: activity.id,
+                    name: activity.name,
+                    type: type,
+                    source: "", // This will be filled from sequences
+                    description: activity.description || "",
+                    instruction: activity.instruction || "",
+                    role: activity.role || "",
+                    inputData: activity.inputData || [],
+                    outputData: activity.outputData || [],
+                    checkpoints: checkpoints,
+                    duration: duration
+                };
+                
+                oldObj.elements.push(newElement);
+                });
+            }
+            
+            // Convert old events to elements format
+            if (oldObj.events && Array.isArray(oldObj.events)) {
+                oldObj.events.forEach(event => {
+                const elementType = "Event";
+                const type = typeMapping[event.type] || event.type;
+                
+                const newElement = {
+                    elementType: elementType,
+                    id: event.id,
+                    name: event.name,
+                    role: event.role || "",
+                    source: "",
+                    type: type,
+                    description: event.description || "",
+                    trigger: event.type === "startEvent" ? "프로세스 시작" : "프로세스 종료"
+                };
+                
+                oldObj.elements.push(newElement);
+                });
+            }
+            
+            // Convert old gateways to elements format
+            if (oldObj.gateways && Array.isArray(oldObj.gateways)) {
+                oldObj.gateways.forEach(gateway => {
+                const elementType = "Gateway";
+                const type = typeMapping[gateway.type] || "ExclusiveGateway";
+                
+                const newElement = {
+                    elementType: elementType,
+                    id: gateway.id,
+                    name: gateway.name || "Gateway",
+                    role: gateway.role || "",
+                    source: "",
+                    type: type,
+                    description: gateway.description || "분기점"
+                };
+                
+                oldObj.elements.push(newElement);
+                });
+            }
+            
+            // Convert old sequences to elements format and set source properties
+            if (oldObj.sequences && Array.isArray(oldObj.sequences)) {
+                // First, create a mapping of target IDs to source IDs
+                const targetToSourceMap = {};
+                oldObj.sequences.forEach(sequence => {
+                if (!targetToSourceMap[sequence.target]) {
+                    targetToSourceMap[sequence.target] = [];
+                }
+                targetToSourceMap[sequence.target].push(sequence.source);
+                });
+                
+                // Update source properties in existing elements
+                oldObj.elements.forEach(element => {
+                if (targetToSourceMap[element.id] && targetToSourceMap[element.id].length > 0) {
+                    element.source = targetToSourceMap[element.id][0]; // Take the first source
+                }
+                });
+                
+                // Now convert sequences to elements
+                oldObj.sequences.forEach(sequence => {
+                let condition = null;
+                try {
+                    if (sequence.condition && sequence.condition !== "") {
+                    // Try to parse condition if it exists
+                    if (typeof sequence.condition === 'string' && sequence.condition.startsWith('{')) {
+                        const condObj = JSON.parse(sequence.condition);
+                        condition = {
+                        key: condObj.key || "",
+                        condition: condObj.operator || "==",
+                        value: condObj.value || ""
+                        };
+                    }
+                    }
+                } catch (e) {
+                    console.error("Error parsing condition:", e);
+                }
+                
+                const newElement = {
+                    elementType: "Sequence",
+                    id: sequence.id,
+                    name: sequence.id.replace("SequenceFlow_", "").replace(/_/g, " "),
+                    source: sequence.source,
+                    target: sequence.target
+                };
+                
+                if (condition) {
+                    newElement.condition = condition;
+                }
+                
+                oldObj.elements.push(newElement);
+                });
+            }
+            
+            return oldObj;
+        },
         async afterGenerationFinished(response) {
             let jsonProcess = null;
             if (typeof response === 'string') {
@@ -893,6 +1250,9 @@ export default {
                 } 
 
                 if(!this.isConsultingMode) {
+                    if(unknown.processDefinitionName){
+                        this.projectName = unknown.processDefinitionName
+                    }
                     if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
                         if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == unknown.megaProcessId)) {
                             this.processDefinitionMap.mega_proc_list.push({
@@ -948,29 +1308,133 @@ export default {
                     const store = useBpmnStore();
                     const modeler = store.getModeler;
                     if (unknown.modifications) {
+                        if(!this.processDefinition['elements']) this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
                         // unknown.modifications.forEach(async (modification) => {
                         for (let modification of unknown.modifications) {
+                            let targetJsonPath = modification.targetJsonPath.includes('[') ? modification.targetJsonPath.split('[')[0].replace('$.', ''):modification.targetJsonPath.replace('$.', '')
                             if (modification.action == 'replace') {
-                                this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
-                                console.log(this.processDefinition);
-                                this.bpmn = this.createBpmnXml(this.processDefinition);
+                                if(this.processDefinition[targetJsonPath]) {
+                                    this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
+                                } else {
+                                    this.jsonPathReplace(this.processDefinition, modification.targetJsonPath.replace(targetJsonPath, 'elements'), modification.value);
+                                }
                             } else if (modification.action == 'add') {
-                                this.modificationAdd(modification);
-                                this.modificationElement(modification, modeler);
-                                let xml = await modeler.saveXML({ format: true, preamble: true });
-                                this.bpmn = xml.xml;
-                                console.log('done');
-                            } else if (modification.action == 'delete') {
-                                this.modificationRemove(modification, modeler);
-                                let xml = await modeler.saveXML({ format: true, preamble: true });
-                                this.bpmn = xml.xml;
+                                if(this.processDefinition[modification.targetJsonPath.replace('$.', '')]) {
+                                    this.processDefinition[modification.targetJsonPath.replace('$.', '')].push(modification.value);
+                                } else {
+                                    this.processDefinition['elements'].push(modification.value);
+                                }
+                                // this.modificationAdd(modification);
+                                // this.modificationElement(modification, modeler);
+                                // let xml = await modeler.saveXML({ format: true, preamble: true });
+                                // this.bpmn = xml.xml;
                                 // this.bpmn = this.createBpmnXml(this.processDefinition);
+                                // console.log('done');
+                            } else if (modification.action == 'delete') {
+                                const elementToDelete = modification.value;
+                                const elementId = elementToDelete.id;
+                                
+                                // 1. 먼저 sequences에서 해당 요소와 관련된 모든 연결 제거
+                                if (this.processDefinition.sequences) {
+                                    this.processDefinition.sequences = this.processDefinition.sequences.filter(seq => 
+                                        seq.source !== elementId && seq.target !== elementId
+                                    );
+                                }
+                                
+                                // 2. elements 배열에서 sequence 요소들 제거
+                                if (this.processDefinition.elements) {
+                                    this.processDefinition.elements = this.processDefinition.elements.filter(element => {
+                                        if (element.elementType === 'Sequence') {
+                                            return element.source !== elementId && element.target !== elementId;
+                                        }
+                                        return element.id !== elementId;
+                                    });
+                                }
+                                
+                                // 3. 타겟 경로에서 요소 제거
+                                if (this.processDefinition[targetJsonPath]) {
+                                    this.processDefinition[targetJsonPath] = this.processDefinition[targetJsonPath].filter(
+                                        item => item.id !== elementId
+                                    );
+                                }
+                                
+                                // 4. 다른 요소들의 참조 정리
+                                const cleanupReferences = (items) => {
+                                    if (!items) return;
+                                    items.forEach(item => {
+                                        if (item.source === elementId) {
+                                            item.source = '';
+                                        }
+                                        if (item.target === elementId) {
+                                            item.target = '';
+                                        }
+                                    });
+                                };
+                                
+                                cleanupReferences(this.processDefinition.elements);
+                                cleanupReferences(this.processDefinition.sequences);
+                                
+                                // 5. 프로세스 정의 정리 및 변환
+                                if (this.processDefinition.activities && this.processDefinition.sequences) {
+                                    this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
+                                }
+                                
+                                // 6. BPMN XML 재생성
+                                try {
+                                    this.bpmn = this.createBpmnXml(this.processDefinition);
+                                } catch (error) {
+                                    console.error('Error creating BPMN XML:', error);
+                                    // 오류 발생 시 기본 BPMN 구조 유지
+                                    if (!this.bpmn) {
+                                        this.bpmn = '<?xml version="1.0" encoding="UTF-8"?>\n<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"></bpmn:definitions>';
+                                    }
+                                }
                             }
+                            if(this.processDefinition['activities'] && this.processDefinition['sequences']) {
+                                this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
+                            }
+                            this.bpmn = this.createBpmnXml(this.processDefinition);
                         }
-    
+                        this.oldProcDefId = unknown.processDefinitionId;
                         this.definitionChangeCount++;
                     }
-                    await this.checkedFormData();
+
+                    if(!jsonProcess.answerType){
+                        if(jsonProcess.modifications){
+                            this.messages.push({
+                                "role": "system",
+                                "content": `요청하신 내용에 따라 수정을 완료하였습니다.`,
+                                "timeStamp": Date.now()
+                            });
+                        } else {
+                            await this.checkedFormData();
+                            this.messages.push({
+                                "role": "system",
+                                "content": `요청하신 프로세스 생성을 모두 완료하였습니다. 🎉🎉`,
+                                "timeStamp": Date.now()
+                            });
+                            this.messages.push({
+                                "role": "system",
+                                "content": `생성된 프로세스의 실제 실행화면을 시뮬레이션 기능을 통해 확인 및 수정이 가능합니다.`,
+                                "timeStamp": Date.now()
+                            });
+        
+                            if(this.chatMode == 'consulting'){
+                                this.messages.push({
+                                    "role": "system",
+                                    "content": `생성된 프로세스 정의에 대하여 추가적인 요청사항이 있으시다면 말씀해주세요.`,
+                                    "timeStamp": Date.now()
+                                });
+                            }
+        
+                            this.$try({
+                                context: this,
+                                action: () => {
+                                },
+                                successMsg: this.$t('successMsg.processGenerationCompleted')
+                            })
+                        }
+                    }
         
                     this.isChanged = true;
                 }

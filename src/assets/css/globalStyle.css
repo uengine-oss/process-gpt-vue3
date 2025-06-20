@@ -48,6 +48,30 @@ hr {
     /* fill: #68369A !important; */
 }
 
+
+.border-animation {
+    padding: 3px;
+    background-image: 
+        linear-gradient(90deg, rgb(var(--v-theme-primary))  50%, transparent 50%),
+        linear-gradient(90deg, rgb(var(--v-theme-primary))  50%, transparent 50%),
+        linear-gradient(0deg, rgb(var(--v-theme-primary))  50%, transparent 50%),
+        linear-gradient(0deg, rgb(var(--v-theme-primary))  50%, transparent 50%);
+    background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+    background-size: 15px 3px, 15px 3px, 3px 15px, 3px 15px;
+    background-position: 0 0, 0 100%, 0 0, 100% 0;
+    animation: border-dance 1s infinite linear;
+    border-radius: 20px;
+}
+
+@keyframes border-dance {
+    0% {
+        background-position: 0 0, 0 100%, 0 0, 100% 0;
+    }
+    100% {
+        background-position: 30px 0, -30px 100%, 0 -30px, 100% 30px;
+    }
+}
+
 @keyframes running-animation {
     0% {
         stroke-dashoffset: 80;
@@ -230,6 +254,13 @@ hr {
     display: block;
 }
 
+.border-primary {
+    border: solid 3px #1976D2; /* 예시 색상, 실제 프로젝트의 primary 색상을 사용하세요 */
+}
+.border-purple {
+    border: solid 3px #7B1FA2;
+}
+
 .canvas-full-layout {
     position: absolute;
     top: 0px;
@@ -242,7 +273,6 @@ hr {
 .mainbox {
     position: relative;
     overflow: hidden;
-    height: calc(100vh - 143px);
 }
 
 .task-btn{
@@ -278,7 +308,6 @@ hr {
 }
 
 .form-layout-card {
-    margin-bottom: 5px;
     border-radius: 8px !important;
 }
 
@@ -338,17 +367,19 @@ hr {
     display: none;
 }
 
-.process-consulting-chat-layout-card .chat-view-box {
-    height:200px !important;
-    overflow: auto;
-}
-
 .delete-input-details .v-input__details {
     display: none !important;
 }
 
 .delete-input-details .form-text-field .v-input__details {
     display: block !important;
+}
+
+.message-input-box {
+    font-size: 20px !important;
+    max-height: 180px;
+    overflow: auto;
+    width: 100%;
 }
 
 .message-input-box .v-field__prepend-inner {
@@ -526,11 +557,133 @@ hr {
     width: 96px;
 }
 
+/* 선택된 배경색을 나타내는 클래스 - 영어로 'choice'로 변경 */
+.choice-background-color {
+    background-color: rgb(var(--v-theme-primary)) !important;
+    color: white;
+}
+
 .instance-select-box:focus {
     background-color: #f5f5f5; /* 포커스 시 색상 */
 }
 
-@media only screen and (max-width:1450px) {
+
+/* 채팅 레이아웃 관련 UI 시작 */
+.process-definition-map-chat .chat-view-box-col {
+    height: 70vh;
+}
+
+.chat-info-view-wrapper-chats {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0; /* 중요! 안 주면 flexbox에서 스크롤 안 생기는 경우 있음 */
+}
+
+.mobile-left-menu {
+    display: flex;
+    flex-direction: column;
+    height: 100%
+}
+
+.chat-info-view-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-info-view-area {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+/* 헤더 영역 */
+.chat-info-header {
+    flex: 0 0 auto;
+}
+
+/* 중간 텍스트 박스영역 */
+.chat-view-box {
+    flex: 1 1 auto;
+}
+
+
+
+/* 채팅창 입력 및 버튼 영역 */
+.chat-info-message-input-box {
+    flex: 0 0 auto;
+}
+/* 채팅 레이아웃 관련 UI 끝  */
+
+
+
+
+.no-scrollbar {
+    height: 100% !important;
+}
+
+.instance-card-kanban-board .todo-list-card-box {
+    height: calc(100vh - 360px) !important;
+}
+    
+.is-work-height {
+    height: calc(100vh - 131px);
+}
+
+.mobile-side-bar-btn {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 999;
+}
+.todolist-card-box {
+    padding: 4px !important;
+    height: calc(100vh - 130px);
+    overflow: auto;
+}
+.todolist-card-box-is-mobile {
+    height: 100vh;
+    overflow: auto;
+}
+
+.instance-card-kanban-board-box {
+    height: calc(100vh - 248px);
+}
+
+.todo-list-card-box > div {
+    width:100%;
+    height:100%;
+}
+
+.todo-list-card-box {
+    height: calc(100vh - 220px);
+    overflow: auto;
+}
+
+
+.main-search-box {
+    max-width: 400px;
+    width: 90vw;
+}
+
+.notification-dd-box {
+    max-width: 400px;
+    width: 90vw;
+}
+
+.mobile-menu-nav {
+    top: 111px !important;
+    width: 300px !important;
+    height: calc(100% - 111px) !important;
+    border-radius: 10px !important;
+}
+
+.add-marketplace-dialog-input-box {
+    max-height: 70vh;
+    overflow: auto;
+}
+
+@media only screen and (max-width: 1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
         height: 94px !important;
@@ -541,7 +694,7 @@ hr {
     display: none;
 }
 
-@media only screen and (max-width:1279px) {
+@media only screen and (max-width: 1279px) {
     .is-sidebar-pc {
         display: none;
     }
@@ -549,6 +702,59 @@ hr {
         display: block;
     }
 }
+
+@media only screen and (max-width: 768px) {
+    .todo-list-card-box {
+        padding-right: 40px !important;
+    }
+    .todo-list-card-box {
+        max-height: calc(-216px + 100vh) !important;
+        min-height: calc(-556px + 100vh) !important;
+        height: 100% !important;
+        overflow: auto;
+    }
+    .todo-task-column-box-pc {
+        padding-right: 20px !important;
+    }
+    .instance-card-title {
+        padding-top: 16px !important;
+    }
+    .instance-card-id {
+        display: none;
+    }
+    
+    .is-work-height {
+        height: 100vh;
+    }
+
+    .chat-info-view-wrapper-chats
+    .chat-info-message-input-box {
+        padding-bottom: 60px;
+    } 
+
+    .leftSidebar {
+        width: 300px !important;
+    }
+
+    .instance-card-kanban-board-box {
+        height: 100%;
+    }
+
+    .instance-card-kanban-board .todo-list-card-box {
+        height: 100vh !important;
+    }
+    .isMobile-add-todo-dialog {
+        height: calc(100vh - 108px);
+        overflow: auto;
+    }
+    .mobile-menu-nav {
+        top:0px !important;
+        height: calc(100% - 60px) !important;
+        border-radius: 10px !important;
+        width: 100vw !important;
+    }
+}
+
 
 @media only screen and (max-width:550px) {
     .vue-bpmn-diagram-container .djs-palette {

@@ -2,7 +2,8 @@
     <div style="background-color: rgba(255, 255, 255, 0); width: 100%;">
         <Chat :messages="messages" :agentInfo="agentInfo"
             :isAgentMode="isAgentMode" :userInfo="userInfo" 
-            :disableChat="disableChat" :type="'instances'" :name="chatName" :chatRoomId="chatRoomId"
+            :disableChat="disableChat" :type="'instances'" :name="chatName" 
+            :chatRoomId="chatRoomId" :hideInput="!isTaskMode"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
             @reGenerateAgentAI="reGenerateAgentAI">
@@ -34,34 +35,37 @@ export default {
         html: String,
         formData: Object,
         useThreadId: Boolean,
+        simulationInstances: Array,
     },
     data: () => ({
         processDefinition: null,
         processInstance: null,
-        path: 'proc_inst',
-        organizationChart: [],
+        
         chatInfo: null,
         imgKeyList: [],
+
         // bpmn
         onLoad: false,
         bpmn: null,
         currentActivities: null,
         
-        // temp
-        isRunningId: null,
+        isTaskMode: false,
 
         // mcp agent
         threadId: '',
+        
+        // 워크아이템 모니터링을 위한 interval ID
+        workItemIntervalId: null,
     }),
     computed: {
         chatName() {
-            if (this.processInstance && this.processInstance.proc_inst_name) {
-                return this.processInstance.proc_inst_name;
+            if (this.processInstance && this.processInstance.name) {
+                return this.processInstance.name;
             }
             return '';
         },
     },
-    async created() {
+    async mounted() {
         await this.init();
 
         this.generator = new ChatGenerator(this, {
@@ -86,6 +90,17 @@ export default {
 
             this.handleDraftResponse()
         }
+
+        if (!this.isAgentMode && !this.isTaskMode) {
+            this.startWorkItemMonitoring();
+        }
+    },
+    beforeDestroy() {
+        // 컴포넌트가 제거될 때 interval 정리
+        if (this.workItemIntervalId) {
+            clearInterval(this.workItemIntervalId);
+            this.workItemIntervalId = null;
+        }
     },
     watch: {
         "$route": {
@@ -95,9 +110,11 @@ export default {
                     if (!newVal.params.taskId) {
                         this.messages = [];
                     }
+                    this.isTaskMode = true;
                     await this.init();
                 } else if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
                     this.messages = [];
+                    this.isTaskMode = false;
                     await this.init();
                 }
             }
@@ -194,15 +211,20 @@ export default {
                     "role": "user"
                 })
             }
-            if(this.processInstance && this.processInstance.proc_inst_id){
-                const instance = await backend.getInstance(this.processInstance.proc_inst_id);
+            if(this.processInstance && this.processInstance.instId){
+                const instance = await backend.getInstance(this.processInstance.instId);
                 this.generator.previousMessages.push({
                     "content": "이전 작업 내역 리스트: " + JSON.stringify(instance),
                     "role": "user"
                 })
+            } else if(this.simulationInstances && this.simulationInstances.length > 0) {
+                this.generator.previousMessages.push({
+                    "content": "이전 작업 내역 리스트: " + JSON.stringify(this.simulationInstances),
+                    "role": "user"
+                })
             } else {
                 this.generator.previousMessages.push({
-                    "content": "이전 작업 내역 리스트: null",
+                    "content": "이전 작업 내역 리스트: []",
                     "role": "user"
                 })
             }
@@ -260,16 +282,16 @@ export default {
         async loadProcess() {
             this.onLoad = false;
             let id, defId;
-            if (this.processInstance && this.processInstance.current_activity_ids) {
-                this.currentActivities = this.processInstance.current_activity_ids;
-                id = this.processInstance.proc_inst_id;
+            if (this.processInstance && this.processInstance.currentActivityIds) {
+                this.currentActivities = this.processInstance.currentActivityIds;
+                id = this.processInstance.instId;
                 defId = id.split('.')[0];
             } else {
                 id = this.$route.params.taskId;
                 defId = id.split('.')[0];
                 this.processInstance = await backend.getInstance(id);
                 if (this.processInstance) {
-                    this.currentActivities = this.processInstance.current_activity_ids;
+                    this.currentActivities = this.processInstance.currentActivityIds;
                 }
             }
             var bpmn = await backend.getRawDefinition(defId, { type: "bpmn"});
@@ -307,7 +329,7 @@ export default {
                 }
                 await me.loadProcess();
                 if(this.isAgentMode){
-                    me.processInstanceId = value.proc_inst_id
+                    me.processInstanceId = value.instId
                 } else {
                     await me.getChatList(me.chatRoomId)
                 }
@@ -315,7 +337,7 @@ export default {
 
             if (me.useThreadId) {
                 if (me.messages.length > 0) {
-                    me.threadId = me.messages[0].thread_id;
+                    me.threadId = me.messages[0].threadId;
                 } else {
                     me.threadId = await backend.createThreadId();
                 }
@@ -327,9 +349,9 @@ export default {
             }
 
             if (this.processInstance) {
-                if (this.processInstance.current_user_ids &&
-                    this.processInstance.current_user_ids.length > 0 &&
-                    !this.processInstance.current_user_ids.includes(this.userInfo.email)
+                if (this.processInstance.currentUserIds &&
+                    this.processInstance.currentUserIds.length > 0 &&
+                    !this.processInstance.currentUserIds.includes(this.userInfo.email)
                 ) {
                     this.disableChat = true;
                 }
@@ -393,19 +415,96 @@ export default {
             me.EventBus.emit('instances-updated');
             me.EventBus.emit('process-definition-updated');
         },
+        afterAgentGeneration(response) {
+            this.$emit('agentGenerationFinished', response)
+        },
         afterModelStopped(response) {
             let id;
 
             if (this.$route.params.taskId) {
                 id = this.$route.params.taskId;
-            } else if (this.processInstance && this.processInstance.proc_inst_id) {
-                id = this.processInstance.proc_inst_id;
+            } else if (this.processInstance && this.processInstance.instId) {
+                id = this.processInstance.instId;
             }
 
             if (id != '') {
                 
             }
         },
+        startWorkItemMonitoring() {
+            this.checkWorkItem();
+            this.workItemIntervalId = setInterval(() => {
+                this.checkWorkItem();
+            }, 3000);
+        },
+        
+        async checkWorkItem() {
+            try {
+                const worklist = await backend.getWorkListByInstId(this.chatRoomId);
+                const workItem = worklist.find(item => item.task.status == 'SUBMITTED' || item.task.status == 'IN_PROGRESS');
+                
+                if (workItem) {
+                    if (this.workItemIntervalId) {
+                        clearInterval(this.workItemIntervalId);
+                        this.workItemIntervalId = null;
+                        // this.messages.push({
+                        //     role: 'system',
+                        //     content: '...',
+                        // });
+                    }
+
+                    const lastMessage = this.messages[this.messages.length - 1];
+                    const taskId = workItem.taskId;
+                    let runningTask = false;
+                    let messageUpdated = false;
+                    
+                    await backend.getTaskLog(taskId, async (task) => {
+                        if (task.log && task.log.length > 0) runningTask = true;
+                        if (runningTask && lastMessage.role == 'system') {
+                            lastMessage.content = task.log;
+                        }
+
+                        if (task.status == "DONE") {
+                            this.$emit('updated');
+                            this.EventBus.emit('instances-updated');
+
+                            if (!messageUpdated) {
+                                const message = {
+                                    "role": "system",
+                                    "content": `${task.activity_name} 활동이 완료되었습니다.`,
+                                    "timeStamp": Date.now()
+                                }
+                                let formHtml = '';
+                                let formJson = {};
+                                if (task.agent_mode !== 'A2A') {
+                                    const formId = task.tool.replace("formHandler:", "");
+                                    formHtml = await backend.getRawDefinition(formId, { type: "form"});
+                                    formJson = task.output[formId] || {};
+                                } else {
+                                    if (task.output && task.output['html'] && task.output['table_data']) {
+                                        formHtml = task.output['html'];
+                                        formJson = task.output['table_data'];
+                                    }
+                                }
+                                if (formHtml !== '' && Object.keys(formJson).length > 0) {
+                                    message.contentType = "html";
+                                    message.htmlContent = formHtml;
+                                    message.jsonContent = formJson;
+                                }
+                                await this.putMessage(message);
+                                this.messages.push(message);
+                                messageUpdated = true;
+                            }
+                            await this.getChatList(this.chatRoomId);
+                            // this.streamingText = '';
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('워크아이템 확인 중 오류 발생:', error);
+            }
+        },
+        
     }
 };
 </script>

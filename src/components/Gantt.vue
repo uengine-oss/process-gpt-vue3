@@ -3,13 +3,17 @@
   </template>
   
   <script>
-  import { onMounted, ref, watch } from 'vue'
+  import { onMounted, ref, watch, onUnmounted } from 'vue'
   import 'dhtmlx-gantt/codebase/dhtmlxgantt.css'
   import 'dhtmlx-gantt'
-  
+
   export default {
     props: {
         tasks: {
+            type: Array,
+            required: true
+        },
+        dependencies: {
             type: Array,
             required: true
         },
@@ -20,11 +24,47 @@
     },
     emits: ['task-updated', 'task-added'],
     setup(props, { emit }) {
-      const ganttContainer = ref(null)
-      const lastClickTime = ref(0)
+        const ganttContainer = ref(null)
+        const lastClickTime = ref(0)
+        const loadGanttData = () => {
 
-      onMounted(() => {
-            gantt.config.date_format = "%d-%m-%Y"
+            // 1. 현재 열린 트리 상태 저장
+            const openedTasks = [];
+            gantt.eachTask(function(task){
+                if (task.$open) {
+                    openedTasks.push(task.id);
+                }
+            });
+        
+            gantt.clearAll()
+
+            const formattedTasks = props.tasks.map(task => ({
+                ...task,
+                id: task.taskId || task.instId,
+                text: task.name || task.title,
+                origin_end_date: task.endDate,
+                start_date: formatGanttDate(task.startDate),
+                end_date: formatGanttDate(task.dueDate, true), // 의존성은 납기일정(듀데이트)과 연결
+            }));
+            
+
+            formattedTasks.sort((a, b) => {
+                return new Date(a.startDate)- new Date(b.startDate);
+            });
+            const formattedData = {
+                data: formattedTasks,
+                links: createLinksFromReferences(props.dependencies)
+            }
+            gantt.parse(formattedData)
+
+            // 2. 트리 상태 복원
+            openedTasks.forEach(id => {
+                gantt.open(id);
+            });
+        }
+
+        onMounted(() => {
+            gantt.config.date_format = "%Y-%m-%d"
             
             // 한글 라벨 설정
             gantt.i18n = {
@@ -87,11 +127,29 @@
             // 한글 적용
             gantt.locale = gantt.i18n.ko;
             
+            gantt.config.scales = [
+                { unit: "month", step: 1, format: date => `${date.getMonth() + 1}월` }, // 5월
+                { unit: "day", step: 1, format: date => `${date.getDate()}일` }     // 21일, 22일, ...
+            ];
+
             // 그리드 컬럼 설정
             gantt.config.columns = [
-                {name: "text", label: "업무명", tree: true, width: 200, resize: true},
-                {name: "start_date", label: "시작일", align: "center", width: 80, resize: true},
-                {name: "duration", label: "기간", align: "center", width: 60, resize: true},
+                {name: "name", label: "업무명", tree: true, width: 200, resize: true},
+                {name: "start_date", label: "시작일", align: "center", width: 100, resize: true},
+                {   
+                    name: "end_date", 
+                    label: "만료일", 
+                    align: "center", 
+                    width: 100, 
+                    resize: true,
+                    template: function(task) {
+                        if (!task.end_date) return "";
+                        const date = new Date(task.end_date);
+                        date.setDate(date.getDate());
+                        return date.toISOString().split('T')[0];
+                    }
+                },
+                { name: "duration", label: "기간", align: "center", width: 60, resize: true},
                 {
                     name: "assignees", 
                     label: "담당자", 
@@ -129,7 +187,7 @@
                 { 
                     name: "업무명", 
                     height: 70, 
-                    map_to: "text", 
+                    map_to: "name", 
                     type: "textarea", 
                     focus: true 
                 },
@@ -160,7 +218,7 @@
                 }
                 
                 return `<div class="gantt-task-content">
-                    <span class="task-text">${task.text}</span>
+                    <span class="task-text">${task.name}</span>
                     ${task.assignees ? `
                         <span class="task-assignee">
                             <i class="fas fa-user"></i> 
@@ -218,7 +276,7 @@
             ////////////////////////////////// EVENTS //////////////////////////////////
             // 라이트박스 저장 이벤트
             gantt.attachEvent("onLightboxSave", (id, task, is_new) => {
-                if (!task.text) {
+                if (!task.name) {
                     gantt.message({
                         type: "error",
                         text: "작업명을 입력해주세요"
@@ -239,31 +297,13 @@
 
                 // 새로운 작업인 경우
                 if (is_new) {
-                    const taskId = uuid();
-                    const newTask = {
-                        id: taskId,
-                        text: task.text,
-                        start_date: task.start_date,
-                        end_date: task.end_date,
-                        duration: task.duration || 1,
-                        progress: 0,
-                        parent: task.parent || 0,
-                        assignees: task.assignees || [],
-                        status: 'TODO',
-                        adhoc: true,
-                        type: "task"  // 필수 속성
-                    };
-
                     try {
-                        // 새 작업 추가
-                        gantt.addTask(newTask);
-                        
                         // 부모 컴포넌트에 이벤트 발생
                         emit('task-added', {
-                            id: taskId,
-                            text: task.text,
-                            startDate: formatDateForBackend(task.start_date),
-                            endDate: formatDateForBackend(task.end_date),
+                            name: task.name,
+                            startDate: dateToTimestamp(task.start_date),
+                            dueDate: dateToTimestamp(task.end_date, true),
+                            endDate: null,
                             duration: task.duration || 1,
                             progress: 0,
                             parent: task.parent || 0,
@@ -271,13 +311,12 @@
                             status: 'TODO',
                             adhoc: true
                         });
-
+                        //새 작업 추가
+                        gantt.addTask(task); 
                         // 라이트박스 수동으로 닫기
                         gantt.hideLightbox();
-                        
                         // 차트 다시 그리기
                         gantt.render();
-                        
                         return false; // 기본 저장 동작 방지
                     } catch (error) {
                         console.error('작업 추가 중 오류 발생:', error);
@@ -287,23 +326,14 @@
                         });
                         return false;
                     }
+                } else {
+                    // update
+                    emit('task-updated', task)
                 }
 
                 return true;
             });
 
-            // 작업 추가 전 이벤트
-            gantt.attachEvent("onBeforeTaskAdd", (id, task) => {
-                if (!task.id || !task.text || !task.type) {
-                    return false;
-                }
-                return true;
-            });
-
-            // 작업 추가 후 이벤트
-            gantt.attachEvent("onAfterTaskAdd", (id, task) => {
-                return true;
-            });
 
             // 라이트박스가 열릴 때 이벤트
             gantt.attachEvent("onLightbox", (taskId) => {
@@ -331,79 +361,132 @@
                 return true;
             });
 
+            gantt.attachEvent("onRowClick", (id, e) => {
+                // 이 부분이 그리드(왼쪽 행) 클릭!
+                emit('grid-row-clicked', { id });
+                return true;
+            });
+
             // 드래그 이벤트 리스너 추가
             gantt.attachEvent("onAfterTaskDrag", (id, mode) => {
-                const task = gantt.getTask(id)
-
-                // 부모 컴포넌트에 업데이트된 태스크 전달
-                emit('task-updated',  {
-                    id: task.id,
-                    text: task.text,
-                    startDate: formatDateForBackend(task.start_date),
-                    dueDate: formatDateForBackend(task.end_date),
-                    duration: task.duration,
-                    progress: task.progress,
-                    parent: task.parent
-                })
+                if(mode == 'resize' || mode == 'move') {
+                    let task = gantt.getTask(id)
+                    task.startDate = dateToTimestamp(task.start_date);
+                    task.dueDate = dateToTimestamp(task.end_date, true);
+                    task.endDate = dateToTimestamp(task.origin_end_date, true);
+                    
+                    // 부모 컴포넌트에 업데이트된 태스크 전달
+                    emit('task-updated', task)
+                } 
             })
 
-            // 크기 조절 이벤트 리스너 추가
-            gantt.attachEvent("onTaskDrag", (id, mode, task, original) => {
-                if (mode == gantt.config.drag_mode.resize) {
-                    // 리사이즈 중일 때의 처리
-                    return true
-                }
-                return true
-            })
+            // gantt.attachEvent("onBeforeLinkAdd", function(link) {
+            //     // 자기 자신과의 연결 체크
+            //     if (link.source === link.target) {
+            //         gantt.message({
+            //             type: "error",
+            //             text: "자기 자신과의 연결은 허용되지 않습니다."
+            //         });
+            //         return false;
+            //     }
+                
+            //     console.log(link)
+                
+            //     return true;
+            // });
+
+            gantt.attachEvent("onAfterLinkAdd", function(id, link) {
+                // link: { id, source, target, type }
+                // 예: { id: 1, source: 1, target: 2, type: "0" }
+                // 여기서 원하는 동작 수행 (예: 부모 컴포넌트로 emit)
+                let copyLink = JSON.parse(JSON.stringify(link));
+                const typeMap = {
+                    "FS": "0", // Finish to Start (기본)
+                    "FF": "2", // Finish to Finish
+                    "SF": "3", // Start to Finishaa
+                    "SS": "1"  // Start to Start
+                };
+                copyLink.type = Object.keys(typeMap).find(key => typeMap[key] == link.type);
+                
+                emit('link-event', {type: 'add', link: copyLink});
+                return true;
+            });
+
+            gantt.attachEvent("onAfterLinkDelete", function(id, link) {
+                // link: { id, source, target, type }
+                // 여기서 원하는 동작 수행 (예: 부모 컴포넌트로 emit)
+                emit('link-event', {type: 'delete', link: link});
+                return true;
+            });
+
+              // 트리 확장(펼침) 이벤트
+            gantt.attachEvent("onTaskOpened", function(id) {
+                emit('task-tree-opened', { id });
+            });
 
             gantt.init(ganttContainer.value)
             loadGanttData()
         })
   
-        // 백엔드로 보낼 날짜 포맷 함수
-        function formatDateForBackend(date) {
-            if(!date) return
-            const d = new Date(date);
-            // 로컬 시간대의 년월일시분초 가져오기
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            
-            // ISO 형식으로 반환 (시간은 00:00:00으로 고정)
-            return `${year}-${month}-${day}T00:00:00.000Z`;
-        }
-
-        function formatGanttDate(date) {
-            if(!date) return null;
+       
+        function formatGanttDate(date, isEndDate) {
+            if (!date) return;
+            let year, month, day;
             if (typeof date === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(date)) {
-                return date;
+                const [d, m, y] = date.split('-');
+                year = y;
+                month = m.padStart(2, '0');
+                day = d.padStart(2, '0');
+            } else {
+                // 여기서 "2025-04-29T00:00:00" 같은 문자열도 Date로 파싱됨
+                const d = new Date(date);
+                year = d.getFullYear();
+                month = String(d.getMonth() + 1).padStart(2, '0');
+                day = String(d.getDate()).padStart(2, '0');
             }
-            const d = new Date(date)
-            const day = String(d.getDate()).padStart(2, '0')
-            const month = String(d.getMonth() + 1).padStart(2, '0')
-            const year = d.getFullYear()
-            
-            return `${day}-${month}-${year}`
+
+            // isEndDate면 하루를 더해서 00:00:00으로 반환
+            if (isEndDate) {
+                const end = new Date(`${year}-${month}-${day}`);
+                end.setUTCDate(end.getUTCDate() + 1);
+                return end.toISOString().split('T')[0];
+            }
+
+            // 여기서 "YYYY-MM-DD"만 리턴
+            return `${year}-${month}-${day}`;
         }
 
-        const createLinksFromReferences = (tasks) => {
-            let linkId = 1;
+        function dateToTimestamp(date, isEnd) {
+            if(!date) return null;
+            const d = new Date(date);
+
+            // pad 함수
+            const pad = (n, z = 2) => ('00' + n).slice(-z);
+            if(isEnd) {
+                d.setUTCDate(d.getUTCDate() - 1); // 하루 빼기
+                d.setHours(23, 59, 59, 0); // 23:59:59로 세팅
+            }
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T` +
+                `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        const createLinksFromReferences = (dependencies) => {
             const links = [];
-            
-            tasks.filter(task => !task.adhoc).forEach(task => {
-                if (task.reference_ids && task.reference_ids.length > 0) {
-                    // reference_ids 배열의 각 참조 ID에 대해 링크 생성
-                    task.reference_ids.forEach(refId => {
-                        // 참조된 작업 찾기
-                        const sourceTask = tasks.find(t => t.activity_id === refId);
-                        if (sourceTask) {
-                            links.push({
-                                id: linkId++,
-                                source: sourceTask.id, // 참조된 작업의 ID
-                                target: task.id,       // 현재 작업의 ID
-                                type: "0"              // 기본 링크 타입 (Finish to Start)
-                            });
-                        }
+            if(!dependencies) return links;
+            const typeMap = {
+                "FS": "0", // Finish to Start (기본)
+                "FF": "2", // Finish to Finish
+                "SF": "3", // Start to Finish
+                "SS": "1"  // Start to Start
+            };
+          
+            dependencies.forEach(dependeny => {
+                if (dependeny) {
+                    links.push({
+                        id: dependeny.id,
+                        source: dependeny.dependsId, // 참조된 작업의 ID
+                        target: dependeny.taskId,       // 현재 작업의 ID
+                        type: typeMap[dependeny.type] || "0"              // 기본 링크 타입 (Finish to Start)
                     });
                 }
             });
@@ -411,41 +494,18 @@
             return links;
         };
 
-        const uuid = () => {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
-
-        const loadGanttData = () => {
-            gantt.clearAll()
-
-            const formattedTasks = props.tasks.map(task => ({
-                id: task.id,
-                text: task.text,
-                start_date: formatGanttDate(task.startDate),
-                end_date: formatGanttDate(task.dueDate),
-                duration: task.duration || 5,
-                progress: task.progress || 0,
-                parent: task.parent || null,
-                status: task.status,
-                assignees: task.assignees,
-                activity_id: task.activity_id,
-                reference_ids: task.reference_ids
-            }));
-            
-            const formattedData = {
-                data: formattedTasks,
-                links: createLinksFromReferences(props.tasks)
-            }
-            gantt.parse(formattedData)
-        }
 
         watch(() => props.tasks, () => {
-            loadGanttData()
+            loadGanttData();
         }, { deep: true })
+
+        onUnmounted(() => {
+            if (gantt) {
+                gantt.clearAll();
+                gantt.detachAllEvents && gantt.detachAllEvents();
+            }
+        });
+
 
 
   
@@ -607,10 +667,10 @@
 
 /* TODO 상태 */
 .status-TODO .gantt_task_progress {
-    background-color: #F57C00 !important;
+    background-color: #616161 !important;
 }
 .status-TODO.gantt_task_line {
-    background-color: #FFA726 !important;
+    background-color: #9E9E9E !important;
 }
 
 /* PENDING 상태 */

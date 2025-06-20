@@ -1,41 +1,50 @@
 <template>
-    <v-row class="ma-0 pa-0 task-btn">
-        <v-spacer></v-spacer>
-        <div class="from-work-item-pc" v-if="!isCompleted">
-            <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded>중간 저장</v-btn>
-            <v-btn @click="executeProcess" color="primary" density="compact" rounded>제출 완료</v-btn>
-        </div>
-        <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
-            <v-tooltip v-if="isMobile"
-                text="중간 저장"
-            >
-                <template v-slot:activator="{ props }">
-                    <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
-                        <Icons :icon="'save'" :width="32" :height="32"/>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            <v-tooltip text="제출 완료">
-                <template v-slot:activator="{ props }">
-                    <v-btn @click="executeProcess" icon v-bind="props"
-                        density="comfortable">
-                        <Icons :icon="'submit-document'" :width="28" :height="28"/>
-                    </v-btn>
-                </template>
-            </v-tooltip>
-        </div> -->
-    </v-row>
-
-    <v-card flat>
-        <v-card-text class="pa-4">
-            <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form"></DynamicForm>
-            <div v-if="!isCompleted" class="mb-4">
-                <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
-                <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
+    <div>
+        <v-row class="ma-0 pa-0 task-btn">
+            <v-spacer></v-spacer>
+            <div class="from-work-item-pc" style="margin-right: 10px;" v-if="!isCompleted">
+                <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded variant="flat">중간 저장</v-btn>
+                <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
+                    class="bouncing-arrow-horizontal" 
+                    color="primary" 
+                    size="large"
+                >
+                    mdi-arrow-right-bold
+                </v-icon>
+                <v-btn @click="executeProcess" color="primary" density="compact" rounded variant="flat">제출 완료</v-btn>
             </div>
-            <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
-        </v-card-text>
-    </v-card>
+            <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
+                <v-tooltip v-if="isMobile"
+                    text="중간 저장"
+                >
+                    <template v-slot:activator="{ props }">
+                        <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
+                            <Icons :icon="'save'" :width="32" :height="32"/>
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+                <v-tooltip text="제출 완료">
+                    <template v-slot:activator="{ props }">
+                        <v-btn @click="executeProcess" icon v-bind="props"
+                            density="comfortable">
+                            <Icons :icon="'submit-document'" :width="28" :height="28"/>
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+            </div> -->
+        </v-row>
+
+        <v-card flat>
+            <v-card-text class="pa-4 pt-3">
+                <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4"></DynamicForm>
+                <div v-if="!isCompleted" class="mb-4">
+                    <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
+                    <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
+                </div>
+                <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
+            </v-card-text>
+        </v-card>
+    </div>
 </template>
 
 <script>
@@ -81,6 +90,8 @@ export default {
             type: String,
             default: "false"
         },
+        isFinishedAgentGeneration: Boolean,
+        processDefinition: Object
     },
     data: () => ({
         html: null,
@@ -97,7 +108,7 @@ export default {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         },
         isMobile() {
-            return this.windowWidth <= 700;
+            return window.innerWidth <= 768;
         },
         mode() {
             return window.$mode;
@@ -129,17 +140,30 @@ export default {
             }
             if(!me.formDefId) {
                 if (this.mode == 'ProcessGPT') {
-                    me.formDefId = `${me.workItem.worklist.defId}_${me.workItem.activity.tracingTag}_form`
+                    me.formDefId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.workItem.worklist.defId}_${me.workItem.activity.tracingTag}_form`
                 } else {
                     return;
                 }
             }
-            me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
+            if(me.isSimulate == 'true' && !window.location.pathname.includes('/definitions/')) {
+                const formId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag}_form`;
+                me.html = localStorage.getItem(formId);    
+            } else {
+                me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
+            }
             if(!me.html) {
                 me.useTextAudio = true;
+                me.formDefId = 'user_input_text' // default form 이 없는 경우 자유롭게 입력 가능하도록 설정
             }
             if(!me.isDryRun) {
                 me.loadForm()
+            }
+            
+            if(me.isSimulate == 'true' && me.processDefinition && me.processDefinition['activities']) {    
+                let currentActivity = me.processDefinition['activities'].find(x => x.id == me.workItem.activity.tracingTag)
+                if(currentActivity && currentActivity.inputFormData) {
+                    me.formData = currentActivity.inputFormData
+                }
             }
 
             me.EventBus.on('form-values-updated', (formValues) => {
@@ -152,14 +176,15 @@ export default {
         },
         async loadForm(){
             var me = this;
-
             if(!me.workItem || !me.workItem.activity || !me.workItem.activity.outParameterContext) return;
-           
-            let outFormName = me.workItem.activity.outParameterContext.variable.name || me.formDefId;
+        
+            let outFormName = me.workItem.activity.outParameterContext.variable.name || me.formDefId
             let outVariable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, outFormName);
 
             if (outVariable && outVariable.valueMap) {
                 me.formData = outVariable.valueMap;
+
+                if(outVariable.valueMap['user_input_text']) me.newMessage = outVariable.valueMap['user_input_text']
             }
             
             if(me.workItem?.parameterValues){
@@ -201,6 +226,7 @@ export default {
             let me = this;
 
             let varName = me.workItem.activity.outParameterContext.variable.name;
+            if(!varName && me.workItem.worklist.adhoc) varName = me.formDefId;
             // let varName = me.workItem.activity.variableForHtmlFormContext.name;
             let variable = {};
             if(!me.isDryRun){
@@ -220,6 +246,11 @@ export default {
                 }
             });
             variable.valueMap._type = 'java.util.HashMap';
+
+            // 자유롭게 입력 가능한 경우 입력한 값을 저장
+            if(varName == 'user_input_text'){
+                variable.valueMap['user_input_text'] = me.newMessage
+            }
 
             if(me.isDryRun) {
                 if(!variables) variables = {}
@@ -241,31 +272,10 @@ export default {
                 if (this.newMessage && this.newMessage.length > 0) {
                     workItem['user_input_text'] = this.newMessage;
                 }
-                backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate)
-                    .then(() => {
-                        // 워크아이템 완료 처리
-                        me.EventBus.emit('workitem-completed');
-                        // 인스턴스 업데이트
-                        me.EventBus.emit('instances-updated');
-                    })
-                    .catch((error) => {
-                        me.$try({
-                            context: me,
-                            action: async () => {
-                                console.log(error);
-                            },
-                            errorMsg: `${me.workItem.activity.name} 실행 중 오류가 발생했습니다: ${error}`
-                        })
-                    });
-
-                let path = btoa(me.workItem.worklist.instId);
-                me.$router.push({
-                    path: `/instancelist/${path}`, 
-                    query: {
-                        instId: me.workItem.worklist.instId,
-                        workitemRunning: true
-                    }
-                });
+                
+                backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
+                const path = btoa(encodeURIComponent(me.workItem.worklist.instId));
+                me.$router.push(`/instancelist/${path}?submitted=true`);
             } else {
                 // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
                 me.$try({
@@ -346,6 +356,12 @@ export default {
                 this.completeTask();
             }
         },
+        handleError(error) {
+            var me = this;
+            me.$try({}, null, {
+                errorMsg: `${me.workItem.activity.name} 실행 중 오류가 발생했습니다: ${error}`
+            });
+        }
     }
 };
 </script>
@@ -359,6 +375,28 @@ export default {
 
 .form-work-item-mobile {
     display: none;
+}
+
+@keyframes bounce-horizontal {
+    0%, 100% { transform: translateX(0); }
+    40% { transform: translateX(-5px); }
+    60% { transform: translateX(3px); }
+    80% { transform: translateX(-2px); }
+}
+
+@keyframes bounce-horizontal-left {
+    0%, 100% { transform: translateX(0); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(2px); }
+}
+
+.bouncing-arrow-horizontal {
+    animation: bounce-horizontal 1.5s infinite;
+}
+
+.bouncing-arrow-horizontal-left {
+    animation: bounce-horizontal-left 1.5s infinite;
 }
 
 @media only screen and (max-width:1080px) {

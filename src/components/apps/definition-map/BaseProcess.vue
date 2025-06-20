@@ -18,7 +18,22 @@ export default {
         hover: false,
         permissionProcess: null,
         permissionProcessMap: null,
+        editable: false,
     }),
+    async mounted() {
+        const role = localStorage.getItem('role');
+        if (role == 'superAdmin') {
+            this.editable = true;
+        } else {
+            const uid = localStorage.getItem('uid');
+            const permission = await backend.getUserPermissions({ proc_def_id: this.process.id, user_id: uid });
+            if (permission) {
+                this.editable = permission.writable;
+            } else {
+                this.editable = false;
+            }
+        }
+    },
     methods: {
         closePermissionDialog() {
             this.permissionProcess = null;
@@ -49,16 +64,27 @@ export default {
         closeProcessDialog() {
             this.processDialogStatus = false;
         },
-        goProcess(path, type) {
+        async goProcess(path, type) {
             if (this.enableEdit) {
                 return;
             }
-            if (!path && !type) {
-                this.$router.push(`/definition-map`);
-            } else {
-                const encodedPath = encodeURIComponent(path);
-                this.$router.push(`/definition-map/${type}/${encodedPath}`)
+            // if (!path && !type) {
+            //     this.$router.push(`/definition-map`);
+            // } else {
+            //     const encodedPath = encodeURIComponent(path);
+            //     this.$router.push(`/definition-map/${type}/${encodedPath}`)
+            // }
+
+            
+            const id = this.value.id.replace(/ /g, '_')
+            const value = await backend.getRawDefinition(id);
+            let url;
+            if(type) {
+                if (value && value.id) {
+                    url = `/definition-map/${type}/${value.id}`;
+                }
             }
+            this.$router.push(url)
         },
         async addProcessPermission(procDef) {
             const uid = localStorage.getItem('uid');

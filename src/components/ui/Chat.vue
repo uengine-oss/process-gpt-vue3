@@ -1,34 +1,37 @@
 <template>
-    <div class="customHeight" style="background-color: rgba( 255, 255, 255, 1 );">
-        <div>
-            <div>
-                <div>
+    <div style="background-color: rgba( 255, 255, 255, 1 );"
+        class="chat-info-view-wrapper"
+    >
+        <div class="chat-info-view-wrapper">
+            <div class="chat-info-view-area">
+                <div class="chat-info-view-area">
+                    <slot name="attachments-area"></slot>
                     <slot name="custom-title">
-                        <div class="chat-info-title" style="position: sticky; top:0px; z-index:1; background-color:white;">
-                            <div class="align-right gap-3 pa-4 justify-space-between">
-                                <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
-                                    <div>
-                                        <h5 class="text-h5 mb-n1">{{ name }}</h5>
-                                    </div>
+                        <div>
+                            <div v-if="name && name !== ''" class="d-flex gap-2 align-center pa-4">
+                                <div>
+                                    <h5 class="text-h5 mb-n1">{{ name }}</h5>
                                 </div>
-                                <div v-else-if="chatInfo" class="d-flex gap-2 align-center">
-                                    <v-avatar v-if="chatInfo.img">
-                                        <img :src="chatInfo.img" width="50" />
-                                    </v-avatar>
-                                    <div>
-                                        <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
-                                        <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
-                                    </div>
-                                </div>
-                                <slot name="custom-tools"></slot>
                             </div>
+                            <div v-else-if="chatInfo" class="d-flex gap-2 align-center">
+                                <v-avatar v-if="chatInfo.img">
+                                    <img :src="chatInfo.img" width="50" />
+                                </v-avatar>
+                                <div>
+                                    <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
+                                    <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
+                                </div>
+                            </div>
+                            <slot name="custom-tools"></slot>
                             <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
                         </div>
                     </slot>
 
-                    <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                        <div class="d-flex w-100 chat-view-box" :style="!$globalState.state.isRightZoomed ? chatHeight : 'height:100vh;'">
-                            <v-col>
+                    <perfect-scrollbar class="h-100 chat-view-box" ref="scrollContainer" @scroll="handleScroll">
+                        <div class="d-flex w-100"
+                            :style="$globalState.state.isRightZoomed ? 'height:100vh;' : ''"
+                        >
+                            <v-col class="chat-view-box-col">
                                 <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
                                     <template v-slot:title>
                                         <Icons style="padding-left:-5px;" :icon="'info-line'" :size="32" :color="'#2196F3'"/>
@@ -40,6 +43,15 @@
                                 </v-alert>
                                 
                                 <div v-for="(message, index) in filteredMessages" :key="index" class="px-1 py-1">
+                                    <!-- 날짜 구분선 표시 -->
+                                    <div v-if="shouldDisplayDateSeparator(message, index)" class="date-separator-container">
+                                        <v-divider class="date-separator-line"></v-divider>
+                                        <div class="date-separator-text">
+                                            {{ formatDateSeparator(message.timeStamp) }}
+                                        </div>
+                                        <v-divider class="date-separator-line"></v-divider>
+                                    </div>
+                                    
                                     <AgentsChat v-if="message && message._template === 'agent'" :message="message"
                                         :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index"
                                     />
@@ -112,14 +124,11 @@
                                                                     <icons :icon="'pencil'" :size="20"  />
                                                                 </v-btn>
     
-                                                            <!-- <transition name="slide-fade"> -->
                                                                 <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
                                                                     :key="isRender"
                                                                 >
-                                                                <!-- <div v-if="type == 'chats' && filteredMessages.length -1 == index && generatedWorkList.length != 0"> -->
                                                                     <div @click="showGeneratedWorkList = !showGeneratedWorkList"
                                                                         class="find-message"
-                                                                        :key="generatedWorkList"
                                                                         :class="generatedWorkList.length > 0 ? 'find-message-on' : 'find-message-off'"
                                                                     >
                                                                         <img src="@/assets/images/chat/chat-icon.png"
@@ -127,7 +136,6 @@
                                                                         />
                                                                     </div>
                                                                 </div>
-                                                            <!-- </transition> -->
                                                             </v-row>
                                                         </div>
                                                     </v-sheet>
@@ -211,7 +219,7 @@
                                                             <img v-if="message.role == 'system'"
                                                                 src="@/assets/images/chat/chat-icon.png" height="40"
                                                                 width="40" />
-                                                            <v-img v-else :src="getProfile(message.email)" :alt="message.name"
+                                                            <v-img v-else :src="getProfile(message)" :alt="message.name"
                                                                 height="40" width="40" />
                                                         </v-avatar>
                                                         <div class="user-name">
@@ -220,8 +228,13 @@
                                                     </v-row>
                                                 </v-row>
 
-                                                <div v-if="message.contentType && message.contentType == 'html'">
-                                                    <DynamicForm ref="dynamicForm" :formHTML="message.htmlContent" v-model="message.jsonContent"></DynamicForm>
+                                                <div v-if="message.contentType && message.contentType == 'html'" style="margin-bottom: 15px;">
+                                                    <DynamicForm 
+                                                        ref="dynamicForm" 
+                                                        :formHTML="message.htmlContent" 
+                                                        v-model="message.jsonContent"
+                                                        :readonly="true"
+                                                    ></DynamicForm>
                                                 </div>
 
                                                 <div v-else class="w-100 pb-3">
@@ -236,164 +249,185 @@
                                                                 :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5"
                                                                 :key="n"></div>
                                                         </template>
-                                                        <v-sheet v-if="message.content" class="chat-message-bubble rounded-md px-3 py-2"
+                                                        <v-sheet v-if="message.content" class="chat-message-bubble rounded-md pa-0"
                                                             :class="'other-message'"
-                                                            @mouseover="replyIndex = index" @mouseleave="replyIndex = -1">
-                                                            <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                                            <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                                            <v-divider v-if="message.replyContent"></v-divider>
+                                                            @mouseover="replyIndex = index" @mouseleave="replyIndex = -1"
+                                                        >
+                                                            <div class="pa-2">
+                                                                <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                                                <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
+                                                                <v-divider v-if="message.replyContent"></v-divider>
 
-                                                            <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
-                                                            <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
+                                                                <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
+                                                                <div v-else-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
+                                                                <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
 
-                                                            <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp other-timestamp">
-                                                                {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
-                                                            </div>
-
-                                                            <v-row class="pa-0 ma-0 message-actions">
-                                                                <div v-if="isMobile || replyIndex === index" class="d-flex">
-                                                                    <v-btn v-if="type != 'AssistantChats' && message.specific" 
-                                                                        @click="viewWork(index)"
-                                                                        variant="text" size="x-small" icon
-                                                                        class="action-btn"
-                                                                    >
-                                                                        <Icons :icon="'document'" :size="20" />
-                                                                    </v-btn>
-                                                                    <v-btn @click="beforeReply(message)"
-                                                                        variant="text" size="x-small" icon
-                                                                        class="action-btn"
-                                                                    >
-                                                                        <Icons :icon="'reply'" :size="20" />
-                                                                    </v-btn>
-                                                                    <v-btn @click="viewJSON(index)"
-                                                                        variant="text" size="x-small" icon
-                                                                        class="action-btn"
-                                                                    >
-                                                                        <Icons v-if="message.jsonContent && isviewJSONStatus"
-                                                                            :icon="'arrow-up-2'" :size="20"
-                                                                        />
-                                                                        <Icons v-else
-                                                                            :icon="'arrow-down-2'" :size="20"
-                                                                        />
-                                                                    </v-btn>
+                                                                <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp other-timestamp">
+                                                                    {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
                                                                 </div>
-                                                            </v-row>
 
-                                                            <v-row v-if="message.tableData" class="my-5">
-                                                                <v-col cols="12">
-                                                                    <v-card outlined>
-                                                                        <v-card-title>{{ setTableName(message.content)
-                                                                            }}</v-card-title>
-                                                                        <v-card-text>
-                                                                            <div v-html="message.tableData"
-                                                                                class="table-responsive">
-                                                                            </div>
-                                                                        </v-card-text>
-                                                                    </v-card>
-                                                                </v-col>
-                                                            </v-row>
-                                                            <v-row v-if="message.memento" class="my-5">
-                                                                <v-col cols="12">
-                                                                    <v-card outlined>
-                                                                        <v-card-title>Memento</v-card-title>
-                                                                        <v-card-text>
-                                                                            <v-textarea hide-details
-                                                                                v-model="message.memento.response" auto-grow
-                                                                                readonly variant="solo-filled"></v-textarea>
-                                                                            <div class="chips-container" style="margin-top: 5px;">
-                                                                                <v-chip
-                                                                                    v-for="(source, index) in message.memento.sources"
-                                                                                    :key="index" variant="outlined" size="x-small"
-                                                                                    text-color="primary"
-                                                                                    style="margin-bottom: 1px;">
-                                                                                    <v-icon start icon="mdi-label" x-small></v-icon>
-                                                                                    {{source.file_name }}
-                                                                                </v-chip>
-                                                                            </div>
-                                                                        </v-card-text>
-                                                                    </v-card>
-                                                                </v-col>
-                                                            </v-row>
-                                                            <pre v-if="isViewJSON.includes(index)"
-                                                                class="text-body-1"
-                                                                >{{ message.jsonContent }}
-                                                            </pre>
-                                                            <v-card v-if="(type == 'AssistantChats' && isMobile && index === filteredMessages.length - 1) || isViewWork == index">
-                                                                <div v-if="message.specific">
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Title:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-textarea readonly rows="1" v-model="message.title" auto-grow></v-textarea>
-                                                                    </v-card-text>
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Specific:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-textarea readonly rows="1" v-model="message.specific" auto-grow></v-textarea>
-                                                                    </v-card-text>
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Measurable:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-textarea readonly rows="1" v-model="message.measurable" auto-grow></v-textarea>
-                                                                    </v-card-text>
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Attainable:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-textarea readonly rows="1" v-model="message.attainable" auto-grow></v-textarea>
-                                                                    </v-card-text>
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Relevant:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-textarea readonly rows="1" v-model="message.relevant" auto-grow></v-textarea>
-                                                                    </v-card-text>
-                                                                    <v-card-title style="margin-bottom: -10px;"><h3>Time-bound:</h3></v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-col style="max-width: 100%;" cols="12" sm="6" md="4">
-                                                                            <v-menu
-                                                                                v-model="timeBoundMenu"
-                                                                                :close-on-content-click="false"
-                                                                                :nudge-right="40"
-                                                                                transition="scale-transition"
-                                                                                offset-y
-                                                                                min-width="auto"
-                                                                            >
-                                                                                <template v-slot:activator="{ on, attrs }">
-                                                                                    <v-text-field
-                                                                                        v-model="message.time_bound"
-                                                                                        prepend-icon="mdi-calendar"
-                                                                                        readonly
-                                                                                        v-bind="attrs"
-                                                                                        v-on="on"
-                                                                                    ></v-text-field>
-                                                                                </template>
-                                                                                <v-date-picker
-                                                                                    v-model="message.time_bound"
-                                                                                    @input="timeBoundMenu = false"
-                                                                                ></v-date-picker>
-                                                                            </v-menu>
-                                                                        </v-col>
-                                                                    </v-card-text>
-                                                                    <v-card-title>Descriptions</v-card-title>
-                                                                    <v-card-text>
-                                                                        <div v-for="(desc, index) in message.descriptions" :key="index">
-                                                                            <h3>{{ desc.word }}</h3>
-                                                                            <p>{{ desc.description }}</p>
-                                                                        </div>
-                                                                    </v-card-text>
-                                                                    <v-card-title>CheckList</v-card-title>
-                                                                    <v-card-text>
-                                                                        <v-checkbox
-                                                                            v-for="(check, index) in message.checkPoints"
-                                                                            :key="index"
-                                                                            :label="check"
-                                                                            readonly
-                                                                            v-model="checked"
-                                                                        ></v-checkbox>
-                                                                    </v-card-text>
-                                                                    <div v-if="type == 'AssistantChats' && isMobile" class="d-flex justify-center" style="margin-bottom: 10px;">
-                                                                        <v-btn
-                                                                            @click="clickedWorkOrder" color="primary">업무 지시하기</v-btn>
+                                                                <v-row class="pa-0 ma-0 message-actions">
+                                                                    <div v-if="isMobile || replyIndex === index" class="d-flex">
+                                                                        <v-btn v-if="type != 'AssistantChats' && message.specific" 
+                                                                            @click="viewWork(index)"
+                                                                            variant="text" size="x-small" icon
+                                                                            class="action-btn"
+                                                                        >
+                                                                            <Icons :icon="'document'" :size="20" />
+                                                                        </v-btn>
+                                                                        <v-btn @click="beforeReply(message)"
+                                                                            variant="text" size="x-small" icon
+                                                                            class="action-btn"
+                                                                        >
+                                                                            <Icons :icon="'reply'" :size="20" />
+                                                                        </v-btn>
+                                                                        <v-btn @click="viewJSON(index)"
+                                                                            variant="text" size="x-small" icon
+                                                                            class="action-btn"
+                                                                        >
+                                                                            <Icons v-if="message.jsonContent && isviewJSONStatus"
+                                                                                :icon="'arrow-up-2'" :size="20"
+                                                                            />
+                                                                            <Icons v-else
+                                                                                :icon="'arrow-down-2'" :size="20"
+                                                                            />
+                                                                        </v-btn>
                                                                     </div>
-                                                                </div>
-                                                            </v-card>
+                                                                </v-row>
+
+                                                                <v-row v-if="message.tableData" class="my-5">
+                                                                    <v-col cols="12">
+                                                                        <v-card outlined>
+                                                                            <v-card-title>{{ setTableName(message.content)
+                                                                                }}</v-card-title>
+                                                                            <v-card-text>
+                                                                                <div v-html="message.tableData"
+                                                                                    class="table-responsive">
+                                                                                </div>
+                                                                            </v-card-text>
+                                                                        </v-card>
+                                                                    </v-col>
+                                                                </v-row>
+
+                                                                <v-row v-if="message.searchResults" class="my-5">
+                                                                    <v-col v-for="(searchResult, index) in message.searchResults" :key="index" cols="4">
+                                                                        <v-card outlined>
+                                                                            <v-card-title class="d-flex justify-space-between">
+                                                                                <span>{{ searchResult.score }}</span>
+                                                                                <span>{{ searchResult.index }}</span>
+                                                                            </v-card-title>
+                                                                            <v-card-text>{{ searchResult.memory }}</v-card-text>
+                                                                        </v-card>
+                                                                    </v-col>
+                                                                </v-row>
+                                                                
+                                                                <v-row v-if="message.memento && (message.memento.sources && message.memento.sources.length > 0)" class="my-5">
+                                                                    <v-col cols="12">
+                                                                        <v-card outlined>
+                                                                            <v-card-title>Memento</v-card-title>
+                                                                            <v-card-text>
+                                                                                <v-textarea hide-details
+                                                                                    v-model="message.memento.response" auto-grow
+                                                                                    readonly variant="solo-filled"></v-textarea>
+                                                                                <div class="chips-container" style="margin-top: 5px;">
+                                                                                    <v-chip
+                                                                                        v-for="(source, index) in message.memento.sources"
+                                                                                        :key="index" variant="outlined" size="x-small"
+                                                                                        text-color="primary"
+                                                                                        style="margin-bottom: 1px;"
+                                                                                        @click="downloadFile(source)"
+                                                                                    >
+                                                                                        <v-icon start icon="mdi-label" x-small></v-icon>
+                                                                                        {{source.file_name }}
+                                                                                    </v-chip>
+                                                                                </div>
+                                                                            </v-card-text>
+                                                                        </v-card>
+                                                                    </v-col>
+                                                                </v-row>
+                                                                <pre v-if="isViewJSON.includes(index)"
+                                                                    class="text-body-1"
+                                                                    >{{ message.jsonContent }}
+                                                                </pre>
+                                                                <v-card v-if="(type == 'AssistantChats' && isMobile && index === filteredMessages.length - 1) || isViewWork == index">
+                                                                    <div v-if="message.specific">
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Title:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-textarea readonly rows="1" v-model="message.title" auto-grow></v-textarea>
+                                                                        </v-card-text>
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Specific:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-textarea readonly rows="1" v-model="message.specific" auto-grow></v-textarea>
+                                                                        </v-card-text>
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Measurable:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-textarea readonly rows="1" v-model="message.measurable" auto-grow></v-textarea>
+                                                                        </v-card-text>
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Attainable:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-textarea readonly rows="1" v-model="message.attainable" auto-grow></v-textarea>
+                                                                        </v-card-text>
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Relevant:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-textarea readonly rows="1" v-model="message.relevant" auto-grow></v-textarea>
+                                                                        </v-card-text>
+                                                                        <v-card-title style="margin-bottom: -10px;"><h3>Time-bound:</h3></v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-col style="max-width: 100%;" cols="12" sm="6" md="4">
+                                                                                <v-menu
+                                                                                    v-model="timeBoundMenu"
+                                                                                    :close-on-content-click="false"
+                                                                                    :nudge-right="40"
+                                                                                    transition="scale-transition"
+                                                                                    offset-y
+                                                                                    min-width="auto"
+                                                                                >
+                                                                                    <template v-slot:activator="{ on, attrs }">
+                                                                                        <v-text-field
+                                                                                            v-model="message.time_bound"
+                                                                                            prepend-icon="mdi-calendar"
+                                                                                            readonly
+                                                                                            v-bind="attrs"
+                                                                                            v-on="on"
+                                                                                        ></v-text-field>
+                                                                                    </template>
+                                                                                    <v-date-picker
+                                                                                        v-model="message.time_bound"
+                                                                                        @input="timeBoundMenu = false"
+                                                                                    ></v-date-picker>
+                                                                                </v-menu>
+                                                                            </v-col>
+                                                                        </v-card-text>
+                                                                        <v-card-title>Descriptions</v-card-title>
+                                                                        <v-card-text>
+                                                                            <div v-for="(desc, index) in message.descriptions" :key="index">
+                                                                                <h3>{{ desc.word }}</h3>
+                                                                                <p>{{ desc.description }}</p>
+                                                                            </div>
+                                                                        </v-card-text>
+                                                                        <v-card-title>CheckList</v-card-title>
+                                                                        <v-card-text>
+                                                                            <v-checkbox
+                                                                                v-for="(check, index) in message.checkPoints"
+                                                                                :key="index"
+                                                                                :label="check"
+                                                                                readonly
+                                                                                v-model="checked"
+                                                                            ></v-checkbox>
+                                                                        </v-card-text>
+                                                                        <div v-if="type == 'AssistantChats' && isMobile" class="d-flex justify-center" style="margin-bottom: 10px;">
+                                                                            <v-btn
+                                                                                @click="clickedWorkOrder" color="primary">업무 지시하기</v-btn>
+                                                                        </div>
+                                                                    </div>
+                                                                </v-card>
+                                                            </div>
+                                                            <!--   -->
+                                                            <v-progress-linear v-if="filteredMessages.length - 1 == index && isLoading"
+                                                                style="margin-top: -4px; border-radius: 0 0 10px 10px; width: 99%;"
+                                                                indeterminate class="my-progress-linear">
+                                                            </v-progress-linear>
                                                         </v-sheet>
-                                                        <v-progress-linear
-                                                            v-if="message.role == 'system' && filteredMessages.length - 1 == index && isLoading"
-                                                            indeterminate class="my-progress-linear"></v-progress-linear>
                                                     </div>
                                                 </div>
                                             </div>
@@ -451,19 +485,19 @@
                                 </v-tooltip>
                                 <v-tooltip text="Draft Agent">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="(type == 'instances' || type == 'chats') && !agentInfo.isRunning"
+                                        <v-btn v-if="(type == 'instances' || type == 'chats') && (agentInfo && !agentInfo.isRunning)"
                                             :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
                                             class="text-medium-emphasis" @click="openChatMenu(); requestDraftAgent()" v-bind="props"
                                             style="width:30px; height:30px; margin:1px 0px 0px 5px;">
                                             <Icons :icon="'document-sparkle'" :size="20"  />
                                         </v-btn>
-                                        <v-btn v-if="(type == 'instances' || type == 'chats') && agentInfo.isRunning" icon variant="text"
+                                        <v-btn v-if="(type == 'instances' || type == 'chats') && (agentInfo && agentInfo.isRunning)" icon variant="text"
                                             class="text-medium-emphasis" style="width:30px; height:30px;">
                                             <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && !agentInfo.isRunning"
+                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && (agentInfo && !agentInfo.isRunning)"
                                     ref="uploadForm" @submit.prevent="openChatMenu(); submitFile()"
                                     style="height:30px;"
                                     class="chat-selected-file"
@@ -471,147 +505,164 @@
                                     <v-row class="ma-0 pa-0"
                                         :style="file && file.length > 0 ? 'margin:-13px 0px 0px 7px !important;' : ''"
                                     >
-                                    <v-tooltip :text="$t('chat.fileUpLoad')">
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn v-if="file && file.length > 0" type="submit" 
-                                                v-bind="props"
-                                                icon variant="text"
-                                                class="text-medium-emphasis"
-                                                style="width:30px;
-                                                    height:30px;
-                                                    margin:12.5px 0px 0px 0px;"
-                                            >
-                                                <Icons :icon="'upload'" />
-                                            </v-btn>
-                                        </template>
-                                    </v-tooltip>
-                                    <v-file-input class="chat-file-up-load"
-                                        :class="{'chat-file-up-load-display': file && file.length > 0}"
-                                        :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
-                                        v-model="file"
-                                        label="Choose a file"
-                                        prepend-icon="mdi-paperclip"
-                                        outlined
-                                        :disabled="disableChat"
-                                    ></v-file-input>
-                                    <v-tooltip v-if="type == 'chats' && !isSystemChat" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); toggleProcessGPTActive()" v-bind="props"
-                                                style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
-                                                <img :style="ProcessGPTActive ? 'opacity:1' : 'opacity:0.5'"
-                                                    src="@/assets/images/chat/chat-icon.png"
-                                                    style="height:24px;"
-                                                />
-                                            </v-btn>
-                                        </template>
-                                    </v-tooltip>
-                                </v-row>
-                            </v-form>
-                        </div>
-                    </v-row>
+                                        <v-tooltip :text="$t('chat.fileUpLoad')">
+                                            <template v-slot:activator="{ props }">
+                                                <v-btn v-if="file && file.length > 0" type="submit" 
+                                                    v-bind="props"
+                                                    icon variant="text"
+                                                    class="text-medium-emphasis"
+                                                    style="width:30px;
+                                                        height:30px;
+                                                        margin:12.5px 0px 0px 0px;"
+                                                >
+                                                    <Icons :icon="'upload'" />
+                                                </v-btn>
+                                            </template>
+                                        </v-tooltip>
+                                        <v-file-input class="chat-file-up-load"
+                                            :class="{'chat-file-up-load-display': file && file.length > 0}"
+                                            :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
+                                            v-model="file"
+                                            label="Choose a file"
+                                            prepend-icon="mdi-paperclip"
+                                            outlined
+                                            :disabled="disableChat"
+                                        ></v-file-input>
+                                        <v-tooltip v-if="type == 'chats' && !isSystemChat" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
+                                            <template v-slot:activator="{ props }">
+                                                <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); toggleProcessGPTActive()" v-bind="props"
+                                                    style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
+                                                    <img :style="ProcessGPTActive ? 'opacity:1' : 'opacity:0.5'"
+                                                        src="@/assets/images/chat/chat-icon.png"
+                                                        style="height:24px;"
+                                                    />
+                                                </v-btn>
+                                            </template>
+                                        </v-tooltip>
+                                    </v-row>
+                                </v-form>
+                            </div>
+                        </v-row>
+                    </div>
                 </div>
-                <!-- <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
-                    <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
-                </div> -->
-                <!-- image preview -->
-                <div style="position: absolute; bottom: 20%; z-index: 9999;" class="d-flex">
-                    <div id="imagePreview"></div>
-                    <v-btn v-if="delImgBtn" @click="deleteImage()" density="compact" icon="mdi-close" variant="text" class="ml-1"></v-btn>
+                <v-divider v-if="!hideInput" />
+            </div>
+
+            <div v-if="!hideInput" style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
+                <div class="message-info-box" v-if="isReply || (!isAtBottom && previewMessage)">
+                    <div class="message-info-content">
+                        <template v-if="isReply">
+                            <div class="message-info-header">
+                                <div>{{ replyUser.role == 'system' ? $t('chat.systemReply') : $t('chat.userReply', { name: replyUser.name }) }}</div>
+                                <v-icon @click="cancelReply()" size="small">mdi-close</v-icon>
+                            </div>
+                            <div class="message-info-text">{{ replyUser.content }}</div>
+                        </template>
+                        <template v-else>
+                            <div class="message-info-header">
+                                <div>{{ previewMessage.name }}</div>
+                                <v-icon @click="scrollToBottom()" color="primary" size="small">mdi-arrow-down-circle</v-icon>
+                            </div>
+                            <div class="message-info-text">{{ previewMessage.content }}</div>
+                        </template>
+                    </div>
                 </div>
             </div>
-            <v-divider />
+            <v-divider v-if="!hideInput" />
 
-            <!-- <div v-if="showNewMessageNoti"
-                style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
-                <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
-                    <div @click="clickToScroll">
-                        <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
-                    </div>
-                    <div style="width: 30%; position: absolute; bottom: 17%; right: 1%;">
-                        <RetrievalBox v-model:message="documentQueryStr"></RetrievalBox>
-                    </div> -->
-                </div>
-                <div style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
-                    <div class="message-info-box" v-if="isReply || (!isAtBottom && previewMessage)">
-                        <div class="message-info-content">
-                            <template v-if="isReply">
-                                <div class="message-info-header">
-                                    <div>{{ replyUser.role == 'system' ? $t('chat.systemReply') : $t('chat.userReply', { name: replyUser.name }) }}</div>
-                                    <v-icon @click="cancelReply()" size="small">mdi-close</v-icon>
-                                </div>
-                                <div class="message-info-text">{{ replyUser.content }}</div>
-                            </template>
-                            <template v-else>
-                                <div class="message-info-header">
-                                    <div>{{ previewMessage.name }}</div>
-                                    <v-icon @click="scrollToBottom()" color="primary" size="small">mdi-arrow-down-circle</v-icon>
-                                </div>
-                                <div class="message-info-text">{{ previewMessage.content }}</div>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-                <v-divider />
-
-                <!-- <div v-if="showNewMessageNoti"
-                    style="position: absolute; z-index: 9; max-width: 1000px; left: 50%; transform: translateX(-50%); bottom: 150px;">
-                    <v-chip color="primary" closable @click:close="showNewMessageNoti = false" style="cursor: pointer;">
-                        <div @click="clickToScroll">
-                            <span>{{ lastMessage.name }}: {{ lastMessage.content }}</span>
-                        </div>
-                    </v-chip>
-                </div> -->
-                <!-- camera capture -->
+            <div v-if="!hideInput" class="chat-info-message-input-box">
                 <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
-                <!-- image upload -->
                 <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-                <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex align-center pa-0">
-                    <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                        class="shadow-none message-input-box cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
-                        auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
-                        style="font-size:20px !important; height:77px;" @input="handleTextareaInput"
+                <div style="z-index: 9999;" class="d-flex">
+                    <div id="imagePreview"></div>
+                    <v-btn
+                        v-if="delImgBtn"
+                        @click="deleteImage()"
+                        density="compact"
+                        icon
+                        size="16"
+                        style="background-color: black !important; margin: 4px 0px 0px -20px !important;"
                     >
-                        <template v-slot:prepend-inner>
+                        <v-icon color="white" size="14">mdi-close</v-icon>
+                    </v-btn>
+                </div>
+                <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
+                    <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
+                        class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
+                        auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
+                        @input="handleTextareaInput"
+                        @paste="handlePaste"
+                    >
+                    </v-textarea>
+                    
+                    <div class="d-flex justify-space-between align-center w-100 pa-2">
+                        <div class="d-flex">
                             <v-btn @click="openChatMenu()"
+                                class="mr-1 text-medium-emphasis"
                                 density="comfortable"
                                 icon
-                                variant="text"
+                                variant="outlined"
+                                size="small"
+                                style="border-color: #e0e0e0 !important;"
                             >
                                 <v-icon v-if="!isOpenedChatMenu">mdi-plus</v-icon>
                                 <v-icon v-else>mdi-close</v-icon>
                             </v-btn>
+                        </div>
+                        
+                        <div>
                             <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                                class="mr-1 text-medium-emphasis"
                                 density="comfortable"
                                 icon
-                                variant="text"
+                                variant="outlined"
+                                size="small"
+                                style="border-color: #e0e0e0 !important;"
                             >
-                                <Icons :icon="'sharp-mic'" />
+                                <Icons :icon="'sharp-mic'" :size="'16'" />
                             </v-btn>
                             <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                                class="mr-1 text-medium-emphasis"
                                 density="comfortable"
                                 icon
-                                variant="text"
+                                variant="outlined"
+                                size="small"
+                                style="border-color: #e0e0e0 !important;"
                             >
-                                <Icons :icon="'stop'" :size="'20'" />
+                                <Icons :icon="'stop'" :size="'16'" />
                             </v-btn>
                             <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
-                        </template>
-                        <template v-slot:append-inner>
-                            <div style="height: -webkit-fill-available; margin:5px 5px 0px 0px;">
-                                <v-btn v-if="!isLoading" class="cp-send" icon variant="text" type="submit" @click="beforeSend"
-                                    style="width:30px; height:30px;" :disabled="disableBtn">
-                                    <icons :icon="'send-outline'" :size="20" />
-                                </v-btn>
-                                <v-btn v-else icon variant="text" @click="isLoading = !isLoading"
-                                    style="width:30px; height:30px;">
-                                    <Icons :icon="'outline-stop-circle'" :size="20" />
-                                </v-btn>
-                                <!-- <v-btn icon variant="text" class="text-medium-emphasis">
-                                    <PaperclipIcon size="20" />
-                                </v-btn> -->
-                            </div>
-                        </template>
-                    </v-textarea>
+
+                            <v-btn v-if="!isLoading"
+                                class="cp-send text-medium-emphasis"
+                                color="primary" 
+                                variant="outlined" 
+                                type="submit" 
+                                density="comfortable"
+                                icon
+                                size="small"
+                                style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
+                                @click="beforeSend"
+                                :disabled="disableBtn"
+                            >
+                                <icons :icon="'send-outline'" :size="16" />
+                            </v-btn>
+                            <v-btn v-else 
+                                class="cp-send text-medium-emphasis"
+                                color="primary" 
+                                variant="outlined" 
+                                type="submit" 
+                                density="comfortable"
+                                icon
+                                size="small"
+                                style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
+                                @click="isLoading = !isLoading"
+                            >
+                                <Icons :icon="'outline-stop-circle'" :size="16" />
+                            </v-btn>
+                        </div>
+                    </div>
+                    
                     <div v-if="showUserList" class="user-list"
                         style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
                         <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
@@ -629,6 +680,7 @@
             <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
                 :audioResponse="newMessage" :chatRoomId="chatRoomId" :recordingMode="recordingMode" />
         </div>
+    </div>
 </template>
 
 <script>
@@ -641,7 +693,6 @@ import AgentsChat from './AgentsChat.vue';
 import axios from 'axios';
 import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
-// import Record from './Record2.vue';
 import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 
@@ -672,7 +723,6 @@ export default {
         agentInfo: Object,
         userList: Array,
         currentChatRoom: Object,
-        // documentQueryStr: String,
         lock: Boolean,
         generatedWorkList: Array,
         ProcessGPTActive: Boolean,
@@ -681,6 +731,10 @@ export default {
         chatRoomId: String,
         isMobile: Boolean,
         newMessageInfo: Object,
+        hideInput: {
+            type: Boolean,
+            default: false
+        }
     },
     data() {
         return {
@@ -721,7 +775,6 @@ export default {
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
             isRender: false,
-            chatHeight: 'height:calc(100vh - 300px)',
             
             // assistantChat
             checked: true,
@@ -730,7 +783,14 @@ export default {
 
             //preview-message
             previewMessage: null,
+            
+            // 채팅창 높이 관련 변수
+            windowWidth: window.innerWidth
         };
+    },
+    created() {
+        // 창 크기 변경 시 높이 조정을 위한 이벤트 리스너 추가
+        window.addEventListener('resize', this.handleResize);
     },
     mounted() {
         var me = this
@@ -740,19 +800,6 @@ export default {
                 me.$emit("requestFile", event.target.getAttribute('data-filename'));
             }
         });
-        if (window.location.pathname && window.location.pathname.includes('/definitions/')) {
-            if (!this.isMobile) {
-                this.chatHeight = 'height:calc(100vh - 337px)'
-            } else {
-                this.chatHeight = 'height:calc(100vh - 450px)'
-            }
-        } else if (window.location.pathname && window.location.pathname.includes('/instancelist')) {
-            if (!this.isMobile) {
-                this.chatHeight = 'height:calc(100vh - 350px)'
-            } else {
-                this.chatHeight = 'height:calc(100vh - 450px)'
-            }
-        }
 
         this.EventBus.on('scroll_update', () => {
             if (this.$refs && this.$refs.scrollContainer) {
@@ -765,6 +812,10 @@ export default {
         this.$nextTick(() => {
             this.scrollToBottom();
         });
+    },
+    beforeUnmount() {
+        // 컴포넌트 제거 시 이벤트 리스너 제거
+        window.removeEventListener('resize', this.handleResize);
     },
     watch: {
         prompt(newVal, oldVal) {
@@ -782,7 +833,7 @@ export default {
             if (newVal) {
                 this.previewMessage = null;
             }
-        }
+        },
     },
     computed: {
         isSystemMentioned() {
@@ -865,6 +916,15 @@ export default {
         }
     },
     methods: {
+        handleResize() {
+            // 화면 크기 변경 시 즉시 높이 업데이트
+            this.windowWidth = window.innerWidth;
+            
+            // 스크롤 컨테이너가 존재하면 업데이트
+            if (this.$refs && this.$refs.scrollContainer) {
+                this.$refs.scrollContainer.update();
+            }
+        },
         clickedWorkOrder(){
             this.$emit('clickedWorkOrder');
         },
@@ -997,27 +1057,55 @@ export default {
                 this.isMicRecorderLoading = false; // 로딩 상태 종료
             }
         },
-        async submitFile() {
+        submitFile() {
             var me = this
+            if (!me.file) return;
+            const fileName = me.file[0].name;
+            const fileObj = {
+                chat_room_id: me.chatRoomId,
+                user_name: me.userInfo.name
+            }
+            backend.uploadFile(fileName, me.file[0], 'drive', fileObj).then((response) => {
+                me.$try({
+                    action: async () => {
+                        console.log(response);
+                        this.file = null
+                    },
+                    successMsg: '파일 업로드가 완료되었습니다.'
+                })
+            });
             
-            me.$try({
-                action: async () => {
-                    if (!me.file) return; // 파일이 없으면 함수 종료
-        
-                    const formData = new FormData();
-                    formData.append('file', this.file[0]); // 'file' 키에 파일 데이터 추가
-
-                    const response = await axios.post(`/memento/uploadfile/`, formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data',
-                        },
-                    });
-                    console.log(response.data); // 응답 로그 출력
-                    this.file = null
-                    
-                },
-                successMsg: '파일 업로드가 완료되었습니다.'
-            })
+            // me.$try({
+            //     action: async () => {
+            //         if (!me.file) return;
+            //         const fileName = me.file[0].name;
+            //         const fileObj = {
+            //             chat_room_id: me.chatRoomId,
+            //             user_name: me.userInfo.name
+            //         }
+            //         const response = await backend.uploadFile(fileName, me.file[0], 'drive', fileObj);
+            //         console.log(response);
+            //         this.file = null
+            //     },
+            //     successMsg: '파일 업로드가 완료되었습니다.'
+            // })
+        },
+        async downloadFile(source) {
+            let filePath = null;
+            if (source.storage_type == 'drive') {
+                const options = {
+                    storageType: 'drive',
+                }
+                filePath = await backend.getFileUrl(source.file_id, options);
+                
+            } else if (source.storage_type == 'storage') {
+                filePath = await backend.getFileUrl(source.file_path);
+            }
+            if (filePath) {
+                window.open(filePath, '_blank');
+            } else {
+                alert('파일을 찾을 수 없습니다.');
+            }
         },
         openVerMangerDialog() {
             this.$emit('openVerMangerDialog', true)
@@ -1038,7 +1126,7 @@ export default {
 
             if (text.startsWith('>') || text.startsWith('!')) {
                 // 명령어 목록 표시 로직 추가
-            } 
+            }
         },
         selectUser(user) {
             const beforeMention = this.newMessage.substring(0, this.mentionStartIndex);
@@ -1077,29 +1165,19 @@ export default {
                 }
             }
         },
-        getProfile(email) {
-            if (!this.userList) return '';
-            const user = this.userList.find(user => user.email === email);
-            return user ? user.profile : '';
+        getProfile(message) {
+            if (message.role == 'agent') {
+                return message.profile ? message.profile : '/images/chat-icon.png';
+            }
+            if (!this.userList) return '/images/defaultUser.png';
+            const user = this.userList.find(user => user.email === message.email);
+            return user && user.profile ? (user.profile.includes('defaultUser.png') ? '/images/defaultUser.png' : user.profile) : '/images/defaultUser.png';
         },
-        // shouldDisplayButtons(message, index) {
-        //     if (message.role !== 'system') {
-        //         return false;
-        //     }
-        //     // 현재 메시지 이후로 동일한 userInfo.email을 가진 메시지가 있는지 확인
-        //     for (let i = index + 1; i < this.filteredMessages.length; i++) {
-        //         if (this.filteredMessages[i].email === this.userInfo.email) {
-        //             return false; // 동일한 email을 가진 메시지가 있다면 버튼을 표시하지 않음
-        //         }
-        //     }
-        //     // 위의 조건들을 모두 통과했다면 버튼을 표시
-        //     return true;
-        // },
         requestDraftAgent() {
             this.$emit('requestDraftAgent', this.newMessage);
         },
         setMessageForUser(content) {
-            if(content){
+            if(content && typeof content == 'string'){
                 if (content.includes(`"messageForUser":`)) {
                     let contentObj = partialParse(content);
                     let messageForUserContent = contentObj.messageForUser || content;
@@ -1169,7 +1247,7 @@ export default {
                 }
             }
         },
-        send() {
+        async send() {
             if (this.editIndex >= 0) {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;
@@ -1240,7 +1318,7 @@ export default {
                 const data = await backend.uploadImage(fileName, imageFile);
                 if (data && data.path) {
                     const imageUrl = await backend.getImageUrl(data.path);
-                    var html = `<img src=${imageUrl} width='100%' />`;
+                    var html = `<img src=${imageUrl} width='56px' height='56px;' style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />`;
                     $('#imagePreview').append(html);
                     me.attachedImg = imageUrl;
                 }
@@ -1251,7 +1329,7 @@ export default {
                     imgElement.src = event.target.result;
                     imgElement.onload = () => {
                         const canvas = document.createElement("canvas");
-                        const max_width = 200; // 최대 너비 설정
+                        const max_width = 200;
                         const scaleSize = max_width / imgElement.width;
                         canvas.width = max_width;
                         canvas.height = imgElement.height * scaleSize;
@@ -1261,7 +1339,7 @@ export default {
                         const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
 
                         // 이미지 미리보기에 추가
-                        var html = `<img src=${srcEncoded} width='100%' />`;
+                        var html = `<img src=${srcEncoded} width='56px' height='56px;' style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />`;
                         $('#imagePreview').append(html);
                         me.attachedImg = event.target.result;
                         me.delImgBtn = true;
@@ -1334,7 +1412,102 @@ export default {
             }
             
             return false;
-        }
+        },
+        // 클립보드에서 이미지 붙여넣기 처리 함수
+        handlePaste(event) {
+            // 클립보드 데이터 확인
+            const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+            let imageFound = false;
+            
+            for (const item of items) {
+                // 이미지 형식인지 확인
+                if (item.type.indexOf('image') === 0) {
+                    const blob = item.getAsFile();
+                    imageFound = true;
+                    
+                    // 파일리더로 이미지 데이터 읽기
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const imgElement = document.createElement("img");
+                        imgElement.src = e.target.result;
+                        imgElement.onload = () => {
+                            const canvas = document.createElement("canvas");
+                            const max_width = 200;
+                            const scaleSize = max_width / imgElement.width;
+                            canvas.width = max_width;
+                            canvas.height = imgElement.height * scaleSize;
+
+                            const ctx = canvas.getContext("2d");
+                            ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+                            const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
+
+                            // 이미지 미리보기에 추가
+                            var html = `<img src=${srcEncoded} width='56px' height='56px;' style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />`;
+                            $('#imagePreview').append(html);
+                            this.attachedImg = e.target.result;
+                            this.delImgBtn = true;
+                        };
+                    };
+                    reader.readAsDataURL(blob);
+                    break;
+                }
+            }
+            
+            // 이미지가 있으면 기본 텍스트 붙여넣기를 방지하지 않음
+            if (!imageFound) {
+                return true;
+            }
+        },
+        shouldDisplayDateSeparator(message, index) {
+            if(!message.timeStamp) return false;
+            
+            if (index === 0) {
+                return true;
+            }
+            
+            if (index > 0) {
+                const prevMessage = this.filteredMessages[index - 1];
+                const currentDate = new Date(message.timeStamp);
+                const prevDate = new Date(prevMessage.timeStamp);
+                
+                // 년, 월, 일이 다르면 날짜 구분선 표시
+                return currentDate.getFullYear() !== prevDate.getFullYear() ||
+                       currentDate.getMonth() !== prevDate.getMonth() ||
+                       currentDate.getDate() !== prevDate.getDate();
+            }
+            return false;
+        },
+        formatDateSeparator(timeStamp) {
+            const date = new Date(timeStamp);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            
+            const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+            const dayName = dayNames[date.getDay()];
+            
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            
+            // 오늘인지 확인
+            if (date.toDateString() === today.toDateString()) {
+                return '오늘';
+            }
+            
+            // 어제인지 확인
+            if (date.toDateString() === yesterday.toDateString()) {
+                return '어제';
+            }
+            
+            // 올해인지 확인
+            if (date.getFullYear() === today.getFullYear()) {
+                return `${month}월 ${day}일 ${dayName}`;
+            }
+            
+            // 다른 해
+            return `${year}년 ${month}월 ${day}일 ${dayName}`;
+        },
     }
 };
 </script>
@@ -1527,7 +1700,7 @@ pre {
 .other-message {
   margin-right: auto;
   background-color: #f1f1f1 !important;
-  border-radius: 3px 15px 15px 15px !important;
+  border-radius: 8px !important;
 }
 
 .message-timestamp {
@@ -1599,4 +1772,41 @@ pre {
 }
 
 // 기존 스타일은 유지하며 추가적인 스타일만 더함
+
+// agent chat
+.search-result {
+    font-weight: bold;
+}
+.search-result-index {
+    font-size: 10px;
+    font-weight: bold;
+    margin: 0 3px;
+    vertical-align: top;
+    line-height: normal;
+}
+
+.date-separator-container {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+  padding: 0 16px;
+}
+
+.date-separator-line {
+  flex: 1;
+  opacity: 0.3;
+}
+
+.date-separator-text {
+  margin: 0 16px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: center;
+  min-width: fit-content;
+}
 </style>

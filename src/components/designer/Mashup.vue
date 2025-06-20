@@ -294,7 +294,43 @@ export default {
             return Object.values(window.mashup.componentRefs)
                 .filter(componentRef => (componentRef.tagName.toLowerCase() !== 'code-field') && (componentRef.localName !== undefined) && (componentRef.localAlias !== undefined))
                 .map(componentRef => componentRef.localName)
-        }
+        },
+
+        /**
+         * keditor 사이드바 토글러에 테마 색상 적용
+         */
+        applyThemeColorToKeditorSidebar() {
+            // localStorage에서 테마 색상 가져오기
+            const savedSettings = JSON.parse(localStorage.getItem('userSettings') ?? '{}');
+            const themeColor = savedSettings.themeColorCode || '#0085DB';
+            
+            // keditor 사이드바 토글러 요소 선택
+            const sidebarToggler = document.querySelector('#keditor-sidebar-toggler');
+            if (sidebarToggler) {
+                sidebarToggler.style.backgroundColor = themeColor;
+                sidebarToggler.style.color = 'white';
+                sidebarToggler.style.border = `1px solid ${themeColor}`;
+            }
+            
+            // localStorage 변경 감지하여 색상 업데이트
+            window.addEventListener('storage', (event) => {
+                if (event.key === 'userSettings') {
+                    try {
+                        const newSettings = JSON.parse(event.newValue || '{}');
+                        if (newSettings.themeColorCode) {
+                            const newThemeColor = newSettings.themeColorCode;
+                            const sidebarToggler = document.querySelector('#keditor-sidebar-toggler');
+                            if (sidebarToggler) {
+                                sidebarToggler.style.backgroundColor = newThemeColor;
+                                sidebarToggler.style.border = `1px solid ${newThemeColor}`;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('테마 색상 파싱 오류:', e);
+                    }
+                }
+            });
+        },
     },
     mounted() {
         window.mashup = this
@@ -484,6 +520,9 @@ export default {
             onReady: function () {
                 // 컴포넌트 설정 버튼 클릭시, 오른쪽 설정 패널이 뜨는 버그 수정
                 $("#keditor-setting-panel").remove()
+                
+                // keditor 사이드바 토글러에 테마 색상 적용
+                window.mashup.applyThemeColorToKeditorSidebar();
             },
         });
 

@@ -3,7 +3,7 @@
         <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
             <div class="d-flex w-100">
                 <component :is="'work-history-' + mode" :messages="messages" :isComplete="isComplete"
-                    @clickMessage="navigateToWorkItemByTaskId" />
+                    @clickMessage="navigateToWorkItemByTaskId" :streamingText="streamingText" />
             </div>
         </perfect-scrollbar>
     </div>
@@ -27,6 +27,7 @@ export default {
     data: () => ({
         workListByInstId: null,
         updatedKey: 0,
+        streamingText: '',
     }),
     created() {
         this.init();
@@ -44,13 +45,23 @@ export default {
                 profile: 'https://avatars0.githubusercontent.com/u/9064066?v=4&s=460',
                 roleName: workItem.task.roleName,
                 _item: workItem,
-                content: workItem.title,
+                content: workItem.name,
                 description: workItem.description,
                 timeStamp: workItem.startDate
             }));
         },
         isComplete(){
             return this.instance.status == "COMPLETED"
+        },
+    },
+    watch: {
+        '$route': {
+            deep: true,
+            async handler(newVal, oldVal) {
+                if (newVal.params.instId !== oldVal.params.instId) {
+                    await this.init();
+                }
+            }
         },
     },
     methods: {
@@ -60,7 +71,7 @@ export default {
                 context: me,
                 action: async () => {
                     if (me.instance) {
-                        me.workListByInstId = await backend.getWorkListByInstId(me.instance.instanceId);
+                        me.workListByInstId = await backend.getWorkListByInstId(me.instance.instId);
                         me.updatedKey++;
                     }
                 }

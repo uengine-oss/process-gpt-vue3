@@ -1,16 +1,13 @@
-<script setup>
-import { useCustomizerStore } from '@/stores/customizer';
-
-import Logo from '../logo/Logo.vue';
-import NavCollapse from './NavCollapse/NavCollapse.vue';
-import NavGroup from './NavGroup/index.vue';
-import NavItem from './NavItem/index.vue';
-import ExtraBox from './extrabox/ExtraBox.vue';
-
-const customizer = useCustomizerStore();
-</script>
-
 <template>
+    <v-btn icon
+        v-if="globalIsMobile.value"
+        @click.stop="customizer.SET_SIDEBAR_DRAWER"
+        class="mobile-side-bar-btn"
+        size="40"
+        color="primary"
+    >
+        <Icons :icon="'list-bold-duotone'"/>
+    </v-btn>
     <v-navigation-drawer
         left
         v-model="customizer.Sidebar_drawer"
@@ -40,15 +37,29 @@ const customizer = useCustomizerStore();
                 </template>
             </v-tooltip>
         </v-row>
-        <div class="pa-5 pl-4 is-sidebar-mobile">
-            <Logo /> 
+        <div class="pa-4 is-sidebar-mobile"
+            :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }"
+        >
+            <v-row class="ma-0 pa-0" align="center">
+                <Logo />
+                <v-spacer></v-spacer>
+                <Icons @click.stop="customizer.SET_SIDEBAR_DRAWER"
+                    style="margin-top: -8px;"
+                    :icon="'close'" :size="16"
+                />
+            </v-row>
         </div>
         <!-- ---------------------------------------------- -->
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
-        <div class="scrollnavbar bg-containerBg overflow-y-hidden">
-            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0"
-                style="display: flex; flex-direction: column; height: 100%;"
+        <div class="scrollnavbar bg-containerBg overflow-y-auto">
+            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0 pr-2"
+                :class="globalIsMobile.value ? 'pr-4' : ''"
+                style="display: flex;
+                    flex-direction: column;
+                    flex: 1 1 auto;
+                    gap: 8px;
+                    overflow: hidden;"
             >
                 <!---Menu Loop -->
                 <template v-for="item in sidebarItem" :key="item.title">
@@ -68,16 +79,36 @@ const customizer = useCustomizerStore();
                     <Icons :icon="'write'" class="mr-2" />
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
+                <VerticalHeader v-if="globalIsMobile.value"/>
+                <v-row v-if="isShowProject" class="ma-0 pa-0 ml-2 align-center">
+                    <div class="text-medium-emphasis cp-menu">
+                        {{ $t('VerticalSidebar.projectList') }}
+                    </div>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="openNewProject()" icon text style="margin-bottom: 2px;"
+                        :size="32"
+                    >
+                        <PlusIcon size="15"/>
+                    </v-btn>
+                </v-row>
+                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 auto; overflow-y: auto; max-height: 350px;">
+                    <ProjectList/>
+                </v-col>
                 <div
                     v-if="!pal"
                     style="font-size:14px;"
-                    class="text-medium-emphasis cp-menu mt-3 ml-2"
+                    class="text-medium-emphasis cp-menu mt-0 ml-2"
                 >{{ $t('VerticalSidebar.instanceList') }}</div>
-                <v-col v-if="instanceList && !pal" class="pa-0" style="flex: 1 1 50%; max-height: 50%; overflow: auto;">
+                <v-col v-if="!pal" class="pa-0"
+                    style="flex: 1 1 auto;
+                    overflow-y: auto;
+                    max-height: 350px;"
+                >
                     <ProcessInstanceList
-                        @update:instanceList="handleInstanceListUpdate" 
+                        @update:instanceLists="handleInstanceListUpdate" 
                     />
                 </v-col>
+               
                 <v-col class="pa-0" style="flex: 0 0 auto;">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
@@ -109,7 +140,11 @@ const customizer = useCustomizerStore();
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
                 </v-col>
-                <v-col class="pa-0" style="flex: 1 1 50%; overflow: auto;">
+                <v-col class="pa-0" 
+                    style="flex: 1 1 auto;
+                    overflow-y: auto;
+                    max-height: 350px;"
+                >
                     <template v-if="definitionList">
                         <!-- 정의 목록 리스트 -->
                         <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
@@ -121,7 +156,7 @@ const customizer = useCustomizerStore();
                         />
                     </template>
                 </v-col>
-                <v-col class="pa-0" style="flex: 1 1; overflow: auto;">
+                <!-- <v-col class="pa-0" style="flex: 1 1; overflow: auto;">
                     <div class="text-medium-emphasis cp-menu mt-3 ml-2">{{ $t('VerticalSidebar.trash') }}</div>
                         <template v-if="deletedDefinitionList">
                             <NavCollapse v-for="(deletedDefinition, i) in deletedDefinitionList.children" :key="i"
@@ -132,7 +167,7 @@ const customizer = useCustomizerStore();
                                 :type="'definition-list'" 
                             />
                         </template>
-                </v-col>
+                </v-col> -->
             </v-list>
         </div>
 
@@ -140,6 +175,12 @@ const customizer = useCustomizerStore();
             <ExtraBox />
         </div>
     </v-navigation-drawer>
+
+    <v-dialog v-model="isNewProjectOpen" max-width="400" class="delete-input-details" persistent>
+        <ProjectCreationForm  @close="closeNewProject" @save="createNewProject" />
+    </v-dialog>
+
+
     <v-dialog v-model="isOpen" max-width="400" class="delete-input-details">
         <v-card class="pa-4 pt-2">
             <v-row class="ma-0 pa-0 pb-2" align="center">
@@ -164,23 +205,57 @@ const customizer = useCustomizerStore();
 </template>
 
 <script>
-import BackendFactory from '@/components/api/BackendFactory';
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
+import ProjectList from '@/components/ui/ProjectList.vue';
+import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.vue';
+
+import { useCustomizerStore } from '@/stores/customizer';
+
+import Logo from '../logo/Logo.vue';
+import NavCollapse from './NavCollapse/NavCollapse.vue';
+import NavGroup from './NavGroup/index.vue';
+import NavItem from './NavItem/index.vue';
+import ExtraBox from './extrabox/ExtraBox.vue';
+import BackendFactory from '@/components/api/BackendFactory';
+
+import VerticalHeader from '../vertical-header/VerticalHeader.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
-        ProcessInstanceList
+        ProcessInstanceList,
+        ProjectList,
+        ProjectCreationForm,
+        Logo,
+        NavCollapse,
+        NavGroup,
+        NavItem,
+        ExtraBox,
+        VerticalHeader
+    },
+    setup() {
+        const customizer = useCustomizerStore();
+        return {
+            customizer
+        };
     },
     data: () => ({
         sidebarItem: [],
         definitionItem: [],
         definitionList: null,
         logoPadding: '',
-        instanceList: [],
+        instanceLists: [],
         isOpen: false,
-        deletedDefinitionList: []
+        startDateMenu: false,
+        dueDateMenu: false,
+        newProjectInfo: {
+            name: '',
+            startDate: null,
+            dueDate: null,
+        },
+        isNewProjectOpen: false,
+        deletedDefinitionList: [],
     }),
     computed: {
         JMS() {
@@ -191,11 +266,41 @@ export default {
         },
         pal() {
             return window.$pal;
-        }
+        },
+        isShowProcessInstanceList() {
+            return this.instanceLists.length > 0;
+        },
+        isShowProject(){
+            return false;
+        },
     },
-    async created() {
+    created() {
         const isAdmin = localStorage.getItem('isAdmin');
         if (isAdmin == 'true') {
+            this.loadSidebar();
+        }
+    },
+    mounted() {
+        this.EventBus.on('definitions-updated', async () => {
+            await this.getDefinitionList();
+        });
+        if (window.$mode === 'uEngine') {
+            this.logoPadding = 'padding:6px'
+        }
+
+        window.addEventListener('localStorageChange', (event) => {
+            if (event.detail.key === 'isAdmin') {
+                if (event.detail.value === 'true' || event.detail.value === true) {
+                    this.loadSidebar();
+                } else {
+                    this.definitionItem = [];
+                    this.definitionList = [];
+                }
+            }
+        });
+    },
+    methods: {
+        loadSidebar() {
             this.definitionItem = [
                 {
                     header: 'definitionManagement.title',
@@ -220,6 +325,13 @@ export default {
                     icon: 'users-group-rounded-line-duotone',
                     BgColor: 'primary',
                     to: '/organization',
+                    disable: true
+                },
+                {
+                    title: 'BSCard.title',
+                    icon: 'strategy',
+                    BgColor: 'primary',
+                    to: '/bscard',
                     disable: true
                 },
                 {
@@ -254,34 +366,47 @@ export default {
                     disable: true,
                     to: this.openDialog
                 },
+                {
+                    title: 'definitionManagement.defaultForm',
+                    icon: 'document',
+                    BgColor: 'primary',
+                    disable: true,
+                    to: '/ui-definitions/defaultform'
+                },
             ]
             if (this.mode === 'ProcessGPT') {
                 this.definitionItem = this.definitionItem.filter((item) => 
                     item.title !== 'uiDefinition.title' && item.title !== 'systemDefinition.title');
             }
             this.getDefinitionList();
-        }
 
-        if (!this.JMS) {
-            this.definitionItem.forEach((item) => {
-                if (item.disable) {
-                    item.disable = false;
-                }
+            if (!this.JMS) {
+                this.definitionItem.forEach((item) => {
+                    if (item.disable) {
+                        item.disable = false;
+                    }
+                });
+            }
+        },
+        openNewProject(){
+            this.isNewProjectOpen = true;
+        },
+        async createNewProject(value){
+            await backend.putProject({
+                name: value.name,
+                startDate: value.startDate,
+                dueDate: value.dueDate,
+                endDate: null,
+                status: "NEW",
+                createdDate: new Date().toISOString(),
+                userId: localStorage.getItem('email'),
             });
-        }
-    },
-    mounted() {
-        this.EventBus.on('definitions-updated', async () => {
-            await this.getDefinitionList();
-        });
-        if (window.$mode === 'uEngine') {
-            this.logoPadding = 'padding:6px'
-        }
-        // this.EventBus.on('instances-updated', async () => {
-        //     await this.loadInstances();
-        // });
-    },
-    methods: {
+            
+            this.closeNewProject();
+        },
+        closeNewProject(){
+            this.isNewProjectOpen = false;
+        },
         openDialog() {
             this.isOpen = true;
         },
@@ -429,8 +554,14 @@ export default {
             }
         },
         handleInstanceListUpdate(instanceList) {
-            this.instanceList = instanceList;
+            this.instanceLists = instanceList;
         }
     }
 };
 </script>
+
+<style scoped>
+.mobile-no-padding-bottom {
+    padding-bottom: 0px !important;
+}
+</style>

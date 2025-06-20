@@ -53,7 +53,7 @@ export interface Backend {
     getSystem(systemId: String): Promise<any>;
     getCurrentWorkItemByCorrKey(corrKey: number): Promise<any>;
     deleteInstance(instanceId: string): Promise<any>;
-    getNotifications(): Promise<any>;
+    getNotifications(callback: (data: any) => void): Promise<any>;
     setNotifications(value: any): Promise<any>;
     search(keyword: string): Promise<any>;
     testList(path: string): Promise<any>;
@@ -71,12 +71,22 @@ export interface Backend {
     getWorkListAll(): Promise<any>;
     uploadImage(fileName: string, image: File): Promise<any>;
     getImageUrl(fileName: string): Promise<any>;
-    uploadFile(fileName: string, file: File): Promise<any>;
+    uploadFile(fileName: string, file: File, storageType: string): Promise<any>;
     getFileUrl(path: string): Promise<any>;
+    downloadFile(path: string): Promise<any>;
     getTenant(tenantId: string): Promise<any>;
     setTenant(tenantId: string): Promise<any>;
     updateUser(userInfo: any): Promise<any>;
     getAllWorkListByInstId(instId: number): Promise<any>;
+    listMarketplaceDefinition(): Promise<any>;
+    getRefForm(taskId: string): Promise<any>;
+    saveTask(id: string, name: string, type: string, json: any): Promise<any>;
+    getTaskList(): Promise<any>;
+    watchNotifications(onNotification?: (notification: any) => void): Promise<any>;
+    getMCPTools(): Promise<any>;
+    getBSCard(): Promise<any>;
+    putBSCard(card: any): Promise<any>;
+    fetchAgentData(agentUrl: string): Promise<any>;
 }
 
 // export type { Backend }
