@@ -423,7 +423,7 @@ export default {
                             //         return activity;
                             //     });
                             // }
-                            me.processDefinition = newProcessDefinition
+                            // me.processDefinition = newProcessDefinition
                         }
 
                         if (info.name && info.name != '') {

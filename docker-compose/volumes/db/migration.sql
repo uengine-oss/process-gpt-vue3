@@ -17,7 +17,7 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS role text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tenant_id text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS device_token text;
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_credentials TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_credentials jsonb;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_credentials_updated_at TIMESTAMP WITH TIME ZONE;
 
 -- configuration table
@@ -230,4 +230,11 @@ ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS lead_time integer;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS type character varying;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS created_date date;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS task_id uuid;
-ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS depends_id uuid; 
+ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS depends_id uuid;
+
+
+DROP TRIGGER IF EXISTS encrypt_credentials_trigger ON public.users;
+
+DROP FUNCTION IF EXISTS encrypt_credentials(TEXT);
+DROP FUNCTION IF EXISTS decrypt_credentials(TEXT);
+DROP FUNCTION IF EXISTS encrypt_credentials_trigger();
