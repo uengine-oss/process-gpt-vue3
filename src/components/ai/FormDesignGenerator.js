@@ -123,6 +123,7 @@ After creating the layout, add components following these rules:
 9. Include all specified attributes for each tag.
 10. Every name attribute (including in div tags with class='row') must be unique.
 11. Note that 'readonly' and 'disabled' attributes serve different purposes: readonly makes a field read-only while disabled makes it inactive.
+12. When creating a form, if there is no suitable result to create, a text area with a default label of "Free Input" should be created. All forms must exist, and if no form is created, they should be filled with the default values ​​mentioned above, not empty values. The form must exist.
 
 ### Available components
 ${componentInfosPromptStr}

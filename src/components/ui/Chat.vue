@@ -262,6 +262,25 @@
                                                                 <div v-else-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
                                                                 <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
 
+                                                                <v-btn v-if="message.type && message.type === 'add_role'"
+                                                                    style="border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                                                    :style="replyIndex === index ? 'margin-bottom: 10px;' : ''"
+                                                                    color="white"
+                                                                    variant="elevated" 
+                                                                    size="small"
+                                                                    class="mt-2"
+                                                                    @click="addRole(message, index)"
+                                                                    :disabled="message.added"
+                                                                >
+                                                                    <template v-if="message.added">
+                                                                        <v-icon style="margin-right: 3px;">mdi-check</v-icon>
+                                                                        추가됨
+                                                                    </template>
+                                                                    <template v-else>
+                                                                        추가
+                                                                    </template>
+                                                                </v-btn>
+
                                                                 <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp other-timestamp">
                                                                     {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
                                                                 </div>
@@ -1362,27 +1381,26 @@ export default {
             imagePreview.innerHTML = '';
         },
         shouldDisplayUserInfo(message, index) {
-            if(!message.disableMsg){
-                if (index === 0) return true; // 첫 번째 메시지는 항상 유저 정보 표시
-                
-                const prevMessage = this.filteredMessages[index - 1];
-                
-                // 이전 메시지와 보낸 사람이 다르면 유저 정보 표시
-                if (message.email !== prevMessage.email) return true;
-                
-                // 같은 사람이 보낸 메시지라도 분 단위 시간이 다르면 유저 정보 표시
-                const currentTime = new Date(message.timeStamp);
-                const prevTime = new Date(prevMessage.timeStamp);
-                
-                // 분 단위로 비교 (년, 월, 일, 시, 분이 같은지 확인)
-                if (currentTime.getFullYear() !== prevTime.getFullYear() ||
-                    currentTime.getMonth() !== prevTime.getMonth() ||
-                    currentTime.getDate() !== prevTime.getDate() ||
-                    currentTime.getHours() !== prevTime.getHours() ||
-                    currentTime.getMinutes() !== prevTime.getMinutes()) {
-                    return true;
-                }
+            if (index === 0) return true; // 첫 번째 메시지는 항상 유저 정보 표시
+            
+            const prevMessage = this.filteredMessages[index - 1];
+            
+            // 이전 메시지와 보낸 사람이 다르면 유저 정보 표시
+            if (message.email !== prevMessage.email) return true;
+            
+            // 같은 사람이 보낸 메시지라도 분 단위 시간이 다르면 유저 정보 표시
+            const currentTime = new Date(message.timeStamp);
+            const prevTime = new Date(prevMessage.timeStamp);
+            
+            // 분 단위로 비교 (년, 월, 일, 시, 분이 같은지 확인)
+            if (currentTime.getFullYear() !== prevTime.getFullYear() ||
+                currentTime.getMonth() !== prevTime.getMonth() ||
+                currentTime.getDate() !== prevTime.getDate() ||
+                currentTime.getHours() !== prevTime.getHours() ||
+                currentTime.getMinutes() !== prevTime.getMinutes()) {
+                return true;
             }
+
             return false;
         },
         shouldDisplayMessageTimestamp(message, index) {
@@ -1507,6 +1525,10 @@ export default {
             
             // 다른 해
             return `${year}년 ${month}월 ${day}일 ${dayName}`;
+        },
+        async addRole(message, index) {
+            this.$emit('addRole', message.newRoleInfo);
+            this.filteredMessages[index].added = true;
         },
     }
 };

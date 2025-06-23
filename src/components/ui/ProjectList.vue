@@ -36,7 +36,30 @@ export default {
     },
     methods: {
         async init() {
-            this.projectLists = await this.loadProjectList();
+            const projectLists = await this.loadProjectList();
+            this.projectLists = this.sortProjectList(projectLists);
+        },
+        sortProjectList(list) {
+            const getCharType = (char) => {
+                if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(char)) return 1; // 한글
+                if (/[a-zA-Z]/.test(char)) return 2; // 영어
+                if (/[0-9]/.test(char)) return 3; // 숫자
+                return 4; // 기타
+            };
+
+            return list.sort((a, b) => {
+                const titleA = a.title.charAt(0);
+                const titleB = b.title.charAt(0);
+                
+                const typeA = getCharType(titleA);
+                const typeB = getCharType(titleB);
+
+                if (typeA !== typeB) {
+                    return typeA - typeB;
+                }
+                
+                return a.title.localeCompare(b.title, 'ko-KR');
+            });
         },
         async loadProjectList() {
             let result = await backend.getProjectList();
