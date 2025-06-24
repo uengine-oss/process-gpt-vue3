@@ -97,6 +97,8 @@ export default {
             bpmnViewer: null,
             bpmnModeler: null,
             _layoutTimeout: null,
+            resizeObserver: null,
+            resizeTimeout: null,
         };
     },
     computed: {
@@ -121,6 +123,7 @@ export default {
         }
         // if (this.mode == 'uEngine') {
         this.bpmnViewer.importXML(this.diagramXML);
+        this.initResizeObserver();
         // }
     },
     watch: {
@@ -231,9 +234,9 @@ export default {
                     element.di.isHorizontal = true;
                 }
             });
+            self.resetZoom();
         },
-        initDefaultOrientation() {
-            if(!this.isViewMode) return;
+        initDefaultOrientation(orientation = null) {
             let self = this;
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
@@ -244,17 +247,29 @@ export default {
             } else {
                 isHorizontal = true;
             }
+
+            if(orientation) {
+                if(orientation === 'horizontal') {
+                    isHorizontal = true;
+                } else {
+                    isHorizontal = false;
+                }
+            }
             
             participant.forEach(element => {
                 const horizontal = element.di.isHorizontal;
                 if(isHorizontal && !horizontal) {
-                    palleteProvider.changeParticipantVerticalToHorizontal(event, element);
-                    self.isHorizontal = true;
-                    element.di.isHorizontal = true;
+                    if(element.width < element.height) {
+                        palleteProvider.changeParticipantVerticalToHorizontal(event, element);
+                        self.isHorizontal = true;
+                        element.di.isHorizontal = true;
+                    }
                 } else if(!isHorizontal && horizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element);
-                    self.isHorizontal = false;
-                    element.di.isHorizontal = false;
+                    if(element.width > element.height) {
+                        palleteProvider.changeParticipantHorizontalToVertical(event, element);
+                        self.isHorizontal = false;
+                        element.di.isHorizontal = false;
+                    }
                 }
             });
 
@@ -269,8 +284,6 @@ export default {
             //     self.$emit('openPanel', e.element.id);
             // });
             eventBus.on('import.done', async function (evt) {
-                self.initDefaultOrientation();
-                console.log('import.done');
                 self.$emit('done');
                 
                 if(self.bpmn) {
@@ -799,6 +812,34 @@ export default {
             const zoomScroll = this.bpmnViewer.get('zoomScroll');
             zoomScroll.stepZoom(-1);
         },
+        initResizeObserver() {
+            const container = this.$refs.container;
+
+            if (!container) return;
+
+            this.resizeObserver = new ResizeObserver(() => {
+            if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
+
+            this.resizeTimeout = setTimeout(() => {
+                this.onContainerResizeFinished();
+            }, 200);
+            });
+
+            this.resizeObserver.observe(container);
+        },
+        onContainerResizeFinished() {
+            const container = this.$refs.container;
+            if (!container) return;
+
+            const { width, height } = container.getBoundingClientRect();
+
+            if(width > height) {
+                this.initDefaultOrientation('horizontal');
+            } else {
+                this.initDefaultOrientation('vertical');
+            }
+
+        }
     }
 };
 </script>

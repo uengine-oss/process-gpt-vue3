@@ -93,7 +93,9 @@ export default {
             activityStatus: null,
             currentInstanceId: null,
             subProcessInstances: {},
-            isViewMode: true
+            isViewMode: true,
+            resizeObserver: null,
+            resizeTimeout: null,
         };
     },
     computed: {
@@ -117,6 +119,7 @@ export default {
             this.diagramXML =
                 '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <bpmn:extensionElements> <uengine:properties> </uengine:properties> </bpmn:extensionElements> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>';
         }
+        this.initResizeObserver();
     },
     watch: {
         url(val) {
@@ -310,9 +313,6 @@ export default {
         setDiagramEvent() {
             var self = this;
             var eventBus = this.bpmnViewer.get('eventBus');
-            eventBus.on('import.done', async function (evt) {
-                self.initDefaultOrientation();
-            });
             eventBus.on('import.render.complete', async function (event) {
                 let startTime = performance.now();
 
@@ -610,8 +610,7 @@ export default {
                 }
             });
         },
-        initDefaultOrientation() {
-            if(!this.isViewMode) return;
+        initDefaultOrientation(orientation = null) {
             let self = this;
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
@@ -622,21 +621,61 @@ export default {
             } else {
                 isHorizontal = true;
             }
+
+            if(orientation) {
+                if(orientation === 'horizontal') {
+                    isHorizontal = true;
+                } else {
+                    isHorizontal = false;
+                }
+            }
             
             participant.forEach(element => {
                 const horizontal = element.di.isHorizontal;
                 if(isHorizontal && !horizontal) {
-                    palleteProvider.changeParticipantVerticalToHorizontal(event, element);
-                    self.isHorizontal = true;
-                    element.di.isHorizontal = true;
+                    if(element.width < element.height) {
+                        palleteProvider.changeParticipantVerticalToHorizontal(event, element);
+                        self.isHorizontal = true;
+                        element.di.isHorizontal = true;
+                    }
                 } else if(!isHorizontal && horizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element);
-                    self.isHorizontal = false;
-                    element.di.isHorizontal = false;
+                    if(element.width > element.height) {
+                        palleteProvider.changeParticipantHorizontalToVertical(event, element);
+                        self.isHorizontal = false;
+                        element.di.isHorizontal = false;
+                    }
                 }
             });
 
             self.resetZoom();
+        },
+        initResizeObserver() {
+            const container = this.$refs.container;
+
+            if (!container) return;
+
+            this.resizeObserver = new ResizeObserver(() => {
+            if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
+
+            this.resizeTimeout = setTimeout(() => {
+                this.onContainerResizeFinished();
+            }, 200);
+            });
+
+            this.resizeObserver.observe(container);
+        },
+        onContainerResizeFinished() {
+            const container = this.$refs.container;
+            if (!container) return;
+
+            const { width, height } = container.getBoundingClientRect();
+
+            if(width > height) {
+                this.initDefaultOrientation('horizontal');
+            } else {
+                this.initDefaultOrientation('vertical');
+            }
+
         }
     }
 };
