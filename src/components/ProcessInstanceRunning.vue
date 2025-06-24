@@ -56,7 +56,6 @@ export default {
         await backend.getTaskLog(this.taskId, async (task) => {
             this.streamingText = task.log;
             if (task.status == "DONE") {
-                this.$emit('updated');
                 this.EventBus.emit('instances-updated');
 
                 if (task.log && task.log.length > 0 && task.log.includes("[WorkItem Error]")) {
