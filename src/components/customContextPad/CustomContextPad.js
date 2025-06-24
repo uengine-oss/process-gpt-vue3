@@ -1,8 +1,9 @@
 import { assign } from 'min-dash';
 import { i18n } from '@/main';
+import { indexOf } from 'lodash';
 
 export default function ContextPadProvider(config, injector, eventBus, contextPad,
-  modeling, elementFactory, connect, create, popupMenu, canvas, rules, translate) {
+  modeling, elementFactory, connect, create, popupMenu, canvas, rules, translate, autoPlace) {
 
   const originalContextPadProvider = injector.get('contextPadProvider');
   this._config = config;
@@ -17,6 +18,7 @@ export default function ContextPadProvider(config, injector, eventBus, contextPa
   this._canvas = canvas;
   this._rules = rules;
   this._translate = translate;
+  this._autoPlace = autoPlace;
 
   contextPad.registerProvider(this);
 
@@ -35,7 +37,8 @@ ContextPadProvider.$inject = [
   'popupMenu',
   'canvas',
   'rules',
-  'translate'
+  'translate',
+  'autoPlace'
 ];
 
 ContextPadProvider.prototype.getContextPadEntries = function (element) {
@@ -44,9 +47,9 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
     _translate: translate,
     _connect: connect,
     _elementFactory: elementFactory,
-    _create: create
+    _create: create,
+    _injector: injector
   } = this;
-
   function removeElement(e) {
     modeling.removeElements([element]);
   }
@@ -56,13 +59,45 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
   }
 
   function appendAction(type, className, title, options) {
-    return (event, element) => {
-      const shape = elementFactory.createShape(assign({ type: type }, options));
-      create.start(event, shape, {
-        source: element
-      });
+    const autoPlace = injector.get('autoPlace', false);
+    function appendStart(event, element) {
+      const shape = elementFactory.createShape(assign({ type }, options));
+      create.start(event, shape, { source: element });
+    }
+  
+    const append = autoPlace
+      ? function (_, element) {
+          const shape = elementFactory.createShape(assign({ type }, options));
+          autoPlace.append(element, shape);
+        }
+      : appendStart;
+  
+    const previewAppend = autoPlace
+      ? function (_, element) {
+          try {
+            appendPreview.create(element, type, options);
+          } catch (e) {
+            console.warn('[appendPreview] 실패:', e);
+          }
+  
+          return () => {
+            appendPreview.cleanUp();
+          };
+        }
+      : null;
+  
+    return {
+      group: 'model',
+      className,
+      title,
+      action: {
+        dragstart: appendStart,
+        click: append,
+        hover: previewAppend
+      }
     };
   }
+  
 
   const popupMenu = this._popupMenu;
 
@@ -240,7 +275,6 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
 
 
   const actions = this._originalGetContextPadEntries(element);
-
   if (element.type === 'bpmn:Participant' || element.type === 'bpmn:Lane' || element.type === 'phase:PhaseContainer') {
     const isHorizontal = element.di.isHorizontal
     assign(actions, {
@@ -338,7 +372,14 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
     actions['append.gateway'].title = i18n.global.t('customContextPad.gateway');
   }
   if (actions['append.append-task']) {
-    actions['append.append-task'].title = i18n.global.t('customContextPad.task');
+    const newAction = appendAction(
+      'bpmn:UserTask',
+      actions['append.append-task'].className,
+      i18n.global.t('customContextPad.task'),
+      {}
+    );
+  
+    actions['append.append-task'].action = newAction.action;
   }
   if (actions['append.intermediate-event']) {
     actions['append.intermediate-event'].title = i18n.global.t('customContextPad.intermediateEvent');
