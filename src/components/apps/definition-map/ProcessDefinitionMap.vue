@@ -273,7 +273,8 @@ export default {
         ProcessPreviewMode: false,
         openMarketplaceDialog: false,
         isSimulateMode: false,
-        windowWidth: window.innerWidth
+        windowWidth: window.innerWidth,
+        pendingRoute: null
     }),
     computed: {
         useLock() {
@@ -303,6 +304,10 @@ export default {
                     action: () => {
                         this.checkIn();
                         this.saveProcess();
+                        if (this.pendingRoute) {
+                            this.pendingRoute.next();
+                            this.pendingRoute = null;
+                        }
                     }
                 },
                 {
@@ -312,7 +317,12 @@ export default {
                     class: 'cp-check-in',
                     action: async () => {
                         this.checkIn();
-                        await this.getProcessMap();
+                        if (this.pendingRoute) {
+                            this.pendingRoute.next();
+                            this.pendingRoute = null;
+                        } else {
+                            await this.getProcessMap();
+                        }
                     }
                 },
                 {
@@ -373,14 +383,10 @@ export default {
     },
     beforeRouteLeave(to, from, next) {
         if (this.lock && this.enableEdit) {
-            this.openAlertDialog().then((proceed) => {
-                if (proceed) {
-                    next();
-                } else {
-                    next(false);
-                }
-            });
+            this.pendingRoute = { to, from, next };
+            this.openAlertDialog();
         } else {
+            this.pendingRoute = null;
             next();
         }
     },
@@ -675,50 +681,32 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if (this.isAdmin) {
-
-                        if(me.useLock){
-                            // GPT 모드인 경우
-                            const lockObj = await backend.getLock('process-map');
-                            if (lockObj && lockObj.id && lockObj.user_id) {
-                                me.lock = true;
-                                me.editUser = lockObj.user_id;
-                                if (me.editUser == me.userName) {
-                                    me.alertDialog = true;
-                                    me.alertMessage = this.$t('processDefinitionMap.checkInMessage');
-                                } else {
-                                    me.alertDialog = true;
-                                    me.alertMessage = this.$t('processDefinitionMap.forcedCheckOutMessage', {name: me.editUser});
-                                    me.enableEdit = false;
-                                }
-                                me.alertType = 'checkin';
-                                // 사용자의 응답을 기다림
-                                me.$nextTick(() => {
-                                    // 다이얼로그가 활성화된 후, 사용자의 응답을 처리
-                                    const confirmButton = document.getElementById('confirmButton'); // 확인 버튼의 ID
-                                    const cancelButton = document.getElementById('cancelButton'); // 취소 버튼의 ID
-                                    confirmButton.onclick = () => resolve(true);
-                                    cancelButton.onclick = () => resolve(false);
-                                });
-                            } else {
-                                me.lock = false;
-                                me.enableEdit = false;
+                    if(me.useLock){
+                        // GPT 모드인 경우
+                        const lockObj = await backend.getLock('process-map');
+                        if (lockObj && lockObj.id && lockObj.user_id) {
+                            me.lock = true;
+                            me.editUser = lockObj.user_id;
+                            if (me.editUser == me.userName) {
                                 me.alertDialog = true;
-                                me.alertMessage = this.$t('processDefinitionMap.checkOutMessage');
-                                me.alertType = 'checkout';
-                                // 사용자의 응답을 기다림
-                                me.$nextTick(() => {
-                                    const confirmButton = document.getElementById('confirmButton');
-                                    const cancelButton = document.getElementById('cancelButton');
-                                    confirmButton.onclick = () => resolve(true);
-                                    cancelButton.onclick = () => resolve(false);
-                                });
+                                me.alertMessage = this.$t('processDefinitionMap.checkInMessage');
+                            } else {
+                                me.alertDialog = true;
+                                me.alertMessage = this.$t('processDefinitionMap.forcedCheckOutMessage', {name: me.editUser});
+                                me.enableEdit = false;
                             }
+                            me.alertType = 'checkin';
                         } else {
-                            // Uegnine 모드인 경우
                             me.lock = false;
-                        }                        
-                    }
+                            me.enableEdit = false;
+                            me.alertDialog = true;
+                            me.alertMessage = this.$t('processDefinitionMap.checkOutMessage');
+                            me.alertType = 'checkout';
+                        }
+                    } else {
+                        // Uegnine 모드인 경우
+                        me.lock = false;
+                    }                        
                 }
             });
         },
