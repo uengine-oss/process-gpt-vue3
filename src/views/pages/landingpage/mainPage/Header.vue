@@ -10,7 +10,7 @@
           <li><a class="nav-link" href="#intro" @click="$router.push('/')">소개</a></li>
           <li><a class="nav-link" href="#consulting" @click="$router.push('/')">프로세스 컨설팅</a></li>
           <li><a class="nav-link" href="#features" @click="$router.push('/')">주요 기능</a></li>
-          <li><a class="nav-link" href="#special" @click="$router.push('/')">핵심 특징</a></li>
+          <li><a class="nav-link" href="#movie-gallery" @click="$router.push('/')">영상 갤러리</a></li>
           <li><a class="nav-link" href="#tech" @click="$router.push('/')">활용 기술</a></li>
           <li><a class="nav-link" href="#download" @click="$router.push('/')">다운로드</a></li>
           <!-- <li><router-link class="nav-link" to="/marketplace" @click="scrollToTop">Marketplace</router-link></li> -->
@@ -26,7 +26,7 @@
           <li><a href="#intro" @click="closeMobileMenuAndNavigate('/')">소개</a></li>
           <li><a href="#consulting" @click="closeMobileMenuAndNavigate('/')">프로세스 컨설팅</a></li>
           <li><a href="#features" @click="closeMobileMenuAndNavigate('/')">주요 기능</a></li>
-          <li><a href="#special" @click="closeMobileMenuAndNavigate('/')">특별 기능</a></li>
+          <li><a href="#movie-gallery" @click="closeMobileMenuAndNavigate('/')">영상 갤러리</a></li>
           <li><a class="nav-link" href="#download" @click="closeMobileMenuAndNavigate('/')">다운로드</a></li>
           <li><a @click="closeMobileMenuAndNavigate('/marketplace')">Marketplace</a></li>
         </ul>

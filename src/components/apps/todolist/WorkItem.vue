@@ -163,6 +163,11 @@
                                 <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
                             </v-card>
                         </v-window-item>
+                        <v-window-item value="agent-feedback" class="pa-2">
+                            <v-card elevation="10" class="pa-4">
+                                <AgentFeedback :workItem="workItem"/>
+                            </v-card>
+                        </v-window-item>
                         <v-window-item v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
                            <DynamicForm 
                                 v-if="inFormValues[index]?.html" 
@@ -246,6 +251,7 @@ import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
 import customBpmnModule from '@/components/customBpmn';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
+import AgentFeedback from './AgentFeedback.vue';
 
 const backend = BackendFactory.createBackend();
 export default {
@@ -279,7 +285,8 @@ export default {
         DynamicForm,
         FormDefinition,
         InstanceOutput,
-        AgentMonitor
+        AgentMonitor,
+        AgentFeedback
     },
     data: () => ({    
         workItem: null,
@@ -402,15 +409,16 @@ export default {
                     return [
                         { value: 'output', label: this.$t('InstanceCard.output') },
                         { value: 'progress', label: this.$t('WorkItem.progress') },
-                        // { value: 'history', label: this.$t('WorkItem.history') },
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent', label: this.$t('WorkItem.agent') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
+                        { value: 'agent-feedback', label: '에이전트 피드백' },
                     ]
                 } else {
                     return [
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent', label: this.$t('WorkItem.agent') },
+                        { value: 'agent-feedback', label: '에이전트 피드백' },
                     ]
                 }
                 
@@ -419,6 +427,7 @@ export default {
                     { value: 'progress', label: this.$t('WorkItem.progress') },
                     { value: 'history', label: this.$t('WorkItem.history') },
                     { value: 'agent', label: this.$t('WorkItem.agent') },
+                    { value: 'agent-feedback', label: '에이전트 피드백' },
                 ]
 
                 // if(this.inFormNameTabs.length > 0) {

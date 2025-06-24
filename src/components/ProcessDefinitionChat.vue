@@ -136,6 +136,7 @@
                         @sendMessage="beforeSendMessage"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
+                        @addRole="addRole"
                     >
                         <template v-slot:custom-title>
                             <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
@@ -167,6 +168,7 @@
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
+                    @addRole="addRole"
                 >
                     <template v-slot:custom-title>
                         <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
@@ -440,6 +442,44 @@ export default {
         }
     },
     methods: {
+        async addRole(newRoleInfo){
+            let organizationChart = [];
+            let organizationChartId = null;
+            const data = await this.getData(`configuration`, { match: { key: 'organization' } });
+            if (data && data.value) {
+                organizationChartId = data.uuid;
+                if (data.value.chart) {
+                    organizationChart = data.value.chart;
+                    if (!organizationChart) {
+                        organizationChart = [];
+                    }
+                }
+            }
+
+            const newTeam = {
+                id: newRoleInfo.endpoint,
+                data: {
+                    id: newRoleInfo.endpoint,
+                    name: newRoleInfo.name,
+                    isTeam: true,
+                    img: '/images/chat-icon.png'
+                },
+                children: []
+            }
+
+            organizationChart.children.push(newTeam);
+
+            var putObj =  {
+                key: 'organization',
+                value: {
+                    chart: organizationChart,
+                }
+            };
+            if (organizationChartId) {
+                putObj.uuid = organizationChartId;
+            }
+            await this.putObject("configuration", putObj);
+        },
         setProcessDefinitionPrompt(){
             if (this.processDefinitionMap) {
                 this.generator.setProcessDefinitionMap(this.processDefinitionMap);
@@ -1425,6 +1465,20 @@ export default {
                                     "content": `생성된 프로세스 정의에 대하여 추가적인 요청사항이 있으시다면 말씀해주세요.`,
                                     "timeStamp": Date.now()
                                 });
+                            }
+
+                            if(jsonProcess.roles) {
+                                jsonProcess.roles.forEach(role => {
+                                    if(role.origin == 'created'){
+                                        this.messages.push({
+                                            "role": "system",
+                                            "content": `${role.name} 역할이 새로 추가되었습니다. 해당 역할을 조직도에 추가하시겠습니까?`,
+                                            "timeStamp": Date.now(),
+                                            "type": "add_role",
+                                            "newRoleInfo": role
+                                        })
+                                    }
+                                })
                             }
         
                             this.$try({

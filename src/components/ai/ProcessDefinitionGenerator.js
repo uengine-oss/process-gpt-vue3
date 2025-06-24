@@ -88,7 +88,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
       6. If a gateway is used, the sequence branching conditions must be clearly defined.
       7. All activities and gateways must have an assigned role.
       8. Role assignment rules:
-         - First, check the organization chart for agents with type 'agent' in appropriate teams. If no suitable agents are found, use the team name as the role. Team members who are not agents cannot be used as roles. Only create new teams or assignees if no suitable teams or agents exist in the organization chart
+         - First, check the organization chart for appropriate teams and prioritize using team members with type 'agent' as roles. If no suitable agents exist within the appropriate team, assign the team itself as the role. Team members who are not agents cannot be used as roles. Only create new teams if no suitable teams or agents exist in the organization chart
          - If a suitable role is found in the organization chart, use it and set origin as "used"
          - If no suitable role exists, create a new role and set origin as "created"
       9. Sequences with conditions must include a condition object.
@@ -110,7 +110,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
        3.  액티비티, 게이트웨이, 이벤트가 삭제되는 경우는 나와 연결된 앞뒤 액티비티 간의 시퀀스도 삭제하되, 삭제된 액티비티의 이전 단계와 다음단계의 액티비티를 시퀀스로 다시 연결해줘.
        4.  생성될 모든 값들은 기존 프로세스의 정보를 참고하여 생성해야한다.
        5.  추가되는 액티비티의 이전 단계 액티비티의 id도 beforeActivity에 반드시 넣어.
-       6.  추가될 액티비티, 게이트웨이의 "role" 은 회사 조직도에서 적절한 팀에 속한 type이 agent인 적절한 팀원을 우선적으로 찾아 사용하고, 팀 내 적절한 agent 가 존재하지 않는다면 팀을 역할로 할당한다. agent 가 아닌 팀원(사람)은 역할로써 사용할 수 없다. 그리고 적절한 팀이나 agent 모두 없는 경우에만 새로운 팀이나 새로운 담당자를 생성해야 한다.
+       6.  추가될 액티비티, 게이트웨이의 "role" 은 회사 조직도에서 해당 역할에 맞는 적절한 팀을 찾고 그 팀에 속한 type이 agent인 적절한 팀원을 우선적으로 찾아 사용하고, 역할에 맞는 팀 내 적절한 agent 가 존재하지 않는다면 팀을 역할로 할당한다. agent 가 아닌 팀원(사람)은 역할로써 사용할 수 없다. 그리고 적절한 팀이나 agent 모두 없는 경우에는 새로운 팀을 생성해야 한다.
        7.  기존 액티비티들의 위치정보는 바뀌면 안돼.
        8.  추가될 액티비티, 게이트웨이의 위치는 프로세스의 위치와 크기에 대한 설명을 참고하여 기존 액티비티의 위치를 참고하여 생성해줘.
        9.  이름이 들어가는것은 반드시 전부 한글로 할 것
@@ -218,7 +218,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
             "roles": [
               {
                 "name": "역할명(한글)", // 조직도에 존재하는 팀 또는 agent 의 이름, 없다면 임의로 생성
-                "endpoint": "역할 엔드포인트", // 조직도에 존재하는 팀 또는 agent 의 id, 없다면 임의로 생성
+                "endpoint": "역할 엔드포인트", // 조직도에 존재하는 팀 또는 agent 의 id, 없다면 임의로 생성. 영어로 생성할 것.
                 "resolutionRule": "역할 매핑 방법",
                 "origin": "used" | "created",  // 조직도에서 가져온 역할이라면 used, 새로 생성된 역할이라면 created
               }
