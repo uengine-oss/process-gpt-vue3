@@ -135,38 +135,43 @@ export default {
         if(!isLogin) {
             this.$router.push('/auth/login')
         }
-        const tenants = await backend.getTenants();
-        
-        if (tenants && tenants.length > 0) {
-            this.tenantInfos = tenants;
-            this.isOwner = true;
-            this.isLoading = false;
+        if(localStorage.getItem('tenantId')) {
+            this.toSelectedTenantPage(localStorage.getItem('tenantId'));
         } else {
-            // tenantInfos가 없다면 users 테이블에서 유저 정보를 가져온다
-            try {
-                const users = await backend.getUserAllTenants();
-                
-                if (users && users.length > 0) {
-                    // tenant_id를 추출하여 고유한 tenant 목록을 만든다
-                    const uniqueTenants = [...new Set(users.map(user => user.tenant_id))];
-                    
-                    if (uniqueTenants.length === 1) {
-                        // 유저 정보가 하나의 tenant에만 속해있다면 바로 리다이렉션
-                        const tenantId = uniqueTenants[0];
-                        if (tenantId && tenantId !== 'process-gpt') {
-                            this.toSelectedTenantPage(tenantId);
-                        }
-                    } else if (uniqueTenants.length > 1) {
-                        // 여러 tenant가 있다면 tenant 목록으로 설정
-                        this.tenantInfos = uniqueTenants.map(tenantId => ({ id: tenantId }));
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching user list:', error);
-            } finally {
+            const tenants = await backend.getTenants();
+        
+            if (tenants && tenants.length > 0) {
+                this.tenantInfos = tenants;
+                this.isOwner = true;
                 this.isLoading = false;
+            } else {
+                // tenantInfos가 없다면 users 테이블에서 유저 정보를 가져온다
+                try {
+                    const users = await backend.getUserAllTenants();
+                    
+                    if (users && users.length > 0) {
+                        // tenant_id를 추출하여 고유한 tenant 목록을 만든다
+                        const uniqueTenants = [...new Set(users.map(user => user.tenant_id))];
+                        
+                        if (uniqueTenants.length === 1) {
+                            // 유저 정보가 하나의 tenant에만 속해있다면 바로 리다이렉션
+                            const tenantId = uniqueTenants[0];
+                            if (tenantId && tenantId !== 'process-gpt') {
+                                this.toSelectedTenantPage(tenantId);
+                            }
+                        } else if (uniqueTenants.length > 1) {
+                            // 여러 tenant가 있다면 tenant 목록으로 설정
+                            this.tenantInfos = uniqueTenants.map(tenantId => ({ id: tenantId }));
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching user list:', error);
+                } finally {
+                    this.isLoading = false;
+                }
             }
         }
+        
     },
     methods: {
         toAddTenentPage() {
@@ -179,14 +184,18 @@ export default {
 
         async deleteTenant() {
             await backend.deleteTenant(this.tenantIdToDelete)
+            if(localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === this.tenantIdToDelete) {
+                localStorage.removeItem('tenantId');
+            }
             this.tenantInfos = this.tenantInfos.filter(tenant => tenant.id !== this.tenantIdToDelete)
         },
         
         async toSelectedTenantPage(tenantId) {
             await backend.setTenant(tenantId);
             
+            localStorage.setItem('tenantId', tenantId);
             // Android 웹뷰 브릿지 체크
-            if (window.AndroidBridge) {
+            if (window && window.AndroidBridge) {
                 // 네이티브 앱에 테넌트 변경 요청
                 window.AndroidBridge.changeTenant(tenantId);
                 return;

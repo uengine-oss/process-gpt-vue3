@@ -268,7 +268,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                 "elementType": "Activity",
                 "id": "activity_id(영문)",
                 "name": "액티비티명(한글)",
-                "type": "UserActivity" | "EmailActivity" | "ScriptActivity",
+                "type": "UserActivity" | "EmailActivity",
                 "source": "이전_컴포넌트_id",
                 "description": "액티비티 설명(한글)",
                 "instruction": "사용자 지침(한글)",

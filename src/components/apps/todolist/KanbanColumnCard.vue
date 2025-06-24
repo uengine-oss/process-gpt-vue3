@@ -59,7 +59,7 @@
                             {{ task.instName }}
                         </div>
                     </div>
-                    <div class="d-flex align-center justify-between mt-1">
+                    <div v-if="!userInfoForTask" class="d-flex align-center justify-between mt-1">
                         <div class="d-flex align-center">
                             <v-icon size="16" icon="mdi-calendar" />
                             <div class="body-text-1 text-dark ml-1">
@@ -76,7 +76,29 @@
                         </div>
                     </div>
                 </div>
-                <v-row v-if="userInfoForTask" class="pa-0 ma-0 mt-1 d-flex align-center">
+                <div v-if="userInfoForTask">
+                    <div class="d-flex align-center mt-1">
+                        <CalendarIcon size="16" class="mr-1" />
+                        <div class="body-text-1 text-dark">
+                            {{ formattedDate }}
+                        </div>
+                        <v-spacer></v-spacer>
+                        <div v-if="isDueTodayOrTomorrow" class="d-flex align-center ml-auto">
+                            <v-icon size="16" icon="mdi-alert" style="color: #FF9800;" />
+                            <span class="text-caption ml-1" style="color: #FF9800;">기한 임박</span>
+                        </div>
+                        <div v-else-if="isPastDue" class="d-flex align-center ml-auto">
+                            <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
+                            <span class="text-caption ml-1" style="color: #F44336;">기한 지남</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="pa-0">
+                    <div class="text-subtitle-2">
+                        {{ task.description }}
+                    </div>
+                </div>
+                <v-row class="pa-0 ma-0 mt-1 d-flex align-center">
                     <div class="mr-1" style="width: 24px;">
                         <v-img
                             :src="userInfoForTask.profile"
@@ -94,18 +116,7 @@
                         <span v-else>{{ userInfoForTask.username || userInfoForTask.email }}</span>
                         <!-- 프로필 이미지를 v-img로 표시, 없으면 기본 이미지 사용 -->
                     </div>
-                    <div class="d-flex align-center">
-                        <CalendarIcon size="16" />
-                        <div class="body-text-1 text-dark">
-                            {{ formattedDate }}
-                        </div>
-                    </div>
                 </v-row>
-                <div class="pa-0">
-                    <div class="text-subtitle-2">
-                        {{ task.description }}
-                    </div>
-                </div>
             </div>
 
             <v-dialog v-model="dialog" max-width="500" persistent>
