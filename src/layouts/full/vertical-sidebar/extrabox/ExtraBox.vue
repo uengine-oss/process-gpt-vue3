@@ -59,7 +59,6 @@ export default defineComponent({
     },
     methods: {
         logout() {
-            localStorage.removeItem('tenantId');
             this.authStore.logout();
         }
     }
