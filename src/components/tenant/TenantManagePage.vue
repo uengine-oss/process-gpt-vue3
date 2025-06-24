@@ -135,6 +135,15 @@ export default {
         if(!isLogin) {
             this.$router.push('/auth/login')
         }
+        
+        // URL 파라미터에서 clear=true인지 확인하고 로컬스토리지 클리어
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('clear') === 'true') {
+            localStorage.removeItem('tenantId');
+            // URL에서 clear 파라미터 제거
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
         if(localStorage.getItem('tenantId')) {
             this.toSelectedTenantPage(localStorage.getItem('tenantId'));
         } else {
