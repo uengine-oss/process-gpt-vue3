@@ -150,22 +150,31 @@ export default {
         },
         generateFormTask: {
             handler(newVal) {
+                let self = this;
                 if (newVal && Object.keys(newVal).length > 0) {
-                const canvas = this.bpmnViewer.get('canvas');
-                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                    const canvas = this.bpmnViewer.get('canvas');
+                    const elementRegistry = this.bpmnViewer.get('elementRegistry');
 
-                Object.keys(newVal).forEach((activityId) => {
-                    const element = elementRegistry.get(activityId);
+                    Object.keys(newVal).forEach((activityId) => {
+                        const element = elementRegistry.get(activityId);
+                        if (!element) return;
 
-                    if (!element) return; // 존재하지 않는 ID는 무시
+                        if (newVal[activityId] === 'generating') {
+                            canvas.addMarker(activityId, 'running');
 
-                    if (newVal[activityId] === 'generating') {
-                        canvas.addMarker(activityId, 'running');
-                        canvas.scrollToElement(element);
-                    } else if (newVal[activityId] === 'finished') {
-                        canvas.addMarker(activityId, 'generated');
-                    }
-                });
+                            // 위치 + 크기 기반으로 중심 계산
+                            const center = {
+                                x: element.x + element.width / 2,
+                                y: element.y + element.height / 2
+                            };
+
+                            canvas.zoom(1.5, center); // 확대 + 해당 위치로 이동
+                        } else if (newVal[activityId] === 'finished') {
+                            canvas.addMarker(activityId, 'generated');
+                            self.resetZoom();
+                        }
+                    });
+
                 }
             },
             deep: true
@@ -836,7 +845,7 @@ export default {
         },
         onContainerResizeFinished() {
             const container = this.$refs.container;
-            if (!container && this.isAIGenerated) return;
+            if (!container || this.isAIGenerated || !container.getBoundingClientRect) return;
 
             const { width, height } = container.getBoundingClientRect();
 

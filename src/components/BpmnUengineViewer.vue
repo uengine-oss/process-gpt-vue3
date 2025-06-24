@@ -666,7 +666,7 @@ export default {
         },
         onContainerResizeFinished() {
             const container = this.$refs.container;
-            if (!container && this.isAIGenerated) return;
+            if (!container || this.isAIGenerated || !container.getBoundingClientRect) return;
 
             const { width, height } = container.getBoundingClientRect();
 
@@ -675,7 +675,6 @@ export default {
             } else {
                 this.initDefaultOrientation('vertical');
             }
-
         }
     }
 };
