@@ -151,14 +151,21 @@ export default {
         generateFormTask: {
             handler(newVal) {
                 if (newVal && Object.keys(newVal).length > 0) {
-                    var canvas = this.bpmnViewer.get('canvas');
-                    Object.keys(newVal).forEach((activityId) => {
-                        if (newVal[activityId] === 'generating') {
-                            canvas.addMarker(activityId, 'running');
-                        } else if (newVal[activityId] === 'finished') {
-                            canvas.addMarker(activityId, 'generated');
-                        }
-                    });
+                const canvas = this.bpmnViewer.get('canvas');
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+
+                Object.keys(newVal).forEach((activityId) => {
+                    const element = elementRegistry.get(activityId);
+
+                    if (!element) return; // 존재하지 않는 ID는 무시
+
+                    if (newVal[activityId] === 'generating') {
+                        canvas.addMarker(activityId, 'running');
+                        canvas.scrollToElement(element);
+                    } else if (newVal[activityId] === 'finished') {
+                        canvas.addMarker(activityId, 'generated');
+                    }
+                });
                 }
             },
             deep: true
@@ -829,7 +836,7 @@ export default {
         },
         onContainerResizeFinished() {
             const container = this.$refs.container;
-            if (!container) return;
+            if (!container && isAIGenerated) return;
 
             const { width, height } = container.getBoundingClientRect();
 

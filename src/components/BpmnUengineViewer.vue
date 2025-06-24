@@ -666,7 +666,7 @@ export default {
         },
         onContainerResizeFinished() {
             const container = this.$refs.container;
-            if (!container) return;
+            if (!container && isAIGenerated) return;
 
             const { width, height } = container.getBoundingClientRect();
 
