@@ -16,8 +16,13 @@
             <div v-else class="circle" :style="{ width: circleSize + 'px', height: circleSize + 'px' }"></div> -->
             
             <PaintWaveAnimation 
-                :size="250" 
-                :isActive="isLoading" 
+                style="margin-top: -40%;"
+                :size="circleSize" 
+                :isActive="isLoading"
+                :isAudioPlaying="isAudioPlaying"
+                :audioBars="audioBars"
+                :volume="volume"
+                :threshold="threshold"
             />
             
             <AudioStream
@@ -30,6 +35,9 @@
                 :stopAudioStreamStatus="stopAudioStreamStatus"
                 :chatRoomId="chatRoomId"
             />
+            <div v-if="!isAudioPlaying && !isLoading" class="chatgpt-waveform">
+                <canvas ref="waveformCanvas" :width="canvasWidth" :height="canvasHeight"></canvas>
+            </div>
             <div class="controls">
                 <v-btn v-if="!isRecording && !isAudioPlaying && !isLoading" @click="toggleRecording()" icon density="comfortable">
                     <Icons :icon="'sharp-mic'"  />
@@ -40,9 +48,6 @@
                 <v-btn v-else @click="stopAudioStream()" icon density="comfortable">
                     <Icons :icon="'stop'"  />
                 </v-btn>
-                <div v-if="!isAudioPlaying && !isLoading" class="bars">
-                    <div v-for="n in 4" :key="n" class="bar" :style="{ height: boxHeight(n) + 'px' }"></div>
-                </div>
             </div>
         </div>
     </v-dialog>
@@ -81,6 +86,12 @@ export default {
             stopAudioStreamStatus: false,
             sendRecordingStatus: false,
             audioBars: [],
+            canvasWidth: Math.floor(window.innerWidth * 0.96), // 96vw 적용
+            canvasHeight: 100,
+            waveformData: [], // 파형 데이터 저장
+            animationId: null,
+            scrollPosition: 0, // 스크롤 위치
+            lastUpdateTime: 0, // 마지막 업데이트 시간
         };
     },
     methods: {
@@ -121,6 +132,18 @@ export default {
                 sum += this.dataArray[i];
             }
             this.volume = sum / this.dataArray.length;
+            
+            // 파형 데이터 추가 (음성이 있을 때만 진폭 생성)
+            const amplitude = this.volume > this.threshold 
+                ? (this.volume - this.threshold) / (100 - this.threshold) * 25
+                : 0;
+            this.waveformData.push(amplitude);
+            
+            // 배열 크기 제한
+            if (this.waveformData.length > this.canvasWidth * 2) {
+                this.waveformData.shift();
+            }
+            
             requestAnimationFrame(this.updateVolume);
         },
         boxHeight(n) {
@@ -130,16 +153,19 @@ export default {
         async toggleRecording() {
             if (this.isRecording) {
                 this.isRecording = false;
+                this.stopWaveformAnimation();
             } else {
                 this.isRecording = true;
                 await this.getMicrophoneInput();
+                this.startWaveformAnimation();
             }
             this.$emit('start');
         },
         sendRecording() {
             this.isRecording = false;
             this.stopAudioStreamStatus = false;
-            this.sendRecordingStatus = true
+            this.sendRecordingStatus = true;
+            this.stopWaveformAnimation();
             if (this.audioContext) {
                 this.audioContext.close();
                 this.audioContext = null;
@@ -167,7 +193,82 @@ export default {
             this.isLoading = false;
             this.stopAudioStreamStatus = false;
             this.sendRecordingStatus = false
-        }
+        },
+        drawWaveform() {
+            const canvas = this.$refs.waveformCanvas;
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const centerY = this.canvasHeight / 2;
+            const waveSpacing = 4; // 각 파형 간격 (픽셀)
+            
+            // 캔버스 클리어
+            ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+            
+            // 매우 천천히 스크롤 (매 프레임마다 아주 작은 값으로 증가)
+            this.scrollPosition += 0.02;
+            
+            // 파형 데이터가 없어도 기본 점선이 지나가도록 최소 데이터 생성
+            const displayData = [];
+            const totalPoints = Math.floor(this.canvasWidth / waveSpacing) + 10; // 여유분 추가
+            
+            // 기존 파형 데이터 복사
+            for (let i = 0; i < this.waveformData.length; i++) {
+                displayData.push(this.waveformData[i]);
+            }
+            
+            // 부족한 부분은 0으로 채워서 점선이 계속 지나가도록
+            while (displayData.length < totalPoints) {
+                displayData.push(0);
+            }
+            
+            // 파형 그리기 (점선 + 실선)
+            for (let i = 0; i < displayData.length; i++) {
+                const x = this.canvasWidth - (displayData.length - i) * waveSpacing - (this.scrollPosition % waveSpacing) + waveSpacing * 5;
+                const amplitude = displayData[i];
+                
+                if (x >= -waveSpacing && x <= this.canvasWidth + waveSpacing) {
+                    if (amplitude > 0) {
+                        // 음성이 있는 부분: 실선 파형
+                        ctx.strokeStyle = 'rgb(255, 255, 255)';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([]);
+                        const yTop = centerY - amplitude;
+                        const yBottom = centerY + amplitude;
+                        ctx.beginPath();
+                        ctx.moveTo(x, yTop);
+                        ctx.lineTo(x, yBottom);
+                        ctx.stroke();
+                    } else {
+                        // 음성이 없는 부분: 점선
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([2, 2]);
+                        ctx.beginPath();
+                        ctx.moveTo(x, centerY - 1);
+                        ctx.lineTo(x, centerY + 1);
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            // 애니메이션 계속
+            this.animationId = requestAnimationFrame(this.drawWaveform);
+        },
+        
+        startWaveformAnimation() {
+            if (this.animationId) {
+                cancelAnimationFrame(this.animationId);
+            }
+            this.drawWaveform();
+        },
+        
+        stopWaveformAnimation() {
+            if (this.animationId) {
+                cancelAnimationFrame(this.animationId);
+                this.animationId = null;
+            }
+        },
     },
     computed: {
         circleSize() {
@@ -415,5 +516,22 @@ export default {
   .container {
     height: calc(100vh - 194px);
   }
+}
+
+.chatgpt-waveform {
+    position: absolute;
+    bottom: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96vw;
+    height: 100px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    padding: 10px;
+}
+
+.chatgpt-waveform canvas {
+    border-radius: 10px;
 }
 </style>

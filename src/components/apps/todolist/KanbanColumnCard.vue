@@ -101,7 +101,7 @@
                 <v-row class="pa-0 ma-0 mt-1 d-flex align-center">
                     <div class="mr-1" style="width: 24px;">
                         <v-img
-                            :src="userInfoForTask.profile"
+                            :src="userInfoForTask && userInfoForTask.profile ? userInfoForTask.profile : '/images/defaultUser.png'"
                             alt="profile"
                             width="24"
                             height="24"
@@ -111,9 +111,9 @@
                     </div>
                     <!-- 텍스트를 세로 기준 중앙정렬하기 위해 flex와 align-center 적용 -->
                     <div class="body-text-2 text-dark mr-2">
-                        <!-- isMyTask가 아니면 '나'로 표시, 맞으면 기존 이름/이메일 표시 -->
-                        <span v-if="isMyTask">{{ $t('TodoTaskItemCard.myTask') }}</span>
-                        <span v-else>{{ userInfoForTask.username || userInfoForTask.email }}</span>
+                        <!-- isMyTask가 아니면 '내 업무'로 표시, 맞으면 기존 이름/이메일 표시 -->
+                        <span v-if="isMyTask && !isTodolistPath">{{ $t('TodoTaskItemCard.myTask') }}</span>
+                        <span v-else-if="userInfoForTask">{{ userInfoForTask.username || userInfoForTask.email }}</span>
                         <!-- 프로필 이미지를 v-img로 표시, 없으면 기본 이미지 사용 -->
                     </div>
                 </v-row>

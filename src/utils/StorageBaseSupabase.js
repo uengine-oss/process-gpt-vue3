@@ -655,6 +655,64 @@ export default class StorageBaseSupabase {
             throw new StorageBaseError('error in watch', error, arguments);
         }
     }
+    
+    async _watch_off(ref) {   
+        return await ref.unsubscribe();
+    }
+
+    async _watch(options, callback) {         
+        /*
+            options: {
+                channel: 'custom-channel', // 채널명
+                type: 'postgres_changes', // 이벤트 타입
+                event: '*', // 이벤트명
+                schema: 'public', // 스키마명
+                table: 'users' // 테이블명
+            }
+        */
+        let ref = window.$supabase;
+        // 채널 설정
+        const channelName = options.channel || 'custom-channel';
+        ref = ref.channel(channelName);
+       
+        // 이벤트 타입 지정 
+        const eventType = options.type || 'postgres_changes';
+        /* 
+            'postgres_changes': Postgres 테이블의 INSERT, UPDATE, DELETE 등 데이터 변경 감지
+            'broadcast': 같은 채널에 연결된 클라이언트끼리 메시지를 주고받을 때 사용 (실시간 채팅, 알림, 커스텀 이벤트 등에 활용)
+            'presence': 같은 채널에 접속한 사용자들의 접속/이탈 상태(접속자 목록, 온라인/오프라인 등)를 실시간으로 감지
+        */
+
+        // 이벤트 옵션
+        let eventOptions = {};
+        if (eventType === 'postgres_changes') {
+            eventOptions = {
+                event: options.event || '*', // INSERT, UPDATE, DELETE, *
+                schema: options.schema || 'public',
+                table: options.table,     
+                filter: options.filter
+            };
+        } else if (eventType === 'broadcast') {
+            eventOptions = {
+                event: options.event || 'message'
+            };
+        } else if (eventType === 'presence') {
+            eventOptions = {
+                event: options.event || 'sync'
+            };
+        }
+       
+        ref = ref.on(
+            eventType,
+            eventOptions,
+            (payload) => {
+                callback(payload);
+            }
+        );
+        await ref.subscribe();
+
+        return ref;
+    }
 
     async watch(path, channel, callback) {
         try {
@@ -799,6 +857,9 @@ export default class StorageBaseSupabase {
                 query = query.match(options.match);
             }
 
+            if (options.inArray) {
+                query = query.in(options.inArray.column, options.inArray.values);
+            }
             // Add match condition for text[] type column
             if (options.matchArray) {
                 query = query.contains(options.matchArray.column, options.matchArray.values);
