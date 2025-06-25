@@ -361,6 +361,21 @@ export default {
             this.chatRenderKey++;
         });
 
+        // ProcessDefinitionMap에서 전달된 메시지 처리 (query parameter 확인)
+        if (this.$route.query.processMessage) {
+            try {
+                const messageData = JSON.parse(decodeURIComponent(this.$route.query.processMessage));
+                setTimeout(() => {
+                    this.handleProcessDefinitionMessage(messageData);
+                }, 500); // 충분한 시간을 두고 처리
+                
+                // query parameter 제거
+                this.$router.replace({ path: '/chats' });
+            } catch (error) {
+                console.error('Failed to parse process message:', error);
+            }
+        }
+
         if (this.$route.query.id) {
             this.chatRoomSelected(this.chatRoomList.find(room => room.id === this.$route.query.id));
         } else if (this.$route.query.code && this.$route.query.state && this.$route.query.scope) {
@@ -957,6 +972,58 @@ export default {
                     }
                     this.generatedWorkList.push(responseObj)
                 }
+            }
+        },
+        handleProcessDefinitionMessage(message) {
+            console.log('handleProcessDefinitionMessage called with:', message);
+            console.log('Current chatRoomList:', this.chatRoomList);
+            
+            // "Process GPT" 이름을 가진 채팅방 찾기
+            let systemChatRoom = this.chatRoomList.find(room => 
+                room.name === "Process GPT"
+            );
+            
+            // "Process GPT" 채팅방이 없으면 시스템 사용자가 포함된 첫 번째 채팅방 찾기
+            if (!systemChatRoom) {
+                systemChatRoom = this.chatRoomList.find(room => 
+                    room.participants.some(participant => participant.id === "system_id")
+                );
+            }
+            
+            console.log('Found system chat room:', systemChatRoom);
+            
+            if (systemChatRoom) {
+                // 시스템 채팅방 선택
+                this.chatRoomSelected(systemChatRoom);
+                console.log('Selected system chat room');
+                
+                // 메시지 전송
+                setTimeout(() => {
+                    console.log('Sending message:', message);
+                    this.beforeSendMessage(message);
+                }, 100);
+            } else {
+                console.log('No system chat room found, creating new one');
+                // 시스템 채팅방이 없으면 생성
+                let newSystemChatRoom = {
+                    "name": "Process GPT",
+                    "participants": [
+                        {
+                            email: "system@uengine.org",
+                            id: "system_id",
+                            username: "System",
+                            is_admin: true,
+                            notifications: null
+                        }
+                    ]
+                };
+                this.createChatRoom(newSystemChatRoom);
+                
+                // 채팅방 생성 후 메시지 전송
+                setTimeout(() => {
+                    console.log('Sending message after creating room:', message);
+                    this.beforeSendMessage(message);
+                }, 200);
             }
         },
     }

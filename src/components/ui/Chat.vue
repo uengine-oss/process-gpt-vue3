@@ -1,12 +1,12 @@
 <template>
-    <div style="background-color: rgba( 255, 255, 255, 1 );"
+    <div v-if="!definitionMapOnlyInput" style="background-color: rgba( 255, 255, 255, 1 );"
         class="chat-info-view-wrapper"
     >
         <div class="chat-info-view-wrapper">
             <div class="chat-info-view-area">
                 <div class="chat-info-view-area">
                     <slot name="attachments-area"></slot>
-                    <slot name="custom-title">
+                    <slot name="custom-title" v-if="!definitionMapOnlyInput">
                         <div>
                             <div v-if="name && name !== ''" class="d-flex gap-2 align-center pa-4">
                                 <div>
@@ -27,7 +27,7 @@
                         </div>
                     </slot>
 
-                    <perfect-scrollbar class="h-100 chat-view-box" ref="scrollContainer" @scroll="handleScroll">
+                    <perfect-scrollbar v-if="!definitionMapOnlyInput" class="h-100 chat-view-box" ref="scrollContainer" @scroll="handleScroll">
                         <div class="d-flex w-100"
                             :style="$globalState.state.isRightZoomed ? 'height:100vh;' : ''"
                         >
@@ -462,7 +462,7 @@
                             </v-col>
                         </div>
                     </perfect-scrollbar>
-                    <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
+                    <div v-if="!definitionMapOnlyInput" :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
                                 <v-tooltip :text="$t('chat.headset')">
@@ -564,10 +564,10 @@
                         </v-row>
                     </div>
                 </div>
-                <v-divider v-if="!hideInput" />
+                <v-divider v-if="!hideInput && !definitionMapOnlyInput" />
             </div>
 
-            <div v-if="!hideInput" style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
+            <div v-if="!hideInput && !definitionMapOnlyInput" style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
                 <div class="message-info-box" v-if="isReply || (!isAtBottom && previewMessage)">
                     <div class="message-info-content">
                         <template v-if="isReply">
@@ -587,7 +587,7 @@
                     </div>
                 </div>
             </div>
-            <v-divider v-if="!hideInput" />
+            <v-divider v-if="!hideInput && !definitionMapOnlyInput" />
 
             <div v-if="!hideInput" class="chat-info-message-input-box">
                 <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
@@ -696,10 +696,192 @@
                     </div>
                 </form>
             </div>
-            <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
-                :audioResponse="newMessage" :chatRoomId="chatRoomId" :recordingMode="recordingMode" />
         </div>
     </div>
+    <!-- 프로세스 정의 체계도 상단 chat UI -->
+    <div v-else>
+        <v-card elevation="10" class="pa-4">
+            <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
+                <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
+                    class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.definitionMapInputMessage')"
+                    auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
+                    @input="handleTextareaInput"
+                    @paste="handlePaste"
+                >
+                </v-textarea>
+                <div class="d-flex justify-space-between align-center w-100 pa-2">
+                    <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
+                        <v-row class="pa-0 ma-0">
+                            <div class="definition-map-chat-menu-background">
+                                <v-tooltip :text="$t('chat.headset')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn @click="openChatMenu(); recordingModeChange()"
+                                            class="text-medium-emphasis"
+                                            icon
+                                            variant="text"
+                                            v-bind="props"
+                                            style="width:30px; height:30px;"
+                                        >
+                                            <Icons :icon="'round-headset'" :size="20"  />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
+                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            <Icons :icon="'document'" :size="20" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-tooltip :text="$t('chat.camera')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
+                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            <Icons :icon="'camera'" :size="20" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-tooltip :text="$t('chat.addImage')">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); uploadImage()" v-bind="props"
+                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            <Icons :icon="'add-media-image'" :size="20" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-tooltip text="Draft Agent">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-if="(type == 'instances' || type == 'chats') && (agentInfo && !agentInfo.isRunning)"
+                                            :disabled="!(newMessage || agentInfo.draftPrompt)" icon variant="text"
+                                            class="text-medium-emphasis" @click="openChatMenu(); requestDraftAgent()" v-bind="props"
+                                            style="width:30px; height:30px; margin:1px 0px 0px 5px;">
+                                            <Icons :icon="'document-sparkle'" :size="20"  />
+                                        </v-btn>
+                                        <v-btn v-if="(type == 'instances' || type == 'chats') && (agentInfo && agentInfo.isRunning)" icon variant="text"
+                                            class="text-medium-emphasis" style="width:30px; height:30px;">
+                                            <v-progress-circular :size="20" indeterminate color="primary"></v-progress-circular>
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && (agentInfo && !agentInfo.isRunning)"
+                                    ref="uploadForm" @submit.prevent="openChatMenu(); submitFile()"
+                                    style="height:30px;"
+                                    class="chat-selected-file"
+                                >
+                                    <v-row class="ma-0 pa-0"
+                                        :style="file && file.length > 0 ? 'margin:-13px 0px 0px 7px !important;' : ''"
+                                    >
+                                        <v-tooltip :text="$t('chat.fileUpLoad')">
+                                            <template v-slot:activator="{ props }">
+                                                <v-btn v-if="file && file.length > 0" type="submit" 
+                                                    v-bind="props"
+                                                    icon variant="text"
+                                                    class="text-medium-emphasis"
+                                                    style="width:30px;
+                                                        height:30px;
+                                                        margin:12.5px 0px 0px 0px;"
+                                                >
+                                                    <Icons :icon="'upload'" />
+                                                </v-btn>
+                                            </template>
+                                        </v-tooltip>
+                                        <v-file-input class="chat-file-up-load"
+                                            :class="{'chat-file-up-load-display': file && file.length > 0}"
+                                            :style="file && file.length > 0 ? '' : 'padding:5px 0px 0px 8px !important; width:30px !important; height:30px !important;'"
+                                            v-model="file"
+                                            label="Choose a file"
+                                            prepend-icon="mdi-paperclip"
+                                            outlined
+                                            :disabled="disableChat"
+                                        ></v-file-input>
+                                        <v-tooltip v-if="type == 'chats' && !isSystemChat" :text="ProcessGPTActive ? $t('chat.isDisableProcessGPT') : $t('chat.isEnableProcessGPT')">
+                                            <template v-slot:activator="{ props }">
+                                                <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); toggleProcessGPTActive()" v-bind="props"
+                                                    style="width:30px; height:30px; margin-left:12px;" :disabled="disableChat">
+                                                    <img :style="ProcessGPTActive ? 'opacity:1' : 'opacity:0.5'"
+                                                        src="@/assets/images/chat/chat-icon.png"
+                                                        style="height:24px;"
+                                                    />
+                                                </v-btn>
+                                            </template>
+                                        </v-tooltip>
+                                    </v-row>
+                                </v-form>
+                            </div>
+                        </v-row>
+                    </div>
+                    
+                    <div>
+                        <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                            class="mr-1 text-medium-emphasis"
+                            density="comfortable"
+                            icon
+                            variant="outlined"
+                            size="small"
+                            style="border-color: #e0e0e0 !important;"
+                        >
+                            <Icons :icon="'sharp-mic'" :size="'16'" />
+                        </v-btn>
+                        <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                            class="mr-1 text-medium-emphasis"
+                            density="comfortable"
+                            icon
+                            variant="outlined"
+                            size="small"
+                            style="border-color: #e0e0e0 !important;"
+                        >
+                            <Icons :icon="'stop'" :size="'16'" />
+                        </v-btn>
+                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
+
+                        <v-btn v-if="!isLoading"
+                            class="cp-send text-medium-emphasis"
+                            color="primary" 
+                            variant="outlined" 
+                            type="submit" 
+                            density="comfortable"
+                            icon
+                            size="small"
+                            style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
+                            @click="beforeSend"
+                            :disabled="disableBtn"
+                        >
+                            <icons :icon="'send-outline'" :size="16" />
+                        </v-btn>
+                        <v-btn v-else 
+                            class="cp-send text-medium-emphasis"
+                            color="primary" 
+                            variant="outlined" 
+                            type="submit" 
+                            density="comfortable"
+                            icon
+                            size="small"
+                            style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
+                            @click="isLoading = !isLoading"
+                        >
+                            <Icons :icon="'outline-stop-circle'" :size="16" />
+                        </v-btn>
+                    </div>
+                </div>
+                
+                <div v-if="showUserList" class="user-list"
+                    style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
+                    <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
+                        style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
+                        <img :src="user.profile" alt="profile"
+                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
+                        <div>
+                            <div>{{ user.username }}</div>
+                            <div style="font-size: 0.8em; color: #666;">{{ user.email }}</div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </v-card>
+    </div>
+    <Record @close="recordingModeChange()" @start="startRecording()" @stop="stopRecording()"
+        :audioResponse="newMessage" :chatRoomId="chatRoomId" :recordingMode="recordingMode" />
 </template>
 
 <script>
@@ -751,6 +933,10 @@ export default {
         isMobile: Boolean,
         newMessageInfo: Object,
         hideInput: {
+            type: Boolean,
+            default: false
+        },
+        definitionMapOnlyInput: {
             type: Boolean,
             default: false
         }
@@ -1271,11 +1457,28 @@ export default {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;
             } else {
-                this.$emit('sendMessage', {
-                    image: this.attachedImg,
-                    text: this.newMessage,
-                    mentionedUsers: this.mentionedUsers
-                });
+                if (this.definitionMapOnlyInput) {
+                    // definitionMapOnlyInput 모드일 때는 메시지를 query parameter로 전달하고 /chats로 이동
+                    const messageData = {
+                        text: this.newMessage,
+                        image: this.attachedImg,
+                        mentionedUsers: this.mentionedUsers
+                    };
+                    
+                    // /chats 페이지로 이동 (query parameter로 메시지 전달)
+                    this.$router.push({
+                        path: '/chats',
+                        query: {
+                            processMessage: encodeURIComponent(JSON.stringify(messageData))
+                        }
+                    });
+                } else {
+                    this.$emit('sendMessage', {
+                        image: this.attachedImg,
+                        text: this.newMessage,
+                        mentionedUsers: this.mentionedUsers
+                    });
+                }
             }
             if (this.isReply) this.isReply = false;
             this.attachedImg = null;
@@ -1653,6 +1856,12 @@ pre {
     max-height: 300px;
     overflow-y: auto;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.definition-map-chat-menu-background {
+    // background-color: rgb(var(--v-theme-primary), 0.15) !important;
+    padding: 0px;
+    display: flex;
+    align-items: center;
 }
 
 .chat-menu-background {
