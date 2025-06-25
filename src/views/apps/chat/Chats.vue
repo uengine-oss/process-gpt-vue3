@@ -828,15 +828,16 @@ export default {
                         }
                         me.putObject(`calendar/${participant}`, calendarObj);
                     });
-                } else if(responseObj.work == 'CreateProcessDefinition'){
-                    systemMsg = this.$t('chats.processDefinitionCreated')
-                    me.$store.dispatch('updateMessages', me.messages);
-                    me.$router.push('/definitions/chat');
-                } else if(responseObj.work == 'ModifyProcessDefinition'){
-                    systemMsg = this.$t('chats.processDefinitionModificationStarted')
-                    me.$store.dispatch('updateEditMessages', me.messages)
-                    me.$router.push(`/definitions/${responseObj.processId}`);
-                }
+                } 
+                // else if(responseObj.work == 'CreateProcessDefinition'){
+                //     systemMsg = this.$t('chats.processDefinitionCreated')
+                //     me.$store.dispatch('updateMessages', me.messages);
+                //     me.$router.push('/definitions/chat');
+                // } else if(responseObj.work == 'ModifyProcessDefinition'){
+                //     systemMsg = this.$t('chats.processDefinitionModificationStarted')
+                //     me.$store.dispatch('updateEditMessages', me.messages)
+                //     me.$router.push(`/definitions/${responseObj.processId}`);
+                // }
 
                 systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
 
