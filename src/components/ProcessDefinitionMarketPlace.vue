@@ -76,7 +76,7 @@
                             {{ getCategoryLabel(definition) }}
                         </div>
                         <v-card variant="outlined">
-                            <v-img class="marketplace-image" height="140px" cover>
+                            <v-img class="marketplace-image" height="140px" cover :src="definition.image || ''">
                                 <div class="chip-container pb-2">
                                     <v-chip
                                         v-for="tag in definition.tags"
@@ -207,7 +207,7 @@
                             {{ getCategoryLabel(definition) }}
                         </div>
                         <v-card variant="outlined">
-                            <v-img class="marketplace-image" height="140px" cover>
+                            <v-img class="marketplace-image" height="140px" cover :src="definition.image || ''">
                                 <div class="chip-container pb-2">
                                     <v-chip
                                         v-for="tag in definition.tags"

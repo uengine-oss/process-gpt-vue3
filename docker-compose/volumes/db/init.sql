@@ -38,7 +38,7 @@ create table if not exists public.users (
     role text null,
     tenant_id text null,
     device_token text null,
-    google_credentials TEXT,
+    google_credentials jsonb,
     google_credentials_updated_at TIMESTAMP WITH TIME ZONE,
     constraint users_pkey primary key (id, tenant_id),
     constraint users_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
@@ -384,30 +384,6 @@ FROM
     JOIN todolist t ON d.task_id = t.id;
 
 -- Create functions
-CREATE OR REPLACE FUNCTION encrypt_credentials(credentials TEXT)
-RETURNS TEXT AS $$
-BEGIN
-    RETURN pgp_sym_encrypt(credentials, current_setting('app.settings.encryption_key'));
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION decrypt_credentials(encrypted_credentials TEXT)
-RETURNS TEXT AS $$
-BEGIN
-    RETURN pgp_sym_decrypt(encrypted_credentials::bytea, current_setting('app.settings.encryption_key'));
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE OR REPLACE FUNCTION encrypt_credentials_trigger()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.google_credentials IS NOT NULL THEN
-        NEW.google_credentials = encrypt_credentials(NEW.google_credentials);
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION set_user_permissions_id()
 RETURNS TRIGGER AS $$
 BEGIN

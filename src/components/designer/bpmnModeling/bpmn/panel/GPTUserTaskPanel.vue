@@ -12,9 +12,13 @@
             <v-window-item value="setting" class="pa-4">
                 <div class="mb-4">{{ $t('BpmnPropertyPanel.role') }}: {{ copyUengineProperties.role ? copyUengineProperties.role.name : '' }}</div>
                 <!-- <v-text-field v-model="name" label="이름" autofocus class="mb-4"></v-text-field> -->
+                <!-- Duration -->
                 <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
+                <!-- Instruction -->
                 <Instruction v-model="activity.description" class="mb-4"></Instruction>
+                <!-- Checkpoints -->
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
+                <!-- Attachments -->
                 <div>
                     <v-file-input
                         label="첨부파일"
@@ -32,6 +36,11 @@
                         </div>
                     </div>
                 </div>
+                <!-- Draft -->
+                <div>
+                    <v-checkbox v-model="activity.isDraft" hide-details density="compact" label="Draft 사용">
+                    </v-checkbox>
+                </div>
             </v-window-item>
             <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
                 <FormDefinition
@@ -40,7 +49,6 @@
                     :formId="formId"
                     v-model="tempFormHtml"
                 />
-                
             </v-window-item>
         </v-window>
     </div>
@@ -84,7 +92,8 @@ export default {
                 duration: 5,
                 attachments: [],
                 instruction: '',
-                checkpoints: ['']
+                checkpoints: [''],
+                isDraft: false
             },
             formId: '',
             tempFormHtml: '',
@@ -98,6 +107,7 @@ export default {
             const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
             if (activity) {
                 this.activity = activity;
+                if (!this.activity.isDraft) this.activity.isDraft = false;
             } else {
                 console.log('Activity not found');
             }

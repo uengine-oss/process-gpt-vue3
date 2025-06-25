@@ -136,6 +136,7 @@
                         @sendMessage="beforeSendMessage"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
+                        @addRole="addRole"
                     >
                         <template v-slot:custom-title>
                             <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
@@ -167,6 +168,7 @@
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
+                    @addRole="addRole"
                 >
                     <template v-slot:custom-title>
                         <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
@@ -299,6 +301,7 @@ export default {
         isPreviewPDFDialog: false,
         marketplaceDialog: false,
         isAIGenerated: false,
+        organizationChart: [],
     }),
     async created() {
         $try(async () => {
@@ -349,6 +352,14 @@ export default {
     
                 if (this.fullPath && this.fullPath != '') {
                     this.chatRoomId = this.fullPath;
+                }
+            }
+
+            const data = await this.getData(`configuration`, { match: { key: 'organization' } });
+            if (data && data.value) {
+                // this.organizationChartId = data.uuid;
+                if (data.value.chart) {
+                    this.organizationChart = data.value.chart;
                 }
             }
         });
@@ -431,6 +442,56 @@ export default {
         }
     },
     methods: {
+        async addRole(newRoleInfo){
+            let organizationChart = [];
+            let organizationChartId = null;
+            const data = await this.getData(`configuration`, { match: { key: 'organization' } });
+            if (data && data.value) {
+                organizationChartId = data.uuid;
+                if (data.value.chart) {
+                    organizationChart = data.value.chart;
+                    if (!organizationChart) {
+                        organizationChart = [];
+                    }
+                }
+            }
+
+            const newTeam = {
+                id: newRoleInfo.endpoint,
+                data: {
+                    id: newRoleInfo.endpoint,
+                    name: newRoleInfo.name,
+                    isTeam: true,
+                    img: '/images/chat-icon.png'
+                },
+                children: []
+            }
+
+            organizationChart.children.push(newTeam);
+
+            var putObj =  {
+                key: 'organization',
+                value: {
+                    chart: organizationChart,
+                }
+            };
+            if (organizationChartId) {
+                putObj.uuid = organizationChartId;
+            }
+            await this.putObject("configuration", putObj);
+        },
+        setProcessDefinitionPrompt(){
+            if (this.processDefinitionMap) {
+                this.generator.setProcessDefinitionMap(this.processDefinitionMap);
+            }
+            if (this.processDefinition) {
+                this.generator.setProcessDefinition(this.processDefinition);
+            }
+
+            if (this.organizationChart) {
+                this.generator.setOrganizationChart(JSON.stringify(this.organizationChart));
+            }
+        },
         // 시퀀스 정보를 활용하여 activities 순서를 재정렬하는 함수
         reorderActivitiesBySequence(jsonData) {
             try {
@@ -535,6 +596,11 @@ export default {
                 this.generator.model = "gpt-4o";
             }
             this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
+
+            if(!this.isConsultingMode){
+                this.setProcessDefinitionPrompt();
+            }
+
             this.startGenerate();
         },
         async beforeSaveDefinition(info){
@@ -919,12 +985,7 @@ export default {
                     preferredLanguage: 'Korean'
                 });
                 this.generator.client.genType = 'proc_def'
-                if (this.processDefinitionMap) {
-                    this.generator.setProcessDefinitionMap(this.processDefinitionMap);
-                }
-                if (this.processDefinition) {
-                    this.generator.setProcessDefinition(this.processDefinition);
-                }
+                this.setProcessDefinitionPrompt();
             }
             this.sendMessage(newMessage);
         },
@@ -1404,6 +1465,20 @@ export default {
                                     "content": `생성된 프로세스 정의에 대하여 추가적인 요청사항이 있으시다면 말씀해주세요.`,
                                     "timeStamp": Date.now()
                                 });
+                            }
+
+                            if(jsonProcess.roles) {
+                                jsonProcess.roles.forEach(role => {
+                                    if(role.origin == 'created'){
+                                        this.messages.push({
+                                            "role": "system",
+                                            "content": `${role.name} 역할이 새로 추가되었습니다. 해당 역할을 조직도에 추가하시겠습니까?`,
+                                            "timeStamp": Date.now(),
+                                            "type": "add_role",
+                                            "newRoleInfo": role
+                                        })
+                                    }
+                                })
                             }
         
                             this.$try({

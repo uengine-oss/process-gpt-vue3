@@ -72,6 +72,7 @@
                     <v-window-item value="gantt">
                         <div class="gantt-area" v-if="!isLoading">
                             <GanttChart 
+                                :key="`gantt-${updatedKey}-${instance?.instId}`"
                                 :tasks="tasks" 
                                 :dependencies="dependencies"
                                 :users="userList" 
@@ -86,7 +87,11 @@
                     </v-window-item>
                     <v-window-item value="progress">
                         <div style="height: 73vh;">
-                            <InstanceProgress :instance="instance"/>
+                            <InstanceProgress 
+                                :key="`progress-${updatedKey}-${instance?.instId}`"
+                                :instance="instance"
+                                ref="progress"
+                            />
                         </div>
                     </v-window-item>
                     <v-window-item value="todo">
@@ -101,12 +106,15 @@
                                         <PlusIcon stroke-width="2" />
                                     </v-avatar>
                                 </div>
-                                <KanbanBoard class="instance-card-kanban-board"
+                                <KanbanBoard 
+                                    :key="`kanban-${updatedKey}-${instance?.instId}`"
+                                    class="instance-card-kanban-board"
                                     :columns="columns" :users="userList"
                                     :isNotAll="false"
                                     :showAddButton="false"
                                     @loadMore="handleLoadMore"
                                     @updateStatus="updateStatus"
+                                    ref="todo"
                                 />
                             </div>
 
@@ -120,7 +128,11 @@
                         </div>
                     </v-window-item>
                     <v-window-item value="workhistory">
-                        <InstanceWorkHistory :instance="instance"/>
+                        <InstanceWorkHistory 
+                            :key="`workhistory-${updatedKey}-${instance?.instId}`"
+                            :instance="instance"
+                            ref="workhistory"
+                        />
                     </v-window-item>
                 </v-window>
             </div>
@@ -184,6 +196,8 @@ export default {
         },
         async tab(newVal, oldVal) {
             if (newVal !== oldVal) {
+                // 탭 변경 시 해당 컴포넌트 초기화
+                await this.$nextTick();
                 const activeComponents = this.$refs[newVal];
                 if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
                     await activeComponents[0].init();
@@ -199,6 +213,22 @@ export default {
                     } else {
                         this.tab = "progress";
                     }
+                }
+            }
+        },
+        // 인스턴스 변경 시 하위 컴포넌트 강제 리렌더링
+        instance: {
+            deep: true,
+            handler(newVal, oldVal) {
+                if (newVal && oldVal && newVal.instId !== oldVal.instId) {
+                    this.updatedKey++;
+                    // 현재 활성 탭의 컴포넌트 재초기화
+                    this.$nextTick(async () => {
+                        const activeComponents = this.$refs[this.tab];
+                        if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
+                            await activeComponents[0].init();
+                        }
+                    });
                 }
             }
         }
@@ -275,14 +305,20 @@ export default {
                     if (!me.id) return;
                     me.isLoading = true;
                     me.instance = await backend.getInstance(me.id);
+                    
                     if (me.instance) {
                         me.eventList = await backend.getEventList(me.instance.instId);
                     }
+                    
+                    // 인스턴스 변경 시 하위 컴포넌트 강제 리렌더링
+                    me.updatedKey++;
+                    
+                    // 인스턴스 로드 후 하위 컴포넌트 초기화
+                    await me.$nextTick();
                     const activeComponents = me.$refs[me.tab];
                     if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
                         await activeComponents[0].init();
                     }
-
 
                     let result = [];
                     const tasks = await backend.getWorkList({instId: me.id});

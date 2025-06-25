@@ -147,7 +147,7 @@
                 >
                     <template v-if="definitionList">
                         <!-- 정의 목록 리스트 -->
-                        <NavCollapse v-for="(definition, i) in definitionList.children" :key="i"
+                        <NavCollapse v-for="(definition, i) in definitionList" :key="i"
                             :item="definition" 
                             class="leftPadding"
                             @update:item="(def) => (definitionList[i] = def)" 
@@ -159,7 +159,7 @@
                 <!-- <v-col class="pa-0" style="flex: 1 1; overflow: auto;">
                     <div class="text-medium-emphasis cp-menu mt-3 ml-2">{{ $t('VerticalSidebar.trash') }}</div>
                         <template v-if="deletedDefinitionList">
-                            <NavCollapse v-for="(deletedDefinition, i) in deletedDefinitionList.children" :key="i"
+                            <NavCollapse v-for="(deletedDefinition, i) in deletedDefinitionList" :key="i"
                                 :item="deletedDefinition" 
                                 class="leftPadding"
                                 @update:item="(deletedDefinitionList[i] = $event)" 
@@ -542,9 +542,31 @@ export default {
                         }
                     }
                 });
-                this.definitionList = menu;
-                this.deletedDefinitionList = deletedMenu;
+                this.definitionList = this.sortProjectList(menu);
+                this.deletedDefinitionList = this.sortProjectList(deletedMenu);
             }
+        },
+        sortProjectList(list) {
+            const getCharType = (char) => {
+                if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(char)) return 1; // 한글
+                if (/[a-zA-Z]/.test(char)) return 2; // 영어
+                if (/[0-9]/.test(char)) return 3; // 숫자
+                return 4; // 기타
+            };
+
+            return list.children.sort((a, b) => {
+                const titleA = a.title.charAt(0);
+                const titleB = b.title.charAt(0);
+                
+                const typeA = getCharType(titleA);
+                const typeB = getCharType(titleB);
+
+                if (typeA !== typeB) {
+                    return typeA - typeB;
+                }
+                
+                return a.title.localeCompare(b.title, 'ko-KR');
+            });
         },
         navigateTo(path) {
             if (typeof path === 'function') {

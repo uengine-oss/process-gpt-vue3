@@ -17,7 +17,7 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS role text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tenant_id text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS device_token text;
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_credentials TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_credentials jsonb;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_credentials_updated_at TIMESTAMP WITH TIME ZONE;
 
 -- configuration table
@@ -242,3 +242,10 @@ CREATE POLICY project_insert_policy ON project FOR INSERT TO authenticated WITH 
 CREATE POLICY project_select_policy ON project FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY project_update_policy ON project FOR UPDATE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
 CREATE POLICY project_delete_policy ON project FOR DELETE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
+
+
+DROP TRIGGER IF EXISTS encrypt_credentials_trigger ON public.users;
+
+DROP FUNCTION IF EXISTS encrypt_credentials(TEXT);
+DROP FUNCTION IF EXISTS decrypt_credentials(TEXT);
+DROP FUNCTION IF EXISTS encrypt_credentials_trigger();

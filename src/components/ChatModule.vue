@@ -667,7 +667,6 @@ export default {
                     }
                 }
                 // jsonData = this.removeComments(jsonData);
-                console.log('formValues 에이전트 생성으로 전달', jsonData['formValues']);
                 if(this.isAgentMode) {
                     if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
                         this.EventBus.emit('form-values-updated', jsonData['formValues']);

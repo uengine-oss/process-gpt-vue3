@@ -229,12 +229,8 @@ class ProcessGPTBackend implements Backend {
 
     async getRawDefinition(defId: string, options: any) {
         try {
-            // if (defId) {
-            //     defId = defId.toLowerCase();
-            // } else {
-            //     return;
-            // }
-
+            if (!defId) return;
+            
             if (options) {
                 // 폼 정보를 불러오기 위해서
                 if(options.type === "form") {
@@ -1937,6 +1933,7 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 match: {
                     id: id,
+                    tenant_id: window.$tenantName
                 }
             }
             const lock = await storage.getObject('lock', options);
@@ -1949,12 +1946,12 @@ class ProcessGPTBackend implements Backend {
 
     async setLock(lockObj: any) {
         try {
-            const lock = await this.getLock(lockObj.id);
             var putObj: any = { 
                 id: lockObj.id, 
                 user_id: lockObj.user_id 
             };
-            if(lock) {
+            const lock = await this.getLock(lockObj.id);
+            if(lock && lock.tenant_id === window.$tenantName) {
                 putObj.uuid = lock.uuid;
                 await storage.putObject('lock', putObj);
             } else {
@@ -2251,8 +2248,13 @@ class ProcessGPTBackend implements Backend {
                 throw new Error(response.data.message);
             }
         } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
+            if (error && error.error && error.error == 'authentication_required') {
+                location.href = error.auth_url;
+                return { error: true, message: 'authentication_required' };
+            } else {
+                //@ts-ignore
+                throw new Error(error.message);
+            }
         }
     }
 

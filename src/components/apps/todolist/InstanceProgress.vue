@@ -77,7 +77,7 @@ export default {
         instance: {
             deep: true,
             async handler(newVal, oldVal) {
-                if (newVal.instanceId !== oldVal.instanceId) {
+                if (newVal && (!oldVal || newVal.instId !== oldVal.instId)) {
                     await this.init();
                 }
             }
