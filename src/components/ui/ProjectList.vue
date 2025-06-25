@@ -28,8 +28,8 @@ export default {
             await this.init();
         });
         
-      
         this.watchRef = await backend.watchProjectList((callback => {
+            console.log('callback', callback);
             const projectId = callback.id
             const project = callback.value
             const index = this.projectLists.findIndex(item => item.projectId == projectId);
