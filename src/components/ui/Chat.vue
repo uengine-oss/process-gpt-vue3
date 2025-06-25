@@ -195,13 +195,13 @@
                                                                                 <pre>{{ work }}</pre>
                                                                             </div>
                                                                         </v-expand-transition>
-                                                                        <v-img
+                                                                        <!-- <v-img
                                                                             v-if="work.work == 'CreateProcessDefinition'"
                                                                             :width="300"
                                                                             aspect-ratio="16/9"
                                                                             cover
                                                                             src="https://github.com/jhyg/project-shop-test/assets/65217813/1b551056-0428-41b6-9b90-76dd7942affc"
-                                                                        ></v-img>
+                                                                        ></v-img> -->
                                                                     </div>
                                                                 </div>
                                                                 <v-divider v-if="index < generatedWorkList.length - 1"></v-divider>
@@ -762,7 +762,7 @@ export default {
                 "ScheduleRegistration" : "calendar-line-duotone", // 달력 아이콘
                 "TodoListRegistration" : "overview", // TODO 리스트 아이콘
                 "StartProcessInstance" : "ibm-process-mining",
-                "CreateProcessDefinition" : "device-imac-cog"
+                // "CreateProcessDefinition" : "device-imac-cog"
             },
             recordingMode: false,
             defaultWorkIcon: defaultWorkIcon,

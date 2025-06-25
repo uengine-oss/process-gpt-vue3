@@ -2784,7 +2784,6 @@ class ProcessGPTBackend implements Backend {
                 tenant_id: window.$tenantName
             });
         } catch (error) {
-            
             //@ts-ignore
             throw new Error(error.message);
         }
