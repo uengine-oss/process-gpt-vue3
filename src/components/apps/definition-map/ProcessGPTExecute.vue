@@ -40,6 +40,7 @@
                             :simulationInstances="simulationInstances"
                             :activityIndex="activityIndex"
                             :processDefinition="processDefinition"
+                            :isStarted="true"
                             @close="closeDialog"
                             @executeProcess="executeProcess"
                             @backToPrevStep="backToPrevStep"
@@ -115,33 +116,10 @@ export default {
         },
         async init() {
             var me = this;
-            if(me.isSimulate == 'true') {
-                if(me.bpmn) {
-                    me.processDefinition.bpmn = me.bpmn;
-                }
-                me.definition = me.processDefinition;
-            } else {
-                const defInfo = await backend.getRawDefinition(me.definitionId);
-                me.definition = defInfo.definition;
+            if(me.bpmn) {
+                me.processDefinition.bpmn = me.bpmn;
             }
-            
-            me.roleMappings = me.definition.roles.map((role) => {
-                return {
-                    name: role.name,
-                    endpoint: role.endpoint || "",
-                    resolutionRule: role.resolutionRule
-                };
-            });
-
-            const roleBindings = await backend.bindRole(me.definition.roles);
-            if (roleBindings && roleBindings.length > 0) {
-                roleBindings.forEach((roleBinding) => {
-                    let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
-                    if(role) {
-                        role['endpoint'] = roleBinding.userId;
-                    }
-                })
-            }
+            me.definition = me.processDefinition;
 
             let startActivity = null;
             if(me.isSimulate == 'true') {
@@ -210,6 +188,24 @@ export default {
                     parameterValues: parameterValues || {}
                 }
                 me.renderKey++;
+
+                me.roleMappings = me.definition.roles.map((role) => {
+                    return {
+                        name: role.name,
+                        endpoint: role.endpoint || "",
+                        resolutionRule: role.resolutionRule
+                    };
+                });
+
+                const roleBindings = await backend.bindRole(me.definition.roles);
+                if (roleBindings && roleBindings.length > 0) {
+                    roleBindings.forEach((roleBinding) => {
+                        let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
+                        if(role) {
+                            role['endpoint'] = roleBinding.userId;
+                        }
+                    })
+                }
             }
         },
         closeDialog() {

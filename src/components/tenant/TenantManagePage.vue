@@ -17,7 +17,7 @@
         </v-row>
 
         <v-row no-gutters justify="center" class="mt-5">
-            <v-card @click="toAddTenentPage()"
+            <v-card @click="!isNavigating ? toAddTenentPage() : null"
                 elevation="9" variant="outlined"
                 style="padding: 10px;
                     display: flex;
@@ -26,6 +26,8 @@
                     border-radius: 10px !important;
                     width: 500px;"
                     color="primary"
+                :disabled="isNavigating"
+                :class="{ 'disabled-card': isNavigating }"
             >
                 <v-row class="pa-0 ma-0">
                     <Icons  :icon="'plus'" :size="16" class="mr-2" />
@@ -37,7 +39,7 @@
         <div style="display: flex; justify-content: center; align-items: center;">
             <div style="height: 450px; width: 500px; overflow-y: auto;">
                 <v-row no-gutters justify="center" class="mt-3" v-for="(tenantInfo, index) in tenantInfos" :key="index">
-                    <v-card @click="toSelectedTenantPage(tenantInfo.id)"
+                    <v-card @click="!isNavigating ? toSelectedTenantPage(tenantInfo.id) : null"
                         elevation="9" variant="outlined"
                         style="padding: 10px;
                             display: flex;
@@ -46,19 +48,29 @@
                             border-radius: 10px !important;
                             width: 500px;
                             height: 45px;"
+                        :disabled="isNavigating"
+                        :class="{ 'disabled-card': isNavigating }"
                     >
                         <v-row class="pa-0 ma-0">
                             <v-col cols="1">
                                 <v-icon size="24">mdi-office-building-outline</v-icon>     
                             </v-col>
-                            <v-col cols="9">
+                            <v-col :cols="isNavigating && selectedTenantId === tenantInfo.id ? '8' : '9'">
                                 &nbsp; {{ tenantInfo.id }}
+                            </v-col>
+                            <v-col v-if="isNavigating && selectedTenantId === tenantInfo.id" cols="1" class="d-flex align-center justify-center">
+                                <v-progress-circular
+                                    indeterminate
+                                    size="20"
+                                    width="2"
+                                    color="primary"
+                                ></v-progress-circular>
                             </v-col>
                             <v-col v-if="isOwner" cols="1">
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                     <v-tooltip text="수정">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn @click.stop="toEditTenantPage(tenantInfo.id)" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
+                                            <v-btn @click.stop="!isNavigating ? toEditTenantPage(tenantInfo.id) : null" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;" :disabled="isNavigating">
                                                 <v-icon size="24">mdi-pencil</v-icon>
                                             </v-btn>
                                         </template>
@@ -69,7 +81,7 @@
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                     <v-tooltip text="삭제">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn @click.stop="deleteDialog = true; tenantIdToDelete = tenantInfo.id" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
+                                            <v-btn @click.stop="!isNavigating ? (deleteDialog = true, tenantIdToDelete = tenantInfo.id) : null" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;" :disabled="isNavigating">
                                                 <Icons :icon="'trash'" />
                                             </v-btn>
                                         </template>
@@ -129,44 +141,60 @@ export default {
         tenantIdToDelete: null,
         isOwner: false,
         isLoading: true,
+        isNavigating: false,
+        selectedTenantId: null,
     }),
     async created() {
         const isLogin = await backend.checkDBConnection();
         if(!isLogin) {
             this.$router.push('/auth/login')
         }
-        const tenants = await backend.getTenants();
         
-        if (tenants && tenants.length > 0) {
-            this.tenantInfos = tenants;
-            this.isOwner = true;
-            this.isLoading = false;
+        // URL 파라미터에서 clear=true인지 확인하고 로컬스토리지 클리어
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('clear') === 'true') {
+            localStorage.removeItem('tenantId');
+            // URL에서 clear 파라미터 제거
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
+        if(localStorage.getItem('tenantId')) {
+            this.toSelectedTenantPage(localStorage.getItem('tenantId'));
         } else {
-            // tenantInfos가 없다면 users 테이블에서 유저 정보를 가져온다
-            try {
-                const users = await backend.getUserAllTenants();
-                
-                if (users && users.length > 0) {
-                    // tenant_id를 추출하여 고유한 tenant 목록을 만든다
-                    const uniqueTenants = [...new Set(users.map(user => user.tenant_id))];
-                    
-                    if (uniqueTenants.length === 1) {
-                        // 유저 정보가 하나의 tenant에만 속해있다면 바로 리다이렉션
-                        const tenantId = uniqueTenants[0];
-                        if (tenantId && tenantId !== 'process-gpt') {
-                            this.toSelectedTenantPage(tenantId);
-                        }
-                    } else if (uniqueTenants.length > 1) {
-                        // 여러 tenant가 있다면 tenant 목록으로 설정
-                        this.tenantInfos = uniqueTenants.map(tenantId => ({ id: tenantId }));
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching user list:', error);
-            } finally {
+            const tenants = await backend.getTenants();
+        
+            if (tenants && tenants.length > 0) {
+                this.tenantInfos = tenants;
+                this.isOwner = true;
                 this.isLoading = false;
+            } else {
+                // tenantInfos가 없다면 users 테이블에서 유저 정보를 가져온다
+                try {
+                    const users = await backend.getUserAllTenants();
+                    
+                    if (users && users.length > 0) {
+                        // tenant_id를 추출하여 고유한 tenant 목록을 만든다
+                        const uniqueTenants = [...new Set(users.map(user => user.tenant_id))];
+                        
+                        if (uniqueTenants.length === 1) {
+                            // 유저 정보가 하나의 tenant에만 속해있다면 바로 리다이렉션
+                            const tenantId = uniqueTenants[0];
+                            if (tenantId && tenantId !== 'process-gpt') {
+                                this.toSelectedTenantPage(tenantId);
+                            }
+                        } else if (uniqueTenants.length > 1) {
+                            // 여러 tenant가 있다면 tenant 목록으로 설정
+                            this.tenantInfos = uniqueTenants.map(tenantId => ({ id: tenantId }));
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching user list:', error);
+                } finally {
+                    this.isLoading = false;
+                }
             }
         }
+        
     },
     methods: {
         toAddTenentPage() {
@@ -179,26 +207,47 @@ export default {
 
         async deleteTenant() {
             await backend.deleteTenant(this.tenantIdToDelete)
+            if(localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === this.tenantIdToDelete) {
+                localStorage.removeItem('tenantId');
+            }
             this.tenantInfos = this.tenantInfos.filter(tenant => tenant.id !== this.tenantIdToDelete)
         },
         
         async toSelectedTenantPage(tenantId) {
-            await backend.setTenant(tenantId);
+            this.isNavigating = true;
+            this.selectedTenantId = tenantId;
             
-            // Android 웹뷰 브릿지 체크
-            if (window.AndroidBridge) {
-                // 네이티브 앱에 테넌트 변경 요청
-                window.AndroidBridge.changeTenant(tenantId);
-                return;
-            }
+            try {
+                await backend.setTenant(tenantId);
+                
+                localStorage.setItem('tenantId', tenantId);
+                // Android 웹뷰 브릿지 체크
+                if (window && window.AndroidBridge) {
+                    // 네이티브 앱에 테넌트 변경 요청
+                    window.AndroidBridge.changeTenant(tenantId);
+                    return;
+                }
 
-            // 일반 웹 브라우저인 경우 기존 로직 실행
-            if(!location.port || location.port == '') {
-                location.href = `https://${tenantId}.process-gpt.io/definition-map`;
-            } else {
-                location.href = `http://${tenantId}.process-gpt.io:${location.port}/definition-map`;
+                // 일반 웹 브라우저인 경우 기존 로직 실행
+                if(!location.port || location.port == '') {
+                    location.href = `https://${tenantId}.process-gpt.io/definition-map`;
+                } else {
+                    location.href = `http://${tenantId}.process-gpt.io:${location.port}/definition-map`;
+                }
+            } catch (error) {
+                console.error('테넌트 선택 중 오류가 발생했습니다:', error);
+                this.isNavigating = false;
+                this.selectedTenantId = null;
             }
         }
     },
 };
 </script>
+
+<style scoped>
+.disabled-card {
+    opacity: 0.6;
+    pointer-events: none;
+    cursor: not-allowed !important;
+}
+</style>

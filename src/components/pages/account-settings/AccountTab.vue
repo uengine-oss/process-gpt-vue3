@@ -72,6 +72,9 @@
             </v-col>
         </v-row>
         <div class="d-flex justify-end mt-5 pb-3">
+            <v-btn @click="changeTenant" size="large" color="secondary" rounded="pill" class="mr-4">
+                테넌트 변경
+            </v-btn>
             <v-btn @click="updateUser" size="large" color="primary" rounded="pill" class="mr-4">{{
                 $t('accountTab.save') }}
             </v-btn>
@@ -111,6 +114,14 @@ export default {
             }
             await backend.updateUserInfo({ type: 'update', user: userInfo });
             window.location.reload();
+        },
+        changeTenant() {
+            // www로 이동하면서 로컬스토리지 클리어 파라미터 추가
+            if(!location.port || location.port == '') {
+                location.href = `https://www.process-gpt.io/tenant/manage?clear=true`;
+            } else {
+                location.href = `http://www.process-gpt.io:${location.port}/tenant/manage?clear=true`;
+            }
         }
     }
 };

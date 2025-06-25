@@ -106,7 +106,6 @@ export default {
                         this.messages[this.messages.length - 1].content = this.streamingText;
                     }
                     if (task.status == "DONE") {
-                        this.$emit('updated');
                         this.EventBus.emit('instances-updated');
                         await this.getChatList(this.chatRoomId);
                         this.streamingText = '';

@@ -56,8 +56,8 @@ export default {
         await backend.getTaskLog(this.taskId, async (task) => {
             this.streamingText = task.log;
             if (task.status == "DONE") {
-                this.$emit('updated');
                 this.EventBus.emit('instances-updated');
+                this.$emit('updated');
 
                 if (task.log && task.log.length > 0 && task.log.includes("[WorkItem Error]")) {
                     const retry = window.confirm("워크아이템 실행 중 오류가 발생했습니다. 다시 시도하시겠습니까?");

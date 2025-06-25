@@ -85,9 +85,7 @@
                         {{ $t('VerticalSidebar.projectList') }}
                     </div>
                     <v-spacer></v-spacer>
-                    <v-btn @click="openNewProject()" icon text style="margin-bottom: 2px;"
-                        :size="32"
-                    >
+                    <v-btn v-if="isAdmin" @click="openNewProject()" icon text style="margin-bottom: 2px;" :size="32">
                         <PlusIcon size="15"/>
                     </v-btn>
                 </v-row>
@@ -271,12 +269,17 @@ export default {
             return this.instanceLists.length > 0;
         },
         isShowProject(){
-            return false;
+            return true;
+        },
+        isAdmin() {
+            const isAdmin = localStorage.getItem('isAdmin') == 'true';
+            return isAdmin;
         },
     },
     created() {
-        const isAdmin = localStorage.getItem('isAdmin');
-        if (isAdmin == 'true') {
+        // const isAdmin = localStorage.getItem('isAdmin');
+        // if (isAdmin == 'true') {
+        if(this.isAdmin) {
             this.loadSidebar();
         }
     },
@@ -392,17 +395,22 @@ export default {
             this.isNewProjectOpen = true;
         },
         async createNewProject(value){
-            await backend.putProject({
-                name: value.name,
-                startDate: value.startDate,
-                dueDate: value.dueDate,
-                endDate: null,
-                status: "NEW",
-                createdDate: new Date().toISOString(),
-                userId: localStorage.getItem('email'),
-            });
-            
-            this.closeNewProject();
+            var me = this
+            me.$try({
+                context: me,
+                async action() {
+                    await backend.putProject({
+                        name: value.name,
+                        startDate: value.startDate,
+                        dueDate: value.dueDate,
+                        endDate: null,
+                        status: "NEW",
+                        createdDate: new Date().toISOString(),
+                        userId: localStorage.getItem('email'),
+                    });
+                    me.closeNewProject();
+                },
+            })
         },
         closeNewProject(){
             this.isNewProjectOpen = false;

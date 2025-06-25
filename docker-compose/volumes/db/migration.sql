@@ -1,4 +1,14 @@
 -- Migration SQL for schema synchronization
+create or replace function public.tenant_id()
+returns text
+language sql stable
+as $$
+    select 
+        nullif(
+            ((current_setting('request.jwt.claims')::jsonb ->>  'app_metadata')::jsonb ->> 'tenant_id'),
+            ''
+        )::text
+$$;
 
 -- tenants table
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS id text;
@@ -71,6 +81,7 @@ ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS time_stamp timestamp w
 ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS user_id text;
 ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS url text;
 ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS from_user_id text;
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS consumer text;
 ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
 
 -- lock table
@@ -94,6 +105,7 @@ ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS project_id uuid;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS start_date timestamp without time zone;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS end_date timestamp without time zone;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS due_date timestamp without time zone;
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
 -- todolist table
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS id uuid;
@@ -121,6 +133,8 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS project_id uuid;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_mode text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback jsonb;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone default now();
+
 
 -- chat_rooms table
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS id text;
@@ -214,6 +228,8 @@ ALTER TABLE public.project ADD COLUMN IF NOT EXISTS status character varying;
 ALTER TABLE public.project ADD COLUMN IF NOT EXISTS project_id uuid DEFAULT gen_random_uuid();
 ALTER TABLE public.project ADD COLUMN IF NOT EXISTS user_id TEXT;
 ALTER TABLE public.project ADD COLUMN IF NOT EXISTS due_date date;
+ALTER TABLE public.project ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
+ALTER TABLE public.project ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
 -- milestone table
 -- ALTER TABLE public.milestone ADD COLUMN IF NOT EXISTS id bigserial;
@@ -230,7 +246,13 @@ ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS lead_time integer;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS type character varying;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS created_date date;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS task_id uuid;
-ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS depends_id uuid;
+ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS depends_id uuid; 
+
+-- project
+CREATE POLICY project_insert_policy ON project FOR INSERT TO authenticated WITH CHECK ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
+CREATE POLICY project_select_policy ON project FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY project_update_policy ON project FOR UPDATE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
+CREATE POLICY project_delete_policy ON project FOR DELETE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
 
 
 DROP TRIGGER IF EXISTS encrypt_credentials_trigger ON public.users;
@@ -238,3 +260,10 @@ DROP TRIGGER IF EXISTS encrypt_credentials_trigger ON public.users;
 DROP FUNCTION IF EXISTS encrypt_credentials(TEXT);
 DROP FUNCTION IF EXISTS decrypt_credentials(TEXT);
 DROP FUNCTION IF EXISTS encrypt_credentials_trigger();
+
+
+alter publication supabase_realtime add table chats;
+alter publication supabase_realtime add table notifications;
+alter publication supabase_realtime add table todolist;
+alter publication supabase_realtime add table bpm_proc_inst;
+alter publication supabase_realtime add table proc_def;

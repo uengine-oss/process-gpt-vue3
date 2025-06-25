@@ -11,7 +11,7 @@
                 >
                     mdi-arrow-right-bold
                 </v-icon>
-                <v-btn @click="executeProcess" color="primary" density="compact" rounded variant="flat">제출 완료</v-btn>
+                <v-btn @click="executeProcess" color="primary" density="compact" rounded variant="flat" :disabled="isLoading" :loading="isLoading">제출 완료</v-btn>
             </div>
             <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
                 <v-tooltip v-if="isMobile"
@@ -99,6 +99,7 @@ export default {
         formData: {},
         newMessage: '',
         useTextAudio: false,
+        isLoading: false,
     }),
     computed: {
         simulate() {
@@ -339,6 +340,10 @@ export default {
             this.$emit('fail', msg)
         },
         executeProcess() {
+            if(this.isSimulate == 'true') {
+                this.isLoading = true;
+            }
+            
             if (!this.$refs.checkpoints.allChecked) {
                 this.$refs.checkpoints.snackbar = true;
                 return;

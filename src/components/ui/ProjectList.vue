@@ -12,54 +12,56 @@ import NavItem from '@/layouts/full/vertical-sidebar/NavItem/index.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
-
-
 export default {
     components: {
         NavItem
     },
     data: () => ({
         projectLists: [],
-        intervalId: null
+        watchRef: null
     }),
     async created() {
         await this.init();
     },
-    mounted() {
+    async mounted() {
         this.EventBus.on('project-updated', async () => {
             await this.init();
         });
         
-        this.intervalId = setInterval(() => {
-            this.init();
-        }, 10000);
+        this.watchRef = await backend.watchProjectList((callback => {
+            console.log('callback', callback);
+            const projectId = callback.id
+            const project = callback.value
+            const index = this.projectLists.findIndex(item => item.projectId == projectId);
+            if (project) {
+                const route = window.$mode == 'ProcessGPT'? btoa(encodeURIComponent(projectId)) : projectId
+                // 삽입 또는 수정
+                const newProject = {
+                    projectId: projectId,
+                    updatedAt: project.updatedAt,
+                    title: project.name,
+                    to: `/project/${route}`,
+                    BgColor: 'primary',
+                    isNew: project.status === 'NEW'
+                };
+
+                if (index !== -1) {
+                    // 수정
+                    this.projectLists.splice(index, 1, newProject);
+                } else {
+                    // 삽입
+                    this.projectLists.push(newProject);
+                }
+                this.projectLists.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            } else if (index !== -1) {
+                // 삭제
+                this.projectLists.splice(index, 1);
+            }
+        }));
     },
     methods: {
         async init() {
-            const projectLists = await this.loadProjectList();
-            this.projectLists = this.sortProjectList(projectLists);
-        },
-        sortProjectList(list) {
-            const getCharType = (char) => {
-                if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(char)) return 1; // 한글
-                if (/[a-zA-Z]/.test(char)) return 2; // 영어
-                if (/[0-9]/.test(char)) return 3; // 숫자
-                return 4; // 기타
-            };
-
-            return list.sort((a, b) => {
-                const titleA = a.title.charAt(0);
-                const titleB = b.title.charAt(0);
-                
-                const typeA = getCharType(titleA);
-                const typeB = getCharType(titleB);
-
-                if (typeA !== typeB) {
-                    return typeA - typeB;
-                }
-                
-                return a.title.localeCompare(b.title, 'ko-KR');
-            });
+            this.projectLists = await this.loadProjectList();
         },
         async loadProjectList() {
             let result = await backend.getProjectList();
@@ -70,6 +72,8 @@ export default {
                 item = {
                     // icon: 'ph:cube',
                     // title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
+                    projectId: item.projectId,
+                    updatedAt: item.updatedAt,
                     title: title,
                     to: `/project/${route}`,
                     BgColor:'primary',
