@@ -291,7 +291,9 @@ create table if not exists public.project (
     due_date date null,
     user_id text null,
     updated_at timestamp with time zone default now(),
-    constraint project_pkey primary key (project_id)
+    tenant_id text null default public.tenant_id(),
+    constraint project_pkey primary key (project_id),
+    constraint project_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
 
 -- create table if not exists public.milestone (
@@ -682,19 +684,6 @@ CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- 2. 트리거 함수 생성
-CREATE OR REPLACE FUNCTION update_bpm_proc_inst_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.proc_inst_id IS NOT NULL THEN
-    UPDATE public.bpm_proc_inst
-    SET updated_at = now()
-    WHERE proc_inst_id = NEW.proc_inst_id;
-  END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
