@@ -85,9 +85,7 @@
                         {{ $t('VerticalSidebar.projectList') }}
                     </div>
                     <v-spacer></v-spacer>
-                    <v-btn @click="openNewProject()" icon text style="margin-bottom: 2px;"
-                        :size="32"
-                    >
+                    <v-btn v-if="isAdmin" @click="openNewProject()" icon text style="margin-bottom: 2px;" :size="32">
                         <PlusIcon size="15"/>
                     </v-btn>
                 </v-row>
@@ -273,10 +271,15 @@ export default {
         isShowProject(){
             return true;
         },
+        isAdmin() {
+            const isAdmin = localStorage.getItem('isAdmin') == 'true';
+            return isAdmin;
+        },
     },
     created() {
-        const isAdmin = localStorage.getItem('isAdmin');
-        if (isAdmin == 'true') {
+        // const isAdmin = localStorage.getItem('isAdmin');
+        // if (isAdmin == 'true') {
+        if(this.isAdmin) {
             this.loadSidebar();
         }
     },

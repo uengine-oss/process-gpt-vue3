@@ -40,6 +40,7 @@
                             :simulationInstances="simulationInstances"
                             :activityIndex="activityIndex"
                             :processDefinition="processDefinition"
+                            :isStarted="true"
                             @close="closeDialog"
                             @executeProcess="executeProcess"
                             @backToPrevStep="backToPrevStep"
@@ -205,7 +206,6 @@ export default {
                         }
                     })
                 }
-                me.renderKey++;
             }
         },
         closeDialog() {
