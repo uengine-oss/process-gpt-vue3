@@ -109,6 +109,7 @@ create table if not exists public.notifications (
     time_stamp timestamp with time zone null default now(),
     user_id text null,
     url text null,
+    consumer text null,
     from_user_id text null,
     tenant_id text null default public.tenant_id(),
     constraint notifications_pkey primary key (id),
@@ -139,6 +140,7 @@ create table if not exists public.bpm_proc_inst (
     start_date timestamp without time zone null,
     end_date timestamp without time zone null,
     due_date timestamp without time zone null,
+    updated_at timestamp with time zone default now(),
     constraint bpm_proc_inst_pkey primary key (proc_inst_id),
     constraint bpm_proc_inst_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -169,6 +171,7 @@ create table if not exists public.todolist (
     draft jsonb null,
     agent_mode text null,
     feedback jsonb null,
+    updated_at timestamp with time zone default now(),
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -287,6 +290,7 @@ create table if not exists public.project (
     project_id uuid not null default gen_random_uuid (),
     due_date date null,
     user_id text null,
+    updated_at timestamp with time zone default now(),
     constraint project_pkey primary key (project_id)
 ) tablespace pg_default;
 
@@ -671,7 +675,70 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- project updated_at 업데이트 
+CREATE OR REPLACE FUNCTION update_project_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.project_id IS NOT NULL THEN
+    UPDATE public.project
+    SET updated_at = now()
+    WHERE project_id = NEW.project_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- bpm_proc_inst updated_at 자동 업데이트
+CREATE OR REPLACE FUNCTION update_bpm_proc_inst_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.proc_inst_id IS NOT NULL THEN
+    UPDATE public.bpm_proc_inst
+    SET updated_at = now()
+    WHERE proc_inst_id = NEW.proc_inst_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- todolist updated_at 자동 업데이트
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 2. 트리거 함수 생성
+CREATE OR REPLACE FUNCTION update_bpm_proc_inst_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.proc_inst_id IS NOT NULL THEN
+    UPDATE public.bpm_proc_inst
+    SET updated_at = now()
+    WHERE proc_inst_id = NEW.proc_inst_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create triggers
+CREATE TRIGGER trigger_update_project_updated_at
+    AFTER UPDATE OF updated_at ON public.bpm_proc_inst
+    FOR EACH ROW
+    EXECUTE FUNCTION update_project_updated_at();
+
+CREATE TRIGGER trigger_update_bpm_proc_inst_updated_at
+    AFTER UPDATE ON public.todolist
+    FOR EACH ROW
+    EXECUTE FUNCTION update_bpm_proc_inst_updated_at();
+
+CREATE TRIGGER set_updated_at
+    BEFORE UPDATE ON public.todolist
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER encrypt_credentials_trigger
     BEFORE INSERT OR UPDATE ON public.users
     FOR EACH ROW
@@ -839,6 +906,12 @@ CREATE POLICY tenant_oauth_delete_policy ON tenant_oauth FOR DELETE TO authentic
 
 -- Storage policies
 CREATE POLICY "Allow authenticated users to upload" ON storage.objects FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Project policies
+CREATE POLICY project_insert_policy ON project FOR INSERT TO authenticated WITH CHECK ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
+CREATE POLICY project_select_policy ON project FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY project_update_policy ON project FOR UPDATE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
+CREATE POLICY project_delete_policy ON project FOR DELETE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
 
 -- Enable Realtime for specific tables
 alter publication supabase_realtime add table chats;

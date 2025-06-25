@@ -271,7 +271,7 @@ export default {
             return this.instanceLists.length > 0;
         },
         isShowProject(){
-            return false;
+            return true;
         },
     },
     created() {
