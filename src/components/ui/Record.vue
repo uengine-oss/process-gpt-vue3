@@ -16,7 +16,6 @@
             <div v-else class="circle" :style="{ width: circleSize + 'px', height: circleSize + 'px' }"></div> -->
             
             <PaintWaveAnimation 
-                style="margin-top: -40%;"
                 :size="circleSize" 
                 :isActive="isLoading"
                 :isAudioPlaying="isAudioPlaying"
