@@ -77,7 +77,7 @@ export default {
         instance: {
             deep: true,
             async handler(newVal, oldVal) {
-                if (newVal.instanceId !== oldVal.instanceId) {
+                if (newVal && (!oldVal || newVal.instId !== oldVal.instId)) {
                     await this.init();
                 }
             }
@@ -89,7 +89,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if (me.instance) {
+                    if (me.instance && me.instance.defId) {
                         me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn', version: this.instance.defVer });
                         await me.initStatus();
                         me.updatedDefKey++;

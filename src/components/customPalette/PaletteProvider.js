@@ -620,7 +620,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
       'bpmn:ExclusiveGateway', 'gateway', 'bpmn-icon-gateway-xor'
     ),
     'create.task': createAction(
-      'bpmn:Task', 'activity', 'bpmn-icon-task'
+      'bpmn:UserTask', 'activity', 'bpmn-icon-task'
     ),
     'create.subprocess-expanded': createAction(
       'bpmn:SubProcess', 'activity', 'bpmn-icon-subprocess-expanded', i18n.global.t('PaletteProvider.expandedSubProcess'),
