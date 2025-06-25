@@ -12,7 +12,7 @@
             </v-row>
         </div>
     </v-sheet>
-    <perfect-scrollbar class="lgScroll">
+    <perfect-scrollbar class="user-listing-lgScroll">
         <v-list>
             <v-list-item v-for="user in filteredUsers" :key="user.id" class="text-no-wrap user-item" @click="selectedUser(user)">
                 <template v-slot:prepend>
@@ -165,8 +165,20 @@ const startChat = (type) => {
     border-bottom: 1px solid rgb(var(--v-theme-inputBorder), 0.1);
 }
 
-.lgScroll {
-    height: calc(100vh - 360px);
-    overflow: auto !important;
+.user-listing-lgScroll {
+    height: calc(100vh - 330px);
+}
+
+
+@media only screen and (max-width: 1279px) {
+    .user-listing-lgScroll {
+        height: calc(100vh - 314px);
+    }
+}
+
+@media only screen and (max-width: 768px) {
+    .user-listing-lgScroll {
+        height: calc(100vh - 262px);
+    }
 }
 </style>
