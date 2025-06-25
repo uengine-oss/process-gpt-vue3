@@ -18,7 +18,7 @@ export default {
     props: {
         size: {
             type: Number,
-            default: 320
+            default: 250
         },
         primaryColor: {
             type: String,
@@ -30,15 +30,74 @@ export default {
         },
         isActive: {
             type: Boolean,
-            default: true
+            default: false
+        },
+        isAudioPlaying: {
+            type: Boolean,
+            default: false
+        },
+        audioBars: {
+            type: Array,
+            default: () => []
+        },
+        volume: {
+            type: Number,
+            default: 0
+        },
+        threshold: {
+            type: Number,
+            default: 15
         }
     },
     computed: {
         containerStyle() {
+            let animationSpeed = 'running';
+            let scale = 1;
+            let animationDuration = '';
+            let brightness = 1;
+            let saturation = 1;
+            
+            if (this.isActive) {
+                // 로딩 상태: 빠른 애니메이션
+                animationSpeed = 'running';
+                scale = 1;
+                animationDuration = 'fast';
+            } else if (this.isAudioPlaying) {
+                // 오디오 재생 상태: 매우 활동적인 크기 변화
+                animationSpeed = 'running';
+                const avgAudioLevel = this.audioBars.length > 0 
+                    ? this.audioBars.reduce((a, b) => a + b, 0) / this.audioBars.length / 255
+                    : 0;
+                
+                // 기본 크기 1에서 확장만 (1.0 ~ 2.5 범위)
+                scale = 1.0 + (avgAudioLevel * 1.5);
+                
+                // 오디오 레벨에 따른 밝기와 채도 조절
+                brightness = 1 + (avgAudioLevel * 0.8);
+                saturation = 1 + (avgAudioLevel * 1.2);
+                
+                animationDuration = 'normal';
+            } else {
+                // 기본 상태: 마이크 볼륨에 따른 애니메이션
+                animationSpeed = this.volume > this.threshold ? 'running' : 'paused';
+                const volumeScale = this.volume > this.threshold 
+                    ? 0.9 + ((this.volume - this.threshold) / (100 - this.threshold)) * 0.3
+                    : 0.9;
+                scale = volumeScale;
+                animationDuration = this.volume > this.threshold ? 'normal' : 'slow';
+            }
+            
             return {
                 width: this.size + 'px',
                 height: this.size + 'px',
-                animationPlayState: this.isActive ? 'running' : 'paused'
+                animationPlayState: animationSpeed,
+                transform: `scale(${scale})`,
+                transition: this.isAudioPlaying ? 'transform 0.02s ease-out, filter 0.05s ease-out' : 'transform 0.1s ease-in-out',
+                filter: `brightness(${brightness}) saturate(${saturation})`,
+                '--animation-speed': animationDuration,
+                '--audio-intensity': this.isAudioPlaying ? (this.audioBars.length > 0 
+                    ? this.audioBars.reduce((a, b) => a + b, 0) / this.audioBars.length / 255 
+                    : 0) : 0
             };
         }
     }
@@ -208,6 +267,63 @@ export default {
     animation: water-ripple-effect 3s ease-in-out infinite;
 }
 
+/* 상태별 애니메이션 속도 조절 */
+.wave-animation-wrapper[style*="--animation-speed: ultra-fast"] .wave-layer::before {
+    animation-duration: 1s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: ultra-fast"] .mixing-layer-first {
+    animation-duration: 0.8s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: ultra-fast"] .mixing-layer-second {
+    animation-duration: 1.2s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: ultra-fast"] .paint-flow-layer {
+    animation-duration: 0.6s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: ultra-fast"] .paint-streak-layer {
+    animation-duration: 0.4s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: ultra-fast"] .ripple-effect-layer {
+    animation-duration: 0.5s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: fast"] .wave-layer::before {
+    animation-duration: 3s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: fast"] .mixing-layer-first {
+    animation-duration: 2s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: fast"] .mixing-layer-second {
+    animation-duration: 2.5s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: fast"] .paint-flow-layer {
+    animation-duration: 1.5s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: slow"] .wave-layer::before {
+    animation-duration: 12s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: slow"] .mixing-layer-first {
+    animation-duration: 8s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: slow"] .mixing-layer-second {
+    animation-duration: 10s;
+}
+
+.wave-animation-wrapper[style*="--animation-speed: slow"] .paint-flow-layer {
+    animation-duration: 6s;
+}
+
 @keyframes wave-swirl-rotation {
     0% {
         transform: rotate(0deg) scale(1);
@@ -297,21 +413,5 @@ export default {
         transform: scale(1.3);
         opacity: 0.8;
     }
-}
-
-.wave-animation-wrapper:hover .wave-layer::before {
-    animation-duration: 4s;
-}
-
-.wave-animation-wrapper:hover .mixing-layer-first {
-    animation-duration: 3s;
-}
-
-.wave-animation-wrapper:hover .mixing-layer-second {
-    animation-duration: 4s;
-}
-
-.wave-animation-wrapper:hover .paint-flow-layer {
-    animation-duration: 2.5s;
 }
 </style> 

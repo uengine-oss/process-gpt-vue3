@@ -302,6 +302,10 @@ class ProcessGPTBackend implements Backend {
                 input['chat_room_id'] = `${input.process_definition_id}.${me.uuid()}`;
             }
 
+            if(input.projectId) {
+                input['project_id'] = input.projectId
+            }
+
             return await me.executeInstance(input);
 
         } catch (error) {
@@ -566,6 +570,9 @@ class ProcessGPTBackend implements Backend {
 
     async putWorkItem(taskId: string, workItem: any) {
         try {
+            // id와 변경할 필드만 포함하여 upsert
+            const putObj = { id: taskId, ...workItem };
+            return await storage.putObject('todolist', putObj);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1280,13 +1287,61 @@ class ProcessGPTBackend implements Backend {
 
     async getInstanceList() {
         try {
-            let instList: any[] = [];
-            const runningList = await this.fetchInstanceListByStatus("RUNNING");
-            const newList = await this.fetchInstanceListByStatus("NEW");
-            instList = [...runningList, ...newList];
-            return instList;
+            // let instList: any[] = [];
+            // const runningList = await this.fetchInstanceListByStatus("RUNNING");
+            // const newList = await this.fetchInstanceListByStatus("NEW");
+            // instList = [...runningList, ...newList];
+            // return instList;
+
+            var me = this
+            const email = window.localStorage.getItem("email");
+            const lists = await storage.list('bpm_proc_inst', { 
+                inArray: {
+                    column: 'status',
+                    values: ["NEW", "RUNNING"]
+                }, 
+                matchArray: {
+                    column: 'current_user_ids',
+                    values: [email]
+                },
+                orderBy: 'updated_at',
+                sort: 'desc'
+            });
+
+            if (lists && lists.length > 0) {
+                return lists.map((item: any) => {
+                    return me.returnInstanceObject(item);
+                });
+            }
+            return [];
         } catch (error) {
-            
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async watchInstanceList(callback: (payload: any) => void){
+        try {
+            return await storage._watch({
+                channel: 'instance',
+                table: 'bpm_proc_inst',
+                // filter: "status=in.(RUNNING,NEW)"
+            },(payload) => {
+                let obj = payload
+                if(payload.eventType === 'UPDATE'){
+                    if(payload.new.status == 'RUNNING'|| payload.new.status == 'NEW') {
+                        obj = {id: payload.old.proc_inst_id, value: this.returnInstanceObject(payload.new)}
+                    } else {
+                        obj = {id: payload.old.proc_inst_id, value: null}
+                    }
+                } else if(payload.eventType === 'INSERT'){
+                    obj = {id: payload.new.proc_inst_id, value: this.returnInstanceObject(payload.new)}
+                } else if(payload.eventType === 'DELETE'){
+                    obj = {id: payload.old.proc_inst_id, value: null}
+                }
+                callback(obj);
+            });
+        } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -1302,8 +1357,31 @@ class ProcessGPTBackend implements Backend {
 
     async getCompleteInstanceList() {
         try {
-            let instList: any[] = await this.fetchInstanceListByStatus("COMPLETED");
-            return instList;
+            // let instList: any[] = await this.fetchInstanceListByStatus("COMPLETED");
+            // return instList;
+
+            var me = this
+            const email = window.localStorage.getItem("email");
+            const lists = await storage.list('bpm_proc_inst', { 
+                inArray: {
+                    column: 'status',
+                    values: ["COMPLETED"]
+                }, 
+                matchArray: {
+                    column: 'current_user_ids',
+                    values: [email]
+                },
+                orderBy: 'updated_at',
+                sort: 'desc'
+            });
+
+            if (lists && lists.length > 0) {
+                return lists.map((item: any) => {
+                    return me.returnInstanceObject(item);
+                });
+            }
+            return [];
+
         } catch (error) {
             
             //@ts-ignore
@@ -2703,6 +2781,7 @@ class ProcessGPTBackend implements Backend {
                 status: project.status || "NEW",
                 created_date: project.createdDate || new Date().toISOString(),
                 user_id: project.userId || localStorage.getItem('email'),
+                tenant_id: window.$tenantName
             });
         } catch (error) {
             
@@ -2713,15 +2792,64 @@ class ProcessGPTBackend implements Backend {
 
     async getProjectList() {
         try {
-            const newList = await storage.list('project', { match: { status: "NEW" } });
-            const runningList = await storage.list('project', { match: { status: "RUNNING" } });
-            
-            const list = [...newList, ...runningList]
-            return list.map((item: any) => {
-                return this.returnProjectObject(item);
+            // const newList = await storage.list('project', { match: { status: "NEW" }});
+            // const runningList = await storage.list('project', { match: { status: "RUNNING" }});
+
+            // const list = [...newList, ...runningList]
+            // return list.map((item: any) => {
+            //     return this.returnProjectObject(item);
+            // });
+
+            var me = this
+            const lists = await storage.list('project', { 
+                inArray: {
+                    column: 'status',
+                    values: ["NEW", "RUNNING"]
+                },
+                orderBy: 'updated_at',
+                sort: 'desc'
             });
+
+            if (lists && lists.length > 0) {
+                return lists.map((item: any) => {
+                    return me.returnProjectObject(item);
+                });
+            }
+            return [];
+
+
         } catch (error) {
             
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async watchOff(ref: any){
+        try {
+            return await storage._watch_off(ref);
+        }catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    async watchProjectList(callback: (payload: any) => void){
+        try {
+            return await storage._watch({
+                channel: 'project',
+                table: 'project'
+            },(payload) => {
+                let obj = payload
+                if(payload.eventType === 'UPDATE'){
+                    obj = {id: payload.old.project_id, value: this.returnProjectObject(payload.new)}
+                } else if(payload.eventType === 'INSERT'){
+                    obj = {id: payload.new.project_id, value: this.returnProjectObject(payload.new)}
+                } else if(payload.eventType === 'DELETE'){
+                    obj = {id: payload.old.project_id, value: null}
+                }
+                callback(obj);
+            });
+        } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -2840,7 +2968,9 @@ class ProcessGPTBackend implements Backend {
             endDate: item.end_date,
             dueDate: item.due_date,
             createdDate: item.created_date,
-            status: item.status
+            status: item.status,
+            tenantId: item.tenant_id,
+            updatedAt: item.updated_at
         }
     }
 
@@ -2861,6 +2991,7 @@ class ProcessGPTBackend implements Backend {
             startDate: item.start_date,
             endDate: item.end_date,
             dueDate: item.due_date,
+            updatedAt: item.updated_at
         }
     }
 
@@ -2883,6 +3014,7 @@ class ProcessGPTBackend implements Backend {
             adhoc: item.adhoc || false,
             referenceIds: item.reference_ids || [],
             projectId: item.project_id || null,
+            updatedAt: item.updated_at,
             task: item
         }
     }

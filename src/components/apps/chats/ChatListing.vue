@@ -258,8 +258,8 @@ const deleteChatRoom = () => {
             </v-row>
         </v-card>
     </v-dialog>
-    <perfect-scrollbar class="lgScroll">
-        <v-list>
+    <perfect-scrollbar>
+        <v-list class="chat-listing-lgScroll">
             <!---Single Item-->
             <v-list-item 
                 :value="chat.id" 
@@ -345,11 +345,24 @@ const deleteChatRoom = () => {
     font-weight: bold;
 }
 
-.lgScroll {
-    height: calc(100vh - 235px);
+.chat-listing-lgScroll {
+    height: calc(100vh - 240px);
+    overflow: auto !important;
 }
 
 .selected-chat {
     background-color: aliceblue;
 }
+@media only screen and (max-width: 1279px) {
+    .chat-listing-lgScroll {
+        height: calc(100vh - 220px);
+    }
+}
+
+@media only screen and (max-width: 768px) {
+    .chat-listing-lgScroll {
+        height: calc(100vh - 165px);
+    }
+}
+
 </style>
