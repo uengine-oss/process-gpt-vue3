@@ -407,23 +407,9 @@ export default {
                                     return newRole;
                                 });
                             }
-                            // if (me.processDefinition.activities) {
-                            //     newProcessDefinition.activities = newProcessDefinition.activities.map(activity => {
-                            //         const oldActivity = me.processDefinition.activities.find(oldActivity => oldActivity.id === activity.id);
-                            //         if (oldActivity) {
-                            //             activity.uuid = oldActivity.uuid;
-                            //             activity.instruction = oldActivity.instruction;
-                            //             activity.description = oldActivity.description;
-                            //             activity.checkpoints = oldActivity.checkpoints;
-                            //             activity.duration = oldActivity.duration;
-                            //             activity.attachments = oldActivity.attachments;
-                            //             activity.pythonCode = oldActivity.pythonCode;
-                            //             activity.taskLink = oldActivity.taskLink;
-                            //         }
-                            //         return activity;
-                            //     });
-                            // }
-                            // me.processDefinition = newProcessDefinition
+                            if (me.processDefinition && me.processDefinition.elements && !me.processDefinition.sequences) {
+                                me.processDefinition = newProcessDefinition
+                            }
                         }
 
                         if (info.name && info.name != '') {

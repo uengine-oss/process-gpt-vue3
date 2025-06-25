@@ -1858,6 +1858,7 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 match: {
                     id: id,
+                    tenant_id: window.$tenantName
                 }
             }
             const lock = await storage.getObject('lock', options);
@@ -1870,12 +1871,12 @@ class ProcessGPTBackend implements Backend {
 
     async setLock(lockObj: any) {
         try {
-            const lock = await this.getLock(lockObj.id);
             var putObj: any = { 
                 id: lockObj.id, 
                 user_id: lockObj.user_id 
             };
-            if(lock) {
+            const lock = await this.getLock(lockObj.id);
+            if(lock && lock.tenant_id === window.$tenantName) {
                 putObj.uuid = lock.uuid;
                 await storage.putObject('lock', putObj);
             } else {
