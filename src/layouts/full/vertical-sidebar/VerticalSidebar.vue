@@ -392,17 +392,22 @@ export default {
             this.isNewProjectOpen = true;
         },
         async createNewProject(value){
-            await backend.putProject({
-                name: value.name,
-                startDate: value.startDate,
-                dueDate: value.dueDate,
-                endDate: null,
-                status: "NEW",
-                createdDate: new Date().toISOString(),
-                userId: localStorage.getItem('email'),
-            });
-            
-            this.closeNewProject();
+            var me = this
+            me.$try({
+                context: me,
+                async action() {
+                    await backend.putProject({
+                        name: value.name,
+                        startDate: value.startDate,
+                        dueDate: value.dueDate,
+                        endDate: null,
+                        status: "NEW",
+                        createdDate: new Date().toISOString(),
+                        userId: localStorage.getItem('email'),
+                    });
+                    me.closeNewProject();
+                },
+            })
         },
         closeNewProject(){
             this.isNewProjectOpen = false;
