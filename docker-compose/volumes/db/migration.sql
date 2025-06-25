@@ -1,4 +1,14 @@
 -- Migration SQL for schema synchronization
+create or replace function public.tenant_id()
+returns text
+language sql stable
+as $$
+    select 
+        nullif(
+            ((current_setting('request.jwt.claims')::jsonb ->>  'app_metadata')::jsonb ->> 'tenant_id'),
+            ''
+        )::text
+$$;
 
 -- tenants table
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS id text;
@@ -238,3 +248,10 @@ DROP TRIGGER IF EXISTS encrypt_credentials_trigger ON public.users;
 DROP FUNCTION IF EXISTS encrypt_credentials(TEXT);
 DROP FUNCTION IF EXISTS decrypt_credentials(TEXT);
 DROP FUNCTION IF EXISTS encrypt_credentials_trigger();
+
+
+alter publication supabase_realtime add table chats;
+alter publication supabase_realtime add table notifications;
+alter publication supabase_realtime add table todolist;
+alter publication supabase_realtime add table bpm_proc_inst;
+alter publication supabase_realtime add table proc_def;
