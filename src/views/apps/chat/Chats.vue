@@ -93,10 +93,12 @@
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab">
                         <v-tab>
-                            <v-icon>mdi-account</v-icon>
+                            <v-icon class="mt-1 mr-2">mdi-account</v-icon>
+                            {{ $t('chat.user') }}
                         </v-tab>
                         <v-tab>
-                            <v-icon>mdi-message</v-icon>
+                            <v-icon class="mt-1 mr-2">mdi-message</v-icon>
+                            {{ $t('chat.chatRoom') }}
                         </v-tab>
                     </v-tabs>
                     <v-tabs-items v-model="activeTab">
