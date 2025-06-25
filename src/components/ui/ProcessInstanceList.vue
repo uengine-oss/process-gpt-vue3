@@ -35,23 +35,55 @@ export default {
         instanceList: [],
         //
         myGroupInstanceList: [],
-        intervalId: null,
+        // intervalId: null,
         runningInstances: {
             header: 'runningInstance.title',
         },
+        watchRef: null,
         
     }),
     async created() {
         await this.init();
     },
-    mounted() {
+    async mounted() {
         this.EventBus.on('instances-updated', async () => {
             await this.init();
         });
         
-        this.intervalId = setInterval(() => {
-            this.init();
-        }, 10000);
+        // this.intervalId = setInterval(() => {
+        //     this.init();
+        // }, 10000);
+
+        this.watchRef = await backend.watchInstanceList((callback => {
+            const instId = callback.id
+            const inst = callback.value
+            const index = this.instanceList.findIndex(item => item.instId == instId);
+            if (inst) {
+                const route = window.$mode == 'ProcessGPT'? btoa(encodeURIComponent(instId)) : instId
+                // 삽입 또는 수정
+                const newProject = {
+                    instId: instId,
+                    title: inst.status == 'NEW' ? inst.name + this.$t('runningInstance.running') : inst.name,
+                    to: `/instancelist/${route}`,
+                    BgColor: 'primary',
+                    updatedAt: inst.updatedAt,
+                    isNew: inst.status === 'NEW'
+                };
+
+                if (index !== -1) {
+                    // 수정
+                    this.instanceList.splice(index, 1, newProject);
+                } else {
+                    // 삽입
+                    this.instanceList.push(newProject);
+                }
+                
+                this.instanceList.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            } else if (index !== -1) {
+                // 삭제
+                this.instanceList.splice(index, 1);
+            }
+        }));
     },
     computed: {
         JMS() {
@@ -75,9 +107,11 @@ export default {
                 const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
                 item = {
                     // icon: 'ph:cube',
+                    instId: item.instId,
                     title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
                     to: `/instancelist/${route}`,
                     BgColor:'primary',
+                    updatedAt: item.updatedAt,
                     isNew: item.status == 'NEW'
                 };
                 return item;
