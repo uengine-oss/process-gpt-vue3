@@ -656,12 +656,11 @@
                                 class="cp-send text-medium-emphasis"
                                 color="primary" 
                                 variant="outlined" 
-                                type="submit" 
                                 density="comfortable"
                                 icon
                                 size="small"
                                 style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
-                                @click="beforeSend"
+                                @click.prevent="beforeSend"
                                 :disabled="disableBtn"
                             >
                                 <icons :icon="'send-outline'" :size="16" />
@@ -670,7 +669,6 @@
                                 class="cp-send text-medium-emphasis"
                                 color="primary" 
                                 variant="outlined" 
-                                type="submit" 
                                 density="comfortable"
                                 icon
                                 size="small"
@@ -839,12 +837,11 @@
                             class="cp-send text-medium-emphasis"
                             color="primary" 
                             variant="outlined" 
-                            type="submit" 
                             density="comfortable"
                             icon
                             size="small"
                             style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
-                            @click="beforeSend"
+                            @click.prevent="beforeSend"
                             :disabled="disableBtn"
                         >
                             <icons :icon="'send-outline'" :size="16" />
@@ -853,7 +850,6 @@
                             class="cp-send text-medium-emphasis"
                             color="primary" 
                             variant="outlined" 
-                            type="submit" 
                             density="comfortable"
                             icon
                             size="small"
