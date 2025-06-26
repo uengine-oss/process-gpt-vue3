@@ -223,6 +223,7 @@ export default {
     watch: {
         '$route.params': {
             handler(newVal, oldVal) {
+                if(!newVal.id) return;
                 if(newVal.id !== oldVal.id) {
                     this.init(newVal);
                 }

@@ -22,10 +22,12 @@
             required: true
         }
     },
-    emits: ['task-updated', 'task-added'],
+    emits: ['task-updated', 'task-added', 'link-event'],
     setup(props, { emit }) {
         const ganttContainer = ref(null)
         const lastClickTime = ref(0)
+        const originalTaskData = ref(null) // 원본 태스크 데이터 저장용
+        
         const loadGanttData = () => {
 
             // 1. 현재 열린 트리 상태 저장
@@ -350,84 +352,232 @@
                 return true;
             });
 
+             // 트리 확장(펼침) 이벤트
+            gantt.attachEvent("onTaskOpened", function(id) {
+                emit('task-tree-opened', id);
+            });
+
+            // 태스크 클릭
             gantt.attachEvent("onTaskClick", (id, e) => {
-                const currentTime = new Date().getTime();
-                if (currentTime - lastClickTime.value < 300) {
-                    // 더블 클릭은 무시 (라이트박스가 열림)
-                    return true;
+                emit('task-clicked', gantt.getTask(id));
+                return true;
+            });
+            gantt.attachEvent("onTaskDblClick", function(id,e){
+                //any custom logic here
+                return false;
+            });
+
+            gantt.attachEvent("onLinkClick", (id, e) => {
+                let link = gantt.getLink(id)
+                let source = gantt.getTask(link.source)
+                let target = gantt.getTask(link.target)
+                emit('link-clicked', link, source, target);
+                return true;
+            });
+            gantt.attachEvent("onLinkDblClick", function(id,e){
+                //any custom logic here
+                return false;
+            });
+
+
+            ////////////////////////// TaskDrag 기간 이동 //////////////////////////
+            gantt.attachEvent("onBeforeTaskDrag", function(id, mode, event){
+                let task = gantt.getTask(id);
+                task.startDate = dateToTimestamp(task.start_date);
+                task.dueDate = dateToTimestamp(task.end_date, true);
+                task.endDate = dateToTimestamp(task.origin_end_date, true);
+
+                // 드래그 시작 시 원본 데이터 저장
+                originalTaskData.value = JSON.parse(JSON.stringify(task));
+                
+                // 조건 검사 함수
+                const validateDrag = () => {
+                    let incommingLinks = task.$target
+                    let outgoingLinks = task.$source
+
+                    // 조건 검사 로직
+                if(incommingLinks && incommingLinks.length > 0) {
+                        for(let linkId of incommingLinks) {
+                            let link = gantt.getLink(linkId)
+                        let source = gantt.getTask(link.source)
+                        let target = gantt.getTask(link.target)
+
+                            return validateTaskConstraint(source, target);
+                        } 
                 }
-                lastClickTime.value = currentTime;
-                emit('task-clicked', { id });
+
+                if(outgoingLinks && outgoingLinks.length > 0) {
+                        for(let linkId of outgoingLinks) {
+                            let link = gantt.getLink(linkId)
+                        let source = gantt.getTask(link.source)
+                        let target = gantt.getTask(link.target)
+
+                            return validateTaskConstraint(source, target);
+                        }
+                    }
+                    return true;
+                };
+
+                if(mode == 'resize' || mode == 'move') {
+                    // 조건 검사
+                    if (!validateDrag()) {
+                        return false;
+                    }
+                }
+
                 return true;
             });
 
-            gantt.attachEvent("onRowClick", (id, e) => {
-                // 이 부분이 그리드(왼쪽 행) 클릭!
-                emit('grid-row-clicked', { id });
-                return true;
-            });
-
-            // 드래그 이벤트 리스너 추가
             gantt.attachEvent("onAfterTaskDrag", (id, mode) => {
                 if(mode == 'resize' || mode == 'move') {
                     let task = gantt.getTask(id)
+                    let incommingLinks = task.$target
+                    let outgoingLinks = task.$source
+
                     task.startDate = dateToTimestamp(task.start_date);
                     task.dueDate = dateToTimestamp(task.end_date, true);
                     task.endDate = dateToTimestamp(task.origin_end_date, true);
-                    
+
+                    // 최종 검증
+                    let isValid = true;
+                    if(incommingLinks && incommingLinks.length > 0) {
+                        for(let linkId of incommingLinks) {
+                            let link = gantt.getLink(linkId)
+                            let source = gantt.getTask(link.source)
+                            let target = gantt.getTask(link.target)
+
+                            if(!validateTaskConstraint(source, target)){
+                                isValid = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if(isValid && outgoingLinks && outgoingLinks.length > 0) {
+                        for(let linkId of outgoingLinks) {
+                            let link = gantt.getLink(linkId)
+                            let source = gantt.getTask(link.source)
+                            let target = gantt.getTask(link.target)
+
+                            if(!validateTaskConstraint(source, target)){
+                                isValid = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isValid) {
                     // 부모 컴포넌트에 업데이트된 태스크 전달
                     emit('task-updated', task)
+                    } else {
+                        // 조건에 맞지 않으면 원상복구
+                        if (originalTaskData.value && originalTaskData.value.id == id) {
+                            // 개별 속성을 복원
+                            task.start_date = originalTaskData.value.start_date;
+                            task.end_date = originalTaskData.value.end_date;
+                            task.startDate = originalTaskData.value.startDate;
+                            task.dueDate = originalTaskData.value.dueDate;
+                            task.endDate = originalTaskData.value.endDate;
+                            
+                            // gantt 업데이트
+                            gantt.refreshTask(id);
+                            gantt.render();
+                        }
+                    }
+                    originalTaskData.value = null;
                 } 
             })
 
-            // gantt.attachEvent("onBeforeLinkAdd", function(link) {
-            //     // 자기 자신과의 연결 체크
-            //     if (link.source === link.target) {
-            //         gantt.message({
-            //             type: "error",
-            //             text: "자기 자신과의 연결은 허용되지 않습니다."
-            //         });
-            //         return false;
-            //     }
-                
-            //     console.log(link)
-                
-            //     return true;
-            // });
+            ////////////////////////// 선연결 이전 이벤트 처리 //////////////////////////
+            gantt.attachEvent("onBeforeLinkAdd", function(id, link) {
+                // 상위 컴포넌트에 이벤트 발생
+                let source = gantt.getTask(link.source)
+                let target = gantt.getTask(link.target)
 
+                if(target.status == 'DONE') {
+                    emit('message', {
+                        color: "error",
+                        text: `"${target.name}"태스크는 완료된 태스크입니다.`
+                    });
+                    return false;
+                }
+                return validateTaskConstraint(source, target);
+            });
             gantt.attachEvent("onAfterLinkAdd", function(id, link) {
-                // link: { id, source, target, type }
-                // 예: { id: 1, source: 1, target: 2, type: "0" }
-                // 여기서 원하는 동작 수행 (예: 부모 컴포넌트로 emit)
-                let copyLink = JSON.parse(JSON.stringify(link));
                 const typeMap = {
                     "FS": "0", // Finish to Start (기본)
                     "FF": "2", // Finish to Finish
                     "SF": "3", // Start to Finishaa
                     "SS": "1"  // Start to Start
                 };
+
+                let copyLink = JSON.parse(JSON.stringify(link));
                 copyLink.type = Object.keys(typeMap).find(key => typeMap[key] == link.type);
                 
                 emit('link-event', {type: 'add', link: copyLink});
                 return true;
             });
+            // 선 삭제 이전 이벤트 처리
+            gantt.attachEvent("onBeforeLinkDelete", function(id, link) {
+                // BPM태스크간 선 삭제 제한 
+                let source = gantt.getTask(link.source)
+                let target = gantt.getTask(link.target)
 
+                if(!source.adhoc && !target.adhoc) {
+                    emit('message', {
+                            color: "error",
+                            text: `태스크[BPM] 선은 삭제 할 수 없습니다.`
+                        });
+                        return false;
+                }
+
+                return true;
+            });
+            // 선 삭제 이후 이벤트 처리
             gantt.attachEvent("onAfterLinkDelete", function(id, link) {
                 // link: { id, source, target, type }
                 // 여기서 원하는 동작 수행 (예: 부모 컴포넌트로 emit)
                 emit('link-event', {type: 'delete', link: link});
                 return true;
             });
-
-              // 트리 확장(펼침) 이벤트
-            gantt.attachEvent("onTaskOpened", function(id) {
-                emit('task-tree-opened', { id });
-            });
-
+            ///////////////////////////////////////////////////////////////////////////////
             gantt.init(ganttContainer.value)
             loadGanttData()
         })
   
+        function validateTaskConstraint(source, target){
+            // BPM <> BPM X
+            if(!source.adhoc && !target.adhoc) {
+                emit('message', {
+                    color: "error",
+                    text: "태스크[BPM]간 선 연결은 할 수 없습니다."
+                });
+                return false;
+            } 
+            // BPM > ADHOC 0 / BPM 이후 날짜
+            else if(!source.adhoc && target.adhoc) {
+                if(source.start_date > target.start_date) {
+                    emit('message', {
+                        color: "error",
+                        text: `"${source.name}"태스크[BPM]는 이전 태스크 업무에 연결 할 수 없습니다.`
+                    });
+                    return false;
+                } 
+            }
+            // ADHOC > BPM 0 / BPM 이전 날짜
+            else if(source.adhoc && !target.adhoc) {
+                if(source.end_date <= target.start_date) {
+                    emit('message', {
+                        color: "error",
+                        text: `"${source.name}"태스크의 시작일은 "${target.name}"태스크[BPM] 만기일 이후여야 합니다.`
+                    });
+                    return false;
+                }
+            }
+
+            // 나머지 가능 
+            return true;
+        }
        
         function formatGanttDate(date, isEndDate) {
             if (!date) return;
@@ -495,6 +645,11 @@
         };
 
 
+        // 태스크 삭제 메서드
+        function deleteTaskById(taskId) {
+            gantt.deleteTask(taskId);
+        }
+
         watch(() => props.tasks, () => {
             loadGanttData();
         }, { deep: true })
@@ -508,9 +663,11 @@
 
 
 
+
   
       return {
             ganttContainer,
+            deleteTaskById,
             // getTaskStyle,
             // getProgressStyle
       }
@@ -694,4 +851,10 @@
     color: #FFFFFF !important;
     font-weight: 500;
   }
-  </style>
+.gantt_message {
+    z-index: 10000 !important;
+    position: fixed !important;
+    top: 50px !important;
+    right: 20px !important;
+}
+</style>

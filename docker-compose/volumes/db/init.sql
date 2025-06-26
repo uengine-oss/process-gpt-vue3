@@ -884,3 +884,4 @@ alter publication supabase_realtime add table notifications;
 alter publication supabase_realtime add table todolist;
 alter publication supabase_realtime add table bpm_proc_inst;
 alter publication supabase_realtime add table proc_def; 
+alter publication supabase_realtime add table project;
