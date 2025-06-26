@@ -1,5 +1,4 @@
-<template>
-</template>
+<template></template>
 
 <script>
 import BackendFactory from "@/components/api/BackendFactory";
@@ -72,7 +71,6 @@ export default {
         },
         async loadToDo() {
             var me = this
-            console.log(me.id)
             let worklist = await backend.getAllWorkListByInstId(me.id)
             if(!worklist) return;
             console.log(worklist)

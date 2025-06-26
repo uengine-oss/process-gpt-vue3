@@ -103,9 +103,13 @@ export default {
                         });
                     } else if (this.streamingText != '') {
                         this.streamingText = task.log;
-                        this.messages[this.messages.length - 1].content = this.streamingText;
+                        const lastMessage = this.messages[this.messages.length - 1];
+                        if (lastMessage.content && lastMessage.content.length > 0) {
+                            lastMessage.content = this.streamingText;
+                        }
                     }
                     if (task.status == "DONE") {
+                        this.$emit('updated');
                         this.EventBus.emit('instances-updated');
                         await this.getChatList(this.chatRoomId);
                         this.streamingText = '';

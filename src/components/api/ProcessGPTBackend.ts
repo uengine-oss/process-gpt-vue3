@@ -499,7 +499,8 @@ class ProcessGPTBackend implements Backend {
                     tool: workitem.tool || "",
                     adhoc: workitem.adhoc || false,
                     currentActivities: workitem.adhoc ? [] : (instance && instance.currentActivityIds ? instance.currentActivityIds : [ activityInfo.id ]),
-                    defVerId: instance && instance.defVersion ? instance.defVersion : null
+                    defVerId: instance && instance.defVersion ? instance.defVersion : null,
+                    output: workitem.output || ""
                 },
                 activity: {
                     name: workitem.activity_name,
