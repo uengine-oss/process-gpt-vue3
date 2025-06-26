@@ -100,7 +100,7 @@
                 </div>
                 <v-row class="pa-0 ma-0 mt-1 d-flex align-center">
                     <div class="mr-1" style="width: 24px;">
-                        <v-img
+                        <v-img v-if="isMyTask && !isTodolistPath"
                             :src="userInfoForTask && userInfoForTask.profile ? userInfoForTask.profile : '/images/defaultUser.png'"
                             alt="profile"
                             width="24"

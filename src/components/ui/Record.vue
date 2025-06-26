@@ -460,6 +460,7 @@ export default {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    max-width: 100% !important;
 }
 
 .circle {

@@ -4,6 +4,14 @@
             class="is-work-height"
             style="overflow: auto;"
         >
+            <div class="pa-4">
+                <Chat
+                    :definitionMapOnlyInput="true"
+                    :disableChat="false"
+                    :isMobile="isMobile"
+                />
+            </div>
+            
             <div v-if="componentName != 'SubProcessDetail'" class="pa-0 pl-6 pt-4 pr-6 d-flex align-center"
                 style="position: sticky; top: 0; z-index:2; background-color:white">
                 <h5 v-if="!globalIsMobile.value" class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
@@ -233,6 +241,7 @@ import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPlace.vue';
+import Chat from '@/components/ui/Chat.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -251,7 +260,8 @@ export default {
         SubProcessDetail,
         DefinitionMapList,
         ProcessDefinitionChat,
-        ProcessDefinitionMarketPlace
+        ProcessDefinitionMarketPlace,
+        Chat
     },
     props: {
         componentName: {

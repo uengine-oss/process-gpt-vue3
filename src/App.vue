@@ -91,9 +91,15 @@ export default {
                     await this.backend.checkDBConnection();
                     this.loadScreen = true;
                 } else {
-                    const isValidTenant = await this.backend.getTenant(window.$tenantName);
+                    const tenantId = await this.backend.getTenant(window.$tenantName);
+                    const raw = sessionStorage.getItem('validated-tenants') || '{}';
+                    const validatedMap = JSON.parse(raw);
+                    if (validatedMap[tenantId]) {
+                        this.loadScreen = true;
+                        return;
+                    }
                     if(window.$tenantName !== 'localhost') {
-                        if (!isValidTenant) {
+                        if (!tenantId) {
                             if(localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === window.$tenantName) {
                                 localStorage.removeItem('tenantId');
                             }
@@ -117,6 +123,8 @@ export default {
                                         })
                                         window.location.href = 'https://www.process-gpt.io/tenant/manage';
                                     }
+                                    validatedMap[tenantId] = true;
+                                    sessionStorage.setItem('validated-tenants', JSON.stringify(validatedMap));
                                 } else {
                                     this.$router.push('/auth/login');
                                 }

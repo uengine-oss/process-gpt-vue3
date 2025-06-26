@@ -272,7 +272,11 @@ export default {
         },
         simulationInstances: Array,
         processDefinition: Object,
-        activityIndex: Number
+        activityIndex: Number,
+        isStarted: {
+            type: Boolean,
+            default: false
+        },
     },
     components: {
         // ProcessDefinition,
@@ -405,10 +409,14 @@ export default {
         },
         tabList() {
             if (this.mode == 'ProcessGPT') {
-                if(this.bpmn) {
+                if(this.bpmn && this.isStarted) {
+                    return [
+                        { value: 'progress', label: this.$t('WorkItem.progress') },
+                        { value: 'agent', label: this.$t('WorkItem.agent') },
+                    ]
+                } else if(this.bpmn && !this.isStarted) {
                     return [
                         { value: 'output', label: this.$t('InstanceCard.output') },
-                        { value: 'progress', label: this.$t('WorkItem.progress') },
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent', label: this.$t('WorkItem.agent') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
