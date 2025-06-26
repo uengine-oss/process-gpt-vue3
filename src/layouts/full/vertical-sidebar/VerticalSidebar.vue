@@ -106,6 +106,7 @@
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
                 </v-col>
+                <v-btn block>완료 목록</v-btn>
                
                 <v-col class="pa-0" style="flex: 0 0 auto;">
                     <!-- definition menu item -->
