@@ -365,9 +365,7 @@ export default {
         if (this.$route.query.processMessage) {
             try {
                 const messageData = JSON.parse(decodeURIComponent(this.$route.query.processMessage));
-                setTimeout(() => {
-                    this.handleProcessDefinitionMessage(messageData);
-                }, 500); // 충분한 시간을 두고 처리
+                this.handleProcessDefinitionMessage(messageData);
                 
                 // query parameter 제거
                 this.$router.replace({ path: '/chats' });
@@ -591,28 +589,30 @@ export default {
         createChatRoom(chatRoomInfo){
             if(!chatRoomInfo.id){
                 chatRoomInfo.id = this.uuid();
-                // chatRoomInfo.participants.forEach(participant => {
-                //     delete participant.profile;
-                // });
-                let userInfo = {
-                    "id": this.userInfo.uid,
-                    "username": this.userInfo.name,
-                    "email": this.userInfo.email,
-                }
-                chatRoomInfo.participants.push(userInfo)
-                let currentTimestamp = Date.now()
-                chatRoomInfo.message = {
-                    "msg": "NEW",
-                    "type": "text",
-                    "createdAt": currentTimestamp
-                }
-                this.chatRoomList.push(chatRoomInfo)
-            } else {
-                let index = this.chatRoomList.findIndex(room => room.id === chatRoomInfo.id);
-                if(index !== -1) {
-                    this.chatRoomList.splice(index, 1, chatRoomInfo);
-                }
             }
+            // chatRoomInfo.participants.forEach(participant => {
+            //     delete participant.profile;
+            // });
+            let userInfo = {
+                "id": this.userInfo.uid,
+                "username": this.userInfo.name,
+                "email": this.userInfo.email,
+            }
+            chatRoomInfo.participants.push(userInfo)
+            let currentTimestamp = Date.now()
+            chatRoomInfo.message = {
+                "msg": "NEW",
+                "type": "text",
+                "createdAt": currentTimestamp
+            }
+            this.chatRoomList.push(chatRoomInfo)
+            // } 
+            // else {
+            //     let index = this.chatRoomList.findIndex(room => room.id === chatRoomInfo.id);
+            //     if(index !== -1) {
+            //         this.chatRoomList.splice(index, 1, chatRoomInfo);
+            //     }
+            // }
             
             this.putObject(`chat_rooms`, chatRoomInfo);
             this.chatRoomSelected(chatRoomInfo)
@@ -620,12 +620,14 @@ export default {
             this.setWatchChatList(this.myChatRoomIds);
         },
         setReadMessage(idx){
-            let participant = this.chatRoomList[idx].participants.find(participant => participant.email === this.userInfo.email);
-            if(participant) {
-                participant.isExistUnReadMessage = false;
-            }
-            this.putObject(`chat_rooms`, this.chatRoomList[idx]);
-            this.EventBus.emit('clear-notification', this.chatRoomList[idx].id);
+            if(idx !== -1) {
+                let participant = this.chatRoomList[idx].participants.find(participant => participant.email === this.userInfo.email);
+                if(participant) {
+                    participant.isExistUnReadMessage = false;
+                }
+                this.putObject(`chat_rooms`, this.chatRoomList[idx]);
+                this.EventBus.emit('clear-notification', this.chatRoomList[idx].id);
+            }   
         },
         chatRoomSelected(chatRoomInfo){
             this.currentChatRoom = chatRoomInfo
@@ -975,56 +977,28 @@ export default {
             }
         },
         handleProcessDefinitionMessage(message) {
-            console.log('handleProcessDefinitionMessage called with:', message);
-            console.log('Current chatRoomList:', this.chatRoomList);
-            
-            // "Process GPT" 이름을 가진 채팅방 찾기
-            let systemChatRoom = this.chatRoomList.find(room => 
-                room.name === "Process GPT"
-            );
-            
-            // "Process GPT" 채팅방이 없으면 시스템 사용자가 포함된 첫 번째 채팅방 찾기
-            if (!systemChatRoom) {
-                systemChatRoom = this.chatRoomList.find(room => 
-                    room.participants.some(participant => participant.id === "system_id")
-                );
-            }
-            
-            console.log('Found system chat room:', systemChatRoom);
+            let systemChatRoom = {
+                "id": this.uuid(),
+                "name": message.chatRoomName,
+                "participants": [
+                    {
+                        email: "system@uengine.org",
+                        id: "system_id",
+                        username: "System",
+                        is_admin: true,
+                        notifications: null
+                    }
+                ]
+            };
+            this.createChatRoom(systemChatRoom);
             
             if (systemChatRoom) {
                 // 시스템 채팅방 선택
                 this.chatRoomSelected(systemChatRoom);
-                console.log('Selected system chat room');
-                
-                // 메시지 전송
-                setTimeout(() => {
-                    console.log('Sending message:', message);
-                    this.beforeSendMessage(message);
-                }, 100);
-            } else {
-                console.log('No system chat room found, creating new one');
-                // 시스템 채팅방이 없으면 생성
-                let newSystemChatRoom = {
-                    "name": "Process GPT",
-                    "participants": [
-                        {
-                            email: "system@uengine.org",
-                            id: "system_id",
-                            username: "System",
-                            is_admin: true,
-                            notifications: null
-                        }
-                    ]
-                };
-                this.createChatRoom(newSystemChatRoom);
-                
-                // 채팅방 생성 후 메시지 전송
-                setTimeout(() => {
-                    console.log('Sending message after creating room:', message);
-                    this.beforeSendMessage(message);
-                }, 200);
+                delete message.chatRoomName
+                this.beforeSendMessage(message);
             }
+
         },
     }
 }

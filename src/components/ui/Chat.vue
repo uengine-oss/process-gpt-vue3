@@ -702,7 +702,7 @@
             <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.definitionMapInputMessage')"
-                    auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
+                    auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
                     @input="handleTextareaInput"
                     @paste="handlePaste"
                 >
@@ -719,6 +719,7 @@
                                             variant="text"
                                             v-bind="props"
                                             style="width:30px; height:30px;"
+                                            :disabled="isGenerationFinished"
                                         >
                                             <Icons :icon="'round-headset'" :size="20"  />
                                         </v-btn>
@@ -727,7 +728,7 @@
                                 <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat || isGenerationFinished">
                                             <Icons :icon="'document'" :size="20" />
                                         </v-btn>
                                     </template>
@@ -735,7 +736,7 @@
                                 <v-tooltip :text="$t('chat.camera')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat || isGenerationFinished">
                                             <Icons :icon="'camera'" :size="20" />
                                         </v-btn>
                                     </template>
@@ -743,7 +744,7 @@
                                 <v-tooltip :text="$t('chat.addImage')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); uploadImage()" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat || isGenerationFinished">
                                             <Icons :icon="'add-media-image'" :size="20" />
                                         </v-btn>
                                     </template>
@@ -818,6 +819,7 @@
                             variant="outlined"
                             size="small"
                             style="border-color: #e0e0e0 !important;"
+                            :disabled="isGenerationFinished"
                         >
                             <Icons :icon="'sharp-mic'" :size="'16'" />
                         </v-btn>
@@ -828,12 +830,13 @@
                             variant="outlined"
                             size="small"
                             style="border-color: #e0e0e0 !important;"
+                            :disabled="isGenerationFinished"
                         >
                             <Icons :icon="'stop'" :size="'16'" />
                         </v-btn>
                         <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
 
-                        <v-btn v-if="!isLoading"
+                        <v-btn v-if="!isLoading && !isGenerationFinished"
                             class="cp-send text-medium-emphasis"
                             color="primary" 
                             variant="outlined" 
@@ -845,6 +848,22 @@
                             :disabled="disableBtn"
                         >
                             <icons :icon="'send-outline'" :size="16" />
+                        </v-btn>
+                        <v-btn v-else-if="isGenerationFinished"
+                            class="cp-send text-medium-emphasis"
+                            color="primary" 
+                            variant="outlined" 
+                            density="comfortable"
+                            icon
+                            size="small"
+                            style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
+                            disabled
+                        >
+                            <v-progress-circular 
+                                indeterminate 
+                                color="primary" 
+                                size="16"
+                            ></v-progress-circular>
                         </v-btn>
                         <v-btn v-else 
                             class="cp-send text-medium-emphasis"
@@ -892,6 +911,7 @@ import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
 import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
+import ChatRoomNameGenerator from "@/components/ai/ChatRoomNameGenerator.js";
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -986,7 +1006,10 @@ export default {
             previewMessage: null,
             
             // 채팅창 높이 관련 변수
-            windowWidth: window.innerWidth
+            windowWidth: window.innerWidth,
+
+            generator: null,
+            isGenerationFinished: false,
         };
     },
     created() {
@@ -1454,20 +1477,26 @@ export default {
                 this.editIndex = -1;
             } else {
                 if (this.definitionMapOnlyInput) {
-                    // definitionMapOnlyInput 모드일 때는 메시지를 query parameter로 전달하고 /chats로 이동
-                    const messageData = {
+                    this.isGenerationFinished = true;
+
+                    this.defMapMsgData = {
                         text: this.newMessage,
                         image: this.attachedImg,
                         mentionedUsers: this.mentionedUsers
                     };
                     
-                    // /chats 페이지로 이동 (query parameter로 메시지 전달)
-                    this.$router.push({
-                        path: '/chats',
-                        query: {
-                            processMessage: encodeURIComponent(JSON.stringify(messageData))
-                        }
+                    this.generator = new ChatRoomNameGenerator(this, {
+                        isStream: true,
+                        preferredLanguage: "Korean"
                     });
+
+                    this.generator.previousMessages.push({
+                        role: 'user',
+                        content: JSON.stringify(this.defMapMsgData)
+                    });
+
+                    this.generator.generate();
+
                 } else {
                     this.$emit('sendMessage', {
                         image: this.attachedImg,
@@ -1479,13 +1508,17 @@ export default {
             if (this.isReply) this.isReply = false;
             this.attachedImg = null;
             var imagePreview = document.querySelector("#imagePreview");
-            imagePreview.innerHTML = '';
+            if(imagePreview) {
+                imagePreview.innerHTML = '';
+            }
             this.delImgBtn = false;
             this.isAtBottom = true
             setTimeout(() => {
-                this.newMessage = "";
-                this.mentionedUsers = [];
-                this.showUserList = false;
+                if(!this.definitionMapOnlyInput) {
+                    this.newMessage = "";
+                    this.mentionedUsers = [];
+                    this.showUserList = false;
+                }
             }, 100);
         },
         cancel() {
@@ -1728,6 +1761,25 @@ export default {
         async addRole(message, index) {
             this.$emit('addRole', message.newRoleInfo);
             this.filteredMessages[index].added = true;
+        },
+        onGenerationFinished(responseObj) {
+            if(responseObj && responseObj.includes('{')){
+                try {
+                    responseObj = JSON.parse(responseObj);
+                } catch(e) {
+                    responseObj = partialParse(responseObj)
+                }
+            }
+            if(responseObj.createdNewChatRoomName) {
+                this.defMapMsgData.chatRoomName = responseObj.createdNewChatRoomName
+                this.isGenerationFinished = false;
+                this.$router.push({
+                    path: '/chats',
+                    query: {
+                        processMessage: encodeURIComponent(JSON.stringify(this.defMapMsgData))
+                    }
+                });
+            }
         },
     }
 };
