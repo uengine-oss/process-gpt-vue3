@@ -22,7 +22,7 @@
                             <v-icon size="small">mdi-plus</v-icon>
                         </v-btn>
                     </template>
-                    <span>전략 추가</span>
+                    <span>{{ $t('BSCard.addStrategy') }}</span>
                 </v-tooltip>
                 <v-tooltip bottom>
                     <template v-slot:activator="{ props }">
@@ -30,7 +30,7 @@
                             <v-icon size="small">mdi-pencil</v-icon>
                         </v-btn>
                     </template>
-                    <span>전략 수정</span>
+                    <span>{{ $t('BSCard.editStrategy') }}</span>
                 </v-tooltip>
                 <v-tooltip bottom>
                     <template v-slot:activator="{ props }">
@@ -38,7 +38,7 @@
                             <v-icon size="small">mdi-delete</v-icon>
                         </v-btn>
                     </template>
-                    <span>전략 삭제</span>
+                    <span>{{ $t('BSCard.deleteStrategy') }}</span>
                 </v-tooltip>
                 <!-- <v-tooltip bottom>
                     <template v-slot:activator="{ props }">
@@ -74,14 +74,14 @@
   
   <v-dialog v-model="deleteDialog" max-width="400">
     <v-card>
-      <v-card-title class="text-h6">전략 삭제</v-card-title>
+      <v-card-title class="text-h6">{{ $t('BSCard.deleteStrategyDialog') }}</v-card-title>
       <v-card-text>
         <v-select
           v-model="selectedStrategy"
           :items="strategyOptions"
           item-title="name"
           item-value="id"
-          label="삭제할 전략을 선택하세요"
+          :label="$t('BSCard.selectStrategyToDelete')"
           variant="outlined"
           return-object
           :item-props="getItemProps"
@@ -89,9 +89,9 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn @click="deleteDialog = false" variant="text">취소</v-btn>
+        <v-btn @click="deleteDialog = false" variant="text">{{ $t('BSCard.cancel') }}</v-btn>
         <v-btn @click="confirmDeleteStrategy" color="red" variant="flat" :disabled="!selectedStrategy">
-          삭제
+          {{ $t('BSCard.delete') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -99,13 +99,13 @@
 
   <v-dialog v-model="addDialog" max-width="500">
     <v-card>
-      <v-card-title class="text-h6 text-center">전략 추가</v-card-title>
+      <v-card-title class="text-h6 text-center">{{ $t('BSCard.addStrategyDialog') }}</v-card-title>
 
       <v-card-text>
         <v-select
           v-model="strategyForm.perspective"
           :items="lanes"
-          label="관점:"
+          :label="$t('BSCard.perspective')"
           variant="outlined"
           dense
           required
@@ -117,7 +117,7 @@
           :items="upperStrategyOptions(null, strategyForm.perspective)"
           item-title="name"
           item-value="id"
-          label="상위 전략 선택 (복수 가능)"
+          :label="$t('BSCard.selectUpperStrategy')"
           multiple
           variant="outlined"
           chips
@@ -126,7 +126,7 @@
 
         <v-text-field
           v-model="strategyForm.name"
-          label="전략명:"
+          :label="$t('BSCard.strategyName')"
           variant="outlined"
           dense
           required
@@ -135,7 +135,7 @@
 
         <v-textarea
           v-model="strategyForm.description"
-          label="설명:"
+          :label="$t('BSCard.description')"
           variant="outlined"
           auto-grow
           rows="2"
@@ -145,15 +145,15 @@
 
       <v-card-actions>
         <v-spacer />
-        <v-btn @click="addDialog = false" variant="outlined" color="grey">취소</v-btn>
-        <v-btn @click="saveStrategy" variant="flat" color="primary" :disabled="!strategyForm.name || !strategyForm.perspective">저장</v-btn>
+        <v-btn @click="addDialog = false" variant="outlined" color="grey">{{ $t('BSCard.cancel') }}</v-btn>
+        <v-btn @click="saveStrategy" variant="flat" color="primary" :disabled="!strategyForm.name || !strategyForm.perspective">{{ $t('BSCard.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 
   <v-dialog v-model="editDialog" max-width="500">
     <v-card>
-      <v-card-title class="text-h6 text-center">전략 수정</v-card-title>
+      <v-card-title class="text-h6 text-center">{{ $t('BSCard.editStrategyDialog') }}</v-card-title>
 
       <v-card-text>
         <v-select
@@ -162,7 +162,7 @@
           v-model:menu="strategyMenu"
           item-title="name"
           item-value="id"
-          label="수정할 전략을 선택하세요"
+          :label="$t('BSCard.selectStrategyToEdit')"
           variant="outlined"
           return-object
           @update:model-value="strategyMenu = false"
@@ -174,7 +174,7 @@
           :items="upperStrategyOptions(selectedStrategy)"
           item-title="name"
           item-value="id"
-          label="상위 전략 선택 (복수 가능)"
+          :label="$t('BSCard.selectUpperStrategy')"
           multiple
           variant="outlined"
           chips
@@ -182,14 +182,14 @@
         />
         <v-text-field
           v-model="editForm.name"
-          label="전략명:"
+          :label="$t('BSCard.strategyName')"
           variant="outlined"
           dense
         />
 
         <v-textarea
           v-model="editForm.description"
-          label="설명:"
+          :label="$t('BSCard.description')"
           variant="outlined"
           auto-grow
           rows="2"
@@ -201,14 +201,14 @@
 
       <v-card-actions>
         <v-spacer />
-        <v-btn @click="editDialog = false" variant="outlined" color="grey">취소</v-btn>
-        <v-btn @click="saveEditedStrategy" variant="flat" color="primary">저장</v-btn>
+        <v-btn @click="editDialog = false" variant="outlined" color="grey">{{ $t('BSCard.cancel') }}</v-btn>
+        <v-btn @click="saveEditedStrategy" variant="flat" color="primary">{{ $t('BSCard.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 <v-dialog v-model="connectionDialog" max-width="500">
   <v-card>
-    <v-card-title class="text-h6 text-center">전략 연결 추가</v-card-title>
+    <v-card-title class="text-h6 text-center">{{ $t('BSCard.addConnectionDialog') }}</v-card-title>
 
     <v-card-text>
       <v-select
@@ -216,7 +216,7 @@
         :items="strategyOptions"
         item-title="name"
         item-value="id"
-        label="출발 전략"
+        :label="$t('BSCard.sourceStrategy')"
         variant="outlined"
         return-object
         class="mb-3"
@@ -228,7 +228,7 @@
         :items="strategyOptions"
         item-title="name"
         item-value="id"
-        label="도착 전략"
+        :label="$t('BSCard.targetStrategy')"
         variant="outlined"
         return-object
         :item-props="getItemProps"
@@ -237,14 +237,14 @@
 
     <v-card-actions>
       <v-spacer />
-      <v-btn @click="connectionDialog = false" variant="outlined" color="grey">취소</v-btn>
+      <v-btn @click="connectionDialog = false" variant="outlined" color="grey">{{ $t('BSCard.cancel') }}</v-btn>
       <v-btn
         @click="confirmAddConnection"
         variant="flat"
         color="primary"
         :disabled="!selectedConnectionSource || !selectedConnectionTarget || selectedConnectionSource.id === selectedConnectionTarget.id"
       >
-        연결 추가
+        {{ $t('BSCard.addConnectionBtn') }}
       </v-btn>
     </v-card-actions>
   </v-card>
@@ -289,7 +289,12 @@
             title: "BSCard.cardTitle",
             text: "BSCard.description"
         },
-        lanes: ['재무', '고객', '내부 프로세스', '학습 및 성장'] ,
+        lanes: [
+            this.$t('BSCard.perspectiveFinance'),
+            this.$t('BSCard.perspectiveCustomer'),
+            this.$t('BSCard.perspectiveProcess'),
+            this.$t('BSCard.perspectiveLearning')
+        ],
         jsonData: {
           strategies: [
             {
