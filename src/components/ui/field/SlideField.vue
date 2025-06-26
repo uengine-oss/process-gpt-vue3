@@ -145,9 +145,9 @@ export default {
 
 항목들이 하나씩 등장합니다
 
-* 첫 번째 포인트 <!-- .element: class=\"fragment\" -->
-* 두 번째 포인트 <!-- .element: class=\"fragment\" -->
-* 세 번째 포인트 <!-- .element: class=\"fragment\" -->
+* 첫 번째 포인트 ::fragment::
+* 두 번째 포인트 ::fragment::
+* 세 번째 포인트 ::fragment::
 
 ---
 

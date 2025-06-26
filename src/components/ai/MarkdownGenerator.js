@@ -100,9 +100,9 @@ export default class MarkdownGenerator extends AIGenerator {
 
                     Items appear one by one
 
-                    * First point <!-- .element: class="fragment" -->
-                    * Second point <!-- .element: class="fragment" -->
-                    * Third point <!-- .element: class="fragment" -->
+                    * First point ::fragment::
+                    * Second point ::fragment::
+                    * Third point ::fragment::
 
                     ---
 
