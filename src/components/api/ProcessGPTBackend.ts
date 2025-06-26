@@ -1825,12 +1825,7 @@ class ProcessGPTBackend implements Backend {
 
     async getAgentList() {
         try {
-            const options = {
-                match: {
-                    tenant_id: window.$tenantName
-                }
-            }
-            const list = await storage.list('agents', options);
+            const list = await storage.list('agents');
             return list;
         } catch (error) {
             //@ts-ignore
