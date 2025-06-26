@@ -5,6 +5,7 @@ import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { Markdown } from 'tiptap-markdown'
 import { DOMParser as ProseMirrorDOMParser } from 'prosemirror-model'
+import { Link } from '@tiptap/extension-link'
 
 export default {
   methods: {
@@ -13,7 +14,7 @@ export default {
 
 
       const editor = new Editor({
-        extensions: [StarterKit, Markdown],
+        extensions: [StarterKit, Markdown, Link],
         content: '',
         editable: false
       });
