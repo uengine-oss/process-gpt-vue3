@@ -1027,5 +1027,8 @@
         "friends": "친구",
         "progress": "진행 상황",
         "menu": "메뉴"
+    },
+    "ReportField": {
+        "title": "컨텐츠 에디터"
     }
 }

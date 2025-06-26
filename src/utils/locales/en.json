@@ -1018,5 +1018,8 @@
         "friends": "Friends",
         "progress": "Progress",
         "menu": "Menu"
+    },
+    "ReportField": {
+        "title": "Content Editor"
     }
 }

@@ -48,6 +48,12 @@
             transition="dialog-transition"
         >
             <v-card>
+                <div class="d-flex pa-4">
+                    <v-card-title class="pa-0">{{ i18n.global.t('SlideEditor.title') }}</v-card-title>
+                    <v-btn icon class="ml-auto" variant="text" @click="cancelMarkdown" density="compact">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </div>
                 <v-card-text style="height: 80vh; padding: 0;">
                 <slide-editor
                     :content="localModelValue"
@@ -58,12 +64,6 @@
                 </v-card-text>
                 <v-row class="ma-0 pa-4">
                     <v-spacer></v-spacer>
-                    <v-btn @click="cancelMarkdown"
-                        variant="elevated" 
-                        class="rounded-pill mr-2"
-                        density="compact"
-                    >취소
-                    </v-btn>
                     <v-btn @click="saveMarkdown"
                         :color="themeColor"
                         variant="elevated" 
@@ -102,6 +102,7 @@ import MarkdownEditor from '@/views/markdown/MarkdownEditor.vue';
 import Icons from "@/components/ui-components/Icons.vue";
 import ThemeColorMixin from "./ThemeColorMixin.js";
 import SlidePresentation from '@/views/markdown/SlidePresentation.vue';
+import { i18n } from '@/main'
 
 export default {
     name: "SlideEditorField",
@@ -221,7 +222,9 @@ $e^{i\\pi} + 1 = 0$
                 commonSettingInfos["localAlias"],
                 commonSettingInfos["localDisabled"],
                 commonSettingInfos["localReadonly"]
-            ]
+            ],
+
+            i18n,
         };
     },
 
