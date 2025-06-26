@@ -1,10 +1,22 @@
 <template>
     <v-card>
-        <v-card-title>
-            <span class="text-h6">{{ dialogTitle }}</span>
-        </v-card-title>
+        <v-row class="ma-0 pa-4">
+            <v-card-title class="text-h6 pa-0">{{ dialogTitle }}</v-card-title>
+            <v-spacer></v-spacer>
+            <v-btn @click="closeDialog"
+                class="ml-auto"
+                variant="text"
+                density="compact"
+                icon
+            >
+                <v-icon>mdi-close</v-icon>
+            </v-btn>
+        </v-row>
 
-        <v-card-text>
+        <v-card-text class="ma-0 pa-4 pb-0 pt-0"
+            style="max-height: calc(-300px + 100vh);
+            overflow: auto;"
+        >
             <!-- edit user -->
             <div v-if="dialogType == 'edit-user'">
                 <v-text-field 
@@ -44,11 +56,15 @@
                 <div>'{{ editNode.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }}</div>
             </div>
         </v-card-text>
-
         <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn color="primary" @click="update" :disabled="!isValid">{{ buttonText }}</v-btn>
-            <v-btn color="error" @click="closeDialog">{{ $t('organizationChartDefinition.close') }}</v-btn>
+            <v-btn @click="update"
+                :disabled="!isValid"
+                color="primary"
+                variant="elevated" 
+                class="rounded-pill"
+                density="compact"
+            >{{ buttonText }}</v-btn>
         </v-card-actions>
     </v-card>
 </template>

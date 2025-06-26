@@ -99,9 +99,20 @@
 
   <v-dialog v-model="addDialog" max-width="500">
     <v-card>
-      <v-card-title class="text-h6 text-center">{{ $t('BSCard.addStrategyDialog') }}</v-card-title>
+      <v-row class="ma-0 pa-4">
+        <v-card-title class="text-h6 pa-0">{{ $t('BSCard.addStrategyDialog') }}</v-card-title>
+        <v-spacer></v-spacer>
+          <v-btn @click="addDialog = false"
+            class="ml-auto"
+            variant="text"
+            density="compact"
+            icon
+          >
+              <v-icon>mdi-close</v-icon>
+          </v-btn>
+      </v-row>
 
-      <v-card-text>
+      <v-card-text class="pa-4 pb-0">
         <v-select
           v-model="strategyForm.perspective"
           :items="lanes"
@@ -145,17 +156,33 @@
 
       <v-card-actions>
         <v-spacer />
-        <v-btn @click="addDialog = false" variant="outlined" color="grey">{{ $t('BSCard.cancel') }}</v-btn>
-        <v-btn @click="saveStrategy" variant="flat" color="primary" :disabled="!strategyForm.name || !strategyForm.perspective">{{ $t('BSCard.save') }}</v-btn>
+          <v-btn @click="saveStrategy"
+              :disabled="!strategyForm.name || !strategyForm.perspective"
+              :color="themeColor"
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+          >{{ $t('BSCard.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 
   <v-dialog v-model="editDialog" max-width="500">
     <v-card>
-      <v-card-title class="text-h6 text-center">{{ $t('BSCard.editStrategyDialog') }}</v-card-title>
+      <v-row class="ma-0 pa-4">
+        <v-card-title class="text-h6 pa-0">{{ $t('BSCard.editStrategyDialog') }}</v-card-title>
+        <v-spacer></v-spacer>
+          <v-btn @click="editDialog = false"
+            class="ml-auto"
+            variant="text"
+            density="compact"
+            icon
+          >
+              <v-icon>mdi-close</v-icon>
+          </v-btn>
+      </v-row>
 
-      <v-card-text>
+      <v-card-text class="pa-4 pb-0">
         <v-select
           v-model="selectedStrategy"
           :items="strategyOptions"
@@ -201,8 +228,12 @@
 
       <v-card-actions>
         <v-spacer />
-        <v-btn @click="editDialog = false" variant="outlined" color="grey">{{ $t('BSCard.cancel') }}</v-btn>
-        <v-btn @click="saveEditedStrategy" variant="flat" color="primary">{{ $t('BSCard.save') }}</v-btn>
+          <v-btn @click="saveEditedStrategy"
+              :color="themeColor"
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+          >{{ $t('BSCard.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
