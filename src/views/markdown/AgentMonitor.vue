@@ -228,6 +228,14 @@ export default {
           if (taskMap.has(jobId)) {
             const task = taskMap.get(jobId)
             task.isCompleted = true
+            
+            // final_result 받자마자 바로 출력 (리포트 통합 전문가)
+            if (task.role === '리포트 통합 전문가' && data?.final_result) {
+              console.log('🔥 final_result 받자마자 출력:', data.final_result);
+              console.log('🔥 final_result 타입:', typeof data.final_result);
+              console.log('🔥 final_result 길이:', data.final_result?.length);
+            }
+            
             task.output = data?.final_result || null
           }
         }
@@ -497,6 +505,13 @@ export default {
     },
 
     submitTask(task) {
+      // 리포트 통합 전문가일 때 원본 출력
+      if (task.role === '리포트 통합 전문가') {
+        console.log('🔍 리포트 통합 전문가 - 원본 결과:', task.output);
+        console.log('🔍 리포트 통합 전문가 - 타입:', typeof task.output);
+        console.log('🔍 리포트 통합 전문가 - 길이:', task.output?.length);
+      }
+      
       // HTML에서 모든 필드 name과 태그명 추출
       console.log('html', this.html);
       const parser = new DOMParser();
@@ -585,7 +600,7 @@ export default {
             (task.crewType === 'report' && field.tag === 'report-field') ||
             (task.crewType === 'slide' && field.tag === 'slide-field')
           ) {
-            formValues[field.name] = this.sanitizeMarkdownOutput(task.output);
+            formValues[field.name] = task.output;
           }
         });
       }
@@ -648,6 +663,26 @@ export default {
             const taskId = this.getTaskIdFromWorkItem();
             const todoId = row.todo_id;
             const exists = this.events.some(e => e.id === row.id);
+
+            // task_completed 이벤트이고 리포트 통합 전문가인 경우 즉시 출력
+            if (row.event_type === 'task_completed' && todoId === taskId) {
+              const data = this.parseData(row);
+              if (data?.final_result) {
+                // role 확인을 위해 기존 task_started 이벤트에서 role 찾기
+                const taskStartedEvent = this.events.find(e => 
+                  e.event_type === 'task_started' && 
+                  (e.job_id === row.job_id || e.id === row.job_id)
+                );
+                if (taskStartedEvent) {
+                  const startedData = this.parseData(taskStartedEvent);
+                  if (startedData?.role === '리포트 통합 전문가') {
+                    console.log('🚀 실시간 수신 즉시 final_result:', data.final_result);
+                    console.log('🚀 실시간 수신 즉시 타입:', typeof data.final_result);
+                    console.log('🚀 실시간 수신 즉시 길이:', data.final_result?.length);
+                  }
+                }
+              }
+            }
 
             console.group('📥 실시간 이벤트 수신');
             console.log('수신된 이벤트:', {

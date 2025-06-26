@@ -18,7 +18,7 @@ const passwordRules = ref([
 const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid']);
 
 function validate(values: any, { setErrors }: any) {
-    return authStore.signIn(username.value, password.value);
+    return authStore.signIn(username.value.toLowerCase(), password.value);
 }
 </script>
 

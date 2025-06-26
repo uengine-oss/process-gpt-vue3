@@ -301,6 +301,7 @@
     },
     "chat": {
         "inputMessage": "Type a Message",
+        "definitionMapInputMessage": "How can I help you?",
         "lock": "Click the save icon to save.",
         "unlock": "Click the pencil icon to edit.",
         "processDefinitionSave": "Save",
@@ -1017,5 +1018,8 @@
         "friends": "Friends",
         "progress": "Progress",
         "menu": "Menu"
+    },
+    "ReportField": {
+        "title": "Content Editor"
     }
 }

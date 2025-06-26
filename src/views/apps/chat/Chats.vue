@@ -361,6 +361,19 @@ export default {
             this.chatRenderKey++;
         });
 
+        // ProcessDefinitionMap에서 전달된 메시지 처리 (query parameter 확인)
+        if (this.$route.query.processMessage) {
+            try {
+                const messageData = JSON.parse(decodeURIComponent(this.$route.query.processMessage));
+                this.handleProcessDefinitionMessage(messageData);
+                
+                // query parameter 제거
+                this.$router.replace({ path: '/chats' });
+            } catch (error) {
+                console.error('Failed to parse process message:', error);
+            }
+        }
+
         if (this.$route.query.id) {
             this.chatRoomSelected(this.chatRoomList.find(room => room.id === this.$route.query.id));
         } else if (this.$route.query.code && this.$route.query.state && this.$route.query.scope) {
@@ -576,28 +589,30 @@ export default {
         createChatRoom(chatRoomInfo){
             if(!chatRoomInfo.id){
                 chatRoomInfo.id = this.uuid();
-                // chatRoomInfo.participants.forEach(participant => {
-                //     delete participant.profile;
-                // });
-                let userInfo = {
-                    "id": this.userInfo.uid,
-                    "username": this.userInfo.name,
-                    "email": this.userInfo.email,
-                }
-                chatRoomInfo.participants.push(userInfo)
-                let currentTimestamp = Date.now()
-                chatRoomInfo.message = {
-                    "msg": "NEW",
-                    "type": "text",
-                    "createdAt": currentTimestamp
-                }
-                this.chatRoomList.push(chatRoomInfo)
-            } else {
-                let index = this.chatRoomList.findIndex(room => room.id === chatRoomInfo.id);
-                if(index !== -1) {
-                    this.chatRoomList.splice(index, 1, chatRoomInfo);
-                }
             }
+            // chatRoomInfo.participants.forEach(participant => {
+            //     delete participant.profile;
+            // });
+            let userInfo = {
+                "id": this.userInfo.uid,
+                "username": this.userInfo.name,
+                "email": this.userInfo.email,
+            }
+            chatRoomInfo.participants.push(userInfo)
+            let currentTimestamp = Date.now()
+            chatRoomInfo.message = {
+                "msg": "NEW",
+                "type": "text",
+                "createdAt": currentTimestamp
+            }
+            this.chatRoomList.push(chatRoomInfo)
+            // } 
+            // else {
+            //     let index = this.chatRoomList.findIndex(room => room.id === chatRoomInfo.id);
+            //     if(index !== -1) {
+            //         this.chatRoomList.splice(index, 1, chatRoomInfo);
+            //     }
+            // }
             
             this.putObject(`chat_rooms`, chatRoomInfo);
             this.chatRoomSelected(chatRoomInfo)
@@ -605,12 +620,14 @@ export default {
             this.setWatchChatList(this.myChatRoomIds);
         },
         setReadMessage(idx){
-            let participant = this.chatRoomList[idx].participants.find(participant => participant.email === this.userInfo.email);
-            if(participant) {
-                participant.isExistUnReadMessage = false;
-            }
-            this.putObject(`chat_rooms`, this.chatRoomList[idx]);
-            this.EventBus.emit('clear-notification', this.chatRoomList[idx].id);
+            if(idx !== -1) {
+                let participant = this.chatRoomList[idx].participants.find(participant => participant.email === this.userInfo.email);
+                if(participant) {
+                    participant.isExistUnReadMessage = false;
+                }
+                this.putObject(`chat_rooms`, this.chatRoomList[idx]);
+                this.EventBus.emit('clear-notification', this.chatRoomList[idx].id);
+            }   
         },
         chatRoomSelected(chatRoomInfo){
             this.currentChatRoom = chatRoomInfo
@@ -958,6 +975,30 @@ export default {
                     this.generatedWorkList.push(responseObj)
                 }
             }
+        },
+        handleProcessDefinitionMessage(message) {
+            let systemChatRoom = {
+                "id": this.uuid(),
+                "name": message.chatRoomName,
+                "participants": [
+                    {
+                        email: "system@uengine.org",
+                        id: "system_id",
+                        username: "System",
+                        is_admin: true,
+                        notifications: null
+                    }
+                ]
+            };
+            this.createChatRoom(systemChatRoom);
+            
+            if (systemChatRoom) {
+                // 시스템 채팅방 선택
+                this.chatRoomSelected(systemChatRoom);
+                delete message.chatRoomName
+                this.beforeSendMessage(message);
+            }
+
         },
     }
 }
