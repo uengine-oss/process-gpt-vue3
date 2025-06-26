@@ -90,7 +90,7 @@ export default {
                         outputList.push({
                             id: formId,
                             type: 'form',
-                            name: item.title,
+                            name: item.name,
                             html: form.html,
                             output: item.task.output[formId],
                         });
@@ -102,7 +102,7 @@ export default {
                         outputList.push({
                             id: formId,
                             type: 'form',
-                            name: item.title,
+                            name: item.name,
                             html: form.html,
                             output: formData,
                         });

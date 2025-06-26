@@ -36,7 +36,7 @@
 
         <v-card flat>
             <v-card-text class="pa-4 pt-3">
-                <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4"></DynamicForm>
+                <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted"></DynamicForm>
                 <div v-if="!isCompleted" class="mb-4">
                     <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
                     <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
@@ -75,7 +75,7 @@ export default {
         workItemStatus: {
             type: String,
             default: function () {
-                return null;
+                return '';
             }
         },
         isDryRun: Boolean,
@@ -105,7 +105,7 @@ export default {
         simulate() {
             return this.isSimulate === 'true' || this.isSimulate === 'false' ? this.isSimulate === 'true' : this.isSimulate;
         },
-        isCompleted(){
+        isCompleted() {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         },
         isMobile() {
@@ -123,7 +123,7 @@ export default {
             this.EventBus.emit('html-updated', this.html);
         },
         formData() {
-            if(this.formData){
+            if(this.formData) {
                 this.EventBus.emit('formData-updated', this.formData);
             }
         },
@@ -178,10 +178,15 @@ export default {
         async loadForm(){
             var me = this;
             if(!me.workItem || !me.workItem.activity || !me.workItem.activity.outParameterContext) return;
-        
+            
+            if (me.workItem && me.workItem.worklist.output && me.formDefId && me.isCompleted) {
+                me.formData = me.workItem.worklist.output[me.formDefId] || {};
+                return;
+            }
+
             let outFormName = me.workItem.activity.outParameterContext.variable.name || me.formDefId
             let outVariable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, outFormName);
-
+            
             if (outVariable && outVariable.valueMap) {
                 me.formData = outVariable.valueMap;
 

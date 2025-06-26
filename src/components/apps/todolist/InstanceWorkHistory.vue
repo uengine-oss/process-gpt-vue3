@@ -3,7 +3,7 @@
         <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
             <div class="d-flex w-100">
                 <component :is="'work-history-' + mode" :messages="messages" :isComplete="isComplete"
-                    @clickMessage="navigateToWorkItemByTaskId" :streamingText="streamingText" />
+                    @clickMessage="navigateToWorkItemByTaskId" :streamingText="streamingText" @updated="$emit('updated')" />
             </div>
         </perfect-scrollbar>
     </div>

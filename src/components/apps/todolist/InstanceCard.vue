@@ -131,6 +131,7 @@
                         <InstanceWorkHistory 
                             :key="`workhistory-${updatedKey}-${instance?.instId}`"
                             :instance="instance"
+                            @updated="handleInstanceUpdated"
                             ref="workhistory"
                         />
                     </v-window-item>
