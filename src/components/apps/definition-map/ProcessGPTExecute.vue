@@ -88,6 +88,10 @@ export default {
         isSimulate: String,
         bpmn: String,
         processDefinition: Object,
+        isExecutionByProject: {
+            type: Boolean,
+            default: false
+        },
     },
     data: () => ({
         definition: null,
@@ -271,19 +275,23 @@ export default {
                     }
                 })
                 
-                backend.start(input).then(async (response) => {
-                    if (response && response.error) {
-                        me.handleError(response.error);
-                    } else if (response) {
-                        if (response && response.id && response.proc_inst_id) {
-                            const instId = btoa(encodeURIComponent(response.proc_inst_id));
-                            const path = `/instancelist/${instId}`;
-                            me.$router.push(path);
+                if(me.isExecutionByProject) {
+                    me.$emit('createInstance', input);
+                } else {
+                    backend.start(input).then(async (response) => {
+                        if (response && response.error) {
+                            me.handleError(response.error);
+                        } else if (response) {
+                            if (response && response.id && response.proc_inst_id) {
+                                const instId = btoa(encodeURIComponent(response.proc_inst_id));
+                                const path = `/instancelist/${instId}`;
+                                me.$router.push(path);
+                            }
                         }
-                    }
-                });
+                    });
+                    me.closeDialog();
+                }
                 
-                me.closeDialog();
             }
         },
         uuid() {

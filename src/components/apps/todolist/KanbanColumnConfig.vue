@@ -40,50 +40,14 @@ export default {
         userList: [],
     }),
     async mounted() {
-        // await this.loadToDo();
         await this.loadUserInfo();
     },
     computed: {
         mode() {
             return window.$mode;
-        },
-        // id() {
-        //     const instId = this.mode == 'ProcessGPT' ? decodeURIComponent(atob(this.$route.params.instId)) : this.$route.params.instId;
-        //     return instId;
-        // },        
-    },
-    watch: {
-        // $route: {
-        //     deep: true,
-        //     handler(newVal, oldVal) {
-        //         if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
-        //             this.columns.forEach(column => {
-        //                 column.tasks = [];
-        //             });
-        //             this.loadToDo();
-        //         }
-        //     }
-        // },
+        },    
     },
     methods: {
-        // async loadToDo() {
-        //     var me = this
-        //     console.log(me.id)
-        //     let worklist = await backend.getAllWorkListByInstId(me.id)
-        //     if(!worklist) return;
-        //     console.log(worklist)
-        //     worklist.forEach((item) => {
-        //         if (item.status == 'TODO' || item.status == 'DRAFT' || item.status == 'Ready' ) {
-        //             me.columns.find(x => x.id == 'TODO').tasks.push(item);
-        //         } else if (item.status == 'IN_PROGRESS' || item.status == 'Running' || item.status == 'NEW' || item.status == 'SUBMITTED') {
-        //             me.columns.find(x => x.id == 'IN_PROGRESS').tasks.push(item);
-        //         } else if (item.status == 'PENDING') {
-        //             me.columns.find(x => x.id == 'PENDING').tasks.push(item);
-        //         } else if (item.status == 'DONE' || item.status == 'COMPLETED') {
-        //             me.columns.find(x => x.id == 'DONE').tasks.push(item);
-        //         }
-        //     })
-        // },
         async loadUserInfo() {
             try {
                 // 슈퍼베이스에서 사용자 목록 가져오기
