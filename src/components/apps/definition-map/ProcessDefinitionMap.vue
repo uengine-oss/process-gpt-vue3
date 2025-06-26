@@ -12,9 +12,9 @@
                     <img src="/process-gpt-favicon.png" alt="Process GPT Favicon" style="height:24px; margin-right:8px;" />
                     <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.mobileTitle') }}</h5>
                 </v-row>
-                <v-btn v-if="$route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" 
+                <v-btn v-if="!isExecutionByProject && $route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" 
                     size="24" @click="goProcessMap">
-                    <Icons :icon="'arrow-go-back'" />
+                    <Icons :icon="'arrow-go-back'"/>
                 </v-btn>
                 
                 <!-- buttons -->
@@ -66,8 +66,17 @@
                         </template>
                     </v-tooltip>
 
+                    <v-tooltip v-if="isExecutionByProject" :text="$t('organizationChartDefinition.close')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" class="ml-3"
+                                @click="closePDM()" icon variant="text" :size="24">
+                                <Icons :icon="'close'" :size="20"/>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
-                    <v-tooltip v-if="componentName != 'SubProcessDetail' && !globalIsMobile.value" :text="$t('processDefinition.zoom')">
+                    <v-tooltip v-if="!isExecutionByProject && componentName != 'SubProcessDetail' && !globalIsMobile.value" :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="ml-3"
                                 @click="$globalState.methods.toggleZoom()" icon variant="text" :size="24">
@@ -88,7 +97,7 @@
                     <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" />
                 </div>
                 <div v-else>
-                    <DefinitionMapList :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" />
+                    <DefinitionMapList :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
                 </div>
             </div>
 
@@ -252,6 +261,10 @@ export default {
         isViewMode: {
             type: Boolean,
             default: false
+        },
+        isExecutionByProject: {
+            type: Boolean,
+            default: false
         }
     },
     data: () => ({
@@ -391,6 +404,9 @@ export default {
         }
     },
     methods: {
+        closePDM(){
+            this.$emit('closePDM')
+        },
         async closeMarketplaceDialog() {
             await this.getProcessMap();
             this.openMarketplaceDialog = false;
@@ -717,6 +733,9 @@ export default {
         },
         clickProcess(id) {
             this.$emit('clickProcess', id);
+        },
+        clickPlayBtn(value){
+            this.$emit('clickPlayBtn', value)
         }
     },
 }

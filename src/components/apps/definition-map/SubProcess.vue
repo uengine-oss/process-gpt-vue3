@@ -5,12 +5,18 @@
                 <v-col :cols="enableEdit ? '6' : '12'" class="ma-0 pa-0 text-left align-center" @click="handleClick">
                     <v-row class="ma-0 pa-0 align-center">
                         <div>{{ value.name }}</div>
-                        <!-- v-if="value.new" -->
-                        <v-chip v-if="isNew(value.id)" class="ml-auto"
-                            color="primary"
-                            variant="outlined"
-                            size="x-small"
-                        >New</v-chip>
+                       
+                        <div class="ml-auto">
+                             <!-- v-if="value.new" -->
+                             <v-chip v-if="isNew(value.id)" 
+                                class="ml-auto"
+                                color="primary"
+                                variant="outlined"
+                                size="x-small"
+                            >New</v-chip>
+                            <Icons v-if="isExecutionByProject" :icon="'play'" :size="20" @click="clickPlayBtn()" style="align-self: center;"/>
+                        </div>
+                       
                     </v-row>
                 </v-col>
                 <v-col :cols="enableEdit ? '6' : ''" class="ma-0 pa-0">
@@ -57,6 +63,7 @@ export default {
         value: Object,
         parent: Object,
         enableEdit: Boolean,
+        isExecutionByProject: Boolean
     },
     data: () => ({
         type: 'sub',
@@ -71,6 +78,8 @@ export default {
             return !this.checkedProcess.includes(id);
         },
         handleClick() {
+            if(this.isExecutionByProject) return;
+            
             if (window.$mode == 'ProcessGPT') {
                 this.goProcess(this.value.id, 'sub');
             } else {
@@ -96,6 +105,9 @@ export default {
             }
             window.open(url, '_blank');
         },
+        clickPlayBtn(){
+            this.$emit('clickPlayBtn', this.value)
+        }
     },
 }
 </script>

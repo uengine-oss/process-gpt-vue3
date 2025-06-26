@@ -5,7 +5,9 @@
                 <v-tab value="managment">{{ $t('ProjectCard.managment') }}</v-tab>
                 <v-tab value="kanbanBoard">{{ $t('ProjectCard.kanbanBoard') }}</v-tab>
                 <v-tab value="instanceList">{{ $t('ProjectCard.instanceList') }}</v-tab>
+                <Icons :icon="'play'" :size="20" @click="openPDM()" style="align-self: center;"/>
             </v-tabs>
+            
             <v-window v-model="tab">
                 <v-window-item value="managment">
                     <div class="gantt-area" v-if="!isLoading">
@@ -16,7 +18,6 @@
                             @task-updated="handleTaskUpdated" 
                             @task-added="handleTaskAdded"
                             @task-clicked="handleTaskClicked"
-                            @grid-row-clicked="handleGridRowClicked"
                             @link-event="handleLinkEvent"
                         />
                     </div>
@@ -61,6 +62,15 @@
                 </v-window-item>
             </v-window>
         </v-card>
+
+        <v-dialog v-model="isPDMOpen" style="width: 100%; height: 100%;">
+            <div v-if="!isShowProcess">
+                <ProcessDefinitionMap :isViewMode="true" :isExecutionByProject="true" @clickPlayBtn="clickPlayBtn" @closePDM="closePDM()"/>
+            </div>
+            <div v-else>
+                <process-gpt-execute v-if="mode === 'ProcessGPT'" :isExecutionByProject="true" :processDefinition="processDefinitionData" :definitionId="processDefinition.id" @close="executeDialog = false" :isSimulate="'false'" @createInstance="createInstance"></process-gpt-execute>
+            </div>
+        </v-dialog>
     </div>
   </template>
 
@@ -68,6 +78,9 @@
 import KanbanBoard from './KanbanBoard.vue';
 import GanttChart from './GanttChart.vue';
 import KanbanColumnConfig from './KanbanColumnConfig.vue';
+import ProcessDefinitionMap from '@/components/apps/definition-map/ProcessDefinitionMap.vue';
+import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
+import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -76,15 +89,22 @@ export default {
     mixins: [KanbanColumnConfig],
     components: {
         KanbanBoard,
-        GanttChart
+        GanttChart,
+        ProcessDefinitionMap,
+        'dry-run-process': DryRunProcess,
+        'process-gpt-execute': ProcessGPTExecute
     },
     data: () => ({  
         tab: 'managment', // 탭 인덱스
-        project: null,
-        instanceList: [],
-        isLoading: true,
-        tasks: [],
-        dependencies: [],
+        project: null, // 프로젝트 정보
+        instanceList: [], // 인스턴스 리스트
+        tasks: [], // 작업 리스트
+        dependencies: [], // 작업 의존성 리스트
+        isLoading: true, // 데이터 로딩 여부
+        isPDMOpen: false, // PDM 모달 열림 여부
+        isShowProcess: false,
+        processDefinitionData: null,
+        processDefinition: null,
     }),
     mounted() {
         this.init();
@@ -100,6 +120,9 @@ export default {
         },
     },
     computed: {
+        mode() {
+            return window.$mode;
+        },
         projectId() {
             if ($mode == "ProcessGPT") {
                 return decodeURIComponent(atob(this.$route.params.projectId))
@@ -144,6 +167,41 @@ export default {
                 column.tasks = me.tasks.filter(task => task.status === column.id);
             });
         },
+        openPDM(){
+            this.isShowProcess = false
+            this.isPDMOpen = true
+        },
+        closePDM(){
+            this.processInfo = null
+            this.isPDMOpen = false
+        },
+        clickPlayBtn(obj){
+            var me = this
+            me.$try({
+                action: async () => {
+                    me.processDefinition = obj;
+                    
+                    const value = await backend.getRawDefinition(me.processDefinition.id);
+                    if (value)  me.processDefinitionData = value.definition;
+                    
+                    this.isShowProcess = true
+                }
+            })
+        },
+        createInstance(value){
+            var me = this
+            me.$try({
+                action: async () => {
+                    if(!value.project_id) value['project_id'] = me.projectId;
+                    await backend.start(value);
+
+                    this.isShowProcess = false
+                    me.closePDM();
+                },
+                successMsg: me.$t('successMsg.processExecutionCompleted')
+            })
+
+        },
         async handleTaskUpdated(task){
             if(task.parent == 0){
                 await backend.putInstance(task.instId, task)
@@ -161,9 +219,6 @@ export default {
         },
         async handleTaskClicked(task){
             console.log(task);
-        },
-        async handleGridRowClicked(id){
-            router.push(`/todolist/${id}`);
         },
         async handleLinkEvent(event){
             let link = event.link;
