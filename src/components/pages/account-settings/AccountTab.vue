@@ -32,8 +32,9 @@
                             </v-dialog>
                             <!-- <v-btn color="error" class="mx-2" variant="outlined" rounded="pill">Reset</v-btn> -->
                         </div>
-                        <div class="text-subtitle-1 text-grey100 text-center my-sm-8 my-6">{{
-                            $t('accountTab.slectImageExplanation') }}</div>
+                        <div class="text-subtitle-1 text-grey100 text-center my-sm-8 my-6">
+                            {{ $t('accountTab.imageSelect') }}
+                        </div>
                     </v-card-item>
                 </v-card>
             </v-col>

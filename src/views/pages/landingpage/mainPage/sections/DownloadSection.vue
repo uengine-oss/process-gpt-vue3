@@ -2,25 +2,47 @@
   <section id="download" class="download">
     <div class="container">
       <div class="section-header">
-        <h2>모바일 앱 다운로드</h2>
-        <p>언제 어디서나 Process GPT를 모바일에서 사용하세요</p>
+        <h2>{{ $t('DownloadSection.title') }}</h2>
+        <p>{{ $t('DownloadSection.subtitle') }}</p>
       </div>
       <div class="download-content">
         <div class="download-text">
-          <p>Process GPT 모바일 앱을 통해 이동 중에도 비즈니스 프로세스를 관리하고 모니터링할 수 있습니다. 실시간 알림을 통해 중요한 업데이트를 놓치지 않고, 팀원들과 원활한 커뮤니케이션을 유지하세요.</p>
+          <p>{{ $t('DownloadSection.description') }}</p>
         </div>
         <div class="download-buttons">
-          <a href="#" class="download-btn apk" @click.prevent="downloadApk" :class="{ 'downloading': downloading }">
-            <svg xmlns="http://www.w3.org/2000/svg" width="84" height="84" viewBox="32 38 44 26">
-              <path fill="currentColor" fill-rule="nonzero" d="M66.94,46.02L66.94,46.02C72.44,50.07 76,56.61 76,64L32,64C32,56.61 35.56,50.11 40.98,46.06L36.18,41.19C35.45,40.45 35.45,39.3 36.18,38.56C36.91,37.81 38.05,37.81 38.78,38.56L44.25,44.05C47.18,42.57 50.48,41.71 54,41.71C57.48,41.71 60.78,42.57 63.68,44.05L69.11,38.56C69.84,37.81 70.98,37.81 71.71,38.56C72.44,39.3 72.44,40.45 71.71,41.19L66.94,46.02ZM62.94,56.92C64.08,56.92 65,56.01 65,54.88C65,53.76 64.08,52.85 62.94,52.85C61.8,52.85 60.88,53.76 60.88,54.88C60.88,56.01 61.8,56.92 62.94,56.92ZM45.06,56.92C46.2,56.92 47.13,56.01 47.13,54.88C47.13,53.76 46.2,52.85 45.06,52.85C43.92,52.85 43,53.76 43,54.88C43,56.01 43.92,56.92 45.06,56.92Z"/>
-            </svg>
-            <div class="btn-text">
-              <span>DOWNLOAD</span>
-              <strong>Android APK</strong>
-              <small v-if="downloading">다운로드 중...</small>
-              <small v-else>v{{ apkVersion }}</small>
-            </div>
-          </a>
+          <v-card
+            @click.prevent="downloadApk" 
+            :class="{ 'downloading': downloading }"
+            class="download-card apk pa-8 pt-4 pb-4"
+            elevation="3"
+            rounded="lg"
+          >
+            <v-card-item class="pa-0">
+              <div class="d-flex align-center">
+                <v-avatar
+                  color="primary"
+                  size="60"
+                  class="mr-8"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="32 38 44 26" fill="white">
+                    <path fill="currentColor" fill-rule="nonzero" d="M66.94,46.02L66.94,46.02C72.44,50.07 76,56.61 76,64L32,64C32,56.61 35.56,50.11 40.98,46.06L36.18,41.19C35.45,40.45 35.45,39.3 36.18,38.56C36.91,37.81 38.05,37.81 38.78,38.56L44.25,44.05C47.18,42.57 50.48,41.71 54,41.71C57.48,41.71 60.78,42.57 63.68,44.05L69.11,38.56C69.84,37.81 70.98,37.81 71.71,38.56C72.44,39.3 72.44,40.45 71.71,41.19L66.94,46.02ZM62.94,56.92C64.08,56.92 65,56.01 65,54.88C65,53.76 64.08,52.85 62.94,52.85C61.8,52.85 60.88,53.76 60.88,54.88C60.88,56.01 61.8,56.92 62.94,56.92ZM45.06,56.92C46.2,56.92 47.13,56.01 47.13,54.88C47.13,53.76 46.2,52.85 45.06,52.85C43.92,52.85 43,53.76 43,54.88C43,56.01 43.92,56.92 45.06,56.92Z"/>
+                  </svg>
+                </v-avatar>
+                <div>
+                  <v-card-title class="text-primary font-weight-bold pb-1">
+                    {{ $t('DownloadSection.androidApk') }}
+                  </v-card-title>
+                  <div class="text-subtitle-2 text-grey-darken-1">
+                    {{ $t('DownloadSection.downloadButton') }}
+                  </div>
+                  <div class="text-caption text-grey">
+                    <span v-if="downloading">{{ $t('DownloadSection.downloading') }}</span>
+                    <span v-else>v{{ apkVersion }}</span>
+                  </div>
+                </div>
+              </div>
+            </v-card-item>
+          </v-card>
           <!-- <a href="#" class="download-btn android">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 512 512" fill="currentColor">
               <path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z"/>
@@ -65,7 +87,7 @@ export default {
 
         // 다운로드 시작
         const response = await fetch(this.apkUrl);
-        if (!response.ok) throw new Error('다운로드 중 오류가 발생했습니다.');
+        if (!response.ok) throw new Error(this.$t('DownloadSection.downloadError'));
 
         // 파일 다운로드
         const blob = await response.blob();
@@ -80,7 +102,7 @@ export default {
 
       } catch (error) {
         console.error('APK 다운로드 오류:', error);
-        alert('다운로드 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        alert(this.$t('DownloadSection.downloadError'));
       } finally {
         this.downloading = false;
       }

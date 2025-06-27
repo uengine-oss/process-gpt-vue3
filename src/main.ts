@@ -62,11 +62,73 @@ import 'dayjs/locale/ko';
 import ganttastic from '@infectoone/vue-ganttastic'
 import { ref } from 'vue';
 
+// 동적 언어 설정 함수
+async function detectLanguage(): Promise<'ko' | 'en'> {
+    // 여러 IP 감지 서비스 목록 (폴백용)
+    const ipServices = [
+        {
+            name: 'ipinfo.io',
+            url: 'https://ipinfo.io/json',
+            parser: (data: any) => data.country
+        },
+        {
+            name: 'ipapi.co',
+            url: 'https://ipapi.co/json/',
+            parser: (data: any) => data.country_code
+        },
+        {
+            name: 'ip-api.com',
+            url: 'http://ip-api.com/json/',
+            parser: (data: any) => data.countryCode
+        }
+    ];
+
+    for (const service of ipServices) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            const response = await fetch(service.url, { 
+                signal: controller.signal,
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'ProcessGPT-App/1.0'
+                }
+            });
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Invalid content type');
+            }
+            
+            const data = await response.json();
+            const country = service.parser(data);
+            
+            return country === "KR" ? 'ko' : 'en';
+        } catch (error) {
+            // 다음 서비스로 계속 시도
+            continue;
+        }
+    }
+    
+    // 모든 IP 감지 서비스 실패시 브라우저 언어로 폴백
+    const browserLang = navigator.language || navigator.languages[0];
+    return browserLang.startsWith('ko') ? 'ko' : 'en';
+}
+
+// i18n 설정을 동적으로 초기화
+const detectedLocale = await detectLanguage();
 const i18n = createI18n({
-    locale: 'ko',
+    locale: 'ko', // 기본값으로 초기화
     fallbackLocale: 'en',
     messages
 });
+
 // 국가별언어를 전역으로 .js 파일에서도 사용 가능하게 추가 
 (window as any).$i18n = i18n;
 
@@ -190,6 +252,11 @@ async function setupTenant() {
 async function initializeApp() {
     await setupSupabase();
     await setupTenant();
+    
+    // 동적 언어 설정
+    const detectedLocale = await detectLanguage();
+    (i18n.global as any).locale = detectedLocale;
+    
     const app = createApp(App);
     
     app.use(VueMonacoEditorPlugin, {

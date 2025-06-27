@@ -3,8 +3,8 @@
     <div class="container">
       <div class="cta-content">
         <div>
-          <h2>지금 바로 Process GPT를 시작하세요</h2>
-          <p>AI 기반 프로세스 관리의 혁신을 경험해보세요</p>
+          <h2>{{ $t('CTASection.title') }}</h2>
+          <p>{{ $t('CTASection.subtitle') }}</p>
           <!-- Vuetify3 버튼 컴포넌트로 변경, a 태그 사용하지 않음 -->
           <div class="cta-buttons">
               <!-- '시작하기' 버튼: 외부 링크 이동을 위해 Vuetify의 v-btn에 href 사용 -->
@@ -15,7 +15,7 @@
                   rel="noopener"
                   variant="flat"
                 >
-                  베타 테스트하기
+                  {{ $t('CTASection.betaTestButton') }}
               </v-btn>
               <!-- '문의하기' 버튼: 클릭 시 폼 오픈 -->
               <!-- Vuetify3의 라운드 설정은 rounded 속성에 값을 지정하여 사용합니다. -->
@@ -24,7 +24,7 @@
                   variant="outlined"
                   @click="openForm"
                 >
-                  문의하기
+                  {{ $t('CTASection.contactButton') }}
               </v-btn>
           </div>
         </div>

@@ -14,11 +14,11 @@
     </div> -->
 
     <div class="container mx-auto px-4 pb-16">
-      <h2 class="text-3xl font-bold text-center mb-12">AI 기반 비즈니스 프로세스 혁신</h2>
+      <h2 class="text-3xl font-bold text-center mb-12">{{ $t('DemoSection.title') }}</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
         <div>
-          <p class="text-lg text-gray-700 mb-6">Process GPT는 BPMN(Business Process Model and Notation)을 기반으로 하는 혁신적인 오픈소스 시스템입니다. 약 20년 동안 축적된 비즈니스 프로세스 표기법을 활용하여 사용자 중심의 AI 에이전트 시스템을 구현합니다. 복잡한 비즈니스 프로세스를 자연어로 정의하고, 자동화하며, 지속적으로 개선할 수 있습니다.</p>
-          <p class="text-lg text-gray-700">기존 BPM 시스템과 달리, Process GPT는 AI의 힘을 활용하여 비즈니스 프로세스의 정의부터 실행, 최적화까지 모든 단계를 간소화합니다. 이를 통해 기업은 시간과 리소스를 절약하면서도 더 효율적이고 유연한 프로세스 관리를 실현할 수 있습니다.</p>
+          <p class="text-lg text-gray-700 mb-6">{{ $t('DemoSection.description1') }}</p>
+          <p class="text-lg text-gray-700">{{ $t('DemoSection.description2') }}</p>
         </div>
         <div class="relative">
           <img alt="AI 에이전트 지식 구조" loading="lazy" width="600" height="400" src="@/assets/images/mainPages/diagram.png" style="">

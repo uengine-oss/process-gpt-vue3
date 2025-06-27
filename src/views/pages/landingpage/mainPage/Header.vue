@@ -7,12 +7,12 @@
       </div>
       <nav class="nav">
         <ul>
-          <li><a class="nav-link" @click.prevent="navigateToSection('intro')">소개</a></li>
-          <li><a class="nav-link" @click.prevent="navigateToSection('consulting')">프로세스 컨설팅</a></li>
-          <li><a class="nav-link" @click.prevent="navigateToSection('features')">주요 기능</a></li>
-          <li><a class="nav-link" @click.prevent="navigateToSection('movie-gallery')">영상 갤러리</a></li>
-          <li><a class="nav-link" @click.prevent="navigateToSection('tech')">활용 기술</a></li>
-          <li><a class="nav-link" @click.prevent="navigateToSection('download')">다운로드</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('intro')">{{ $t('Header.intro') }}</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('consulting')">{{ $t('Header.consulting') }}</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('features')">{{ $t('Header.features') }}</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('movie-gallery')">{{ $t('Header.movieGallery') }}</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('tech')">{{ $t('Header.tech') }}</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('download')">{{ $t('Header.download') }}</a></li>
           <!-- <li><router-link class="nav-link" to="/marketplace" @click="scrollToTop">Marketplace</router-link></li> -->
         </ul>
       </nav>
@@ -23,12 +23,12 @@
       </div>
       <div class="mobile-menu" v-if="mobileMenuOpen">
         <ul>
-          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('intro')">소개</a></li>
-          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('consulting')">프로세스 컨설팅</a></li>
-          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('features')">주요 기능</a></li>
-          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('movie-gallery')">영상 갤러리</a></li>
-          <li><a class="nav-link" @click.prevent="closeMobileMenuAndNavigateToSection('download')">다운로드</a></li>
-          <li><a @click.prevent="closeMobileMenuAndNavigate('/marketplace')">Marketplace</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('intro')">{{ $t('Header.intro') }}</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('consulting')">{{ $t('Header.consulting') }}</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('features')">{{ $t('Header.features') }}</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('movie-gallery')">{{ $t('Header.movieGallery') }}</a></li>
+          <li><a class="nav-link" @click.prevent="closeMobileMenuAndNavigateToSection('download')">{{ $t('Header.download') }}</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigate('/marketplace')">{{ $t('Header.marketplace') }}</a></li>
         </ul>
       </div>
     </div>

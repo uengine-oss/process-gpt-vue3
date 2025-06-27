@@ -2,8 +2,8 @@
   <section class="hero">
     <div class="container">
       <div class="hero-content">
-        <h1>AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요</h1>
-        <p>Process GPT로 비즈니스 프로세스를 자연어로 정의하고 실행 가능한 모델로 변환하세요. 전통적인 BPM 작업을 단순화하고 비용과 노력을 줄일 수 있습니다.</p>
+        <h1>{{ $t('HeroSection.title') }}</h1>
+        <p>{{ $t('HeroSection.description') }}</p>
         <div class="hero-buttons">
           <!-- 텍스트를 중앙 정렬하기 위해 flex와 justify-center 클래스 추가 -->
           <!-- '시작하기' 버튼과 동일한 구조로 마켓플레이스 버튼 정렬 (to, color, class, height 순서로 통일) -->
@@ -12,13 +12,13 @@
               color="#1976D2"
               class="rounded-pill"
               height="48"
-          >베타 테스트하기</v-btn>
+          >{{ $t('HeroSection.betaTestButton') }}</v-btn>
           <v-btn 
-              color="secondary"
+              color="#6c757d"
               class="rounded-pill"
               height="48"
           >
-            <a href="https://www.youtube.com/watch?v=kd6_hKSQDYc&list=PLEr96Fo5umW9KIzFLelvN4pc8jsdcEl65" target="_blank">갤러리 보기</a>
+            <a href="https://www.youtube.com/watch?v=kd6_hKSQDYc&list=PLEr96Fo5umW9KIzFLelvN4pc8jsdcEl65" target="_blank">{{ $t('HeroSection.galleryButton') }}</a>
           </v-btn>
           <!-- <v-btn 
               to="/marketplace"
@@ -38,7 +38,7 @@
                 style="width: fit-content; display: block; color: #1976D2;"
             >
               <v-row>
-                <div>Technical Report 보기</div>
+                <div>{{ $t('HeroSection.technicalReportLink') }}</div>
                 <v-icon class="ml-1" style="margin-top: 1px;" size="18" color="#1976D2">mdi-open-in-new</v-icon>
               </v-row>
             </a>

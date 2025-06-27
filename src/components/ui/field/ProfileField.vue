@@ -10,8 +10,9 @@
             <div class="d-flex justify-center">
                 <v-dialog width="650" v-model="imageDialog">
                     <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" color="primary" class="mx-2" rounded="pill" text="이미지 선택">{{
-                            $t('accountTab.imageSlect') }}</v-btn>
+                        <v-btn v-bind="props" color="primary" class="mx-2" rounded="pill" text="이미지 선택">
+                            {{ $t('accountTab.imageSelect') }}
+                        </v-btn>
                     </template>
 
                     <v-card style="padding:30px;">
@@ -27,9 +28,6 @@
                         </v-row>
                     </v-card>
                 </v-dialog>
-            </div>
-            <div class="text-subtitle-1 text-grey100 text-center my-sm-8 my-6">
-                {{ $t('accountTab.slectImageExplanation') }}
             </div>
         </v-card-item>
     </v-card>    
