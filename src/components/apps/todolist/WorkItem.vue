@@ -414,9 +414,17 @@ export default {
                         { value: 'progress', label: this.$t('WorkItem.progress') },
                         { value: 'agent', label: this.$t('WorkItem.agent') },
                     ]
-                } else if(this.bpmn && !this.isStarted) {
+                } else if (this.bpmn && !this.isStarted && this.isCompleted) {
                     return [
                         { value: 'output', label: this.$t('InstanceCard.output') },
+                        { value: 'progress', label: this.$t('WorkItem.progress') },
+                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
+                        { value: 'agent-feedback', label: '에이전트 피드백' },
+                    ]
+                } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
+                    return [
+                        { value: 'output', label: this.$t('InstanceCard.output') },
+                        { value: 'progress', label: this.$t('WorkItem.progress') },
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent', label: this.$t('WorkItem.agent') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },

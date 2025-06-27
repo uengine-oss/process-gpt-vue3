@@ -189,7 +189,8 @@
         "addUserFailed": "사용자 추가에 실패했습니다.",
         "addNewUserExplanation": "신규 사용자를 추가하려면 이름과 이메일을 입력해 주세요. 입력된 이메일 주소로 회원가입이 자동 처리되며, 초기 비밀번호는 000000으로 설정됩니다.",
         "agent": "에이전트",
-        "deleteAgentExplanation": "팀원 삭제가 아닌 영구 삭제입니다. 삭제된 에이전트는 복구할 수 없습니다. 팀원 삭제를 원하신다면 소속 팀의 + 버튼을 눌러 팀원을 수정해주세요."
+        "deleteAgentExplanation": "팀원 삭제가 아닌 영구 삭제입니다. 삭제된 에이전트는 복구할 수 없습니다. 팀원 삭제를 원하신다면 소속 팀의 + 버튼을 눌러 팀원을 수정해주세요.",
+        "oauth": "OAuth 설정"
     },
     "agentField": {
         "agentId": "에이전트 ID",
@@ -323,8 +324,8 @@
     "accountTab": {
         "accountSetting": "계정 설정",
         "profileImageChange": "프로필 이미지 변경",
-        "imageSlect": "프로필 이미지 선택",
-        "slectImageExplanation": "JPG, GIF 또는 PNG가 허용됩니다. 최대 크기 800K",
+        "imageSelect": "프로필 이미지 선택",
+        "selectImageExplanation": "JPG, GIF 또는 PNG가 허용됩니다. 최대 크기 800K",
         "changePassword": "비밀번호 변경",
         "changePasswordExplanation": "비밀번호를 변경하려면 여기에서 확인하세요.",
         "currentPassword": "현재 비밀번호",
@@ -1017,7 +1018,30 @@
     "BSCard": {
         "title": "전략 맵",
         "cardTitle": "전략 맵",
-        "description": "조직의 전략 목표를 4가지 관점(재무, 고객, 내부 프로세스, 학습 및 성장)으로 정리하고 시각화된 전략 맵을 생성합니다."
+        "addStrategy": "전략 추가",
+        "editStrategy": "전략 수정", 
+        "deleteStrategy": "전략 삭제",
+        "addConnection": "연결 추가",
+        "deleteStrategyDialog": "전략 삭제",
+        "selectStrategyToDelete": "삭제할 전략을 선택하세요",
+        "cancel": "취소",
+        "delete": "삭제",
+        "addStrategyDialog": "전략 추가",
+        "perspective": "관점:",
+        "selectUpperStrategy": "상위 전략 선택 (복수 가능)",
+        "strategyName": "전략명:",
+        "description": "조직의 전략 목표를 4가지 관점(재무, 고객, 내부 프로세스, 학습 및 성장)으로 정리하고 시각화된 전략 맵을 생성합니다.",
+        "save": "저장",
+        "editStrategyDialog": "전략 수정",
+        "selectStrategyToEdit": "수정할 전략을 선택하세요",
+        "addConnectionDialog": "전략 연결 추가",
+        "sourceStrategy": "출발 전략",
+        "targetStrategy": "도착 전략",
+        "addConnectionBtn": "연결 추가",
+        "perspectiveFinance": "재무",
+        "perspectiveCustomer": "고객",
+        "perspectiveProcess": "내부 프로세스",
+        "perspectiveLearning": "학습 및 성장"
     },
     "ProjectCreationForm": {
         "title": "프로젝트 생성",
@@ -1027,5 +1051,11 @@
         "friends": "친구",
         "progress": "진행 상황",
         "menu": "메뉴"
+    },
+    "ReportField": {
+        "title": "컨텐츠 에디터"
+    },
+    "OrganizationAddDialog": {
+        "add": "추가"
     }
 }

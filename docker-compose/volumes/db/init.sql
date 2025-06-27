@@ -759,6 +759,7 @@ ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proc_def_marketplace ENABLE ROW LEVEL SECURITY;
 ALTER TABLE form_def_marketplace ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_oauth ENABLE ROW LEVEL SECURITY;
+ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- Tenants policies
@@ -877,6 +878,12 @@ CREATE POLICY project_insert_policy ON project FOR INSERT TO authenticated WITH 
 CREATE POLICY project_select_policy ON project FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY project_update_policy ON project FOR UPDATE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
 CREATE POLICY project_delete_policy ON project FOR DELETE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
+
+-- Agents policies
+CREATE POLICY agents_insert_policy ON agents FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+CREATE POLICY agents_select_policy ON agents FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY agents_update_policy ON agents FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY agents_delete_policy ON agents FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
 
 -- Enable Realtime for specific tables
 alter publication supabase_realtime add table chats;

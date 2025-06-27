@@ -7,12 +7,12 @@
       </div>
       <nav class="nav">
         <ul>
-          <li><a class="nav-link" href="#intro" @click="$router.push('/')">소개</a></li>
-          <li><a class="nav-link" href="#consulting" @click="$router.push('/')">프로세스 컨설팅</a></li>
-          <li><a class="nav-link" href="#features" @click="$router.push('/')">주요 기능</a></li>
-          <li><a class="nav-link" href="#movie-gallery" @click="$router.push('/')">영상 갤러리</a></li>
-          <li><a class="nav-link" href="#tech" @click="$router.push('/')">활용 기술</a></li>
-          <li><a class="nav-link" href="#download" @click="$router.push('/')">다운로드</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('intro')">소개</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('consulting')">프로세스 컨설팅</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('features')">주요 기능</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('movie-gallery')">영상 갤러리</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('tech')">활용 기술</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('download')">다운로드</a></li>
           <!-- <li><router-link class="nav-link" to="/marketplace" @click="scrollToTop">Marketplace</router-link></li> -->
         </ul>
       </nav>
@@ -23,12 +23,12 @@
       </div>
       <div class="mobile-menu" v-if="mobileMenuOpen">
         <ul>
-          <li><a href="#intro" @click="closeMobileMenuAndNavigate('/')">소개</a></li>
-          <li><a href="#consulting" @click="closeMobileMenuAndNavigate('/')">프로세스 컨설팅</a></li>
-          <li><a href="#features" @click="closeMobileMenuAndNavigate('/')">주요 기능</a></li>
-          <li><a href="#movie-gallery" @click="closeMobileMenuAndNavigate('/')">영상 갤러리</a></li>
-          <li><a class="nav-link" href="#download" @click="closeMobileMenuAndNavigate('/')">다운로드</a></li>
-          <li><a @click="closeMobileMenuAndNavigate('/marketplace')">Marketplace</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('intro')">소개</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('consulting')">프로세스 컨설팅</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('features')">주요 기능</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('movie-gallery')">영상 갤러리</a></li>
+          <li><a class="nav-link" @click.prevent="closeMobileMenuAndNavigateToSection('download')">다운로드</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigate('/marketplace')">Marketplace</a></li>
         </ul>
       </div>
     </div>
@@ -72,6 +72,10 @@ export default {
     closeMobileMenu() {
       this.mobileMenuOpen = false;
     },
+    closeMobileMenuAndNavigateToSection(sectionId) {
+      this.mobileMenuOpen = false;
+      this.navigateToSection(sectionId);
+    },
     closeMobileMenuAndNavigate(path) {
       this.mobileMenuOpen = false;
       this.$router.push(path);
@@ -85,14 +89,25 @@ export default {
     handleScroll() {
       this.scrolled = window.scrollY > 50;
     },
+    navigateToSection(sectionId) {
+      this.scrollToSection(sectionId);
+    },
     scrollToSection(sectionId) {
       this.$nextTick(() => {
         const element = document.getElementById(sectionId);
         if (element) {
           const sectionTitle = element.querySelector('.section-title');
           if (sectionTitle) {
-            const headerHeight = document.querySelector('.header').offsetHeight;
+            const headerHeight = document.querySelector('.header-main').offsetHeight;
             const elementPosition = sectionTitle.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          } else {
+            const headerHeight = document.querySelector('.header-main').offsetHeight;
+            const elementPosition = element.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
             window.scrollTo({
               top: offsetPosition,

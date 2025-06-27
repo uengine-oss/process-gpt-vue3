@@ -470,20 +470,30 @@ hr {
 
 .node-content-btn-box {
     position: absolute;
-    right:5px;
-    top:32px;
+    right: 0px;
+    top: 5px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 }
 
 .node-content-btn {
-    width:16px;
-    height:16px;
+    width: 20px;
+    height: 20px;
     cursor: pointer;
+    margin-right: 2px;
+    border-radius: 4px;
+    background-color: #FFFFFF;
+    box-shadow: 0 2px 4px 0 rgba(60, 60, 60, 0.10), 0 0.5px 1.5px 0 rgba(60, 60, 60, 0.10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 0.2s, background-color 0.2s;
+    padding: 4px !important;
 }
-.edit-team-btn {
-    width:13px;
-    height:13px;
-    position: relative;
-    top:-1px;
+.node-content-btn:hover {
+    background-color: #F5F5F5;
+    box-shadow: 0 4px 8px 0 rgba(60, 60, 60, 0.15);
 }
 
 
@@ -683,6 +693,16 @@ hr {
     overflow: auto;
 }
 
+.agent-field-dialog-contents {
+    height: 60vh;
+    overflow: auto;
+}
+
+.organization-edit-dialog-contents {
+    height: calc(-300px + 100vh);
+    overflow: auto;
+}
+
 @media only screen and (max-width: 1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
@@ -752,6 +772,16 @@ hr {
         height: calc(100% - 60px) !important;
         border-radius: 10px !important;
         width: 100vw !important;
+    }
+
+    .agent-field-dialog-contents {
+        height: calc(100vh - 200px);
+        overflow: auto;
+    }
+
+    .organization-edit-dialog-contents {
+        height: calc(100vh - 100px);
+        overflow: auto;
     }
 }
 

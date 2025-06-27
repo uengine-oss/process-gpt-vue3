@@ -106,6 +106,7 @@
 <script>
 import { Editor, EditorContent, BubbleMenu as BubbleMenuComponent } from '@tiptap/vue-3'
 import { DOMSerializer, DOMParser as ProseMirrorDOMParser } from 'prosemirror-model'
+import { Markdown } from 'tiptap-markdown'
 import { marked } from 'marked'
 
 import StarterKit from '@tiptap/starter-kit'
@@ -239,6 +240,7 @@ export default {
           Underline,
           Highlight,
           Link,
+          Markdown,
         ],
         editorProps: {
           handlePaste(view, event) {
@@ -255,10 +257,21 @@ export default {
         },
         onUpdate: ({ editor }) => {
           const html = editor.getHTML();
-          const markdown = this.convertHtmlToMarkdown(html);
+          const markdown = this.getMarkdown();
+          // const markdown = this.convertHtmlToMarkdown(html);
+          console.log('markdown', markdown);
           this.$emit('update:modelValue', markdown);
         }
       });
+    },
+    getMarkdown() {
+      let markdown = this.editor.storage.markdown.getMarkdown();
+      if(markdown) {
+        if(markdown.includes('\\--')) {
+          markdown = markdown.replaceAll('\\--', '--');
+        }
+      }
+      return markdown;
     },
     convertHtmlToMarkdown(html) {
       const turndownService = new TurndownService();
@@ -412,7 +425,8 @@ export default {
         dispatch(tr);
         this.$nextTick(() => {
           const html = this.editor.getHTML();
-          const markdown = this.convertHtmlToMarkdown(html);
+          const markdown = this.getMarkdown();
+          // const markdown = this.convertHtmlToMarkdown(html);
           this.$emit('update:modelValue', markdown);
         });
         return true;
@@ -427,7 +441,8 @@ export default {
         dispatch(tr);
         this.$nextTick(() => {
           const html = this.editor.getHTML();
-          const markdown = this.convertHtmlToMarkdown(html);
+          const markdown = this.getMarkdown();
+          // const markdown = this.convertHtmlToMarkdown(html);
           this.$emit('update:modelValue', markdown);
         });
         return true;
@@ -441,7 +456,8 @@ export default {
         dispatch(tr);
         this.$nextTick(() => {
           const html = this.editor.getHTML();
-          const markdown = this.convertHtmlToMarkdown(html);
+          const markdown = this.getMarkdown();
+          // const markdown = this.convertHtmlToMarkdown(html);
           this.$emit('update:modelValue', markdown);
         });
         return true;
@@ -455,7 +471,8 @@ export default {
     },
     save() {
       const html = this.editor.getHTML();
-      const markdown = this.convertHtmlToMarkdown(html);
+      const markdown = this.getMarkdown();
+      // const markdown = this.convertHtmlToMarkdown(html);
       this.$emit('save', markdown);
     }
   }

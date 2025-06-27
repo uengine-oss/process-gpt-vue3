@@ -323,22 +323,23 @@
     },
     "accountTab": {
         "accountSetting": "Account Settings",
-        "profileImageChange": "Profile Image Change",
+        "profileImageChange": "Change Profile Image",
         "imageSelect": "Select Profile Image",
-        "selectImageExplanation": "JPG, GIF, or PNG allowed. Max size 800K",
+        "selectImageExplanation": "JPG, GIF, or PNG files are allowed. Maximum size 800KB.",
         "changePassword": "Change Password",
-        "changePasswordExplanation": "To change your password, confirm here.",
+        "changePasswordExplanation": "Check here to change your password.",
         "currentPassword": "Current Password",
         "newPassword": "New Password",
         "confirmPassword": "Confirm Password",
-        "personalDetails": "Personal Details",
-        "personalDetailsExplanation": "To modify and save your personal details, edit here.",
+        "personalDetails": "Personal Information",
+        "personalDetailsExplanation": "Edit and save your personal details here.",
         "name": "Name",
         "email": "Email",
-        "phone": "Phone",
+        "phone": "Phone Number",
         "address": "Address",
         "save": "Save",
-        "manageAccess": "Manage Access",
+        "manageAccess": "Manage Users",
+        "addUser": "Add User",
         "drive": "Google Drive Settings",
         "clientId": "Client ID",
         "clientSecret": "Client Secret",
@@ -564,35 +565,36 @@
     },
     "UserTaskPanel": {
         "default": "Default",
-        "defaultInfo": "All users with the role of the current task can view this task. The user who first selects the task will be designated as the assignee.",
-        "sharedGroupInfo": "All users in the selected shared group can view this task. The user who first selects the task will be designated as the assignee.",
-        "assigneeInfo": "Only the designated user can view this task. Other users cannot view it.",
-        "loadBalancingInfo": "The task is automatically assigned to users within the designated group. You can select a distribution strategy.",
-        "expressionInfo": "The assignee is determined dynamically based on the expression. ex) ${initiatorManager}",
+        "defaultInfo": "All users assigned to this task role can view this task. The first user to select the task will be assigned as the assignee.",
+        "sharedGroupInfo": "All users in the selected shared group can view this task. The first user to select the task becomes the assignee. e.g., Author, Reviewer",
+        "assigneeInfo": "This task is assigned only to the specified user. Other users cannot view it.",
+        "loadBalancingInfo": "Tasks are automatically distributed among users in the designated group. You can select a distribution strategy.",
+        "expressionInfo": "The assignee is dynamically determined at runtime based on an expression. e.g., ${initiatorManager}",
         "form": "Form",
         "external": "External Application",
-        "formCreateDialog": "Do you want to create a form?",
+        "formCreateDialog": "Would you like to create a form?",
         "yes": "Yes",
         "no": "No",
-        "radioSelectDescriptionTitle": "Select data processing method: Basic data processing, Custom screen creation, External system integration.",
-        "radioSelectDescriptionSubTitle1": "1. Basic: Use basic data \n2. Form: Screen created in screen definition \n3. External Application: Generates a field for entering a business screen URL",
-        "assignmentType": "Task Assignment Type",
-        "assignee": "Single Assignment",
+        "radioSelectDescriptionTitle": "Select data processing method: basic data processing, custom screen creation, or external system integration.",
+        "radioSelectDescriptionSubTitle1": "1. Basic: Use default data\n2. Form: Use a screen created in the screen definition\n3. External Application: Create a field to enter the business screen URL",
+        "assignmentType": "Assignment Method",
+        "assignee": "Assign User",
         "sharedGroup": "Shared Group",
-        "loadBalancing": "Load Balancing",
         "expression": "Expression-based",
+        "loadBalancing": "Load Balancing",
         "taskType": "Task Type",
-        "descriptionTo": "Assignment Target",
-        "descriptionToTitle": "Assignment Target Input",
-        "direction": "Direction",
+        "descriptionTo": "Assignee",
+        "descriptionToTitle": "Enter Assignee",
+        "direction": "Connection Direction",
         "inputForm": "Reference Form",
-        "outputForm": "Write Form",
-        "addFormParameter": "Add Form Parameter",
-        "removeFormParameter": "Remove Form Parameter",
+        "outputForm": "Edit Form",
+        "addFormParameter": "Add Form",
+        "removeFormParameter": "Remove Form",
         "loadBalancingGroup": "Load Balancing Group",
-        "loadBalancingStrategy": "Load Balancing Strategy",
-        "leastTasks": "Least Tasks",
-        "idle": "Idle"
+        "loadBalancingStrategy": "Assignment Strategy",
+        "roundRobin": "Round Robin (Sequential Assignment)",
+        "leastTasks": "Least Tasks First",
+        "idle": "Longest Idle First"
     },
     "Mapper": {
         "mapper": "Mapper"
@@ -862,11 +864,13 @@
     },
     "VerticalSidebar": {
         "instanceList": "Instance List",
+        "projectList": "Project List",
         "instanceMyGroup": "My Group Instance",
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Definition Export",
         "save": "Save",
-        "trash": "Trash"
+        "trash": "Trash",
+        "newProject": "Create New Project"
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "Process Execution Performance",
@@ -884,8 +888,14 @@
         "workItem": "Work Item",
         "workHistory": "Work History",
         "ganttChart": "Gantt Chart",
+        "kanbanBoard": "Kanban Board",
         "sendEvent": "Send {event} event",
         "output": "Output"
+    },
+    "ProjectCard": {
+        "managment": "Progress",
+        "kanbanBoard": "Kanban Board",
+        "instanceList": "Instance List"
     },
     "DryRunProcess": {
         "notFound": "Work item not found."
@@ -1008,7 +1018,30 @@
     "BSCard": {
         "title": "Strategy Map",
         "cardTitle": "Strategy Map",
-        "description": "Organize the organization's strategic goals into four perspectives (financial, customer, internal process, and learning and growth) and create a visualized strategy map."
+        "addStrategy": "Add Strategy",
+        "editStrategy": "Edit Strategy",
+        "deleteStrategy": "Delete Strategy",
+        "addConnection": "Add Connection",
+        "deleteStrategyDialog": "Delete Strategy",
+        "selectStrategyToDelete": "Select a strategy to delete",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "addStrategyDialog": "Add Strategy",
+        "perspective": "Perspective:",
+        "selectUpperStrategy": "Select upper strategies (multiple allowed)",
+        "strategyName": "Strategy Name:",
+        "description": "Organize and visualize your organization's strategic goals from four perspectives: Finance, Customer, Internal Process, and Learning & Growth.",
+        "save": "Save",
+        "editStrategyDialog": "Edit Strategy",
+        "selectStrategyToEdit": "Select a strategy to edit",
+        "addConnectionDialog": "Add Strategy Connection",
+        "sourceStrategy": "Source Strategy",
+        "targetStrategy": "Target Strategy",
+        "addConnectionBtn": "Add Connection",
+        "perspectiveFinance": "Finance",
+        "perspectiveCustomer": "Customer",
+        "perspectiveProcess": "Internal Process",
+        "perspectiveLearning": "Learning & Growth"
     },
     "ProjectCreationForm": {
         "title": "Create Project",
@@ -1018,5 +1051,11 @@
         "friends": "Friends",
         "progress": "Progress",
         "menu": "Menu"
+    },
+    "ReportField": {
+        "title": "Content Editor"
+    },
+    "OrganizationAddDialog": {
+        "add": "Add"
     }
 }

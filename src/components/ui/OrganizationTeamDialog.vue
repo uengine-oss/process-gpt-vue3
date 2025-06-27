@@ -1,10 +1,19 @@
 <template>
     <v-card>
-        <v-card-title>
-            <span class="text-h6">{{ dialogTitle }}</span>
-        </v-card-title>
+        <v-row class="ma-0 pa-4">
+            <v-card-title class="text-h6 pa-0">{{ dialogTitle }}</v-card-title>
+            <v-spacer></v-spacer>
+            <v-btn @click="closeDialog"
+                class="ml-auto"
+                variant="text"
+                density="compact"
+                icon
+            >
+                <v-icon>mdi-close</v-icon>
+            </v-btn>
+        </v-row>
 
-        <v-card-text>
+        <v-card-text class="pa-4 pb-0">
             <!-- add team -->
             <div v-if="dialogType == 'add'">
                 <v-text-field 
@@ -39,14 +48,19 @@
 
             <!-- delete team -->
             <div v-else-if="dialogType == 'delete'">
-                <div>'{{ editNode.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }} 1111</div>
+                <div>'{{ editNode.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }}</div>
             </div>
         </v-card-text>
 
         <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn color="primary" @click="update" :disabled="!isValid">{{ buttonText }}</v-btn>
-            <v-btn color="error" @click="closeDialog">{{ $t('organizationChartDefinition.close') }}</v-btn>
+            <v-btn @click="update"
+                :disabled="!isValid"
+                color="primary"
+                variant="elevated" 
+                class="rounded-pill"
+                density="compact"
+            >{{ buttonText }}</v-btn>
         </v-card-actions>
     </v-card>
 </template>

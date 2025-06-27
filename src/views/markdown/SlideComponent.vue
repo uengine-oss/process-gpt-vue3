@@ -33,12 +33,17 @@ export default {
   mounted() {
     if (this.$refs.markdownContent) {
       console.log('[Reveal Debug] setting textarea content')
-      this.$refs.markdownContent.textContent = this.content
+      let content = this.content;
+      content = content.replaceAll('::fragment::', '<!-- .element: class=\"fragment\" -->');
+      this.$refs.markdownContent.textContent = content;
 
       // DOM 반영 → 렌더링 → Reveal 초기화까지 안전하게 대기
       if (this.$refs.markdownContent) {
         console.log('[Reveal Debug] setting textarea content')
-        this.$refs.markdownContent.textContent = this.content
+        let content = this.content;
+        console.log('[Reveal Debug] setting textarea content', content)
+        content = content.replaceAll('::fragment::', '<!-- .element: class=\"fragment\" -->');
+        this.$refs.markdownContent.textContent = content;
 
         this.$nextTick(() => {
           requestAnimationFrame(() => {
@@ -53,7 +58,9 @@ export default {
       handler: async function (newContent) {
         if (this.$refs.markdownContent) {
           console.log('[Reveal Debug] updating textarea content')
-          this.$refs.markdownContent.textContent = newContent
+          let content = newContent;
+          content = content.replaceAll('::fragment::', '<!-- .element: class=\"fragment\" -->');
+          this.$refs.markdownContent.textContent = content;
 
           await this.$nextTick()
           requestAnimationFrame(() => {

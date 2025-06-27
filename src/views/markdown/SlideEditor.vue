@@ -1,7 +1,6 @@
 <template>
   <div class="slide-editor">
     <div class="editor-header">
-      <v-card-title class="pa-2">{{ i18n.global.t('SlideEditor.title') }}</v-card-title>
       <!-- 모든 버튼을 일반 HTML 버튼으로 변경하고 for문 사용 -->
       <div class="actions">
         <!-- 데스크톱 화면에서는 버튼 표시 -->
@@ -88,10 +87,11 @@
     <pptx-export-helper ref="pptxExportHelper" v-model="markdownContent" />
     <word-export-helper ref="wordExportHelper" v-model="markdownContent" />
     <slide-presentation ref="slidePresentation"
-     :modelValue="markdownContent" 
-     :key="markdownContent" 
-     :isPresentationMode="isPresentationMode"
-     @close="isPresentationMode = false"/>
+      :modelValue="markdownContent" 
+      :key="markdownContent" 
+      :isPresentationMode="isPresentationMode"
+      @close="isPresentationMode = false"
+    />
   </div>
 </template>
 
@@ -176,6 +176,8 @@ export default {
     }
   },
   mounted() {
+    // 전역 속성으로 i18n 추가
+    this.$i18n = i18n;
     if(this.content) {
       this.markdownContent = this.content;
       this.onLoaded = true;

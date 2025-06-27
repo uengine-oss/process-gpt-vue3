@@ -37,7 +37,11 @@
                 ></Chat>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="addDialog" max-width="500">
+        <v-dialog 
+            v-model="addDialog" 
+            :max-width="isMobile ? '100vw' : 500"
+            :fullscreen="isMobile"
+        >
             <OrganizationAddDialog
                 :teamInfo="editNode"
                 :userList="userList"
@@ -102,6 +106,11 @@ export default {
                 children: []
             };
         }
+    },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
     },
     watch: {
         organizationChart: {
