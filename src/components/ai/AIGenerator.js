@@ -23,6 +23,12 @@ export default class AIGenerator {
             this.options = {};
         }
 
+        // 백그라운드 모드 관련
+        this.isBackgroundMode = false;
+        this.backgroundRequestId = null;
+        this.backgroundChatRoomId = null;
+        this.lastMessageData = null;
+
         if (!this.previousMessages) {
             this.previousMessages = [];
         }
@@ -66,9 +72,30 @@ export default class AIGenerator {
 
     stop() {
         this.stopSignaled = true;
-        if (this.client.onModelStopped) {
+        if (this.client && this.client.onModelStopped) {
             this.client.onModelStopped();
         }
+    }
+
+    // 백그라운드 모드로 전환
+    switchToBackgroundMode(requestId, chatRoomId, messageData) {
+        console.log('[AIGenerator] 백그라운드 모드로 전환:', requestId);
+        this.isBackgroundMode = true;
+        this.backgroundRequestId = requestId;
+        this.backgroundChatRoomId = chatRoomId;
+        this.lastMessageData = messageData;
+        
+        // ChatBackgroundManager에 등록
+        import('./ChatBackgroundManager.js').then(({ default: ChatBgManager }) => {
+            ChatBgManager.registerBackgroundRequest(
+                requestId, 
+                this, 
+                chatRoomId, 
+                messageData
+            );
+        }).catch(error => {
+            console.error('[AIGenerator] ChatBackgroundManager 로드 실패:', error);
+        });
     }
 
     generateHashKey(str) {
@@ -318,15 +345,18 @@ export default class AIGenerator {
 
         xhr.onloadend = function () {
             console.log('End to Success - onloadend', xhr);
-            if (me.client) {
+            me.state = 'end';
+            let model = me.createModel(me.modelJson);
+            console.log("[*][AIGenerator] 백엔드 서버에서 최종적인 응답 데이터 구축 완료", {modelJson: me.modelJson});
+
+            if (me.isBackgroundMode) {
+                // 백그라운드 모드에서는 매니저를 통해 처리
+                me.handleBackgroundComplete(model);
+            } else if (me.client) {
                 if (me.finish_reason == 'length') {
                     // me.continue();
                     console.log('max_token issue');
                 }
-
-                me.state = 'end';
-                let model = me.createModel(me.modelJson);
-                console.log("[*][AIGenerator] 백엔드 서버에서 최종적인 응답 데이터 구축 완료", {modelJson: me.modelJson});
 
                 if (!me.stopSignaled) {
                     if(me.client.genType && me.client.genType == 'form'){
@@ -421,5 +451,17 @@ export default class AIGenerator {
 
     createModel(text) {
         return text;
+    }
+
+    handleBackgroundComplete(model) {
+        console.log('[AIGenerator] 백그라운드 완료 처리 시작');
+        import('./ChatBackgroundManager.js').then(({ default: ChatBgManager }) => {
+            ChatBgManager.handleBackgroundComplete(
+                this.backgroundRequestId, 
+                model
+            );
+        }).catch(error => {
+            console.error('[AIGenerator] 백그라운드 완료 처리 실패:', error);
+        });
     }
 }
