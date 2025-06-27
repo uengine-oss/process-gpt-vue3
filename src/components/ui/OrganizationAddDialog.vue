@@ -1,13 +1,42 @@
 <template>
     <v-card>
-        <v-card-title>
-            <v-tabs v-model="tab">
+        <v-row class="ma-0 pa-4 pb-0 align-center">
+            <v-card-title class="pa-0">
+                {{teamInfo.data.name}} {{ $t('OrganizationAddDialog.add') }}
+            </v-card-title>
+            <v-spacer></v-spacer>
+            <v-btn @click="closeDialog"
+                class="ml-auto" 
+                variant="text" 
+                density="compact"
+                icon
+            >
+                <v-icon>mdi-close</v-icon>
+            </v-btn>
+        </v-row>
+        <v-card-title class="pa-4 pb-0 pt-0">
+            <v-tabs v-if="!isMobile" v-model="tab">
                 <v-tab v-for="item in tabItems" :key="item.value" :value="item.value" color="primary">
                     {{ $t(item.text) }}
                 </v-tab>
             </v-tabs>
+            <!-- 모바일: 버튼 형태 -->
+            <div v-else>
+                <div class="d-flex flex-wrap ga-2">
+                    <v-btn
+                        v-for="item in tabItems"
+                        :key="item.value"
+                        :variant="tab === item.value ? 'flat' : 'text'"
+                        :color="tab === item.value ? 'primary' : 'default'"
+                        size="small"
+                        @click="tab = item.value"
+                    >
+                        {{ $t(item.text) }}
+                    </v-btn>
+                </div>
+            </div>
         </v-card-title>
-        <v-card-text>
+        <v-card-text class="pa-4 pb-0">
             <v-window v-model="tab">
                 <v-window-item value="user">
                     <v-autocomplete
@@ -72,25 +101,30 @@
                     </div>
                 </v-window-item>
 
-                <v-window-item value="agent" class="py-2">
-                    <AgentField v-model="newAgent" :idRules="idRules" :nameRules="nameRules" />
+                <v-window-item value="agent">
+                    <AgentField v-model="newAgent" :idRules="idRules" :nameRules="nameRules"
+                        class="agent-field-dialog-contents"
+                    />
                 </v-window-item>
 
-                <v-window-item value="a2a" class="py-2">
-                    <AgentField v-model="newAgent" :idRules="idRules" :nameRules="nameRules" :type="tab" />
+                <v-window-item value="a2a">
+                    <AgentField v-model="newAgent" :idRules="idRules" :nameRules="nameRules" :type="tab"
+                        class="agent-field-dialog-contents"
+                    />
                 </v-window-item>
             </v-window>
         </v-card-text>
 
-        <v-card-actions>
+        <v-row class="ma-0 pa-4 pr-2">
             <v-spacer></v-spacer>
-            <v-btn color="primary" @click="save" :disabled="!isValid">
-                {{ $t('organizationChartDefinition.save') }}
-            </v-btn>
-            <v-btn color="error" @click="closeDialog">
-                {{ $t('organizationChartDefinition.close') }}
-            </v-btn>
-        </v-card-actions>
+            <v-btn @click="save"
+                :disabled="!isValid"
+                color="primary"
+                variant="elevated" 
+                class="rounded-pill"
+                density="compact"
+            >{{ $t('organizationChartDefinition.save') }}</v-btn>
+        </v-row>
     </v-card>
 </template>
 
@@ -162,6 +196,9 @@ export default {
         },
     }),
     computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
         idRules() {
             return [
                 (value) => !!value || this.$t('organizationChartDefinition.idRequired'),

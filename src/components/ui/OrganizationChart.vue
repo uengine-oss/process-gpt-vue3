@@ -19,7 +19,11 @@
                 @closeDialog="closeTeamDialog"
             ></OrganizationTeamDialog>
         </v-dialog>
-        <v-dialog v-model="editDialog" max-width="500">
+        <v-dialog 
+            v-model="editDialog" 
+            :max-width="isMobile ? '100vw' : 500"
+            :fullscreen="isMobile"
+        >
             <OrganizationEditDialog
                 :dialogType="editDialogType"
                 :editNode="editNode"
@@ -60,6 +64,11 @@ export default {
         showBadgesDiagram: false,
         selectedAgent: null,
     }),
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
+    },
     watch: {
         node(newVal) {
             if (newVal && newVal.id && newVal.data) {

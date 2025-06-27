@@ -1054,5 +1054,8 @@
     },
     "ReportField": {
         "title": "컨텐츠 에디터"
+    },
+    "OrganizationAddDialog": {
+        "add": "추가"
     }
 }

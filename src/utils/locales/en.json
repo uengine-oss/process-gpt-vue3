@@ -1054,5 +1054,8 @@
     },
     "ReportField": {
         "title": "Content Editor"
+    },
+    "OrganizationAddDialog": {
+        "add": "Add"
     }
 }

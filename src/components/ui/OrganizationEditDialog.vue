@@ -13,10 +13,7 @@
             </v-btn>
         </v-row>
 
-        <v-card-text class="ma-0 pa-4 pb-0 pt-0"
-            style="max-height: calc(-300px + 100vh);
-            overflow: auto;"
-        >
+        <v-card-text class="ma-0 pa-4 pb-0 pt-0 organization-edit-dialog-contents">
             <!-- edit user -->
             <div v-if="dialogType == 'edit-user'">
                 <v-text-field 
