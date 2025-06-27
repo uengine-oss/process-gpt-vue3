@@ -630,6 +630,9 @@ export default {
             }   
         },
         chatRoomSelected(chatRoomInfo){
+            // 현재 진행 중인 AI 생성 작업이 있으면 백그라운드 모드로 전환 (새로운 채팅방 정보 설정 전에 호출)
+            this.handleChatRoomChange();
+
             this.currentChatRoom = chatRoomInfo
             if(chatRoomInfo.participants.find(p => p.id === "system_id")){
                 this.ProcessGPTActive = true
@@ -891,7 +894,7 @@ export default {
                     if(responseObj.work == 'CompanyQuery'){
                         try{
                             const token = localStorage.getItem('accessToken');
-                            let mementoRes = await axios.get(`/memento/query`, {
+                            let mementoRes = await axios.post(`/memento/query`, {
                                 params: {
                                     query: responseObj.content,
                                     tenant_id: window.$tenantName
@@ -913,7 +916,9 @@ export default {
                                 }
                             });
                             obj.memento.sources = sources
-                            this.messages[this.messages.length - 1].content = '테이블 생성 중...'
+                            if(this.messages.length > 0){
+                                this.messages[this.messages.length - 1].content = '테이블 생성 중...'
+                            }
                             const responseTable = await axios.post(`/execution/process-data-query`, {
                                 input: {
                                     query: responseObj.content,

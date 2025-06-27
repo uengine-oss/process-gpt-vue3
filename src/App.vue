@@ -47,6 +47,7 @@
 // import { createClient } from '@supabase/supabase-js';
 import { RouterView } from 'vue-router';
 import BackendFactory from "@/components/api/BackendFactory";
+import partialParse from "partial-json-parser";
 
 export default {
     components: {
@@ -178,6 +179,10 @@ export default {
                         }
                     }
                     if(notiHeader && notiBody) {
+                        if(notiBody.includes('"messageForUser":')) {
+                            let contentObj = partialParse(notiBody);
+                            notiBody = contentObj.messageForUser || notiBody;
+                        }
                         new Notification(notiHeader, {
                             body: notiBody,
                             icon: '/process-gpt-favicon.png',

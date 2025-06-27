@@ -1,0 +1,239 @@
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import partialParse from "partial-json-parser";
+import Chats from '@/views/apps/chat/Chats.vue';
+
+class ChatBackgroundManager {
+    constructor() {
+        this.activeRequests = new Map(); // 진행 중인 요청들
+        this.storage = StorageBaseFactory.getStorage();
+    }
+    
+    // 백그라운드 요청 등록
+    registerBackgroundRequest(requestId, generator, chatRoomId, messageData) {
+        console.log('[ChatBackgroundManager] 백그라운드 요청 등록:', requestId);
+        this.activeRequests.set(requestId, {
+            generator,
+            chatRoomId,
+            messageData,
+            status: 'running',
+            startTime: Date.now()
+        });
+    }
+    
+    // 백그라운드 완료 처리
+    async handleBackgroundComplete(requestId, response) {
+        console.log('[ChatBackgroundManager] 백그라운드 완료 처리:', requestId);
+        const request = this.activeRequests.get(requestId);
+        if (!request) {
+            console.log('[ChatBackground Manager] 요청을 찾을 수 없습니다:', requestId);
+            return;
+        }
+        
+        try {
+            // DB에 자동 저장 (기존 afterGenerationFinished 로직 사용)
+            await this.saveResponseToDatabase(request, response);
+            console.log('[ChatBackgroundManager] DB 저장 완료');
+        } catch (error) {
+            console.error('[ChatBackgroundManager] DB 저장 실패:', error);
+        }
+        
+        // 요청 정리
+        this.activeRequests.delete(requestId);
+    }
+    
+    async saveResponseToDatabase(request, response) {
+        try {
+            let jsonData = response;
+            if (typeof response == 'string') {
+                jsonData = this.extractJSON(response);
+                if (jsonData && jsonData.includes('{')) {
+                    try {
+                        jsonData = JSON.parse(jsonData);
+                    } catch (e) {
+                        jsonData = partialParse(jsonData);
+                    }
+                } else {
+                    jsonData = null;
+                }
+            }
+
+            // 기존 afterGenerationFinished 로직 실행
+            await this.processGeneratedResponse(request, jsonData || response);
+            
+        } catch (error) {
+            console.error('[ChatBackgroundManager] 응답 처리 실패:', error);
+        }
+    }
+    
+    async processGeneratedResponse(request, responseObj) {
+        const { chatRoomId, messageData } = request;
+        
+        try {
+            // Chats 컴포넌트의 afterGenerationFinished 로직을 직접 호출
+            await this.callChatsAfterGenerationFinished(responseObj, request);
+        } catch (error) {
+            console.error('[ChatBackgroundManager] Chats afterGenerationFinished 호출 실패:', error);
+            // 실패 시 기본 저장
+            if (responseObj) {
+                const obj = this.createMessageObj(responseObj, 'system', messageData, chatRoomId);
+                await this.putMessage(obj, chatRoomId);
+            }
+        }
+    }
+
+    async callChatsAfterGenerationFinished(responseObj, request) {
+        console.log('[ChatBackgroundManager] Chats afterGenerationFinished 호출 시작');
+        
+        // Chats 컴포넌트의 필요한 컨텍스트를 구성
+        const mockChatsContext = await this.createMockChatsContext(request);
+        
+        // Chats 컴포넌트의 afterGenerationFinished 메서드 호출
+        await Chats.methods.afterGenerationFinished.call(mockChatsContext, responseObj);
+    }
+
+    async createMockChatsContext(request) {
+        const { chatRoomId, messageData } = request;
+        
+        // localStorage에서 사용자 정보 가져오기
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        
+        // Chats 컴포넌트에서 필요한 최소한의 컨텍스트 구성
+        const mockContext = {
+            userInfo: userInfo,
+            chatRoomId: chatRoomId, // 원래 채팅방 ID 고정
+            currentChatRoom: { id: chatRoomId }, // 원래 채팅방 ID 고정
+            isAgentChat: false,
+            isSystemChat: false,
+            ProcessGPTActive: false,
+            agentInfo: null,
+            messages: [],
+            storage: this.storage,
+            
+            // 필요한 메서드들 - 원래 채팅방 ID로 고정
+            uuid: this.uuid.bind(this),
+            createMessageObj: (message, role) => this.createMessageObj(message, role, messageData, chatRoomId),
+            putMessage: (obj) => this.putMessage(obj, chatRoomId), // 원래 채팅방 ID 사용
+            $t: (key, params) => key, // 번역 함수 mock
+            
+            // startProcess 메서드 (간단한 버전)
+            startProcess: async (obj) => {
+                console.log('[ChatBackgroundManager] startProcess 호출:', obj);
+                const systemMsg = `작업 실행: ${obj.work || '작업'}`;
+                const systemMsgObj = this.createMessageObj(systemMsg, 'system', messageData, chatRoomId);
+                await this.putMessage(systemMsgObj, chatRoomId);
+            },
+            
+            // deleteSystemMessage 메서드
+            deleteSystemMessage: (response) => {
+                console.log('[ChatBackgroundManager] deleteSystemMessage 호출:', response);
+                // 백그라운드에서는 UI 관련 처리 생략
+            }
+        };
+        
+        return mockContext;
+    }
+    
+    createMessageObj(message, role, originalMessage, chatRoomId) {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        
+        return {
+            name: role === 'system' ? 'System' : userInfo.name,
+            email: role === 'system' ? 'system@uengine.org' : userInfo.email,
+            role: role,
+            timeStamp: Date.now(),
+            content: typeof message === 'string' ? message : JSON.stringify(message),
+            image: originalMessage?.image || "",
+            uuid: this.uuid()
+        };
+    }
+    
+    async putMessage(messageObj, chatRoomId) {
+        try {
+            const message = {
+                "messages": messageObj,
+                "id": chatRoomId,
+                "uuid": messageObj.uuid,
+            };
+            
+            await this.storage.putObject(`db://chats/${messageObj.uuid}`, message);
+            
+            // chat_rooms 테이블 업데이트 - 현재 채팅방 정보 가져와서 업데이트
+            await this.updateChatRoomMessage(messageObj, chatRoomId);
+            
+            console.log('[ChatBackgroundManager] 메시지 저장 완료:', messageObj.uuid);
+            
+        } catch (error) {
+            console.error('[ChatBackgroundManager] 메시지 저장 실패:', error);
+        }
+    }
+
+    async updateChatRoomMessage(messageObj, chatRoomId) {
+        try {
+            // 현재 채팅방 정보 가져오기
+            const currentChatRoom = await this.storage.getObject(`db://chat_rooms/${chatRoomId}`, { key: 'id' });
+            
+            if (currentChatRoom) {
+                // 마지막 메시지 정보만 업데이트
+                currentChatRoom.message = {
+                    "msg": messageObj.messageForUser ? messageObj.messageForUser : messageObj.content,
+                    "type": "text",
+                    "createdAt": messageObj.timeStamp
+                };
+
+                // 참가자들의 읽지 않은 메시지 상태 업데이트
+                const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+                currentChatRoom.participants.forEach(participant => {
+                    if(participant.email !== userInfo.email) {
+                        participant.isExistUnReadMessage = true;
+                    }
+                });
+                
+                // 전체 채팅방 정보 업데이트
+                await this.storage.putObject(`db://chat_rooms`, currentChatRoom);
+                console.log('[ChatBackgroundManager] 채팅방 업데이트 완료:', chatRoomId);
+            }
+        } catch (error) {
+            console.error('[ChatBackgroundManager] 채팅방 업데이트 실패:', error);
+        }
+    }
+    
+    extractJSON(inputString) {
+        try {
+            JSON.parse(inputString);
+            return inputString;
+        } catch (e) {}
+        
+        let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+        let match = inputString.match(regex);
+        if (match) {
+            return match[1];
+        } else {
+            regex = /\{[\s\S]*\}/;
+            match = inputString.match(regex);
+            return match && match[0] ? match[0] : null;
+        }
+        return null;
+    }
+    
+    uuid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+        }
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+    }
+    
+    // 활성 요청 상태 확인
+    getActiveRequests() {
+        return Array.from(this.activeRequests.entries());
+    }
+    
+    // 특정 요청 상태 확인
+    getRequestStatus(requestId) {
+        return this.activeRequests.get(requestId);
+    }
+}
+
+// 싱글톤 인스턴스
+export default new ChatBackgroundManager(); 
