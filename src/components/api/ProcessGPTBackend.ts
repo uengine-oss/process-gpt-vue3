@@ -1563,13 +1563,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async bindRole(roles: any) {
+    async bindRole(roles: any, defId?: string) {
         try {
             let result: any = null;
             await axios.post(`/execution/role-binding`, {
                 "input": {
                     "roles": roles,
-                    "email": localStorage.getItem('email')
+                    "email": localStorage.getItem('email'),
+                    "proc_def_id": defId || null
                 }
             })
             .then(res => {
