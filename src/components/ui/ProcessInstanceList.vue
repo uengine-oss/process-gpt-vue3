@@ -100,7 +100,7 @@ export default {
             }
         },
         async loadInstances() {
-            let result = await backend.getInstanceList();
+            let result = await backend.getInstanceListByStatus(["NEW", "RUNNING"]);
             if (!result) result = [];
             this.instanceList = result.map((item) => {
                 const title = item.name;
