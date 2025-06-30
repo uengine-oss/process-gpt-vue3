@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, onUnmounted, watch, getCurrentInstance } from 'vue';
 import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns';
 import { last } from 'lodash';
+import ChatBackgroundManager from '@/components/ai/ChatBackgroundManager.js';
 
 const { proxy } = getCurrentInstance();
 
@@ -34,16 +35,39 @@ const refreshChatList = () => {
 };
 
 let intervalId;
+let backgroundStatusListener;
 
 onMounted(() => {
     intervalId = setInterval(refreshChatList, 60000);
+    
+    // 기존 백그라운드 작업 상태 확인
+    const activeChatRooms = ChatBackgroundManager.getActiveChatRooms();
+    backgroundGeneratingRooms.value = new Set(activeChatRooms);
+    
+    // 백그라운드 생성 상태 이벤트 리스너 등록
+    backgroundStatusListener = (event) => {
+        const { chatRoomId, isActive } = event.detail;
+        if (isActive) {
+            backgroundGeneratingRooms.value.add(chatRoomId);
+        } else {
+            backgroundGeneratingRooms.value.delete(chatRoomId);
+        }
+        // ref의 값을 업데이트하여 반응성 트리거
+        backgroundGeneratingRooms.value = new Set(backgroundGeneratingRooms.value);
+    };
+    
+    window.addEventListener('background-generation-status', backgroundStatusListener);
 });
 
 onUnmounted(() => {
     clearInterval(intervalId);
+    if (backgroundStatusListener) {
+        window.removeEventListener('background-generation-status', backgroundStatusListener);
+    }
 });
 
 const selectedChatId = ref(null);
+const backgroundGeneratingRooms = ref(new Set()); // 백그라운드 생성 중인 채팅방들
 
 const selectChatRoom = (chat) => {
     selectedChatId.value = chat.id;
@@ -302,7 +326,10 @@ const deleteChatRoom = () => {
                 </v-sheet>
                 <div v-else class="text-subtitle-2 textPrimary mt-1 text-truncate w-100"
                     :class="{ 'font-weight-bold': chat.participants.find(participant => participant.email == userInfo.email).isExistUnReadMessage }">
-                    {{ chat.message.msg }}
+                    <span v-if="backgroundGeneratingRooms.has(chat.id)" class="generating-status">
+                        <v-icon size="small" class="mr-1">mdi-dots-horizontal</v-icon>
+                    </span>
+                    <span v-else>{{ chat.message.msg }}</span>
                 </div>
                 <!---Last seen--->
                 <template v-slot:append>
@@ -363,6 +390,19 @@ const deleteChatRoom = () => {
     .chat-listing-lgScroll {
         height: calc(100vh - 165px);
     }
+}
+
+.generating-status {
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.3; }
+}
+
+.generating-status .v-icon {
+    animation: blink 1.5s infinite;
 }
 
 </style>

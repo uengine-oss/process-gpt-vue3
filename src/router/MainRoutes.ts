@@ -43,6 +43,11 @@ const MainRoutes = {
             component: () => import('@/components/ProcessInstanceRunning.vue'),
         },
         {
+            name: 'Completed Page',
+            path: '/list-pages/completed',
+            component: () => import('@/components/ui/list-pages/CompletedListPage.vue'),
+        },
+        {
             name: 'Chats',
             path: '/chats',
             component: () => import('@/views/apps/chat/Chats.vue')

@@ -193,22 +193,26 @@ export default {
                 }
                 me.renderKey++;
 
-                me.roleMappings = me.definition.roles.map((role) => {
-                    return {
-                        name: role.name,
-                        endpoint: role.endpoint || "",
-                        resolutionRule: role.resolutionRule
-                    };
-                });
+                if (me.definition.roleBindings) {
+                    me.roleMappings = me.definition.roleBindings;
+                } else {
+                    me.roleMappings = me.definition.roles.map((role) => {
+                        return {
+                            name: role.name,
+                            endpoint: role.endpoint || "",
+                            resolutionRule: role.resolutionRule
+                        };
+                    });
 
-                const roleBindings = await backend.bindRole(me.definition.roles);
-                if (roleBindings && roleBindings.length > 0) {
-                    roleBindings.forEach((roleBinding) => {
-                        let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
-                        if(role) {
-                            role['endpoint'] = roleBinding.userId;
-                        }
-                    })
+                    const roleBindings = await backend.bindRole(me.definition.roles, me.definitionId);
+                    if (roleBindings && roleBindings.length > 0) {
+                        roleBindings.forEach((roleBinding) => {
+                            let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
+                            if(role) {
+                                role['endpoint'] = roleBinding.userId;
+                            }
+                        })
+                    }
                 }
             }
         },

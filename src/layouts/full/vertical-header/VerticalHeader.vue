@@ -20,7 +20,7 @@ const globalIsMobile = computed(() => {
 
 // 알림 뱃지 상태 관리 (localStorage에서 초기값 로드)
 const notificationBadges = ref({
-    chat: localStorage.getItem('notificationBadge_chat') === 'true',
+    chat: false,
     workitem: localStorage.getItem('notificationBadge_workitem') === 'true'
 });
 
@@ -95,9 +95,13 @@ onMounted(() => {
     window.addEventListener('resize', handleResize);
     handleResize(); // 초기 호출
 
+    // 알림 뱃지 업데이트 이벤트 리스너 등록
+    window.addEventListener('update-notification-badge', handleNotificationBadgeUpdate);
+
     // Clean up event listener on component unmount
     onBeforeUnmount(() => {
         window.removeEventListener('resize', handleResize);
+        window.removeEventListener('update-notification-badge', handleNotificationBadgeUpdate);
     });
 });
 
@@ -142,11 +146,6 @@ function navigateTo(item: SidebarItem) {
             router.push(item.to);
         }
         
-        // 채팅 페이지로 이동 시 채팅 뱃지 제거
-        if (item.to === '/chats') {
-            notificationBadges.value.chat = false;
-            localStorage.setItem('notificationBadge_chat', 'false');
-        }
         // 할일 목록 페이지로 이동 시 워크아이템 뱃지 제거
         if (item.to === '/todolist') {
             notificationBadges.value.workitem = false;
@@ -157,12 +156,7 @@ function navigateTo(item: SidebarItem) {
 
 // 새 알림 처리 함수
 function newNotification(type: string) {
-    if (type === 'chat') {
-        if(window.location.pathname != '/chats') {
-            notificationBadges.value.chat = true;
-            localStorage.setItem('notificationBadge_chat', 'true');
-        }
-    } else if (type === 'workitem_bpm' || type === 'workitem') {
+    if (type === 'workitem_bpm' || type === 'workitem') {
         if(window.location.pathname != '/todolist') {
             notificationBadges.value.workitem = true;
             localStorage.setItem('notificationBadge_workitem', 'true');
@@ -176,6 +170,18 @@ function handleSidebarToggle() {
         customizer.SET_SIDEBAR_DRAWER();
     } else {
         customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar);
+    }
+}
+
+// 알림 뱃지 업데이트 핸들러
+function handleNotificationBadgeUpdate(event: Event) {
+    const customEvent = event as CustomEvent;
+    const data = customEvent.detail;
+    if (data.type === 'chat') {
+        notificationBadges.value.chat = data.value;
+    } else if (data.type === 'workitem') {
+        // notificationBadges.value.workitem = data.value;
+        // localStorage.setItem('notificationBadge_workitem', data.value.toString());
     }
 }
 </script>

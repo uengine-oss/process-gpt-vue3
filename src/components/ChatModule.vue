@@ -100,7 +100,7 @@ export default {
         // var me = this;
         this.backend = BackendFactory.createBackend();
         this.storage = StorageBaseFactory.getStorage();
-        this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
+        // this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
         getModifiedPrevFormOutput(modifications, currentFormData) {
@@ -200,7 +200,6 @@ export default {
                                 if(me.chatRoomList[idx].id != me.currentChatRoom.id){
                                     const participantWithEmail = me.chatRoomList[idx].participants.find(participant => participant.email === me.userInfo.email);
                                     participantWithEmail.isExistUnReadMessage = true
-                                    
                                 }
                             }
                         }
@@ -423,7 +422,8 @@ export default {
                     // }
                     // if(message.mentionedUsers){
                         if(this.ProcessGPTActive){
-                            this.debouncedGenerate();
+                            // this.debouncedGenerate();
+                            this.startGenerate();
                         } else if(message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
                             this.ProcessGPTActive = false
                             this.startGenerate();
@@ -685,24 +685,13 @@ export default {
                         jsonData = null
                     }
                 }
-                // jsonData = this.removeComments(jsonData);
-                if(this.isAgentMode) {
-                    if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
-                        this.EventBus.emit('form-values-updated', jsonData['formValues']);
-                        this.messages[this.messages.length - 1].content = '초안 생성을 완료하였습니다.'
-                        this.afterAgentGeneration(jsonData);
-                    } else {
-                        this.messages[this.messages.length - 1].content = '초안 생성을 실패하였습니다. 잠시 후 다시 시도해주세요.'
-                        this.afterAgentGeneration(null);
-                    }
+                
+                if(jsonData){
+                    this.afterGenerationFinished(jsonData);
                 } else {
-                    if(jsonData){
-                        this.afterGenerationFinished(jsonData);
-                    } else {
-                        this.afterGenerationFinished(response);
-                    }
+                    this.afterGenerationFinished(response);
                 }
-
+                
                 this.EventBus.emit('scroll_update');
             }
         },
