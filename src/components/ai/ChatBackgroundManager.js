@@ -6,6 +6,7 @@ class ChatBackgroundManager {
     constructor() {
         this.activeRequests = new Map(); // 진행 중인 요청들
         this.storage = StorageBaseFactory.getStorage();
+        this.activeChatRooms = new Set(); // 백그라운드 생성 중인 채팅방 ID들
     }
     
     // 백그라운드 요청 등록
@@ -18,6 +19,10 @@ class ChatBackgroundManager {
             status: 'running',
             startTime: Date.now()
         });
+        
+        // 진행 중인 채팅방에 추가 및 이벤트 발생
+        this.activeChatRooms.add(chatRoomId);
+        this.notifyBackgroundStatusChange(chatRoomId, true);
     }
     
     // 백그라운드 완료 처리
@@ -29,6 +34,8 @@ class ChatBackgroundManager {
             return;
         }
         
+        const { chatRoomId } = request;
+        
         try {
             // DB에 자동 저장 (기존 afterGenerationFinished 로직 사용)
             await this.saveResponseToDatabase(request, response);
@@ -39,6 +46,15 @@ class ChatBackgroundManager {
         
         // 요청 정리
         this.activeRequests.delete(requestId);
+        
+        // 해당 채팅방에 다른 진행 중인 요청이 없으면 활성 목록에서 제거
+        const hasOtherActiveRequests = Array.from(this.activeRequests.values())
+            .some(req => req.chatRoomId === chatRoomId);
+        
+        if (!hasOtherActiveRequests) {
+            this.activeChatRooms.delete(chatRoomId);
+            this.notifyBackgroundStatusChange(chatRoomId, false);
+        }
     }
     
     async saveResponseToDatabase(request, response) {
@@ -232,6 +248,29 @@ class ChatBackgroundManager {
     // 특정 요청 상태 확인
     getRequestStatus(requestId) {
         return this.activeRequests.get(requestId);
+    }
+    
+    // 백그라운드 상태 변경 알림
+    notifyBackgroundStatusChange(chatRoomId, isActive) {
+        console.log(`[ChatBackgroundManager] 채팅방 ${chatRoomId} 백그라운드 상태:`, isActive);
+        
+        // 전역 이벤트 발생
+        window.dispatchEvent(new CustomEvent('background-generation-status', {
+            detail: {
+                chatRoomId: chatRoomId,
+                isActive: isActive
+            }
+        }));
+    }
+    
+    // 채팅방이 현재 백그라운드에서 생성 중인지 확인
+    isChatRoomGenerating(chatRoomId) {
+        return this.activeChatRooms.has(chatRoomId);
+    }
+    
+    // 모든 진행 중인 채팅방 ID 목록 반환
+    getActiveChatRooms() {
+        return Array.from(this.activeChatRooms);
     }
 }
 

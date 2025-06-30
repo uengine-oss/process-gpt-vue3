@@ -543,9 +543,15 @@ export default {
                 if (chatRooms) {
                     me.myChatRoomIds = []
                     chatRooms.forEach(function (chatRoom) {
-                        if(chatRoom.participants.find(x => x.email === me.userInfo.email)){
+                        let existUserInfo = chatRoom.participants.find(x => x.email === me.userInfo.email)
+                        if(existUserInfo){
                             me.chatRoomList.push(chatRoom)
                             me.myChatRoomIds.push(chatRoom.id)
+                            if(existUserInfo.isExistUnReadMessage){
+                                window.dispatchEvent(new CustomEvent('update-notification-badge', {
+                                    detail: { type: 'chat', value: true }
+                                }));
+                            }
                         }
                     });
                     if(me.chatRoomList.length > 0){
@@ -627,6 +633,11 @@ export default {
                 }
                 this.putObject(`chat_rooms`, this.chatRoomList[idx]);
                 this.EventBus.emit('clear-notification', this.chatRoomList[idx].id);
+                if(!this.chatRoomList.find(x => x.participants.find(x => x.email == this.userInfo.email).isExistUnReadMessage)){
+                    window.dispatchEvent(new CustomEvent('update-notification-badge', {
+                        detail: { type: 'chat', value: false }
+                    }));
+                }
             }   
         },
         chatRoomSelected(chatRoomInfo){

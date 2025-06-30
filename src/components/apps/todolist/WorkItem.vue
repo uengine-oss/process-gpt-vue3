@@ -56,14 +56,6 @@
                         </v-tab>
                         <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
                             {{ tab.label }} 
-                            <v-icon
-                                v-if="tab.value == 'agent' && isAddedNewForm"
-                                class="bouncing-arrow-horizontal-left" 
-                                color="primary" 
-                                size="large"
-                            >
-                                mdi-arrow-left-bold
-                            </v-icon>
                         </v-tab>
                         <!-- <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>
                         <v-tab v-if="messages && messages.length > 0" value="history">{{ $t('WorkItem.history') }}</v-tab>
@@ -141,23 +133,6 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
-                        <v-window-item value="agent" class="pa-2">
-                            <v-card elevation="10" class="pa-4">
-                                <perfect-scrollbar v-if="messages" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-                                    <div :key="agentRenderKey" class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
-                                        <component
-                                            :is="'work-history-' + mode"
-                                            :messages="[]"
-                                            :html="html"
-                                            :formData="formData"
-                                            :isAgentMode="true"
-                                            :simulationInstances="simulationInstances"
-                                            @agentGenerationFinished="agentGenerationFinished"
-                                        />
-                                    </div>
-                                </perfect-scrollbar>
-                            </v-card>
-                        </v-window-item>
                         <v-window-item value="agent-monitor" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
@@ -208,27 +183,51 @@
                         :processDefinition="processDefinition"
                     ></component>
                     
-                    <div v-if="isSimulate == 'true'" class="feedback-container">
-                        <FormDefinition
-                            ref="formDefinition"
-                            type="simulation"
-                            :formId="formId"
-                            :simulation_data="simulation_data"
-                            @addedNewForm="addedNewForm"
-                            v-model="tempFormHtml"
-                            v-if="showFeedbackForm"
-                            class="feedback-form"
-                        />   
-                        <v-btn 
+                    <div class="feedback-container">
+                        <v-btn
                             class="feedback-btn" 
                             fab 
                             elevation="2" 
                             color="primary" 
-                            @click="toggleFeedback"
+                            @click="beforeGenerateExample"
+                            :loading="isGeneratingExample"
+                            :disabled="isGeneratingExample"
                         >
-                            <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
-                            <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
+                            <span v-if="!isGeneratingExample">
+                                <span v-if="generator">
+                                    <v-icon>mdi-refresh</v-icon>
+                                    <span class="ms-2">예시 재생성</span>
+                                </span>
+                                <span v-else>
+                                    <v-icon>mdi-pencil</v-icon>
+                                    <span class="ms-2">빠른 예시 생성</span>
+                                </span>
+                            </span>
+                            
                         </v-btn>
+                        <div v-if="isSimulate == 'true'" style="margin-left: 10px;">
+                            <FormDefinition
+                                ref="formDefinition"
+                                type="simulation"
+                                :formId="formId"
+                                :simulation_data="simulation_data"
+                                @addedNewForm="addedNewForm"
+                                v-model="tempFormHtml"
+                                v-if="showFeedbackForm"
+                                class="feedback-form"
+                            />   
+                            <v-btn 
+                                class="feedback-btn" 
+                                fab 
+                                elevation="2" 
+                                color="primary" 
+                                @click="toggleFeedback"
+                                :disabled="isGeneratingExample"
+                            >
+                                <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
+                                <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
+                            </v-btn>
+                        </div>
                     </div>
                 </div>
             </v-col>
@@ -252,6 +251,9 @@ import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
 import customBpmnModule from '@/components/customBpmn';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import AgentFeedback from './AgentFeedback.vue';
+import exampleGenerator from '@/components/ai/WorkItemAgentGenerator.js';
+import JSON5 from 'json5';
+import partialParse from 'partial-json-parser';
 
 const backend = BackendFactory.createBackend();
 export default {
@@ -329,9 +331,12 @@ export default {
         formId: null,
         simulation_data: {},
         agentRenderKey: 0,
-        isAddedNewForm: false,
 
         processInstance: null,
+        generator: null,
+        imgKeyList: [],
+        isVisionMode: false,
+        isGeneratingExample: false,
     }),
     created() {
         // this.init();
@@ -350,19 +355,6 @@ export default {
         });
         window.addEventListener('resize', this.handleResize);
 
-        if(this.isSimulate == 'true') {
-            if(this.processDefinition && 
-            this.processDefinition['activities'] && 
-            this.processDefinition['activities'][this.activityIndex] && !this.processDefinition['activities'][this.activityIndex].inputFormData){
-                setTimeout(() => {
-                    if(this.formData && Object.keys(this.formData).length > 0) {
-                        this.selectedTab = 'agent';
-                    } else {
-                        this.agentGenerationFinished(null)
-                    }
-                }, 1500);
-            }
-        }
     },
     async mounted() {
         await this.init();
@@ -412,7 +404,6 @@ export default {
                 if(this.bpmn && this.isStarted) {
                     return [
                         { value: 'progress', label: this.$t('WorkItem.progress') },
-                        { value: 'agent', label: this.$t('WorkItem.agent') },
                     ]
                 } else if (this.bpmn && !this.isStarted && this.isCompleted) {
                     return [
@@ -426,14 +417,12 @@ export default {
                         { value: 'output', label: this.$t('InstanceCard.output') },
                         { value: 'progress', label: this.$t('WorkItem.progress') },
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
-                        { value: 'agent', label: this.$t('WorkItem.agent') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
                         { value: 'agent-feedback', label: '에이전트 피드백' },
                     ]
                 } else {
                     return [
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
-                        { value: 'agent', label: this.$t('WorkItem.agent') },
                         { value: 'agent-feedback', label: '에이전트 피드백' },
                     ]
                 }
@@ -442,7 +431,6 @@ export default {
                 return[
                     { value: 'progress', label: this.$t('WorkItem.progress') },
                     { value: 'history', label: this.$t('WorkItem.history') },
-                    { value: 'agent', label: this.$t('WorkItem.agent') },
                     { value: 'agent-feedback', label: '에이전트 피드백' },
                 ]
 
@@ -470,27 +458,247 @@ export default {
             },
             deep: true
         },
-        selectedTab(newVal) {
-            if(newVal == 'agent'){
-                this.agentRenderKey++;
-                this.isAddedNewForm = false
-            }
-        },
         inFormNameTabs(newVal) {
             console.log(newVal);
         }
     },
     methods: {
+        hasUnclosedTripleBackticks(inputString) {
+            // 백틱 세 개의 시작과 끝을 찾는 정규 표현식
+            const regex = /`{3}/g;
+            let match;
+            let isOpen = false;
+
+            // 모든 백틱 세 개의 시작과 끝을 찾습니다
+            while ((match = regex.exec(inputString)) !== null) {
+                // 현재 상태를 토글합니다 (열림 -> 닫힘, 닫힘 -> 열림)
+                isOpen = !isOpen;
+            }
+
+            // 마지막으로 찾은 백틱 세 개가 닫혀있지 않은 경우 true 반환
+            return isOpen;
+        },
+        extractJSON(inputString, checkFunction) {
+            try {
+                JSON5.parse(inputString); // if no problem, just return the whole thing
+                return inputString;
+            } catch (e) {}
+
+            if (this.hasUnclosedTripleBackticks(inputString)) {
+                inputString = inputString + '\n```';
+            }
+
+            // 정규 표현식 정의
+            //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
+            let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+            
+            // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
+            let match = inputString.match(regex);
+            // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
+            if (match) {
+                if (checkFunction)
+                    match.forEach((shouldBeJson) => {
+                        const lastIndex = shouldBeJson.lastIndexOf('}');
+                        const result = shouldBeJson.slice(0, lastIndex + 1);
+                        if (checkFunction(result)) return result;
+                    });
+                else return match[1];
+            } else {
+                regex = /\{[\s\S]*\}/
+                match = inputString.match(regex);
+                return match && match[0] ? match[0] : null;
+            }
+
+            // 매치된 결과가 없으면 null 반환
+            return null;
+        },
+        async resizeBase64Image(base64Str, minWidth, minHeight) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = base64Str;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > minWidth) {
+                            height *= minWidth / width;
+                            width = minWidth;
+                        }
+                    } else {
+                        if (height > minHeight) {
+                            width *= minHeight / height;
+                            height = minHeight;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL());
+                };
+            });
+        },
+        async beforeGenerateExample() {
+            if(!this.generator) {
+                this.generator = new exampleGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: 'Korean'
+                });
+            }            
+            
+
+            this.isGeneratingExample = true;
+            this.isVisionMode = false
+            this.imgKeyList = []
+        
+            if(this.formData && typeof this.formData == 'object'){
+                for (const key of Object.keys(this.formData)) {
+                    if(this.formData[key] && (typeof this.formData[key] == 'string' && this.formData[key].includes("data:image/"))){
+                        this.imgKeyList.push(key)
+                        this.isVisionMode = true
+                        this.generator.previousMessages = []
+                        const resizedImage = await this.resizeBase64Image(this.formData[key], 512, 512);
+                        this.generator.previousMessages.push({
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": "해당 이미지를 분석하고 이미지 분석 내용을 자세하게 한글로 설명해. 이미지에 표시된 날짜, 글자 위주로 집중 분석한 결과를 설명해. 결과는 최대한 정확하고 자세하지만 최대한 요약해서 생성해주면 좋아."
+                                },
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": resizedImage
+                                    }
+                                }
+                            ],
+                            "role": "user"
+                        });
+                        this.generator.model = "gpt-4-vision-preview";
+                    } 
+                }
+            }
+            if(this.isVisionMode){
+                this.generator.generate()
+            } else {
+                this.generateExample()
+            }
+        },
+        async generateExample(response){
+            var me = this
+            this.isVisionMode = false
+            
+            this.generator = new exampleGenerator(this, {
+                isStream: true,
+                preferredLanguage: 'Korean'
+            });
+                        
+            this.generator.model = "gpt-4o";
+            
+            if(response){
+                this.generator.previousMessages.push({
+                    "content": "첨부된 이미지에 대한 설명: " + response,
+                    "role": "user"
+                })
+            }
+            if(this.processInstance && this.processInstance.instId){
+                const instance = await backend.getInstance(this.processInstance.instId);
+                this.generator.previousMessages.push({
+                    "content": "이전 작업 내역 리스트: " + JSON.stringify(instance),
+                    "role": "user"
+                })
+            } else if(this.simulationInstances && this.simulationInstances.length > 0) {
+                this.generator.previousMessages.push({
+                    "content": "이전 작업 내역 리스트: " + JSON.stringify(this.simulationInstances),
+                    "role": "user"
+                })
+            } else {
+                this.generator.previousMessages.push({
+                    "content": "이전 작업 내역 리스트: []",
+                    "role": "user"
+                })
+            }
+
+            this.generator.previousMessages.push({
+                "content": "현재 작업 입력 양식: " + this.html,
+                "role": "user"
+            })
+
+            let formData = JSON.parse(JSON.stringify(me.formData))
+            if(this.imgKeyList.length > 0){
+                this.imgKeyList.forEach(function (key){
+                    delete formData[key]
+                })
+                me.imgKeyList = []
+            }
+            let formValues = {
+                "formValues": formData
+            }
+            this.generator.previousMessages.push({
+                "content": "생성해야할 답변 형식: " + JSON.stringify(formValues),
+                "role": "user"
+            })
+            const userList = await backend.getUserList();
+            this.generator.previousMessages.push({
+                "content": "유저 목록: " + JSON.stringify(userList),
+                "role": "user"
+            })
+            const organization = await backend.getOrganization(`db://configuration/organization`, {key: 'key'});
+            if(organization && organization.value){
+                this.generator.previousMessages.push({
+                    "content": "회사 조직도: " + JSON.stringify(organization.value),
+                    "role": "user"
+                })
+            }
+
+            this.generator.generate()
+        },
+        onModelCreated(response) {
+            //
+        },
+        onGenerationFinished(response) {
+            var me = this
+            me.$try({
+                action: async () => {
+                    if(me.isVisionMode){
+                        me.generateExample(response)
+                    } else {
+                        let jsonData = response;
+                        if (typeof response == 'string') {
+                            jsonData = me.extractJSON(response);
+                            if(jsonData && jsonData.includes('{')){
+                                try {
+                                    jsonData = JSON.parse(jsonData);
+                                } catch(e) {
+                                    jsonData = partialParse(jsonData)
+                                }
+                            } else {
+                                jsonData = null
+                            }
+                        }
+                        if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
+                            me.EventBus.emit('form-values-updated', jsonData['formValues']);
+                            me.agentGenerationFinished(jsonData);
+                        } else {
+                            me.agentGenerationFinished(null);
+                        }
+                        me.isGeneratingExample = false;
+                    }
+                },
+                successMsg: '초안 생성을 완료하였습니다.',
+                errorMsg: '초안 생성을 실패하였습니다. 잠시 후 다시 시도해주세요.',
+                finalAction: () => {
+                    me.isGeneratingExample = false;
+                }
+            });
+            
+        },
         addedNewForm(){
-            this.isAddedNewForm = true
             this.isFinishedAgentGeneration = false
         },
         agentGenerationFinished(value) {
             if(this.isSimulate == 'true') {
-                // setTimeout(() => {
-                //     this.executeProcess();
-                // }, 2000);
-                
                 this.$emit('agentGenerationFinished', value)
                 this.isFinishedAgentGeneration = true;
                 setTimeout(() => {

@@ -176,6 +176,10 @@ export default {
                             const chatRoomName = notification.description || '채팅방';
                             const messageContent = notification.title || '새 메시지';
                             notiBody = `${chatRoomName}\n${messageContent}`;
+
+                            window.dispatchEvent(new CustomEvent('update-notification-badge', {
+                                detail: { type: 'chat', value: true }
+                            }));
                         }
                     }
                     if(notiHeader && notiBody) {

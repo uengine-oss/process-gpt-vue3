@@ -343,6 +343,15 @@ class ProcessGPTBackend implements Backend {
         }
     } 
 
+    async getOrganization(path: string, options: any) {
+        try {
+            const organization = await storage.getObject(path, options);
+            return organization;
+        } catch (error) {
+            return null;
+        }
+    }
+
     async getInstance(instanceId: string) {
         try {
             const options = {
