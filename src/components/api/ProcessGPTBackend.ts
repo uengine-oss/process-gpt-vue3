@@ -1285,29 +1285,23 @@ class ProcessGPTBackend implements Backend {
         return [];
     }
 
-    async getInstanceList() {
+    async getInstanceList(options?: any) {
         try {
             // let instList: any[] = [];
             // const runningList = await this.fetchInstanceListByStatus("RUNNING");
             // const newList = await this.fetchInstanceListByStatus("NEW");
             // instList = [...runningList, ...newList];
             // return instList;
-
             var me = this
-            const email = window.localStorage.getItem("email");
-            const lists = await storage.list('bpm_proc_inst', { 
-                inArray: {
-                    column: 'status',
-                    values: ["NEW", "RUNNING"]
-                }, 
-                matchArray: {
-                    column: 'current_user_ids',
-                    values: [email]
-                },
-                orderBy: 'updated_at',
-                sort: 'desc'
-            });
+            if(!options) {
+                // 기본 정렬
+                options = {
+                    orderBy: 'updated_at',
+                    sort: 'desc'
+                }
+            }
 
+            const lists = await storage.list('bpm_proc_inst', options);
             if (lists && lists.length > 0) {
                 return lists.map((item: any) => {
                     return me.returnInstanceObject(item);
@@ -1319,6 +1313,41 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async getInstanceListByStatus(status: string[], options?: any) {
+        try {
+            var me = this
+            if(!options) options = {}
+            if(!status) return []
+            if(status.includes('*')) status = ['NEW', 'RUNNING', 'DONE', 'PENDING', 'IN_PROGRESS']
+            let email = window.localStorage.getItem("email");
+            let filter = { 
+                inArray: {
+                    column: 'status',
+                    values: status
+                },
+                matchArray: {
+                    column: 'current_user_ids',
+                    values: [email]
+                },
+                orderBy: 'updated_at',
+                sort: 'desc',
+                range: null,
+                like: null,
+            }
+        
+            if(options) {
+                Object.keys(options).forEach((key)=> {
+                    filter[key] = options[key]
+                })
+            }
+            return await me.getInstanceList(filter)
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
 
     async watchInstanceList(callback: (payload: any) => void){
         try {
@@ -1348,42 +1377,18 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getInstanceListByRole(roles: string) {
-        return this.getInstanceList();
+        // return this.getInstanceList();
+        return this.getInstanceListByStatus(["NEW", "RUNNING"]);
     }
     
     async getInstanceListByGroup(group: string) {
         return null;
     }
 
-    async getCompleteInstanceList() {
+    async getCompleteInstanceList(filter) {
         try {
-            // let instList: any[] = await this.fetchInstanceListByStatus("COMPLETED");
-            // return instList;
-
-            var me = this
-            const email = window.localStorage.getItem("email");
-            const lists = await storage.list('bpm_proc_inst', { 
-                inArray: {
-                    column: 'status',
-                    values: ["COMPLETED"]
-                }, 
-                matchArray: {
-                    column: 'current_user_ids',
-                    values: [email]
-                },
-                orderBy: 'updated_at',
-                sort: 'desc'
-            });
-
-            if (lists && lists.length > 0) {
-                return lists.map((item: any) => {
-                    return me.returnInstanceObject(item);
-                });
-            }
-            return [];
-
+            return this.getInstanceListByStatus(["COMPLETED"]);
         } catch (error) {
-            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -2789,36 +2794,56 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getProjectList() {
+
+    async getProjectList(options?: any) {
         try {
-            // const newList = await storage.list('project', { match: { status: "NEW" }});
-            // const runningList = await storage.list('project', { match: { status: "RUNNING" }});
-
-            // const list = [...newList, ...runningList]
-            // return list.map((item: any) => {
-            //     return this.returnProjectObject(item);
-            // });
-
             var me = this
-            const lists = await storage.list('project', { 
-                inArray: {
-                    column: 'status',
-                    values: ["NEW", "RUNNING"]
-                },
-                orderBy: 'updated_at',
-                sort: 'desc'
-            });
+            if(!options) {
+                // 기본 정렬
+                options = {
+                    orderBy: 'updated_at',
+                    sort: 'desc'
+                }
+            }
 
+            const lists = await storage.list('project', options);
             if (lists && lists.length > 0) {
                 return lists.map((item: any) => {
                     return me.returnProjectObject(item);
                 });
             }
             return [];
-
-
         } catch (error) {
-            
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getProjectListByStatus(status: string[], options?: any) {
+        try {
+            var me = this
+            if(!options) options = {}
+            if(!status) return []
+            if(status.includes('*')) status = ['NEW', 'RUNNING', 'DONE', 'PENDING', 'IN_PROGRESS']
+            let email = window.localStorage.getItem("email");
+            let filter = { 
+                inArray: {
+                    column: 'status',
+                    values: status
+                },
+                orderBy: 'updated_at',
+                sort: 'desc',
+                range: null,
+                like: null,
+            }
+        
+            if(options) {
+                Object.keys(options).forEach((key)=> {
+                    filter[key] = options[key]
+                })
+            }
+            return await me.getProjectList(filter)
+        } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
         }
