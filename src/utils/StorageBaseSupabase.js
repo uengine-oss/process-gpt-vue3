@@ -820,6 +820,19 @@ export default class StorageBaseSupabase {
                 query = query.order(orderByField, { ascending: isAscending });
             }
 
+            /* 
+                gt: >
+                gte: >=
+                lt: <
+                lte: <=
+                eq: == 
+
+                startAt: >=
+                startAfter: >
+                endAt: <=
+                endBefore: <
+                
+            */
             // 범위 쿼리 처리
             if (options.startAt && !options.endAt && !options.endBefore) {
                 query = query.gte(orderByField, options.startAt);
@@ -849,7 +862,7 @@ export default class StorageBaseSupabase {
 
             // like 처리
             if (options.like) {
-                query = query.like(orderByField, options.like);
+                query = query.like(options.like.key, options.like.value);
             }
 
             // 일치 처리
@@ -874,6 +887,10 @@ export default class StorageBaseSupabase {
             // size 처리
             if (options.size) {
                 query = query.limit(options.size);
+            }
+
+            if(options.range) {
+                query = query.range(options.range.from, options.range.to);
             }
 
             const { data, error } = await query;

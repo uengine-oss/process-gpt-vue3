@@ -64,7 +64,7 @@ export default {
             this.projectLists = await this.loadProjectList();
         },
         async loadProjectList() {
-            let result = await backend.getProjectList();
+            let result = await backend.getProjectListByStatus(["NEW", "RUNNING"]);
             if (!result) result = [];
             return result.map((item) => {
                 const title = item.name;
