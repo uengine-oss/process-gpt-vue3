@@ -221,7 +221,7 @@ export default {
         
         try {
             // 인스턴스 목록 가져오기
-            const result = await backend.getInstanceList();
+            const result = await backend.getInstanceListByStatus(["NEW", "RUNNING"]);
             if (!result) return;
             
             // 현재 task의 instId와 일치하는 인스턴스 찾기
