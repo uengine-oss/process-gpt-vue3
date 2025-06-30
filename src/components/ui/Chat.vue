@@ -465,23 +465,10 @@
                     <div v-if="!definitionMapOnlyInput" :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
-                                <v-tooltip :text="$t('chat.headset')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn @click="openChatMenu(); recordingModeChange()"
-                                            class="text-medium-emphasis"
-                                            icon
-                                            variant="text"
-                                            v-bind="props"
-                                            style="width:30px; height:30px;"
-                                        >
-                                            <Icons :icon="'round-headset'" :size="20"  />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
                                 <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            style="width:30px; height:30px;" :disabled="disableChat">
                                             <Icons :icon="'document'" :size="20" />
                                         </v-btn>
                                     </template>
@@ -630,6 +617,22 @@
                         </div>
                         
                         <div>
+                            <!-- 헤드셋 아이콘 임시 차단 -->
+                            <!-- <v-tooltip :text="$t('chat.headset')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn @click="openChatMenu(); recordingModeChange()"
+                                        v-bind="props"
+                                        class="mr-1 text-medium-emphasis"
+                                        density="comfortable"
+                                        icon
+                                        variant="outlined"
+                                        size="small"
+                                        style="border-color: #e0e0e0 !important;"
+                                    >
+                                        <Icons :icon="'round-headset'" :size="16"  />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip> -->
                             <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                                 class="mr-1 text-medium-emphasis"
                                 density="comfortable"
@@ -711,24 +714,10 @@
                     <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
                         <v-row class="pa-0 ma-0">
                             <div class="definition-map-chat-menu-background">
-                                <v-tooltip :text="$t('chat.headset')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn @click="openChatMenu(); recordingModeChange()"
-                                            class="text-medium-emphasis"
-                                            icon
-                                            variant="text"
-                                            v-bind="props"
-                                            style="width:30px; height:30px;"
-                                            :disabled="isGenerationFinished"
-                                        >
-                                            <Icons :icon="'round-headset'" :size="20"  />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
                                 <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat || isGenerationFinished">
+                                            style="width:30px; height:30px;" :disabled="disableChat || isGenerationFinished">
                                             <Icons :icon="'document'" :size="20" />
                                         </v-btn>
                                     </template>
@@ -812,6 +801,23 @@
                     </div>
                     
                     <div>
+                        <!-- 헤드셋 아이콘 임시 차단 -->
+                        <!-- <v-tooltip :text="$t('chat.headset')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn @click="openChatMenu(); recordingModeChange()"
+                                    class="mr-1 text-medium-emphasis"
+                                    density="comfortable"
+                                    icon
+                                    variant="outlined"
+                                    size="small"
+                                    v-bind="props"
+                                    style="border-color: #e0e0e0 !important;"
+                                    :disabled="isGenerationFinished"
+                                >
+                                    <Icons :icon="'round-headset'" :size="'16'"  />
+                                </v-btn>
+                            </template>
+                        </v-tooltip> -->
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             class="mr-1 text-medium-emphasis"
                             density="comfortable"

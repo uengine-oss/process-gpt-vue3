@@ -44,7 +44,7 @@
                 <Logo />
                 <v-spacer></v-spacer>
                 <Icons @click.stop="customizer.SET_SIDEBAR_DRAWER"
-                    style="margin-top: -8px;"
+                    style="margin-top: -8px; cursor: pointer;"
                     :icon="'close'" :size="16"
                 />
             </v-row>

@@ -942,7 +942,8 @@
         "submittedMessage": "Submitted successfully."
     },
     "ProcessDefinitionChatHeader": {
-        "addMarketplace": "Register to Marketplace"
+        "addMarketplace": "Register to Marketplace",
+        "processDefinitionName": "Process Definition Name"
     },
     "ProcessDefinitionMarketPlaceDialog": {
         "title": "Register to Marketplace",
