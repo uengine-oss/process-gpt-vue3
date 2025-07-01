@@ -29,6 +29,13 @@
                             ></user-select-field>
                         </div>
                     </div>
+                    
+                    <!-- Model Settings Button -->
+                    <div class="mt-4">
+                        <v-btn @click="openModelSettings" variant="outlined" size="small" rounded block>
+                            {{ $t('ProcessGPTExecute.modelSettings') }}
+                        </v-btn>
+                    </div>
                 </div>
                 <div class="w-100">
                     <div v-if="workItem != null">
@@ -65,6 +72,12 @@
                 </div>
             </div>
         </v-card>
+        
+        <!-- Model Settings Modal -->
+        <ModelSettings 
+            v-model="showModelSettings"
+            @confirm="handleModelSettingsConfirm"
+        />
     </div>
 </template>
 
@@ -73,6 +86,7 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
 import WorkItem from '@/components/apps/todolist/WorkItem.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
+import ModelSettings from './ModelSettings.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -81,7 +95,8 @@ export default {
     components: {
         AppBaseCard,
         WorkItem,
-        UserSelectField
+        UserSelectField,
+        ModelSettings
     },
     props: {
         definitionId: String,
@@ -101,6 +116,7 @@ export default {
         activityIndex: 0,
         renderKey: 0,
         simulationInstances: [],
+        showModelSettings: false,
     }),
     async mounted() {
         await this.init();
@@ -315,6 +331,13 @@ export default {
             me.$try({}, null, {
                 errorMsg: `${me.definition.processDefinitionName} 실행 중 오류가 발생했습니다: ${error}`
             })
+        },
+        openModelSettings() {
+            this.showModelSettings = true;
+        },
+        handleModelSettingsConfirm(settings) {
+            console.log('Model settings confirmed:', settings);
+            // TODO: 모델 설정 처리 로직 구현
         }
     }
 };

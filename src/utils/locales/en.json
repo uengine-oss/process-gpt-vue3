@@ -911,7 +911,14 @@
     "ProcessGPTExecute": {
         "roleMapping": "Role Mapping",
         "processStart": "Process Start",
-        "processSimulate": "Process Simulation"
+        "processSimulate": "Process Simulation",
+        "modelSettings": "Model Settings"
+    },
+    "ModelSettings": {
+        "title": "Model Settings",
+        "name": "Name",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
     },
     "Checkpoints": {
         "checkpoints": "Checkpoints"
