@@ -49,18 +49,64 @@
             <v-col :cols="isMobile ? 12 : 5"
                 :class="isMobile ? 'pa-4 pt-3 order-last' : 'pa-0 pt-3 pl-4 pb-4'"
             >
-                <v-alert class="pa-0" color="#2196F3" variant="outlined">
-                    <v-tabs v-model="selectedTab">
-                        <v-tab v-if="inFormNameTabs && inFormNameTabs.length > 0" v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
-                            {{ inFormNameTab }}
-                        </v-tab>
-                        <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
-                            {{ tab.label }} 
-                        </v-tab>
-                        <!-- <v-tab value="progress">{{ $t('WorkItem.progress') }}</v-tab>
-                        <v-tab v-if="messages && messages.length > 0" value="history">{{ $t('WorkItem.history') }}</v-tab>
-                        <v-tab v-if="messages" value="agent">{{ $t('WorkItem.agent') }}</v-tab> -->
-                    </v-tabs>
+                <v-alert class="pa-0 primary-border" variant="outlined">
+                    <!-- 데스크톱: 기존 탭 -->
+                    <div v-if="!isMobile">
+                        <v-tabs v-model="selectedTab" color="primary">
+                            <template v-if="inFormNameTabs && inFormNameTabs.length > 0">
+                                <v-tab v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
+                                    {{ inFormNameTab }}
+                                </v-tab>
+                            </template>
+                            <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
+                                {{ tab.label }} 
+                                <v-icon
+                                    v-if="tab.value == 'agent' && isAddedNewForm"
+                                    class="bouncing-arrow-horizontal-left" 
+                                    color="primary" 
+                                    size="large"
+                                >
+                                    mdi-arrow-left-bold
+                                </v-icon>
+                            </v-tab>
+                        </v-tabs>
+                    </div>
+                    
+                    <!-- 모바일: 버튼 형태 -->
+                    <div v-else class="pa-2">
+                        <div class="d-flex flex-wrap ga-2">
+                            <template v-if="inFormNameTabs && inFormNameTabs.length > 0">
+                                <v-btn
+                                    v-for="(inFormNameTab, index) in inFormNameTabs"
+                                    :key="index"
+                                    :variant="selectedTab === `form-${index}` ? 'flat' : 'text'"
+                                    :color="selectedTab === `form-${index}` ? 'primary' : 'default'"
+                                    size="small"
+                                    @click="selectedTab = `form-${index}`"
+                                >
+                                    {{ inFormNameTab }}
+                                </v-btn>
+                            </template>
+                            <v-btn
+                                v-for="tab in tabList"
+                                :key="tab.value"
+                                :variant="selectedTab === tab.value ? 'flat' : 'text'"
+                                :color="selectedTab === tab.value ? 'primary' : 'default'"
+                                size="small"
+                                @click="selectedTab = tab.value"
+                            >
+                                {{ tab.label }}
+                                <v-icon
+                                    v-if="tab.value == 'agent' && isAddedNewForm"
+                                    class="bouncing-arrow-horizontal-left ml-1" 
+                                    color="primary" 
+                                    size="small"
+                                >
+                                    mdi-arrow-left-bold
+                                </v-icon>
+                            </v-btn>
+                        </div>
+                    </div>
                     <v-window v-model="selectedTab"
                         :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px); overflow: auto' : 'height: calc(100vh - 249px); color: black; overflow: auto'"
                     >
