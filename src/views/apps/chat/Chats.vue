@@ -244,7 +244,7 @@ export default {
     components: {
         Chat,
         AppBaseCard,
-        ChatListing,
+        // ChatListing,
         UserListing,
         ChatProfile,
         VDataTable,
