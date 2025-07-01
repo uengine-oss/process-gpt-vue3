@@ -152,7 +152,8 @@
         "title": "정의 관리",
         "upload": "정의 목록 업로드",
         "release": "정의 내보내기",
-        "defaultForm": "기본 폼 관리"
+        "defaultForm": "기본 폼 관리",
+        "completedList": "완료된 목록 보기"
     },
     "systemDefinition": {
         "title": "시스템 정의"

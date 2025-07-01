@@ -152,7 +152,8 @@
         "title": "Definition Management",
         "upload": "Upload definition list",
         "release": "Definition Export",
-        "defaultForm": "Default Form Management"
+        "defaultForm": "Default Form Management",
+        "completedList": "View Completed List"
     },
     "systemDefinition": {
         "title": "System Definition"
