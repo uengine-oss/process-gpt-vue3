@@ -32,7 +32,7 @@ export default {
     components: {
         Chat,
         AppBaseCard,
-        ChatListing,
+        // ChatListing,
         ChatProfile,
         VDataTable,
 
