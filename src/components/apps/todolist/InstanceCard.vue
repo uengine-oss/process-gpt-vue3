@@ -33,6 +33,7 @@
                 </div>
             </div>
         </div>
+        <v-divider v-if="isMobile"></v-divider>
 
         <div :key="updatedKey">
             <div v-if="isNew">

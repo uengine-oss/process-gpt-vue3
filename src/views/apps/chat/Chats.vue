@@ -128,13 +128,18 @@
                 </div>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="openWorkOrderDialog" persistent>
+        <v-dialog v-model="openWorkOrderDialog"
+            persistent
+            :fullscreen="isMobile"
+            max-width="80%"
+        >
             <v-row class="ma-0 pa-0">
                 <v-col  v-if="!isMobile && assistantRes" class="pa-0 mr-2"
                     cols="4"
                 >
                     <v-card>
                         <div class="description-card">
+                            123123
                             <v-card-title><h3>Title:</h3></v-card-title>
                             <v-card-text class="pa-0 pl-4 pr-4">
                                 <v-textarea rows="1" v-model="assistantRes.title" auto-grow></v-textarea>
@@ -244,7 +249,7 @@ export default {
     components: {
         Chat,
         AppBaseCard,
-        ChatListing,
+        // ChatListing,
         UserListing,
         ChatProfile,
         VDataTable,
@@ -379,6 +384,14 @@ export default {
         } else if (this.$route.query.code && this.$route.query.state && this.$route.query.scope) {
             await this.getOAuth();
         }
+        
+        // 정의 맵에서 업무지시 버튼 클릭으로 이동한 경우 다이얼로그 열기
+        if (this.$route.query.openWorkOrder === 'true') {
+            this.startWorkOrder();
+            // query parameter 제거
+            this.$router.replace({ path: '/chats' });
+        }
+        
         if (this.currentChatRoom && this.currentChatRoom.id) {
             this.chatRoomId = this.currentChatRoom.id;
         }

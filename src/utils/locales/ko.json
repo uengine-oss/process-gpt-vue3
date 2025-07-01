@@ -152,7 +152,8 @@
         "title": "정의 관리",
         "upload": "정의 목록 업로드",
         "release": "정의 내보내기",
-        "defaultForm": "기본 폼 관리"
+        "defaultForm": "기본 폼 관리",
+        "completedList": "완료된 목록 보기"
     },
     "systemDefinition": {
         "title": "시스템 정의"
@@ -942,7 +943,8 @@
         "submittedMessage": "제출되었습니다."
     },
     "ProcessDefinitionChatHeader": {
-        "addMarketplace" : "마켓플레이스 등록"
+        "addMarketplace" : "마켓플레이스 등록",
+        "processDefinitionName": "프로세스 정의명"
     },
     "ProcessDefinitionMarketPlaceDialog": {
         "title": "마켓플레이스 등록",

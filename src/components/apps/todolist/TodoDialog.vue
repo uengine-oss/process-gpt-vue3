@@ -35,17 +35,22 @@
         </v-card>
 
         <v-card v-else>
-            <v-row class="pa-4 pt-2 pb-0 ma-0 align-center">
-                <v-card-title v-if="type && type == 'edit'" class="d-flex align-center justify-space-between pa-0">
-                    <h4 class="text-h4">할 일 수정</h4>
+            <v-row class="ma-0 pa-4 pb-0 align-center">
+                <div v-if="type && type == 'edit'" class="d-flex">
+                    <v-card-title  class="pa-0">할 일 수정</v-card-title>
                     <v-icon @click="type = 'view'">mdi-arrow-left</v-icon>
-                </v-card-title>
+                </div>
 
                 <v-card-title v-else class="pa-0 pb-0">
-                    <h4 class="text-h4">업무 등록</h4>
+                    <v-card-title  class="pa-0">업무 등록</v-card-title>
                 </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn icon @click="close">
+                <v-btn @click="close"
+                    class="ml-auto" 
+                    variant="text" 
+                    density="compact"
+                    icon
+                >
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>

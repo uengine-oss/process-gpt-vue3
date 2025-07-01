@@ -4,7 +4,7 @@
         <v-card class="rounded-lg mb-2" :style="`background-color: ${hexToRgba(themeColor, 0.05)} !important;`" elevation="0" @click="editMarkdown" hover>
             <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
             <v-row class="ma-0 pa-4 align-center">
-                <div :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
+                <div :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px;`">
                     <Icons :icon="'slide-show'" color="white" />
                 </div>
                 <div>

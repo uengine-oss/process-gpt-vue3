@@ -54,7 +54,7 @@
                 <Logo />
                 <v-spacer></v-spacer>
                 <Icons @click.stop="customizer.SET_SIDEBAR_DRAWER"
-                    style="margin-top: -8px;"
+                    style="margin-top: -8px; cursor: pointer;"
                     :icon="'close'" :size="16"
                 />
             </v-row>
@@ -63,7 +63,7 @@
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
         <div class="scrollnavbar bg-containerBg overflow-y-auto">
-            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0 pr-2"
+            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0 pr-2 pl-2"
                 :class="globalIsMobile.value ? 'pr-4' : ''"
                 style="display: flex;
                     flex-direction: column;
@@ -116,9 +116,6 @@
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
                 </v-col>
-                <v-row class="ma-0 pa-0 ml-2 align-center">
-                    <v-btn block dense @click="openCompletedList()">완료된 목록 보기</v-btn>
-                </v-row>
               
                
                 <v-col class="pa-0" style="flex: 0 0 auto;">
@@ -143,7 +140,7 @@
                                             class="text-medium-emphasis cp-menu"
                                             density="comfortable"
                                         >
-                                            <Icons :icon="subItem.icon" :size="20" />    
+                                            <Icons :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />   
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
@@ -363,6 +360,22 @@ export default {
                     disable: true
                 },
                 {
+                    title: 'definitionManagement.defaultForm',
+                    icon: 'formList',
+                    BgColor: 'primary',
+                    disable: true,
+                    to: '/ui-definitions/defaultform',
+                    size: 24
+                },
+                {
+                    title: 'definitionManagement.completedList',
+                    icon: 'completedList',
+                    BgColor: 'primary',
+                    disable: true,
+                    to: '/list-pages/completed',
+                    size: 24
+                },
+                {
                     title: 'definitionManagement.upload',
                     icon: 'upload',
                     BgColor: 'primary',
@@ -387,13 +400,6 @@ export default {
                     disable: true,
                     to: this.openDialog
                 },
-                {
-                    title: 'definitionManagement.defaultForm',
-                    icon: 'document',
-                    BgColor: 'primary',
-                    disable: true,
-                    to: '/ui-definitions/defaultform'
-                },
             ]
             if (this.mode === 'ProcessGPT') {
                 this.definitionItem = this.definitionItem.filter((item) => 
@@ -408,9 +414,6 @@ export default {
                     }
                 });
             }
-        },
-        openCompletedList(){
-            this.$router.push('/list-pages/completed');
         },
         openNewProject(){
             this.isNewProjectOpen = true;

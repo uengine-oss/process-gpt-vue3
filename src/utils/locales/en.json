@@ -152,7 +152,8 @@
         "title": "Definition Management",
         "upload": "Upload definition list",
         "release": "Definition Export",
-        "defaultForm": "Default Form Management"
+        "defaultForm": "Default Form Management",
+        "completedList": "View Completed List"
     },
     "systemDefinition": {
         "title": "System Definition"
@@ -942,7 +943,8 @@
         "submittedMessage": "Submitted successfully."
     },
     "ProcessDefinitionChatHeader": {
-        "addMarketplace": "Register to Marketplace"
+        "addMarketplace": "Register to Marketplace",
+        "processDefinitionName": "Process Definition Name"
     },
     "ProcessDefinitionMarketPlaceDialog": {
         "title": "Register to Marketplace",

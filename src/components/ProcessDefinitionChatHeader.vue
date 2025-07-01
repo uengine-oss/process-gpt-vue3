@@ -7,22 +7,19 @@
                 <v-row class="ma-0 pa-0"
                     style="height: 48px;"
                 >
-                    <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center"
-                        style="max-width:80%;"
+                    <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center flex-grow-1"
                     >
                         <v-text-field v-if="isEditableTitle" v-model="processName"
-                            label="프로세스 정의명" variant="underlined" hide-details class="pa-0 ma-0"
-                            style="min-width:150px; width:150px;"
+                            :label="$t('ProcessDefinitionChatHeader.processDefinitionName')" variant="underlined" hide-details class="pa-0 ma-0 flex-grow-1"
                         ></v-text-field>
-                        <v-tooltip v-else  location="bottom">
+                        <v-tooltip v-else  location="bottom" class="flex-grow-1">
                             <template v-slot:activator="{ props }">
                                 <h5 v-bind="props" class="text-h5 mb-n1 process-title-truncate">{{ modelValue }}</h5>
                             </template>
                             <span>{{ modelValue }}</span>
                         </v-tooltip>
                     </div>
-                    <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
-                    <v-spacer></v-spacer>
+                    <h5 v-else class="text-h5 mb-n1 flex-grow-1">{{ $t('processDefinition.title') }}</h5>
                     <!-- 삭제 아이콘 -->
                     <div v-if="chatMode != 'consulting' && fullPath != 'chat'">
                         <v-tooltip v-if="isDeleted" location="bottom">

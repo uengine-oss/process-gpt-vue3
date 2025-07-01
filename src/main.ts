@@ -121,8 +121,7 @@ async function detectLanguage(): Promise<'ko' | 'en'> {
     return browserLang.startsWith('ko') ? 'ko' : 'en';
 }
 
-// i18n 설정을 동적으로 초기화
-const detectedLocale = await detectLanguage();
+// i18n 설정을 기본값으로 초기화
 const i18n = createI18n({
     locale: 'ko', // 기본값으로 초기화
     fallbackLocale: 'en',

@@ -17,7 +17,7 @@
                     v-model="localModelValue" :readOnly="true" 
                     :isPreview="true" />
                 </div>
-                <div v-else-if="localModelValue.length == 0" :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
+                <div v-else-if="localModelValue.length == 0" :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px;`">
                     <Icons :icon="'report'" color="white" />
                 </div>
                 <div v-else

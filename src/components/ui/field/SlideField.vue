@@ -18,7 +18,7 @@
                         style="width: 120px; height: 120px; transform: rotate(5deg); box-shadow: 0 2px 8px rgba(0,0,0,0.08);"
                     />
                 </div>
-                <div v-else-if="localModelValue.length == 0" :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px; margin-right: 8px;`">
+                <div v-else-if="localModelValue.length == 0" :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px;`">
                     <Icons :icon="'slide-show'" color="white" />
                 </div>
                 <div v-else
