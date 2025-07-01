@@ -8,6 +8,16 @@
     >
         <Icons :icon="'list-bold-duotone'"/>
     </v-btn>
+    <v-badge
+        v-if="notiCount > 0"
+        class="mobile-side-bar-btn"
+        :content="notiCount"
+        :model-value="notiCount > 0"
+        color="error"
+        location="top end"
+        offset-x="-40"
+        offset-y="-37"
+    ></v-badge>
     <v-navigation-drawer
         left
         v-model="customizer.Sidebar_drawer"
@@ -79,7 +89,7 @@
                     <Icons :icon="'write'" class="mr-2" />
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
-                <VerticalHeader v-if="globalIsMobile.value"/>
+                <VerticalHeader v-if="globalIsMobile.value" @update-noti-count="updateNotiCount" />
                 <v-row v-if="isShowProject" class="ma-0 pa-0 ml-2 align-center">
                     <div class="text-medium-emphasis cp-menu">
                         {{ $t('VerticalSidebar.projectList') }}
@@ -258,6 +268,7 @@ export default {
         },
         isNewProjectOpen: false,
         deletedDefinitionList: [],
+        notiCount: 0,
     }),
     computed: {
         JMS() {
@@ -307,6 +318,9 @@ export default {
         });
     },
     methods: {
+        updateNotiCount(count) {
+            this.notiCount = count;
+        },
         loadSidebar() {
             this.definitionItem = [
                 {

@@ -549,7 +549,7 @@ export default {
                             me.myChatRoomIds.push(chatRoom.id)
                             if(existUserInfo.isExistUnReadMessage){
                                 window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                                    detail: { type: 'chat', value: true }
+                                    detail: { type: 'chat', value: true, id: chatRoom.id }
                                 }));
                             }
                         }
@@ -633,11 +633,9 @@ export default {
                 }
                 this.putObject(`chat_rooms`, this.chatRoomList[idx]);
                 this.EventBus.emit('clear-notification', this.chatRoomList[idx].id);
-                if(!this.chatRoomList.find(x => x.participants.find(x => x.email == this.userInfo.email).isExistUnReadMessage)){
-                    window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                        detail: { type: 'chat', value: false }
-                    }));
-                }
+                window.dispatchEvent(new CustomEvent('update-notification-badge', {
+                    detail: { type: 'chat', value: false, id: this.chatRoomList[idx].id}
+                }));
             }   
         },
         chatRoomSelected(chatRoomInfo){
@@ -661,7 +659,7 @@ export default {
             
             this.EventBus.emit('chat-room-selected', this.currentChatRoom.id);
         },
-        async putMessage(msg){
+        async putMessage(msg, chatRoomId = null){
             // this.addTextToVectorStore(msg)
             let uuid
             if(msg.uuid){
@@ -671,9 +669,10 @@ export default {
             }
             let message = {
                 "messages": msg,
-                "id": this.currentChatRoom.id,
+                "id": chatRoomId || this.currentChatRoom.id,
                 "uuid": uuid,
             }
+            
             this.putObject(`chats/${uuid}`, message);
 
             let chatRoomObj = {
@@ -681,13 +680,14 @@ export default {
                 "type": "text",
                 "createdAt": msg.timeStamp
             }
-            this.currentChatRoom.message = chatRoomObj
-            this.currentChatRoom.participants.forEach(participant => {
+            let targetChatRoom = this.chatRoomList.find(room => room.id === chatRoomId) || this.currentChatRoom;
+            targetChatRoom.message = chatRoomObj
+            targetChatRoom.participants.forEach(participant => {
                 if(participant.email !== this.userInfo.email) {
                     participant.isExistUnReadMessage = true
                 }
             });
-            this.putObject(`chat_rooms`, this.currentChatRoom);
+            this.putObject(`chat_rooms`, targetChatRoom);
         },
         beforeReply(msg){
             if(msg){
@@ -874,12 +874,15 @@ export default {
 
                 systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
 
-                const systemMsgObj = me.createMessageObj(systemMsg, 'system')
-                if(this.messages[this.messages.length - 1].content === '...' && this.messages[this.messages.length - 1].isLoading){
-                    this.messages.pop()
+                if(this.currentChatRoom.id == chatRoomId){
+                    const systemMsgObj = me.createMessageObj(systemMsg, 'system')
+                    if(this.messages[this.messages.length - 1].content === '...' && this.messages[this.messages.length - 1].isLoading){
+                        this.messages.pop()
+                    }
+                    this.messages.push(systemMsgObj)
                 }
-                this.messages.push(systemMsgObj)
-                me.putMessage(systemMsgObj)
+                
+                me.putMessage(systemMsgObj, chatRoomId)
                 
                 if(response.content){
                     me.deleteSystemMessage(response)
@@ -888,7 +891,7 @@ export default {
         afterModelStopped(response) {
             // console.log(response)
         },
-        async afterGenerationFinished(responseObj) {
+        async afterGenerationFinished(responseObj, chatRoomId = null) {
             if(responseObj){
                 let startProcess = false;
                 let role = this.isAgentChat ? 'agent' : 'system';
@@ -927,7 +930,7 @@ export default {
                                 }
                             });
                             obj.memento.sources = sources
-                            if(this.messages.length > 0){
+                            if(this.currentChatRoom.id == chatRoomId && this.messages.length > 0){
                                 this.messages[this.messages.length - 1].content = '테이블 생성 중...'
                             }
                             const responseTable = await axios.post(`/execution/process-data-query`, {
@@ -970,13 +973,13 @@ export default {
                     }
                     obj.uuid = this.uuid()
                     if(startProcess) {
-                        this.startProcess(obj)
+                        this.startProcess(obj, chatRoomId)
                     } else {
                         if (this.isAgentChat) {
                             obj.profile = this.agentInfo.profile
                             obj.name = this.agentInfo.name
                         }
-                        this.putMessage(obj)
+                        this.putMessage(obj, chatRoomId)
                     }
                 } else {
                     if(!this.ProcessGPTActive) this.ProcessGPTActive = true

@@ -178,14 +178,18 @@ export default {
                             notiBody = `${chatRoomName}\n${messageContent}`;
 
                             window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                                detail: { type: 'chat', value: true }
+                                detail: { type: 'chat', value: true, id: notification.url.replace('/chats?id=', '')}
                             }));
                         }
                     }
                     if(notiHeader && notiBody) {
                         if(notiBody.includes('"messageForUser":')) {
-                            let contentObj = partialParse(notiBody);
-                            notiBody = contentObj.messageForUser || notiBody;
+                            try {
+                                let contentObj = partialParse(notiBody);
+                                notiBody = contentObj.messageForUser || notiBody;
+                            } catch (e) {
+                                console.log(e);
+                            }
                         }
                         new Notification(notiHeader, {
                             body: notiBody,
