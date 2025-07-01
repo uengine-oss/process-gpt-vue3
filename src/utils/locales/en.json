@@ -911,12 +911,11 @@
     "ProcessGPTExecute": {
         "roleMapping": "Role Mapping",
         "processStart": "Process Start",
-        "processSimulate": "Process Simulation",
-        "modelSettings": "Model Settings"
+        "processSimulate": "Process Simulation"
     },
     "ModelSettings": {
-        "title": "Model Settings",
-        "name": "Name",
+        "title": "Agent Model Settings",
+        "modelName": "Model Name",
         "confirm": "Confirm",
         "cancel": "Cancel"
     },
