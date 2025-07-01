@@ -115,18 +115,23 @@ export default {
             document.addEventListener('click', (event) => {
                 if (event.target.classList.contains('add-team-btn')) {
                     event.stopPropagation();
+                    this.closeBadgesDiagram();
                     this.openTeamDialog('add');
                 } else if (event.target.classList.contains('edit-team-btn')) {
                     event.stopPropagation();
+                    this.closeBadgesDiagram();
                     this.openTeamDialog('edit');
                 } else if (event.target.classList.contains('delete-team-btn')) {
                     event.stopPropagation();
+                    this.closeBadgesDiagram();
                     this.openTeamDialog('delete');
                 } else if (event.target.classList.contains('add-member-btn')) {
                     event.stopPropagation();
+                    this.closeBadgesDiagram();
                     this.$emit('addMember', this.editNode);
                 } else if (event.target.classList.contains('edit-member-btn')) {
                     event.stopPropagation();
+                    this.closeBadgesDiagram();
                     this.openEditDialog('edit-user');
                 } else if (event.target.classList.contains('edit-agent-btn')) {
                     event.stopPropagation();
@@ -134,6 +139,7 @@ export default {
                     this.openEditDialog('edit-agent');
                 } else if (event.target.classList.contains('delete-agent-btn')) {
                     event.stopPropagation();
+                    this.closeBadgesDiagram();
                     this.openEditDialog('delete');
                 }
             });
