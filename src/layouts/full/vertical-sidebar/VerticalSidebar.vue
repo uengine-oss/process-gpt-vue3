@@ -8,6 +8,16 @@
     >
         <Icons :icon="'list-bold-duotone'"/>
     </v-btn>
+    <v-badge
+        v-if="notiCount > 0"
+        class="mobile-side-bar-btn"
+        :content="notiCount"
+        :model-value="notiCount > 0"
+        color="error"
+        location="top end"
+        offset-x="-40"
+        offset-y="-37"
+    ></v-badge>
     <v-navigation-drawer
         left
         v-model="customizer.Sidebar_drawer"
@@ -53,7 +63,7 @@
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
         <div class="scrollnavbar bg-containerBg overflow-y-auto">
-            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0 pr-2"
+            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0 pr-2 pl-2"
                 :class="globalIsMobile.value ? 'pr-4' : ''"
                 style="display: flex;
                     flex-direction: column;
@@ -79,7 +89,7 @@
                     <Icons :icon="'write'" class="mr-2" />
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
-                <VerticalHeader v-if="globalIsMobile.value"/>
+                <VerticalHeader v-if="globalIsMobile.value" @update-noti-count="updateNotiCount" />
                 <v-row v-if="isShowProject" class="ma-0 pa-0 ml-2 align-center">
                     <div class="text-medium-emphasis cp-menu">
                         {{ $t('VerticalSidebar.projectList') }}
@@ -106,9 +116,6 @@
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
                 </v-col>
-                <v-row class="ma-0 pa-0 ml-2 align-center">
-                    <v-btn block dense @click="openCompletedList()">완료된 목록 보기</v-btn>
-                </v-row>
               
                
                 <v-col class="pa-0" style="flex: 0 0 auto;">
@@ -133,7 +140,7 @@
                                             class="text-medium-emphasis cp-menu"
                                             density="comfortable"
                                         >
-                                            <Icons :icon="subItem.icon" :size="20" />    
+                                            <Icons :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />   
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
@@ -258,6 +265,7 @@ export default {
         },
         isNewProjectOpen: false,
         deletedDefinitionList: [],
+        notiCount: 0,
     }),
     computed: {
         JMS() {
@@ -307,6 +315,9 @@ export default {
         });
     },
     methods: {
+        updateNotiCount(count) {
+            this.notiCount = count;
+        },
         loadSidebar() {
             this.definitionItem = [
                 {
@@ -349,6 +360,22 @@ export default {
                     disable: true
                 },
                 {
+                    title: 'definitionManagement.defaultForm',
+                    icon: 'formList',
+                    BgColor: 'primary',
+                    disable: true,
+                    to: '/ui-definitions/defaultform',
+                    size: 24
+                },
+                {
+                    title: 'definitionManagement.completedList',
+                    icon: 'completedList',
+                    BgColor: 'primary',
+                    disable: true,
+                    to: '/list-pages/completed',
+                    size: 24
+                },
+                {
                     title: 'definitionManagement.upload',
                     icon: 'upload',
                     BgColor: 'primary',
@@ -372,13 +399,6 @@ export default {
                     BgColor: 'primary',
                     disable: true,
                     to: this.openDialog
-                },
-                {
-                    title: 'definitionManagement.defaultForm',
-                    icon: 'document',
-                    BgColor: 'primary',
-                    disable: true,
-                    to: '/ui-definitions/defaultform'
                 },
             ]
             if (this.mode === 'ProcessGPT') {

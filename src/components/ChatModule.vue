@@ -649,7 +649,7 @@ export default {
                 db.close();
             };
         },
-        onGenerationFinished(response) {
+        onGenerationFinished(response, chatRoomId = null) {
             var me = this
             if(this.isVisionMode){
                 this.generateAgentAI(response)
@@ -687,9 +687,9 @@ export default {
                 }
                 
                 if(jsonData){
-                    this.afterGenerationFinished(jsonData);
+                    this.afterGenerationFinished(jsonData, chatRoomId);
                 } else {
-                    this.afterGenerationFinished(response);
+                    this.afterGenerationFinished(response, chatRoomId);
                 }
                 
                 this.EventBus.emit('scroll_update');
@@ -804,7 +804,6 @@ export default {
 
         // 백그라운드 모드 준비
         prepareBackgroundMode(requestId) {
-            console.log('[ChatModule] 백그라운드 모드 준비:', requestId);
             this.setupBeforeUnloadHandler(requestId);
         },
 
@@ -817,14 +816,12 @@ export default {
 
             // 페이지를 떠날 때 백그라운드 모드로 전환하는 핸들러
             this.beforeUnloadHandler = () => {
-                console.log('[ChatModule] 페이지 언로드 감지, 백그라운드 모드로 전환');
                 this.switchToBackgroundMode(requestId, request);
             };
 
             // 라우터 이동 시 핸들러
             this.routerBeforeEach = (to, from, next) => {
                 if (from.path.includes('chats') && !to.path.includes('chats')) {
-                    console.log('[ChatModule] 채팅 페이지에서 이동 감지, 백그라운드 모드로 전환');
                     this.switchToBackgroundMode(requestId, request);
                 }
                 next();
@@ -839,7 +836,6 @@ export default {
 
         switchToBackgroundMode(requestId, request) {
             if (this.generator && this.generator.state === 'running') {
-                console.log('[ChatModule] Generator를 백그라운드 모드로 전환');
                 this.generator.switchToBackgroundMode(requestId, request.chatRoomId, request.message);
                 // 요청 정리
                 this.activeBackgroundRequests.delete(requestId);
@@ -847,7 +843,6 @@ export default {
         },
 
         handlePageUnload() {
-            console.log('[ChatModule] 컴포넌트 언로드 처리');
             // 진행 중인 모든 요청을 백그라운드로 전환
             this.activeBackgroundRequests.forEach((request, requestId) => {
                 if (this.generator && this.generator.state === 'running') {
@@ -869,7 +864,6 @@ export default {
 
         // 채팅방 변경 시 백그라운드 모드 처리
         handleChatRoomChange() {
-            console.log('[ChatModule] 채팅방 변경 감지, 진행 중인 작업 확인');
             
             // 현재 채팅방 ID 백업 (새로운 채팅방으로 변경되기 전의 ID)
             const currentChatRoomId = this.chatRoomId;
@@ -877,7 +871,6 @@ export default {
             // 진행 중인 모든 요청을 백그라운드로 전환
             this.activeBackgroundRequests.forEach((request, requestId) => {
                 if (this.generator && this.generator.state === 'running') {
-                    console.log('[ChatModule] 채팅방 변경으로 인한 백그라운드 모드 전환:', requestId);
                     // 원래 채팅방 ID 사용
                     request.chatRoomId = currentChatRoomId;
                     this.switchToBackgroundMode(requestId, request);

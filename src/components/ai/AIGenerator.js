@@ -79,7 +79,6 @@ export default class AIGenerator {
 
     // 백그라운드 모드로 전환
     switchToBackgroundMode(requestId, chatRoomId, messageData) {
-        console.log('[AIGenerator] 백그라운드 모드로 전환:', requestId);
         this.isBackgroundMode = true;
         this.backgroundRequestId = requestId;
         this.backgroundChatRoomId = chatRoomId;
@@ -251,6 +250,10 @@ export default class AIGenerator {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url);
         xhr.setRequestHeader('Content-Type', 'application/json');
+        
+        if(this.client.chatRoomId){
+            xhr.originalChatRoomId = this.client.chatRoomId;
+        }
 
         xhr.onprogress = function (event) {
             var currentResId;
@@ -371,7 +374,11 @@ export default class AIGenerator {
                             me.client.onModelCreated(model);
                         }
                         if (me.client.onGenerationFinished) {
-                            me.client.onGenerationFinished(model);
+                            if(xhr.originalChatRoomId){
+                                me.client.onGenerationFinished(model, xhr.originalChatRoomId);
+                            } else {
+                                me.client.onGenerationFinished(model);
+                            }
                         }
                     }
                 }
@@ -458,8 +465,16 @@ export default class AIGenerator {
         import('./ChatBackgroundManager.js').then(({ default: ChatBgManager }) => {
             ChatBgManager.handleBackgroundComplete(
                 this.backgroundRequestId, 
-                model
+                model,
+                this.backgroundChatRoomId // 원래 채팅방 ID 전달
             );
+            
+            // 백그라운드 모드 종료
+            this.isBackgroundMode = false;
+            this.backgroundRequestId = null;
+            this.backgroundChatRoomId = null;
+            this.lastMessageData = null;
+            console.log('[AIGenerator] 백그라운드 모드 종료됨');
         }).catch(error => {
             console.error('[AIGenerator] 백그라운드 완료 처리 실패:', error);
         });

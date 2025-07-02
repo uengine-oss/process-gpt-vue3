@@ -1,7 +1,6 @@
 <template>
   <ListPage
       v-if="initLoading"
-      type="project"
       :items="filteredList"
       :title="title"
       :loading="loading"
@@ -10,12 +9,11 @@
       :filterConfig="filterConfig"
       :filter="filter"
       @filter="handleFilter"
-      @row-click="handleInstanceClick"
       @search="handleSearch"
       @load="handleLoad"
   >
       <template v-slot:item-row="{ item }">
-          <v-card @click="handleInstanceClick(item)">
+          <v-card @click="handleRowClick(item)">
               <v-card-title>
                   <StatusChip :status="item.status" type="instance"/>
                   <strong style="margin-left:5px;">{{ item.name }}</strong>
@@ -68,28 +66,40 @@ const backend = BackendFactory.createBackend();
     },
     data() {
       return {
-        config:{
-          title: '전체 프로젝트',
-          headers: [
-            { text: '프로젝트명', value: 'name' },
-            { text: '상태', value: 'status' },
-            { text: '시작일', value: 'start_date' },
-            { text: '종료일', value: 'end_date' }
-          ],
-          searchConfig: {
-            placeholder: '프로젝트 검색...',
-            fields: ['name', 'description']
-          },
-          filterConfig: {
-            label: '상태 필터',
-            options: [
-              { text: '전체', value: '' },
-              { text: '계획', value: 'PLANNING' },
-              { text: '진행중', value: 'IN_PROGRESS' },
-              { text: '완료', value: 'COMPLETED' }
-            ]
-          }
+        loading: true,
+        list: [],
+        filterConfig: {
+            sort: {
+                label: '정렬',
+                options: [
+                    { text: '최신순', value: 'updated_at' }, // desc
+                    { text: '시작일순', value: 'start_date' }, // asc
+                    { text: '종료일순', value: 'end_date' }, // desc
+                    { text: '만기일순', value: 'due_date' } // desc
+                ]
+            },
+            status: {
+                label: '상태 필터',
+                multiple: true,
+                options: [
+                    { text: '예정 업무', value: 'NEW' },
+                    { text: '진행중', value: 'IN_PROGRESS' },
+                    { text: '보류', value: 'PENDING' },
+                    { text: '완료', value: 'COMPLETED' },
+                    { text: '취소', value: 'CANCELLED' },
+                ]
+            }
         },
+        filter: {
+            period: {
+                startDate:new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10).replace(/-/g, '-'),
+                endDate: new Date().toISOString().slice(0, 10).replace(/-/g, '-')
+            },
+            sort: 'end_date',
+            status: ['NEW', 'IN_PROGRESS', 'PENDING', 'COMPLETED', 'CANCELLED']
+        },
+        initLoading: false,
+        currentOptions: null,
       }
     },
     created() {
@@ -119,13 +129,13 @@ const backend = BackendFactory.createBackend();
                         endAt: `${me.filter.period.endDate} 23:59:59` // 종료일 23:59:59 추가
                     }
                     
-                    me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                    me.list = await backend.getProjectListByStatus(me.listType, me.currentOptions);
                     if(!me.initLoading) me.initLoading = true
                     me.loading = false                
                 },
             });
         },
-        handleInstanceClick(item) {
+        handleRowClick(item) {
             const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.projectId)) : item.projectId;
             this.$router.push(`/project/${route}`);
         },
@@ -142,9 +152,9 @@ const backend = BackendFactory.createBackend();
                             range: {from: 0, to: itemsPerPage - 1},
                             startAt: me.filter.period.startDate,
                             endAt: `${me.filter.period.endDate} 23:59:59`,
-                            like: {key: 'proc_inst_name', value: `%${searchWord}%`},
+                            like: {key: 'name', value: `%${searchWord}%`},
                         }
-                        me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                        me.list = await backend.getProjectListByStatus(me.listType, me.currentOptions);
                     } else {
                         me.init()
                     }
@@ -163,7 +173,7 @@ const backend = BackendFactory.createBackend();
                     me.currentOptions.range.from = currntCnt
                     me.currentOptions.range.to = currntCnt + itemsPerPage - 1
 
-                    let list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                    let list = await backend.getProjectListByStatus(me.listType, me.currentOptions);
                     if(list && list.length > 0){
                         me.list.push(...list)
                         done('ok')
@@ -193,7 +203,7 @@ const backend = BackendFactory.createBackend();
                     }
                     me.filter = filter
 
-                    me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                    me.list = await backend.getProjectListByStatus(me.listType, me.currentOptions);
                     me.loading = false                
                 }
             });
