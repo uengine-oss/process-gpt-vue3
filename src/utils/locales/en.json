@@ -1228,6 +1228,7 @@
         "title": "Delegate Task",
         "delegate": "Delegate",
         "close": "Close",
+        "noAssignee": "No assignee",
         "notification": "Assignee not found. Please contact the administrator.",
         "delegateTitle": "Delegatee",
         "description": "Description",

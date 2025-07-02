@@ -40,7 +40,10 @@
                             <v-skeleton type="list-item-two-line" height="48"></v-skeleton>
                         </div>
                         <div v-else>
-                            <div v-if="assigneeUserInfo.length == 0">
+                            <div v-if="!assigneeUserInfo">
+                                {{ $t('DelegateTask.noAssignee') }}
+                            </div>
+                            <div v-else-if="assigneeUserInfo.length == 0">
                                 {{ $t('DelegateTask.notification') }}
                             </div>
                             <div v-else>
@@ -190,7 +193,7 @@ export default {
                         startAt: me.task.worklist.endpoint,
                         endAt: me.task.worklist.endpoint
                     })
-                } 
+                }
                 me.isLoading = false
             }
         })  

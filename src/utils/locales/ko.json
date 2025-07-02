@@ -1228,6 +1228,7 @@
         "title": "위임 설정",
         "delegate": "위임하기",
         "close": "닫기",
+        "noAssignee": "담당자가 없습니다.",
         "notification": "담당자가 조회 되지 않습니다. 관리자에게 문의 하세요.",
         "delegateTitle": "위임 대상자",
         "description": "설명",
