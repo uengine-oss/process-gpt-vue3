@@ -1,7 +1,6 @@
 <template>
   <ListPage
       v-if="initLoading"
-      type="task"
       :items="filteredLists"
       :title="title"
       :loading="loading"
@@ -10,14 +9,13 @@
       :filterConfig="filterConfig"
       :filter="filter"
       @filter="handleFilter"
-      @row-click="handleInstanceClick"
       @search="handleSearch"
       @load="handleLoad"
   >
       <template v-slot:item-row="{ item }">
-          <v-card @click="handleInstanceClick(item)">
+          <v-card @click="handleRowClick(item)">
               <v-card-title>
-                  <StatusChip :status="item.status" type="instance"/>
+                  <StatusChip :status="item.status" type="task"/>
                   <strong style="margin-left:5px;">{{ item.name }}</strong>
               </v-card-title>
               <v-card-text>
@@ -119,13 +117,13 @@ const backend = BackendFactory.createBackend();
                         endAt: `${me.filter.period.endDate} 23:59:59` // 종료일 23:59:59 추가
                     }
                     
-                    me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                    // me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
                     if(!me.initLoading) me.initLoading = true
                     me.loading = false                
                 },
             });
         },
-        handleInstanceClick(item) {
+        handleRowClick(item) {
             const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.taskId)) : item.taskId;
             this.$router.push(`/todolist/${route}`);
         },
@@ -144,7 +142,7 @@ const backend = BackendFactory.createBackend();
                             endAt: `${me.filter.period.endDate} 23:59:59`,
                             like: {key: 'proc_inst_name', value: `%${searchWord}%`},
                         }
-                        me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                        // me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
                     } else {
                         me.init()
                     }
@@ -163,7 +161,7 @@ const backend = BackendFactory.createBackend();
                     me.currentOptions.range.from = currntCnt
                     me.currentOptions.range.to = currntCnt + itemsPerPage - 1
 
-                    let list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                    // let list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
                     if(list && list.length > 0){
                         me.list.push(...list)
                         done('ok')
@@ -193,7 +191,7 @@ const backend = BackendFactory.createBackend();
                     }
                     me.filter = filter
 
-                    me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                    // me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
                     me.loading = false                
                 }
             });

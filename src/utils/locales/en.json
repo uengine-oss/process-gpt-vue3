@@ -1223,5 +1223,19 @@
         "subtitle": "Experience the innovation of AI-based process management",
         "betaTestButton": "Try Beta Test",
         "contactButton": "Contact Us"
+    },
+     "DelegateTask": {
+        "title": "Delegate Task",
+        "delegate": "Delegate",
+        "close": "Close",
+        "notification": "Assignee not found. Please contact the administrator.",
+        "delegateTitle": "Delegatee",
+        "description": "Description",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "assignee": "Assignee",
+        "selectAssignee": "Select Delegatee",
+        "equalDelegate": "Delegatee is the same as the assignee.",
+        "sucessMsg": "Delegated successfully."
     }
 }
