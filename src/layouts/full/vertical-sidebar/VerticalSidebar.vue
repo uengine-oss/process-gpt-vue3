@@ -116,9 +116,6 @@
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
                 </v-col>
-                <v-row class="ma-0 pa-0 ml-2 align-center">
-                    <v-btn block dense @click="openCompletedList()">완료된 목록 보기</v-btn>
-                </v-row>
               
                
                 <v-col class="pa-0" style="flex: 0 0 auto;">
