@@ -9,21 +9,27 @@
         :filterConfig="filterConfig"
         :filter="filter"
         @filter="handleFilter"
+        @row-click="handleRowClick"
         @search="handleSearch"
         @load="handleLoad"
     >
         <template v-slot:item-row="{ item }">
             <v-card @click="handleRowClick(item)">
-                <v-card-title>
-                    <StatusChip :status="item.status" type="instance"/>
-                    <strong style="margin-left:5px;">{{ item.name }}</strong>
-                </v-card-title>
-                <v-card-text>
-                    <div>ID: {{ item.instId }}</div>
-                    <div>시작일: {{ formatDateTime(item.startDate) }}</div>
-                    <div>종료일: {{ formatDateTime(item.endDate) }}</div>
-                    <div>만기일: {{ formatDateTime(item.dueDate) }}</div>
-                </v-card-text>
+                <v-col cols="9">
+                    <div class="d-flex align-center">
+                        <div class="pl-5">
+                            <v-img v-if="item.profile" :src="item.profile" width="45px" 
+                                class="rounded-circle img-fluid" />
+                            <v-avatar v-else>
+                                <Icons :icon="'user-circle-bold'" :size="50" />
+                            </v-avatar>
+                        </div>
+                        <div class="ml-5">
+                            <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ item.username }}</h4>
+                            <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ item.email }}</div>
+                        </div>
+                    </div>
+                </v-col>
             </v-card>
         </template>
     </ListPage>
@@ -31,31 +37,24 @@
   
 <script>
 import ListPage from '@/components/ui/common/ListPage.vue'
-import StatusChip from '@/components/ui/common/StatusChip.vue'
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
-    components: { ListPage, StatusChip },
+    components: { ListPage },
     props: {
-      // 리스트 타입: '*', 'COMPLETED', 'NEW' ...
-      listType: {
-        type: Array,
-        default: ['*']
-      },
       title: {
         type: String,
-        default: '모든 인스턴스'
+        default: '사용자 목록'
       },
       searchConfig: {
         type: Object,
         default: {
             show: true,
-            label: '인스턴스 검색...',
+            label: '이메일 검색...',
         }
       },
-      // 기본 설정 관련 설정
       config: {
         type: Object,
         default: {
@@ -70,33 +69,24 @@ export default {
             list: [],
             filterConfig: {
                 sort: {
-                    label: '정렬',
+                    label: '검색 기준',
                     options: [
-                        { text: '최신순', value: 'updated_at' }, // desc
-                        { text: '시작일순', value: 'start_date' }, // asc
-                        { text: '종료일순', value: 'end_date' }, // desc
-                        { text: '만기일순', value: 'due_date' } // desc
+                        { text: '이메일', value: 'email' }, // asc 
+                        { text: '이름', value: 'username' }, // desc
                     ]
                 },
-                status: {
-                    label: '상태 필터',
-                    multiple: true,
-                    options: [
-                        { text: '예정 업무', value: 'NEW' },
-                        { text: '진행중', value: 'IN_PROGRESS' },
-                        { text: '보류', value: 'PENDING' },
-                        { text: '완료', value: 'COMPLETED' },
-                        { text: '취소', value: 'CANCELLED' },
-                    ]
-                }
+                // status: {
+                //     label: '필터',
+                //     multiple: true,
+                //     options: [
+                //         { text: '이름', value: 'username' },
+                //         { text: '이메일', value: 'email' },
+                //     ]
+                // }
             },
             filter: {
-                period: {
-                    startDate:new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10).replace(/-/g, '-'),
-                    endDate: new Date().toISOString().slice(0, 10).replace(/-/g, '-')
-                },
-                sort: 'end_date',
-                status: ['NEW', 'IN_PROGRESS', 'PENDING', 'COMPLETED', 'CANCELLED']
+                sort: 'email',
+                // status: ['username', 'email']
             },
             initLoading: false,
             currentOptions: null,
@@ -118,26 +108,19 @@ export default {
                     me.loading = true;
 
                     let itemsPerPage = me.config.itemsPerPage ? me.config.itemsPerPage : 1
-                    if(me.listType != '*') {
-                        me.filterConfig.status.options = me.filterConfig.status.options.filter(option => me.listType.includes(option.value) )
-                        me.filter.status = JSON.parse(JSON.stringify(me.listType))  
-                    }
                     me.currentOptions = {
                         orderBy: me.filter.sort, 
                         range: {from: 0, to: itemsPerPage - 1},
-                        startAt: me.filter.period.startDate,
-                        endAt: `${me.filter.period.endDate} 23:59:59` // 종료일 23:59:59 추가
                     }
                     
-                    me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                    me.list = await backend.getUserList(me.currentOptions);
                     if(!me.initLoading) me.initLoading = true
                     me.loading = false                
                 },
             });
         },
         handleRowClick(item) {
-            const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
-            this.$router.push(`/instancelist/${route}`);
+            this.$emit('selected-user', item)
         },
         handleSearch(searchWord){
             var me = this
@@ -150,11 +133,9 @@ export default {
                         me.currentOptions = {
                             orderBy: me.filter.sort, 
                             range: {from: 0, to: itemsPerPage - 1},
-                            startAt: me.filter.period.startDate,
-                            endAt: `${me.filter.period.endDate} 23:59:59`,
-                            like: {key: 'proc_inst_name', value: `%${searchWord}%`},
+                            like: {key: me.filter.sort, value: `%${searchWord}%`},
                         }
-                        me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                        me.list = await backend.getUserList(me.currentOptions);
                     } else {
                         me.init()
                     }
@@ -173,7 +154,7 @@ export default {
                     me.currentOptions.range.from = currntCnt
                     me.currentOptions.range.to = currntCnt + itemsPerPage - 1
 
-                    let list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                    let list = await backend.getUserList(me.currentOptions);
                     if(list && list.length > 0){
                         me.list.push(...list)
                         done('ok')
@@ -183,7 +164,6 @@ export default {
 
                     me.loading = false                
                 },
-                // successMsg: me.$t('successMsg.processExecutionCompleted')
             });
         },
         handleFilter(filter){
@@ -193,17 +173,13 @@ export default {
                     me.loading = true;
                     let itemsPerPage = me.config.itemsPerPage ? me.config.itemsPerPage : 1
 
-                   
                     me.currentOptions = {
-                        sort: filter.sort == "start_date" ? "asc" : "desc",
                         orderBy: filter.sort, 
                         range: {from: 0, to: itemsPerPage - 1},
-                        startAt: filter.period.startDate,
-                        endAt: `${filter.period.endDate} 23:59:59`,
                     }
                     me.filter = filter
 
-                    me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
+                    me.list = await backend.getUserList(me.currentOptions);
                     me.loading = false                
                 }
             });

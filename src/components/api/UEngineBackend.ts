@@ -54,7 +54,7 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    async getUserList() {
+    async getUserList(options: any) {
         return [
             {
                 id: 1,

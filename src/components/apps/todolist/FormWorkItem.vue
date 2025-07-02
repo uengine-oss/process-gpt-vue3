@@ -2,7 +2,7 @@
     <div>
         <v-row class="ma-0 pa-0 task-btn">
             <v-spacer></v-spacer>
-            <div class="from-work-item-pc" style="margin-right: 10px;" v-if="!isCompleted">
+            <div v-if="!isCompleted && isOwnWorkItem" class="from-work-item-pc" style="margin-right: 10px;">
                 <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded variant="flat">중간 저장</v-btn>
                 <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
                     class="bouncing-arrow-horizontal" 
@@ -12,6 +12,9 @@
                     mdi-arrow-right-bold
                 </v-icon>
                 <v-btn @click="executeProcess" color="primary" density="compact" rounded variant="flat" :disabled="isLoading" :loading="isLoading">제출 완료</v-btn>
+            </div>
+            <div v-if="!isCompleted && !isOwnWorkItem" class="from-work-item-pc" style="margin-right: 10px;">
+                <v-btn @click="openDelegateTask()" color="primary" density="compact" rounded variant="flat" :disabled="isLoading" :loading="isLoading">위임 하기</v-btn>
             </div>
             <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
                 <v-tooltip v-if="isMobile"
@@ -44,7 +47,16 @@
                 <Checkpoints ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
             </v-card-text>
         </v-card>
+        <v-dialog v-model="delegateTaskDialog" width="500">
+            <DelegateTaskForm 
+                :task="workItem"
+                @delegate="delegateTask"
+                @close="closeDelegateTask"
+            />
+        </v-dialog>
     </div>
+
+
 </template>
 
 <script>
@@ -53,7 +65,7 @@ import DynamicForm from '@/components/designer/DynamicForm.vue';
 import Instruction from '@/components/ui/Instruction.vue';
 import AudioTextarea from '@/components/ui/AudioTextarea.vue';
 import Checkpoints from '@/components/ui/Checkpoints.vue';
-
+import DelegateTaskForm from '@/components/apps/todolist/DelegateTaskForm.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
@@ -62,7 +74,8 @@ export default {
         DynamicForm,
         Instruction,
         AudioTextarea,
-        Checkpoints
+        Checkpoints,
+        DelegateTaskForm
     },
     props: {
         definitionId: String,
@@ -91,7 +104,8 @@ export default {
             default: "false"
         },
         isFinishedAgentGeneration: Boolean,
-        processDefinition: Object
+        processDefinition: Object,
+        isOwnWorkItem: Boolean
     },
     data: () => ({
         html: null,
@@ -100,6 +114,7 @@ export default {
         newMessage: '',
         useTextAudio: false,
         isLoading: false,
+        delegateTaskDialog: false,
     }),
     computed: {
         simulate() {
@@ -113,7 +128,7 @@ export default {
         },
         mode() {
             return window.$mode;
-        }
+        },
     },
     watch:  {
         html() {
@@ -134,44 +149,49 @@ export default {
     methods: {
         async init() {
             var me = this;
-            if(me.isDryRun) {
-                me.formDefId = me.dryRunWorkItem.activity.tool.split(':')[1];
-            } else {
-                me.formDefId = me.workItem.worklist.tool.split(':')[1];
-            }
-            if(!me.formDefId) {
-                if (this.mode == 'ProcessGPT') {
-                    me.formDefId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.workItem.worklist.defId}_${me.workItem.activity.tracingTag}_form`
-                } else {
-                    return;
-                }
-            }
-            if(me.isSimulate == 'true' && !window.location.pathname.includes('/definitions/')) {
-                const formId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag}_form`;
-                me.html = localStorage.getItem(formId);    
-            } else {
-                me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
-            }
-            if(!me.html) {
-                me.useTextAudio = true;
-                me.formDefId = 'user_input_text' // default form 이 없는 경우 자유롭게 입력 가능하도록 설정
-            }
-            if(!me.isDryRun) {
-                me.loadForm()
-            }
-            
-            if(me.isSimulate == 'true' && me.processDefinition && me.processDefinition['activities']) {    
-                let currentActivity = me.processDefinition['activities'].find(x => x.id == me.workItem.activity.tracingTag)
-                if(currentActivity && currentActivity.inputFormData) {
-                    me.formData = currentActivity.inputFormData
-                }
-            }
+            me.$try({
+                context: me,
+                action: async () => {
+                    if(me.isDryRun) {
+                        me.formDefId = me.dryRunWorkItem.activity.tool.split(':')[1];
+                    } else {
+                        me.formDefId = me.workItem.worklist.tool.split(':')[1];
+                    }
+                    if(!me.formDefId) {
+                        if (me.mode == 'ProcessGPT') {
+                            me.formDefId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.workItem.worklist.defId}_${me.workItem.activity.tracingTag}_form`
+                        } else {
+                            return;
+                        }
+                    }
+                    if(me.isSimulate == 'true' && !window.location.pathname.includes('/definitions/')) {
+                        const formId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag}_form`;
+                        me.html = localStorage.getItem(formId);    
+                    } else {
+                        me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
+                    }
+                    if(!me.html) {
+                        me.useTextAudio = true;
+                        me.formDefId = 'user_input_text' // default form 이 없는 경우 자유롭게 입력 가능하도록 설정
+                    }
+                    if(!me.isDryRun) {
+                        me.loadForm()
+                    }
+                    
+                    if(me.isSimulate == 'true' && me.processDefinition && me.processDefinition['activities']) {    
+                        let currentActivity = me.processDefinition['activities'].find(x => x.id == me.workItem.activity.tracingTag)
+                        if(currentActivity && currentActivity.inputFormData) {
+                            me.formData = currentActivity.inputFormData
+                        }
+                    }
 
-            me.EventBus.on('form-values-updated', (formValues) => {
-                if(formValues){
-                    Object.keys(formValues).forEach(function (key){
-                        me.formData[key] = formValues[key]
-                    })
+                    me.EventBus.on('form-values-updated', (formValues) => {
+                        if(formValues){
+                            Object.keys(formValues).forEach(function (key){
+                                me.formData[key] = formValues[key]
+                            })
+                        }
+                    });
                 }
             });
         },
@@ -371,7 +391,40 @@ export default {
             me.$try({}, null, {
                 errorMsg: `${me.workItem.activity.name} 실행 중 오류가 발생했습니다: ${error}`
             });
-        }
+        },
+        delegateTask(delegateUser, assigneeUserInfo){
+            var me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    let notificationMessage = `'${me.workItem.activity.name}'업무를 ${delegateUser.email}(${delegateUser.username})에게 위임하였습니다.`;
+                    if(assigneeUserInfo){
+                        const formattedAssigneeInfo = assigneeUserInfo.map(user => `${user.email}(${user.username})`).join(',');
+                        notificationMessage = `'${me.workItem.activity.name}'업무의 담당자를 [${formattedAssigneeInfo}]에서 ${delegateUser.email}(${delegateUser.username})으로 위임하였습니다.`;
+                    }
+                  
+                    await Promise.all([
+                        backend.updateInstanceChat(me.workItem.worklist.instId, {
+                            "name": localStorage.getItem('userName'),
+                            "role": "user",
+                            "email": localStorage.getItem('email'),
+                            "image": "",
+                            "content": notificationMessage,
+                            "timeStamp": new Date().toISOString()
+                        }),
+                        backend.putWorkItem(me.workItem.worklist.taskId, {'user_id': delegateUser.email})
+                    ]);
+                    me.closeDelegateTask();
+                },
+                successMsg: this.$t('DelegateTask.successMsg')
+            });
+        },
+        openDelegateTask(){
+            this.delegateTaskDialog = true
+        },
+        closeDelegateTask(){
+            this.delegateTaskDialog = false
+        },
     }
 };
 </script>
