@@ -229,19 +229,9 @@ export default {
         
         getColSize(tenantInfo) {
             const isLoadingThisTenant = this.isNavigating && this.selectedTenantId === tenantInfo.id;
-            const isOwned = tenantInfo.isOwned;
-            
-            if (isLoadingThisTenant && isOwned) {
-                // 로딩 중이고 소유한 테넌트인 경우: 프로그레스 바 + 수정/삭제 버튼 공간 확보
-                return '7';
-            } else if (isLoadingThisTenant) {
-                // 로딩 중이지만 소유하지 않은 테넌트인 경우: 프로그레스 바 공간만 확보
+            if (isLoadingThisTenant) {
                 return '8';
-            } else if (isOwned) {
-                // 소유한 테넌트인 경우: 수정/삭제 버튼 공간 확보
-                return '9';
             } else {
-                // 일반적인 경우: 최대 공간 사용
                 return '9';
             }
         },
