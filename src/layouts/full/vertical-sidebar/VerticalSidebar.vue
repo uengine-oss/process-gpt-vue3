@@ -415,6 +415,9 @@ export default {
                 });
             }
         },
+        openCompletedList(){
+            this.$router.push('/list-pages/completed');
+        },
         openNewProject(){
             this.isNewProjectOpen = true;
         },

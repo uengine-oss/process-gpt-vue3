@@ -28,21 +28,14 @@ function checkCapsLock(event: KeyboardEvent | FocusEvent) {
     }
 }
 
-// 전역 키보드 이벤트 핸들러
-const handleGlobalKeyEvent = (event: KeyboardEvent) => {
-    isCapsLockOn.value = event.getModifierState('CapsLock');
-};
-
 // 컴포넌트 마운트 시 전역 이벤트 리스너 추가
 onMounted(() => {
-    document.addEventListener('keydown', handleGlobalKeyEvent);
-    document.addEventListener('keyup', handleGlobalKeyEvent);
+    
 });
 
 // 컴포넌트 언마운트 시 리스너 제거
 onBeforeUnmount(() => {
-    document.removeEventListener('keydown', handleGlobalKeyEvent);
-    document.removeEventListener('keyup', handleGlobalKeyEvent);
+    
 });
 </script>
 
