@@ -237,7 +237,8 @@
         "settingPermission": "Setting Permission",
         "isReadable": "Readable",
         "isWritable": "Writable",
-        "marketplace": "Marketplace"
+        "marketplace": "Marketplace",
+        "marketplaceExplanation": "Find a business process template"
     },
     "uiDefinition": {
         "title": "Screen Definition",
