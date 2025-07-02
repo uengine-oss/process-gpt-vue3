@@ -102,15 +102,11 @@
                 </v-window-item>
 
                 <v-window-item value="agent">
-                    <AgentField v-model="newAgent" :idRules="idRules" :nameRules="nameRules"
-                        class="agent-field-dialog-contents"
-                    />
+                    <AgentField v-model="newAgent" :nameRules="nameRules" class="agent-field-dialog-contents"/>
                 </v-window-item>
 
                 <v-window-item value="a2a">
-                    <AgentField v-model="newAgent" :idRules="idRules" :nameRules="nameRules" :type="tab"
-                        class="agent-field-dialog-contents"
-                    />
+                    <AgentField v-model="newAgent" :nameRules="nameRules" :type="tab" class="agent-field-dialog-contents"/>
                 </v-window-item>
             </v-window>
         </v-card-text>
@@ -199,11 +195,6 @@ export default {
         isMobile() {
             return window.innerWidth <= 768;
         },
-        idRules() {
-            return [
-                (value) => !!value || this.$t('organizationChartDefinition.idRequired'),
-            ];
-        },
         emailRules() {
             return [
                 (value) => !!value || this.$t('organizationChartDefinition.emailRequired'),
@@ -224,7 +215,7 @@ export default {
                     return true;
                 }
             } else {
-                return this.idRules.every(rule => rule(this.newAgent.id) === true);
+                return this.nameRules.every(rule => rule(this.newAgent.name) === true);
             }
         }
     },

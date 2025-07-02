@@ -42,7 +42,7 @@
 
             <!-- edit agent -->
             <div v-if="dialogType == 'edit-agent'">
-                <AgentField v-model="editNode.data" :idRules="idRules" :nameRules="nameRules" :type="editNode.data.type" :isEdit="true" />
+                <AgentField v-model="editNode.data" :nameRules="nameRules" :type="editNode.data.type" :isEdit="true" />
             </div>
 
             <!-- delete agent -->
@@ -87,11 +87,6 @@ export default {
         editRoles: [],
     }),
     computed: {
-        idRules() {
-            return [
-                (value) => !!value || this.$t('organizationChartDefinition.idRequired'),
-            ];
-        },
         nameRules() {
             return [
                 (value) => !!value || this.$t('organizationChartDefinition.nameRequired'),

@@ -23,13 +23,6 @@
                 </template>
             </v-text-field>
             <v-text-field 
-                v-model="agent.id" 
-                :label="$t('agentField.agentId')" 
-                :rules="idRules"
-                class="mb-2"
-                :readonly="isEdit"
-            ></v-text-field>
-            <v-text-field 
                 v-model="agent.name" 
                 :label="$t('agentField.agentName')" 
                 :rules="nameRules"
@@ -54,13 +47,6 @@
         </div>
 
         <div v-else>
-            <v-text-field 
-                v-model="agent.id" 
-                :label="$t('agentField.agentId')" 
-                :rules="idRules"
-                class="mb-2"
-                :readonly="isEdit"
-            ></v-text-field>
             <v-text-field 
                 v-model="agent.name" 
                 :label="$t('agentField.agentName')" 
@@ -120,11 +106,6 @@ export default {
                 skills: ''
             })
         },  
-        idRules: {
-            type: Array,
-            required: true,
-            default: () => []
-        },
         nameRules: {
             type: Array,
             required: true,
@@ -193,11 +174,21 @@ export default {
             if (this.agent.tools) this.selectedTools = this.agent.tools.split(',');
             if (this.agent.skills) this.selectedSkills = this.agent.skills.split(',');
         }
+        if (!this.agent.id || this.agent.id == '') this.agent.id = this.uuid();
         if (this.type === 'agent') {
             await this.getTools();
         }
     },
     methods: {
+        uuid() {
+            function s4() {
+                return Math.floor((1 + Math.random()) * 0x10000)
+                    .toString(16)
+                    .substring(1);
+            }
+
+            return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+        },
         async getTools() {
             const backend = BackendFactory.createBackend();
             const jsonData = await backend.getMCPTools();
