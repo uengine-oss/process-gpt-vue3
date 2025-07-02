@@ -149,7 +149,7 @@ export default {
         ],
         roleOptions: [
             { text: '사용자', value: 'user' },
-            { text: '관리자', value: 'superAdmin' }
+            { text: '관리자', value: 'admin' }
         ]
     }),
     methods: {
@@ -198,7 +198,7 @@ export default {
             var me = this
             me.$try({
                 action: async () => {
-                    const tenantId = this.tenantInfo && this.tenantInfo.id ? this.tenantInfo.id : window.location.host.split('.')[0];
+                    const tenantId = this.tenantInfo && this.tenantInfo.id ? this.tenantInfo.id : (window.location.host.includes('.process-gpt.io') ? window.location.host.split('.')[0] : window.location.host.split(':')[0]);
                     for (const user of this.inviteUserlist) {
                         let userInfo = {
                             email: user.email,
@@ -206,7 +206,17 @@ export default {
                             tenant_id: tenantId
                         }
                         const result = await backend.inviteUser(userInfo);
-                        console.log(result)
+                        if(result) {
+                            user.id = result.response.user.id
+                            user.profile = "/images/defaultUser.png"
+                            user.name = user.email.split('@')[0]
+                            if(user.role === 'admin') {
+                                user.is_admin = true;
+                            } else {
+                                user.is_admin = false;
+                            }
+                            delete user.role;
+                        }
                     }
                     this.isInviteLoading = false;
                     if(this.type === 'createTenant') {
