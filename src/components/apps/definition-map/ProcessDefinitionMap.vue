@@ -173,7 +173,7 @@
                                     </v-card-title>
                                     <!-- div로 변경, Vuetify3의 서브타이틀 스타일 클래스 적용 (text-subtitle-2) -->
                                     <div class="text-subtitle-2 text-grey-darken-1">
-                                        비즈니스 프로세스 템플릿을 찾아보세요
+                                        {{ $t('processDefinitionMap.marketplaceExplanation') }}
                                     </div>
                                 </div>
                             </div>

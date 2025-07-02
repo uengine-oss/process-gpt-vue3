@@ -237,7 +237,8 @@
         "settingPermission": "권한 설정",
         "isReadable": "열람",
         "isWritable": "개정",
-        "marketplace": "마켓플레이스"
+        "marketplace": "마켓플레이스",
+        "marketplaceExplanation": "비즈니스 프로세스 템플릿을 찾아보세요"
     },
     "uiDefinition": {
         "title": "화면 정의",

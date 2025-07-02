@@ -1,19 +1,23 @@
 <template>
     <div :key="renderKey">
         <v-card flat class="w-100">
-            <v-row class="ma-0 pa-4 pb-0">
+            <v-row class="ma-0 pa-4 pb-0 align-center">
                 <h2 v-if="isSimulate == 'true'">{{ $t('ProcessGPTExecute.processSimulate') }}</h2>
                 <h2 v-else>{{ $t('ProcessGPTExecute.processStart') }}</h2>
                 <v-spacer></v-spacer>
-                <div v-if="isSimulate == 'true'" style="margin: -20px;">
-                    <v-btn @click="closeDialog" icon size="small">
-                        <v-icon>mdi-close</v-icon>
-                    </v-btn>
-                </div>
                 <div class="form-work-item-mobile ml-auto" v-if="!isCompleted">
                     <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
                 </div>
+                <v-btn @click="closeDialog"
+                    class="ml-auto" 
+                    variant="text" 
+                    density="compact"
+                    icon
+                >
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
             </v-row>
+            
             <div :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">
                 <div v-if="isSimulate == 'false'" :class="isMobile ? 'pa-4 pb-0' : 'pa-4'" style="min-width: 300px;">
                     <v-row class="ma-0 pa-0">
@@ -25,7 +29,7 @@
                                 :name="roleMapping.name"
                                 :item-value="'email'"
                                 :hide-details="true"
-                                :use-agent="true"
+                                :use-agent="roleMapping.isAgent"
                             ></user-select-field>
                         </div>
                     </div>
@@ -193,23 +197,35 @@ export default {
                 }
                 me.renderKey++;
 
-                if (me.definition.roleBindings) {
-                    me.roleMappings = me.definition.roleBindings;
-                } else {
-                    me.roleMappings = me.definition.roles.map((role) => {
-                        return {
-                            name: role.name,
-                            endpoint: role.endpoint || "",
-                            resolutionRule: role.resolutionRule
-                        };
-                    });
+                const activities = me.definition.activities;
+                const roles = me.definition.roles;
+                let hasDefaultRole = false;
+                me.roleMappings = roles.map((role) => {
+                    if(role.default && role.default.length > 0) {
+                        hasDefaultRole = true;
+                    }
+                    const activity = activities.find((activity) => activity.role === role.name);
+                    let isAgent = false;
+                    if(activity && activity.agentMode && activity.agentMode != 'none') {
+                        isAgent = true;
+                    }
+                    return {
+                        name: role.name,
+                        endpoint: role.default || role.endpoint,
+                        resolutionRule: role.resolutionRule,
+                        default: role.default || "",
+                        isAgent: isAgent
+                    };
+                });
 
+                if (!hasDefaultRole) {
                     const roleBindings = await backend.bindRole(me.definition.roles, me.definitionId);
                     if (roleBindings && roleBindings.length > 0) {
                         roleBindings.forEach((roleBinding) => {
                             let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
                             if(role) {
                                 role['endpoint'] = roleBinding.userId;
+                                role['default'] = roleBinding.userId;
                             }
                         })
                     }

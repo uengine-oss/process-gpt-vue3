@@ -643,7 +643,8 @@ export default {
                         return {
                             name: lane.name,
                             endpoint: endpoint,
-                            resolutionRule: lane.resolutionRule
+                            resolutionRule: lane.resolutionRule,
+                            default: ""
                         }
                     }),
                     events: [

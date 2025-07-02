@@ -7,7 +7,9 @@
             item-title="username" 
             :item-value="itemValue" 
             :return-object="returnObject"
-            chips multiple small-chips :closable-chips="!localReadonly"
+            chips small-chips
+            :multiple="useMultiple"
+            :closable-chips="!localReadonly"
             :readonly="localReadonly"
             :variant="localReadonly ? 'filled' : 'outlined'"
             :hide-details="hideDetails"
@@ -98,7 +100,8 @@ export default {
             userList: [],
             agentList: [],
 
-            backend: null
+            backend: null,
+            useMultiple: true
         };
     },
 
@@ -158,8 +161,10 @@ export default {
                     };
                 }
             });
+            this.useMultiple = true;
         } else {
             this.usersToSelect = this.userList;
+            this.useMultiple = false;
         }
     }
 };
