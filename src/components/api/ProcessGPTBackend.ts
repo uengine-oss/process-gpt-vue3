@@ -1288,11 +1288,6 @@ class ProcessGPTBackend implements Backend {
 
     async getInstanceList(options?: any) {
         try {
-            // let instList: any[] = [];
-            // const runningList = await this.fetchInstanceListByStatus("RUNNING");
-            // const newList = await this.fetchInstanceListByStatus("NEW");
-            // instList = [...runningList, ...newList];
-            // return instList;
             var me = this
             if(!options) {
                 // 기본 정렬
@@ -1791,17 +1786,24 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getUserList() {
+    async getUserList(options: any) {
         try {
-            const options = {
+            if(!options) options = {}
+
+            let filter = {
                 orderBy: 'username',
                 sort: 'asc',
                 match: {
                     tenant_id: window.$tenantName
                 }
             }
-            const users = await storage.list('users', options);
-            return users
+            if(options) {
+                Object.keys(options).forEach((key)=> {
+                    filter[key] = options[key]
+                })
+            }
+
+            return await storage.list('users', filter);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2759,18 +2761,6 @@ class ProcessGPTBackend implements Backend {
         });
     }
 
-    // async getInstanceList() {
-    //     try {
-    //         // const list = await storage.list('bpm_proc_inst',  { orderBy: "status", startAt: "RUNNING", endAt: "RUNNING", not: { key: "definition_id", operator: "is", value: null } });
-    //         const list = await storage.list('bpm_proc_inst');
-    //         return list.map((item: any) => {
-    //             return this.returnInstanceObject(item);
-    //         });
-    //     } catch (error) {
-    //         //@ts-ignore
-    //         throw new Error(error.message);
-    //     }
-    // }
     async putProject(project: any) {
         try {
             return await storage.putObject('project', {

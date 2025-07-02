@@ -200,6 +200,7 @@
                         :isDryRun="isDryRun" 
                         :dryRunWorkItem="dryRunWorkItem"
                         :currentActivities="currentActivities"
+                        :isOwnWorkItem="isOwnWorkItem"
                         @updateCurrentActivities="updateCurrentActivities"
                         @close="close"
                         @executeProcess="executeProcess"
@@ -371,6 +372,9 @@ export default {
         window.removeEventListener('resize', this.handleResize);
     },
     computed: {
+        isOwnWorkItem() {
+            return localStorage.getItem('email') == this.workItem.worklist.endpoint
+        },
         mode() {
             return window.$mode;
         },

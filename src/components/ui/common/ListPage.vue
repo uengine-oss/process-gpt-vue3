@@ -38,7 +38,7 @@
 
                 <v-card min-width="300" v-if="!isLoading">
                   <v-list>
-                    <v-list-item>
+                    <v-list-item v-if="copyFilter.period">
                       <v-card flat>
                         <v-card-title> 기간 설정 </v-card-title>
                         <v-divider></v-divider>
@@ -142,11 +142,7 @@ export default {
         StatusChip
     },
     props: {
-      type: {
-        type: String,
-        required: true
-      },
-       // 타이틀
+      // 타이틀
       title: {
         type: String,
         default: ''
@@ -161,7 +157,7 @@ export default {
         type: Boolean,
         default: false
       },
-      // 설정
+      // 스크롤 설정
       config: {
         type: Object,
         required: true
@@ -220,7 +216,7 @@ export default {
       "startDateByPicker": {
         handler(newVal, oldVal){
           if(newVal) {
-            this.copyFilter.period.startDate =  this.formatDateToYYYYMMDD(newVal)
+            if(this.copyFilter.period) this.copyFilter.period.startDate = this.formatDateToYYYYMMDD(newVal)
           }
           
         },
@@ -228,7 +224,7 @@ export default {
       "endDateByPicker": {
         handler(newVal, oldVal){
           if(newVal) {
-            this.copyFilter.period.endDate = this.formatDateToYYYYMMDD(newVal)
+            if(this.copyFilter.period) this.copyFilter.period.endDate = this.formatDateToYYYYMMDD(newVal)
           }
         },
       },
@@ -251,8 +247,8 @@ export default {
         this.isLoading = true
         this.copyFilter = JSON.parse(JSON.stringify(this.filter))
 
-        if(this.copyFilter.period.startDate) this.startDateByPicker = new Date(this.copyFilter.period.startDate)
-        if(this.copyFilter.period.endDate)   this.endDateByPicker = new Date(this.copyFilter.period.endDate)
+        if(this.copyFilter.period && this.copyFilter.period.startDate) this.startDateByPicker = new Date(this.copyFilter.period.startDate)
+        if(this.copyFilter.period && this.copyFilter.period.endDate)   this.endDateByPicker = new Date(this.copyFilter.period.endDate)
         this.isLoading = false
       },
       closeFilter(){
