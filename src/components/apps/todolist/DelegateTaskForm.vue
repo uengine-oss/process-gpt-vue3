@@ -184,11 +184,13 @@ export default {
         me.$try({
             action: async () => {
                 me.isLoading = true
-                me.assigneeUserInfo = await backend.getUserList({
-                    orderBy: 'email',
-                    startAt: me.task.worklist.endpoint,
-                    endAt: me.task.worklist.endpoint
-                })
+                if(me.task.worklist.endpoint){
+                    me.assigneeUserInfo = await backend.getUserList({
+                        orderBy: 'email',
+                        startAt: me.task.worklist.endpoint,
+                        endAt: me.task.worklist.endpoint
+                    })
+                } 
                 me.isLoading = false
             }
         })  
