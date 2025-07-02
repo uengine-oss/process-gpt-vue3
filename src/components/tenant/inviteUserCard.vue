@@ -29,7 +29,7 @@
                                     </v-col>
                                     <v-col cols="10" sm="3" class="px-sm-2">
                                         <v-select
-                                            v-model="user.role"
+                                            v-model="user.is_admin"
                                             :items="roleOptions"
                                             item-title="text"
                                             item-value="value"
@@ -144,12 +144,12 @@ export default {
         inviteUserlist: [
             {
                 email: '',
-                role: 'user'
+                is_admin: false
             }
         ],
         roleOptions: [
-            { text: '사용자', value: 'user' },
-            { text: '관리자', value: 'admin' }
+            { text: '사용자', value: false },
+            { text: '관리자', value: true }
         ]
     }),
     methods: {
@@ -185,7 +185,7 @@ export default {
         addUser() {
             this.inviteUserlist.push({
                 email: '',
-                role: 'user'
+                is_admin: false
             });
         },
         removeUser(index) {
@@ -202,7 +202,7 @@ export default {
                     for (const user of this.inviteUserlist) {
                         let userInfo = {
                             email: user.email,
-                            role: user.role,
+                            is_admin: user.is_admin,
                             tenant_id: tenantId
                         }
                         const result = await backend.inviteUser(userInfo);
@@ -210,12 +210,6 @@ export default {
                             user.id = result.response.user.id
                             user.profile = "/images/defaultUser.png"
                             user.name = user.email.split('@')[0]
-                            if(user.role === 'admin') {
-                                user.is_admin = true;
-                            } else {
-                                user.is_admin = false;
-                            }
-                            delete user.role;
                         }
                     }
                     this.isInviteLoading = false;
