@@ -25,7 +25,7 @@
                                 :name="roleMapping.name"
                                 :item-value="'email'"
                                 :hide-details="true"
-                                :use-agent="true"
+                                :use-agent="roleMapping.isAgent"
                             ></user-select-field>
                         </div>
                     </div>
@@ -193,23 +193,35 @@ export default {
                 }
                 me.renderKey++;
 
-                if (me.definition.roleBindings) {
-                    me.roleMappings = me.definition.roleBindings;
-                } else {
-                    me.roleMappings = me.definition.roles.map((role) => {
-                        return {
-                            name: role.name,
-                            endpoint: role.endpoint || "",
-                            resolutionRule: role.resolutionRule
-                        };
-                    });
+                const activities = me.definition.activities;
+                const roles = me.definition.roles;
+                let hasDefaultRole = false;
+                me.roleMappings = roles.map((role) => {
+                    if(role.default && role.default.length > 0) {
+                        hasDefaultRole = true;
+                    }
+                    const activity = activities.find((activity) => activity.role === role.name);
+                    let isAgent = false;
+                    if(activity && activity.agentMode && activity.agentMode != 'none') {
+                        isAgent = true;
+                    }
+                    return {
+                        name: role.name,
+                        endpoint: role.default || role.endpoint,
+                        resolutionRule: role.resolutionRule,
+                        default: role.default || "",
+                        isAgent: isAgent
+                    };
+                });
 
+                if (!hasDefaultRole) {
                     const roleBindings = await backend.bindRole(me.definition.roles, me.definitionId);
                     if (roleBindings && roleBindings.length > 0) {
                         roleBindings.forEach((roleBinding) => {
                             let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
                             if(role) {
                                 role['endpoint'] = roleBinding.userId;
+                                role['default'] = roleBinding.userId;
                             }
                         })
                     }
