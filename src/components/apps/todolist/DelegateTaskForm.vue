@@ -129,7 +129,6 @@ export default {
             isLoading: true,
             assigneeUserInfo: null,
             delegateUser: null,
-
         }
     },
     computed: {
@@ -167,7 +166,6 @@ export default {
         },
         isDisabled(){
             if(!this.delegateUser) return true
-            if(!this.task.worklist.endpoint) return true
             if(this.delegateUser.email == this.task.worklist.endpoint) return true
 
             return false
