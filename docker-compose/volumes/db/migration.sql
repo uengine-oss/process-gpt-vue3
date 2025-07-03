@@ -270,6 +270,7 @@ alter publication supabase_realtime add table proc_def;
 
 -- Agents
 ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS model text;
 
 DROP POLICY IF EXISTS agents_insert_policy ON agents;
 DROP POLICY IF EXISTS agents_select_policy ON agents;

@@ -102,11 +102,22 @@
                 </v-window-item>
 
                 <v-window-item value="agent">
-                    <AgentField v-model="newAgent" :nameRules="nameRules" class="agent-field-dialog-contents"/>
+                    <AgentField v-model="newAgent"
+                        class="agent-field-dialog-contents"
+                        :nameRules="nameRules"
+                        :teamInfo="teamInfo"
+                        :dialogReset="dialogReset"
+                    />
                 </v-window-item>
 
                 <v-window-item value="a2a">
-                    <AgentField v-model="newAgent" :nameRules="nameRules" :type="tab" class="agent-field-dialog-contents"/>
+                    <AgentField v-model="newAgent"
+                        class="agent-field-dialog-contents"
+                        :nameRules="nameRules"
+                        :teamInfo="teamInfo"
+                        :type="tab"
+                        :dialogReset="dialogReset"
+                    />
                 </v-window-item>
             </v-window>
         </v-card-text>
@@ -165,6 +176,7 @@ export default {
         
         selectedList: [],
         teamMembers: [],
+        dialogReset: false,
 
         // 신규 사용자(팀원) 추가
         isNewUser: false,
@@ -282,7 +294,12 @@ export default {
     },
     methods: {
         closeDialog() {
-            this.$emit('closeDialog')
+            this.$emit('closeDialog');
+            this.dialogReset = true;
+            // 다음 tick에서 false로 설정하여 다음 dialog open을 위해 준비
+            this.$nextTick(() => {
+                this.dialogReset = false;
+            });
         },
         save() {
             if (this.tab == 'user') {

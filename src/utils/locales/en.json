@@ -153,7 +153,7 @@
         "upload": "Upload definition list",
         "release": "Definition Export",
         "defaultForm": "Default Form Management",
-        "completedList": "View Completed List"
+        "completedList": "View completed instance list"
     },
     "systemDefinition": {
         "title": "System Definition"
@@ -915,6 +915,12 @@
         "processStart": "Process Start",
         "processSimulate": "Process Simulation"
     },
+    "ModelSettings": {
+        "title": "Agent Model Settings",
+        "modelName": "Model Name",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+    },
     "Checkpoints": {
         "checkpoints": "Checkpoints"
     },
@@ -1239,5 +1245,9 @@
         "selectAssignee": "Select Delegatee",
         "equalDelegate": "Delegatee is the same as the assignee.",
         "sucessMsg": "Delegated successfully."
+    },
+    "UserInputGenerator": {
+        "inputLabel": "Enter the agent you want to generate",
+        "generateButton": "Generate Agent with AI"
     }
 }

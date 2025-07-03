@@ -153,7 +153,7 @@
         "upload": "정의 목록 업로드",
         "release": "정의 내보내기",
         "defaultForm": "기본 폼 관리",
-        "completedList": "완료된 목록 보기"
+        "completedList": "완료된 인스턴스 목록 보기"
     },
     "systemDefinition": {
         "title": "시스템 정의"
@@ -915,6 +915,12 @@
         "processStart": "프로세스 실행",
         "processSimulate": "프로세스 시뮬레이션"
     },
+    "ModelSettings": {
+        "title": "에이전트 모델 설정",
+        "modelName": "모델명",
+        "confirm": "확인",
+        "cancel": "취소"
+    },
     "Checkpoints": {
         "checkpoints": "체크포인트"
     },
@@ -1239,5 +1245,9 @@
         "selectAssignee": "위임 대상자를 선택하세요.",
         "equalDelegate": "위임 대상자와 동일한 사용자입니다.",
         "sucessMsg": "위임 완료되었습니다."
+    },
+    "UserInputGenerator": {
+        "inputLabel": "생성하고싶은 에이전트를 입력하세요",
+        "generateButton": "AI로 에이전트 생성"
     }
 }

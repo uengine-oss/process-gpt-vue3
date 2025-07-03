@@ -33,6 +33,11 @@
                             ></user-select-field>
                         </div>
                     </div>
+                    <div class="mt-4">
+                        <v-btn @click="openModelSettings" variant="text" size="small" color="primary" prepend-icon="mdi-cog">
+                            {{ $t('ModelSettings.title') }}
+                        </v-btn>
+                    </div>
                 </div>
                 <div class="w-100">
                     <div v-if="workItem != null">
@@ -69,6 +74,12 @@
                 </div>
             </div>
         </v-card>
+        
+        <ModelSettings 
+            v-model="showModelSettings"
+            :roleMappings="roleMappings"
+            @save="handleModelSettingsSave"
+        />
     </div>
 </template>
 
@@ -77,6 +88,7 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
 import WorkItem from '@/components/apps/todolist/WorkItem.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
+import ModelSettings from '@/components/apps/definition-map/ModelSettings.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -85,7 +97,8 @@ export default {
     components: {
         AppBaseCard,
         WorkItem,
-        UserSelectField
+        UserSelectField,
+        ModelSettings
     },
     props: {
         definitionId: String,
@@ -105,6 +118,8 @@ export default {
         activityIndex: 0,
         renderKey: 0,
         simulationInstances: [],
+        showModelSettings: false,
+        pendingModelSettings: null,
     }),
     async mounted() {
         await this.init();
@@ -257,7 +272,11 @@ export default {
             this.init();
         },
         async executeProcess(value) {
+            console.log('🎯 제출완료 버튼 클릭됨!');
             var me = this;
+            
+            // 제출완료 시 임시 저장된 모델 설정을 실제 저장
+            await me.savePendingModelSettings();
 
             if(me.isSimulate == 'true') {
                 me.activityIndex++;
@@ -331,6 +350,40 @@ export default {
             me.$try({}, null, {
                 errorMsg: `${me.definition.processDefinitionName} 실행 중 오류가 발생했습니다: ${error}`
             })
+        },
+        openModelSettings() {
+            this.showModelSettings = true;
+        },
+        handleModelSettingsSave(settings) {
+            // 모델 설정을 임시 저장 (실제 저장은 제출완료 시)
+            this.pendingModelSettings = settings;
+            console.log('📝 ProcessGPTExecute - 모델 설정 임시 저장 (putAgent 호출 안함):', settings);
+        },
+        
+        async savePendingModelSettings() {
+            console.log('🚀 제출완료 버튼 - savePendingModelSettings 호출됨');
+            
+            // 임시 저장된 모델 설정을 실제 저장
+            if (this.pendingModelSettings && this.pendingModelSettings.length > 0) {
+                console.log('💾 실제 putAgent 호출 시작:', this.pendingModelSettings);
+                try {
+                    for (const setting of this.pendingModelSettings) {
+                        const agentData = {
+                            ...setting.agentData,
+                            model: setting.modelValue
+                        };
+                        console.log(`🔄 putAgent 호출 중 - ${setting.agentData.name}:`, setting.modelValue);
+                        await backend.putAgent(agentData);
+                        console.log(`✅ ${setting.agentData.name} 모델 저장 완료:`, setting.modelValue);
+                    }
+                    this.pendingModelSettings = null; // 저장 후 초기화
+                    console.log('🎉 모든 모델 설정 저장 완료');
+                } catch (error) {
+                    console.error('❌ 모델 설정 저장 실패:', error);
+                }
+            } else {
+                console.log('📭 임시 저장된 모델 설정이 없음');
+            }
         }
     }
 };
