@@ -1245,5 +1245,9 @@
         "selectAssignee": "Select Delegatee",
         "equalDelegate": "Delegatee is the same as the assignee.",
         "sucessMsg": "Delegated successfully."
+    },
+    "UserInputGenerator": {
+        "inputLabel": "Enter the agent you want to generate",
+        "generateButton": "Generate Agent with AI"
     }
 }
