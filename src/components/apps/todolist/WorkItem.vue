@@ -411,7 +411,11 @@ export default {
     },
     computed: {
         isOwnWorkItem() {
-            return localStorage.getItem('email') == this.workItem.worklist.endpoint
+            if (this.isStarted || this.isSimulate == 'true') {
+                return true
+            }
+            const email = localStorage.getItem('email')
+            return this.workItem.worklist.endpoint.includes(email)
         },
         mode() {
             return window.$mode;
