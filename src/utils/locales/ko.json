@@ -153,7 +153,7 @@
         "upload": "정의 목록 업로드",
         "release": "정의 내보내기",
         "defaultForm": "기본 폼 관리",
-        "completedList": "완료된 목록 보기"
+        "completedList": "완료된 인스턴스 목록 보기"
     },
     "systemDefinition": {
         "title": "시스템 정의"

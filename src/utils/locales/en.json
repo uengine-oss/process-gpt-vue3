@@ -153,7 +153,7 @@
         "upload": "Upload definition list",
         "release": "Definition Export",
         "defaultForm": "Default Form Management",
-        "completedList": "View Completed List"
+        "completedList": "View completed instance list"
     },
     "systemDefinition": {
         "title": "System Definition"

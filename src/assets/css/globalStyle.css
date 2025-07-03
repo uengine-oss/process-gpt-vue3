@@ -708,7 +708,7 @@ hr {
 }
 
 .agent-field-dialog-contents {
-    height: 60vh;
+    max-height: 60vh;
     overflow: auto;
 }
 
