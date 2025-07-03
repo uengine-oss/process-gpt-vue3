@@ -915,6 +915,12 @@
         "processStart": "Process Start",
         "processSimulate": "Process Simulation"
     },
+    "ModelSettings": {
+        "title": "Agent Model Settings",
+        "modelName": "Model Name",
+        "confirm": "Confirm",
+        "cancel": "Cancel"
+    },
     "Checkpoints": {
         "checkpoints": "Checkpoints"
     },
