@@ -55,7 +55,7 @@
                             <v-col cols="1">
                                 <v-icon size="24">mdi-office-building-outline</v-icon>     
                             </v-col>
-                            <v-col :cols="isNavigating && selectedTenantId === tenantInfo.id ? '8' : '9'">
+                            <v-col :cols="getColSize(tenantInfo)">
                                 &nbsp; {{ tenantInfo.id }}
                             </v-col>
                             <v-col v-if="isNavigating && selectedTenantId === tenantInfo.id" cols="1" class="d-flex align-center justify-center">
@@ -66,22 +66,22 @@
                                     color="primary"
                                 ></v-progress-circular>
                             </v-col>
-                            <v-col v-if="isOwner" cols="1">
+                            <v-col cols="1">
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                     <v-tooltip text="수정">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn @click.stop="!isNavigating ? toEditTenantPage(tenantInfo.id) : null" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;" :disabled="isNavigating">
+                                            <v-btn :disabled="!tenantInfo.isOwned || isNavigating" @click.stop="!isNavigating ? toEditTenantPage(tenantInfo.id) : null" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                                 <v-icon size="24">mdi-pencil</v-icon>
                                             </v-btn>
                                         </template>
                                     </v-tooltip>
                                 </v-sheet>
                             </v-col>
-                            <v-col v-if="isOwner" cols="1">
+                            <v-col cols="1">
                                 <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                     <v-tooltip text="삭제">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn @click.stop="!isNavigating ? (deleteDialog = true, tenantIdToDelete = tenantInfo.id) : null" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;" :disabled="isNavigating">
+                                            <v-btn :disabled="!tenantInfo.isOwned || isNavigating" @click.stop="!isNavigating ? (deleteDialog = true, tenantIdToDelete = tenantInfo.id) : null" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
                                                 <Icons :icon="'trash'" />
                                             </v-btn>
                                         </template>
@@ -161,37 +161,51 @@ export default {
         if(localStorage.getItem('tenantId')) {
             this.toSelectedTenantPage(localStorage.getItem('tenantId'));
         } else {
-            const tenants = await backend.getTenants();
-        
-            if (tenants && tenants.length > 0) {
-                this.tenantInfos = tenants;
-                this.isOwner = true;
-                this.isLoading = false;
-            } else {
-                // tenantInfos가 없다면 users 테이블에서 유저 정보를 가져온다
-                try {
-                    const users = await backend.getUserAllTenants();
-                    
-                    if (users && users.length > 0) {
-                        // tenant_id를 추출하여 고유한 tenant 목록을 만든다
-                        const uniqueTenants = [...new Set(users.map(user => user.tenant_id))];
-                        
-                        if (uniqueTenants.length === 1) {
-                            // 유저 정보가 하나의 tenant에만 속해있다면 바로 리다이렉션
-                            const tenantId = uniqueTenants[0];
-                            if (tenantId && tenantId !== 'process-gpt') {
-                                this.toSelectedTenantPage(tenantId);
-                            }
-                        } else if (uniqueTenants.length > 1) {
-                            // 여러 tenant가 있다면 tenant 목록으로 설정
-                            this.tenantInfos = uniqueTenants.map(tenantId => ({ id: tenantId }));
-                        }
+            try {
+                let allTenantInfos = [];
+                // 소유한 테넌트들 가져오기
+                const ownedTenants = await backend.getTenants() || [];
+                ownedTenants.forEach(tenant => {
+                    allTenantInfos.push({
+                        id: tenant.id,
+                        isOwned: true
+                    });
+                });
+                
+                // 속한 모든 테넌트들 가져오기 (소유한 것 + 직원으로 속한 것)
+                const users = await backend.getUserAllTenants() || [];
+                users.forEach(user => {
+                    if(user.tenant_id && !allTenantInfos.some(tenant => tenant.id === user.tenant_id)) {
+                        allTenantInfos.push({
+                            id: user.tenant_id,
+                            isOwned: false
+                        });
                     }
-                } catch (error) {
-                    console.error('Error fetching user list:', error);
-                } finally {
+                });
+                
+                
+                if (allTenantInfos.length === 0) {
+                    // 속한 테넌트가 없는 경우 (유저4)
+                    this.tenantInfos = [];
+                    this.isOwner = false;
                     this.isLoading = false;
                 }
+                // else if (allTenantInfos.length === 1) {
+                //     // 하나의 테넌트에만 속한 경우 바로 리다이렉션 (유저3)
+                //     const tenantId = allTenantInfos[0].id;
+                //     if (tenantId && tenantId !== 'process-gpt') {
+                //         this.toSelectedTenantPage(tenantId);
+                //     } 
+                // } 
+                else {
+                    // 여러 테넌트에 속한 경우 목록 표시 (유저1, 유저2)
+                    this.tenantInfos = allTenantInfos;
+                    this.isOwner = allTenantInfos.some(tenant => tenant.isOwned);
+                    this.isLoading = false;
+                }
+            } catch (error) {
+                console.error('Error fetching tenant list:', error);
+                this.isLoading = false;
             }
         }
         
@@ -213,6 +227,15 @@ export default {
             this.tenantInfos = this.tenantInfos.filter(tenant => tenant.id !== this.tenantIdToDelete)
         },
         
+        getColSize(tenantInfo) {
+            const isLoadingThisTenant = this.isNavigating && this.selectedTenantId === tenantInfo.id;
+            if (isLoadingThisTenant) {
+                return '8';
+            } else {
+                return '9';
+            }
+        },
+
         async toSelectedTenantPage(tenantId) {
             this.isNavigating = true;
             this.selectedTenantId = tenantId;

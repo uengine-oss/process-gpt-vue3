@@ -259,7 +259,7 @@
 
                                                                 <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
                                                                 <div v-else-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
-                                                                <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
+                                                                <pre v-else class="text-body-1" v-html="setMessageForUser(message.content)"></pre>
 
                                                                 <v-btn v-if="message.type && message.type === 'add_role'"
                                                                     style="border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
