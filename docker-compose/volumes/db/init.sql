@@ -963,7 +963,6 @@ end;
 $$;
 
 
-
 create or replace function public.register_cron_job(
   p_job_name text,
   p_cron_expr text,
@@ -973,12 +972,23 @@ returns void
 language plpgsql
 security definer
 as $$
+declare
+  v_job_name int;
 begin
+  select jobname into v_job_name
+  from cron.job
+  where jobname = p_job_name;
+
+  if v_job_name is not null then
+    perform cron.unschedule(v_job_name);
+  end if;
+
+  -- ✅ 새로 schedule
   perform cron.schedule(
     p_job_name,
     p_cron_expr,
     format(
-      E'select public.start_process_scheduled(''%s''::jsonb);',
+      E'select public.start_process_scheduled(''%s'', ''%s''::jsonb);',
       replace(p_job_name, '''', ''''''),
       replace(p_input::text, '''', '''''')
     )

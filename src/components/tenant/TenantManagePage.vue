@@ -217,16 +217,18 @@ export default {
                 // 소유한 테넌트들 가져오기
                 const ownedTenants = await backend.getTenants() || [];
                 ownedTenants.forEach(tenant => {
-                    allTenantInfos.push({
-                        id: tenant.id,
-                        isOwned: true
-                    });
+                    if(tenant.id !== 'process-gpt') {
+                        allTenantInfos.push({
+                            id: tenant.id,
+                            isOwned: true
+                        });
+                    }
                 });
                 
                 // 속한 모든 테넌트들 가져오기 (소유한 것 + 직원으로 속한 것)
                 const users = await backend.getUserAllTenants() || [];
                 users.forEach(user => {
-                    if(user.tenant_id && !allTenantInfos.some(tenant => tenant.id === user.tenant_id)) {
+                    if(user.tenant_id && user.tenant_id !== 'process-gpt' && !allTenantInfos.some(tenant => tenant.id === user.tenant_id)) {
                         allTenantInfos.push({
                             id: user.tenant_id,
                             isOwned: false

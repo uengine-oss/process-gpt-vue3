@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="10" v-if="currentComponent" :key="updatedKey">
+    <v-card elevation="10" v-if="currentComponent" :key="updatedKey"  :style="isMobile ? 'margin-top: 10px;' : ''">
         <div class="pa-2 pb-0 pl-4 align-center"
             style="height: 40px;"
         >
@@ -11,6 +11,31 @@
                     style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center">
                     {{ workItemStatus }}
                 </v-chip>
+                <div v-if="isMobile">
+                    <v-btn
+                        class="feedback-btn-mobile" 
+                        elevation="2" 
+                        color="primary" 
+                        density="compact"
+                        rounded
+                        @click="beforeGenerateExample"
+                        :loading="isGeneratingExample"
+                        :disabled="isGeneratingExample"
+                        style="margin-left: 5px; margin-right: 5px;"
+                    >
+                        <span v-if="!isGeneratingExample">
+                            <span v-if="generator">
+                                <v-icon>mdi-refresh</v-icon>
+                                <span class="ms-2">예시 재생성</span>
+                            </span>
+                            <span v-else>
+                                <v-icon>mdi-pencil</v-icon>
+                                <span class="ms-2">빠른 예시 생성</span>
+                            </span>
+                        </span>
+                        
+                    </v-btn>
+                </div>
                 <v-tooltip :text="$t('processDefinition.zoom')">
                     <template v-slot:activator="{ props }">
                         <v-btn v-if="!isMobile" 
@@ -232,6 +257,7 @@
                     
                     <div class="feedback-container">
                         <v-btn
+                            v-if="!isMobile"
                             class="feedback-btn" 
                             fab 
                             elevation="2" 

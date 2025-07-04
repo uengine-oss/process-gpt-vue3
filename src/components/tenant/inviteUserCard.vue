@@ -201,7 +201,7 @@ export default {
                         }
                         const result = await backend.inviteUser(userInfo);
                         if(result) {
-                            user.id = result.response.user.id
+                            user.id = result.user_id ? result.user_id : ''
                             user.profile = "/images/defaultUser.png"
                             user.name = user.email.split('@')[0]
                         }
