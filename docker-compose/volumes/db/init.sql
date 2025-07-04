@@ -893,3 +893,120 @@ alter publication supabase_realtime add table todolist;
 alter publication supabase_realtime add table bpm_proc_inst;
 alter publication supabase_realtime add table proc_def; 
 alter publication supabase_realtime add table project;
+
+
+
+-- schedule 관련
+create table if not exists public.cron_job_run_log (
+  id serial primary key,
+  job_name text,
+  executed_at timestamptz default now(),
+  status text,
+  http_status int,
+  response_body jsonb,
+  error_message text
+);
+
+create or replace function public.start_process_scheduled(
+  p_job_name text,
+  p_input jsonb
+)
+returns void
+language plpgsql
+as $$
+declare
+  response text;
+  status_code int; 
+begin
+  response := net.http_post(
+    'http://host.docker.internal:8000/initiate',
+    p_input,
+    '{"Content-Type":"application/json"}'
+  )::text;
+
+  status_code := 200;
+
+  insert into public.cron_job_run_log (
+    job_name, status, http_status, response_body
+  )
+  values (
+    p_job_name,
+    'SUCCESS',
+    status_code,
+    to_jsonb(response)
+  );
+
+  raise notice '✅ HTTP status: %, response: %', status_code, response;
+
+exception
+  when others then
+    insert into public.cron_job_run_log (
+      job_name, status, http_status, error_message
+    )
+    values (
+      p_job_name,
+      'ERROR',
+      500,
+      SQLERRM
+    );
+    raise notice '❌ exception: %', SQLERRM;
+    raise;
+end;
+$$;
+
+
+
+create or replace function public.register_cron_job(
+  p_job_name text,
+  p_cron_expr text,
+  p_input jsonb
+)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  perform cron.schedule(
+    p_job_name,
+    p_cron_expr,
+    format(
+      E'select public.start_process_scheduled(''%s''::jsonb);',
+      replace(p_job_name, '''', ''''''),
+      replace(p_input::text, '''', '''''')
+    )
+  );
+end;
+$$;
+
+
+grant execute on function public.register_cron_job(text, text, jsonb) to authenticated;
+
+
+create or replace function public.get_cron_jobs()
+returns setof cron.job
+language sql
+security definer
+as $$
+  select * from cron.job;
+$$;
+
+grant execute on function public.get_cron_jobs() to authenticated;
+
+create or replace function public.delete_cron_job(
+  p_job_name text
+)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  perform cron.unschedule(p_job_name);
+end;
+$$;
+
+grant execute on function public.delete_cron_job(text) to authenticated;
+
+
+
+GRANT USAGE ON SCHEMA cron TO authenticated;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA cron TO authenticated;

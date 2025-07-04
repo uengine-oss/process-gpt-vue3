@@ -937,6 +937,20 @@ class UEngineBackend implements Backend {
     async putBSCard(card: any) {
         console.warn("method is not implemented only use Process-GPT Mode");
     }
+
+    async getSchedule(id: string, version: string) {
+        console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
+    }
+
+    async setSchedule(json: any) {
+        console.warn("method is not implemented only use Process-GPT Mode");
+    }
+
+    async deleteSchedule(defId: string, eventId: string) {
+        console.warn("method is not implemented only use Process-GPT Mode");
+    }
+
 }
 
 export default UEngineBackend;

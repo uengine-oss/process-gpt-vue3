@@ -466,23 +466,56 @@ export default {
     /*****************************************************************
      * 4. 수정된 createEvent                                         *
      *****************************************************************/
-    createEvent(element, process, xmlDoc) {
-      const evtTag = element.type === 'StartEvent' ? 'bpmn:startEvent' :
-                    element.type === 'EndEvent'   ? 'bpmn:endEvent'   :
-                                                      'bpmn:intermediateThrowEvent';
+     createEvent(element, process, xmlDoc) {
+        const evtTag =
+          element.type === 'StartEvent' ? 'bpmn:startEvent' :
+          element.type === 'EndEvent'   ? 'bpmn:endEvent'   :
+                                          'bpmn:intermediateThrowEvent';
 
-      const evt = xmlDoc.createElementNS(
-        'http://www.omg.org/spec/BPMN/20100524/MODEL', evtTag
-      );
-      evt.setAttribute('id',   element.id);
-      evt.setAttribute('name', element.name || '');
+        const evt = xmlDoc.createElementNS(
+          'http://www.omg.org/spec/BPMN/20100524/MODEL', evtTag
+        );
 
-      if (element.description) {
-        evt.appendChild(this.buildExtension(xmlDoc, { description: element.description }));
+        evt.setAttribute('id', element.id);
+        evt.setAttribute('name', element.name || '');
+
+        // ✅ Event Definition 별도 메서드로 분리
+        this.attachEventDefinition(evt, element, xmlDoc);
+
+        // ✅ ExtensionElements: description, expression 모두 JSON에 포함
+        const props = {};
+        if (element.description) props.description = element.description;
+        if (element.expression) props.expression = element.expression;
+
+        if (Object.keys(props).length > 0) {
+          evt.appendChild(this.buildExtension(xmlDoc, props));
+        }
+
+        process.appendChild(evt);
+        return evt;
+    },
+    attachEventDefinition(evt, element, xmlDoc) {
+      switch (element.eventType) {
+        case 'Timer':
+          const timerDef = xmlDoc.createElementNS(
+            'http://www.omg.org/spec/BPMN/20100524/MODEL',
+            'bpmn:timerEventDefinition'
+          );
+          evt.appendChild(timerDef);
+          break;
+
+        // 예시: Message
+        case 'Message':
+          const messageDef = xmlDoc.createElementNS(
+            'http://www.omg.org/spec/BPMN/20100524/MODEL',
+            'bpmn:messageEventDefinition'
+          );
+          evt.appendChild(messageDef);
+          break;
+
+        default:
+          break;
       }
-
-      process.appendChild(evt);
-      return evt;
     }, 
     createProcessElements(xmlDoc, jsonModel, process, inComing, outGoing) {
       console.log('createProcessElements 시작');

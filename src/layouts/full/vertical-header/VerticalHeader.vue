@@ -61,6 +61,13 @@ const sidebarItems = ref<SidebarItem[]>([
         isVisible: true
     },
     {
+        title: 'headerMenu.schedule',
+        icon: 'mdi-timetable',
+        to: '/schedule',
+        disable: false,
+        isVisible: true
+    },
+    {
         title: 'headerMenu.admin',
         icon: 'user-admin',
         to: '/admin',
