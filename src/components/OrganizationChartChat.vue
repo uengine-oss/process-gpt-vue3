@@ -45,7 +45,6 @@
             <OrganizationAddDialog
                 :teamInfo="editNode"
                 :userList="userList"
-                :agentList="agentList"
                 @addUser="addUser"
                 @addAgent="addAgent"
                 @closeDialog="closeAddDialog"
@@ -83,7 +82,6 @@ export default {
         },
         addDialog: false,
         userList: [],
-        agentList: [],
         editNode: null,
     }),
     async mounted() {
@@ -117,7 +115,6 @@ export default {
             deep: true,
             async handler(newVal) {
                 this.userList = await this.backend.getUserList();
-                this.agentList = await this.backend.getAgentList();
             }
         }
     },
@@ -146,7 +143,6 @@ export default {
             await this.getChatList(this.chatRoomId);
 
             this.userList = await this.backend.getUserList();
-            this.agentList = await this.backend.getAgentList();
         },
         beforeSendMessage(newMessage) {
             this.sendMessage(newMessage);

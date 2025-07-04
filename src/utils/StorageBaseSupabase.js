@@ -301,6 +301,7 @@ export default class StorageBaseSupabase {
                     document.cookie = 'access_token=; path=/';
                     document.cookie = 'refresh_token=; path=/';
                 }
+                sessionStorage.removeItem('validated-tenants');
             }
 
             return await window.$supabase.auth.signOut();
@@ -714,7 +715,7 @@ export default class StorageBaseSupabase {
         return ref;
     }
 
-    async watch(path, channel, callback) {
+    async watch(path, channel, callback, options = {}) {
         try {
             let obj = this.formatDataPath(path);
             let watchOptions = {
@@ -722,18 +723,31 @@ export default class StorageBaseSupabase {
                 schema: 'public',
                 table: obj.table,
             }
+
+            // 기존 chats 테이블 필터링 로직
             if (obj.table === 'chats' && path.startsWith('db://chats/')) {
                 obj.chatRoomIds = path.split('/')[3];
-                watchOptions.filter = obj.chatRoomIds ? `id=in.(${obj.chatRoomIds})` : null;
+                watchOptions.filter = obj.chatRoomIds ? `` : null;
             }
-            await window.$supabase
+            
+            // 새로운 필터 옵션 지원
+            if (options.filter) {
+                watchOptions.filter = options.filter;
+            }
+            
+            const subscription = await window.$supabase
                 .channel(channel)
                 .on('postgres_changes', watchOptions, (payload) => {
                     // console.log('Change received!', payload);
                     callback(payload);
                 })
-                .subscribe();
+                .subscribe((status) => {
+                    if (options.onStatusChange) {
+                        options.onStatusChange(status);
+                    }
+                });
 
+            return subscription;
         } catch (error) {
             throw new StorageBaseError('error in watch', error, arguments);
         }
@@ -1402,4 +1416,6 @@ export default class StorageBaseSupabase {
             throw new StorageBaseError('error in downloadFile', error, arguments);
         }
     }
+
+
 }

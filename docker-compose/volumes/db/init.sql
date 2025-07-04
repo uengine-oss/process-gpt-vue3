@@ -40,6 +40,14 @@ create table if not exists public.users (
     device_token text null,
     google_credentials jsonb,
     google_credentials_updated_at TIMESTAMP WITH TIME ZONE,
+    goal text null,
+    persona text null,
+    url text null,
+    description text null,
+    tools text null,
+    skills text null,
+    is_agent boolean not null default false,
+    model text null,
     constraint users_pkey primary key (id, tenant_id),
     constraint users_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -171,6 +179,7 @@ create table if not exists public.todolist (
     draft jsonb null,
     agent_mode text null,
     feedback jsonb null,
+    draft_status text null,
     updated_at timestamp with time zone default now(),
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
@@ -458,7 +467,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_proc_inst_name text;
 BEGIN
-    IF (TG_OP = 'INSERT') THEN
+    IF (TG_OP = 'INSERT' AND NEW.status != 'SUBMITTED') THEN
         SELECT proc_inst_name, tenant_id INTO v_proc_inst_name 
         FROM bpm_proc_inst 
         WHERE proc_inst_id = NEW.proc_inst_id;
@@ -955,7 +964,6 @@ end;
 $$;
 
 
-
 create or replace function public.register_cron_job(
   p_job_name text,
   p_cron_expr text,
@@ -965,12 +973,23 @@ returns void
 language plpgsql
 security definer
 as $$
+declare
+  v_job_name int;
 begin
+  select jobname into v_job_name
+  from cron.job
+  where jobname = p_job_name;
+
+  if v_job_name is not null then
+    perform cron.unschedule(v_job_name);
+  end if;
+
+  -- ✅ 새로 schedule
   perform cron.schedule(
     p_job_name,
     p_cron_expr,
     format(
-      E'select public.start_process_scheduled(''%s''::jsonb);',
+      E'select public.start_process_scheduled(''%s'', ''%s''::jsonb);',
       replace(p_job_name, '''', ''''''),
       replace(p_input::text, '''', '''''')
     )

@@ -99,8 +99,17 @@
                     </div>
                 </div>
                 <v-row class="pa-0 ma-0 mt-1 d-flex align-center">
-                    <div class="mr-1" style="width: 24px;">
-                        <v-img v-if="isMyTask && !isTodolistPath"
+                    <div class="mr-1" style="width: 24px;" :class="{'mr-4': isMultiUser}">
+                        <div v-if="isMultiUser" class="d-flex"> 
+                            <v-img v-for="user in userInfoForTask"
+                                :src="user.profile ? user.profile : '/images/defaultUser.png'"
+                                alt="profile"
+                                width="24"
+                                height="24"
+                                style="border-radius: 50%; margin-right: -8px;"
+                            />
+                        </div>
+                        <v-img v-else-if="isMyTask && !isTodolistPath"
                             :src="userInfoForTask && userInfoForTask.profile ? userInfoForTask.profile : '/images/defaultUser.png'"
                             alt="profile"
                             width="24"
@@ -108,12 +117,20 @@
                             class="mr-2"
                             style="border-radius: 50%;"
                         />
+                        <v-img v-else-if="userInfoForTask"
+                            :src="userInfoForTask.profile ? userInfoForTask.profile : '/images/defaultUser.png'"
+                            alt="profile"
+                            width="24"
+                            height="24"
+                            style="border-radius: 50%;"
+                        />
                     </div>
                     <!-- 텍스트를 세로 기준 중앙정렬하기 위해 flex와 align-center 적용 -->
                     <div class="body-text-2 text-dark mr-2">
                         <!-- isMyTask가 아니면 '내 업무'로 표시, 맞으면 기존 이름/이메일 표시 -->
-                        <span v-if="isMyTask && !isTodolistPath">{{ $t('TodoTaskItemCard.myTask') }}</span>
-                        <span v-else-if="userInfoForTask">{{ userInfoForTask.username || userInfoForTask.email }}</span>
+                        <span v-if="isMultiUser">{{ userInfoForTask.map(user => user.username).join(', ') }}</span>
+                        <span v-else-if="isMyTask && !isTodolistPath">{{ $t('TodoTaskItemCard.myTask') }}</span>
+                        <span v-else-if="userInfoForTask">{{ userInfoForTask.username }}</span>
                         <!-- 프로필 이미지를 v-img로 표시, 없으면 기본 이미지 사용 -->
                     </div>
                 </v-row>
@@ -142,7 +159,7 @@ export default {
     },
     props: {
         task: Object,
-        userInfo: {
+        userList: {
             type: Array,
             default: () => []
         }
@@ -225,13 +242,40 @@ export default {
             }, []);
         },
         userInfoForTask() {
-            if (!this.userInfo || !this.task || !this.task.endpoint) return null;
-            return this.userInfo.find(user => user.email === this.task.endpoint);
+            if (!this.userList || !this.task || !this.task.endpoint) return null;
+            if (this.task.endpoint.includes(',')) {
+                const endpoints = this.task.endpoint.split(',');
+                let users = [];
+                let user = null;
+                for (const endpoint of endpoints) {
+                    user = this.userList.find(user => (user.email && user.email === endpoint) || user.id == endpoint);
+                    if (user) {
+                        users.push(user)
+                    }
+                };
+                return users;
+            } else {
+                let user = this.userList.find(user => (user.email && user.email === this.task.endpoint) || user.id == this.task.endpoint);
+                if (!user) {
+                    user = {
+                        name: this.task.endpoint
+                    }
+                }
+                return user;
+            }
+        },
+        isMultiUser() {
+            return this.task.endpoint.includes(',');
         },
         isMyTask() {
             // localStorage의 email과 task의 endpoint가 일치하고, task의 status가 'DONE'이 아닐 때 true 반환
             const myEmail = localStorage.getItem('email');
-            return myEmail && this.task && this.task.endpoint === myEmail;
+            if (this.task.endpoint.includes(',')) {
+                const endpoints = this.task.endpoint.split(',');
+                return endpoints.includes(myEmail);
+            } else {
+                return myEmail && this.task && this.task.endpoint === myEmail;
+            }
         },
         isTodolistPath() {
             // 현재 경로가 todolist를 포함하는지 확인

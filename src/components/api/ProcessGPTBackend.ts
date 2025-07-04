@@ -864,7 +864,7 @@ class ProcessGPTBackend implements Backend {
                             proc_def_id: item.id,
                             proc_def_ids: item
                         }
-                        await this.putUserPermission(putObj);
+                        // await this.putUserPermission(putObj);
                         Object.assign(item, change);
                     } else {
                         // 권한이 없는 프로세스
@@ -895,7 +895,7 @@ class ProcessGPTBackend implements Backend {
                             proc_def_id: item.id,
                             proc_def_ids: item
                         }
-                        await this.putUserPermission(putObj);
+                        // await this.putUserPermission(putObj);
                     }
                     existingMap.push(item);
                 }
@@ -1266,7 +1266,7 @@ class ProcessGPTBackend implements Backend {
 
     async fetchInstances(callback: (payload: any) => void) {
         try {
-            await storage.watch('bpm_proc_inst', 'bpm_proc_inst', (payload) => {
+            const subscription = await storage.watch('bpm_proc_inst', 'bpm_proc_inst', (payload) => {
                 if (payload && payload.new && payload.eventType) {
                     const instance = payload.new;
                     if (callback) {
@@ -1275,7 +1275,7 @@ class ProcessGPTBackend implements Backend {
                 }
             });
 
-            return true;
+            return subscription;
         } catch (error) {
             throw new Error(error.message);
         }
@@ -1622,11 +1622,16 @@ class ProcessGPTBackend implements Backend {
     async getNotifications(callback: (data: any) => void) {
         try {
             const uid = localStorage.getItem('uid');
-            await storage.watch('notifications', `notifications-${uid}`, (data: any) => {
+            const channelName = `notifications_${uid}_${Date.now()}`;
+            const subscription = await storage.watch('notifications', channelName, (data: any) => {
                 if(data && data.new) {
                     callback(data);
                 }
+            }, {
+                filter: `user_id=eq.${uid} AND is_checked=false`
             });
+
+            return subscription;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1842,7 +1847,7 @@ class ProcessGPTBackend implements Backend {
 
     async getAgentList() {
         try {
-            const list = await storage.list('agents');
+            const list = await storage.list('users', { match: { is_agent: true } });
             return list;
         } catch (error) {
             //@ts-ignore
@@ -1857,7 +1862,7 @@ class ProcessGPTBackend implements Backend {
                     id: agentId
                 }
             }
-            const agent = await storage.getObject('agents', options);
+            const agent = await storage.getObject('users', options);
             return agent;
         } catch (error) {
             //@ts-ignore
@@ -1869,7 +1874,7 @@ class ProcessGPTBackend implements Backend {
         try {
             const putObj: any = {
                 id: newAgent.id,
-                name: newAgent.name,
+                username: newAgent.name,
                 role: newAgent.role,
                 goal: newAgent.goal,
                 persona: newAgent.persona,
@@ -1879,9 +1884,10 @@ class ProcessGPTBackend implements Backend {
                 profile: newAgent.img,
                 skills: newAgent.skills,
                 model: newAgent.model,
-                tenant_id: window.$tenantName
+                tenant_id: window.$tenantName,
+                is_agent: true
             }
-            await storage.putObject('agents', putObj);
+            await storage.putObject('users', putObj);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1890,7 +1896,7 @@ class ProcessGPTBackend implements Backend {
 
     async deleteAgent(agentId: string) {
         try {
-            await storage.delete('agents', { match: { id: agentId } });
+            await storage.delete('users', { match: { id: agentId } });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2362,13 +2368,16 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getAttachments(chatRoomId: string, callback: (attachment: any) => void) {
-        await storage.watch('chat_attachments', chatRoomId, (payload) => {
+        const channelName = `chat_attachments_${chatRoomId}_${Date.now()}`;
+        const subscription = await storage.watch('chat_attachments', channelName, (payload) => {
             if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
                 const attachment = payload.new;
                 if (callback) {
                     callback(attachment);
                 }
             }
+        }, {
+            filter: `chat_room_id=eq.${chatRoomId}`
         });
 
         if (callback) {
@@ -2383,6 +2392,8 @@ class ProcessGPTBackend implements Backend {
                 }
             }
         }
+
+        return subscription;
     }
 
     async getEmbedding(text) {
@@ -2695,17 +2706,21 @@ class ProcessGPTBackend implements Backend {
 
     async getTaskLog(taskId: string, callback: (payload: any) => void) {
         try {
-            await storage.watch('todolist', taskId, (payload) => {
-                if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+            const channelName = `todolist_${taskId}_${Date.now()}`;
+            const subscription = await storage.watch('todolist', channelName, (payload) => {
+                if (payload && payload.new && (payload.eventType === "INSERT" || payload.eventType === "UPDATE")) {
                     const task = payload.new;
                     if (callback) {
                         callback(task);
                     }
                 }
+            }, {
+                filter: `id=eq.${taskId}`
             });
 
-            return true;
+            return subscription;
         } catch (error) {
+            console.error('Error in getTaskLog:', error);
             throw new Error(error.message);
         }
     }

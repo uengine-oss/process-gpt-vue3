@@ -670,7 +670,7 @@ export default {
 
             const { width, height } = container.getBoundingClientRect();
 
-            if(width > height) {
+            if(width - 100 > height) {
                 this.initDefaultOrientation('horizontal');
             } else {
                 this.initDefaultOrientation('vertical');
