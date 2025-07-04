@@ -108,7 +108,29 @@
                     overflow-y: auto;
                     max-height: 350px;"
                 >
-                    <template v-for="(item, index) in instanceItem" :key="item.title">
+                    <div class="d-flex align-center justify-between">
+                        <div v-for="(item, index) in instanceItem" :key="item.title">
+                            <div v-if="!item.icon" style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                                {{ $t(item.title) }}
+                            </div>
+                            <div v-else>
+                                <v-tooltip location="bottom" :text="$t(item.title)">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            @click="navigateTo(item.to)"
+                                            v-bind="props"
+                                            icon variant="text" 
+                                            class="text-medium-emphasis cp-menu"
+                                            density="comfortable"
+                                        >
+                                            <Icons :icon="item.icon" :size="item.size ? item.size : 20" />   
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <template v-for="(item, index) in instanceItem" :key="item.title">
                         <div v-if="!pal && item.header && index === 0"
                             style="font-size:14px;"
                             class="text-medium-emphasis cp-menu mt-0 ml-2"
@@ -133,7 +155,7 @@
                                 </v-tooltip>
                             </template>
                         </v-row>
-                    </template>
+                    </template> -->
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
@@ -419,7 +441,8 @@ export default {
             ],
             this.instanceItem = [
                 {
-                    header: 'VerticalSidebar.instanceList',
+                    title: 'VerticalSidebar.instanceList',
+                    // header: 'VerticalSidebar.instanceList',
                     disable: false
                 },
                 {
