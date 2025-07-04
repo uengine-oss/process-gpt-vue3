@@ -8,6 +8,16 @@
     >
         <Icons :icon="'list-bold-duotone'"/>
     </v-btn>
+    <v-badge
+        v-if="notiCount > 0"
+        class="mobile-side-bar-btn"
+        :content="notiCount"
+        :model-value="notiCount > 0"
+        color="error"
+        location="top end"
+        offset-x="-40"
+        offset-y="-37"
+    ></v-badge>
     <v-navigation-drawer
         left
         v-model="customizer.Sidebar_drawer"
@@ -53,7 +63,7 @@
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
         <div class="scrollnavbar bg-containerBg overflow-y-auto">
-            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0 pr-2"
+            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0 pr-2 pl-2"
                 :class="globalIsMobile.value ? 'pr-4' : ''"
                 style="display: flex;
                     flex-direction: column;
@@ -79,7 +89,7 @@
                     <Icons :icon="'write'" class="mr-2" />
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
-                <VerticalHeader v-if="globalIsMobile.value"/>
+                <VerticalHeader v-if="globalIsMobile.value" @update-noti-count="updateNotiCount" />
                 <v-row v-if="isShowProject" class="ma-0 pa-0 ml-2 align-center">
                     <div class="text-medium-emphasis cp-menu">
                         {{ $t('VerticalSidebar.projectList') }}
@@ -92,23 +102,42 @@
                 <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 auto; overflow-y: auto; max-height: 350px;">
                     <ProjectList/>
                 </v-col>
-                <div
-                    v-if="!pal"
-                    style="font-size:14px;"
-                    class="text-medium-emphasis cp-menu mt-0 ml-2"
-                >{{ $t('VerticalSidebar.instanceList') }}</div>
+                
                 <v-col v-if="!pal" class="pa-0"
                     style="flex: 1 1 auto;
                     overflow-y: auto;
                     max-height: 350px;"
                 >
+                    <template v-for="(item, index) in instanceItem" :key="item.title">
+                        <div v-if="!pal && item.header && index === 0"
+                            style="font-size:14px;"
+                            class="text-medium-emphasis cp-menu mt-0 ml-2"
+                        >{{ $t(item.header) }}</div>
+                        <v-row v-if="item.header && !item.disable"
+                            class="pa-0 ma-0" 
+                        >
+                            <template v-for="subItem in instanceItem" :key="subItem.title">
+                                <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            v-if="!subItem.header && !subItem.disable"
+                                            @click="navigateTo(subItem.to)"
+                                            v-bind="props"
+                                            icon variant="text" 
+                                            class="text-medium-emphasis cp-menu"
+                                            density="comfortable"
+                                        >
+                                            <Icons :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />   
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                            </template>
+                        </v-row>
+                    </template>
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
                 </v-col>
-                <v-row class="ma-0 pa-0 ml-2 align-center">
-                    <v-btn block dense @click="openCompletedList()">완료된 목록 보기</v-btn>
-                </v-row>
               
                
                 <v-col class="pa-0" style="flex: 0 0 auto;">
@@ -133,7 +162,7 @@
                                             class="text-medium-emphasis cp-menu"
                                             density="comfortable"
                                         >
-                                            <Icons :icon="subItem.icon" :size="20" />    
+                                            <Icons :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />   
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
@@ -244,6 +273,7 @@ export default {
     },
     data: () => ({
         sidebarItem: [],
+        instanceItem: [],
         definitionItem: [],
         definitionList: null,
         logoPadding: '',
@@ -258,6 +288,7 @@ export default {
         },
         isNewProjectOpen: false,
         deletedDefinitionList: [],
+        notiCount: 0,
     }),
     computed: {
         JMS() {
@@ -300,6 +331,7 @@ export default {
                 if (event.detail.value === 'true' || event.detail.value === true) {
                     this.loadSidebar();
                 } else {
+                    this.instanceItem = [];
                     this.definitionItem = [];
                     this.definitionList = [];
                 }
@@ -307,6 +339,9 @@ export default {
         });
     },
     methods: {
+        updateNotiCount(count) {
+            this.notiCount = count;
+        },
         loadSidebar() {
             this.definitionItem = [
                 {
@@ -336,7 +371,7 @@ export default {
                 },
                 {
                     title: 'BSCard.title',
-                    icon: 'strategy',
+                    icon: 'compass',
                     BgColor: 'primary',
                     to: '/bscard',
                     disable: true
@@ -347,6 +382,14 @@ export default {
                     BgColor: 'primary',
                     to: '/system',
                     disable: true
+                },
+                {
+                    title: 'definitionManagement.defaultForm',
+                    icon: 'formList',
+                    BgColor: 'primary',
+                    disable: true,
+                    to: '/ui-definitions/defaultform',
+                    size: 24
                 },
                 {
                     title: 'definitionManagement.upload',
@@ -373,22 +416,38 @@ export default {
                     disable: true,
                     to: this.openDialog
                 },
+            ],
+            this.instanceItem = [
                 {
-                    title: 'definitionManagement.defaultForm',
-                    icon: 'document',
+                    header: 'VerticalSidebar.instanceList',
+                    disable: false
+                },
+                {
+                    title: 'definitionManagement.completedList',
+                    icon: 'search',
                     BgColor: 'primary',
                     disable: true,
-                    to: '/ui-definitions/defaultform'
+                    to: '/list-pages/completed',
+                    size: 24
                 },
             ]
             if (this.mode === 'ProcessGPT') {
                 this.definitionItem = this.definitionItem.filter((item) => 
-                    item.title !== 'uiDefinition.title' && item.title !== 'systemDefinition.title');
+                    item.title !== 'uiDefinition.title' && 
+                    item.title !== 'systemDefinition.title' &&
+                    item.title !== 'definitionManagement.upload' &&
+                    item.title !== 'definitionManagement.release'
+                );
             }
             this.getDefinitionList();
 
             if (!this.JMS) {
                 this.definitionItem.forEach((item) => {
+                    if (item.disable) {
+                        item.disable = false;
+                    }
+                });
+                this.instanceItem.forEach((item) => {
                     if (item.disable) {
                         item.disable = false;
                     }

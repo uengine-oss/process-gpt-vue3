@@ -37,9 +37,9 @@
                     </div>
                 </div>
                 <!-- Draft -->
-                <div>
-                    <v-checkbox v-model="activity.isDraft" hide-details density="compact" label="Draft 사용">
-                    </v-checkbox>
+                <div class="mt-4">
+                    <v-select v-model="activity.agentMode" :items="agentModeItems" hide-details density="compact" label="에이전트 모드 사용">
+                    </v-select>
                 </div>
             </v-window-item>
             <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
@@ -93,12 +93,17 @@ export default {
                 attachments: [],
                 instruction: '',
                 checkpoints: [''],
-                isDraft: false
+                agentMode: 'none'
             },
             formId: '',
             tempFormHtml: '',
             activeTab: 'setting',
-            fieldsJson: []
+            fieldsJson: [],
+            agentModeItems: [
+                { title: 'None', value: 'none' },
+                { title: 'Draft', value: 'draft' },
+                { title: 'Complete', value: 'complete' }
+            ]
         };
     },
     created() {
@@ -107,7 +112,8 @@ export default {
             const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
             if (activity) {
                 this.activity = activity;
-                if (!this.activity.isDraft) this.activity.isDraft = false;
+                if (!this.activity.agentMode) this.activity.agentMode = 'none';
+                if (this.activity.isDraft) delete this.activity.isDraft;
             } else {
                 console.log('Activity not found');
             }

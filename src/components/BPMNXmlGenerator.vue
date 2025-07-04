@@ -793,6 +793,11 @@ export default {
             elementShape.setAttribute('id', `BPMNShape_${element.id}`);
         }
         elementShape.setAttribute('bpmnElement', element.id);
+        
+        // Gateway인 경우 isMarkerVisible="true" 속성 추가
+        if (element.elementType === "Gateway") {
+            elementShape.setAttribute('isMarkerVisible', 'true');
+        }
 
         const dcBoundselement = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
         let width = 50;

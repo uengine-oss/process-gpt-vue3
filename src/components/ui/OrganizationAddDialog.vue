@@ -102,14 +102,21 @@
                 </v-window-item>
 
                 <v-window-item value="agent">
-                    <AgentField v-model="newAgent" :idRules="idRules" :nameRules="nameRules"
+                    <AgentField v-model="newAgent"
                         class="agent-field-dialog-contents"
+                        :nameRules="nameRules"
+                        :teamInfo="teamInfo"
+                        :dialogReset="dialogReset"
                     />
                 </v-window-item>
 
                 <v-window-item value="a2a">
-                    <AgentField v-model="newAgent" :idRules="idRules" :nameRules="nameRules" :type="tab"
+                    <AgentField v-model="newAgent"
                         class="agent-field-dialog-contents"
+                        :nameRules="nameRules"
+                        :teamInfo="teamInfo"
+                        :type="tab"
+                        :dialogReset="dialogReset"
                     />
                 </v-window-item>
             </v-window>
@@ -169,6 +176,7 @@ export default {
         
         selectedList: [],
         teamMembers: [],
+        dialogReset: false,
 
         // 신규 사용자(팀원) 추가
         isNewUser: false,
@@ -199,11 +207,6 @@ export default {
         isMobile() {
             return window.innerWidth <= 768;
         },
-        idRules() {
-            return [
-                (value) => !!value || this.$t('organizationChartDefinition.idRequired'),
-            ];
-        },
         emailRules() {
             return [
                 (value) => !!value || this.$t('organizationChartDefinition.emailRequired'),
@@ -224,7 +227,7 @@ export default {
                     return true;
                 }
             } else {
-                return this.idRules.every(rule => rule(this.newAgent.id) === true);
+                return this.nameRules.every(rule => rule(this.newAgent.name) === true);
             }
         }
     },
@@ -291,7 +294,12 @@ export default {
     },
     methods: {
         closeDialog() {
-            this.$emit('closeDialog')
+            this.$emit('closeDialog');
+            this.dialogReset = true;
+            // 다음 tick에서 false로 설정하여 다음 dialog open을 위해 준비
+            this.$nextTick(() => {
+                this.dialogReset = false;
+            });
         },
         save() {
             if (this.tab == 'user') {

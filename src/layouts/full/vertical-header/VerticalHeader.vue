@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, onBeforeMount, onMounted, onBeforeUnmount } from 'vue';
+
+const emit = defineEmits(['update-noti-count']);
 import { useCustomizerStore } from '../../../stores/customizer';
 import { useEcomStore } from '@/stores/apps/eCommerce';
 import { useRouter } from 'vue-router';
@@ -13,16 +15,16 @@ const priority = ref(customizer.setHorizontalLayout ? 0 : 0);
 const router = useRouter();
 const stickyHeader = ref(false);
 
+const chatNotiData = JSON.parse(localStorage.getItem('chatNotiData') || '{}');
+const chatNotiCount = ref(chatNotiData.count || 0);
+const chatNotiIds = ref(chatNotiData.ids || []);
+
 // globalIsMobile computed 추가
 const globalIsMobile = computed(() => {
     return (window as any).$globalIsMobile || false;
 });
 
-// 알림 뱃지 상태 관리 (localStorage에서 초기값 로드)
-const notificationBadges = ref({
-    chat: false,
-    workitem: localStorage.getItem('notificationBadge_workitem') === 'true'
-});
+const workItemNotiBadge = ref(localStorage.getItem('notificationBadge_workitem') === 'true');
 
 interface SidebarItem {
     title: string;
@@ -98,6 +100,10 @@ onMounted(() => {
     // 알림 뱃지 업데이트 이벤트 리스너 등록
     window.addEventListener('update-notification-badge', handleNotificationBadgeUpdate);
 
+    if(chatNotiCount.value > 0) {
+        emit('update-noti-count', chatNotiCount.value);
+    }
+
     // Clean up event listener on component unmount
     onBeforeUnmount(() => {
         window.removeEventListener('resize', handleResize);
@@ -148,7 +154,7 @@ function navigateTo(item: SidebarItem) {
         
         // 할일 목록 페이지로 이동 시 워크아이템 뱃지 제거
         if (item.to === '/todolist') {
-            notificationBadges.value.workitem = false;
+            workItemNotiBadge.value = false;
             localStorage.setItem('notificationBadge_workitem', 'false');
         }
     }
@@ -158,7 +164,7 @@ function navigateTo(item: SidebarItem) {
 function newNotification(type: string) {
     if (type === 'workitem_bpm' || type === 'workitem') {
         if(window.location.pathname != '/todolist') {
-            notificationBadges.value.workitem = true;
+            workItemNotiBadge.value = true;
             localStorage.setItem('notificationBadge_workitem', 'true');
         }
     }
@@ -178,11 +184,27 @@ function handleNotificationBadgeUpdate(event: Event) {
     const customEvent = event as CustomEvent;
     const data = customEvent.detail;
     if (data.type === 'chat') {
-        notificationBadges.value.chat = data.value;
-    } else if (data.type === 'workitem') {
-        // notificationBadges.value.workitem = data.value;
-        // localStorage.setItem('notificationBadge_workitem', data.value.toString());
-    }
+        if(data.value) {
+            if(!chatNotiIds.value.includes(data.id)) {
+                chatNotiCount.value++;
+                chatNotiIds.value.push(data.id);
+            }
+        } else {
+            if(chatNotiIds.value.includes(data.id)) {
+                chatNotiIds.value = chatNotiIds.value.filter(id => id !== data.id);
+                chatNotiCount.value--;
+            }
+        }
+        
+        localStorage.setItem('chatNotiData', JSON.stringify({
+            count: chatNotiCount.value,
+            ids: chatNotiIds.value
+        }));
+        emit('update-noti-count', chatNotiCount.value);
+    } 
+    // else if (data.type === 'workitem') {
+        
+    // }
 }
 </script>
 
@@ -208,6 +230,7 @@ function handleNotificationBadgeUpdate(event: Event) {
                             >
                                 <Icons :icon="item.icon" class="mr-2" />
                                 {{ $t(item.title) }}
+                                <v-badge v-if="item.to === '/chats' && chatNotiCount > 0" :content="chatNotiCount" color="error" inline></v-badge>
                             </v-btn>
                         </div>
                     </template>
@@ -237,8 +260,8 @@ function handleNotificationBadgeUpdate(event: Event) {
                                     <Icons 
                                         :icon="item.icon"
                                         :class="{
-                                            'icon-heartbit': (item.to === '/chats' && notificationBadges.chat) || 
-                                                           (item.to === '/todolist' && notificationBadges.workitem)
+                                            'icon-heartbit': (item.to === '/chats' && chatNotiCount > 0) || 
+                                                           (item.to === '/todolist' && workItemNotiBadge)
                                         }"
                                     />
                                 </v-btn>

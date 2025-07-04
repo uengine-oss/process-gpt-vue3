@@ -1,6 +1,5 @@
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import partialParse from "partial-json-parser";
-import Chats from '@/views/apps/chat/Chats.vue';
 
 class ChatBackgroundManager {
     constructor() {
@@ -11,7 +10,6 @@ class ChatBackgroundManager {
     
     // 백그라운드 요청 등록
     registerBackgroundRequest(requestId, generator, chatRoomId, messageData) {
-        console.log('[ChatBackgroundManager] 백그라운드 요청 등록:', requestId);
         this.activeRequests.set(requestId, {
             generator,
             chatRoomId,
@@ -26,20 +24,24 @@ class ChatBackgroundManager {
     }
     
     // 백그라운드 완료 처리
-    async handleBackgroundComplete(requestId, response) {
-        console.log('[ChatBackgroundManager] 백그라운드 완료 처리:', requestId);
+    async handleBackgroundComplete(requestId, response, originalChatRoomId = null) {
         const request = this.activeRequests.get(requestId);
         if (!request) {
             console.log('[ChatBackground Manager] 요청을 찾을 수 없습니다:', requestId);
             return;
         }
         
-        const { chatRoomId } = request;
+        // 원래 채팅방 ID 우선 사용
+        const chatRoomId = originalChatRoomId || request.chatRoomId;
+        console.log('[ChatBackgroundManager] 채팅방 ID 사용:', {
+            originalChatRoomId,
+            requestChatRoomId: request.chatRoomId,
+            finalChatRoomId: chatRoomId
+        });
         
         try {
             // DB에 자동 저장 (기존 afterGenerationFinished 로직 사용)
-            await this.saveResponseToDatabase(request, response);
-            console.log('[ChatBackgroundManager] DB 저장 완료');
+            await this.saveResponseToDatabase(request, response, chatRoomId);
         } catch (error) {
             console.error('[ChatBackgroundManager] DB 저장 실패:', error);
         }
@@ -57,7 +59,7 @@ class ChatBackgroundManager {
         }
     }
     
-    async saveResponseToDatabase(request, response) {
+    async saveResponseToDatabase(request, response, targetChatRoomId) {
         try {
             let jsonData = response;
             if (typeof response == 'string') {
@@ -74,41 +76,52 @@ class ChatBackgroundManager {
             }
 
             // 기존 afterGenerationFinished 로직 실행
-            await this.processGeneratedResponse(request, jsonData || response);
+            await this.processGeneratedResponse(request, jsonData || response, targetChatRoomId);
             
         } catch (error) {
             console.error('[ChatBackgroundManager] 응답 처리 실패:', error);
         }
     }
     
-    async processGeneratedResponse(request, responseObj) {
-        const { chatRoomId, messageData } = request;
+    async processGeneratedResponse(request, responseObj, targetChatRoomId) {
+        const { messageData } = request;
         
         try {
             // Chats 컴포넌트의 afterGenerationFinished 로직을 직접 호출
-            await this.callChatsAfterGenerationFinished(responseObj, request);
+            await this.callChatsAfterGenerationFinished(responseObj, request, targetChatRoomId);
         } catch (error) {
             console.error('[ChatBackgroundManager] Chats afterGenerationFinished 호출 실패:', error);
             // 실패 시 기본 저장
             if (responseObj) {
-                const obj = this.createMessageObj(responseObj, 'system', messageData, chatRoomId);
-                await this.putMessage(obj, chatRoomId);
+                const obj = this.createMessageObj(responseObj, 'system', messageData, targetChatRoomId);
+                await this.putMessage(obj, targetChatRoomId);
             }
         }
     }
 
-    async callChatsAfterGenerationFinished(responseObj, request) {
-        console.log('[ChatBackgroundManager] Chats afterGenerationFinished 호출 시작');
+    async callChatsAfterGenerationFinished(responseObj, request, targetChatRoomId) {
         
-        // Chats 컴포넌트의 필요한 컨텍스트를 구성
-        const mockChatsContext = await this.createMockChatsContext(request);
-        
-        // Chats 컴포넌트의 afterGenerationFinished 메서드 호출
-        await Chats.methods.afterGenerationFinished.call(mockChatsContext, responseObj);
+        try {
+            // 동적 import를 사용하여 순환 참조 방지
+            const { default: Chats } = await import('@/views/apps/chat/Chats.vue');
+            
+            // Chats 컴포넌트의 필요한 컨텍스트를 구성
+            const mockChatsContext = await this.createMockChatsContext(request, targetChatRoomId);
+            
+            // Chats 컴포넌트의 afterGenerationFinished 메서드 호출
+            await Chats.methods.afterGenerationFinished.call(mockChatsContext, responseObj, targetChatRoomId);
+        } catch (error) {
+            console.error('[ChatBackgroundManager] 동적 import 실패:', error);
+            // fallback 처리
+            if (responseObj) {
+                const obj = this.createMessageObj(responseObj, 'system', request.messageData, targetChatRoomId);
+                await this.putMessage(obj, targetChatRoomId);
+            }
+        }
     }
 
-    async createMockChatsContext(request) {
-        const { chatRoomId, messageData } = request;
+    async createMockChatsContext(request, targetChatRoomId) {
+        const { messageData } = request;
         
         // localStorage에서 사용자 정보 가져오기
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
@@ -116,8 +129,8 @@ class ChatBackgroundManager {
         // Chats 컴포넌트에서 필요한 최소한의 컨텍스트 구성
         const mockContext = {
             userInfo: userInfo,
-            chatRoomId: chatRoomId, // 원래 채팅방 ID 고정
-            currentChatRoom: { id: chatRoomId }, // 원래 채팅방 ID 고정
+            chatRoomId: targetChatRoomId, // 원래 채팅방 ID 고정
+            currentChatRoom: { id: targetChatRoomId }, // 원래 채팅방 ID 고정
             isAgentChat: false,
             isSystemChat: false,
             ProcessGPTActive: false,
@@ -127,16 +140,15 @@ class ChatBackgroundManager {
             
             // 필요한 메서드들 - 원래 채팅방 ID로 고정
             uuid: this.uuid.bind(this),
-            createMessageObj: (message, role) => this.createMessageObj(message, role, messageData, chatRoomId),
-            putMessage: (obj) => this.putMessage(obj, chatRoomId), // 원래 채팅방 ID 사용
+            createMessageObj: (message, role) => this.createMessageObj(message, role, messageData, targetChatRoomId),
+            putMessage: (obj) => this.putMessage(obj, targetChatRoomId), // 원래 채팅방 ID 사용
             $t: (key, params) => key, // 번역 함수 mock
             
             // startProcess 메서드 (간단한 버전)
             startProcess: async (obj) => {
-                console.log('[ChatBackgroundManager] startProcess 호출:', obj);
                 const systemMsg = `작업 실행: ${obj.work || '작업'}`;
-                const systemMsgObj = this.createMessageObj(systemMsg, 'system', messageData, chatRoomId);
-                await this.putMessage(systemMsgObj, chatRoomId);
+                const systemMsgObj = this.createMessageObj(systemMsg, 'system', messageData, targetChatRoomId);
+                await this.putMessage(systemMsgObj, targetChatRoomId);
             },
             
             // deleteSystemMessage 메서드
@@ -149,7 +161,7 @@ class ChatBackgroundManager {
         return mockContext;
     }
     
-    createMessageObj(message, role, originalMessage, chatRoomId) {
+    createMessageObj(message, role, originalMessage, targetChatRoomId) {
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
         
         return {
@@ -175,8 +187,6 @@ class ChatBackgroundManager {
             
             // chat_rooms 테이블 업데이트 - 현재 채팅방 정보 가져와서 업데이트
             await this.updateChatRoomMessage(messageObj, chatRoomId);
-            
-            console.log('[ChatBackgroundManager] 메시지 저장 완료:', messageObj.uuid);
             
         } catch (error) {
             console.error('[ChatBackgroundManager] 메시지 저장 실패:', error);
@@ -206,7 +216,6 @@ class ChatBackgroundManager {
                 
                 // 전체 채팅방 정보 업데이트
                 await this.storage.putObject(`db://chat_rooms`, currentChatRoom);
-                console.log('[ChatBackgroundManager] 채팅방 업데이트 완료:', chatRoomId);
             }
         } catch (error) {
             console.error('[ChatBackgroundManager] 채팅방 업데이트 실패:', error);
@@ -252,7 +261,6 @@ class ChatBackgroundManager {
     
     // 백그라운드 상태 변경 알림
     notifyBackgroundStatusChange(chatRoomId, isActive) {
-        console.log(`[ChatBackgroundManager] 채팅방 ${chatRoomId} 백그라운드 상태:`, isActive);
         
         // 전역 이벤트 발생
         window.dispatchEvent(new CustomEvent('background-generation-status', {

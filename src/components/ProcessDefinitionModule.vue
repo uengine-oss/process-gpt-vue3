@@ -82,7 +82,7 @@ export default {
                         messageWriting.isLoading = false;
                         this.messages.push({
                             "role": "system",
-                            "content": `${activity.name} 활동의 폼이 생성되었습니다.`,
+                            "content": `${activity.name} 활동의 폼 생성이 완료되었습니다.`,
                             "timeStamp": Date.now(),
                             "contentType": "html",
                             "htmlContent": formHtml,
@@ -122,7 +122,7 @@ export default {
                 formGenerator.client.genType = 'form';
                 formGenerator.client.onFormCreated = async (response) => {
                     let messageWriting = me.messages[me.messages.length - 1];
-                    messageWriting.content = response;
+                    messageWriting.jsonContent = response;
                 }
                 formGenerator.client.onFormGenerationFinished = async (response) => {
                     try {
@@ -643,7 +643,8 @@ export default {
                         return {
                             name: lane.name,
                             endpoint: endpoint,
-                            resolutionRule: lane.resolutionRule
+                            resolutionRule: lane.resolutionRule,
+                            default: ""
                         }
                     }),
                     events: [

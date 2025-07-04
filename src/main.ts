@@ -226,6 +226,7 @@ async function setupTenant() {
     ) {
         Object.defineProperty(window, '$isTenantServer', {
             value: false,
+            // value: true,
             writable: false,
             configurable: true
         });

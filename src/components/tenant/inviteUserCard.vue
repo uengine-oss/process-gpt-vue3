@@ -29,7 +29,7 @@
                                     </v-col>
                                     <v-col cols="10" sm="3" class="px-sm-2">
                                         <v-select
-                                            v-model="user.role"
+                                            v-model="user.is_admin"
                                             :items="roleOptions"
                                             item-title="text"
                                             item-value="value"
@@ -144,12 +144,12 @@ export default {
         inviteUserlist: [
             {
                 email: '',
-                role: 'user'
+                is_admin: false
             }
         ],
         roleOptions: [
-            { text: '사용자', value: 'user' },
-            { text: '관리자', value: 'superAdmin' }
+            { text: '사용자', value: false },
+            { text: '관리자', value: true }
         ]
     }),
     methods: {
@@ -185,7 +185,7 @@ export default {
         addUser() {
             this.inviteUserlist.push({
                 email: '',
-                role: 'user'
+                is_admin: false
             });
         },
         removeUser(index) {
@@ -198,15 +198,19 @@ export default {
             var me = this
             me.$try({
                 action: async () => {
-                    const tenantId = this.tenantInfo && this.tenantInfo.id ? this.tenantInfo.id : window.location.host.split('.')[0];
+                    const tenantId = this.tenantInfo && this.tenantInfo.id ? this.tenantInfo.id : (window.location.host.includes('.process-gpt.io') ? window.location.host.split('.')[0] : window.location.host.split(':')[0]);
                     for (const user of this.inviteUserlist) {
                         let userInfo = {
                             email: user.email,
-                            role: user.role,
+                            is_admin: user.is_admin,
                             tenant_id: tenantId
                         }
                         const result = await backend.inviteUser(userInfo);
-                        console.log(result)
+                        if(result) {
+                            user.id = result.response.user.id
+                            user.profile = "/images/defaultUser.png"
+                            user.name = user.email.split('@')[0]
+                        }
                     }
                     this.isInviteLoading = false;
                     if(this.type === 'createTenant') {

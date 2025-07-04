@@ -100,15 +100,8 @@ export default {
     },
     methods: {
         closeInviteUserCard(userList) {
+            this.users = [...this.users, ...userList];
             this.openInviteUserCard = false;
-            userList.forEach(user => {
-                if(user.role === 'superAdmin') {
-                    user.is_admin = true;
-                } else {
-                    user.is_admin = false;
-                }
-                this.users.push(user);
-            });
         },
         async getUserList() {
             this.users  = await backend.getUserList();

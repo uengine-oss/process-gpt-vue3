@@ -152,7 +152,8 @@
         "title": "Definition Management",
         "upload": "Upload definition list",
         "release": "Definition Export",
-        "defaultForm": "Default Form Management"
+        "defaultForm": "Default Form Management",
+        "completedList": "View completed instance list"
     },
     "systemDefinition": {
         "title": "System Definition"
@@ -236,7 +237,8 @@
         "settingPermission": "Setting Permission",
         "isReadable": "Readable",
         "isWritable": "Writable",
-        "marketplace": "Marketplace"
+        "marketplace": "Marketplace",
+        "marketplaceExplanation": "Find a business process template"
     },
     "uiDefinition": {
         "title": "Screen Definition",
@@ -1228,5 +1230,24 @@
         "subtitle": "Experience the innovation of AI-based process management",
         "betaTestButton": "Try Beta Test",
         "contactButton": "Contact Us"
+    },
+     "DelegateTask": {
+        "title": "Delegate Task",
+        "delegate": "Delegate",
+        "close": "Close",
+        "noAssignee": "No assignee",
+        "notification": "Assignee not found. Please contact the administrator.",
+        "delegateTitle": "Delegatee",
+        "description": "Description",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "assignee": "Assignee",
+        "selectAssignee": "Select Delegatee",
+        "equalDelegate": "Delegatee is the same as the assignee.",
+        "sucessMsg": "Delegated successfully."
+    },
+    "UserInputGenerator": {
+        "inputLabel": "Enter the agent you want to generate",
+        "generateButton": "Generate Agent with AI"
     }
 }

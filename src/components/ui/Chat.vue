@@ -259,7 +259,7 @@
 
                                                                 <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
                                                                 <div v-else-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
-                                                                <pre v-else class="text-body-1">{{ setMessageForUser(message.content) }}</pre>
+                                                                <pre v-else class="text-body-1" v-html="setMessageForUser(message.content)"></pre>
 
                                                                 <v-btn v-if="message.type && message.type === 'add_role'"
                                                                     style="border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
@@ -472,14 +472,14 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-tooltip :text="$t('chat.camera')">
+                                <!-- <v-tooltip v-if="isMobile" :text="$t('chat.camera')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
                                             <Icons :icon="'camera'" :size="20" />
                                         </v-btn>
                                     </template>
-                                </v-tooltip>
+                                </v-tooltip> -->
                                 <v-tooltip :text="$t('chat.addImage')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); uploadImage()" v-bind="props"
@@ -701,6 +701,21 @@
     <!-- 프로세스 정의 체계도 상단 chat UI -->
     <div v-else>
         <v-card elevation="10" class="pa-4">
+            <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
+            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+            <div style="z-index: 9999;" class="d-flex">
+                <div id="imagePreview"></div>
+                <v-btn
+                    v-if="delImgBtn"
+                    @click="deleteImage()"
+                    density="compact"
+                    icon
+                    size="16"
+                    style="background-color: black !important; margin: 4px 0px 0px -20px !important;"
+                >
+                    <v-icon color="white" size="14">mdi-close</v-icon>
+                </v-btn>
+            </div>
             <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.definitionMapInputMessage')"
@@ -721,14 +736,14 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-tooltip :text="$t('chat.camera')">
+                                <!-- <v-tooltip v-if="isMobile" :text="$t('chat.camera')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat || isGenerationFinished">
                                             <Icons :icon="'camera'" :size="20" />
                                         </v-btn>
                                     </template>
-                                </v-tooltip>
+                                </v-tooltip> -->
                                 <v-tooltip :text="$t('chat.addImage')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); uploadImage()" v-bind="props"
@@ -1158,7 +1173,18 @@ export default {
             this.$emit('clickedWorkOrder');
         },
         startWorkOrder(){
-            this.$emit('startWorkOrder');
+            if (this.definitionMapOnlyInput) {
+                // 정의 맵에서는 chats로 이동하면서 업무지시 다이얼로그 열기
+                this.$router.push({
+                    path: '/chats',
+                    query: {
+                        openWorkOrder: 'true'
+                    }
+                });
+            } else {
+                // 일반 채팅에서는 기존대로 이벤트 emit
+                this.$emit('startWorkOrder');
+            }
             this.isOpenedChatMenu = false
         },
         openChatMenu(){
