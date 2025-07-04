@@ -118,6 +118,8 @@ export default {
         if(!this.copyUengineProperties.expression) {
             this.copyUengineProperties.expression = "* * * * *";
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        } else {
+            this.expression = this.copyUengineProperties.expression;
         }
     },
     computed: {
