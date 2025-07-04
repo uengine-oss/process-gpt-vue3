@@ -4,7 +4,7 @@
             class="is-work-height"
             style="overflow: auto;"
         >
-            <div v-if="componentName == 'DefinitionMapList'" class="pa-4">
+            <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
                 <Chat
                     :definitionMapOnlyInput="true"
                     :disableChat="false"
