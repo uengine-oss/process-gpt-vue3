@@ -1842,7 +1842,7 @@ class ProcessGPTBackend implements Backend {
 
     async getAgentList() {
         try {
-            const list = await storage.list('agents');
+            const list = await storage.list('users', { match: { is_agent: true } });
             return list;
         } catch (error) {
             //@ts-ignore
@@ -1857,7 +1857,7 @@ class ProcessGPTBackend implements Backend {
                     id: agentId
                 }
             }
-            const agent = await storage.getObject('agents', options);
+            const agent = await storage.getObject('users', options);
             return agent;
         } catch (error) {
             //@ts-ignore
@@ -1869,7 +1869,7 @@ class ProcessGPTBackend implements Backend {
         try {
             const putObj: any = {
                 id: newAgent.id,
-                name: newAgent.name,
+                username: newAgent.name,
                 role: newAgent.role,
                 goal: newAgent.goal,
                 persona: newAgent.persona,
@@ -1879,9 +1879,10 @@ class ProcessGPTBackend implements Backend {
                 profile: newAgent.img,
                 skills: newAgent.skills,
                 model: newAgent.model,
-                tenant_id: window.$tenantName
+                tenant_id: window.$tenantName,
+                is_agent: true
             }
-            await storage.putObject('agents', putObj);
+            await storage.putObject('users', putObj);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1890,7 +1891,7 @@ class ProcessGPTBackend implements Backend {
 
     async deleteAgent(agentId: string) {
         try {
-            await storage.delete('agents', { match: { id: agentId } });
+            await storage.delete('users', { match: { id: agentId } });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

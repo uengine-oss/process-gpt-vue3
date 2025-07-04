@@ -5,7 +5,7 @@
         <div class="chat-info-view-wrapper">
             <div class="chat-info-view-area">
                 <div class="chat-info-view-area">
-                    <slot name="attachments-area"></slot>
+                    <slot name="custom-chat-top"></slot>
                     <slot name="custom-title" v-if="!definitionMapOnlyInput">
                         <div>
                             <div v-if="name && name !== ''" class="d-flex gap-2 align-center pa-4">
