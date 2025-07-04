@@ -1,183 +1,193 @@
 <template>
   <div class="agent-monitor">
-    <div v-if="errorMessage" class="error-banner">
-      {{ errorMessage }}
-    </div>
-    <div v-if="tasks.length > 0" class="task-list">
-      <div v-for="(task, index) in tasks" :key="task.id" class="task-card">
-        <div class="task-header">
-          <div class="task-left">
-            <div class="task-avatar">
-              <img v-if="task.agentProfile" :src="task.agentProfile" alt="Agent" class="avatar-image" />
-              <span v-else>{{ index + 1 }}</span>
-            </div>
-            <div class="task-info">
-              <h3 class="task-title">{{ task.role }}</h3>
-              <p class="task-description">{{ task.goal }}</p>
-            </div>
-          </div>
-          <div class="task-header-right">
-            <div :class="['task-status', task.isCompleted ? (task.isCrewCompleted ? 'crew-completed' : 'completed') : 'running']">
-              <div class="status-dot"></div>
-              <span>{{ getStatusText(task) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="task-meta">
-          <div class="meta-item">
-            <span class="meta-label">시작시간</span>
-            <span class="meta-value">{{ formatTime(task.startTime) }}</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">유형</span>
-            <span class="meta-value">{{ task.crewType }}</span>
-          </div>
-          <div v-if="task.isCompleted && isTaskCompleted(task)" class="meta-submit">
-            <button @click="submitTask(task)" class="submit-button-light">
-              채택
-            </button>
-          </div>
-        </div>
-
-        <div v-if="task.isCompleted && task.output" class="task-result">
-          <div class="result-header">
-            <h4 class="result-title">작업 결과</h4>
-            <div class="result-type-badge">
-              <span class="type-label">{{ getOutputTypeLabel(task.crewType, task.output) }}</span>
-            </div>
-          </div>
-          <div class="result-content">
-            <!-- JSON 출력 -->
-            <div v-if="isJsonOutput(task.crewType, task.output)" class="json-output">
-              <div 
-                :class="['json-container', { expanded: isTaskExpanded(task.id) }]"
-                @dblclick="toggleTaskExpansion(task.id)"
-              >
-              <pre>{{ formatJsonOutput(task.output) }}</pre>
-              </div>
-              <div v-if="isContentLong(formatJsonOutput(task.output))" class="expand-controls">
-                <button @click="toggleTaskExpansion(task.id)" class="expand-button">
-                  {{ isTaskExpanded(task.id) ? '접기' : '더보기' }} 
-                  <span class="expand-icon">{{ isTaskExpanded(task.id) ? '▲' : '▼' }}</span>
-                </button>
-                <span class="expand-hint">더블클릭으로도 {{ isTaskExpanded(task.id) ? '접기' : '펼치기' }}가 가능합니다</span>
-              </div>
-            </div>
-            <!-- 슬라이드 출력 -->
-            <div v-else-if="isSlideOutput(task.crewType, task.output)" class="slides-container">
-              <div class="slides-header">
-                <div class="header-info">
-                  <h5>프레젠테이션 모드</h5>
-                  <span class="slide-hint">슬라이드를 클릭하여 탐색하세요</span>
+    <div class="task-area">
+      <div v-if="errorMessage" class="error-banner">
+        {{ errorMessage }}
+      </div>
+      <div v-if="timeline.length > 0" class="timeline-list">
+        <div
+          v-for="(item, index) in timeline"
+          :key="item.type + '-' + (item.type === 'task' ? item.payload.id : 'chat-' + index)"
+          class="timeline-item"
+        >
+          <template v-if="item.type === 'task'">
+            <div class="task-card">
+              <div class="task-header">
+                <div class="task-left">
+                  <div class="task-avatar">
+                    <img v-if="item.payload.agentProfile"
+                         :src="item.payload.agentProfile"
+                         alt="Agent"
+                         class="avatar-image"
+                         @load="handleAvatarLoad(item.payload.agentProfile)"
+                         @error="handleAvatarError(item.payload.agentProfile)" />
+                    <span v-else>{{ index + 1 }}</span>
+                  </div>
+                  <div class="task-info">
+                    <h3 class="task-title">{{ item.payload.role }}</h3>
+                    <p class="task-description">{{ item.payload.goal }}</p>
+                  </div>
                 </div>
-                <div class="slide-navigation">
-                  <button 
-                    @click="previousSlide(task.id)" 
-                    :disabled="getCurrentSlideIndex(task.id) === 0"
-                    class="nav-btn"
-                  >
-                    ←
+                <div class="task-header-right">
+                  <div :class="['task-status', item.payload.isCompleted ? (item.payload.isCrewCompleted ? 'crew-completed' : 'completed') : 'running']">
+                    <div class="status-dot"></div>
+                    <span>{{ getStatusText(item.payload) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="task-meta">
+                <div class="meta-item">
+                  <span class="meta-label">시작시간</span>
+                  <span class="meta-value">{{ formatTime(item.payload.startTime) }}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">유형</span>
+                  <span class="meta-value">{{ item.payload.crewType }}</span>
+                </div>
+                <div v-if="item.payload.isCompleted && isTaskCompleted(item.payload)" class="meta-submit">
+                  <button @click="submitTask(item.payload)" class="submit-button-light">
+                    채택
                   </button>
-                  <span class="slide-counter">
-                    {{ getCurrentSlideIndex(task.id) + 1 }} / {{ getSlides(task.output).length }}
+                </div>
+              </div>
+
+              <div v-if="item.payload.isCompleted && item.payload.output" class="task-result">
+                <div class="result-header">
+                  <h4 class="result-title">작업 결과</h4>
+                  <div class="result-type-badge">
+                    <span class="type-label">{{ getOutputTypeLabel(item.payload.crewType, item.payload.output) }}</span>
+                  </div>
+                </div>
+                <div class="result-content">
+                  <!-- JSON 출력 -->
+                  <div v-if="isJsonOutput(item.payload.crewType, item.payload.output)" class="json-output">
+                    <div 
+                      :class="['json-container', { expanded: isTaskExpanded(item.payload.id) }]"
+                      @dblclick="toggleTaskExpansion(item.payload.id)"
+                    >
+                    <pre>{{ formatJsonOutput(item.payload.output) }}</pre>
+                    </div>
+                    <div v-if="isContentLong(formatJsonOutput(item.payload.output))" class="expand-controls">
+                      <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
+                        {{ isTaskExpanded(item.payload.id) ? '접기' : '더보기' }} 
+                        <span class="expand-icon">{{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}</span>
+                      </button>
+                      <span class="expand-hint">더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다</span>
+                    </div>
+                  </div>
+                  <!-- 슬라이드 출력 -->
+                  <div v-else-if="isSlideOutput(item.payload.crewType, item.payload.output)" class="slides-container">
+                    <div class="slides-header">
+                      <div class="header-info">
+                        <h5>프레젠테이션 모드</h5>
+                        <span class="slide-hint">슬라이드를 클릭하여 탐색하세요</span>
+                      </div>
+                      <div class="slide-navigation">
+                        <button 
+                          @click="previousSlide(item.payload.id)" 
+                          :disabled="getCurrentSlideIndex(item.payload.id) === 0"
+                          class="nav-btn"
+                        >
+                          ←
+                        </button>
+                        <span class="slide-counter">
+                          {{ getCurrentSlideIndex(item.payload.id) + 1 }} / {{ getSlides(item.payload.output).length }}
+                        </span>
+                        <button 
+                          @click="nextSlide(item.payload.id)" 
+                          :disabled="getCurrentSlideIndex(item.payload.id) === getSlides(item.payload.output).length - 1"
+                          class="nav-btn"
+                        >
+                          →
+                        </button>
+                      </div>
+                    </div>
+                    <div class="slide-content">
+                      <div v-html="getCurrentSlide(item.payload)" class="slide-inner"></div>
+                    </div>
+                    <div class="slide-indicators">
+                      <span 
+                        v-for="(slide, index) in getSlides(item.payload.output)" 
+                        :key="index"
+                        :class="['indicator', { active: index === getCurrentSlideIndex(item.payload.id) }]"
+                        @click="goToSlide(item.payload.id, index)"
+                      ></span>
+                    </div>
+                  </div>
+                  <!-- 마크다운 출력 -->
+                  <div v-else class="markdown-output">
+                    <div 
+                      :class="['markdown-container', { expanded: isTaskExpanded(item.payload.id) }]"
+                      @dblclick="toggleTaskExpansion(item.payload.id)"
+                      v-html="formatMarkdownOutput(item.payload.output)"
+                    ></div>
+                    <div v-if="isContentLong(item.payload.output)" class="expand-controls">
+                      <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
+                        {{ isTaskExpanded(item.payload.id) ? '접기' : '더보기' }}
+                        <span class="expand-icon">{{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}</span>
+                      </button>
+                      <span class="expand-hint">더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else-if="!item.payload.isCompleted" class="task-progress">
+                <div class="progress-dots">
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                </div>
+                <span>작업을 진행하고 있습니다...</span>
+              </div>
+              <div v-if="!item.payload.isCompleted && toolUsageStatusByTask[item.payload.jobId] && toolUsageStatusByTask[item.payload.jobId].length" class="tool-usage-status-list">
+                <div
+                  v-for="tool in toolUsageStatusByTask[item.payload.jobId]"
+                  :key="tool.tool_name + tool.query"
+                  class="tool-usage-status-item"
+                >
+                  <div class="tool-status-indicator">
+                    <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
+                    <div v-else class="check-mark">✓</div>
+                  </div>
+                  <span v-if="tool.tool_name && tool.tool_name.includes('mem0')">
+                    {{ tool.tool_name }}로 {{ tool.query }} 정보{{ tool.status === 'done' ? ' 검색 완료' : '를 찾는중' }}
                   </span>
-                  <button 
-                    @click="nextSlide(task.id)" 
-                    :disabled="getCurrentSlideIndex(task.id) === getSlides(task.output).length - 1"
-                    class="nav-btn"
-                  >
-                    →
-                  </button>
+                  <span v-else-if="tool.tool_name && tool.tool_name.includes('perplexity')">
+                    {{ tool.tool_name }}로 {{ tool.query }}를 {{ tool.status === 'done' ? '검색 완료' : '검색중' }}
+                  </span>
+                  <span v-else>
+                    {{ tool.tool_name }}({{ tool.query }}) {{ tool.status === 'done' ? '작업 완료' : '작업중' }}
+                  </span>
                 </div>
               </div>
-              <div class="slide-content">
-                <div v-html="getCurrentSlide(task)" class="slide-inner"></div>
-              </div>
-              <div class="slide-indicators">
-                <span 
-                  v-for="(slide, index) in getSlides(task.output)" 
-                  :key="index"
-                  :class="['indicator', { active: index === getCurrentSlideIndex(task.id) }]"
-                  @click="goToSlide(task.id, index)"
-                ></span>
-              </div>
             </div>
-            <!-- 마크다운 출력 -->
-            <div v-else class="markdown-output">
-              <div 
-                :class="['markdown-container', { expanded: isTaskExpanded(task.id) }]"
-                @dblclick="toggleTaskExpansion(task.id)"
-                v-html="formatMarkdownOutput(task.output)"
-              ></div>
-              <div v-if="isContentLong(task.output)" class="expand-controls">
-                <button @click="toggleTaskExpansion(task.id)" class="expand-button">
-                  {{ isTaskExpanded(task.id) ? '접기' : '더보기' }}
-                  <span class="expand-icon">{{ isTaskExpanded(task.id) ? '▲' : '▼' }}</span>
-                </button>
-                <span class="expand-hint">더블클릭으로도 {{ isTaskExpanded(task.id) ? '접기' : '펼치기' }}가 가능합니다</span>
-              </div>
+          </template>
+          <template v-else>
+            <div class="chat-message">
+              <div class="bubble">{{ item.payload.content }}</div>
             </div>
-          </div>
-        </div>
-
-        <div v-else-if="!task.isCompleted" class="task-progress">
-          <div class="progress-dots">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-          </div>
-          <span>작업을 진행하고 있습니다...</span>
-        </div>
-        <div v-if="!task.isCompleted && toolUsageStatusByTask[task.jobId] && toolUsageStatusByTask[task.jobId].length" class="tool-usage-status-list">
-          <div
-            v-for="tool in toolUsageStatusByTask[task.jobId]"
-            :key="tool.tool_name + tool.query"
-            class="tool-usage-status-item"
-          >
-            <div class="tool-status-indicator">
-              <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
-              <div v-else class="check-mark">✓</div>
-            </div>
-            <span v-if="tool.tool_name && tool.tool_name.includes('mem0')">
-              {{ tool.tool_name }}로 {{ tool.query }} 정보{{ tool.status === 'done' ? ' 검색 완료' : '를 찾는중' }}
-            </span>
-            <span v-else-if="tool.tool_name && tool.tool_name.includes('perplexity')">
-              {{ tool.tool_name }}로 {{ tool.query }}를 {{ tool.status === 'done' ? '검색 완료' : '검색중' }}
-            </span>
-            <span v-else>
-              {{ tool.tool_name }}({{ tool.query }}) {{ tool.status === 'done' ? '작업 완료' : '작업중' }}
-            </span>
-          </div>
+          </template>
         </div>
       </div>
-    </div>
-
-    <div v-if="tasks.length === 0" class="empty-state">
-      <div class="empty-icon">📋</div>
-      <h3>{{ isQueued ? '작업이 대기열에 등록되었습니다' : '진행중인 작업이 없습니다' }}</h3>
-      <p>작업이 시작되면 여기에 표시됩니다.</p>
-      <button v-if="!isQueued" @click="startTask" class="start-button">시작하기</button>
-    </div>
-
-    <!-- Chat UI -->
-    <div class="chat-container">
-      <div class="chat-messages">
-        <div v-for="(message, index) in chatMessages" :key="index" class="chat-message">
-          <div class="bubble">{{ message.content }}</div>
-        </div>
+      <div v-else class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h3>{{ isQueued ? '작업이 대기열에 등록되었습니다' : '진행중인 작업이 없습니다' }}</h3>
+        <p>작업이 시작되면 여기에 표시됩니다.</p>
+        <button v-if="!isQueued" @click="startTask" class="start-button">시작하기</button>
       </div>
-      <!-- 피드백 처리 로딩 표시 -->
       <div v-if="isFeedbackLoading" class="feedback-loading">
         <div class="loading-spinner"></div>
         <span>피드백 처리 중입니다. 잠시만 기다려주세요...</span>
       </div>
-      <!-- 채팅 입력창 -->
-      <div v-else class="chat-input-wrapper">
-        <input v-model="chatInput" :disabled="!isCancelled" placeholder="메시지를 입력하세요..." />
-        <button @click="submitChat" :disabled="!isCancelled || !chatInput">전송</button>
-        <button class="stop-button" @click="stopTask" v-if="!isCancelled">중단</button>
-      </div>
+    </div>
+    <div v-if="tasks.length > 0" class="chat-input-wrapper">
+      <textarea v-model="chatInput" :disabled="!isCancelled || isFeedbackLoading" placeholder="메시지를 입력하세요..." rows="3" class="chat-textarea"></textarea>
+      <button class="chat-toggle-button" @click="isCancelled ? submitChat() : stopTask()" :disabled="isFeedbackLoading || (isCancelled && !chatInput)">
+        <i class="fa fa-paper-plane" v-if="isCancelled"></i>
+        <i class="fa fa-stop" v-else></i>
+      </button>
     </div>
   </div>
 </template>
@@ -203,14 +213,14 @@ export default {
     return {
       events: [],
       channel: null,
-      slideIndexes: {}, // task별 현재 슬라이드 인덱스 관리
-      expandedTasks: {}, // task별 확장/축소 상태 관리
-      errorMessage: null, // 에러 메시지 상태 추가
-      todoStatus: null, // todolist의 상태 저장
-      chatInput: '',        // Chat 입력값
-      chatMessages: [],     // Chat 메시지 리스트
-      isCancelled: false,    // 채팅 활성화 상태 (중단 시 true로 변경)
-      isFeedbackLoading: false  // 피드백 처리 중 로딩 상태
+      slideIndexes: {},
+      expandedTasks: {},
+      errorMessage: null,
+      todoStatus: null,
+      chatInput: '',
+      chatMessages: [],
+      isCancelled: false,
+      isFeedbackLoading: false
     }
   },
   computed: {
@@ -222,7 +232,6 @@ export default {
       const taskMap = new Map()
       const crewCompletedTypes = new Set()
       
-      // crew_completed 이벤트 먼저 처리
       filtered.forEach(event => {
         if (event.event_type === 'crew_completed') {
           crewCompletedTypes.add(event.crew_type)
@@ -246,26 +255,18 @@ export default {
             isCrewCompleted: false,
             agentProfile: data?.agent_profile
           }
+          console.log('agentProfile', data?.agent_profile);
           tasks.push(task)
           taskMap.set(jobId, task)
         } else if (event.event_type === 'task_completed') {
           if (taskMap.has(jobId)) {
             const task = taskMap.get(jobId)
             task.isCompleted = true
-            
-            // final_result 받자마자 바로 출력 (리포트 통합 전문가)
-            if (task.role === '리포트 통합 전문가' && data?.final_result) {
-              console.log('🔥 final_result 받자마자 출력:', data.final_result);
-              console.log('🔥 final_result 타입:', typeof data.final_result);
-              console.log('🔥 final_result 길이:', data.final_result?.length);
-            }
-            
             task.output = data?.final_result || null
           }
         }
       })
       
-      // 각 crew_type별로 마지막 완료된 작업에 crew_completed 표시
       crewCompletedTypes.forEach(crewType => {
         const completedTasksOfType = tasks
           .filter(task => task.crewType === crewType && task.isCompleted)
@@ -279,7 +280,6 @@ export default {
       return tasks
     },
     toolUsageStatusByTask() {
-      // jobId별로 [{tool_name, query, status: 'searching'|'done'}] 배열
       const started = {};
       const finished = {};
       this.events.forEach(e => {
@@ -297,8 +297,6 @@ export default {
         }
       });
       
-      
-      // 매칭해서 상태 부여 (tool_name과 jobId만으로 매칭, query는 finished에서 null이 올 수 있음)
       const result = {};
       Object.keys(started).forEach(jobId => {
         result[jobId] = started[jobId].map(s => {
@@ -312,6 +310,11 @@ export default {
     isQueued() {
       return this.todoStatus &&
         (this.todoStatus.status === 'IN_PROGRESS' && this.todoStatus.agent_mode === 'DRAFT')
+    },
+    timeline() {
+      const taskItems = this.tasks.map(task => ({ type: 'task', time: task.startTime, payload: task }));
+      const chatItems = this.chatMessages.map(msg => ({ type: 'chat', time: msg.time, payload: msg }));
+      return [...taskItems, ...chatItems].sort((a, b) => new Date(a.time) - new Date(b.time));
     },
   },
   methods: {
@@ -339,28 +342,22 @@ export default {
       })
     },
     
-    // 출력 타입 판별 메서드들
     isJsonOutput(crewType, output) {
-      // 특정 crewType은 무조건 JSON
       if (crewType === 'text' || crewType === 'planning') {
         return true
       }
       
-      // output 내용 분석해서 JSON인지 판별
       return this.detectJsonContent(output)
     },
     
     isSlideOutput(crewType, output) {
-      // crew_type이 'slide'일 때만 슬라이드로 표시
       return crewType === 'slide'
     },
 
-    // 문자열 정리 유틸리티
     cleanString(str) {
       return str.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\\t/g, '  ').replace(/\\\\/g, '\\')
     },
 
-    // JSON 내용 감지
     detectJsonContent(output) {
       if (!output) return false
       if (typeof output === 'object') return true
@@ -383,7 +380,6 @@ export default {
       return this.isSlideOutput(crewType, output) ? '프레젠테이션' : 'Markdown 문서'
     },
 
-    // JSON 출력 포맷팅
     formatJsonOutput(output) {
       if (!output) return ''
       
@@ -407,16 +403,13 @@ export default {
       }
     },
 
-    // 마크다운 출력 포맷팅 - 코드블록 완전 제거
     sanitizeMarkdownOutput(output) {
       if (typeof output === 'string') {
         let trimmed = output.trim();
-        // 여러 번 감싸진 경우도 반복적으로 제거
         let loopCount = 0;
         while (true) {
           const beforeTrim = trimmed;
           loopCount++;
-          // ``` 또는 ~~~ 또는 """로 감싸진 코드블록 전체 제거 (언어명 포함 가능)
           trimmed = trimmed.replace(/^(```|~~~|""")[a-zA-Z0-9]*\s*\n([\s\S]*?)\n\1\s*$/gm, '$2').trim();
           if (beforeTrim === trimmed || loopCount > 10) break;
         }
@@ -439,12 +432,11 @@ export default {
       }
     },
 
-    // 슬라이드 관련 메서드들
     getSlides(output) {
       if (!output) return [];
       const sanitized = this.sanitizeMarkdownOutput(output);
       return String(sanitized)
-        .split(/^---$/gm)
+        .split(/^\s*---\s*$/gm)
         .filter(slide => slide.trim().length > 0)
         .map(slide => {
           const clean = this.cleanString(slide.trim());
@@ -489,7 +481,6 @@ export default {
     },
 
     isTaskCompleted(task) {
-      // task_completed 이벤트가 실제로 존재하는지 확인
       return this.events.some(event => 
         event.event_type === 'task_completed' && 
         (event.job_id === task.jobId || event.id === task.id)
@@ -508,7 +499,6 @@ export default {
 
       const formValues = {};
 
-      // text 타입 output 파싱 함수 (재귀적 JSON 파싱 + key:value 파싱)
       function deepParseJson(str) {
         let result = str;
         let count = 0;
@@ -531,13 +521,11 @@ export default {
       if (task.crewType === 'text') {
         let parsed = deepParseJson(task.output);
         if (typeof parsed === 'object' && parsed !== null) {
-          // row-layout 요소 name으로 그룹핑 매핑
           const rowLayouts = Array.from(doc.querySelectorAll('row-layout[name]'));
           rowLayouts.forEach(rl => {
             const groupName = rl.getAttribute('name');
             const isMulti = rl.getAttribute('is_multidata_mode') === 'true';
             if (isMulti) {
-              // 해당 그룹의 필드들 추출 후 단일 아이템 배열로 설정
               const fieldEls = Array.from(
                 rl.querySelectorAll('text-field[name], textarea-field[name]')
               );
@@ -548,7 +536,6 @@ export default {
               });
               formValues[groupName] = [item];
             } else {
-              // 단일 필드 매핑
               const fieldEls = Array.from(
                 rl.querySelectorAll('text-field[name], textarea-field[name], select-field[name]')
               );
@@ -569,7 +556,6 @@ export default {
               parsed[match[1]] = match[2];
             }
           });
-          // 필드 매핑 (매칭된 경우에만 설정)
           fields.forEach(field => {
             if (parsed[field.name] !== undefined) {
               formValues[field.name] = parsed[field.name];
@@ -577,7 +563,6 @@ export default {
           });
         }
       } else {
-        // report/slide 그룹 값 매핑 (기존 값은 초기화하지 않음)
         fields.forEach(field => {
           if (
             (task.crewType === 'report' && field.tag === 'report-field') ||
@@ -591,7 +576,6 @@ export default {
       this.EventBus.emit('form-values-updated', formValues);
     },
 
-    // Supabase 로직 (건드리지 않음)
     async loadData() {
       try {
         this.errorMessage = null;
@@ -613,7 +597,6 @@ export default {
         }
         if (data) {
           this.events = data
-          // 최초 로드 중 crew_completed 이벤트가 있으면 로딩 해제 및 채팅 활성화
           if (this.events.some(e => e.event_type === 'crew_completed')) {
             this.isCancelled = true;
             this.isFeedbackLoading = false;
@@ -639,7 +622,6 @@ export default {
 
             if (!exists && ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'].includes(row.event_type) && todoId === taskId) {
               this.events = [...this.events, row];
-              // 실시간 crew_completed 이벤트 처리: 채팅 활성화 및 로딩 해제
               if (row.event_type === 'crew_completed') {
                 this.isCancelled = true;
                 this.isFeedbackLoading = false;
@@ -685,7 +667,6 @@ export default {
         return '전체완료'
       }
       
-      // 폰트 렌더링 문제 해결을 위해 다른 텍스트 사용
       return '작업완료'
     },
     async startTask() {
@@ -695,9 +676,7 @@ export default {
         return;
       }
       try {
-        // agent_mode 와 status 필드를 업데이트
         await backend.putWorkItem(taskId, { agent_mode: 'DRAFT', status: 'IN_PROGRESS' });
-        // 즉시 UI 반영을 위해 todoStatus 업데이트
         this.todoStatus = { ...this.todoStatus, agent_mode: 'DRAFT', status: 'IN_PROGRESS' };
       } catch (error) {
         console.error('작업 시작 중 오류:', error);
@@ -710,22 +689,36 @@ export default {
       try {
         const { data, error } = await window.$supabase
           .from('todolist')
-          .select('status, agent_mode, draft_status')
+          .select('status, agent_mode, draft_status, feedback')
           .eq('id', taskId)
           .single();
         if (error) {
           throw error;
         }
         this.todoStatus = data;
+        let feedbackArr = [];
+        if (data.feedback) {
+          try {
+            feedbackArr = typeof data.feedback === 'string'
+              ? JSON.parse(data.feedback)
+              : data.feedback;
+          } catch {
+            feedbackArr = [];
+          }
+        }
+        this.chatMessages = feedbackArr.map(item => ({ time: item.time, content: item.content }));
+        this.chatMessages.sort((a, b) => new Date(a.time) - new Date(b.time));
         if (data.draft_status === 'CANCELLED') {
           this.isCancelled = true;
+        }
+        if (data.draft_status === 'FB_REQUESTED') {
+          this.isFeedbackLoading = true;
         }
       } catch (e) {
         console.error('todolist 상태 조회 실패:', e);
         this.errorMessage = 'todolist 상태 조회 실패: ' + (e.message || e);
       }
     },
-    // 작업 중단: draft_status를 CANCELLED로 변경하고 채팅 활성화
     async stopTask() {
       const taskId = this.getTaskIdFromWorkItem();
       if (!taskId) {
@@ -740,7 +733,6 @@ export default {
         this.errorMessage = '중단 중 오류가 발생했습니다.';
       }
     },
-    // 채팅 전송: feedback 필드에 저장하고 로컬에 메시지 추가
     async submitChat() {
       const taskId = this.getTaskIdFromWorkItem();
       if (!taskId) {
@@ -748,18 +740,39 @@ export default {
         return;
       }
       if (!this.chatInput) return;
-      // 채팅 전송 시 로딩 활성화 및 입력 비활성화
       this.isCancelled = false;
       this.isFeedbackLoading = true;
       try {
-        await backend.putWorkItem(taskId, { feedback: this.chatInput, draft_status: 'FB_REQUESTED' });
-        this.chatMessages.push({ content: this.chatInput });
+        const existing = this.todoStatus.feedback;
+        let arr = [];
+        try {
+          arr = existing
+            ? (typeof existing === 'string' ? JSON.parse(existing) : existing)
+            : [];
+        } catch {
+          arr = [];
+        }
+        const now = new Date().toISOString();
+        arr.push({ time: now, content: this.chatInput });
+        const updatedFeedback = arr;
+        await backend.putWorkItem(taskId, {
+          feedback: updatedFeedback,
+          draft_status: 'FB_REQUESTED'
+        });
+        this.todoStatus.feedback = updatedFeedback;
+        this.chatMessages.push({ time: now, content: this.chatInput });
         this.chatInput = '';
       } catch (error) {
         console.error('채팅 전송 중 오류:', error);
         this.errorMessage = '채팅 전송 중 오류가 발생했습니다.';
         this.isFeedbackLoading = false;
       }
+    },
+    handleAvatarLoad(path) {
+      console.log('agentProfile loaded:', path)
+    },
+    handleAvatarError(path) {
+      console.log('agentProfile failed to load:', path)
     },
   },
   async created() {
@@ -783,14 +796,17 @@ export default {
 .agent-monitor {
   max-width: 800px;
   margin: 0 auto;
-  padding: 24px 16px;
-  background: #fafbfc;
-  min-height: auto;
-  max-height: 70vh;
-  overflow-y: auto;
+  padding: 20px 16px 0px;
+  width: 100%;
+  height: 67vh;
+  display: flex;
+  flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-
+.task-area {
+  flex: 1;
+  overflow-y: auto;
+}
 .error-banner {
   background: #ffe0e0;
   color: #b71c1c;
@@ -815,6 +831,7 @@ export default {
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
+  margin-bottom: 16px;
 }
 
 .task-card:hover {
@@ -1578,13 +1595,45 @@ export default {
 }
 
 /* 채팅 UI 스타일 */
-.chat-container { margin-top: 20px; border-top: 1px solid #e1e8ed; padding-top: 16px; }
-.chat-messages { max-height: 150px; overflow-y: auto; margin-bottom: 12px; }
-.chat-message { display: flex; justify-content: flex-start; margin-bottom: 8px; }
+.chat-messages {
+  max-height: 150px;
+  overflow-y: auto;
+  margin: 16px 0;
+}
+.chat-message { display: flex; justify-content: flex-end; margin: 16px 0; }
 .bubble { background: #e5e5ea; border-radius: 12px; padding: 8px 12px; max-width: 70%; }
-.chat-input-wrapper { display: flex; align-items: center; gap: 8px; }
-.stop-button { margin-left: auto; background: transparent; border: none; color: #f44336; cursor: pointer; }
-input:disabled { opacity: 0.6; cursor: not-allowed; }
+.chat-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 0;
+  width: 100%;
+  margin-top: 16px;
+}
+.chat-textarea {
+  flex: 1;
+  resize: none;
+  overflow-y: auto;
+  max-height: 72px;
+  font-size: 14px;
+  line-height: 1.4;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+}
+.chat-textarea:focus { outline: none; box-shadow: none; }
+.chat-toggle-button {
+  margin-left: 8px;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #0066cc;
+  cursor: pointer;
+}
+.chat-toggle-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* 피드백 처리 로딩 스타일 */
 .feedback-loading {
