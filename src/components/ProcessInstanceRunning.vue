@@ -16,7 +16,7 @@
                                 </v-row>
                                 <div class="w-100 pb-3">
                                     <div class="progress-border">
-                                        <v-sheet class="chat-message-bubble rounded-md px-3 py-2" :class="'other-message'">
+                                        <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message">
                                             <pre class="text-body-1">{{ streamingText }}</pre>
                                         </v-sheet>
                                     </div>
@@ -43,7 +43,8 @@ export default {
             workItem: null,
             title: '',
             streamingText: '...',
-            taskId: ''
+            taskId: '',
+            subscription: null
         }
     },
     async mounted() {
@@ -53,22 +54,19 @@ export default {
             this.taskId = this.workItem.taskId;
         }
 
-        await backend.getTaskLog(this.taskId, async (task) => {
+        this.subscription = await backend.getTaskLog(this.taskId, async (task) => {
             this.streamingText = task.log;
             if (task.status == "DONE") {
                 this.EventBus.emit('instances-updated');
                 this.$emit('updated');
-
-                if (task.log && task.log.length > 0 && task.log.includes("[WorkItem Error]")) {
-                    const retry = window.confirm("워크아이템 실행 중 오류가 발생했습니다. 다시 시도하시겠습니까?");
-                    if (retry) {
-                        await backend.putWorkItemComplete(this.taskId, this.workItem);
-                    } else {
-                        this.$router.go(-1);
-                    }
-                }
             }
         });
+    },
+    beforeUnmount() {
+        if (this.subscription) {
+            console.log('Unsubscribing from task log for taskId:', this.taskId);
+            window.$supabase.removeChannel(this.subscription);
+        }
     }
 }
 </script>

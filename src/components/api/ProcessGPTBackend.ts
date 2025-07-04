@@ -1266,7 +1266,7 @@ class ProcessGPTBackend implements Backend {
 
     async fetchInstances(callback: (payload: any) => void) {
         try {
-            await storage.watch('bpm_proc_inst', 'bpm_proc_inst', (payload) => {
+            const subscription = await storage.watch('bpm_proc_inst', 'bpm_proc_inst', (payload) => {
                 if (payload && payload.new && payload.eventType) {
                     const instance = payload.new;
                     if (callback) {
@@ -1275,7 +1275,7 @@ class ProcessGPTBackend implements Backend {
                 }
             });
 
-            return true;
+            return subscription;
         } catch (error) {
             throw new Error(error.message);
         }
@@ -1622,11 +1622,16 @@ class ProcessGPTBackend implements Backend {
     async getNotifications(callback: (data: any) => void) {
         try {
             const uid = localStorage.getItem('uid');
-            await storage.watch('notifications', `notifications-${uid}`, (data: any) => {
+            const channelName = `notifications_${uid}_${Date.now()}`;
+            const subscription = await storage.watch('notifications', channelName, (data: any) => {
                 if(data && data.new) {
                     callback(data);
                 }
+            }, {
+                filter: `user_id=eq.${uid} AND is_checked=false`
             });
+
+            return subscription;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2363,13 +2368,16 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getAttachments(chatRoomId: string, callback: (attachment: any) => void) {
-        await storage.watch('chat_attachments', chatRoomId, (payload) => {
+        const channelName = `chat_attachments_${chatRoomId}_${Date.now()}`;
+        const subscription = await storage.watch('chat_attachments', channelName, (payload) => {
             if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
                 const attachment = payload.new;
                 if (callback) {
                     callback(attachment);
                 }
             }
+        }, {
+            filter: `chat_room_id=eq.${chatRoomId}`
         });
 
         if (callback) {
@@ -2384,6 +2392,8 @@ class ProcessGPTBackend implements Backend {
                 }
             }
         }
+
+        return subscription;
     }
 
     async getEmbedding(text) {
@@ -2696,17 +2706,21 @@ class ProcessGPTBackend implements Backend {
 
     async getTaskLog(taskId: string, callback: (payload: any) => void) {
         try {
-            await storage.watch('todolist', taskId, (payload) => {
-                if (payload && payload.new && payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+            const channelName = `todolist_${taskId}_${Date.now()}`;
+            const subscription = await storage.watch('todolist', channelName, (payload) => {
+                if (payload && payload.new && (payload.eventType === "INSERT" || payload.eventType === "UPDATE")) {
                     const task = payload.new;
                     if (callback) {
                         callback(task);
                     }
                 }
+            }, {
+                filter: `id=eq.${taskId}`
             });
 
-            return true;
+            return subscription;
         } catch (error) {
+            console.error('Error in getTaskLog:', error);
             throw new Error(error.message);
         }
     }
