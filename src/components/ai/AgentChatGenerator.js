@@ -11,17 +11,20 @@ export default class AgentChatGenerator extends AIGenerator {
 
     beforeGenerate(message) {
         this.message = message.text;
-        this.agentInfo = this.client.agentInfo;
-        if (this.client.agentInfo && this.client.agentInfo.url && this.client.agentInfo.url !== '') {
+        this.agentInfo = this.client.selectedUserInfo;
+        this.isAgentLearning = this.client.isAgentLearning;
+
+        if (this.client.selectedUserInfo && this.client.selectedUserInfo.url && this.client.selectedUserInfo.url !== '') {
             this.type = 'a2a';
             this.options = {
-                agent_url: this.client.agentInfo.url,
+                agent_url: this.client.selectedUserInfo.url,
                 stream: true
             }
         } else {
             this.type = 'mem0';
             this.options = {
-                agent_id: this.client.agentInfo.id
+                agent_id: this.client.selectedUserInfo.id,
+                is_learning_mode: this.isAgentLearning
             }
         }
     }
@@ -39,7 +42,7 @@ export default class AgentChatGenerator extends AIGenerator {
             if (this.client.messages) {
                 this.client.messages.push({
                     role: 'agent',
-                    name: this.agentInfo.name,
+                    name: this.agentInfo.username,
                     profile: this.agentInfo.profile,
                     content: '답변을 생성 중입니다...',
                     isLoading: true
@@ -179,11 +182,6 @@ export default class AgentChatGenerator extends AIGenerator {
             } else if (result.type === 'information') {
                 modelJson = {
                     work: 'Mem0AgentInformation',
-                    content: result.content
-                }
-            } else {
-                modelJson = {
-                    work: 'Mem0AgentResponse',
                     content: result.content
                 }
             }

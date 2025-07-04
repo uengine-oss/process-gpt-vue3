@@ -35,6 +35,7 @@
         "sidebar" : "사이드바 보기",
         "dashboard" : "대시보드",
         "todoList" : "나의 업무",
+        "schedule" : "스케줄러",
         "calendar" : "달력",
         "layoutSetting" : "레이아웃 설정",
         "admin" : "관리자 페이지"

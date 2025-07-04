@@ -151,10 +151,6 @@ export default {
             type: Array,
             default: [],
         },
-        agentList: {
-            type: Array,
-            default: [],
-        },
     },
     data: () => ({
         tab: 'user',
@@ -240,9 +236,8 @@ export default {
             this.selectedList = this.teamInfo.children
         }
 
-        const allMembers = [...this.userList, ...this.agentList]
-        this.teamMembers = allMembers.map(member => {
-            if (member.username && member.profile) {
+        this.teamMembers = this.userList.map(member => {
+            if (!member.is_agent) {
                 return {
                     id: member.id,
                     name: member.username,
@@ -255,38 +250,40 @@ export default {
                         pid: this.teamInfo.id || ''
                     }
                 }
-            } else if (member.name && 'persona' in member && member.persona !== '') {
-                return {
-                    id: member.id,
-                    name: member.name,
-                    data: {
+            } else {
+                if ('persona' in member && member.persona !== '') {
+                    return {
                         id: member.id,
-                        name: member.name,
-                        img: member.profile || '/images/chat-icon.png',
-                        role: member.role || '',
-                        goal: member.goal || '',
-                        persona: member.persona || '',
-                        tools: member.tools || '',
-                        isAgent: true,
-                        type: 'agent',
-                        pid: this.teamInfo.id || ''
+                        name: member.username,
+                        data: {
+                            id: member.id,
+                            name: member.username,
+                            img: member.profile || '/images/chat-icon.png',
+                            role: member.role || '',
+                            goal: member.goal || '',
+                            persona: member.persona || '',
+                            tools: member.tools || '',
+                            isAgent: true,
+                            type: 'agent',
+                            pid: this.teamInfo.id || ''
+                        }
                     }
-                }
-            } else if (member.name && 'url' in member && member.url !== '') {
-                return {
-                    id: member.id,
-                    name: member.name,
-                    data: {
+                } else if ('url' in member && member.url !== '') {
+                    return {
                         id: member.id,
-                        name: member.name,
-                        img: member.profile || '/images/chat-icon.png',
-                        role: member.role || '',
-                        url: member.url || '',
-                        description: member.description || '',
-                        skills: member.skills || '',
-                        isAgent: true,
-                        type: 'a2a',
-                        pid: this.teamInfo.id || ''
+                        name: member.username,
+                        data: {
+                            id: member.id,
+                            name: member.username,
+                            img: member.profile || '/images/chat-icon.png',
+                            role: member.role || '',
+                            url: member.url || '',
+                            description: member.description || '',
+                            skills: member.skills || '',
+                            isAgent: true,
+                            type: 'a2a',
+                            pid: this.teamInfo.id || ''
+                        }
                     }
                 }
             }

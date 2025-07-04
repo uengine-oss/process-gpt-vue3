@@ -247,6 +247,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                 "role": "역할명",
                 "source": "이전_컴포넌트_id",
                 "type": "StartEvent" | "EndEvent" | "IntermediateCatchEvent",
+                "eventType": "Timer" | "Signal" | "Message" | "Conditional",
+                "expression": "타이머 설정(cron 표현식) eventType이 Timer 인 경우에만 사용",
                 "description": "이벤트 설명(한글)",
                 "trigger": "트리거 조건"
               }

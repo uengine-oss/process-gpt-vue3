@@ -51,44 +51,7 @@
                 </v-list-item-content>
             </v-list-item>
 
-            <v-divider></v-divider>
-
-            <v-list-item v-for="agent in agentList" :key="agent.id" class="text-no-wrap user-item" @click="selectedUser(agent)">
-                <template v-slot:prepend>
-                    <v-avatar color="#f0f5f9" size="large" style="width: 50px; height: 50px;">
-                        <img :src="getProfile(agent)" :alt="agent.name" style="width: 100%; height: 100%; object-fit: cover;" />
-                    </v-avatar>
-                </template>
-                <v-list-item-content>
-                    <v-list-item-title class="text-subtitle-1 w-100 font-weight-semibold">{{ agent.name }}</v-list-item-title>
-                    <v-list-item-subtitle class="text-subtitle-2">{{ agent.role }}</v-list-item-subtitle>
-                    <div v-if="selectedUserInfo && selectedUserInfo.id === agent.id">
-                        <v-tooltip location="bottom" :text="$t('userListing.chat')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="startChat('agent-chat')" v-bind="props" 
-                                    icon variant="text"
-                                    class="text-medium-emphasis" 
-                                    density="comfortable"
-                                >
-                                    <v-icon>mdi-message-text-outline</v-icon>
-                                </v-btn>
-                            </template> 
-                        </v-tooltip>
-                        <v-tooltip location="bottom" text="업무 지시">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="startChat('agent-work')" v-bind="props" 
-                                    icon variant="text"
-                                    class="text-medium-emphasis" 
-                                    density="comfortable"
-                                    style="margin-left:5px;"
-                                >
-                                    <v-icon>mdi-file-document-outline</v-icon>
-                                </v-btn>
-                            </template> 
-                        </v-tooltip>
-                    </div>
-                </v-list-item-content>
-            </v-list-item>
+            <!-- <v-divider></v-divider> -->
         </v-list>
     </perfect-scrollbar>
 </template>
@@ -99,7 +62,6 @@ import { defineProps } from 'vue';
 
 const props = defineProps({
     userList: Array,
-    agentList: Array,
 });
 
 const emit = defineEmits(['startChat', 'selectedUser']);

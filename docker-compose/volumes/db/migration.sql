@@ -29,6 +29,15 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tenant_id text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS device_token text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_credentials jsonb;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_credentials_updated_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS goal text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS persona text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS url text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS description text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tools text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS skills text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_agent boolean DEFAULT false;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS model text;
+
 
 -- configuration table
 ALTER TABLE public.configuration ADD COLUMN IF NOT EXISTS key text;

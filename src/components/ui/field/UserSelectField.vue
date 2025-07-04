@@ -98,7 +98,6 @@ export default {
 
             usersToSelect: [],
             userList: [],
-            agentList: [],
 
             backend: null,
             useMultiple: true
@@ -146,24 +145,22 @@ export default {
         this.backend = BackendFactory.createBackend();
 
         this.userList = await this.backend.getUserList();
-        this.agentList = await this.backend.getAgentList();
 
         if(this.useAgent) {
-            const list = [...this.userList, ...this.agentList];
-            this.usersToSelect = list.map(member => {
-                if ("username" in member) {
-                    return member;
-                } else {
+            this.usersToSelect = this.userList.map(member => {
+                if (member.is_agent) {
                     return {
                         id: member.id,
-                        username: member.name,
-                        email: member.id
+                        username: member.username,
+                        email: member.email || member.id
                     };
+                } else {
+                    return member
                 }
             });
             this.useMultiple = true;
         } else {
-            this.usersToSelect = this.userList;
+            this.usersToSelect = this.userList.filter(member => !member.is_agent);
             this.useMultiple = false;
         }
     }
