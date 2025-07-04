@@ -953,8 +953,8 @@ export default {
         
         Object.keys(roleVector).forEach((key, index) => {
             const role = roleVector[key];
-            let roleWidth = isHorizontal ? (mainWidth - 30) : 0;
-            let roleHeight = isHorizontal ? 0 : (mainHeight - 30);
+            let roleWidth = isHorizontal ? (mainWidth) : 0;
+            let roleHeight = isHorizontal ? 0 : (mainHeight);
             
             if(isHorizontal) {
             roleY = 0;
@@ -1534,10 +1534,10 @@ export default {
                 const paddingY = isHorizontal ? 0 : 30;
                 
                 // 참가자 경계 설정
-                dcBoundsParticipant.setAttribute('x', (minX - paddingX).toString());
-                dcBoundsParticipant.setAttribute('y', (minY - paddingY).toString());
-                dcBoundsParticipant.setAttribute('width', (maxX - minX + paddingX).toString());
-                dcBoundsParticipant.setAttribute('height', (maxY - minY + paddingY).toString());
+                dcBoundsParticipant.setAttribute('x', (minX).toString());
+                dcBoundsParticipant.setAttribute('y', (minY).toString());
+                dcBoundsParticipant.setAttribute('width', (maxX - minX).toString());
+                dcBoundsParticipant.setAttribute('height', (maxY - minY).toString());
                 
             } else {
                 // 경계 정보가 없는 경우 기본값 사용
