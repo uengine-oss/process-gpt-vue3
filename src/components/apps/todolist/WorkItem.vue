@@ -766,7 +766,6 @@ export default {
                         me.isGeneratingExample = false;
                     }
                 },
-                successMsg: '초안 생성을 완료하였습니다.',
                 errorMsg: '초안 생성을 실패하였습니다. 잠시 후 다시 시도해주세요.',
                 finalAction: () => {
                     me.isGeneratingExample = false;
