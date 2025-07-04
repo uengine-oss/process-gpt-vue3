@@ -159,6 +159,26 @@
       <p>작업이 시작되면 여기에 표시됩니다.</p>
       <button v-if="!isQueued" @click="startTask" class="start-button">시작하기</button>
     </div>
+
+    <!-- Chat UI -->
+    <div class="chat-container">
+      <div class="chat-messages">
+        <div v-for="(message, index) in chatMessages" :key="index" class="chat-message">
+          <div class="bubble">{{ message.content }}</div>
+        </div>
+      </div>
+      <!-- 피드백 처리 로딩 표시 -->
+      <div v-if="isFeedbackLoading" class="feedback-loading">
+        <div class="loading-spinner"></div>
+        <span>피드백 처리 중입니다. 잠시만 기다려주세요...</span>
+      </div>
+      <!-- 채팅 입력창 -->
+      <div v-else class="chat-input-wrapper">
+        <input v-model="chatInput" :disabled="!isCancelled" placeholder="메시지를 입력하세요..." />
+        <button @click="submitChat" :disabled="!isCancelled || !chatInput">전송</button>
+        <button class="stop-button" @click="stopTask" v-if="!isCancelled">중단</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -186,7 +206,11 @@ export default {
       slideIndexes: {}, // task별 현재 슬라이드 인덱스 관리
       expandedTasks: {}, // task별 확장/축소 상태 관리
       errorMessage: null, // 에러 메시지 상태 추가
-      todoStatus: null // todolist의 상태 저장
+      todoStatus: null, // todolist의 상태 저장
+      chatInput: '',        // Chat 입력값
+      chatMessages: [],     // Chat 메시지 리스트
+      isCancelled: false,    // 채팅 활성화 상태 (중단 시 true로 변경)
+      isFeedbackLoading: false  // 피드백 처리 중 로딩 상태
     }
   },
   computed: {
@@ -252,9 +276,6 @@ export default {
         }
       })
       
-      // tasks 배열이 바뀔 때마다 로그
-      console.log('tasks computed 실행됨:', tasks.length, '개의 작업, events 개수:', this.events.length);
-      console.log('tasks computed:', tasks);
       return tasks
     },
     toolUsageStatusByTask() {
@@ -352,13 +373,6 @@ export default {
       return false
     },
 
-    // 슬라이드 내용 감지
-    detectSlideContent(output) {
-      if (!output) return false
-      const outputStr = String(output)
-      return outputStr.includes('---') && outputStr.includes('#')
-    },
-    
     getOutputTypeLabel(crewType, output) {
       if (this.isJsonOutput(crewType, output)) {
         return crewType === 'planning' ? 'JSON 계획' 
@@ -474,11 +488,6 @@ export default {
       }
     },
 
-    isLatestIncomplete(task) {
-      const incomplete = this.tasks.filter(t => !t.isCompleted)
-      return incomplete.length > 0 && task.id === incomplete[incomplete.length - 1].id
-    },
-
     isTaskCompleted(task) {
       // task_completed 이벤트가 실제로 존재하는지 확인
       return this.events.some(event => 
@@ -487,33 +496,7 @@ export default {
       )
     },
 
-    extractFieldNamesFromHtml(htmlString) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(htmlString, 'text/html');
-      const fieldNames = {};
-
-      const fields = doc.querySelectorAll('report-field, slide-field, text-field');
-      
-      fields.forEach(field => {
-        const name = field.getAttribute('name');
-        if (name) {
-          fieldNames[name] = field.tagName.toLowerCase();
-        }
-      });
-
-      return fieldNames;
-    },
-
     submitTask(task) {
-      // 리포트 통합 전문가일 때 원본 출력
-      if (task.role === '리포트 통합 전문가') {
-        console.log('🔍 리포트 통합 전문가 - 원본 결과:', task.output);
-        console.log('🔍 리포트 통합 전문가 - 타입:', typeof task.output);
-        console.log('🔍 리포트 통합 전문가 - 길이:', task.output?.length);
-      }
-      
-      // HTML에서 모든 필드 name과 태그명 추출
-      console.log('html', this.html);
       const parser = new DOMParser();
       const doc = parser.parseFromString(this.html, 'text/html');
       const fields = Array.from(doc.querySelectorAll('text-field, textarea-field, report-field, slide-field'))
@@ -605,7 +588,6 @@ export default {
         });
       }
 
-      console.log('submitTask - formValues:', formValues);
       this.EventBus.emit('form-values-updated', formValues);
     },
 
@@ -614,38 +596,29 @@ export default {
       try {
         this.errorMessage = null;
         this.events = [];
-        const taskId = this.getTaskIdFromWorkItem()
+        const taskId = this.getTaskIdFromWorkItem();
         if (!taskId) {
           this.errorMessage = 'taskId를 찾을 수 없습니다.';
-          console.error('taskId를 찾을 수 없습니다.')
-          return
+          return;
         }
-
-        console.group('🔄 초기 데이터 로드');
-        console.log('작업 ID:', taskId);
-
         const { data, error } = await window.$supabase
           .from('events')
           .select('*')
           .eq('todo_id', taskId)
           .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'])
           .order('timestamp', { ascending: true })
-          
         if (error) {
           this.errorMessage = '이벤트 데이터를 불러오는 중 오류가 발생했습니다: ' + error.message;
           throw error
         }
         if (data) {
           this.events = data
-          console.log('로드된 이벤트 수:', data.length);
-          console.table(data.map(event => ({
-            이벤트_ID: event.id,
-            할일_ID: event.todo_id,
-            이벤트_타입: event.event_type,
-            타임스탬프: new Date(event.timestamp).toLocaleString('ko-KR')
-          })));
+          // 최초 로드 중 crew_completed 이벤트가 있으면 로딩 해제 및 채팅 활성화
+          if (this.events.some(e => e.event_type === 'crew_completed')) {
+            this.isCancelled = true;
+            this.isFeedbackLoading = false;
+          }
         }
-        console.groupEnd();
       } catch (error) {
         this.errorMessage = '이벤트 데이터를 불러오는 중 오류가 발생했습니다: ' + (error.message || error);
         console.error('Failed to load data from Supabase:', error)
@@ -664,51 +637,18 @@ export default {
             const todoId = row.todo_id;
             const exists = this.events.some(e => e.id === row.id);
 
-            // task_completed 이벤트이고 리포트 통합 전문가인 경우 즉시 출력
-            if (row.event_type === 'task_completed' && todoId === taskId) {
-              const data = this.parseData(row);
-              if (data?.final_result) {
-                // role 확인을 위해 기존 task_started 이벤트에서 role 찾기
-                const taskStartedEvent = this.events.find(e => 
-                  e.event_type === 'task_started' && 
-                  (e.job_id === row.job_id || e.id === row.job_id)
-                );
-                if (taskStartedEvent) {
-                  const startedData = this.parseData(taskStartedEvent);
-                  if (startedData?.role === '리포트 통합 전문가') {
-                    console.log('🚀 실시간 수신 즉시 final_result:', data.final_result);
-                    console.log('🚀 실시간 수신 즉시 타입:', typeof data.final_result);
-                    console.log('🚀 실시간 수신 즉시 길이:', data.final_result?.length);
-                  }
-                }
-              }
-            }
-
-            console.group('📥 실시간 이벤트 수신');
-            console.log('수신된 이벤트:', {
-              이벤트_ID: row.id,
-              작업_ID: taskId,
-              할일_ID: todoId,
-              이벤트_타입: row.event_type,
-              타임스탬프: new Date(row.timestamp).toLocaleString('ko-KR'),
-              ID_일치여부: todoId === taskId ? '✅ 일치' : '❌ 불일치'
-            });
-
             if (!exists && ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'].includes(row.event_type) && todoId === taskId) {
               this.events = [...this.events, row];
-              console.log('✅ 이벤트가 추가되었습니다');
-              console.log('현재 총 이벤트 수:', this.events.length);
+              // 실시간 crew_completed 이벤트 처리: 채팅 활성화 및 로딩 해제
+              if (row.event_type === 'crew_completed') {
+                this.isCancelled = true;
+                this.isFeedbackLoading = false;
+              }
             } else {
-              console.log('❌ 이벤트가 추가되지 않았습니다', {
-                이미존재: exists,
-                유효한이벤트타입: ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'].includes(row.event_type),
-                ID일치: todoId === taskId
-              });
               if (todoId !== taskId) {
                 console.warn('[ID 불일치] 이벤트 todo_id:', todoId, 'vs 현재 taskId:', taskId, '이벤트 전체:', row);
               }
             }
-            console.groupEnd();
           })
           .subscribe((status) => {
             if (status === 'SUBSCRIPTION_ERROR') {
@@ -749,7 +689,6 @@ export default {
       return '작업완료'
     },
     async startTask() {
-      console.log('시작하기 버튼 클릭');
       const taskId = this.getTaskIdFromWorkItem();
       if (!taskId) {
         this.errorMessage = 'taskId를 찾을 수 없습니다.';
@@ -767,22 +706,59 @@ export default {
     },
     async fetchTodoStatus() {
       const taskId = this.getTaskIdFromWorkItem();
-      console.log('fetchTodoStatus called for taskId:', taskId);
       if (!taskId) return;
       try {
         const { data, error } = await window.$supabase
           .from('todolist')
-          .select('status, agent_mode')
+          .select('status, agent_mode, draft_status')
           .eq('id', taskId)
           .single();
-        console.log('fetchTodoStatus result:', { data, error });
         if (error) {
           throw error;
         }
         this.todoStatus = data;
+        if (data.draft_status === 'CANCELLED') {
+          this.isCancelled = true;
+        }
       } catch (e) {
         console.error('todolist 상태 조회 실패:', e);
         this.errorMessage = 'todolist 상태 조회 실패: ' + (e.message || e);
+      }
+    },
+    // 작업 중단: draft_status를 CANCELLED로 변경하고 채팅 활성화
+    async stopTask() {
+      const taskId = this.getTaskIdFromWorkItem();
+      if (!taskId) {
+        this.errorMessage = 'taskId를 찾을 수 없습니다.';
+        return;
+      }
+      try {
+        await backend.putWorkItem(taskId, { draft_status: 'CANCELLED' });
+        this.isCancelled = true;
+      } catch (error) {
+        console.error('중단 중 오류:', error);
+        this.errorMessage = '중단 중 오류가 발생했습니다.';
+      }
+    },
+    // 채팅 전송: feedback 필드에 저장하고 로컬에 메시지 추가
+    async submitChat() {
+      const taskId = this.getTaskIdFromWorkItem();
+      if (!taskId) {
+        this.errorMessage = 'taskId를 찾을 수 없습니다.';
+        return;
+      }
+      if (!this.chatInput) return;
+      // 채팅 전송 시 로딩 활성화 및 입력 비활성화
+      this.isCancelled = false;
+      this.isFeedbackLoading = true;
+      try {
+        await backend.putWorkItem(taskId, { feedback: this.chatInput, draft_status: 'FB_REQUESTED' });
+        this.chatMessages.push({ content: this.chatInput });
+        this.chatInput = '';
+      } catch (error) {
+        console.error('채팅 전송 중 오류:', error);
+        this.errorMessage = '채팅 전송 중 오류가 발생했습니다.';
+        this.isFeedbackLoading = false;
       }
     },
   },
@@ -1599,5 +1575,28 @@ export default {
 
 .start-button:hover {
   background: #005bb5;
+}
+
+/* 채팅 UI 스타일 */
+.chat-container { margin-top: 20px; border-top: 1px solid #e1e8ed; padding-top: 16px; }
+.chat-messages { max-height: 150px; overflow-y: auto; margin-bottom: 12px; }
+.chat-message { display: flex; justify-content: flex-start; margin-bottom: 8px; }
+.bubble { background: #e5e5ea; border-radius: 12px; padding: 8px 12px; max-width: 70%; }
+.chat-input-wrapper { display: flex; align-items: center; gap: 8px; }
+.stop-button { margin-left: auto; background: transparent; border: none; color: #f44336; cursor: pointer; }
+input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* 피드백 처리 로딩 스타일 */
+.feedback-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #f8fafb;
+  border: 1px solid #e4e6ea;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #606770;
 }
 </style>
