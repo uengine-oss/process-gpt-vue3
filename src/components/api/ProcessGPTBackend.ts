@@ -864,7 +864,7 @@ class ProcessGPTBackend implements Backend {
                             proc_def_id: item.id,
                             proc_def_ids: item
                         }
-                        await this.putUserPermission(putObj);
+                        // await this.putUserPermission(putObj);
                         Object.assign(item, change);
                     } else {
                         // 권한이 없는 프로세스
@@ -895,7 +895,7 @@ class ProcessGPTBackend implements Backend {
                             proc_def_id: item.id,
                             proc_def_ids: item
                         }
-                        await this.putUserPermission(putObj);
+                        // await this.putUserPermission(putObj);
                     }
                     existingMap.push(item);
                 }
