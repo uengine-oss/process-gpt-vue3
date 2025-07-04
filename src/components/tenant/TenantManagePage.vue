@@ -29,7 +29,7 @@
                 :disabled="isNavigating"
                 :class="{ 'disabled-card': isNavigating }"
             >
-                <v-row class="pa-0 ma-0">
+                <v-row class="pa-0 ma-0 align-center">
                     <Icons  :icon="'plus'" :size="16" class="mr-2" />
                     <div>{{ $t('tenantManagePage.createCompany') }}</div>
                 </v-row>
@@ -52,42 +52,42 @@
                         :class="{ 'disabled-card': isNavigating }"
                     >
                         <v-row class="pa-0 ma-0">
-                            <v-col cols="1">
-                                <v-icon size="24">mdi-office-building-outline</v-icon>     
-                            </v-col>
-                            <v-col :cols="getColSize(tenantInfo)">
-                                &nbsp; {{ tenantInfo.id }}
-                            </v-col>
-                            <v-col v-if="isNavigating && selectedTenantId === tenantInfo.id" cols="1" class="d-flex align-center justify-center">
-                                <v-progress-circular
-                                    indeterminate
-                                    size="20"
-                                    width="2"
-                                    color="primary"
-                                ></v-progress-circular>
-                            </v-col>
-                            <v-col cols="1">
-                                <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
-                                    <v-tooltip text="수정">
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn :disabled="!tenantInfo.isOwned || isNavigating" @click.stop="!isNavigating ? toEditTenantPage(tenantInfo.id) : null" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
-                                                <v-icon size="24">mdi-pencil</v-icon>
-                                            </v-btn>
-                                        </template>
-                                    </v-tooltip>
-                                </v-sheet>
-                            </v-col>
-                            <v-col cols="1">
-                                <v-sheet style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
-                                    <v-tooltip text="삭제">
-                                        <template v-slot:activator="{ props }">
-                                            <v-btn :disabled="!tenantInfo.isOwned || isNavigating" @click.stop="!isNavigating ? (deleteDialog = true, tenantIdToDelete = tenantInfo.id) : null" icon v-bind="props" style="width: 24px; height: 24px; min-height: 24px; min-width: 24px;">
-                                                <Icons :icon="'trash'" />
-                                            </v-btn>
-                                        </template>
-                                    </v-tooltip>
-                                </v-sheet>
-                            </v-col>
+                            <v-icon size="24" class="mr-2">mdi-office-building-outline</v-icon>     
+                            <div>{{ tenantInfo.id }}</div>
+                            <v-progress-circular v-if="isNavigating && selectedTenantId === tenantInfo.id" 
+                                indeterminate
+                                size="20"
+                                width="2"
+                                color="primary"
+                            ></v-progress-circular>
+                            <v-spacer></v-spacer>
+                            <v-tooltip text="수정"
+                                class="mr-2"
+                            >
+                                <template v-slot:activator="{ props }">
+                                    <v-btn @click.stop="!isNavigating ? toEditTenantPage(tenantInfo.id) : null"
+                                        class="mr-2"
+                                        :disabled="!tenantInfo.isOwned || isNavigating"
+                                        icon v-bind="props"
+                                        :size="24"
+                                    >
+                                        <v-icon size="24">mdi-pencil</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <v-tooltip text="삭제"
+                                class="mr-2"
+                            >
+                                <template v-slot:activator="{ props }">
+                                    <v-btn @click.stop="!isNavigating ? (deleteDialog = true, tenantIdToDelete = tenantInfo.id, confirmationTenantName = '') : null"
+                                        :disabled="!tenantInfo.isOwned || isNavigating"
+                                        icon v-bind="props"
+                                        :size="24"
+                                    >
+                                        <Icons :icon="'trash'" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
                         </v-row>
                     </v-card>
                 </v-row>
@@ -113,13 +113,63 @@
 
     <v-dialog v-model="deleteDialog" max-width="500">
         <v-card>
-            <v-card-text>
-                회사를 삭제하시겠습니까?
+            <v-row class="ma-0 pa-4 pb-0 align-center">
+                <v-card-title class="pa-0 text-h4">
+                    "{{ tenantIdToDelete }}" 회사 삭제
+                </v-card-title>
+                <v-spacer></v-spacer>
+                <v-btn @click="deleteDialog = false; confirmationTenantName = ''"
+                    class="ml-auto" 
+                    variant="text" 
+                    density="compact"
+                    icon
+                >
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </v-row>
+            <v-card-text class="pa-4 pb-0">
+                <div class="mb-4">
+                    <p class="mb-2"><strong>다음 데이터가 완전히 삭제됩니다:</strong></p>
+                    <ul class="ml-4 mb-3">
+                        <li>모든 회사 정보 및 설정</li>
+                        <li>모든 사용자 계정 및 권한</li>
+                        <li>모든 프로세스 데이터 및 기록</li>
+                        <li>모든 파일 및 문서</li>
+                        <li>모든 히스토리 및 로그</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-4 pa-3" style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px;">
+                    <p class="mb-2" style="color: #721c24;"><strong>⚠️ 삭제 후 복구 불가능</strong></p>
+                    <p class="mb-2" style="color: #721c24;">• 이 작업은 되돌릴 수 없으며 백업에서도 복구할 수 없습니다.</p>
+                    <p class="mb-0" style="color: #721c24;">• 당사는 삭제된 데이터에 대해 어떠한 책임도 지지 않습니다.</p>
+                </div>
+                
+                <p class="mb-2 text-body-2">
+                    계속하려면 아래에 <strong>{{ tenantIdToDelete }}</strong> 를 정확히 입력하세요:
+                </p>
+                <v-text-field
+                    v-model="confirmationTenantName"
+                    :placeholder="tenantIdToDelete"
+                    variant="outlined"
+                    density="compact"
+                    class="mb-3"
+                    @keyup.enter="confirmationTenantName === tenantIdToDelete ? (deleteTenant(), deleteDialog = false) : null"
+                />
             </v-card-text>
-            <v-card-actions class="justify-center pt-0">
-                <v-btn color="primary" variant="flat" @click="deleteTenant(); deleteDialog = false">삭제</v-btn>
-                <v-btn color="error" variant="flat" @click="deleteDialog = false">취소</v-btn>
-            </v-card-actions>
+
+            <v-row class="ma-0 pa-4 pr-2">
+                <v-spacer></v-spacer>
+                <v-btn @click="deleteTenant(); deleteDialog = false"
+                    :disabled="confirmationTenantName !== tenantIdToDelete"
+                    color="error" 
+                    variant="elevated" 
+                    class="rounded-pill"
+                    density="compact"
+                    style="text-transform: none;"
+                >{{ tenantIdToDelete }} 회사 삭제
+                </v-btn>
+            </v-row>
         </v-card>
     </v-dialog>
 </template>
@@ -143,6 +193,7 @@ export default {
         isLoading: true,
         isNavigating: false,
         selectedTenantId: null,
+        confirmationTenantName: '',
     }),
     async created() {
         const isLogin = await backend.checkDBConnection();
@@ -225,15 +276,7 @@ export default {
                 localStorage.removeItem('tenantId');
             }
             this.tenantInfos = this.tenantInfos.filter(tenant => tenant.id !== this.tenantIdToDelete)
-        },
-        
-        getColSize(tenantInfo) {
-            const isLoadingThisTenant = this.isNavigating && this.selectedTenantId === tenantInfo.id;
-            if (isLoadingThisTenant) {
-                return '8';
-            } else {
-                return '9';
-            }
+            this.confirmationTenantName = ''
         },
 
         async toSelectedTenantPage(tenantId) {
