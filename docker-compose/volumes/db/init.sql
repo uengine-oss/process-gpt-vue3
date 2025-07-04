@@ -466,7 +466,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_proc_inst_name text;
 BEGIN
-    IF (TG_OP = 'INSERT') THEN
+    IF (TG_OP = 'INSERT' AND NEW.status != 'SUBMITTED') THEN
         SELECT proc_inst_name, tenant_id INTO v_proc_inst_name 
         FROM bpm_proc_inst 
         WHERE proc_inst_id = NEW.proc_inst_id;
