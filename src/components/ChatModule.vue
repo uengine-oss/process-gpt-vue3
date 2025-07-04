@@ -157,13 +157,13 @@ export default {
                 this.userInfo = await this.storage.getUserInfo();
             }
             await this.loadData(this.getDataPath());
-            // await this.loadMessages(this.getDataPath());
         },
         async setWatchChatList(chatRoomIds) {
             var me = this;
             me.userInfo = await this.storage.getUserInfo();
            
-            await this.storage.watch(`db://chats/${chatRoomIds.join(',')}`, "chat_channel", async (data) => {
+            const channelName = `chats_${chatRoomIds.join(',')}_${Date.now()}`;
+            const subscription = await this.storage.watch('chats', channelName, async (data) => {
                 if(data && data.new){
                     if(data.eventType == "DELETE"){
                         let messageIndex = me.messages.findIndex(msg => msg.uuid === data.old.uuid);
@@ -205,7 +205,11 @@ export default {
                         }
                     }
                 }
+            }, {
+                filter: `id=in.(${chatRoomIds.join(',')})`
             });
+
+            return subscription;
         },
         async getChatList(chatRoomId) {
             var me = this;
@@ -271,30 +275,7 @@ export default {
             if (value && value.agent_messages) {
                 this.messages = value.agent_messages
             }
-
-            // await this.storage.watch(`db://${callPath}`, async () => {
-            //     const value = await this.getData(callPath, options);
-            //     if (value && value.messages) {
-            //         this.messages = value.messages
-            //     }
-            // });
         },
-        async loadMessages(path, options) {
-            const callPath = path ? path : this.path;
-            
-            const value = await this.getData(callPath, options);
-            if (value && value.messages) {
-                this.messages = value.messages
-            }
-
-            await this.storage.watch(`db://${callPath}`, async () => {
-                const value = await this.getData(callPath, options);
-                if (value && value.messages) {
-                    this.messages = value.messages
-                }
-            });
-        },
-
         async getData(path, options) {
             let value;
             if (path) {
