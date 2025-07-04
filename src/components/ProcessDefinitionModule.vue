@@ -82,7 +82,7 @@ export default {
                         messageWriting.isLoading = false;
                         this.messages.push({
                             "role": "system",
-                            "content": `${activity.name} 활동의 폼이 생성되었습니다.`,
+                            "content": `${activity.name} 활동의 폼 생성이 완료되었습니다.`,
                             "timeStamp": Date.now(),
                             "contentType": "html",
                             "htmlContent": formHtml,
@@ -122,7 +122,7 @@ export default {
                 formGenerator.client.genType = 'form';
                 formGenerator.client.onFormCreated = async (response) => {
                     let messageWriting = me.messages[me.messages.length - 1];
-                    messageWriting.content = response;
+                    messageWriting.jsonContent = response;
                 }
                 formGenerator.client.onFormGenerationFinished = async (response) => {
                     try {
@@ -328,6 +328,7 @@ export default {
                 context: me,
                 action: async () => {
                     me.loading = true;
+                    me.saveSchedule(info, '1.0');
                     await me.setDefinitionInfo(info)
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
@@ -443,6 +444,45 @@ export default {
                 },
                 successMsg: this.$t('successMsg.save')
             });
+        },
+        async saveSchedule(info, version) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(info.prevSnapshot, "text/xml");
+
+            const startEvents = xmlDoc.getElementsByTagName("bpmn:startEvent");
+
+            for (let i = 0; i < startEvents.length; i++) {
+                let result = {};
+                const event = startEvents[i];
+                const timer = event.getElementsByTagName("bpmn:timerEventDefinition")[0];
+
+                if (timer) {
+                    const extensionElements = event.getElementsByTagName("bpmn:extensionElements")[0];
+                    if (!extensionElements) continue;
+
+                    const uengineJson = extensionElements.querySelector("uengine\\:json, json");
+                    if (!uengineJson || !uengineJson.textContent) continue;
+
+                    let cronExpression = null;
+                    try {
+                        const json = JSON.parse(uengineJson.textContent);
+                        cronExpression = json.expression;
+                    } catch (e) {
+                        console.warn("Invalid uengine:json in startEvent", e);
+                        continue;
+                    }
+
+                    result = {
+                        proc_def_id: info.proc_def_id,
+                        event_id: event.getAttribute("id"),
+                        name: event.getAttribute("name") || "",
+                        cronExpression: cronExpression,
+                        version: version
+                    };
+                    
+                    backend.setSchedule(result);
+                }
+            }
         },
         async convertXMLToJSON(xmlString) {
             try {

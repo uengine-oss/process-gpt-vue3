@@ -7,8 +7,8 @@
                 <div class="chat-info-view-area">
                     <slot name="custom-chat-top"></slot>
                     <slot name="custom-title" v-if="!definitionMapOnlyInput">
-                        <div>
-                            <div v-if="name && name !== ''" class="d-flex gap-2 align-center pa-4">
+                        <div class="pa-4">
+                            <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                                 <div>
                                     <h5 class="text-h5 mb-n1">{{ name }}</h5>
                                 </div>
@@ -23,8 +23,8 @@
                                 </div>
                             </div>
                             <slot name="custom-tools"></slot>
-                            <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
                         </div>
+                        <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
                     </slot>
 
                     <perfect-scrollbar v-if="!definitionMapOnlyInput" class="h-100 chat-view-box" ref="scrollContainer" @scroll="handleScroll">

@@ -135,6 +135,11 @@ const MainRoutes = {
             path: '/bscard',
             component: () => import('@/components/ui/BSCard.vue')
         },
+        {
+            name: 'Schedule',
+            path: '/schedule',
+            component: () => import('@/components/scheduler/ScheduleList.vue')
+        },
 
         // {
         //     name: 'Email',
