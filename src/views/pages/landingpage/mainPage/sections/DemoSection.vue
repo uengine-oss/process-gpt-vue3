@@ -21,7 +21,7 @@
           <p class="text-lg text-gray-700">{{ $t('DemoSection.description2') }}</p>
         </div>
         <div class="relative">
-          <img alt="AI 에이전트 지식 구조" loading="lazy" width="600" height="400" src="@/assets/images/mainPages/diagram.png" style="">
+          <img alt="AI 에이전트 지식 구조" loading="lazy" width="600" height="400" :src="`/images/${$t('DemoSection.diagramImg')}`" style="">
         </div>
       </div>
   </div>

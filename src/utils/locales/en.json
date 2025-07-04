@@ -38,7 +38,9 @@
         "schedule" : "Scheduler",
         "calendar": "Calendar",
         "layoutSetting": "Layout Setting",
-        "admin" : "Admin Page"
+        "admin" : "Admin Page",
+        "setting" : "Setting",
+        "search": "Search"
     },
     "DashboardTodoList": {
         "todo": "My Task List",
@@ -340,6 +342,7 @@
         "email": "Email",
         "phone": "Phone Number",
         "address": "Address",
+        "changeTenant": "Change Tenant",
         "save": "Save",
         "manageAccess": "Manage Users",
         "addUser": "Add User",
@@ -1098,7 +1101,8 @@
     "DemoSection": {
         "title": "AI-based Business Process Innovation",
         "description1": "Process GPT is an innovative open-source system based on BPMN (Business Process Model and Notation). It implements a user-centric AI agent system utilizing business process notation accumulated over about 20 years. You can define, automate, and continuously improve complex business processes in natural language.",
-        "description2": "Unlike traditional BPM systems, Process GPT leverages the power of AI to simplify all stages from business process definition to execution and optimization. This enables companies to achieve more efficient and flexible process management while saving time and resources."
+        "description2": "Unlike traditional BPM systems, Process GPT leverages the power of AI to simplify all stages from business process definition to execution and optimization. This enables companies to achieve more efficient and flexible process management while saving time and resources.",
+        "diagramImg": "diagram-en.png"
     },
     "ConsultingSection": {
         "title": "Process Consulting AI and Management",

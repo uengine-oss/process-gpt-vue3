@@ -20,7 +20,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <v-tooltip text="설정">
+    <v-tooltip :text="$t('headerMenu.setting')">
         <template v-slot:activator="{ props }">
             <router-link class="custom-hover-primary text-left px-0 cursor-pointer text-decoration-none" variant="text" :to="`/account-settings`">
                 <div class="d-flex align-center">
