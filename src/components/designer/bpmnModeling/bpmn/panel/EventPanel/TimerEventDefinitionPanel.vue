@@ -3,7 +3,7 @@
         <!-- <cron-vuetify v-model="cron" :chip-props="{ color: 'success', textColor: 'white' }" @error="error = $event" /> -->
         <!-- <v-text-field class="mt-4" v-model="copyUengineProperties.expression" :label="$t('TimerEventDefinitionPanel.cron')"></v-text-field> -->
         
-        <cron-core v-model="expression" format="quartz" v-slot="{fields, period, error}">
+        <cron-core v-model="expression" :format="mode ? 'default' : 'quartz'" v-slot="{fields, period, error}">
             <div>
 
                 <!-- period selection -->
@@ -105,7 +105,7 @@ export default {
             paramKey: '',
             paramValue: '',
             eventType: null,
-            expression: '* * * * * *',
+            expression: '* * * * *',
             error: '',
             cronDescription: [
                 {
@@ -116,13 +116,16 @@ export default {
     },
     mounted() {
         if(!this.copyUengineProperties.expression) {
-            this.copyUengineProperties.expression = "* * * * * *";
+            this.copyUengineProperties.expression = "* * * * *";
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         } else {
-            this.expression = this.copyUengineProperties.expression.slice(0, -2);
+            this.expression = this.copyUengineProperties.expression;
         }
     },
     computed: {
+        mode() {
+            return window.$mode === 'ProcessGPT';
+        }
     },
     watch: {
         expression(newVal) {

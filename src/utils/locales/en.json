@@ -35,6 +35,7 @@
         "sidebar": "Sidebar",
         "dashboard": "Dashboard",
         "todoList" : "My Task List",
+        "schedule" : "Scheduler",
         "calendar": "Calendar",
         "layoutSetting": "Layout Setting",
         "admin" : "Admin Page"

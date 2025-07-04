@@ -25,14 +25,14 @@
         <!-- 테넌트 생성 완료 및 유저 초대 섹션 -->
         <div v-if="tenantCreated" class="tenant-success-section">
             <!-- 성공 메시지 -->
-            <v-row justify="center" class="mb-8">
-                <v-col cols="12" md="8" lg="6">
+            <v-row justify="center" class="mb-8 mt-4">
+                <v-col  cols="12" md="10" lg="8">
                     <v-card class="success-card" elevation="3">
                         <v-card-text class="text-center pa-8">
                             <v-icon color="success" size="64" class="mb-4">mdi-check-circle</v-icon>
                             <h2 class="text-h4 text-success mb-3">🎉 회사 생성 완료!</h2>
                             <p class="text-h6 text-grey-darken-1 mb-4">
-                                <strong>{{ tenantInfo.id }}</strong> 회사가 성공적으로 생성되었습니다.
+                                <strong>"{{ tenantInfo.id }}"</strong> 회사가 성공적으로 생성되었습니다.
                             </p>
                             <p class="text-body-1 text-grey-darken-2">
                                 이제 팀원들을 초대하여 함께 작업을 시작해보세요.<br>

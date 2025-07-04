@@ -87,6 +87,9 @@ export interface Backend {
     getBSCard(): Promise<any>;
     putBSCard(card: any): Promise<any>;
     fetchAgentData(agentUrl: string): Promise<any>;
+    getSchedule(id: string, version: string): Promise<any>;
+    setSchedule(json: any): Promise<any>;
+    deleteSchedule(defId: string, eventId: string): Promise<any>;
 }
 
 // export type { Backend }

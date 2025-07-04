@@ -39,7 +39,7 @@
             <div class="list-group">
                 <transition-group>
                     <div v-for="task in column.tasks" :key="task.id" class="todo-task-item-card-style">
-                        <KanbanColumnCard :task="task" @deleteTask="deleteTask" :userInfo="users" />
+                        <KanbanColumnCard :task="task" @deleteTask="deleteTask" :userList="users" />
                     </div>
                 </transition-group>
             </div>

@@ -1842,7 +1842,7 @@ class ProcessGPTBackend implements Backend {
 
     async getAgentList() {
         try {
-            const list = await storage.list('agents');
+            const list = await storage.list('users', { match: { is_agent: true } });
             return list;
         } catch (error) {
             //@ts-ignore
@@ -1857,7 +1857,7 @@ class ProcessGPTBackend implements Backend {
                     id: agentId
                 }
             }
-            const agent = await storage.getObject('agents', options);
+            const agent = await storage.getObject('users', options);
             return agent;
         } catch (error) {
             //@ts-ignore
@@ -1869,7 +1869,7 @@ class ProcessGPTBackend implements Backend {
         try {
             const putObj: any = {
                 id: newAgent.id,
-                name: newAgent.name,
+                username: newAgent.name,
                 role: newAgent.role,
                 goal: newAgent.goal,
                 persona: newAgent.persona,
@@ -1879,9 +1879,10 @@ class ProcessGPTBackend implements Backend {
                 profile: newAgent.img,
                 skills: newAgent.skills,
                 model: newAgent.model,
-                tenant_id: window.$tenantName
+                tenant_id: window.$tenantName,
+                is_agent: true
             }
-            await storage.putObject('agents', putObj);
+            await storage.putObject('users', putObj);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1890,7 +1891,7 @@ class ProcessGPTBackend implements Backend {
 
     async deleteAgent(agentId: string) {
         try {
-            await storage.delete('agents', { match: { id: agentId } });
+            await storage.delete('users', { match: { id: agentId } });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3062,6 +3063,80 @@ class ProcessGPTBackend implements Backend {
         }
     }
     
+
+
+    async setSchedule(json: any) {
+        try {
+            const defId = json.proc_def_id;
+            const activityId = json.event_id; // 여기서는 여전히 event_id 쓰고 있네?
+            const cronExpression = json.cronExpression;
+            const tenantId = window.$tenantName;
+            const jobName = `${defId}_${activityId}_${tenantId}`;
+        
+            // ✅ JSON payload 만들어서 함수로 보냄
+            const inputPayload = {
+                input: {
+                    process_definition_id: defId,
+                    activity_id: activityId,
+                    process_instance_id: 'new', // 필요하면 하드코딩
+                    email: json.email ?? '',    // 필요하면 외부에서 받기
+                    tenant_id: tenantId
+                }
+            };
+
+            await storage.callProcedure('register_cron_job', {
+                p_job_name: jobName,
+                p_cron_expr: cronExpression,
+                p_input: inputPayload // 이제 JSONB 하나로!
+            });
+        
+            console.log(`✅ pg_cron 잡 ${jobName} 등록 완료`);
+        } catch (e) {
+            throw new Error('setSchedule failed: ' + (e instanceof Error ? e.message : ''));
+        }
+    }
+      
+      
+
+
+    async getSchedule(defId: string, eventId: string) {
+        try {
+            const tenantId = window.$tenantName;
+            let jobName = `${defId}_${eventId}_${tenantId}`;
+            let result = null;
+            if(!defId || !eventId) {
+                jobName = null;
+                result = await storage.callProcedure('get_cron_jobs');
+            } else {
+                result = await storage.callProcedure('get_cron_jobs', {
+                    p_job_name: jobName
+                });
+            }
+        
+        
+            console.log(`✅ 잡 ${jobName} 조회 결과`, result);
+            return result;
+        } catch (e) {
+            throw new Error('getSchedule failed: ' + (e instanceof Error ? e.message : ''));
+        }
+    }
+      
+
+
+    async deleteSchedule(job: any) {
+        try {
+            const jobName = job.jobname;
+        
+            await storage.callProcedure('delete_cron_job', {
+                p_job_name: jobName
+            });
+        
+            console.log(`✅ pg_cron 잡 ${jobName} 삭제 완료`);
+        } catch (e) {
+            throw new Error('deleteSchedule failed: ' + (e instanceof Error ? e.message : ''));
+        }
+    }
+      
 }
 
 export default ProcessGPTBackend;

@@ -19,7 +19,6 @@
                             <v-divider class="my-2"></v-divider>
                             <UserListing 
                                 :userList="userList" 
-                                :agentList="agentList"
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
@@ -68,9 +67,16 @@
                         @toggleProcessGPTActive="toggleProcessGPTActive"
                         @startWorkOrder="startWorkOrder"
                     >
-                        <template #attachments-area>
-                            <div class="attachment-container">
+                        <template #custom-chat-top>
+                            <div class="custom-top-area">
                                 <div class="position-fixed">
+                                    <div v-if="selectedUserInfo && 
+                                        selectedUserInfo.is_agent && 
+                                        selectedUserInfo.persona && 
+                                        selectedUserInfo.persona !== ''"
+                                    >
+                                        <v-switch v-model="isAgentLearning" color="primary" label="학습 모드" density="compact" class="ml-4" />
+                                    </div>
                                     <div v-if="attachments.length > 0">
                                         <v-tooltip text="Attachments" location="right">
                                             <template v-slot:activator="{ props }">
@@ -107,7 +113,6 @@
                             <v-divider class="my-2"></v-divider>
                             <UserListing 
                                 :userList="userList" 
-                                :agentList="agentList"
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
@@ -286,9 +291,7 @@ export default {
         isAttachmentsOpen: false,
         attachments: [],
 
-        // agent
-        agentList: [],
-        agentInfo: null
+        isAgentLearning: false,
     }),
     computed: {
         filteredChatRoomList() {
@@ -301,7 +304,7 @@ export default {
                 if (newVal && newVal.id) {
                     if (newVal.participants.length > 0) {
                         this.isAgentChat = newVal.participants.some(participant => participant.is_agent);
-                        this.agentInfo = newVal.participants.find(participant => participant.is_agent);
+                        this.selectedUserInfo = newVal.participants.find(participant => participant.is_agent);
                     }
                     if(this.generator) {
                         this.chatRoomId = newVal.id;
@@ -356,9 +359,7 @@ export default {
 
         await this.getChatRoomList();
 
-        await this.getUserList();
-        await this.getAgentList();
-        
+        await this.getUserList();        
         await this.getCalendar();
         await this.getAttachments();
 
@@ -432,9 +433,6 @@ export default {
                 }
             });
         },
-        async getAgentList(){
-            this.agentList = await this.backend.getAgentList();
-        },
         selectedUser(user){
             this.selectedUserInfo = user
         },
@@ -445,17 +443,11 @@ export default {
             const currentUserEmail = this.userInfo.email;
             const currentUserName = this.userInfo.username;
 
-            if(type == 'work' || type == 'agent-work'){
+            if(type == 'work'){
                 chatRoomInfo = {}
-                chatRoomInfo.name = type == 'agent-work' ? this.selectedUserInfo.name : this.selectedUserInfo.username
+                chatRoomInfo.name = this.selectedUserInfo.username
                 chatRoomInfo.participants = []
-                if (type == 'agent-work') {
-                    const agentInfo = this.selectedUserInfo
-                    agentInfo.is_agent = true
-                    chatRoomInfo.participants.push(agentInfo)
-                } else {
-                    chatRoomInfo.participants.push(this.selectedUserInfo)
-                }
+                chatRoomInfo.participants.push(this.selectedUserInfo)
                 this.createChatRoom(chatRoomInfo)
             } else {
                 const chatRoomExists = this.chatRoomList.some(chatRoom => {
@@ -473,16 +465,9 @@ export default {
                     this.chatRoomSelected(chatRoomInfo)
                 } else {
                     chatRoomInfo = {}
-                    chatRoomInfo.name = type == 'agent-chat' ? this.selectedUserInfo.name : this.selectedUserInfo.username
+                    chatRoomInfo.name = this.selectedUserInfo.username
                     chatRoomInfo.participants = []
-                    if (type == 'agent-chat') {
-                        this.agentInfo = this.selectedUserInfo
-                        const agentInfo = this.selectedUserInfo
-                        agentInfo.is_agent = true
-                        chatRoomInfo.participants.push(agentInfo)
-                    } else {
-                        chatRoomInfo.participants.push(this.selectedUserInfo)
-                    }
+                    chatRoomInfo.participants.push(this.selectedUserInfo)
                     this.createChatRoom(chatRoomInfo)
                 }
             }
@@ -989,8 +974,8 @@ export default {
                         this.startProcess(obj, chatRoomId)
                     } else {
                         if (this.isAgentChat) {
-                            obj.profile = this.agentInfo.profile
-                            obj.name = this.agentInfo.name
+                            obj.profile = this.selectedUserInfo.profile
+                            obj.name = this.selectedUserInfo.username
                         }
                         this.putMessage(obj, chatRoomId)
                     }
@@ -1042,12 +1027,12 @@ export default {
     overflow: auto;
 }
 
-.attachment-container {
+.custom-top-area {
     position: relative;
     z-index: 1000;
 }
 
-.attachment-container .v-btn {
+.custom-top-area .v-btn {
     background-color: white;
 }
 </style>

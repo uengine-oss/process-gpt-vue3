@@ -212,16 +212,16 @@ export default {
                 }
                 me.renderKey++;
 
-                const activities = me.definition.activities;
+                let activities = me.definition.activities.filter((activity) => activity.agentMode && activity.agentMode != 'none');
                 const roles = me.definition.roles;
                 let hasDefaultRole = false;
                 me.roleMappings = roles.map((role) => {
                     if(role.default && role.default.length > 0) {
                         hasDefaultRole = true;
                     }
-                    const activity = activities.find((activity) => activity.role === role.name);
                     let isAgent = false;
-                    if(activity && activity.agentMode && activity.agentMode != 'none') {
+                    const roleActivities = activities.filter((activity) => activity.role === role.name);
+                    if(roleActivities.length > 0) {
                         isAgent = true;
                     }
                     return {
@@ -232,6 +232,7 @@ export default {
                         isAgent: isAgent
                     };
                 });
+                console.log(me.roleMappings);
 
                 if (!hasDefaultRole) {
                     const roleBindings = await backend.bindRole(me.definition.roles, me.definitionId);
