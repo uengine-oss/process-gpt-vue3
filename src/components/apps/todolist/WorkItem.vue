@@ -496,7 +496,7 @@ export default {
                     return [
                         { value: 'output', label: this.$t('InstanceCard.output') },
                         { value: 'progress', label: this.$t('WorkItem.progress') },
-                        { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
+                        // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
                         { value: 'agent-feedback', label: '에이전트 피드백' },
                     ]
