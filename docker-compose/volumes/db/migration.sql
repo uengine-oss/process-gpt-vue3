@@ -291,3 +291,14 @@ CREATE POLICY agents_insert_policy ON agents FOR INSERT TO authenticated WITH CH
 CREATE POLICY agents_select_policy ON agents FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY agents_update_policy ON agents FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY agents_delete_policy ON agents FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+
+--events table
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS run_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS job_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS todo_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS proc_inst_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS crew_type text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS data jsonb;

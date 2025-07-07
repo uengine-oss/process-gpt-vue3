@@ -24,7 +24,7 @@
                     <span v-else>{{ index + 1 }}</span>
                   </div>
                   <div class="task-info">
-                    <h3 class="task-title">{{ item.payload.role }}</h3>
+                    <h3 class="task-title">{{ getDisplayName(item.payload) }}</h3>
                     <p class="task-description">{{ item.payload.goal }}</p>
                   </div>
                 </div>
@@ -61,12 +61,23 @@
                 </div>
                 <div class="result-content">
                   <!-- JSON 출력 -->
-                  <div v-if="isJsonOutput(item.payload.crewType, item.payload.output)" class="json-output">
+                  <div v-if="item.payload.crewType !== 'slide' && isJsonOutput(item.payload.crewType, item.payload.output)" class="json-output">
                     <div 
                       :class="['json-container', { expanded: isTaskExpanded(item.payload.id) }]"
                       @dblclick="toggleTaskExpansion(item.payload.id)"
                     >
-                    <pre>{{ formatJsonOutput(item.payload.output) }}</pre>
+                      <template v-if="typeof item.payload.output === 'object'">
+                        <div 
+                          v-for="(val, key) in item.payload.output" 
+                          :key="key" 
+                          class="json-value"
+                        >
+                          <div v-html="formatMarkdownOutput(val)"></div>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <pre>{{ formatJsonOutput(item.payload.output) }}</pre>
+                      </template>
                     </div>
                     <div v-if="isContentLong(formatJsonOutput(item.payload.output))" class="expand-controls">
                       <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
@@ -247,6 +258,7 @@ export default {
             id: event.id,
             jobId,
             goal: data?.goal || 'Task',
+            name: data?.name || '',
             role: data?.role || 'Agent',
             crewType: event.crew_type || 'default',
             startTime: event.timestamp,
@@ -434,7 +446,11 @@ export default {
 
     getSlides(output) {
       if (!output) return [];
-      const sanitized = this.sanitizeMarkdownOutput(output);
+      // 객체 형태일 경우 첫 번째 값(슬라이드 마크다운) 사용
+      const source = (typeof output === 'object' && !Array.isArray(output))
+        ? Object.values(output)[0]
+        : output;
+      const sanitized = this.sanitizeMarkdownOutput(source);
       return String(sanitized)
         .split(/^\s*---\s*$/gm)
         .filter(slide => slide.trim().length > 0)
@@ -490,89 +506,41 @@ export default {
     submitTask(task) {
       const parser = new DOMParser();
       const doc = parser.parseFromString(this.html, 'text/html');
-      const fields = Array.from(doc.querySelectorAll('text-field, textarea-field, report-field, slide-field'))
-        .map(field => ({
-          name: field.getAttribute('name'),
-          tag: field.tagName.toLowerCase()
-        }))
-        .filter(field => field.name);
-
+      // task.output이 문자열인 경우 JSON 파싱
+      let parsed;
+      try {
+        parsed = typeof task.output === 'string' ? JSON.parse(task.output) : task.output;
+      } catch {
+        parsed = {};
+      }
       const formValues = {};
-
-      function deepParseJson(str) {
-        let result = str;
-        let count = 0;
-        while (typeof result === 'string' && count < 5) {
-          try {
-            const parsed = JSON.parse(result);
-            if (typeof parsed === 'object' && parsed !== null) {
-              result = parsed;
-            } else {
-              break;
-            }
-          } catch {
-            break;
-          }
-          count++;
-        }
-        return result;
-      }
-
-      if (task.crewType === 'text') {
-        let parsed = deepParseJson(task.output);
-        if (typeof parsed === 'object' && parsed !== null) {
-          const rowLayouts = Array.from(doc.querySelectorAll('row-layout[name]'));
-          rowLayouts.forEach(rl => {
-            const groupName = rl.getAttribute('name');
-            const isMulti = rl.getAttribute('is_multidata_mode') === 'true';
-            if (isMulti) {
-              const fieldEls = Array.from(
-                rl.querySelectorAll('text-field[name], textarea-field[name]')
-              );
-              const item = {};
-              fieldEls.forEach(el => {
-                const fname = el.getAttribute('name');
-                item[fname] = parsed[fname] !== undefined ? parsed[fname] : '';
-              });
-              formValues[groupName] = [item];
-            } else {
-              const fieldEls = Array.from(
-                rl.querySelectorAll('text-field[name], textarea-field[name], select-field[name]')
-              );
-              fieldEls.forEach(el => {
-                const fname = el.getAttribute('name');
-                if (parsed[fname] !== undefined) {
-                  formValues[fname] = parsed[fname];
-                }
-              });
-            }
+      // 각 row-layout 그룹별 필드 이름과 값을 매핑
+      const rowLayouts = Array.from(doc.querySelectorAll('row-layout[name]'));
+      rowLayouts.forEach(rl => {
+        const groupName = rl.getAttribute('name');
+        const isMulti = rl.getAttribute('is_multidata_mode') === 'true';
+        // 그룹 내 모든 입력 필드 선택
+        const selector = 'text-field[name], textarea-field[name], report-field[name], slide-field[name], select-field[name]';
+        const fieldEls = Array.from(rl.querySelectorAll(selector));
+        if (isMulti) {
+          // 다중 모드: 배열로 전달
+          const item = {};
+          fieldEls.forEach(el => {
+            const fname = el.getAttribute('name');
+            item[fname] = parsed[fname] !== undefined ? parsed[fname] : '';
           });
+          formValues[groupName] = [item];
         } else {
-          parsed = {};
-          const lines = String(task.output).split('\n');
-          lines.forEach(line => {
-            const match = line.match(/^([\w\-]+)\s*:\s*(.+)$/);
-            if (match) {
-              parsed[match[1]] = match[2];
-            }
-          });
-          fields.forEach(field => {
-            if (parsed[field.name] !== undefined) {
-              formValues[field.name] = parsed[field.name];
+          // 단일 모드: 개별 키-값으로 전달
+          fieldEls.forEach(el => {
+            const fname = el.getAttribute('name');
+            if (parsed[fname] !== undefined) {
+              formValues[fname] = parsed[fname];
             }
           });
         }
-      } else {
-        fields.forEach(field => {
-          if (
-            (task.crewType === 'report' && field.tag === 'report-field') ||
-            (task.crewType === 'slide' && field.tag === 'slide-field')
-          ) {
-            formValues[field.name] = task.output;
-          }
-        });
-      }
-
+      });
+      // 이벤트 발행
       this.EventBus.emit('form-values-updated', formValues);
     },
 
@@ -773,6 +741,14 @@ export default {
     },
     handleAvatarError(path) {
       console.log('agentProfile failed to load:', path)
+    },
+    getDisplayName(task) {
+      const name = task.name || '';
+      // name이 없거나 'unknown'일 경우 role 사용
+      if (!name.trim() || name.trim().toLowerCase() === 'unknown') {
+        return task.role;
+      }
+      return task.name;
     },
   },
   async created() {
