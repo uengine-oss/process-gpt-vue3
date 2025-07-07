@@ -41,8 +41,8 @@
             <v-card-text class="pa-4 pt-3">
                 <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted"></DynamicForm>
                 <div v-if="!isCompleted" class="mb-4">
-                    <!-- <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox> -->
-                    <!-- <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" /> -->
+                    <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
+                    <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
                 </div>
                 <Checkpoints v-if="workItem.activity.checkpoints.length > 0" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
             </v-card-text>
@@ -171,9 +171,12 @@ export default {
                         me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
                     }
                     if(!me.html) {
-                        me.useTextAudio = true;
-                        me.html = '<section>  <row-layout name="result_input_layout" alias="자유롭게 결과 입력" is_multidata_mode="false" v-model="formValues" v-slot="slotProps"><div class="row"><div class="col-sm-12">      <textarea-field name="result_input" alias="결과" rows="5" disabled="false" readonly="false" v-model="slotProps.modelValue[\'result_input\']"></textarea-field>    </div></div></row-layout></section>'
-                        // me.formDefId = 'user_input_text' // default form 이 없는 경우 자유롭게 입력 가능하도록 설정
+                        me.formDefId = 'defaultform'
+                        me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
+                        if(!me.html) {
+                            me.useTextAudio = true;
+                            me.formDefId = 'user_input_text' // default form 이 없는 경우 자유롭게 입력 가능하도록 설정
+                        }
                     }
                     if(!me.isDryRun) {
                         me.loadForm()

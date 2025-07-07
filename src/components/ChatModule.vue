@@ -660,7 +660,11 @@ export default {
                         try {
                             jsonData = JSON.parse(jsonData);
                         } catch(e) {
-                            jsonData = partialParse(jsonData)
+                            try {
+                                jsonData = partialParse(jsonData)
+                            } catch(e) {
+                                
+                            }
                         }
                     } else {
                         jsonData = null

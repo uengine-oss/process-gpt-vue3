@@ -18,6 +18,8 @@ $$;
 create table if not exists public.tenants (
     id text not null,
     owner uuid null default auth.uid (),
+    is_deleted boolean not null default false,
+    deleted_at timestamp with time zone null,
     constraint tenants_pkey primary key (id)
 ) tablespace pg_default;
 
@@ -1028,3 +1030,94 @@ grant execute on function public.delete_cron_job(text) to authenticated;
 
 GRANT USAGE ON SCHEMA cron TO authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA cron TO authenticated;
+
+-- ===============================================
+-- 테넌트 자동 삭제 기능 (deleted_at 기준 7일 후)
+-- ===============================================
+
+-- pg_cron 확장 추가 (이미 있을 수 있지만 안전하게)
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- 테넌트 정리 함수 (기존 start_process_scheduled 패턴과 동일)
+create or replace function public.cleanup_deleted_tenants_job(
+  p_job_name text,
+  p_input jsonb
+)
+returns void
+language plpgsql
+as $$
+declare
+  deleted_count int;
+  response text;
+  status_code int; 
+begin
+  -- deleted_at이 일주일(7일) 지난 테넌트들을 실제로 삭제
+  delete from public.tenants
+  where deleted_at is not null
+    and deleted_at < now() - interval '7 days';
+  
+  get diagnostics deleted_count = row_count;
+  
+  response := format('Successfully deleted %s expired tenants', deleted_count);
+  status_code := 200;
+
+  insert into public.cron_job_run_log (
+    job_name, status, http_status, response_body
+  )
+  values (
+    p_job_name,
+    'SUCCESS',
+    status_code,
+    jsonb_build_object(
+      'deleted_count', deleted_count,
+      'message', response
+    )
+  );
+
+  raise notice '✅ Tenant cleanup completed: % tenants deleted', deleted_count;
+
+exception
+  when others then
+    insert into public.cron_job_run_log (
+      job_name, status, http_status, error_message
+    )
+    values (
+      p_job_name,
+      'ERROR',
+      500,
+      SQLERRM
+    );
+    raise notice '❌ Tenant cleanup failed: %', SQLERRM;
+    raise;
+end;
+$$;
+
+grant execute on function public.cleanup_deleted_tenants_job(text, jsonb) to authenticated;
+
+-- 테넌트 정리 cron job 등록 함수
+create or replace function public.register_tenant_cleanup()
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  -- 기존 job이 있다면 삭제
+  perform cron.unschedule('tenant_cleanup_daily') where exists (
+    select 1 from cron.job where jobname = 'tenant_cleanup_daily'
+  );
+
+  -- 새로 등록 (매일 새벽 2시에 실행 - 한국시간 기준, UTC로는 17시)
+  perform cron.schedule(
+    'tenant_cleanup_daily',
+    '0 17 * * *',
+    'select public.cleanup_deleted_tenants_job(''tenant_cleanup_daily'', ''{}''::jsonb);'
+  );
+  
+  raise notice '✅ Tenant cleanup job registered successfully (runs daily at 2:00 AM KST / 17:00 UTC)';
+end;
+$$;
+
+grant execute on function public.register_tenant_cleanup() to authenticated;
+
+-- 테넌트 정리 cron job 등록 실행 (한 번 실행하면 매일 자동 실행)
+SELECT public.register_tenant_cleanup();
