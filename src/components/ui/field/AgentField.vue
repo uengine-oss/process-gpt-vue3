@@ -101,8 +101,12 @@
                     closable-chips
                     variant="outlined"
                 ></v-combobox>
-                <v-row dense>
-                    <v-col cols="5">
+                <v-row dense
+                    class="ma-0 pa-0"
+                >
+                    <v-col class="pa-0"
+                        cols="5"
+                    >
                         <v-select
                             v-model="selectedProvider"
                             :items="providers"
@@ -114,7 +118,9 @@
                             @update:model-value="onProviderChange"
                         ></v-select>
                     </v-col>
-                    <v-col cols="7">
+                    <v-col class="pa-0 pl-2"
+                        cols="7"
+                    >
                         <v-select
                             v-model="selectedModel"
                             :items="getModelsForProvider(selectedProvider)"

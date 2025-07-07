@@ -1,71 +1,74 @@
 <template>
     <v-card elevation="10" v-if="currentComponent" :key="updatedKey"  :style="isMobile ? 'margin-top: 10px;' : ''">
-        <div class="pa-2 pb-0 pl-4 align-center"
-            style="height: 40px;"
-        >
-            <div class="d-flex align-center">
+        <div class="pa-2 pb-0 pl-4 align-center">
+            <div class="d-flex align-center"
+                :style="isMobile ? 'display: block !important;' : ''"
+            >
                 <h5 class="text-h5 font-weight-semibold">
                     {{ activityName }}
                 </h5>
-                <v-chip v-if="workItemStatus" size="x-small" variant="outlined" 
-                    style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center">
-                    {{ workItemStatus }}
-                </v-chip>
-                <div v-if="isMobile">
-                    <v-btn
-                        class="feedback-btn-mobile" 
-                        elevation="2" 
-                        color="primary" 
-                        density="compact"
-                        rounded
-                        @click="beforeGenerateExample"
-                        :loading="isGeneratingExample"
-                        :disabled="isGeneratingExample"
-                        style="margin-left: 5px; margin-right: 5px;"
-                    >
-                        <span v-if="!isGeneratingExample">
-                            <span v-if="generator">
-                                <v-icon>mdi-refresh</v-icon>
-                                <span class="ms-2">예시 재생성</span>
-                            </span>
-                            <span v-else>
-                                <v-icon>mdi-pencil</v-icon>
-                                <span class="ms-2">빠른 예시 생성</span>
-                            </span>
-                        </span>
-                        
-                    </v-btn>
-                </div>
-                <v-tooltip :text="$t('processDefinition.zoom')">
-                    <template v-slot:activator="{ props }">
-                        <v-btn v-if="!isMobile" 
-                            @click="$globalState.methods.toggleZoom()"
-                            class="ml-1"
-                            size="x-small"
-                            icon="$vuetify" variant="text"
-                            v-bind="props"
+                <v-row class="pa-0 pt-1 pb-1 ma-0 align-center">
+                    <v-chip v-if="workItemStatus" size="x-small" variant="outlined" 
+                        style = "margin: 2px 0px 0px 5px !important; display: flex; align-items: center"
+                        :style="isMobile ? 'margin: 0px !important;' : ''">
+                        {{ workItemStatus }}
+                    </v-chip>
+                    <div v-if="isMobile">
+                        <v-btn
+                            class="feedback-btn-mobile align-center" 
+                            elevation="2" 
+                            color="primary" 
+                            density="compact"
+                            rounded
+                            @click="beforeGenerateExample"
+                            :loading="isGeneratingExample"
+                            :disabled="isGeneratingExample"
+                            style="margin-left: 5px; margin-right: 5px;"
                         >
-                            <Icons
-                                :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                :size="20"
-                            />
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <!-- <v-tooltip v-if="isSimulate == 'true'" text="이전 단계">
-                    <template v-slot:activator="{ props }">
-                        <v-btn @click="backToPrevStep"
-                            class="ml-1"
-                            size="x-small"
-                            icon="mdi-arrow-left"
-                            v-bind="props"
-                            :disabled="activityIndex == 0"
-                        >
+                            <span v-if="!isGeneratingExample">
+                                <span v-if="generator">
+                                    <v-icon class="mr-1">mdi-refresh</v-icon>
+                                    <span>예시 재생성</span>
+                                </span>
+                                <span v-else>
+                                    <v-icon class="mr-1">mdi-pencil</v-icon>
+                                    <span>빠른 예시 생성</span>
+                                </span>
+                            </span>
                             
                         </v-btn>
-                    </template>
-                </v-tooltip> -->
-                <v-btn v-if="isSimulate == 'true'" :disabled="activityIndex == 0" @click="backToPrevStep" density="compact" rounded>이전 단계</v-btn>
+                    </div>
+                    <v-tooltip :text="$t('processDefinition.zoom')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-if="!isMobile" 
+                                @click="$globalState.methods.toggleZoom()"
+                                class="ml-1"
+                                size="x-small"
+                                icon="$vuetify" variant="text"
+                                v-bind="props"
+                            >
+                                <Icons
+                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
+                                    :size="20"
+                                />
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                    <!-- <v-tooltip v-if="isSimulate == 'true'" text="이전 단계">
+                        <template v-slot:activator="{ props }">
+                            <v-btn @click="backToPrevStep"
+                                class="ml-1"
+                                size="x-small"
+                                icon="mdi-arrow-left"
+                                v-bind="props"
+                                :disabled="activityIndex == 0"
+                            >
+                                
+                            </v-btn>
+                        </template>
+                    </v-tooltip> -->
+                    <v-btn v-if="isSimulate == 'true'" :disabled="activityIndex == 0" @click="backToPrevStep" density="compact" rounded>이전 단계</v-btn>
+                </v-row>
             </div>
         </div>
 

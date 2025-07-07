@@ -50,6 +50,70 @@ PaletteProvider.$inject = [
   'viewModeFlag'
 ];
 
+
+PaletteProvider.prototype.rotateAndSnapAttacher = function(attacher, taskBounds, newTaskBounds, direction = 'clockwise') {
+  const taskCenterX = taskBounds.x + taskBounds.width / 2;
+  const taskCenterY = taskBounds.y + taskBounds.height / 2;
+
+  const attacherBounds = attacher.di.bounds;
+  const attacherCenterX = attacherBounds.x + attacherBounds.width / 2;
+  const attacherCenterY = attacherBounds.y + attacherBounds.height / 2;
+
+  const dx = attacherCenterX - taskCenterX;
+  const dy = attacherCenterY - taskCenterY;
+
+  let rotatedDx, rotatedDy;
+
+  if (direction === 'clockwise') {
+    rotatedDx = dy;
+    rotatedDy = -dx;
+  } else {
+    rotatedDx = -dy;
+    rotatedDy = dx;
+  }
+
+  let side;
+  if (Math.abs(rotatedDx) > Math.abs(rotatedDy)) {
+    side = rotatedDx > 0 ? 'right' : 'left';
+  } else {
+    side = rotatedDy > 0 ? 'bottom' : 'top';
+  }
+
+  const newTaskCenterX = newTaskBounds.x + newTaskBounds.width / 2;
+  const newTaskCenterY = newTaskBounds.y + newTaskBounds.height / 2;
+
+  let newAttacherCenterX = newTaskCenterX;
+  let newAttacherCenterY = newTaskCenterY;
+
+  switch (side) {
+    case 'left':
+      newAttacherCenterX = newTaskBounds.x;
+      break;
+    case 'right':
+      newAttacherCenterX = newTaskBounds.x + newTaskBounds.width;
+      break;
+    case 'top':
+      newAttacherCenterY = newTaskBounds.y;
+      break;
+    case 'bottom':
+      newAttacherCenterY = newTaskBounds.y + newTaskBounds.height;
+      break;
+  }
+
+  const radiusX = attacherBounds.width / 2;
+  const radiusY = attacherBounds.height / 2;
+
+  const newAttacherBounds = {
+    x: newAttacherCenterX - radiusX,
+    y: newAttacherCenterY - radiusY,
+    width: attacherBounds.width,
+    height: attacherBounds.height
+  };
+
+  return newAttacherBounds;
+}
+
+
 PaletteProvider.prototype.adjustParticipantBoundsByLanes = function(participant, lanes, isHorizontal) {
   var modeling = this._modeling;
   if (!lanes.length) return;
@@ -225,7 +289,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
       child.type !== 'bpmn:LaneSet' &&
       child.type !== 'bpmn:Participant'
     ) {
-      if (child.type !== 'bpmn:SequenceFlow') {
+      if (child.type !== 'bpmn:SequenceFlow' && child.type !== 'bpmn:BoundaryEvent') {
         const originalCenterX = child.di.bounds.x + (child.di.bounds.width / 2);
         const originalCenterY = child.di.bounds.y + (child.di.bounds.height / 2);
 
@@ -243,6 +307,13 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
         };
 
         modeling.resizeShape(child, newChildBounds);
+
+        if(child.attachers && child.attachers.length > 0) {
+          child.attachers.forEach(attacher => {
+            const newBounds = this.rotateAndSnapAttacher(attacher, child.di.bounds, newChildBounds, 'clockwise');
+            modeling.resizeShape(attacher, newBounds);
+          });
+        }
       }
     }
 
@@ -410,13 +481,13 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
       child.type !== 'bpmn:LaneSet' &&
       child.type !== 'bpmn:Participant'
     ) {
-      if (child.type !== 'bpmn:SequenceFlow') {
+      if (child.type !== 'bpmn:SequenceFlow' && child.type !== 'bpmn:BoundaryEvent') {
         const originalCenterX = child.di.bounds.x + (child.di.bounds.width / 2);
         const originalCenterY = child.di.bounds.y + (child.di.bounds.height / 2);
 
         const relativeX = originalCenterX - oldParticipantBounds.x;
         const relativeY = originalCenterY - oldParticipantBounds.y;
-
+ 
         const rotatedX = relativeY * 1.2;
         const rotatedY = relativeX * 0.8;
 
@@ -428,6 +499,14 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
         };
 
         modeling.resizeShape(child, newChildBounds);
+
+        
+        if(child.attachers && child.attachers.length > 0) {
+          child.attachers.forEach(attacher => {
+            const newBounds = this.rotateAndSnapAttacher(attacher, child.di.bounds, newChildBounds, 'counter-clockwise');
+            modeling.resizeShape(attacher, newBounds);
+          });
+        }
       }
     }
   });
