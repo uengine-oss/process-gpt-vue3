@@ -302,3 +302,40 @@ ALTER TABLE public.events ADD COLUMN IF NOT EXISTS proc_inst_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS crew_type text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS data jsonb;
+
+
+--schedule
+
+
+create or replace function public.register_cron_job(
+  p_job_name text,
+  p_cron_expr text,
+  p_input jsonb
+)
+returns void
+language plpgsql
+security definer
+as $$
+DECLARE
+  v_job_name text;
+BEGIN
+  SELECT jobname INTO v_job_name
+  FROM cron.job
+  WHERE jobname = p_job_name;
+
+  IF v_job_name IS NOT NULL THEN
+    PERFORM cron.unschedule(v_job_name);
+  END IF;
+
+  -- ✅ 새로 schedule
+  PERFORM cron.schedule(
+    p_job_name,
+    p_cron_expr,
+    format(
+      E'select public.start_process_scheduled(''%s'', ''%s''::jsonb);',
+      replace(p_job_name, '''', ''''''),
+      replace(p_input::text, '''', '''''')
+    )
+  );
+END;
+$$;
