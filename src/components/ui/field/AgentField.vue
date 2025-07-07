@@ -101,6 +101,38 @@
                     closable-chips
                     variant="outlined"
                 ></v-combobox>
+                <v-row dense
+                    class="ma-0 pa-0"
+                >
+                    <v-col class="pa-0"
+                        cols="5"
+                    >
+                        <v-select
+                            v-model="selectedProvider"
+                            :items="providers"
+                            item-title="name"
+                            item-value="key"
+                            label="AI 제공사"
+                            outlined
+                            dense
+                            @update:model-value="onProviderChange"
+                        ></v-select>
+                    </v-col>
+                    <v-col class="pa-0 pl-2"
+                        cols="7"
+                    >
+                        <v-select
+                            v-model="selectedModel"
+                            :items="getModelsForProvider(selectedProvider)"
+                            item-title="name"
+                            item-value="key"
+                            label="AI 모델"
+                            outlined
+                            dense
+                            :disabled="!selectedProvider"
+                        ></v-select>
+                    </v-col>
+                </v-row>
             </div>
         </div>
         
@@ -129,7 +161,8 @@ export default {
                 persona: '',
                 url: '',
                 description: '',
-                skills: ''
+                skills: '',
+                model: ''
             })
         },
         teamInfo: {
@@ -172,7 +205,8 @@ export default {
                 url: '',
                 img: '',
                 description: '',
-                skills: ''
+                skills: '',
+                model: ''
             },
             tools: [],
             selectedTools: [],
@@ -182,6 +216,64 @@ export default {
             isDataGenerated: false,
             isGenerating: false,
             resetGenerator: false,
+            providers: [
+                { key: 'openai', name: 'OpenAI' },
+                { key: 'anthropic', name: 'Claude (Anthropic)' },
+                { key: 'gemini', name: 'Google Gemini' },
+                { key: 'groq', name: 'Grok (xAI)' }
+            ],
+            modelsByProvider: {
+                openai: [
+                    { key: 'gpt-4.1', name: 'GPT-4.1' },
+                    { key: 'gpt-4.1-mini', name: 'GPT-4.1 Mini' },
+                    { key: 'gpt-4.1-nano', name: 'GPT-4.1 Nano' },
+                    { key: 'gpt-4', name: 'GPT-4' },
+                    { key: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+                    { key: 'gpt-4-32k', name: 'GPT-4 (32k)' },
+                    { key: 'gpt-4o', name: 'GPT-4 Omni' },
+                    { key: 'gpt-4o-mini', name: 'GPT-4 Omni Mini' },
+                    { key: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+                    { key: 'gpt-3.5-turbo-16k', name: 'GPT-3.5 Turbo (16k)' }
+                ],
+                anthropic: [
+                    { key: 'claude-sonnet-4', name: 'Claude Sonnet 4' },
+                    { key: 'claude-opus-4', name: 'Claude Opus 4' },
+                    { key: 'claude-3.7-sonnet', name: 'Claude 3.7 Sonnet' },
+                    { key: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
+                    { key: 'claude-3.5-haiku', name: 'Claude 3.5 Haiku' },
+                    { key: 'claude-3-opus', name: 'Claude 3 Opus' },
+                    { key: 'claude-3-sonnet', name: 'Claude 3 Sonnet' },
+                    { key: 'claude-3-haiku', name: 'Claude 3 Haiku' },
+                    { key: 'claude-2.1', name: 'Claude 2.1' },
+                    { key: 'claude-instant', name: 'Claude Instant' }
+                ],
+                gemini: [
+                    { key: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+                    { key: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
+                    { key: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite' },
+                    { key: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+                    { key: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite' },
+                    { key: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+                    { key: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
+                    { key: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash-8B' },
+                    { key: 'gemini-1.0-ultra', name: 'Gemini 1.0 Ultra' },
+                    { key: 'gemini-1.0-nano', name: 'Gemini 1.0 Nano' }
+                ],
+                groq: [
+                    { key: 'grok-vision-beta', name: 'Grok Vision Beta' },
+                    { key: 'grok-beta', name: 'Grok Beta' },
+                    { key: 'grok-3-mini-fast', name: 'Grok 3 Mini Fast' },
+                    { key: 'grok-3-mini', name: 'Grok 3 Mini' },
+                    { key: 'grok-3-fast', name: 'Grok 3 Fast' },
+                    { key: 'grok-3', name: 'Grok 3' },
+                    { key: 'grok-2-mini', name: 'Grok 2 Mini' },
+                    { key: 'grok-2', name: 'Grok 2' },
+                    { key: 'grok-1.5', name: 'Grok 1.5' },
+                    { key: 'grok-1', name: 'Grok 1' }
+                ]
+            },
+            selectedProvider: '',
+            selectedModel: ''
         }
     },
     computed: {
@@ -224,6 +316,12 @@ export default {
             handler(newVal) {
                 this.agent.skills = newVal ? newVal.join(',') : '';
             }
+        },
+        selectedProvider(newVal) {
+            this.onProviderChange(newVal);
+        },
+        selectedModel(newVal) {
+            this.agent.model = newVal ? `${this.selectedProvider}/${newVal}` : '';
         }
     },
     async mounted() {
@@ -235,6 +333,11 @@ export default {
         if (!this.agent.id || this.agent.id == '') this.agent.id = this.uuid();
         if (this.type === 'agent') {
             await this.getTools();
+        }
+        if (this.agent.model && this.agent.model.includes('/')) {
+            const [prov, mod] = this.agent.model.split('/');
+            this.selectedProvider = prov;
+            this.selectedModel = mod;
         }
     },
     methods: {
@@ -317,6 +420,13 @@ export default {
             } finally {
                 this.isLoading = false;
             }
+        },
+        getModelsForProvider(provider) {
+            return this.modelsByProvider[provider] || [];
+        },
+        onProviderChange(value) {
+            const models = this.getModelsForProvider(value);
+            this.selectedModel = models.length ? models[0].key : '';
         }
     }
 }

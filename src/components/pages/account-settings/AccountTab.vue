@@ -14,7 +14,7 @@
                             <v-dialog width="650" v-model="imageChangeDialog">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" color="primary" class="mx-2" rounded="pill" text="이미지 선택">{{
-                                        $t('accountTab.imageSlect') }}</v-btn>
+                                        $t('accountTab.imageSelect') }}</v-btn>
                                 </template>
 
                                 <v-card style="padding:30px;">
@@ -74,10 +74,10 @@
         </v-row>
         <div class="d-flex justify-end mt-5 pb-3">
             <v-btn @click="changeTenant" size="large" color="secondary" rounded="pill" class="mr-4">
-                테넌트 변경
+                {{ $t('accountTab.changeTenant') }}
             </v-btn>
-            <v-btn @click="updateUser" size="large" color="primary" rounded="pill" class="mr-4">{{
-                $t('accountTab.save') }}
+            <v-btn @click="updateUser" size="large" color="primary" rounded="pill" class="mr-4">
+                {{ $t('accountTab.save') }}
             </v-btn>
             <!-- <v-btn size="large" class="bg-lighterror text-error"  rounded="pill">닫기</v-btn> -->
         </div>

@@ -1,5 +1,5 @@
 <template>
-    <div ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }"> 
+    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }"> 
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
         <div v-if="isViewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
@@ -111,9 +111,10 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 1080;
-        }
+        },
     },
     mounted() {
+        this.canvasContainer = document.getElementById('canvas-container');
         this.initializeViewer();
         this.setDiagramEvent();
         if (this.bpmn) {
@@ -153,22 +154,33 @@ export default {
                 let self = this;
                 if (newVal && Object.keys(newVal).length > 0) {
                     const canvas = this.bpmnViewer.get('canvas');
+                    const container = this.canvasContainer;
                     const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                    const scale = canvas.viewbox().scale;
 
                     Object.keys(newVal).forEach((activityId) => {
                         const element = elementRegistry.get(activityId);
                         if (!element) return;
-
                         if (newVal[activityId] === 'generating') {
                             canvas.addMarker(activityId, 'running');
-
-                            // 위치 + 크기 기반으로 중심 계산
-                            const center = {
-                                x: element.x + element.width / 2,
-                                y: element.y + element.height / 2
+                                                        
+                            const bbox = canvas.getAbsoluteBBox(element);
+                            const nodeCenter = {
+                                x: bbox.x + bbox.width / 2,
+                                y: bbox.y + bbox.height / 2
                             };
+                            const scale = 1.5;
+                            const viewbox = canvas.viewbox();
 
-                            canvas.zoom(1.5, center); // 확대 + 해당 위치로 이동
+                            const newWidth = viewbox.width / scale;
+                            const newHeight = viewbox.height / scale;
+                            const newViewbox = {
+                                x: nodeCenter.x - newWidth / 2,
+                                y: nodeCenter.y - newHeight / 2,
+                                width: newWidth,
+                                height: newHeight
+                            };
+                            canvas.viewbox(newViewbox);
                         } else if (newVal[activityId] === 'finished') {
                             canvas.addMarker(activityId, 'generated');
                             self.resetZoom();

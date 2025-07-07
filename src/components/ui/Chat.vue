@@ -616,8 +616,7 @@
                         </div>
                         
                         <div>
-                            <!-- 헤드셋 아이콘 임시 차단 -->
-                            <!-- <v-tooltip :text="$t('chat.headset')">
+                            <v-tooltip :text="$t('chat.headset')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn @click="openChatMenu(); recordingModeChange()"
                                         v-bind="props"
@@ -631,7 +630,7 @@
                                         <Icons :icon="'round-headset'" :size="16"  />
                                     </v-btn>
                                 </template>
-                            </v-tooltip> -->
+                            </v-tooltip>
                             <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                                 class="mr-1 text-medium-emphasis"
                                 density="comfortable"
@@ -724,7 +723,7 @@
                     @paste="handlePaste"
                 >
                 </v-textarea>
-                <div class="d-flex justify-space-between align-center w-100 pa-2">
+                <div class="d-flex justify-space-between align-center w-100 pl-1">
                     <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
                         <v-row class="pa-0 ma-0">
                             <div class="definition-map-chat-menu-background">
@@ -815,8 +814,7 @@
                     </div>
                     
                     <div>
-                        <!-- 헤드셋 아이콘 임시 차단 -->
-                        <!-- <v-tooltip :text="$t('chat.headset')">
+                        <v-tooltip :text="$t('chat.headset')">
                             <template v-slot:activator="{ props }">
                                 <v-btn @click="openChatMenu(); recordingModeChange()"
                                     class="mr-1 text-medium-emphasis"
@@ -831,7 +829,7 @@
                                     <Icons :icon="'round-headset'" :size="'16'"  />
                                 </v-btn>
                             </template>
-                        </v-tooltip> -->
+                        </v-tooltip>
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             class="mr-1 text-medium-emphasis"
                             density="comfortable"

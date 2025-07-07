@@ -9,7 +9,8 @@
                     <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
                         <Icons :icon="'magnifer-linear'" :size="22" />
                         <v-text-field v-model="searchKeyword" variant="plain" density="compact"
-                            class="position-relative pt-0 ml-3 custom-placeholer-color" placeholder="검색"
+                            class="position-relative pt-0 ml-3 custom-placeholer-color" 
+                            :placeholder="$t('headerMenu.search')"
                             single-line hide-details
                             @keyup.enter="search"
                         ></v-text-field>

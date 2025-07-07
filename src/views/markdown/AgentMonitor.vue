@@ -1,163 +1,204 @@
 <template>
   <div class="agent-monitor">
-    <div v-if="errorMessage" class="error-banner">
-      {{ errorMessage }}
-    </div>
-    <div v-if="tasks.length > 0" class="task-list">
-      <div v-for="(task, index) in tasks" :key="task.id" class="task-card">
-        <div class="task-header">
-          <div class="task-left">
-            <div class="task-avatar">
-              <img v-if="task.agentProfile" :src="task.agentProfile" alt="Agent" class="avatar-image" />
-              <span v-else>{{ index + 1 }}</span>
-            </div>
-            <div class="task-info">
-              <h3 class="task-title">{{ task.role }}</h3>
-              <p class="task-description">{{ task.goal }}</p>
-            </div>
-          </div>
-          <div class="task-header-right">
-            <div :class="['task-status', task.isCompleted ? (task.isCrewCompleted ? 'crew-completed' : 'completed') : 'running']">
-              <div class="status-dot"></div>
-              <span>{{ getStatusText(task) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="task-meta">
-          <div class="meta-item">
-            <span class="meta-label">시작시간</span>
-            <span class="meta-value">{{ formatTime(task.startTime) }}</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">유형</span>
-            <span class="meta-value">{{ task.crewType }}</span>
-          </div>
-          <div v-if="task.isCompleted && isTaskCompleted(task)" class="meta-submit">
-            <button @click="submitTask(task)" class="submit-button-light">
-              채택
-            </button>
-          </div>
-        </div>
-
-        <div v-if="task.isCompleted && task.output" class="task-result">
-          <div class="result-header">
-            <h4 class="result-title">작업 결과</h4>
-            <div class="result-type-badge">
-              <span class="type-label">{{ getOutputTypeLabel(task.crewType, task.output) }}</span>
-            </div>
-          </div>
-          <div class="result-content">
-            <!-- JSON 출력 -->
-            <div v-if="isJsonOutput(task.crewType, task.output)" class="json-output">
-              <div 
-                :class="['json-container', { expanded: isTaskExpanded(task.id) }]"
-                @dblclick="toggleTaskExpansion(task.id)"
-              >
-              <pre>{{ formatJsonOutput(task.output) }}</pre>
-              </div>
-              <div v-if="isContentLong(formatJsonOutput(task.output))" class="expand-controls">
-                <button @click="toggleTaskExpansion(task.id)" class="expand-button">
-                  {{ isTaskExpanded(task.id) ? '접기' : '더보기' }} 
-                  <span class="expand-icon">{{ isTaskExpanded(task.id) ? '▲' : '▼' }}</span>
-                </button>
-                <span class="expand-hint">더블클릭으로도 {{ isTaskExpanded(task.id) ? '접기' : '펼치기' }}가 가능합니다</span>
-              </div>
-            </div>
-            <!-- 슬라이드 출력 -->
-            <div v-else-if="isSlideOutput(task.crewType, task.output)" class="slides-container">
-              <div class="slides-header">
-                <div class="header-info">
-                  <h5>프레젠테이션 모드</h5>
-                  <span class="slide-hint">슬라이드를 클릭하여 탐색하세요</span>
+    <div class="task-area">
+      <div v-if="errorMessage" class="error-banner">
+        {{ errorMessage }}
+      </div>
+      <div v-if="timeline.length > 0" class="timeline-list">
+        <div
+          v-for="(item, index) in timeline"
+          :key="item.type + '-' + (item.type === 'task' ? item.payload.id : 'chat-' + index)"
+          class="timeline-item"
+        >
+          <template v-if="item.type === 'task'">
+            <div class="task-card">
+              <div class="task-header">
+                <div class="task-left">
+                  <div class="task-avatar">
+                    <img v-if="item.payload.agentProfile"
+                         :src="item.payload.agentProfile"
+                         alt="Agent"
+                         class="avatar-image"
+                         @load="handleAvatarLoad(item.payload.agentProfile)"
+                         @error="handleAvatarError(item.payload.agentProfile)" />
+                    <span v-else>{{ index + 1 }}</span>
+                  </div>
+                  <div class="task-info">
+                    <h3 class="task-title">{{ getDisplayName(item.payload) }}</h3>
+                    <p class="task-description">{{ item.payload.goal }}</p>
+                  </div>
                 </div>
-                <div class="slide-navigation">
-                  <button 
-                    @click="previousSlide(task.id)" 
-                    :disabled="getCurrentSlideIndex(task.id) === 0"
-                    class="nav-btn"
-                  >
-                    ←
+                <div class="task-header-right">
+                  <div :class="['task-status', item.payload.isCompleted ? (item.payload.isCrewCompleted ? 'crew-completed' : 'completed') : 'running']">
+                    <div class="status-dot"></div>
+                    <span>{{ getStatusText(item.payload) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="task-meta">
+                <div class="meta-item">
+                  <span class="meta-label">시작시간</span>
+                  <span class="meta-value">{{ formatTime(item.payload.startTime) }}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">유형</span>
+                  <span class="meta-value">{{ item.payload.crewType }}</span>
+                </div>
+                <div v-if="item.payload.isCompleted && isTaskCompleted(item.payload)" class="meta-submit">
+                  <button @click="submitTask(item.payload)" class="submit-button-light">
+                    채택
                   </button>
-                  <span class="slide-counter">
-                    {{ getCurrentSlideIndex(task.id) + 1 }} / {{ getSlides(task.output).length }}
+                </div>
+              </div>
+
+              <div v-if="item.payload.isCompleted && item.payload.output" class="task-result">
+                <div class="result-header">
+                  <h4 class="result-title">작업 결과</h4>
+                  <div class="result-type-badge">
+                    <span class="type-label">{{ getOutputTypeLabel(item.payload.crewType, item.payload.output) }}</span>
+                  </div>
+                </div>
+                <div class="result-content">
+                  <!-- JSON 출력 -->
+                  <div v-if="item.payload.crewType !== 'slide' && isJsonOutput(item.payload.crewType, item.payload.output)" class="json-output">
+                    <div 
+                      :class="['json-container', { expanded: isTaskExpanded(item.payload.id) }]"
+                      @dblclick="toggleTaskExpansion(item.payload.id)"
+                    >
+                      <template v-if="typeof item.payload.output === 'object'">
+                        <div 
+                          v-for="(val, key) in item.payload.output" 
+                          :key="key" 
+                          class="json-value"
+                        >
+                          <div v-html="formatMarkdownOutput(val)"></div>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <pre>{{ formatJsonOutput(item.payload.output) }}</pre>
+                      </template>
+                    </div>
+                    <div v-if="isContentLong(formatJsonOutput(item.payload.output))" class="expand-controls">
+                      <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
+                        {{ isTaskExpanded(item.payload.id) ? '접기' : '더보기' }} 
+                        <span class="expand-icon">{{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}</span>
+                      </button>
+                      <span class="expand-hint">더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다</span>
+                    </div>
+                  </div>
+                  <!-- 슬라이드 출력 -->
+                  <div v-else-if="isSlideOutput(item.payload.crewType, item.payload.output)" class="slides-container">
+                    <div class="slides-header">
+                      <div class="header-info">
+                        <h5>프레젠테이션 모드</h5>
+                        <span class="slide-hint">슬라이드를 클릭하여 탐색하세요</span>
+                      </div>
+                      <div class="slide-navigation">
+                        <button 
+                          @click="previousSlide(item.payload.id)" 
+                          :disabled="getCurrentSlideIndex(item.payload.id) === 0"
+                          class="nav-btn"
+                        >
+                          ←
+                        </button>
+                        <span class="slide-counter">
+                          {{ getCurrentSlideIndex(item.payload.id) + 1 }} / {{ getSlides(item.payload.output).length }}
+                        </span>
+                        <button 
+                          @click="nextSlide(item.payload.id)" 
+                          :disabled="getCurrentSlideIndex(item.payload.id) === getSlides(item.payload.output).length - 1"
+                          class="nav-btn"
+                        >
+                          →
+                        </button>
+                      </div>
+                    </div>
+                    <div class="slide-content">
+                      <div v-html="getCurrentSlide(item.payload)" class="slide-inner"></div>
+                    </div>
+                    <div class="slide-indicators">
+                      <span 
+                        v-for="(slide, index) in getSlides(item.payload.output)" 
+                        :key="index"
+                        :class="['indicator', { active: index === getCurrentSlideIndex(item.payload.id) }]"
+                        @click="goToSlide(item.payload.id, index)"
+                      ></span>
+                    </div>
+                  </div>
+                  <!-- 마크다운 출력 -->
+                  <div v-else class="markdown-output">
+                    <div 
+                      :class="['markdown-container', { expanded: isTaskExpanded(item.payload.id) }]"
+                      @dblclick="toggleTaskExpansion(item.payload.id)"
+                      v-html="formatMarkdownOutput(item.payload.output)"
+                    ></div>
+                    <div v-if="isContentLong(item.payload.output)" class="expand-controls">
+                      <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
+                        {{ isTaskExpanded(item.payload.id) ? '접기' : '더보기' }}
+                        <span class="expand-icon">{{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}</span>
+                      </button>
+                      <span class="expand-hint">더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else-if="!item.payload.isCompleted" class="task-progress">
+                <div class="progress-dots">
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                </div>
+                <span>작업을 진행하고 있습니다...</span>
+              </div>
+              <div v-if="!item.payload.isCompleted && toolUsageStatusByTask[item.payload.jobId] && toolUsageStatusByTask[item.payload.jobId].length" class="tool-usage-status-list">
+                <div
+                  v-for="tool in toolUsageStatusByTask[item.payload.jobId]"
+                  :key="tool.tool_name + tool.query"
+                  class="tool-usage-status-item"
+                >
+                  <div class="tool-status-indicator">
+                    <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
+                    <div v-else class="check-mark">✓</div>
+                  </div>
+                  <span v-if="tool.tool_name && tool.tool_name.includes('mem0')">
+                    {{ tool.tool_name }}로 {{ tool.query }} 정보{{ tool.status === 'done' ? ' 검색 완료' : '를 찾는중' }}
                   </span>
-                  <button 
-                    @click="nextSlide(task.id)" 
-                    :disabled="getCurrentSlideIndex(task.id) === getSlides(task.output).length - 1"
-                    class="nav-btn"
-                  >
-                    →
-                  </button>
+                  <span v-else-if="tool.tool_name && tool.tool_name.includes('perplexity')">
+                    {{ tool.tool_name }}로 {{ tool.query }}를 {{ tool.status === 'done' ? '검색 완료' : '검색중' }}
+                  </span>
+                  <span v-else>
+                    {{ tool.tool_name }}({{ tool.query }}) {{ tool.status === 'done' ? '작업 완료' : '작업중' }}
+                  </span>
                 </div>
               </div>
-              <div class="slide-content">
-                <div v-html="getCurrentSlide(task)" class="slide-inner"></div>
-              </div>
-              <div class="slide-indicators">
-                <span 
-                  v-for="(slide, index) in getSlides(task.output)" 
-                  :key="index"
-                  :class="['indicator', { active: index === getCurrentSlideIndex(task.id) }]"
-                  @click="goToSlide(task.id, index)"
-                ></span>
-              </div>
             </div>
-            <!-- 마크다운 출력 -->
-            <div v-else class="markdown-output">
-              <div 
-                :class="['markdown-container', { expanded: isTaskExpanded(task.id) }]"
-                @dblclick="toggleTaskExpansion(task.id)"
-                v-html="formatMarkdownOutput(task.output)"
-              ></div>
-              <div v-if="isContentLong(task.output)" class="expand-controls">
-                <button @click="toggleTaskExpansion(task.id)" class="expand-button">
-                  {{ isTaskExpanded(task.id) ? '접기' : '더보기' }}
-                  <span class="expand-icon">{{ isTaskExpanded(task.id) ? '▲' : '▼' }}</span>
-                </button>
-                <span class="expand-hint">더블클릭으로도 {{ isTaskExpanded(task.id) ? '접기' : '펼치기' }}가 가능합니다</span>
-              </div>
+          </template>
+          <template v-else>
+            <div class="chat-message">
+              <div class="bubble">{{ item.payload.content }}</div>
             </div>
-          </div>
-        </div>
-
-        <div v-else-if="!task.isCompleted" class="task-progress">
-          <div class="progress-dots">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-          </div>
-          <span>작업을 진행하고 있습니다...</span>
-        </div>
-        <div v-if="!task.isCompleted && toolUsageStatusByTask[task.jobId] && toolUsageStatusByTask[task.jobId].length" class="tool-usage-status-list">
-          <div
-            v-for="tool in toolUsageStatusByTask[task.jobId]"
-            :key="tool.tool_name + tool.query"
-            class="tool-usage-status-item"
-          >
-            <div class="tool-status-indicator">
-              <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
-              <div v-else class="check-mark">✓</div>
-            </div>
-            <span v-if="tool.tool_name && tool.tool_name.includes('mem0')">
-              {{ tool.tool_name }}로 {{ tool.query }} 정보{{ tool.status === 'done' ? ' 검색 완료' : '를 찾는중' }}
-            </span>
-            <span v-else-if="tool.tool_name && tool.tool_name.includes('perplexity')">
-              {{ tool.tool_name }}로 {{ tool.query }}를 {{ tool.status === 'done' ? '검색 완료' : '검색중' }}
-            </span>
-            <span v-else>
-              {{ tool.tool_name }}({{ tool.query }}) {{ tool.status === 'done' ? '작업 완료' : '작업중' }}
-            </span>
-          </div>
+          </template>
         </div>
       </div>
+      <div v-else class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h3>{{ isQueued ? '작업이 대기열에 등록되었습니다' : '진행중인 작업이 없습니다' }}</h3>
+        <p>작업이 시작되면 여기에 표시됩니다.</p>
+        <button v-if="!isQueued" @click="startTask" class="start-button">시작하기</button>
+      </div>
+      <div v-if="isFeedbackLoading" class="feedback-loading">
+        <div class="loading-spinner"></div>
+        <span>피드백 처리 중입니다. 잠시만 기다려주세요...</span>
+      </div>
     </div>
-
-    <div v-if="tasks.length === 0" class="empty-state">
-      <div class="empty-icon">📋</div>
-      <h3>{{ isQueued ? '작업이 대기열에 등록되었습니다' : '진행중인 작업이 없습니다' }}</h3>
-      <p>작업이 시작되면 여기에 표시됩니다.</p>
-      <button v-if="!isQueued" @click="startTask" class="start-button">시작하기</button>
+    <div v-if="tasks.length > 0" class="chat-input-wrapper">
+      <textarea v-model="chatInput" :disabled="!isCancelled || isFeedbackLoading" placeholder="메시지를 입력하세요..." rows="3" class="chat-textarea"></textarea>
+      <button class="chat-toggle-button" @click="isCancelled ? submitChat() : stopTask()" :disabled="isFeedbackLoading || (isCancelled && !chatInput)">
+        <i class="fa fa-paper-plane" v-if="isCancelled"></i>
+        <i class="fa fa-stop" v-else></i>
+      </button>
     </div>
   </div>
 </template>
@@ -183,10 +224,14 @@ export default {
     return {
       events: [],
       channel: null,
-      slideIndexes: {}, // task별 현재 슬라이드 인덱스 관리
-      expandedTasks: {}, // task별 확장/축소 상태 관리
-      errorMessage: null, // 에러 메시지 상태 추가
-      todoStatus: null // todolist의 상태 저장
+      slideIndexes: {},
+      expandedTasks: {},
+      errorMessage: null,
+      todoStatus: null,
+      chatInput: '',
+      chatMessages: [],
+      isCancelled: false,
+      isFeedbackLoading: false
     }
   },
   computed: {
@@ -198,7 +243,6 @@ export default {
       const taskMap = new Map()
       const crewCompletedTypes = new Set()
       
-      // crew_completed 이벤트 먼저 처리
       filtered.forEach(event => {
         if (event.event_type === 'crew_completed') {
           crewCompletedTypes.add(event.crew_type)
@@ -214,6 +258,7 @@ export default {
             id: event.id,
             jobId,
             goal: data?.goal || 'Task',
+            name: data?.name || '',
             role: data?.role || 'Agent',
             crewType: event.crew_type || 'default',
             startTime: event.timestamp,
@@ -222,26 +267,18 @@ export default {
             isCrewCompleted: false,
             agentProfile: data?.agent_profile
           }
+          console.log('agentProfile', data?.agent_profile);
           tasks.push(task)
           taskMap.set(jobId, task)
         } else if (event.event_type === 'task_completed') {
           if (taskMap.has(jobId)) {
             const task = taskMap.get(jobId)
             task.isCompleted = true
-            
-            // final_result 받자마자 바로 출력 (리포트 통합 전문가)
-            if (task.role === '리포트 통합 전문가' && data?.final_result) {
-              console.log('🔥 final_result 받자마자 출력:', data.final_result);
-              console.log('🔥 final_result 타입:', typeof data.final_result);
-              console.log('🔥 final_result 길이:', data.final_result?.length);
-            }
-            
             task.output = data?.final_result || null
           }
         }
       })
       
-      // 각 crew_type별로 마지막 완료된 작업에 crew_completed 표시
       crewCompletedTypes.forEach(crewType => {
         const completedTasksOfType = tasks
           .filter(task => task.crewType === crewType && task.isCompleted)
@@ -252,13 +289,9 @@ export default {
         }
       })
       
-      // tasks 배열이 바뀔 때마다 로그
-      console.log('tasks computed 실행됨:', tasks.length, '개의 작업, events 개수:', this.events.length);
-      console.log('tasks computed:', tasks);
       return tasks
     },
     toolUsageStatusByTask() {
-      // jobId별로 [{tool_name, query, status: 'searching'|'done'}] 배열
       const started = {};
       const finished = {};
       this.events.forEach(e => {
@@ -276,8 +309,6 @@ export default {
         }
       });
       
-      
-      // 매칭해서 상태 부여 (tool_name과 jobId만으로 매칭, query는 finished에서 null이 올 수 있음)
       const result = {};
       Object.keys(started).forEach(jobId => {
         result[jobId] = started[jobId].map(s => {
@@ -291,6 +322,11 @@ export default {
     isQueued() {
       return this.todoStatus &&
         (this.todoStatus.status === 'IN_PROGRESS' && this.todoStatus.agent_mode === 'DRAFT')
+    },
+    timeline() {
+      const taskItems = this.tasks.map(task => ({ type: 'task', time: task.startTime, payload: task }));
+      const chatItems = this.chatMessages.map(msg => ({ type: 'chat', time: msg.time, payload: msg }));
+      return [...taskItems, ...chatItems].sort((a, b) => new Date(a.time) - new Date(b.time));
     },
   },
   methods: {
@@ -318,28 +354,22 @@ export default {
       })
     },
     
-    // 출력 타입 판별 메서드들
     isJsonOutput(crewType, output) {
-      // 특정 crewType은 무조건 JSON
       if (crewType === 'text' || crewType === 'planning') {
         return true
       }
       
-      // output 내용 분석해서 JSON인지 판별
       return this.detectJsonContent(output)
     },
     
     isSlideOutput(crewType, output) {
-      // crew_type이 'slide'일 때만 슬라이드로 표시
       return crewType === 'slide'
     },
 
-    // 문자열 정리 유틸리티
     cleanString(str) {
       return str.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\\t/g, '  ').replace(/\\\\/g, '\\')
     },
 
-    // JSON 내용 감지
     detectJsonContent(output) {
       if (!output) return false
       if (typeof output === 'object') return true
@@ -352,13 +382,6 @@ export default {
       return false
     },
 
-    // 슬라이드 내용 감지
-    detectSlideContent(output) {
-      if (!output) return false
-      const outputStr = String(output)
-      return outputStr.includes('---') && outputStr.includes('#')
-    },
-    
     getOutputTypeLabel(crewType, output) {
       if (this.isJsonOutput(crewType, output)) {
         return crewType === 'planning' ? 'JSON 계획' 
@@ -369,7 +392,6 @@ export default {
       return this.isSlideOutput(crewType, output) ? '프레젠테이션' : 'Markdown 문서'
     },
 
-    // JSON 출력 포맷팅
     formatJsonOutput(output) {
       if (!output) return ''
       
@@ -393,16 +415,13 @@ export default {
       }
     },
 
-    // 마크다운 출력 포맷팅 - 코드블록 완전 제거
     sanitizeMarkdownOutput(output) {
       if (typeof output === 'string') {
         let trimmed = output.trim();
-        // 여러 번 감싸진 경우도 반복적으로 제거
         let loopCount = 0;
         while (true) {
           const beforeTrim = trimmed;
           loopCount++;
-          // ``` 또는 ~~~ 또는 """로 감싸진 코드블록 전체 제거 (언어명 포함 가능)
           trimmed = trimmed.replace(/^(```|~~~|""")[a-zA-Z0-9]*\s*\n([\s\S]*?)\n\1\s*$/gm, '$2').trim();
           if (beforeTrim === trimmed || loopCount > 10) break;
         }
@@ -425,12 +444,15 @@ export default {
       }
     },
 
-    // 슬라이드 관련 메서드들
     getSlides(output) {
       if (!output) return [];
-      const sanitized = this.sanitizeMarkdownOutput(output);
+      // 객체 형태일 경우 첫 번째 값(슬라이드 마크다운) 사용
+      const source = (typeof output === 'object' && !Array.isArray(output))
+        ? Object.values(output)[0]
+        : output;
+      const sanitized = this.sanitizeMarkdownOutput(source);
       return String(sanitized)
-        .split(/^---$/gm)
+        .split(/^\s*---\s*$/gm)
         .filter(slide => slide.trim().length > 0)
         .map(slide => {
           const clean = this.cleanString(slide.trim());
@@ -474,178 +496,80 @@ export default {
       }
     },
 
-    isLatestIncomplete(task) {
-      const incomplete = this.tasks.filter(t => !t.isCompleted)
-      return incomplete.length > 0 && task.id === incomplete[incomplete.length - 1].id
-    },
-
     isTaskCompleted(task) {
-      // task_completed 이벤트가 실제로 존재하는지 확인
       return this.events.some(event => 
         event.event_type === 'task_completed' && 
         (event.job_id === task.jobId || event.id === task.id)
       )
     },
 
-    extractFieldNamesFromHtml(htmlString) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(htmlString, 'text/html');
-      const fieldNames = {};
-
-      const fields = doc.querySelectorAll('report-field, slide-field, text-field');
-      
-      fields.forEach(field => {
-        const name = field.getAttribute('name');
-        if (name) {
-          fieldNames[name] = field.tagName.toLowerCase();
-        }
-      });
-
-      return fieldNames;
-    },
-
     submitTask(task) {
-      // 리포트 통합 전문가일 때 원본 출력
-      if (task.role === '리포트 통합 전문가') {
-        console.log('🔍 리포트 통합 전문가 - 원본 결과:', task.output);
-        console.log('🔍 리포트 통합 전문가 - 타입:', typeof task.output);
-        console.log('🔍 리포트 통합 전문가 - 길이:', task.output?.length);
-      }
-      
-      // HTML에서 모든 필드 name과 태그명 추출
-      console.log('html', this.html);
       const parser = new DOMParser();
       const doc = parser.parseFromString(this.html, 'text/html');
-      const fields = Array.from(doc.querySelectorAll('text-field, textarea-field, report-field, slide-field'))
-        .map(field => ({
-          name: field.getAttribute('name'),
-          tag: field.tagName.toLowerCase()
-        }))
-        .filter(field => field.name);
-
+      // task.output이 문자열인 경우 JSON 파싱
+      let parsed;
+      try {
+        parsed = typeof task.output === 'string' ? JSON.parse(task.output) : task.output;
+      } catch {
+        parsed = {};
+      }
       const formValues = {};
-
-      // text 타입 output 파싱 함수 (재귀적 JSON 파싱 + key:value 파싱)
-      function deepParseJson(str) {
-        let result = str;
-        let count = 0;
-        while (typeof result === 'string' && count < 5) {
-          try {
-            const parsed = JSON.parse(result);
-            if (typeof parsed === 'object' && parsed !== null) {
-              result = parsed;
-            } else {
-              break;
-            }
-          } catch {
-            break;
-          }
-          count++;
-        }
-        return result;
-      }
-
-      if (task.crewType === 'text') {
-        let parsed = deepParseJson(task.output);
-        if (typeof parsed === 'object' && parsed !== null) {
-          // row-layout 요소 name으로 그룹핑 매핑
-          const rowLayouts = Array.from(doc.querySelectorAll('row-layout[name]'));
-          rowLayouts.forEach(rl => {
-            const groupName = rl.getAttribute('name');
-            const isMulti = rl.getAttribute('is_multidata_mode') === 'true';
-            if (isMulti) {
-              // 해당 그룹의 필드들 추출 후 단일 아이템 배열로 설정
-              const fieldEls = Array.from(
-                rl.querySelectorAll('text-field[name], textarea-field[name]')
-              );
-              const item = {};
-              fieldEls.forEach(el => {
-                const fname = el.getAttribute('name');
-                item[fname] = parsed[fname] !== undefined ? parsed[fname] : '';
-              });
-              formValues[groupName] = [item];
-            } else {
-              // 단일 필드 매핑
-              const fieldEls = Array.from(
-                rl.querySelectorAll('text-field[name], textarea-field[name], select-field[name]')
-              );
-              fieldEls.forEach(el => {
-                const fname = el.getAttribute('name');
-                if (parsed[fname] !== undefined) {
-                  formValues[fname] = parsed[fname];
-                }
-              });
-            }
+      // 각 row-layout 그룹별 필드 이름과 값을 매핑
+      const rowLayouts = Array.from(doc.querySelectorAll('row-layout[name]'));
+      rowLayouts.forEach(rl => {
+        const groupName = rl.getAttribute('name');
+        const isMulti = rl.getAttribute('is_multidata_mode') === 'true';
+        // 그룹 내 모든 입력 필드 선택
+        const selector = 'text-field[name], textarea-field[name], report-field[name], slide-field[name], select-field[name]';
+        const fieldEls = Array.from(rl.querySelectorAll(selector));
+        if (isMulti) {
+          // 다중 모드: 배열로 전달
+          const item = {};
+          fieldEls.forEach(el => {
+            const fname = el.getAttribute('name');
+            item[fname] = parsed[fname] !== undefined ? parsed[fname] : '';
           });
+          formValues[groupName] = [item];
         } else {
-          parsed = {};
-          const lines = String(task.output).split('\n');
-          lines.forEach(line => {
-            const match = line.match(/^([\w\-]+)\s*:\s*(.+)$/);
-            if (match) {
-              parsed[match[1]] = match[2];
-            }
-          });
-          // 필드 매핑 (매칭된 경우에만 설정)
-          fields.forEach(field => {
-            if (parsed[field.name] !== undefined) {
-              formValues[field.name] = parsed[field.name];
+          // 단일 모드: 개별 키-값으로 전달
+          fieldEls.forEach(el => {
+            const fname = el.getAttribute('name');
+            if (parsed[fname] !== undefined) {
+              formValues[fname] = parsed[fname];
             }
           });
         }
-      } else {
-        // report/slide 그룹 값 매핑 (기존 값은 초기화하지 않음)
-        fields.forEach(field => {
-          if (
-            (task.crewType === 'report' && field.tag === 'report-field') ||
-            (task.crewType === 'slide' && field.tag === 'slide-field')
-          ) {
-            formValues[field.name] = task.output;
-          }
-        });
-      }
-
-      console.log('submitTask - formValues:', formValues);
+      });
+      // 이벤트 발행
       this.EventBus.emit('form-values-updated', formValues);
     },
 
-    // Supabase 로직 (건드리지 않음)
     async loadData() {
       try {
         this.errorMessage = null;
         this.events = [];
-        const taskId = this.getTaskIdFromWorkItem()
+        const taskId = this.getTaskIdFromWorkItem();
         if (!taskId) {
           this.errorMessage = 'taskId를 찾을 수 없습니다.';
-          console.error('taskId를 찾을 수 없습니다.')
-          return
+          return;
         }
-
-        console.group('🔄 초기 데이터 로드');
-        console.log('작업 ID:', taskId);
-
         const { data, error } = await window.$supabase
           .from('events')
           .select('*')
           .eq('todo_id', taskId)
           .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'])
           .order('timestamp', { ascending: true })
-          
         if (error) {
           this.errorMessage = '이벤트 데이터를 불러오는 중 오류가 발생했습니다: ' + error.message;
           throw error
         }
         if (data) {
           this.events = data
-          console.log('로드된 이벤트 수:', data.length);
-          console.table(data.map(event => ({
-            이벤트_ID: event.id,
-            할일_ID: event.todo_id,
-            이벤트_타입: event.event_type,
-            타임스탬프: new Date(event.timestamp).toLocaleString('ko-KR')
-          })));
+          if (this.events.some(e => e.event_type === 'crew_completed')) {
+            this.isCancelled = true;
+            this.isFeedbackLoading = false;
+          }
         }
-        console.groupEnd();
       } catch (error) {
         this.errorMessage = '이벤트 데이터를 불러오는 중 오류가 발생했습니다: ' + (error.message || error);
         console.error('Failed to load data from Supabase:', error)
@@ -664,51 +588,17 @@ export default {
             const todoId = row.todo_id;
             const exists = this.events.some(e => e.id === row.id);
 
-            // task_completed 이벤트이고 리포트 통합 전문가인 경우 즉시 출력
-            if (row.event_type === 'task_completed' && todoId === taskId) {
-              const data = this.parseData(row);
-              if (data?.final_result) {
-                // role 확인을 위해 기존 task_started 이벤트에서 role 찾기
-                const taskStartedEvent = this.events.find(e => 
-                  e.event_type === 'task_started' && 
-                  (e.job_id === row.job_id || e.id === row.job_id)
-                );
-                if (taskStartedEvent) {
-                  const startedData = this.parseData(taskStartedEvent);
-                  if (startedData?.role === '리포트 통합 전문가') {
-                    console.log('🚀 실시간 수신 즉시 final_result:', data.final_result);
-                    console.log('🚀 실시간 수신 즉시 타입:', typeof data.final_result);
-                    console.log('🚀 실시간 수신 즉시 길이:', data.final_result?.length);
-                  }
-                }
-              }
-            }
-
-            console.group('📥 실시간 이벤트 수신');
-            console.log('수신된 이벤트:', {
-              이벤트_ID: row.id,
-              작업_ID: taskId,
-              할일_ID: todoId,
-              이벤트_타입: row.event_type,
-              타임스탬프: new Date(row.timestamp).toLocaleString('ko-KR'),
-              ID_일치여부: todoId === taskId ? '✅ 일치' : '❌ 불일치'
-            });
-
             if (!exists && ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'].includes(row.event_type) && todoId === taskId) {
               this.events = [...this.events, row];
-              console.log('✅ 이벤트가 추가되었습니다');
-              console.log('현재 총 이벤트 수:', this.events.length);
+              if (row.event_type === 'crew_completed') {
+                this.isCancelled = true;
+                this.isFeedbackLoading = false;
+              }
             } else {
-              console.log('❌ 이벤트가 추가되지 않았습니다', {
-                이미존재: exists,
-                유효한이벤트타입: ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'].includes(row.event_type),
-                ID일치: todoId === taskId
-              });
               if (todoId !== taskId) {
                 console.warn('[ID 불일치] 이벤트 todo_id:', todoId, 'vs 현재 taskId:', taskId, '이벤트 전체:', row);
               }
             }
-            console.groupEnd();
           })
           .subscribe((status) => {
             if (status === 'SUBSCRIPTION_ERROR') {
@@ -745,20 +635,16 @@ export default {
         return '전체완료'
       }
       
-      // 폰트 렌더링 문제 해결을 위해 다른 텍스트 사용
       return '작업완료'
     },
     async startTask() {
-      console.log('시작하기 버튼 클릭');
       const taskId = this.getTaskIdFromWorkItem();
       if (!taskId) {
         this.errorMessage = 'taskId를 찾을 수 없습니다.';
         return;
       }
       try {
-        // agent_mode 와 status 필드를 업데이트
         await backend.putWorkItem(taskId, { agent_mode: 'DRAFT', status: 'IN_PROGRESS' });
-        // 즉시 UI 반영을 위해 todoStatus 업데이트
         this.todoStatus = { ...this.todoStatus, agent_mode: 'DRAFT', status: 'IN_PROGRESS' };
       } catch (error) {
         console.error('작업 시작 중 오류:', error);
@@ -767,23 +653,102 @@ export default {
     },
     async fetchTodoStatus() {
       const taskId = this.getTaskIdFromWorkItem();
-      console.log('fetchTodoStatus called for taskId:', taskId);
       if (!taskId) return;
       try {
         const { data, error } = await window.$supabase
           .from('todolist')
-          .select('status, agent_mode')
+          .select('status, agent_mode, draft_status, feedback')
           .eq('id', taskId)
           .single();
-        console.log('fetchTodoStatus result:', { data, error });
         if (error) {
           throw error;
         }
         this.todoStatus = data;
+        let feedbackArr = [];
+        if (data.feedback) {
+          try {
+            feedbackArr = typeof data.feedback === 'string'
+              ? JSON.parse(data.feedback)
+              : data.feedback;
+          } catch {
+            feedbackArr = [];
+          }
+        }
+        this.chatMessages = feedbackArr.map(item => ({ time: item.time, content: item.content }));
+        this.chatMessages.sort((a, b) => new Date(a.time) - new Date(b.time));
+        if (data.draft_status === 'CANCELLED') {
+          this.isCancelled = true;
+        }
+        if (data.draft_status === 'FB_REQUESTED') {
+          this.isFeedbackLoading = true;
+        }
       } catch (e) {
         console.error('todolist 상태 조회 실패:', e);
         this.errorMessage = 'todolist 상태 조회 실패: ' + (e.message || e);
       }
+    },
+    async stopTask() {
+      const taskId = this.getTaskIdFromWorkItem();
+      if (!taskId) {
+        this.errorMessage = 'taskId를 찾을 수 없습니다.';
+        return;
+      }
+      try {
+        await backend.putWorkItem(taskId, { draft_status: 'CANCELLED' });
+        this.isCancelled = true;
+      } catch (error) {
+        console.error('중단 중 오류:', error);
+        this.errorMessage = '중단 중 오류가 발생했습니다.';
+      }
+    },
+    async submitChat() {
+      const taskId = this.getTaskIdFromWorkItem();
+      if (!taskId) {
+        this.errorMessage = 'taskId를 찾을 수 없습니다.';
+        return;
+      }
+      if (!this.chatInput) return;
+      this.isCancelled = false;
+      this.isFeedbackLoading = true;
+      try {
+        const existing = this.todoStatus.feedback;
+        let arr = [];
+        try {
+          arr = existing
+            ? (typeof existing === 'string' ? JSON.parse(existing) : existing)
+            : [];
+        } catch {
+          arr = [];
+        }
+        const now = new Date().toISOString();
+        arr.push({ time: now, content: this.chatInput });
+        const updatedFeedback = arr;
+        await backend.putWorkItem(taskId, {
+          feedback: updatedFeedback,
+          draft_status: 'FB_REQUESTED'
+        });
+        this.todoStatus.feedback = updatedFeedback;
+        this.chatMessages.push({ time: now, content: this.chatInput });
+        this.chatInput = '';
+      } catch (error) {
+        console.error('채팅 전송 중 오류:', error);
+        this.errorMessage = '채팅 전송 중 오류가 발생했습니다.';
+        this.isFeedbackLoading = false;
+      }
+    },
+    handleAvatarLoad(path) {
+      console.log('agentProfile loaded:', path)
+    },
+    handleAvatarError(path) {
+      console.log('agentProfile failed to load:', path)
+    },
+    getDisplayName(task) {
+      const name = task.name || '';
+      // name이 없거나 'unknown'일 경우 role 사용
+      if (!name.trim() || name.trim().toLowerCase() === 'unknown') {
+        return task.role;
+      }
+      return task.name;
     },
   },
   async created() {
@@ -807,14 +772,17 @@ export default {
 .agent-monitor {
   max-width: 800px;
   margin: 0 auto;
-  padding: 24px 16px;
-  background: #fafbfc;
-  min-height: auto;
-  max-height: 70vh;
-  overflow-y: auto;
+  padding: 20px 16px 0px;
+  width: 100%;
+  height: 67vh;
+  display: flex;
+  flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
-
+.task-area {
+  flex: 1;
+  overflow-y: auto;
+}
 .error-banner {
   background: #ffe0e0;
   color: #b71c1c;
@@ -839,6 +807,7 @@ export default {
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
+  margin-bottom: 16px;
 }
 
 .task-card:hover {
@@ -1599,5 +1568,60 @@ export default {
 
 .start-button:hover {
   background: #005bb5;
+}
+
+/* 채팅 UI 스타일 */
+.chat-messages {
+  max-height: 150px;
+  overflow-y: auto;
+  margin: 16px 0;
+}
+.chat-message { display: flex; justify-content: flex-end; margin: 16px 0; }
+.bubble { background: #e5e5ea; border-radius: 12px; padding: 8px 12px; max-width: 70%; }
+.chat-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 0;
+  width: 100%;
+  margin-top: 16px;
+}
+.chat-textarea {
+  flex: 1;
+  resize: none;
+  overflow-y: auto;
+  max-height: 72px;
+  font-size: 14px;
+  line-height: 1.4;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+}
+.chat-textarea:focus { outline: none; box-shadow: none; }
+.chat-toggle-button {
+  margin-left: 8px;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #0066cc;
+  cursor: pointer;
+}
+.chat-toggle-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 피드백 처리 로딩 스타일 */
+.feedback-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #f8fafb;
+  border: 1px solid #e4e6ea;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #606770;
 }
 </style>

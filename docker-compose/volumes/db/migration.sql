@@ -144,6 +144,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS project_id uuid;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_mode text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback jsonb;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone default now();
 
 
@@ -292,3 +293,51 @@ CREATE POLICY agents_insert_policy ON agents FOR INSERT TO authenticated WITH CH
 CREATE POLICY agents_select_policy ON agents FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY agents_update_policy ON agents FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY agents_delete_policy ON agents FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+
+--events table
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS run_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS job_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS todo_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS proc_inst_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS crew_type text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS data jsonb;
+
+
+--schedule
+
+
+create or replace function public.register_cron_job(
+  p_job_name text,
+  p_cron_expr text,
+  p_input jsonb
+)
+returns void
+language plpgsql
+security definer
+as $$
+DECLARE
+  v_job_name text;
+BEGIN
+  SELECT jobname INTO v_job_name
+  FROM cron.job
+  WHERE jobname = p_job_name;
+
+  IF v_job_name IS NOT NULL THEN
+    PERFORM cron.unschedule(v_job_name);
+  END IF;
+
+  -- ✅ 새로 schedule
+  PERFORM cron.schedule(
+    p_job_name,
+    p_cron_expr,
+    format(
+      E'select public.start_process_scheduled(''%s'', ''%s''::jsonb);',
+      replace(p_job_name, '''', ''''''),
+      replace(p_input::text, '''', '''''')
+    )
+  );
+END;
+$$;

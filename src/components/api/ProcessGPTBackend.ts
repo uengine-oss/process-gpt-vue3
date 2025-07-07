@@ -564,10 +564,15 @@ class ProcessGPTBackend implements Backend {
 
             if (options && options.instId) {
                 filter.match.proc_inst_id = options.instId;
-            } else {
-                const email = localStorage.getItem("email");
-                filter.match.user_id = email;
             }
+
+            if (options && options.userId) {
+                filter.like = {
+                    key: 'user_id',
+                    value: `%${options.userId}%`
+                }
+            }
+
             const list = await storage.list('todolist', filter);
 
             return list.map((item: any) => {
@@ -885,7 +890,7 @@ class ProcessGPTBackend implements Backend {
                             proc_def_id: item.id,
                             proc_def_ids: item
                         }
-                        await this.putUserPermission(putObj);
+                        // await this.putUserPermission(putObj);
                         Object.assign(item, change);
                     } else {
                         // 권한이 없는 프로세스
@@ -916,7 +921,7 @@ class ProcessGPTBackend implements Backend {
                             proc_def_id: item.id,
                             proc_def_ids: item
                         }
-                        await this.putUserPermission(putObj);
+                        // await this.putUserPermission(putObj);
                     }
                     existingMap.push(item);
                 }
