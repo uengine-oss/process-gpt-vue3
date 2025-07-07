@@ -9,7 +9,7 @@
             auto-grow
         ></v-textarea>
         
-        <v-row class="ma-0 pa-0 pt-4 pb-4">
+        <v-row class="ma-0 pa-0 pt-4 pb-4 pr-1">
             <v-spacer></v-spacer>
             <v-btn
                 @click="generateAgent"

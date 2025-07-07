@@ -122,7 +122,7 @@
             </v-window>
         </v-card-text>
 
-        <v-row class="ma-0 pa-4 pr-2">
+        <v-row class="ma-0 pa-4 pr-2 pt-0 align-center">
             <v-spacer></v-spacer>
             <v-btn @click="save"
                 :disabled="!isValid"

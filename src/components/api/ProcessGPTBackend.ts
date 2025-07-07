@@ -543,10 +543,15 @@ class ProcessGPTBackend implements Backend {
 
             if (options && options.instId) {
                 filter.match.proc_inst_id = options.instId;
-            } else {
-                const email = localStorage.getItem("email");
-                filter.match.user_id = email;
             }
+
+            if (options && options.userId) {
+                filter.like = {
+                    key: 'user_id',
+                    value: `%${options.userId}%`
+                }
+            }
+
             const list = await storage.list('todolist', filter);
 
             return list.map((item: any) => {
