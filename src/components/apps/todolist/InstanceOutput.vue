@@ -1,17 +1,26 @@
 <template>
-    <v-card elevation="10" class="w-100">
-        <v-row v-if="outputList.length > 0" class="ma-0 pa-0" style="height:calc(100vh - 239px); overflow:auto;">
-            <v-col v-for="item in outputList" :key="item.id" cols="12" :lg="isInWorkItem ? 12 : 6" :md="isInWorkItem ? 12 : 6" sm="12">
-                <v-card elevation="10" class="h-100">
-                    <v-card-title> {{ item.name }} </v-card-title>
-                    <v-card-text>
+    <div class="w-100">
+        <v-row v-if="outputList.length > 0" 
+            class="ma-0 pa-0" 
+            style="height:calc(100vh - 180px); overflow: auto;"
+        >
+            <v-col v-for="item in outputList" 
+                :key="item.id" cols="12" 
+                :lg="isInWorkItem ? 12 : 6" 
+                :md="isInWorkItem ? 12 : 6" 
+                sm="12"
+                class="pa-0"
+            >
+                <div class="h-100">
+                    <v-card-title class="pa-0 pb-2"> {{ item.name }} </v-card-title>
+                    <v-card-text class="pa-0">
                         <DynamicForm v-if="item.type === 'form'" :formHTML="item.html" v-model="item.output" :readonly="true" class="dynamic-form" />
                         <div v-else-if="item.type === 'html'" v-html="item.html" class="border border-1 border-gray-300 rounded-md pa-2"></div>
                     </v-card-text>
-                </v-card>
+                </div>
             </v-col>
         </v-row>
-    </v-card>
+    </div>
 </template>
 
 <script>
