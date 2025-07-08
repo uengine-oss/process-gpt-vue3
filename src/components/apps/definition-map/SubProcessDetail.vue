@@ -4,7 +4,9 @@
         style="overflow: auto;"
         class="is-work-height"
     >
-        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center">
+        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center" 
+            :style="isMobile ? 'display: block !important;' : ''"
+        >
             <div class="d-flex">
                 <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer mega-text-ellipsis"
                     @click="goProcess()">
