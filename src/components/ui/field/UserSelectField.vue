@@ -14,6 +14,7 @@
             :variant="localReadonly ? 'filled' : 'outlined'"
             :hide-details="hideDetails"
             :density="density"
+            @update:model-value="handleSelectionChange"
         >
             <template v-slot:chip="{ props, item }">
                 <v-chip v-bind="props" :text="item.raw.username ?? item.raw.email"></v-chip>
@@ -147,21 +148,46 @@ export default {
         this.userList = await this.backend.getUserList();
 
         if(this.useAgent) {
+            // 모든 유저를 선택 목록에 포함
             this.usersToSelect = this.userList.map(member => {
-                if (member.is_agent) {
-                    return {
-                        id: member.id,
-                        username: member.username,
-                        email: member.email || member.id
-                    };
-                } else {
-                    return member
-                }
+                return {
+                    id: member.id,
+                    username: member.username,
+                    email: member.email || member.id,
+                    is_agent: member.is_agent
+                };
             });
             this.useMultiple = true;
         } else {
             this.usersToSelect = this.userList.filter(member => !member.is_agent);
             this.useMultiple = false;
+        }
+    },
+
+    methods: {
+        handleSelectionChange(newValue) {
+            if (!this.useAgent || !this.useMultiple) {
+                return;
+            }
+
+            // 선택된 값들 중 is_agent가 false인 유저가 2개 이상인지 확인
+            const nonAgentUsers = newValue.filter(user => {
+                const userData = this.returnObject ? user : this.usersToSelect.find(u => u[this.itemValue] === user);
+                return userData && !userData.is_agent;
+            });
+
+            if (nonAgentUsers.length > 1) {
+                // is_agent가 false인 유저가 2개 이상이면 마지막 선택된 것만 유지
+                const lastNonAgentUser = nonAgentUsers[nonAgentUsers.length - 1];
+                const agentUsers = newValue.filter(user => {
+                    const userData = this.returnObject ? user : this.usersToSelect.find(u => u[this.itemValue] === user);
+                    return userData && userData.is_agent;
+                });
+                
+                this.localModelValue = [...agentUsers, lastNonAgentUser];
+            } else {
+                this.localModelValue = newValue;
+            }
         }
     }
 };

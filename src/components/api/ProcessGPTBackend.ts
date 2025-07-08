@@ -1350,16 +1350,11 @@ class ProcessGPTBackend implements Backend {
             var me = this
             if(!options) options = {}
             if(!status) return []
-            if(status.includes('*')) status = ['NEW', 'RUNNING', 'DONE', 'PENDING', 'IN_PROGRESS']
-            let email = window.localStorage.getItem("email");
+            if(status.includes('*')) status = ['NEW', 'RUNNING', 'COMPLETED']
             let filter = { 
                 inArray: {
                     column: 'status',
                     values: status
-                },
-                matchArray: {
-                    column: 'current_user_ids',
-                    values: [email]
                 },
                 orderBy: 'updated_at',
                 sort: 'desc',

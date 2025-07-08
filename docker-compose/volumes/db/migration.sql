@@ -280,20 +280,7 @@ alter publication supabase_realtime add table todolist;
 alter publication supabase_realtime add table bpm_proc_inst;
 alter publication supabase_realtime add table proc_def;
 
--- Agents
-ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agents ADD COLUMN IF NOT EXISTS model text;
-
-DROP POLICY IF EXISTS agents_insert_policy ON agents;
-DROP POLICY IF EXISTS agents_select_policy ON agents;
-DROP POLICY IF EXISTS agents_update_policy ON agents;
-DROP POLICY IF EXISTS agents_delete_policy ON agents;
-
-CREATE POLICY agents_insert_policy ON agents FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
-CREATE POLICY agents_select_policy ON agents FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
-CREATE POLICY agents_update_policy ON agents FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
-CREATE POLICY agents_delete_policy ON agents FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
-
+DROP TABLE IF EXISTS public.agents;
 
 --events table
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS id text;
