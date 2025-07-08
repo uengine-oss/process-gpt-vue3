@@ -1254,5 +1254,14 @@
     "UserInputGenerator": {
         "inputLabel": "생성하고싶은 에이전트를 입력하세요",
         "generateButton": "AI로 에이전트 생성"
+    },
+    "subProcessDetail": {
+        "execute": "실행",
+        "simulation": "시뮬레이션",
+        "edit": "수정",
+        "save": "저장",
+        "noProcessModel": "정의된 프로세스 모델이 없습니다.",
+        "editProcess": "프로세스 편집",
+        "processDefinitionSaved": "프로세스 정의가 저장되었습니다."
     }
 }

@@ -102,7 +102,7 @@
                     <ViewProcessDetails class="pa-5" :value="value" :enableEdit="enableEdit" />
                 </div>
                 <div v-else-if="componentName == 'SubProcessDetail'">
-                    <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" />
+                    <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" :isAdmin="isAdmin" />
                 </div>
                 <div v-else>
                     <DefinitionMapList :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
