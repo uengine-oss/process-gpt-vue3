@@ -169,7 +169,7 @@ export default {
                                 x: bbox.x + bbox.width / 2,
                                 y: bbox.y + bbox.height / 2
                             };
-                            const scale = 1.5;
+                            const scale = 1.3;
                             const viewbox = canvas.viewbox();
 
                             const newWidth = viewbox.width / scale;
