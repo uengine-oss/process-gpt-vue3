@@ -1585,12 +1585,22 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getDeletedInstances() {
+        try {
+            return await storage.list('bpm_proc_inst', { match: { is_deleted: true } });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async deleteInstance(instId: string) {
         try {
             await Promise.all([
-                await storage.delete('bpm_proc_inst', { match: { proc_inst_id: instId } }),
-                await storage.delete('todolist', { match: { proc_inst_id: instId } }),
-                await storage.delete('chats', { match: { id: instId } })
+                await storage.putObject('bpm_proc_inst', { proc_inst_id: instId, is_deleted: true, deleted_at: new Date().toISOString() }),
+                // await storage.delete('bpm_proc_inst', { match: { proc_inst_id: instId } }),
+                // await storage.delete('todolist', { match: { proc_inst_id: instId } }),
+                // await storage.delete('chats', { match: { id: instId } })
             ]);
         } catch (error) {
             //@ts-ignore
@@ -2140,6 +2150,15 @@ class ProcessGPTBackend implements Backend {
         try {
             await storage.putObject('tenants', { id: tenantId, is_deleted: true, deleted_at: new Date().toISOString() });
             // await storage.delete('tenants', { match: { id: tenantId } });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async restoreTenant(tenantId: string) {
+        try {
+            await storage.putObject('tenants', { id: tenantId, is_deleted: false, deleted_at: null });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
