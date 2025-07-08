@@ -216,84 +216,55 @@ export default {
             var self = this;
             var canvas = self.bpmnViewer.get('canvas');
             var elementRegistry = self.bpmnViewer.get('elementRegistry');
+            var zoomScroll = self.bpmnViewer.get('zoomScroll');
+            var moveCanvas = self.bpmnViewer.get('MoveCanvas');
+
             var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-            const zoomScroll = self.bpmnViewer.get('zoomScroll');
-            const moveCanvas = self.bpmnViewer.get('MoveCanvas');
+
             zoomScroll.reset();
 
+            // ✅ 1) 기본 줌: 캔버스 꽉 채우기
+            canvas.zoom('fit-viewport', 'auto');
 
+            // ✅ 2) 줌 제한 핸들러
             canvas._eventBus.on('zoom', function(event) {
                 let zoomLevel = event.scale;
 
-                // 줌 범위를 0.2 ~ 2로 제한
                 if (zoomLevel < 0.2) {
-                    zoomLevel = 0.2;
+                zoomLevel = 0.2;
                 } else if (zoomLevel > 2) {
-                    zoomLevel = 2;
+                zoomLevel = 2;
                 }
 
-                // 줌 레벨을 제한된 값으로 설정
                 canvas.zoom(zoomLevel, {
-                    x: canvas._cachedViewbox.inner.width / 2,
-                    y: canvas._cachedViewbox.inner.height / 2
+                x: canvas._cachedViewbox.inner.width / 2,
+                y: canvas._cachedViewbox.inner.height / 2
                 });
             });
 
-            var x = 0;
-            var y = 0;
-            var width = 0;
-            var height = 0;
-                
-            if (allPools.length > 1) {
-                var firstPool = allPools[0];
-                var lastPool = allPools[allPools.length - 1];
-                var firstBbox = canvas.getAbsoluteBBox(firstPool);
-                var lastBbox = canvas.getAbsoluteBBox(lastPool);
-                x = firstBbox.x;
-                y = firstBbox.y;
-                width = lastBbox.x + lastBbox.width + 100;
-                height = lastBbox.y + lastBbox.height + 100;
-            } 
-            // else if(allPools.length == 1){
-            //     var firstPool = allPools[0];
-            //     var firstBbox = canvas.getAbsoluteBBox(firstPool);
-            //     x = firstBbox.x - 50;
-            //     y = firstBbox.y - 50;
-            //     width = firstBbox.x + firstBbox.width + 100;
-            //     height = firstBbox.y + firstBbox.height + 100;
-            // }
-             else {
-                var viewbox = canvas.viewbox();
-                x = viewbox.x - 50;
-                y = viewbox.y - 50;
-                width = viewbox.x + viewbox.width + 100;
-                height = viewbox.y + viewbox.height + 100;
-            }
+            // ✅ 3) 꽉 찬 상태의 bbox 가져오기
+            const bbox = canvas.viewbox();
 
-            canvas.viewbox({
-                x: x,
-                y: y,
-                width: width,
-                height: height
-            });
+            // ✅ 4) 필요하면 여기서 padding / 이동 조정하고 싶으면 scroll 사용
+            // 예: canvas.scroll({ dx: 50, dy: 50 });
 
-            
+            // ✅ 5) zoomScroll, moveCanvas 동기화
             moveCanvas.canvasSize = {
-                height: height,
-                width: width,
-                x: x,
-                y: y
-            }
-            moveCanvas.scaleOffset = canvas.viewbox().scale;
+                height: bbox.height,
+                width: bbox.width,
+                x: bbox.x,
+                y: bbox.y
+            };
+            moveCanvas.scaleOffset = bbox.scale;
             moveCanvas.resetMovedDistance();
 
             zoomScroll.canvasSize = {
-                height: height,
-                width: width,
-                x: x,
-                y: y
-            }
-            zoomScroll.scaleOffset = canvas.viewbox().scale;
+                height: bbox.height,
+                width: bbox.width,
+                x: bbox.x,
+                y: bbox.y
+            };
+            zoomScroll.scaleOffset = bbox.scale;
             zoomScroll.resetMovedDistance();
         },
         zoomIn() {
