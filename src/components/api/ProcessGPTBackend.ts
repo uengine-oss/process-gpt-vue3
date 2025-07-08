@@ -550,6 +550,12 @@ class ProcessGPTBackend implements Backend {
                     key: 'user_id',
                     value: `%${options.userId}%`
                 }
+            } else {
+                const email = localStorage.getItem("email");
+                filter.like = {
+                    key: 'user_id',
+                    value: `%${email}%`
+                }
             }
 
             const list = await storage.list('todolist', filter);
