@@ -1254,5 +1254,14 @@
     "UserInputGenerator": {
         "inputLabel": "Enter the agent you want to generate",
         "generateButton": "Generate Agent with AI"
+    },
+    "subProcessDetail": {
+        "execute": "Execute",
+        "simulation": "Simulation",
+        "edit": "Edit",
+        "save": "Save",
+        "noProcessModel": "No defined process model.",
+        "editProcess": "Edit Process",
+        "processDefinitionSaved": "Process definition has been saved."
     }
 }

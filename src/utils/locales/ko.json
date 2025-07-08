@@ -834,7 +834,7 @@
         "replace-with-expanded-pool": "확장된 풀로 변경"
     },
     "WorkItem": {
-        "progress": "진행 상황",
+        "progress": "프로세스",
         "history": "워크 히스토리",
         "chatbot": "어시스턴트",
         "agent": "빠른 초안 생성",
@@ -1254,5 +1254,14 @@
     "UserInputGenerator": {
         "inputLabel": "생성하고싶은 에이전트를 입력하세요",
         "generateButton": "AI로 에이전트 생성"
+    },
+    "subProcessDetail": {
+        "execute": "실행",
+        "simulation": "시뮬레이션",
+        "edit": "수정",
+        "save": "저장",
+        "noProcessModel": "정의된 프로세스 모델이 없습니다.",
+        "editProcess": "프로세스 편집",
+        "processDefinitionSaved": "프로세스 정의가 저장되었습니다."
     }
 }

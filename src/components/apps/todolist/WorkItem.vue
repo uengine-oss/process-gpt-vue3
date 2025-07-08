@@ -136,12 +136,12 @@
                         </div>
                     </div>
                     <v-window v-model="selectedTab"
-                        :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px); overflow: auto' : 'height: calc(100vh - 249px); color: black; overflow: auto'"
+                        :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px); overflow: auto' : 'height: calc(100vh - 257px); color: black; overflow: auto'"
                     >
                         <v-window-item value="progress">
                             <div
                                 class="pa-2"
-                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 250px); color: black; overflow: auto'"
+                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 260px); color: black; overflow: auto'"
 
                             >
                                 <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
@@ -562,6 +562,7 @@ export default {
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
                         { value: 'agent-feedback', label: '에이전트 피드백' },
+                        { value: 'history', label: this.$t('WorkItem.history') },
                     ]
                 } else {
                     return [

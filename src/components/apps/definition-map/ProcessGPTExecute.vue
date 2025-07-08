@@ -29,7 +29,7 @@
                                 :name="roleMapping.name"
                                 :item-value="'email'"
                                 :hide-details="true"
-                                :use-agent="roleMapping.isAgent"
+                                :use-agent="true"
                             ></user-select-field>
                         </div>
                     </div>
@@ -204,20 +204,14 @@ export default {
                     if(role.default && role.default.length > 0) {
                         hasDefaultRole = true;
                     }
-                    let isAgent = false;
-                    const roleActivities = activities.filter((activity) => activity.role === role.name);
-                    if(roleActivities.length > 0) {
-                        isAgent = true;
-                    }
+
                     return {
                         name: role.name,
                         endpoint: role.default || role.endpoint,
                         resolutionRule: role.resolutionRule,
                         default: role.default || "",
-                        isAgent: isAgent
                     };
                 });
-                console.log(me.roleMappings);
 
                 if (!hasDefaultRole) {
                     const roleBindings = await backend.bindRole(me.definition.roles, me.definitionId);
