@@ -13,6 +13,8 @@ $$;
 -- tenants table
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS id text;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS owner uuid DEFAULT auth.uid();
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
 
 -- user_devices table
 ALTER TABLE public.user_devices ADD COLUMN IF NOT EXISTS user_email text;
@@ -278,5 +280,51 @@ alter publication supabase_realtime add table todolist;
 alter publication supabase_realtime add table bpm_proc_inst;
 alter publication supabase_realtime add table proc_def;
 
--- Agents
 DROP TABLE IF EXISTS public.agents;
+
+--events table
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS run_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS job_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS todo_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS proc_inst_id text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS crew_type text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS data jsonb;
+
+
+--schedule
+
+
+create or replace function public.register_cron_job(
+  p_job_name text,
+  p_cron_expr text,
+  p_input jsonb
+)
+returns void
+language plpgsql
+security definer
+as $$
+DECLARE
+  v_job_name text;
+BEGIN
+  SELECT jobname INTO v_job_name
+  FROM cron.job
+  WHERE jobname = p_job_name;
+
+  IF v_job_name IS NOT NULL THEN
+    PERFORM cron.unschedule(v_job_name);
+  END IF;
+
+  -- ✅ 새로 schedule
+  PERFORM cron.schedule(
+    p_job_name,
+    p_cron_expr,
+    format(
+      E'select public.start_process_scheduled(''%s'', ''%s''::jsonb);',
+      replace(p_job_name, '''', ''''''),
+      replace(p_input::text, '''', '''''')
+    )
+  );
+END;
+$$;

@@ -224,7 +224,8 @@ export default {
         processDefUrlData: null,
         formNameByUrl: null,
 
-        isOpenDeleteDialog: false
+        isOpenDeleteDialog: false,
+        isDefaultFormMode: false,
     }),
     async created() {
         const reloadOnConnectionFailure = async () => {
@@ -260,6 +261,10 @@ export default {
             });
 
             this.formNameByUrl = this.processDefUrlData.formName;
+        }
+
+        if(window.location.pathname.includes('/ui-definitions/defaultform')) {
+            this.isDefaultFormMode = true;
         }
         // #endregion
     },
@@ -315,7 +320,12 @@ export default {
         },
 
         openSaveDialog() {
-            this.isOpenSaveDialog = true;
+            if(this.isDefaultFormMode) {
+                this.tryToSaveFormDefinition({ id: 'defaultform' });
+            } else {
+                this.isOpenSaveDialog = true;
+            }
+
         },
 
         openDeleteDialog() {
@@ -581,29 +591,34 @@ export default {
          * 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장하기 위해서
          */
         async saveFormDefinition({ id, html }) {
-            const isNewSave = this.loadFormId !== id;
+            // const isNewSave = this.loadFormId !== id;
 
-            if (isNewSave) {
-                try {
-                    const isFormAlreadyExist = await this.backend.getRawDefinition(id, { type: 'form' });
-                    if (isFormAlreadyExist) {
+            const isFormAlreadyExist = await this.backend.getRawDefinition(id, { type: 'form_def' });
+
+            // if (isNewSave) {
+            //     try {
+                    if (isFormAlreadyExist && isFormAlreadyExist.id !== "defaultform") {
                         if (!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`)) return;
                     }
-                } catch (error) {
+                // } catch (error) {
 
-                }
-            }
+                // }
+            // }
 
-            await this.backend.putRawDefinition(html, id, { type: 'form' });
+            await this.backend.putRawDefinition(html, id, { 
+                type: 'form',
+                proc_def_id: isFormAlreadyExist?.proc_def_id,
+                activity_id: isFormAlreadyExist?.activity_id
+            });
             this.isOpenSaveDialog = false;
 
             this.kEditorContentBeforeSave = this.$refs.mashup.getKEditorContentHtml();
             this.isAIUpdated = false
 
-            if (isNewSave) {
-                await this.$router.push(`/ui-definitions/${id}`);
-                window.location.reload();
-            }
+            // if (!isFormAlreadyExist) {
+            //     await this.$router.push(`/ui-definitions/${id}`);
+            //     window.location.reload();
+            // }
 
 
             if(this.processDefUrlData) {
@@ -700,7 +715,7 @@ export default {
                 messageWriting.content = messageWriting.content.replace(messageWriting.jsonContent, '');
 
                 // messageWriting.jsonContent에 내용이 있어도, messageWriting.content에 내용이 없으면 메시지가 표시되지 않기때문에 추가함
-                if(messageWriting.content.length == 0) messageWriting.content = " "
+                if(messageWriting.content.length == 0) messageWriting.content = "요청하신 폼 수정을 완료했습니다."
                 
 
                 // 생성된 HTML을 보여주기 위해서
@@ -1097,7 +1112,11 @@ export default {
                 action: async () => {
                     await this.backend.deleteDefinition(this.loadFormId, {type: 'form'});
                     this.isOpenDeleteDialog = false;
-                    await this.$router.push('/ui-definitions/chat');
+                    if(window.location.pathname.includes('/ui-definitions/defaultform')) {
+                        await this.$router.push('/ui-definitions/defaultform');
+                    } else {
+                        await this.$router.push('/ui-definitions/chat');
+                    }
                     window.location.reload();
                 },
                 successMsg: this.$t('successMsg.delete')

@@ -236,9 +236,7 @@ export default {
                     }
                 });
                 
-                
                 if (allTenantInfos.length === 0) {
-                    // 속한 테넌트가 없는 경우 (유저4)
                     this.tenantInfos = [];
                     this.isOwner = false;
                     this.isLoading = false;
@@ -251,6 +249,10 @@ export default {
                 //     } 
                 // } 
                 else {
+                    const deletedTenants = await backend.getDeletedTenants() || [];
+                    deletedTenants.forEach(deletedTenant => {
+                        allTenantInfos = allTenantInfos.filter(tenant => tenant.id !== deletedTenant.id);
+                    });
                     // 여러 테넌트에 속한 경우 목록 표시 (유저1, 유저2)
                     this.tenantInfos = allTenantInfos;
                     this.isOwner = allTenantInfos.some(tenant => tenant.isOwned);
