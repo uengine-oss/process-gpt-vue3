@@ -4,6 +4,7 @@
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
                     <v-row v-if="isViewMode"
+                        class="align-center"
                         style="position: absolute;
                         left: 24px;
                         top:24px;
