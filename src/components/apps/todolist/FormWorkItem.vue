@@ -40,10 +40,10 @@
         <v-card flat>
             <v-card-text class="pa-4 pt-3">
                 <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted"></DynamicForm>
-                <div v-if="!isCompleted" class="mb-4">
+                <!-- <div v-if="!isCompleted" class="mb-4">
                     <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
                     <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
-                </div>
+                </div> -->
                 <Checkpoints v-if="workItem.activity.checkpoints.length > 0" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
             </v-card-text>
         </v-card>
@@ -174,6 +174,7 @@ export default {
                         me.formDefId = 'defaultform'
                         me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
                         if(!me.html) {
+                            me.html = '<NotExistDefaultForm/>'
                             me.useTextAudio = true;
                             me.formDefId = 'user_input_text' // default form 이 없는 경우 자유롭게 입력 가능하도록 설정
                         }

@@ -240,7 +240,32 @@
                 :class="isMobile ? 'order-first' : ''"
                 :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 190px); overflow: auto')"
             >
-                <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
+                <div v-if="currentComponent && !isNotExistDefaultForm" class="work-itme-current-component" style="height: 100%;">
+                    <div :style="isMobile ? 'top: 90px;' : 'top: 70px;'" style="position: absolute; right: 20px; z-index: 9999;">
+                        <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                            class="mr-1 text-medium-emphasis"
+                            density="comfortable"
+                            icon
+                            variant="outlined"
+                            size="small"
+                            style="border-color: #e0e0e0 !important;"
+                            :disabled="isGenerationFinished"
+                        >
+                            <Icons :icon="'sharp-mic'" :size="'16'" />
+                        </v-btn>
+                        <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                            class="mr-1 text-medium-emphasis"
+                            density="comfortable"
+                            icon
+                            variant="outlined"
+                            size="small"
+                            style="border-color: #e0e0e0 !important;"
+                            :disabled="isGenerationFinished"
+                        >
+                            <Icons :icon="'stop'" :size="'16'" />
+                        </v-btn>
+                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
+                    </div>
                     <component 
                         :is="currentComponent" 
                         :definitionId="definitionId"
@@ -306,6 +331,25 @@
                         </div>
                     </div>
                 </div>
+                <div v-else-if="isNotExistDefaultForm">
+                    <div class="d-flex justify-center align-center" style="height: 100%;">
+                        <div class="text-center">
+                            <v-icon size="100" color="grey-lighten-1">mdi-form-textbox</v-icon>
+                            <h3 class="mt-4 text-grey-darken-1">해당 단계의 입력 폼이 없습니다.</h3>
+                            <p class="mt-2 text-grey-darken-2">기본 폼을 생성하여 입력 폼이 없는 단계들에 사용하실 수 있습니다.</p>
+                            <v-btn 
+                                color="primary" 
+                                class="mt-4"
+                                @click="goToDefaultForm"
+                                variant="flat"
+                                size="large"
+                            >
+                                <v-icon class="mr-2">mdi-plus</v-icon>
+                                기본 폼 생성하러 가기
+                            </v-btn>
+                        </div>
+                    </div>
+                </div>
             </v-col>
         </v-row>
     </v-card>
@@ -330,6 +374,7 @@ import AgentFeedback from './AgentFeedback.vue';
 import exampleGenerator from '@/components/ai/WorkItemAgentGenerator.js';
 import JSON5 from 'json5';
 import partialParse from 'partial-json-parser';
+import axios from 'axios';
 
 const backend = BackendFactory.createBackend();
 export default {
@@ -413,6 +458,15 @@ export default {
         imgKeyList: [],
         isVisionMode: false,
         isGeneratingExample: false,
+        
+        // Audio recording
+        newMessage: '',
+        isMicRecording: false,
+        isMicRecorderLoading: false,
+        micRecorder: null,
+        micAudioChunks: [],
+
+        isNotExistDefaultForm: false,
     }),
     created() {
         // this.init();
@@ -420,7 +474,14 @@ export default {
             this.updatedDefKey++;
         });
         this.EventBus.on('html-updated', (newHtml) => {
-            this.html = newHtml
+            if(newHtml === '<NotExistDefaultForm/>') {
+                this.isNotExistDefaultForm = true;
+            } else {
+                this.html = newHtml
+                if(this.isSimulate == 'true' && !this.generator) {
+                    this.beforeGenerateExample();
+                }
+            }
         });
         this.EventBus.on('formData-updated', (newformData) => {
             this.formData = newformData
@@ -430,7 +491,6 @@ export default {
             this.inFormValues = formData.inFormValues;
         });
         window.addEventListener('resize', this.handleResize);
-
     },
     async mounted() {
         await this.init();
@@ -547,6 +607,49 @@ export default {
         }
     },
     methods: {
+        async startVoiceRecording() {
+            this.isMicRecording = true;
+
+            if (!navigator.mediaDevices) {
+                alert('getUserMedia를 지원하지 않는 브라우저입니다.');
+                return;
+            }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.micRecorder = new MediaRecorder(stream);
+            this.micAudioChunks = [];
+            this.micRecorder.ondataavailable = e => {
+                this.micAudioChunks.push(e.data);
+            };
+            this.micRecorder.start();
+        },
+        stopVoiceRecording() {
+            this.isMicRecording = false;
+            // MediaRecorder의 상태가 'recording'인 경우에만 stop 메서드를 호출
+            if (this.micRecorder && this.micRecorder.state === 'recording') {
+                this.micRecorder.stop();
+                this.micRecorder.onstop = async () => {
+                    const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
+                    await this.uploadAudio(audioBlob);
+                };
+            }
+        },
+        async uploadAudio(audioBlob) {
+            this.isMicRecorderLoading = true; // 로딩 상태 시작
+
+            const formData = new FormData();
+            formData.append('audio', audioBlob);
+
+            try {
+                const response = await axios.post(`/execution/upload`, formData);
+                const data = response.data;
+                this.newMessage = data.transcript;
+                this.beforeGenerateExample();
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                this.isMicRecorderLoading = false; // 로딩 상태 종료
+            }
+        },
         hasUnclosedTripleBackticks(inputString) {
             // 백틱 세 개의 시작과 끝을 찾는 정규 표현식
             const regex = /`{3}/g;
@@ -666,10 +769,14 @@ export default {
             if(this.isVisionMode){
                 this.generator.generate()
             } else {
-                this.generateExample()
+                if(this.newMessage){
+                    this.generateExample(this.newMessage, 'audio')
+                } else {
+                    this.generateExample()
+                }
             }
         },
-        async generateExample(response){
+        async generateExample(response, type){
             var me = this
             this.isVisionMode = false
             
@@ -681,10 +788,21 @@ export default {
             this.generator.model = "gpt-4o";
             
             if(response){
-                this.generator.previousMessages.push({
-                    "content": "첨부된 이미지에 대한 설명: " + response,
-                    "role": "user"
-                })
+                if(type == 'audio'){
+                    this.generator.previousMessages.push({
+                        "content": "오디오 내용을 보고 오디오 내용을 개선해서 예시를 생성해. 오디오 내용을 기반으로 생성해야하고 오디오에 관한 언급은 하면 안돼. 오디오 내용과 생성될 내용이 달라서도 안돼. 적당한 수준의 보완, 정리만 해서 생성해.",
+                        "role": "user"
+                    })
+                    this.generator.previousMessages.push({
+                        "content": "오디오 내용: " + response,
+                        "role": "user"
+                    })
+                } else if(type == 'vision'){
+                    this.generator.previousMessages.push({
+                        "content": "첨부된 이미지에 대한 설명: " + response,
+                        "role": "user"
+                    })
+                }
             }
             if(this.processInstance && this.processInstance.instId){
                 const instance = await backend.getInstance(this.processInstance.instId);
@@ -746,7 +864,7 @@ export default {
             me.$try({
                 action: async () => {
                     if(me.isVisionMode){
-                        me.generateExample(response)
+                        me.generateExample(response, 'vision')
                     } else {
                         let jsonData = response;
                         if (typeof response == 'string') {
@@ -768,11 +886,13 @@ export default {
                             me.agentGenerationFinished(null);
                         }
                         me.isGeneratingExample = false;
+                        me.newMessage = null;
                     }
                 },
                 errorMsg: '초안 생성을 실패하였습니다. 잠시 후 다시 시도해주세요.',
                 finalAction: () => {
                     me.isGeneratingExample = false;
+                    me.newMessage = null;
                 }
             });
             
@@ -928,6 +1048,9 @@ export default {
                 }
             }
         },
+        goToDefaultForm() {
+            this.$router.push('/ui-definitions/defaultform');
+        }
     }
 };
 </script>
