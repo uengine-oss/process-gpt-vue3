@@ -462,7 +462,7 @@ export default {
                     // 이벤트 발행
                     me.EventBus.emit('definitions-updated');
                 },
-                successMsg: $t('subProcessDetail.processDefinitionSaved')
+                successMsg: this.$t('subProcessDetail.processDefinitionSaved')
             });
         },
     },
