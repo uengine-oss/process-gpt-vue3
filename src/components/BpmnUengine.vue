@@ -863,6 +863,8 @@ export default {
 
             if (ev.type === 'panend') {
             }
+            ev.srcEvent.stopPropagation();
+            ev.srcEvent.preventDefault();
         },
         onPinch(ev) {
             const canvas = this.bpmnViewer.get('canvas');
@@ -878,6 +880,8 @@ export default {
 
             if (ev.type === 'pinchend') {
             }
+            ev.srcEvent.stopPropagation();
+            ev.srcEvent.preventDefault();
         }
     }
 };

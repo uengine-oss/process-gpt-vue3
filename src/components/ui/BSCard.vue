@@ -896,6 +896,8 @@
 
         if (ev.type === 'panend') {
         }
+        ev.srcEvent.stopPropagation();
+        ev.srcEvent.preventDefault();
       },
       onPinch(ev) {
         const canvas = this.diagram.get('canvas');
@@ -911,6 +913,8 @@
 
         if (ev.type === 'pinchend') {
         }
+        ev.srcEvent.stopPropagation();
+        ev.srcEvent.preventDefault();
       }
     }
   };
