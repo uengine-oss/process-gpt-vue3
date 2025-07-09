@@ -408,7 +408,7 @@ export default {
                                     return newRole;
                                 });
                             }
-                            if (me.processDefinition && me.processDefinition.elements && !me.processDefinition.sequences) {
+                            if (me.processDefinition && me.processDefinition.sequences) {
                                 me.processDefinition = newProcessDefinition
                             }
                         }
