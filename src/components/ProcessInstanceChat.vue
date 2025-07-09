@@ -91,7 +91,7 @@ export default {
                     if (task.status == "DONE") {
                         this.$emit('updated');
                         this.EventBus.emit('instances-updated');
-                        await this.getChatList(this.chatRoomId);
+                        await this.getMessages(this.chatRoomId);
                         this.streamingText = '';
                     }
                 });
@@ -183,7 +183,7 @@ export default {
                 }
                 await me.loadProcess();
                 
-                await me.getChatList(me.chatRoomId)
+                await me.getMessages(me.chatRoomId)
 
             }
 

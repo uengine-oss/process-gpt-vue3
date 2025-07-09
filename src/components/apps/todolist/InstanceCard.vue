@@ -8,11 +8,11 @@
                 <v-row class="ma-0 pa-4 pb-0 pt-0 align-center instance-card-title">
                     <!-- 한글: 인스턴스 이름이 길 경우 줄바꿈이 가능하도록 스타일 추가 -->
                     <div class="text-h5 font-weight-semibold align-center"
-                        style="word-break: break-all; white-space: normal;"
+                        style="word-break: break-all; white-space: normal; margin-right: 5px;"
                     >{{ instanceName }}</div>
 
                     <v-chip v-if="instance.status" size="x-small" variant="outlined" class="align-center">
-                        {{ instance.status }}
+                        {{ instance.is_deleted ? 'DELETED' : instance.status }}
                     </v-chip>
                     <div v-for="event in eventList" :key="event.tracingTag">
                         <v-btn @click="fireMessage(event)"
@@ -24,9 +24,17 @@
                         > {{  $t('InstanceCard.sendEvent', {event: event.name ? event.name : event.type}) }}
                         </v-btn>
                     </div>
-                    <v-btn v-if="deletable" @click="deleteInstance" variant="plain" icon class="ml-auto">
-                        <Icons :icon="'trash'" />
+                    <v-btn v-if="deletable" @click="openDeleteDialog" rounded size="small" color="error" class="ml-auto" style="margin-top: 10px;">
+                        삭제
                     </v-btn>
+                    <div v-else style="margin-top: 10px;" class="ml-auto d-flex flex-column align-end">
+                        <div class="text-caption">
+                            {{ getRemainingTime(instance.deleted_at) }}
+                        </div>
+                        <v-btn @click="restoreInstance" color="error" rounded>
+                            삭제 취소
+                        </v-btn>
+                    </div>
                 </v-row>
                 <div v-if="instance.instId && !isMobile" class="font-weight-medium pl-4 pr-4" style="color:gray; font-size:14px;">
                     ID: {{ instance.instId }}
@@ -143,6 +151,39 @@
     <v-card v-else>
         <!-- 존재 하지 않은 인스턴스 -->
     </v-card>
+    <v-dialog v-model="deleteDialog" persistent
+        :fullscreen="isMobile"
+        width="90vw"
+        max-width="500px"
+    >
+        <v-card>
+            <v-card-title class="d-flex justify-space-between align-center">
+                <span>인스턴스 삭제</span>
+                <v-btn icon variant="plain" @click="deleteDialog = false">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </v-card-title>
+            <v-card-text>
+                <div class="mb-4">
+                    <strong>{{ instanceName }}</strong> 인스턴스를 삭제하시겠습니까?
+                </div>
+                <div class="mb-4 pa-3" style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px;">
+                    <p class="mb-2" style="color: #721c24;"><strong>⚠️ 경고</strong></p>
+                    <p class="mb-2" style="color: #721c24;">• 삭제 요청은 7일 이내 취소할 수 있습니다.</p>
+                    <p class="mb-2" style="color: #721c24;">• 삭제 요청 7일 이후 관련 데이터는 완전히 삭제되며 복구는 불가능합니다.</p>
+                    <p class="mb-0" style="color: #721c24;">• 당사는 삭제된 데이터에 대해 어떠한 책임도 지지 않습니다.</p>
+                </div>
+            </v-card-text>
+            <v-card-actions class="justify-end">
+                <v-btn @click="deleteDialog = false" variant="text">
+                    취소
+                </v-btn>
+                <v-btn @click="deleteInstance" color="error" variant="flat">
+                    삭제
+                </v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
@@ -183,6 +224,7 @@ export default {
         ],
 
         updatedKey: 0,
+        deleteDialog: false,
     }),
     watch: {
         $route: {
@@ -265,6 +307,7 @@ export default {
         },
         deletable() {
             if (this.instance) {
+                if(this.instance.is_deleted) return false;
                 const email = localStorage.getItem('email');
                 if (this.instance.currentUserIds && this.instance.currentUserIds.length > 0 && this.instance.currentUserIds.includes(email)) {
                     return true;
@@ -381,6 +424,9 @@ export default {
                 progressComponent.initStatus();
             }
         },
+        openDeleteDialog() {
+            this.deleteDialog = true;
+        },
         deleteInstance() {
             var me = this;
             me.$try({
@@ -388,10 +434,22 @@ export default {
                 action: async () => {
                     if (!me.id) return;
                     await backend.deleteInstance(me.id);
+                    me.deleteDialog = false;
                     me.EventBus.emit('instances-updated');
                     me.$router.push("/todolist");
                 },
                 successMsg: this.$t('successMsg.instanceDelete')
+            });
+        },
+        restoreInstance() {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    await backend.restoreInstance(me.id);
+                    me.instance.is_deleted = false;
+                    me.instance.deleted_at = null;
+                },
             });
         },
 
@@ -459,6 +517,32 @@ export default {
         },
         closeDialog() {
             this.dialog = false;
+        },
+        getRemainingTime(deletedAt) {
+            if (!deletedAt) return '';
+
+            const deletedDate = new Date(deletedAt);
+            const finalDeleteDate = new Date(deletedDate);
+            finalDeleteDate.setDate(finalDeleteDate.getDate() + 7);
+            
+            const now = new Date();
+            const timeDiff = finalDeleteDate - now;
+
+            if (timeDiff <= 0) {
+                return '완전 삭제됨';
+            }
+
+            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+
+            if (days >= 1) {
+                return `${days}일 후 삭제 예정`;
+            } else if (hours >= 1) {
+                return `${hours}시간 후 삭제 예정`;
+            } else {
+                return `${minutes}분 후 삭제 예정`;
+            }
         }
     }
 };
