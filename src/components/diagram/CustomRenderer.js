@@ -97,7 +97,7 @@ class CustomRenderer extends BaseRenderer {
         ry: 10
       });
       svgAppend(parentNode, rect);
-
+    
       const label = svgCreate('text');
       svgAttr(label, {
         x: element.width / 2,
@@ -106,13 +106,26 @@ class CustomRenderer extends BaseRenderer {
         'font-size': '16',
         'font-weight': '900',
         fill: this._getLaneColor(element.perspective),
+        // fill: '#0085db',
       });
-      
       label.textContent = element.name;
       svgAppend(parentNode, label);
-
+    
+      // ✅ 아래쪽 선 추가
+      const line = svgCreate('line');
+      svgAttr(line, {
+        x1: 15,
+        y1: element.height + 100,
+        x2: 1000,
+        y2: element.height + 100,
+        stroke: '#ddd',   // 원하는 선 색상
+        'stroke-width': 1
+      });
+      svgAppend(parentNode, line);
+    
       return rect;
     }
+    
 
     // 네모 카드 스타일 담당
     if (element.type === 'custom:strategy') {
