@@ -140,7 +140,7 @@ export default {
                 }
             }
             this.chatRoomId = 'organization_chart_chat';
-            await this.getChatList(this.chatRoomId);
+            await this.getMessages(this.chatRoomId);
 
             this.userList = await this.backend.getUserList();
         },

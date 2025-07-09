@@ -736,7 +736,7 @@
       },
       async loadData(path) {
           this.chatRoomId = 'bscard_chat';
-          await this.getChatList(this.chatRoomId);
+          await this.getMessages(this.chatRoomId);
 
           this.userList = await this.backend.getUserList();
           this.agentList = await this.backend.getAgentList();

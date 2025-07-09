@@ -165,7 +165,7 @@
                 </div>
                 
                 <div class="mb-4 pa-3" style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px;">
-                    <p class="mb-2" style="color: #721c24;"><strong>⚠️ 삭제</strong></p>
+                    <p class="mb-2" style="color: #721c24;"><strong>⚠️ 경고</strong></p>
                     <p class="mb-2" style="color: #721c24;">• 삭제 요청은 7일 이내 취소할 수 있습니다.</p>
                     <p class="mb-2" style="color: #721c24;">• 삭제 요청 7일 이후 관련 데이터는 완전히 삭제되며 복구는 불가능합니다.</p>
                     <p class="mb-0" style="color: #721c24;">• 당사는 삭제된 데이터에 대해 어떠한 책임도 지지 않습니다.</p>

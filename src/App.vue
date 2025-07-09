@@ -139,7 +139,6 @@ export default {
             }
 
             if (localStorage.getItem('email')) {
-                this.watchNotifications(localStorage.getItem('email'));
 
                 this.EventBus.on('chat-room-selected', (chatRoomId) => {
                     this.currentChatRoomId = chatRoomId;
@@ -147,6 +146,10 @@ export default {
 
                 this.EventBus.on('chat-room-unselected', () => {
                     this.currentChatRoomId = null;
+                });
+
+                this.EventBus.on('show-notification', (notification) => {
+                    this.showNotifications(notification);
                 });
                 
                 // 페이지 로드 시 브라우저 알림 권한 요청
@@ -161,50 +164,47 @@ export default {
                 this.snackbar = false;
             }
         },
-        async watchNotifications(email){
-            // this.backend = BackendFactory.createBackend();
-            await this.backend.watchNotifications((notification) => {
-                if (notification.user_id === email && (Notification && Notification.permission === 'granted')) {
-                    let notiHeader = null;
-                    let notiBody = null;
-                    if(notification.type === 'workitem_bpm') {
-                        notiHeader = 'New Todo';
-                        notiBody = notification.title || '새 할 일 목록 추가';
-                    } else if(notification.type === 'chat') {
-                        if (!this.currentChatRoomId || (this.currentChatRoomId && !notification.url.includes(this.currentChatRoomId))) {
-                            notiHeader = notification.from_user_id || '알 수 없는 사용자';
-                            const chatRoomName = notification.description || '채팅방';
-                            const messageContent = notification.title || '새 메시지';
-                            notiBody = `${chatRoomName}\n${messageContent}`;
+        showNotifications(notification){
+            const email = localStorage.getItem('email');
+            if (notification.user_id === email && (Notification && Notification.permission === 'granted')) {
+                let notiHeader = null;
+                let notiBody = null;
+                if(notification.type === 'workitem_bpm') {
+                    notiHeader = 'New Todo';
+                    notiBody = notification.title || '새 할 일 목록 추가';
+                } else if(notification.type === 'chat') {
+                    if (!this.currentChatRoomId || (this.currentChatRoomId && !notification.url.includes(this.currentChatRoomId))) {
+                        notiHeader = notification.from_user_id || '알 수 없는 사용자';
+                        const chatRoomName = notification.description || '채팅방';
+                        const messageContent = notification.title || '새 메시지';
+                        notiBody = `${chatRoomName}\n${messageContent}`;
 
-                            window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                                detail: { type: 'chat', value: true, id: notification.url.replace('/chats?id=', '')}
-                            }));
+                        window.dispatchEvent(new CustomEvent('update-notification-badge', {
+                            detail: { type: 'chat', value: true, id: notification.url.replace('/chats?id=', '')}
+                        }));
+                    }
+                }
+                if(notiHeader && notiBody) {
+                    if(notiBody.includes('"messageForUser":')) {
+                        try {
+                            let contentObj = partialParse(notiBody);
+                            notiBody = contentObj.messageForUser || notiBody;
+                        } catch (e) {
+                            console.log(e);
                         }
                     }
-                    if(notiHeader && notiBody) {
-                        if(notiBody.includes('"messageForUser":')) {
-                            try {
-                                let contentObj = partialParse(notiBody);
-                                notiBody = contentObj.messageForUser || notiBody;
-                            } catch (e) {
-                                console.log(e);
-                            }
-                        }
-                        new Notification(notiHeader, {
-                            body: notiBody,
-                            icon: '/process-gpt-favicon.png',
-                            badge: '/process-gpt-favicon.png',
-                            tag: `noti-${notification.id || Date.now()}`,
-                            data: { url: notification.url }
-                        }).onclick = function() {
-                            window.focus();
-                            window.location.href = notification.url;
-                        };
-                    }
-                }   
-                
-            });
+                    new Notification(notiHeader, {
+                        body: notiBody,
+                        icon: '/process-gpt-favicon.png',
+                        badge: '/process-gpt-favicon.png',
+                        tag: `noti-${notification.id || Date.now()}`,
+                        data: { url: notification.url }
+                    }).onclick = function() {
+                        window.focus();
+                        window.location.href = notification.url;
+                    };
+                }
+            }
         },
         // 알림 권한 요청 메서드
         requestNotificationPermission() {

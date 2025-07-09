@@ -3,7 +3,6 @@ import jp from 'jsonpath';
 
 import partialParse from "partial-json-parser";
 import BackendFactory from '@/components/api/BackendFactory';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { encodingForModel } from "js-tiktoken";
 import _ from 'lodash';
 import GeneratorAgent from "./GeneratorAgent.vue";
@@ -14,7 +13,6 @@ export default {
     data: () => ({
         replyUser: null,
         isInitDone: false,
-        storage: null,
         generator: null,
         messages: [],
         userInfo: {},
@@ -99,7 +97,6 @@ export default {
     async created() {
         // var me = this;
         this.backend = BackendFactory.createBackend();
-        this.storage = StorageBaseFactory.getStorage();
         // this.debouncedGenerate = _.debounce(this.startGenerate, 3000);
     },
     methods: {
@@ -154,16 +151,15 @@ export default {
         async init() {
             this.disableChat = false;
             if (this.useLock) {
-                this.userInfo = await this.storage.getUserInfo();
+                this.userInfo = await this.backend.getUserInfo();
             }
             await this.loadData(this.getDataPath());
         },
         async setWatchChatList(chatRoomIds) {
             var me = this;
-            me.userInfo = await this.storage.getUserInfo();
+            me.userInfo = await this.backend.getUserInfo();
            
-            const channelName = `chats_${chatRoomIds.join(',')}_${Date.now()}`;
-            const subscription = await this.storage.watch('chats', channelName, async (data) => {
+            await this.backend.watchChats((data) => {
                 if(data && data.new){
                     if(data.eventType == "DELETE"){
                         let messageIndex = me.messages.findIndex(msg => msg.uuid === data.old.uuid);
@@ -208,53 +204,26 @@ export default {
             }, {
                 filter: `id=in.(${chatRoomIds.join(',')})`
             });
-
-            return subscription;
         },
-        async getChatList(chatRoomId) {
+        async getMessages(chatRoomId) {
             var me = this;
             me.messages = []
-
-            // `db://chats/${chatRoomId}`, options
-            // let option = {
-            //     key: "id"
-            // }
-            let options = { 
-                orderBy: 'id',
-                startAt: chatRoomId,
-                endAt: chatRoomId
+            let messages = await this.backend.getMessages(chatRoomId)
+            if (messages) {
+                let allMessages = messages.map(message => {
+                    let newMessage = message.messages;
+                    newMessage.thread_id = message.thread_id || null;
+                    return newMessage;
+                });
+                allMessages.sort((a, b) => {
+                    return new Date(a.timeStamp) - new Date(b.timeStamp);
+                });
+                me.messages = allMessages;
+                me.EventBus.emit('messages-updated');
             }
-            await this.storage.list(`chats`, options).then(function (messages) {
-                if (messages) {
-                    let allMessages = messages.map(message => {
-                        let newMessage = message.messages;
-                        newMessage.thread_id = message.thread_id || null;
-                        return newMessage;
-                    });
-                    allMessages.sort((a, b) => {
-                        return new Date(a.timeStamp) - new Date(b.timeStamp);
-                    });
-                    me.messages = allMessages;
-                    me.EventBus.emit('messages-updated');
-                }
-                me.isInitDone = true;
-            });
+            me.isInitDone = true;
 
         },
-        // async getMoreChat() {
-        //     var option = {
-        //         sort: 'desc',
-        //         orderBy: null,
-        //         size: 11,
-        //         startAt: null,
-        //         endAt: this.messages[0].timeStamp
-        //     };
-        //     let messages = await this.storage.list(`chats/1/messages`, option);
-        //     if (messages) {
-        //         messages.splice(0, 1);
-        //         this.messages = messages.reverse().concat(this.messages);
-        //     }
-        // },
 
         getDataPath() {
             return this.$route.href.replace('/', '');
@@ -276,14 +245,8 @@ export default {
                 this.messages = value.agent_messages
             }
         },
-        async getData(path, options) {
-            let value;
-            if (path) {
-                value = await this.storage.getObject(`db://${path}`, options);
-            } else {
-                value = await this.storage.getObject(`db://${this.path}`, options);
-            }
-            return value;
+        getData(path, options) {
+            return this.backend.getData(`db://${path}`, options);
         },
         createMessageObj(message, role) {
             let obj;
@@ -557,19 +520,19 @@ export default {
         },
 
         async putObject(path, obj, options) {
-            await this.storage.putObject(`db://${path}`, obj, options);
+            await this.backend.putObject(`db://${path}`, obj, options);
         },
 
         async pushObject(path, obj, options) {
-            await this.storage.pushObject(`db://${path}`, obj, options);
+            await this.backend.pushObject(`db://${path}`, obj, options);
         },
 
         async setObject(path, obj, options) {
-            await this.storage.setObject(`db://${path}`, obj, options);
+            // await this.backend.setObject(`db://${path}`, obj, options);
         },
 
         async delete(path, options) {
-            await this.storage.delete(`db://${path}`, options);
+            await this.backend.delete(`db://${path}`, options);
         },
 
         onModelCreated(response) {

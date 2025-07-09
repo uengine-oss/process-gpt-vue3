@@ -79,18 +79,24 @@ export default {
         }
     },
     async mounted() {
-        this.notifications = await backend.fetchNotifications();
+        this.fetchNotifications();
 
-        backend.getNotifications(async (data) => {
-            if (data && data.new) {
-                this.notifications = await backend.fetchNotifications();
-                if(localStorage.getItem('email') && data.new.user_id === localStorage.getItem('email')) {
-                    this.$emit('newNotification', data.new.type);
+        await backend.watchNotifications((noti) => {
+            if (noti && noti.new && noti.new.is_checked === false) {
+                this.fetchNotifications();
+                if(localStorage.getItem('email') && noti.new.user_id === localStorage.getItem('email')) {
+                    this.$emit('newNotification', noti.new.type);
+                }
+                if(noti.eventType === 'INSERT') {
+                    this.EventBus.emit('show-notification', noti.new);
                 }
             }
         });
     },
     methods: {
+        async fetchNotifications() {
+            this.notifications = await backend.fetchNotifications();
+        },
         async checkNotification(value) {
             if (value.type == 'workitem') {
                 this.$router.push('/todolist');
@@ -98,7 +104,7 @@ export default {
                 this.$router.push(value.url);
             }
             await backend.setNotifications(value);
-            this.notifications = await backend.fetchNotifications();
+            this.fetchNotifications();
         }
     }
 }

@@ -184,7 +184,7 @@
                 </Chat>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="executeDialog" max-width="80%"
+        <v-dialog v-model="executeDialog" max-width="80%" persistent
             :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
              :fullscreen="isMobile"
         >
