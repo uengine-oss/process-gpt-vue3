@@ -74,8 +74,8 @@
                             </v-tooltip>
                             <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold, .csv, .xlsx" style="display: none" />
                     
-                            <div v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map'">
-                                <!-- 저장 아이콘 -->
+                            <div v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map' && !isMobile">
+                                <!-- ProcessDefinitionChatHeader.vue 프로세스 정의 수정 및 저장 아이콘 -->
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
                                         <div v-bind="props">
@@ -259,7 +259,10 @@ export default {
         },
         useMarketplace() {
             return this.mode == 'ProcessGPT';
-        }
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
     },
     methods: {
         executeProcess() {
