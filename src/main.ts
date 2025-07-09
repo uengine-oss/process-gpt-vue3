@@ -10,6 +10,7 @@ import 'vue3-carousel/dist/carousel.css';
 import PerfectScrollbar from 'vue3-perfect-scrollbar';
 import App from './App.vue';
 import vuetify from './plugins/vuetify';
+import hammerDirective from '@/components/directive/hammerDirective';
 import { router } from './router';
 import store from './store';
 import axios from 'axios';
@@ -295,6 +296,7 @@ async function initializeApp() {
     app.component('Icon', Icon);
     app.component('Icons', Icons)
     app.component('DetailComponent', DetailComponent);
+    app.directive('hammer', hammerDirective);
     // app.use(print);
     app.use(VueRecaptcha, {
         siteKey: '6LdzqbcaAAAAALrGEZWQHIHUhzJZc8O-KSTdTTh_',

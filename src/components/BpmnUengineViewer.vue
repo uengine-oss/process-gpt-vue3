@@ -1,6 +1,6 @@
 <template>
     <!-- <div> -->
-    <div style="height: 100%; position: relative;" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }">
+    <div style="height: 100%; position: relative;" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }" v-hammer:pan="onPan" v-hammer:pinch="onPinch">
         <div :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
@@ -96,6 +96,8 @@ export default {
             isViewMode: true,
             resizeObserver: null,
             resizeTimeout: null,
+            panStart: { x: 0, y: 0 },
+            pinchStartZoom: 1
         };
     },
     computed: {
@@ -645,6 +647,44 @@ export default {
                 this.initDefaultOrientation('horizontal');
             } else {
                 this.initDefaultOrientation('vertical');
+            }
+        },
+        onPan(ev) {
+            const canvas = this.bpmnViewer.get('canvas');
+            
+            if (ev.type === 'panstart') {
+            const viewbox = canvas.viewbox();
+            this.panStart = { x: viewbox.x, y: viewbox.y };
+            }
+
+            if (ev.type === 'panmove') {
+            const viewbox = canvas.viewbox();
+            const scale = viewbox.scale || 1;
+
+            canvas.viewbox({
+                x: this.panStart.x - ev.deltaX / scale,
+                y: this.panStart.y - ev.deltaY / scale,
+                width: viewbox.width,
+                height: viewbox.height
+            });
+            }
+
+            if (ev.type === 'panend') {
+            }
+        },
+        onPinch(ev) {
+            const canvas = this.bpmnViewer.get('canvas');
+
+            if (ev.type === 'pinchstart') {
+            this.pinchStartZoom = canvas.zoom();
+            }
+
+            if (ev.type === 'pinchmove') {
+            const newZoom = this.pinchStartZoom * ev.scale;
+            canvas.zoom(newZoom);
+            }
+
+            if (ev.type === 'pinchend') {
             }
         }
     }

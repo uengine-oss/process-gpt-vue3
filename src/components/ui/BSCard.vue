@@ -53,7 +53,8 @@
               <v-btn @click="onResetView">초기화</v-btn> -->
             </div>
             <div class="d-flex flex-wrap gap-2" style="width: 100%; height: 100%;">
-              <div ref="container" class="strategy-map-container" style="width: 100%; height: 100%;"></div>
+              <div ref="container" class="strategy-map-container" style="width: 100%; height: 100%;" v-hammer:pan="onPan" v-hammer:pinch="onPinch">
+              </div>
             </div>
           </template>
 
@@ -387,6 +388,8 @@
         agentList: [],
         strategyOptions :[],
         strategyMenu: false,
+        panStart: { x: 0, y: 0 },
+        pinchStartZoom: 1
       };
     },
     watch: {
@@ -404,6 +407,7 @@
       }
     },
     mounted() {
+      console.log("VueEvents", window.$touchEvents);
       this.generator = new ChatGenerator(this, {
           isStream: true,
           preferredLanguage: "Korean"
@@ -869,6 +873,44 @@
             fontWeight: 'bold'
           }
         };
+      },
+      onPan(ev) {
+        const canvas = this.diagram.get('canvas');
+        
+        if (ev.type === 'panstart') {
+          const viewbox = canvas.viewbox();
+          this.panStart = { x: viewbox.x, y: viewbox.y };
+        }
+
+        if (ev.type === 'panmove') {
+          const viewbox = canvas.viewbox();
+          const scale = viewbox.scale || 1;
+
+          canvas.viewbox({
+            x: this.panStart.x - ev.deltaX / scale,
+            y: this.panStart.y - ev.deltaY / scale,
+            width: viewbox.width,
+            height: viewbox.height
+          });
+        }
+
+        if (ev.type === 'panend') {
+        }
+      },
+      onPinch(ev) {
+        const canvas = this.diagram.get('canvas');
+
+        if (ev.type === 'pinchstart') {
+          this.pinchStartZoom = canvas.zoom();
+        }
+
+        if (ev.type === 'pinchmove') {
+          const newZoom = this.pinchStartZoom * ev.scale;
+          canvas.zoom(newZoom);
+        }
+
+        if (ev.type === 'pinchend') {
+        }
       }
     }
   };
