@@ -902,7 +902,7 @@
         "taskId": "작업 ID"
     },
     "InstanceCard": {
-        "progress": "진행 상황",
+        "progress": "프로세스",
         "workItem": "워크 아이템",
         "workHistory": "워크 히스토리",
         "ganttChart": "간트 차트",
@@ -911,7 +911,7 @@
         "output": "산출물"
     },
     "ProjectCard": {
-        "managment": "진행 상황",
+        "managment": "프로세스",
         "kanbanBoard": "칸반보드",
         "instanceList": "인스턴스 목록"
     },
@@ -1074,7 +1074,7 @@
     },
     "AppBaseCard": {
         "friends": "친구",
-        "progress": "진행 상황",
+        "progress": "프로세스",
         "menu": "메뉴"
     },
     "ReportField": {
