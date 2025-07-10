@@ -298,8 +298,7 @@ export default {
                             me.handleError(response.error);
                         } else if (response) {
                             if (response && response.id && response.proc_inst_id) {
-                                const instId = btoa(encodeURIComponent(response.proc_inst_id));
-                                const path = `/instancelist/${instId}`;
+                                const path = `/instancelist/${response.proc_inst_id.replace(/\./g, '_DOT_')}`;
                                 me.$router.push(path);
                             }
                         }

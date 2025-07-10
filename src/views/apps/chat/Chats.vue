@@ -70,7 +70,7 @@
                         <template #custom-chat-top>
                             <div class="custom-top-area">
                                 <div class="position-fixed">
-                                    <div v-if="selectedUserInfo && 
+                                    <div v-if="isAgentChat && selectedUserInfo && 
                                         selectedUserInfo.is_agent && 
                                         selectedUserInfo.persona && 
                                         selectedUserInfo.persona !== ''"
@@ -407,11 +407,12 @@ export default {
                 const code = urlParams.get('code');
                 const state = urlParams.get('state');
                 const scope = urlParams.get('scope');
+                const email = this.userInfo.email;
 
                 const response = await fetch('/memento/auth/google/callback', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code, state, scope })
+                    body: JSON.stringify({ code, state, scope, user_email: email })
                 });
                 const result = await response.json();
                 if (result.success) {

@@ -124,8 +124,7 @@ const backend = BackendFactory.createBackend();
             });
         },
         handleRowClick(item) {
-            const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.taskId)) : item.taskId;
-            this.$router.push(`/todolist/${route}`);
+            this.$router.push(`/todolist/${item.taskId}`);
         },
         handleSearch(searchWord){
             var me = this

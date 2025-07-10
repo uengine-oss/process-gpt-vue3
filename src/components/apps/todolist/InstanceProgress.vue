@@ -62,7 +62,7 @@ export default {
     },
     computed: {
         id() {
-            return decodeURIComponent(atob(this.$route.params.instId));
+            return this.$route.params.instId.replace(/_DOT_/g, '.');
         },
     },
     watch: {

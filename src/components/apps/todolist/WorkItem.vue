@@ -137,8 +137,9 @@
                     </div>
                     <v-window v-model="selectedTab"
                         :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px); overflow: auto' : 'height: calc(100vh - 257px); color: black; overflow: auto'"
+                        :touch="false"
                     >
-                        <v-window-item value="progress">
+                        <v-window-item v-if="isTabAvailable('progress')" value="progress">
                             <div
                                 class="pa-2"
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 260px); color: black; overflow: auto'"
@@ -180,7 +181,7 @@
                                 </div>
                             </div>
                         </v-window-item>
-                        <v-window-item value="history" class="pa-2">
+                        <v-window-item v-if="isTabAvailable('history')" value="history" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
@@ -194,7 +195,7 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
-                        <v-window-item value="chatbot" class="pa-2">
+                        <v-window-item v-if="isTabAvailable('chatbot')" value="chatbot" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
@@ -207,12 +208,12 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
-                        <v-window-item value="agent-monitor" class="pa-2">
+                        <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
                             </v-card>
                         </v-window-item>
-                        <v-window-item value="agent-feedback" class="pa-2">
+                        <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <AgentFeedback :workItem="workItem"/>
                             </v-card>
@@ -227,7 +228,7 @@
                                 class="dynamic-form">
                             </DynamicForm>
                         </v-window-item>
-                        <v-window-item value="output" class="pa-2">
+                        <v-window-item v-if="isTabAvailable('output')" value="output" class="pa-2">
                             <InstanceOutput :instance="processInstance" :isInWorkItem="true" />
                         </v-window-item>
                     </v-window>
@@ -604,9 +605,22 @@ export default {
         },
         inFormNameTabs(newVal) {
             console.log(newVal);
+        },
+        selectedTab(newTab) {
+            // 현재 탭이 사용 가능한 탭 목록에 있는지 확인
+            if (!this.isTabAvailable(newTab)) {
+                // 사용 가능한 첫 번째 탭으로 변경
+                const firstAvailableTab = this.tabList[0];
+                if (firstAvailableTab) {
+                    this.selectedTab = firstAvailableTab.value;
+                }
+            }
         }
     },
     methods: {
+        isTabAvailable(tabValue) {
+            return this.tabList.some(tab => tab.value === tabValue);
+        },
         async startVoiceRecording() {
             this.isMicRecording = true;
 

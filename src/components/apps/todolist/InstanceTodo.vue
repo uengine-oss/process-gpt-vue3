@@ -43,12 +43,8 @@ export default {
         await this.loadUserInfo();
     },
     computed: {
-        mode() {
-            return window.$mode;
-        },
         id() {
-            const instId = this.mode == 'ProcessGPT' ? decodeURIComponent(atob(this.$route.params.instId)) : this.$route.params.instId;
-            return instId;
+            return this.$route.params.instId.replace(/_DOT_/g, '.');
         },        
     },
     watch: {

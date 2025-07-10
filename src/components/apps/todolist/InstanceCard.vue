@@ -210,7 +210,6 @@ export default {
         TodoDialog
     },
     data: () => ({
-        mode: window.$mode,
         isLoading: true,
         instance: null,
         eventList: [],
@@ -282,11 +281,7 @@ export default {
     },
     computed: {
         id() {
-            if ($mode == "ProcessGPT") {
-                return decodeURIComponent(atob(this.$route.params.instId))
-            } else {
-                return this.$route.params.instId
-            }
+            return this.$route.params.instId.replace(/_DOT_/g, '.');
         },
         filteredTabItems() {
             let items = this.tabItems;
@@ -382,7 +377,11 @@ export default {
                     me.dependencies = me.settingTaskDependency(dependencies, me.tasks);
                     // 칸반 컬럼 업데이트
                     me.columns.forEach(column => {
-                        column.tasks = me.tasks.filter(task => task.status === column.id);
+                        if(column.id == 'IN_PROGRESS') {
+                            column.tasks = me.tasks.filter(task => task.status === 'SUBMITTED' || task.status === 'IN_PROGRESS');
+                        } else {
+                            column.tasks = me.tasks.filter(task => task.status === column.id);
+                        }
                     });
                     me.isLoading = false
                 }
