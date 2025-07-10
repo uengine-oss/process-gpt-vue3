@@ -61,7 +61,7 @@
                 </div>
                 <div class="result-content">
                   <!-- JSON 출력 -->
-                  <div v-if="item.payload.crewType !== 'slide' && isJsonOutput(item.payload.crewType, item.payload.output)" class="json-output">
+                  <div v-if="getOutputMode(item.payload.crewType, item.payload.output) === 'json'" class="json-output">
                     <div 
                       :class="['json-container', { expanded: isTaskExpanded(item.payload.id) }]"
                       @dblclick="toggleTaskExpansion(item.payload.id)"
@@ -88,7 +88,7 @@
                     </div>
                   </div>
                   <!-- 슬라이드 출력 -->
-                  <div v-else-if="isSlideOutput(item.payload.crewType, item.payload.output)" class="slides-container">
+                  <div v-else-if="getOutputMode(item.payload.crewType, item.payload.output) === 'slide'" class="slides-container">
                     <div class="slides-header">
                       <div class="header-info">
                         <h5>프레젠테이션 모드</h5>
@@ -194,16 +194,27 @@
       </div>
     </div>
     <div v-if="tasks.length > 0" class="chat-input-wrapper">
-      <textarea v-model="chatInput" :disabled="!isCancelled || isFeedbackLoading" placeholder="메시지를 입력하세요..." rows="3" class="chat-textarea"></textarea>
-      <button class="chat-toggle-button" @click="isCancelled ? submitChat() : stopTask()" :disabled="isFeedbackLoading || (isCancelled && !chatInput)">
-        <i class="fa fa-paper-plane" v-if="isCancelled"></i>
-        <i class="fa fa-stop" v-else></i>
-      </button>
+      <Chat
+        :messages="chatMessages"
+        :agentInfo="{ isRunning: isFeedbackLoading, isConnection: false }"
+        :disableChat="!isCancelled || isFeedbackLoading"
+        type="chats"
+        :userInfo="{ name: '', email: '' }"
+        :chatRoomId="getTaskIdFromWorkItem()"
+        @sendMessage="submitChat"
+        @stopMessage="stopTask"
+      >
+        <template #custom-tools v-if="isFeedbackLoading">
+          <button @click="stopTask" class="stop-button">중단</button>
+        </template>
+      </Chat>
     </div>
   </div>
 </template>
 
 <script>
+import ChatModule from '@/components/ChatModule.vue'
+import Chat from '@/components/ui/Chat.vue'
 import { marked } from 'marked'
 import BackendFactory from '@/components/api/BackendFactory'
 
@@ -211,6 +222,8 @@ const backend = BackendFactory.createBackend()
 
 export default {
   name: 'AgentMonitor',
+  mixins: [ChatModule],
+  components: { Chat },
   props: {
     html: {
       type: String,
@@ -361,10 +374,6 @@ export default {
       
       return this.detectJsonContent(output)
     },
-    
-    isSlideOutput(crewType, output) {
-      return crewType === 'slide'
-    },
 
     cleanString(str) {
       return str.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\\t/g, '  ').replace(/\\\\/g, '\\')
@@ -389,7 +398,7 @@ export default {
              : 'JSON 객체'
       }
       
-      return this.isSlideOutput(crewType, output) ? '프레젠테이션' : 'Markdown 문서'
+      return 'Markdown 문서'
     },
 
     formatJsonOutput(output) {
@@ -750,6 +759,11 @@ export default {
       }
       return task.name;
     },
+    getOutputMode(crewType, output) {
+      if (crewType === 'slide') return 'slide';
+      if (this.isJsonOutput(crewType, output)) return 'json';
+      return 'markdown';
+    },
   },
   async created() {
       try {
@@ -1054,7 +1068,7 @@ export default {
   left: 0;
   right: 0;
   height: 40px;
-  background: linear-gradient(transparent, #1e1e1e);
+  background: linear-gradient(transparent, #f8fafb);
   pointer-events: none;
 }
 
@@ -1579,11 +1593,11 @@ export default {
 .chat-message { display: flex; justify-content: flex-end; margin: 16px 0; }
 .bubble { background: #e5e5ea; border-radius: 12px; padding: 8px 12px; max-width: 70%; }
 .chat-input-wrapper {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
   padding-top: 0;
-  width: 100%;
   margin-top: 16px;
 }
 .chat-textarea {
@@ -1623,5 +1637,15 @@ export default {
   margin-bottom: 12px;
   font-size: 14px;
   color: #606770;
+}
+
+/* 채팅 영역 전체 너비 고정 */
+.chat-input-wrapper {
+  width: 100%;
+  display: flex;
+}
+/* Chat.vue 루트 컨테이너도 너비 100% 적용 */
+.chat-input-wrapper ::v-deep .chat-info-view-wrapper {
+  width: 100% !important;
 }
 </style>

@@ -297,7 +297,6 @@ CREATE POLICY agents_delete_policy ON agents FOR DELETE TO authenticated USING (
 
 --events table
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS id text;
-ALTER TABLE public.events ADD COLUMN IF NOT EXISTS run_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS job_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS todo_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS proc_inst_id text;
