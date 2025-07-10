@@ -5,7 +5,7 @@ language sql stable
 as $$
     select 
         nullif(
-            ((current_setting('request.jwt.claims')::jsonb ->>  'app_metadata')::jsonb ->> 'tenant_id'),
+            ((current_setting('request.jwt.claims', true)::jsonb ->>  'app_metadata')::jsonb ->> 'tenant_id'),
             ''
         )::text
 $$;
@@ -15,6 +15,7 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS id text;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS owner uuid DEFAULT auth.uid();
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS mcp jsonb;
 
 -- user_devices table
 ALTER TABLE public.user_devices ADD COLUMN IF NOT EXISTS user_email text;
@@ -276,11 +277,44 @@ DROP FUNCTION IF EXISTS decrypt_credentials(TEXT);
 DROP FUNCTION IF EXISTS encrypt_credentials_trigger();
 
 
-alter publication supabase_realtime add table chats;
-alter publication supabase_realtime add table notifications;
-alter publication supabase_realtime add table todolist;
-alter publication supabase_realtime add table bpm_proc_inst;
-alter publication supabase_realtime add table proc_def;
+-- Add tables to supabase_realtime publication if not already added
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'chats'
+    ) THEN
+        alter publication supabase_realtime add table chats;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'notifications'
+    ) THEN
+        alter publication supabase_realtime add table notifications;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'todolist'
+    ) THEN
+        alter publication supabase_realtime add table todolist;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'bpm_proc_inst'
+    ) THEN
+        alter publication supabase_realtime add table bpm_proc_inst;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'proc_def'
+    ) THEN
+        alter publication supabase_realtime add table proc_def;
+    END IF;
+END $$;
 
 DROP TABLE IF EXISTS public.agents;
 

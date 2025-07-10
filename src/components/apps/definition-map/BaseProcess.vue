@@ -25,12 +25,14 @@ export default {
         if (role == 'superAdmin') {
             this.editable = true;
         } else {
-            const uid = localStorage.getItem('uid');
-            const permission = await backend.getUserPermissions({ proc_def_id: this.process.id, user_id: uid });
-            if (permission) {
-                this.editable = permission.writable;
-            } else {
-                this.editable = false;
+            if(this.process) {
+                const uid = localStorage.getItem('uid');
+                const permission = await backend.getUserPermissions({ proc_def_id: this.process.id, user_id: uid });
+                if (permission) {
+                    this.editable = permission.writable;
+                } else {
+                    this.editable = false;
+                }
             }
         }
     },

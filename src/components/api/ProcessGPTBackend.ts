@@ -3106,6 +3106,27 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async getMCPByTenant() {
+        try {
+            const tenantId = window.$tenantName;
+            const mcp = await storage.getString('tenants', { match: { id: tenantId }, column: 'mcp' });
+            return mcp;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
+    async setMCPByTenant(mcp: any) {
+        try {
+            const tenantId = window.$tenantName;
+            await storage.putObject('tenants', { id: tenantId, mcp: mcp });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
     
 
 
