@@ -68,13 +68,14 @@
             <v-card v-if="editingKey && !isAddMode" flat>
                 <v-card-item>
                     <h5 class="text-h5 mb-3">{{ formatServerName(editingKey) }}</h5>
-                    <v-textarea
-                        v-model="mcpJsonText"
-                        variant="outlined"
-                        rows="12"
-                        auto-grow
-                        class="font-family-monospace"
-                    ></v-textarea>
+                    <div style="height: 40vh;">
+                        <vue-monaco-editor
+                            v-model:value="mcpJsonText"
+                            language="json"
+                            :options="MONACO_EDITOR_OPTIONS"
+                            @mount="handleMount"
+                        />
+                    </div>
 
                     <div class="d-flex justify-space-between pb-2">
                         <v-btn
@@ -110,13 +111,14 @@
             <v-card v-else-if="isAddMode && !editingKey" flat>
                 <v-card-item>
                     <h5 class="text-h5 mb-3">New MCP</h5>
-                    <v-textarea
-                        v-model="newJsonText"
-                        variant="outlined"
-                        rows="12"
-                        auto-grow
-                        class="font-family-monospace"
-                    ></v-textarea>
+                    <div style="height: 40vh;">
+                        <vue-monaco-editor
+                            v-model:value="newJsonText"
+                            language="json"
+                            :options="MONACO_EDITOR_OPTIONS"
+                            @mount="handleMount"
+                        />
+                    </div>
 
                     <div class="d-flex justify-end pb-2">
                         <v-btn
@@ -165,22 +167,22 @@
             </v-toolbar>
             
             <v-card-text class="pa-4">
-                <v-textarea
-                    v-if="editingKey"
-                    v-model="mcpJsonText"
-                    variant="outlined"
-                    rows="15"
-                    auto-grow
-                    class="font-family-monospace"
-                ></v-textarea>
-                <v-textarea
-                    v-else
-                    v-model="newJsonText"
-                    variant="outlined"
-                    rows="15"
-                    auto-grow
-                    class="font-family-monospace"
-                ></v-textarea>
+                <div style="height: 40vh;">
+                    <vue-monaco-editor
+                        v-if="editingKey"
+                        v-model:value="mcpJsonText"
+                        language="json"
+                        :options="MONACO_EDITOR_OPTIONS"
+                        @mount="handleMount"
+                    />
+                    <vue-monaco-editor
+                        v-else
+                        v-model:value="newJsonText"
+                        language="json"
+                        :options="MONACO_EDITOR_OPTIONS"
+                        @mount="handleMount"
+                    />
+                </div>
             </v-card-text>
         </v-card>
     </v-dialog>
@@ -200,6 +202,11 @@ export default {
         mcpServers: {},
         mcpJsonText: '',
         editDialog: false,
+        MONACO_EDITOR_OPTIONS: {
+            automaticLayout: true,
+            formatOnType: true,
+            formatOnPaste: true
+        }
     }),
     async mounted() {
         await this.loadData();
@@ -241,9 +248,11 @@ export default {
         addNewMCP() {
             this.editingKey = null;
             this.mcpJsonText = '';
-            this.newJsonText = '';
             this.selectedToolToAdd = null;
             this.isAddMode = true;
+
+            const newJson = { mcpServers: {} }
+            this.newJsonText = JSON.stringify(newJson);
             
             if (window.innerWidth < 1024) {
                 this.editDialog = true;

@@ -759,7 +759,7 @@ export default {
                     if (me.lock) {
                         // 잠금 > 수정가능 하도록
                         if (me.processDefinition && me.useLock) {
-                            await me.storage.putObject('lock', {
+                            await backend.setLock({
                                 id: me.processDefinition.processDefinitionId,
                                 user_id: me.userInfo.name
                             });

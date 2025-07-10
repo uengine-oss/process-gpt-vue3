@@ -44,7 +44,11 @@ export default {
     },
     computed: {
         id() {
-            return this.$route.params.instId.replace(/_DOT_/g, '.');
+            if (this.$route.params.instId) {
+                return this.$route.params.instId.replace(/_DOT_/g, '.');
+            } else {
+                return null;
+            }
         },        
     },
     watch: {
