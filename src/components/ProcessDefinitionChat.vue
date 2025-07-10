@@ -46,6 +46,7 @@
                 <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
                     {{ projectName }}
                 </h5>
+                <!-- 프로세스 정의 내부에 있는 ProcessDefinition.vue 컴포넌트 -->
                 <process-definition
                     class="process-definition-resize"
                     :bpmn="bpmn"
@@ -183,7 +184,7 @@
                 </Chat>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="executeDialog" max-width="80%"
+        <v-dialog v-model="executeDialog" max-width="80%" persistent
             :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
              :fullscreen="isMobile"
         >

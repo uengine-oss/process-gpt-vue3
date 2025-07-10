@@ -3,12 +3,12 @@
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
                 <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
-                    <v-row v-if="isViewMode"
+                    <v-row v-if="isViewMode && isAdmin && !isMobile"
                         class="align-center"
                         style="position: absolute;
                         left: 24px;
-                        top:24px;
-                        font-size:11px;
+                        top: 24px;
+                        font-size: 11px;
                         z-index: 1;
                         background-color: white; opacity: 0.7;"
                     >
@@ -381,6 +381,9 @@ export default {
             return {
                 height: this.isAdmin ? '100%' : 'calc(100% - 50px)'
             };
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
         },
     },
     watch: {

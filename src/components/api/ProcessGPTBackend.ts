@@ -1593,6 +1593,15 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async restoreInstance(instId: string) {
+        try {
+            await storage.putObject('bpm_proc_inst', { proc_inst_id: instId, is_deleted: false, deleted_at: null });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async bindRole(roles: any, defId?: string) {
         try {
             let result: any = null;
@@ -1622,37 +1631,28 @@ class ProcessGPTBackend implements Backend {
         }
     }
     
-    async watchNotifications(onNotification?: (notification: any) => void) {
+    async watchChats(callback: (payload: any) => void) {
         try {
-            await storage.watchNotifications(`notifications`, (payload) => {
-                if (payload && payload.new && payload.eventType === "INSERT") { // || payload.eventType === "UPDATE"
-                    const notification = payload.new;
-                    if (onNotification) {
-                        onNotification(notification);
-                    }
-                }
+            return await storage._watch({
+                channel: 'chats',
+                table: 'chats',
+            },(payload) => {
+                callback(payload);  
             });
-            
-            return true;
         } catch (error) {
-            console.error('알림 감시 설정 실패:', error);
-            throw error;
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 
-    async getNotifications(callback: (data: any) => void) {
+    async watchNotifications(callback: (payload: any) => void) {
         try {
-            const uid = localStorage.getItem('uid');
-            const channelName = `notifications_${uid}_${Date.now()}`;
-            const subscription = await storage.watch('notifications', channelName, (data: any) => {
-                if(data && data.new) {
-                    callback(data);
-                }
-            }, {
-                filter: `user_id=eq.${uid} AND is_checked=false`
+            return await storage._watch({
+                channel: 'notifications',
+                table: 'notifications',
+            },(payload) => {
+                callback(payload);  
             });
-
-            return subscription;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3057,7 +3057,9 @@ class ProcessGPTBackend implements Backend {
             startDate: item.start_date,
             endDate: item.end_date,
             dueDate: item.due_date,
-            updatedAt: item.updated_at
+            updatedAt: item.updated_at,
+            is_deleted: item.is_deleted,
+            deleted_at: item.deleted_at
         }
     }
 
@@ -3161,9 +3163,6 @@ class ProcessGPTBackend implements Backend {
         }
     }
       
-      
-
-
     async getSchedule(defId: string, eventId: string) {
         try {
             const tenantId = window.$tenantName;
@@ -3186,8 +3185,6 @@ class ProcessGPTBackend implements Backend {
         }
     }
       
-
-
     async deleteSchedule(job: any) {
         try {
             const jobName = job.jobname;
@@ -3199,6 +3196,67 @@ class ProcessGPTBackend implements Backend {
             console.log(`✅ pg_cron 잡 ${jobName} 삭제 완료`);
         } catch (e) {
             throw new Error('deleteSchedule failed: ' + (e instanceof Error ? e.message : ''));
+        }
+    }
+
+    async getData(path: string, options: any) {
+        try {
+            return await storage.getObject(path, options);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getMessages(chatRoomId: string) {
+        try {
+            let messages = await storage.list('chats', {
+                match: {
+                    id: chatRoomId
+                }
+            });
+            return messages;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getChatRoomList(path: string) {
+        try {
+            return await storage.list(path);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async putObject(path: string, obj: any, options: any) {
+        try {
+            return await storage.putObject(path, obj, options);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async pushObject(path: string, obj: any, options: any) {
+        try {
+            return await storage.pushObject(path, obj, options);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    // async setObject(path: string, obj: any, options: any) {
+    //     try {
+    //         return await storage.setObject(`db://${path}`, obj, options);
+    //     } catch (error) {
+    //         throw new Error(error.message);
+    //     }
+    // }
+
+    async delete(path: string, options: any) {
+        try {
+            return await storage.delete(path, options);
+        } catch (error) {
+            throw new Error(error.message);
         }
     }
       

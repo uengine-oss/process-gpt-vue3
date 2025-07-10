@@ -67,7 +67,9 @@ export default {
                     to: `/instancelist/${route}`,
                     BgColor: 'primary',
                     updatedAt: inst.updatedAt,
-                    isNew: inst.status === 'NEW'
+                    isNew: inst.status === 'NEW',
+                    isDeleted: inst.is_deleted,
+                    deletedAt: inst.deleted_at
                 };
 
                 if (index !== -1) {
@@ -112,9 +114,22 @@ export default {
                     to: `/instancelist/${route}`,
                     BgColor:'primary',
                     updatedAt: item.updatedAt,
-                    isNew: item.status == 'NEW'
+                    isNew: item.status == 'NEW',
+                    isDeleted: item.is_deleted,
+                    deletedAt: item.deleted_at
                 };
                 return item;
+            });
+            // isDeleted 항목을 마지막으로 정렬하고, 삭제된 항목들은 삭제일자 기준 내림차순 정렬
+            this.instanceList.sort((a, b) => {
+                if (a.isDeleted === b.isDeleted) {
+                    if (a.isDeleted) {
+                        // 둘 다 삭제된 경우 삭제일자 기준 내림차순
+                        return new Date(b.deletedAt) - new Date(a.deletedAt);
+                    }
+                    return 0;
+                }
+                return a.isDeleted ? 1 : -1;
             });
             this.$emit('update:instanceList', this.instanceList);
         },

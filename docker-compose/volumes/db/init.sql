@@ -1102,3 +1102,117 @@ grant execute on function public.register_tenant_cleanup() to authenticated;
 
 -- 테넌트 정리 cron job 등록 실행 (한 번 실행하면 매일 자동 실행)
 SELECT public.register_tenant_cleanup();
+
+-- ===============================================
+-- bpm_proc_inst 자동 삭제 기능 (deleted_at 기준 7일 후)
+-- ===============================================
+
+-- bpm_proc_inst 삭제 시 관련 데이터를 삭제하는 트리거 함수
+create or replace function public.cleanup_bpm_proc_inst_related_data()
+returns trigger as $$
+begin
+    -- proc_inst_id와 관련된 todolist 삭제
+    delete from public.todolist
+    where proc_inst_id = old.proc_inst_id;
+    
+    -- proc_inst_id와 관련된 chats 삭제 (id 컬럼이 proc_inst_id와 매칭)
+    delete from public.chats
+    where id = old.proc_inst_id;
+    
+    -- proc_inst_id와 관련된 chat_rooms 삭제 (id 컬럼이 proc_inst_id와 매칭)
+    delete from public.chat_rooms
+    where id = old.proc_inst_id;
+    
+    return old;
+end;
+$$ language plpgsql;
+
+-- bpm_proc_inst 삭제 시 관련 데이터를 삭제하는 트리거 생성
+create trigger cleanup_bpm_proc_inst_related_data_trigger
+    before delete on public.bpm_proc_inst
+    for each row
+    execute function public.cleanup_bpm_proc_inst_related_data();
+
+-- bpm_proc_inst 정리 함수 (기존 start_process_scheduled 패턴과 동일)
+create or replace function public.cleanup_deleted_bpm_proc_inst_job(
+  p_job_name text,
+  p_input jsonb
+)
+returns void
+language plpgsql
+as $$
+declare
+  deleted_count int;
+  response text;
+  status_code int; 
+begin
+  -- deleted_at이 일주일(7일) 지난 bpm_proc_inst들을 실제로 삭제
+  delete from public.bpm_proc_inst
+  where deleted_at is not null
+    and deleted_at < now() - interval '7 days';
+  
+  get diagnostics deleted_count = row_count;
+  
+  response := format('Successfully deleted %s expired bpm_proc_inst records', deleted_count);
+  status_code := 200;
+
+  insert into public.cron_job_run_log (
+    job_name, status, http_status, response_body
+  )
+  values (
+    p_job_name,
+    'SUCCESS',
+    status_code,
+    jsonb_build_object(
+      'deleted_count', deleted_count,
+      'message', response
+    )
+  );
+
+  raise notice '✅ BPM Process Instance cleanup completed: % records deleted', deleted_count;
+
+exception
+  when others then
+    insert into public.cron_job_run_log (
+      job_name, status, http_status, error_message
+    )
+    values (
+      p_job_name,
+      'ERROR',
+      500,
+      SQLERRM
+    );
+    raise notice '❌ BPM Process Instance cleanup failed: %', SQLERRM;
+    raise;
+end;
+$$;
+
+grant execute on function public.cleanup_deleted_bpm_proc_inst_job(text, jsonb) to authenticated;
+
+-- bpm_proc_inst 정리 cron job 등록 함수
+create or replace function public.register_bpm_proc_inst_cleanup()
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  -- 기존 job이 있다면 삭제
+  perform cron.unschedule('bpm_proc_inst_cleanup_daily') where exists (
+    select 1 from cron.job where jobname = 'bpm_proc_inst_cleanup_daily'
+  );
+
+  -- 새로 등록 (매일 새벽 3시에 실행 - 한국시간 기준, UTC로는 18시)
+  perform cron.schedule(
+    'bpm_proc_inst_cleanup_daily',
+    '0 18 * * *',
+    'select public.cleanup_deleted_bpm_proc_inst_job(''bpm_proc_inst_cleanup_daily'', ''{}''::jsonb);'
+  );
+  
+  raise notice '✅ BPM Process Instance cleanup job registered successfully (runs daily at 3:00 AM KST / 18:00 UTC)';
+end;
+$$;
+
+grant execute on function public.register_bpm_proc_inst_cleanup() to authenticated;
+
+-- bpm_proc_inst 정리 cron job 등록 실행 (한 번 실행하면 매일 자동 실행)
+SELECT public.register_bpm_proc_inst_cleanup();

@@ -49,14 +49,6 @@
                 <div v-if="onLoad && bpmn" class="d-flex align-center">
                     <div class="sub-process-start-btn">
                         <template v-if="!JMS && !Pal">
-                            <v-btn @click="executeProcess('execute')"
-                                class="mr-2"
-                                color="primary"
-                                rounded
-                                density="comfortable"
-                            >
-                                {{ $t('subProcessDetail.execute') }}
-                            </v-btn>
                             <v-btn @click="executeProcess('simulate')"
                                 class="mr-2"
                                 rounded
@@ -66,7 +58,7 @@
                                 {{ $t('subProcessDetail.simulation') }}
                             </v-btn>
                             <v-btn
-                                v-if="isAdmin"
+                                v-if="isAdmin && !isMobile"
                                 @click="toggleEditMode()"
                                 class="mr-2"
                                 rounded
@@ -74,6 +66,14 @@
                                 style="background-color: #808080; color: white;"
                             >
                                 {{ isViewMode ? $t('subProcessDetail.edit') : $t('subProcessDetail.save') }}
+                            </v-btn>
+                            <v-btn @click="executeProcess('execute')"
+                                class="mr-2"
+                                color="primary"
+                                rounded
+                                density="comfortable"
+                            >
+                                {{ $t('subProcessDetail.execute') }}
                             </v-btn>
                         </template>
                     </div>
@@ -154,6 +154,7 @@
             <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinitionData"
                 :isViewMode="isViewMode"
+                :isAdmin="isAdmin"
                 :isPreviewPDFDialog="isPreviewPDFDialog"
                 @closePDFDialog="isPreviewPDFDialog = false"
                 v-on:openSubProcess="ele => openSubProcess(ele)"
@@ -167,7 +168,7 @@
             </div>
             <div v-else></div>
         </v-card-text>
-        <v-dialog v-model="executeDialog"
+        <v-dialog v-model="executeDialog" persistent
             :fullscreen="isMobile"
         >
             <process-gpt-execute v-if="mode === 'ProcessGPT'" :processDefinition="processDefinitionData" :definitionId="processDefinition.id" :isSimulate="isSimulate"

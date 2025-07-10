@@ -79,9 +79,6 @@ export default {
             return window.innerWidth <= 768;
         },
         filteredTodolist() {
-            console.log(this.deletedInstances)
-            console.log(this.todolist)
-            
             // 삭제된 인스턴스들의 proc_inst_id 배열 생성
             const deletedInstanceIds = this.deletedInstances ? this.deletedInstances.map(instance => instance.proc_inst_id) : [];
             

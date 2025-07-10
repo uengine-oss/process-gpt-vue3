@@ -23,7 +23,7 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    async watchNotifications(onNotification?: (notification: any) => void) {
+    async watchNotifications(callback: (notification: any) => void) {
         return null;
     }
 

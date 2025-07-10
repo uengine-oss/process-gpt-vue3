@@ -1,6 +1,6 @@
 <template>
     <!-- <div> -->
-    <div style="height: 100%; position: relative;" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }">
+    <div style="height: 100%; position: relative;" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }" v-hammer:pan="onPan" v-hammer:pinch="onPinch">
         <div :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
@@ -96,6 +96,8 @@ export default {
             isViewMode: true,
             resizeObserver: null,
             resizeTimeout: null,
+            panStart: { x: 0, y: 0 },
+            pinchStartZoom: 1
         };
     },
     computed: {
@@ -533,21 +535,78 @@ export default {
         setTaskStatus(val) {
             let self = this;
             var canvas = self.bpmnViewer.get('canvas');
+            var elementRegistry = self.bpmnViewer.get('elementRegistry');
+            
             if(val) {
                 try {
+                    // 현재 러닝 상태인 태스크들을 먼저 파악
+                    const currentRunningTasks = [];
+                    Object.keys(val).forEach((task) => {
+                        if(val[task] === 'Running') {
+                            currentRunningTasks.push(task);
+                        }
+                    });
+
+                    // 모든 SequenceFlow 요소에서 기존 running-task-line 클래스 제거
+                    const allElements = elementRegistry.getAll();
+                    allElements.forEach((element) => {
+                        if (element.type === 'bpmn:SequenceFlow') {
+                            try {
+                                const flowGfx = canvas.getGraphics(element);
+                                if (flowGfx && flowGfx.classList.contains('running-task-line')) {
+                                    flowGfx.classList.remove('running-task-line');
+                                }
+                            } catch (e) {
+                                // 개별 flow 처리 실패 시 계속 진행
+                            }
+                        }
+                    });
+
+                    // 태스크 상태별 처리
                     Object.keys(val).forEach((task) => {
                         let taskStatus = val[task];
-                        if(taskStatus == 'Completed') {
-                            canvas.addMarker(task, 'completed');
-                        } else if(taskStatus == 'Running') {
-                            canvas.addMarker(task, 'running');
-                        } else if(taskStatus == 'Stopped') {
-                            canvas.addMarker(task, 'stopped');
-                        } else if(taskStatus == 'Cancelled') {
-                        canvas.addMarker(task, 'cancelled');
+                        
+                        try {
+                            if(taskStatus == 'Completed') {
+                                canvas.addMarker(task, 'completed');
+                            } else if(taskStatus == 'Running') {
+                                canvas.addMarker(task, 'running');
+                                
+                                // 러닝 상태인 태스크에서 나가는 연결선에 애니메이션 적용
+                                const taskElement = elementRegistry.get(task);
+                                if (taskElement && taskElement.businessObject.outgoing) {
+                                    taskElement.businessObject.outgoing.forEach((flow) => {
+                                        try {
+                                            const flowElement = elementRegistry.get(flow.id);
+                                            if (flowElement) {
+                                                const flowGfx = canvas.getGraphics(flowElement);
+                                                if (flowGfx) {
+                                                    let connectionElement = flowGfx;
+                                                    if (!flowGfx.classList.contains('djs-connection')) {
+                                                        connectionElement = flowGfx.closest('.djs-connection') || flowGfx;
+                                                    }
+                                                    
+                                                    if (connectionElement) {
+                                                        connectionElement.classList.add('running-task-line');
+                                                    }
+                                                }
+                                            }
+                                        } catch (e) {
+                                            // 개별 flow 처리 실패 시 계속 진행
+                                        }
+                                    });
+                                }
+                            } else if(taskStatus == 'Stopped') {
+                                canvas.addMarker(task, 'stopped');
+                            } else if(taskStatus == 'Cancelled') {
+                                canvas.addMarker(task, 'cancelled');
+                            }
+                        } catch (e) {
+                            console.warn(`태스크 ${task} 상태 처리 중 오류:`, e);
                         }
                     });
                 } catch (error) {
+                    console.error('setTaskStatus error:', error);
                 }
             }
         },
@@ -646,6 +705,50 @@ export default {
             } else {
                 this.initDefaultOrientation('vertical');
             }
+        },
+        onPan(ev) {
+            const canvas = this.bpmnViewer.get('canvas');
+            
+            if (ev.type === 'panstart') {
+            const viewbox = canvas.viewbox();
+            this.panStart = { x: viewbox.x, y: viewbox.y };
+            }
+
+            if (ev.type === 'panmove') {
+            const viewbox = canvas.viewbox();
+            const scale = viewbox.scale || 1;
+
+            canvas.viewbox({
+                x: this.panStart.x - ev.deltaX / scale,
+                y: this.panStart.y - ev.deltaY / scale,
+                width: viewbox.width,
+                height: viewbox.height
+            });
+            }
+
+            if (ev.type === 'panend') {
+            }
+            
+            ev.srcEvent.stopPropagation();
+            ev.srcEvent.preventDefault();
+        },
+        onPinch(ev) {
+            const canvas = this.bpmnViewer.get('canvas');
+
+            if (ev.type === 'pinchstart') {
+            this.pinchStartZoom = canvas.zoom();
+            }
+
+            if (ev.type === 'pinchmove') {
+            const newZoom = this.pinchStartZoom * ev.scale;
+            canvas.zoom(newZoom);
+            }
+
+            if (ev.type === 'pinchend') {
+            }
+            
+            ev.srcEvent.stopPropagation();
+            ev.srcEvent.preventDefault();
         }
     }
 };

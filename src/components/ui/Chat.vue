@@ -1759,8 +1759,9 @@ export default {
             const month = date.getMonth() + 1;
             const day = date.getDate();
             
-            const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-            const dayName = dayNames[date.getDay()];
+            // 요일명을 국제화 키로 가져오기
+            const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const dayName = this.$t(`chats.${dayKeys[date.getDay()]}`);
             
             const today = new Date();
             const yesterday = new Date(today);
@@ -1768,21 +1769,21 @@ export default {
             
             // 오늘인지 확인
             if (date.toDateString() === today.toDateString()) {
-                return '오늘';
+                return this.$t('chats.today');
             }
             
             // 어제인지 확인
             if (date.toDateString() === yesterday.toDateString()) {
-                return '어제';
+                return this.$t('chats.yesterday');
             }
             
             // 올해인지 확인
             if (date.getFullYear() === today.getFullYear()) {
-                return `${month}월 ${day}일 ${dayName}`;
+                return this.$t('chats.thisYear', { month: month, day: day, dayName: dayName });
             }
             
             // 다른 해
-            return `${year}년 ${month}월 ${day}일 ${dayName}`;
+            return this.$t('chats.otherYear', { year: year, month: month, day: day, dayName: dayName });
         },
         async addRole(message, index) {
             this.$emit('addRole', message.newRoleInfo);

@@ -63,12 +63,12 @@
             </v-window>
         </v-card>
 
-        <v-dialog v-model="isPDMOpen" style="width: 100%; height: 100%;">
+        <v-dialog v-model="isPDMOpen" style="width: 100%; height: 100%;" persistent>
             <div v-if="!isShowProcess">
                 <ProcessDefinitionMap :isViewMode="true" :isExecutionByProject="true" @clickPlayBtn="clickPlayBtn" @closePDM="closePDM()"/>
             </div>
             <div v-else>
-                <process-gpt-execute v-if="mode === 'ProcessGPT'" :isExecutionByProject="true" :processDefinition="processDefinitionData" :definitionId="processDefinition.id" @close="executeDialog = false" :isSimulate="'false'" @createInstance="createInstance"></process-gpt-execute>
+                <process-gpt-execute v-if="mode === 'ProcessGPT'" :isExecutionByProject="true" :processDefinition="processDefinitionData" :definitionId="processDefinition.id" @close="closePDM()" :isSimulate="'false'" @createInstance="createInstance"></process-gpt-execute>
             </div>
         </v-dialog>
     </div>
