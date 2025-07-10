@@ -21,7 +21,11 @@
                                             class="text-medium-emphasis"
                                             @click="openSaveDialog"
                                         >
-                                            <Icons :icon="'save'" />
+                                            <Icons :icon="'save'"
+                                                :class="{
+                                                    'icon-heartbit': isChanged
+                                                }"
+                                            />
                                         </v-btn>
                                     </template>
                                     <span>{{ $t('uiDefinition.save') }}</span>
@@ -226,6 +230,8 @@ export default {
 
         isOpenDeleteDialog: false,
         isDefaultFormMode: false,
+
+        isChanged: false
     }),
     async created() {
         const reloadOnConnectionFailure = async () => {
@@ -347,6 +353,7 @@ export default {
                         id: id,
                         html: DynamicFormHTML
                     });
+                    me.isChanged = false;
                 },
                 successMsg: this.$t('successMsg.save')
             });
@@ -715,7 +722,7 @@ export default {
                 messageWriting.content = messageWriting.content.replace(messageWriting.jsonContent, '');
 
                 // messageWriting.jsonContent에 내용이 있어도, messageWriting.content에 내용이 없으면 메시지가 표시되지 않기때문에 추가함
-                if(messageWriting.content.length == 0) messageWriting.content = "요청하신 폼 수정을 완료했습니다."
+                if(messageWriting.content.length == 0) messageWriting.content = "요청하신 폼 수정이 완료되었습니다."
                 
 
                 // 생성된 HTML을 보여주기 위해서
@@ -728,6 +735,8 @@ export default {
                     } else console.error('알 수 없는 JSON 결과: ', JSON.stringify(messageWriting.jsonContent));
                     this.isAIUpdated = true;
                 }
+
+                this.isChanged = true;
             } catch (error) {
                 console.log("[*] 폼 생성 관련 AI 응답 처리 과정에서 오류 발생!", {response, error});
             }
@@ -1149,5 +1158,25 @@ export default {
 <style scoped>
 .full-width {
     width: 100%;
+}
+.icon-heartbit {
+    color: rgb(var(--v-theme-primary)) !important;
+    animation: icon-pulse 1.5s ease-in-out infinite;
+    transform-origin: center;
+}
+
+@keyframes icon-pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 </style>

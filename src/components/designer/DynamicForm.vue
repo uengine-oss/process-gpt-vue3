@@ -78,6 +78,9 @@ export default {
 
     formValues: {
       handler() {
+        if (this.formValues && typeof this.formValues === 'object' && this.formValues.isTrusted !== undefined && Object.keys(this.formValues).length <= 3) {
+          return;
+        }
         if(JSON.stringify(this.formValues) === JSON.stringify(this.modelValue)) return
 
         this.$emit('update:modelValue', this.formValues)

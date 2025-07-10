@@ -514,7 +514,7 @@ export default {
             let option = {
                 key: "uid"
             }
-            const res = await this.storage.getObject(`db://calendar/${this.userInfo.uid}`, option);
+            const res = await this.getData(`calendar/${this.userInfo.uid}`, option);
             this.calendarData = res && res.data ? res.data : {};
             this.generator.setCalendarData(this.calendarData);
         },
@@ -537,51 +537,50 @@ export default {
         },
         async getChatRoomList(){
             var me = this
-            await me.storage.list(`chat_rooms`).then(function (chatRooms) {
-                if (chatRooms) {
-                    me.myChatRoomIds = []
-                    chatRooms.forEach(function (chatRoom) {
-                        let existUserInfo = chatRoom.participants.find(x => x.email === me.userInfo.email)
-                        if(existUserInfo){
-                            me.chatRoomList.push(chatRoom)
-                            me.myChatRoomIds.push(chatRoom.id)
-                            if(existUserInfo.isExistUnReadMessage){
-                                window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                                    detail: { type: 'chat', value: true, id: chatRoom.id }
-                                }));
-                            }
+            let chatRooms = await me.backend.getChatRoomList(`chat_rooms`)
+            if (chatRooms) {
+                me.myChatRoomIds = []
+                chatRooms.forEach(function (chatRoom) {
+                    let existUserInfo = chatRoom.participants.find(x => x.email === me.userInfo.email)
+                    if(existUserInfo){
+                        me.chatRoomList.push(chatRoom)
+                        me.myChatRoomIds.push(chatRoom.id)
+                        if(existUserInfo.isExistUnReadMessage){
+                            window.dispatchEvent(new CustomEvent('update-notification-badge', {
+                                detail: { type: 'chat', value: true, id: chatRoom.id }
+                            }));
                         }
-                    });
-                    if(me.chatRoomList.length > 0){
-                        me.currentChatRoom = me.filteredChatRoomList[0];
-                        me.chatRoomSelected(me.currentChatRoom)
-                        me.setWatchChatList(me.myChatRoomIds);
-                        me.setReadMessage(0);
-                    } else {
-                        let systemChatRoom = {
-                            "name": "Process GPT",
-                            "participants": [
-                                {
-                                    email: "system@uengine.org",
-                                    id: "system_id",
-                                    username: "System",
-                                    is_admin: true,
-                                    notifications: null
-                                }
-                            ]
-                        };
-                        me.createChatRoom(systemChatRoom);
                     }
+                });
+                if(me.chatRoomList.length > 0){
+                    me.currentChatRoom = me.filteredChatRoomList[0];
+                    me.chatRoomSelected(me.currentChatRoom)
+                    me.setWatchChatList(me.myChatRoomIds);
+                    me.setReadMessage(0);
+                } else {
+                    let systemChatRoom = {
+                        "name": "Process GPT",
+                        "participants": [
+                            {
+                                email: "system@uengine.org",
+                                id: "system_id",
+                                username: "System",
+                                is_admin: true,
+                                notifications: null
+                            }
+                        ]
+                    };
+                    me.createChatRoom(systemChatRoom);
                 }
-            });
+            }
         },
         deleteChatRoom(chatRoomId){
             let index = this.chatRoomList.findIndex(room => room.id === chatRoomId);
             if(index !== -1) {
                 this.chatRoomList.splice(index, 1);
             }
-            this.storage.delete(`chats/${chatRoomId}`, {key: 'id'});
-            this.storage.delete(`chat_rooms/${chatRoomId}`, {key: 'id'});
+            this.backend.delete(`chats/${chatRoomId}`, {key: 'id'});
+            this.backend.delete(`chat_rooms/${chatRoomId}`, {key: 'id'});
 
             if(this.chatRoomList && this.chatRoomList.length > 0){
                 this.chatRoomSelected(this.chatRoomList[0])
@@ -652,7 +651,7 @@ export default {
                 this.ProcessGPTActive = false
                 this.isSystemChat = false
             }
-            this.getChatList(this.currentChatRoom.id);
+            this.getMessages(this.currentChatRoom.id);
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
             
             this.EventBus.emit('chat-room-selected', this.currentChatRoom.id);
@@ -739,7 +738,7 @@ export default {
             }
         },
         deleteSystemMessage(response){
-            this.storage.delete(`chats/${response.uuid}`, {key: 'uuid'});
+            this.backend.delete(`chats/${response.uuid}`, {key: 'uuid'});
         },
         cancelProcess(response){
             let systemMsg = this.$t('chats.requestCancelled', { name: this.name })
@@ -846,7 +845,7 @@ export default {
                             let option = {
                                 key: "uid"
                             }
-                            const res = await me.storage.getObject(`db://calendar/${participant}`, option);
+                            const res = await me.getData(`calendar/${participant}`, option);
                             calendarData = res && res.data ? res.data : {};
                         }
                         if(!calendarData[`${startDate[0]}_${startDate[1]}`]){

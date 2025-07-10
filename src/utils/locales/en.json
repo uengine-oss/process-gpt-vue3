@@ -90,7 +90,18 @@
         "processDefinitionCreated": "Process definition has been created.",
         "processDefinitionModificationStarted": "Process definition modification has started.",
         "userRequestedAction": "{name} requested {action}",
-        "processExecutionFailed": "Failed to start the {title} process. Please try again."
+        "processExecutionFailed": "Failed to start the {title} process. Please try again.",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "thisYear": "{dayName}, {month}/{day}",
+        "otherYear": "{dayName}, {month}/{day}/{year}",
+        "sunday": "Sunday",
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday"
     },
     "AssistantChats": {
         "document": "Enter the task details you want to assign. When you provide information about the task, a preview of the task that the recipient will see is displayed on the left. Review the preview and improve any lacking areas. Once the improvements are complete, use 'Assign Task' to give the task."
@@ -1254,5 +1265,14 @@
     "UserInputGenerator": {
         "inputLabel": "Enter the agent you want to generate",
         "generateButton": "Generate Agent with AI"
+    },
+    "subProcessDetail": {
+        "execute": "Execute",
+        "simulation": "Simulation",
+        "edit": "Edit",
+        "save": "Save",
+        "noProcessModel": "No defined process model.",
+        "editProcess": "Edit Process",
+        "processDefinitionSaved": "Process definition has been saved."
     }
 }

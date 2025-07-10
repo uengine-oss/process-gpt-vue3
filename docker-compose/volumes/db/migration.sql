@@ -5,7 +5,7 @@ language sql stable
 as $$
     select 
         nullif(
-            ((current_setting('request.jwt.claims')::jsonb ->>  'app_metadata')::jsonb ->> 'tenant_id'),
+            ((current_setting('request.jwt.claims', true)::jsonb ->>  'app_metadata')::jsonb ->> 'tenant_id'),
             ''
         )::text
 $$;
@@ -15,6 +15,7 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS id text;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS owner uuid DEFAULT auth.uid();
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS mcp jsonb;
 
 -- user_devices table
 ALTER TABLE public.user_devices ADD COLUMN IF NOT EXISTS user_email text;
@@ -117,6 +118,8 @@ ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS start_date timestamp w
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS end_date timestamp without time zone;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS due_date timestamp without time zone;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
 
 -- todolist table
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS id uuid;
@@ -274,26 +277,46 @@ DROP FUNCTION IF EXISTS decrypt_credentials(TEXT);
 DROP FUNCTION IF EXISTS encrypt_credentials_trigger();
 
 
-alter publication supabase_realtime add table chats;
-alter publication supabase_realtime add table notifications;
-alter publication supabase_realtime add table todolist;
-alter publication supabase_realtime add table bpm_proc_inst;
-alter publication supabase_realtime add table proc_def;
+-- Add tables to supabase_realtime publication if not already added
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'chats'
+    ) THEN
+        alter publication supabase_realtime add table chats;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'notifications'
+    ) THEN
+        alter publication supabase_realtime add table notifications;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'todolist'
+    ) THEN
+        alter publication supabase_realtime add table todolist;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'bpm_proc_inst'
+    ) THEN
+        alter publication supabase_realtime add table bpm_proc_inst;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'proc_def'
+    ) THEN
+        alter publication supabase_realtime add table proc_def;
+    END IF;
+END $$;
 
--- Agents
-ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agents ADD COLUMN IF NOT EXISTS model text;
-
-DROP POLICY IF EXISTS agents_insert_policy ON agents;
-DROP POLICY IF EXISTS agents_select_policy ON agents;
-DROP POLICY IF EXISTS agents_update_policy ON agents;
-DROP POLICY IF EXISTS agents_delete_policy ON agents;
-
-CREATE POLICY agents_insert_policy ON agents FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
-CREATE POLICY agents_select_policy ON agents FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
-CREATE POLICY agents_update_policy ON agents FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
-CREATE POLICY agents_delete_policy ON agents FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
-
+DROP TABLE IF EXISTS public.agents;
 
 --events table
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS id text;

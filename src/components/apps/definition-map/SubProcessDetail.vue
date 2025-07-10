@@ -4,7 +4,9 @@
         style="overflow: auto;"
         class="is-work-height"
     >
-        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center">
+        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center" 
+            :style="isMobile ? 'display: block !important;' : ''"
+        >
             <div class="d-flex">
                 <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer mega-text-ellipsis"
                     @click="goProcess()">
@@ -46,22 +48,34 @@
             <div class="sub-process-detail-btn-box">
                 <div v-if="onLoad && bpmn" class="d-flex align-center">
                     <div class="sub-process-start-btn">
-                        <v-btn v-if="!JMS && !Pal"
-                            @click="executeProcess('simulate')"
-                            rounded
-                            density="comfortable"
-                            style="background-color: #808080; color: white; margin-right: 5px;"
-                        >
-                            시뮬레이션
-                        </v-btn>
-                        <v-btn v-if="!JMS && !Pal"
-                            @click="executeProcess('execute')"
-                            color="primary"
-                            rounded
-                            density="comfortable"
-                        >
-                            실행
-                        </v-btn>
+                        <template v-if="!JMS && !Pal">
+                            <v-btn @click="executeProcess('simulate')"
+                                class="mr-2"
+                                rounded
+                                density="comfortable"
+                                style="background-color: #808080; color: white;"
+                            >
+                                {{ $t('subProcessDetail.simulation') }}
+                            </v-btn>
+                            <v-btn
+                                v-if="isAdmin && !isMobile"
+                                @click="toggleEditMode()"
+                                class="mr-2"
+                                rounded
+                                density="comfortable"
+                                style="background-color: #808080; color: white;"
+                            >
+                                {{ isViewMode ? $t('subProcessDetail.edit') : $t('subProcessDetail.save') }}
+                            </v-btn>
+                            <v-btn @click="executeProcess('execute')"
+                                class="mr-2"
+                                color="primary"
+                                rounded
+                                density="comfortable"
+                            >
+                                {{ $t('subProcessDetail.execute') }}
+                            </v-btn>
+                        </template>
                     </div>
 
                     <v-tooltip v-if="isEditable" location="bottom">
@@ -136,22 +150,25 @@
             </div>
         </div>
 
-        <v-card-text style="width: 100%; height: 94%; padding: 10px;">
+        <v-card-text style="width: 100%; height: calc(100vh - 180px); padding: 10px;">
             <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
-                :processDefinition="processDefinitionData" :isViewMode="isViewMode"
+                :processDefinition="processDefinitionData"
+                :isViewMode="isViewMode"
+                :isAdmin="isAdmin"
                 :isPreviewPDFDialog="isPreviewPDFDialog"
                 @closePDFDialog="isPreviewPDFDialog = false"
-                v-on:openSubProcess="ele => openSubProcess(ele)">
+                v-on:openSubProcess="ele => openSubProcess(ele)"
+            >
             </ProcessDefinition>
             <div v-else-if="onLoad && !bpmn" style="height: 90%; text-align: center">
-                <h6 class="text-h6">정의된 프로세스 모델이 없습니다.</h6>
+                <h6 class="text-h6">{{ $t('subProcessDetail.noProcessModel') }}</h6>
                 <v-btn v-if="enableEdit" color="primary" variant="flat" class="mt-4" @click="editProcessModel">
-                    프로세스 편집
+                    {{ $t('subProcessDetail.editProcess') }}
                 </v-btn>
             </div>
             <div v-else></div>
         </v-card-text>
-        <v-dialog v-model="executeDialog"
+        <v-dialog v-model="executeDialog" persistent
             :fullscreen="isMobile"
         >
             <process-gpt-execute v-if="mode === 'ProcessGPT'" :processDefinition="processDefinitionData" :definitionId="processDefinition.id" :isSimulate="isSimulate"
@@ -161,6 +178,18 @@
                 <dry-run-process :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>
+        
+        <ProcessDefinitionVersionDialog
+            :process="{ 
+                processDefinitionId: processDefinition ? processDefinition.id : '',
+                processDefinitionName: processDefinition ? processDefinition.name : ''
+            }"
+            :loading="loading"
+            :open="versionDialog"
+            :processName="processDefinition ? processDefinition.name : ''"
+            @close="toggleVersionDialog"
+            @save="beforeSaveDefinition"
+        />
     </v-card>
 </template>
 
@@ -169,9 +198,12 @@ import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessExecuteDialog from '@/components/apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
+import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
+import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
 import BaseProcess from './BaseProcess.vue'
 
 import BackendFactory from '@/components/api/BackendFactory';
+import { useBpmnStore } from '@/stores/bpmn';
 
 const backend = BackendFactory.createBackend();
 
@@ -180,12 +212,14 @@ export default {
         ProcessDefinition,
         ProcessExecuteDialog,
         'dry-run-process': DryRunProcess,
-        'process-gpt-execute': ProcessGPTExecute
+        'process-gpt-execute': ProcessGPTExecute,
+        ProcessDefinitionVersionDialog
     },
-    mixins: [BaseProcess],
+    mixins: [BaseProcess, ProcessDefinitionModule],
     props: {
         value: Object,
-        enableEdit: Boolean
+        enableEdit: Boolean,
+        isAdmin: Boolean,
     },
     data: () => ({
         onLoad: false,
@@ -204,7 +238,9 @@ export default {
         isPreviewPDFDialog: false,
         //
         isEditable: false,
-        isSimulate: false
+        isSimulate: false,
+        versionDialog: false,
+        loading: false
     }),
     computed: {
         mode() {
@@ -378,6 +414,57 @@ export default {
                 },
                 successMsg: me.$t('successMsg.processExecutionCompleted')
             })
+        },
+        toggleEditMode() {
+            if (this.isViewMode) {
+                // 보기 모드 > 수정 모드로 전환
+                this.isViewMode = false;
+            } else {
+                // 수정 모드 > 저장 후 보기 모드로 전환
+                this.saveProcessDefinition();
+            }
+        },
+        saveProcessDefinition() {
+            // 버전 다이얼로그 열기
+            this.versionDialog = true;
+        },
+        toggleVersionDialog(open) {
+            this.versionDialog = open;
+        },
+        async beforeSaveDefinition(info) {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    const store = useBpmnStore();
+                    const modeler = store.getModeler;
+                    const xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                    
+                    // processDefinition이 없으면 생성
+                    if (!me.processDefinition) {
+                        me.processDefinition = {
+                            processDefinitionId: info.proc_def_id,
+                            processDefinitionName: info.name
+                        };
+                    }
+                    
+                    // 저장할 정보 구성
+                    info.definition = me.processDefinitionData || me.processDefinition;
+                    
+                    // ProcessDefinitionModule의 saveModel 사용
+                    await me.saveModel(info, xmlObj.xml);
+                    
+                    // 저장 후 상태 변경
+                    me.bpmn = xmlObj.xml;
+                    me.isViewMode = true;
+                    me.defCnt++;
+                    me.versionDialog = false;
+                    
+                    // 이벤트 발행
+                    me.EventBus.emit('definitions-updated');
+                },
+                successMsg: this.$t('subProcessDetail.processDefinitionSaved')
+            });
         },
     },
 }

@@ -72,13 +72,25 @@ export default {
         ],
         dialog: false,
         currentPage: 0,
+        deletedInstances: null
     }),
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
         },
         filteredTodolist() {
-            return this.todolist.filter(column => column.id !== 'TODO');
+            // 삭제된 인스턴스들의 proc_inst_id 배열 생성
+            const deletedInstanceIds = this.deletedInstances ? this.deletedInstances.map(instance => instance.proc_inst_id) : [];
+            
+            return this.todolist
+                .filter(column => column.id !== 'TODO')  // 기존 TODO 컬럼 제외
+                .map(column => ({
+                    ...column,
+                    tasks: column.tasks.filter(task => {
+                        // rootInstId 또는 instId가 삭제된 인스턴스 리스트에 있는지 확인
+                        return !deletedInstanceIds.includes(task.rootInstId) || !deletedInstanceIds.includes(task.instId);
+                    })
+                }));
         }
     },
     mounted() {
@@ -87,10 +99,20 @@ export default {
     async created() {
         await Promise.all([
             this.loadToDo(),
-            this.loadCompletedWorkList()
+            this.loadCompletedWorkList(),
+            this.loadDeletedInstance()
         ]);
     },
     methods: {
+        loadDeletedInstance() {
+            var me = this
+            me.$try({
+                context: me,
+                action: async () => {
+                    this.deletedInstances = await backend.getDeletedInstances()
+                }
+            })
+        },
         handleLoadMore(page) {
             this.loadCompletedWorkList();
         },

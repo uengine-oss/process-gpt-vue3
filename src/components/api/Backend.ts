@@ -82,8 +82,10 @@ export interface Backend {
     getRefForm(taskId: string): Promise<any>;
     saveTask(id: string, name: string, type: string, json: any): Promise<any>;
     getTaskList(): Promise<any>;
-    watchNotifications(onNotification?: (notification: any) => void): Promise<any>;
+    watchNotifications(callback: (notification: any) => void): Promise<any>;
     getMCPTools(): Promise<any>;
+    getMCPByTenant(): Promise<any>;
+    setMCPByTenant(mcp: any): Promise<any>;
     getBSCard(): Promise<any>;
     putBSCard(card: any): Promise<any>;
     fetchAgentData(agentUrl: string): Promise<any>;

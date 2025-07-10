@@ -162,7 +162,6 @@ class ProcessGPTBackend implements Backend {
                     match: {
                         proc_def_id: options.proc_def_id,
                         activity_id: options.activity_id,
-                        tenant_id: window.$tenantName || null
                     }
                 });
                 if(formDef) {
@@ -172,14 +171,13 @@ class ProcessGPTBackend implements Backend {
                     }
                     await storage.putObject('form_def', formDef);
                 } else {
-                    let value = {
+                    await storage.putObject('form_def', {
                         id: defId.replace(/\//g, "#"),
                         html: xml,
                         proc_def_id: defId == 'defaultform' ? 'default' : options.proc_def_id,
                         activity_id: defId == 'defaultform' ? 'default' : options.activity_id,
                         fields_json: fieldsJson
-                    }
-                    await storage.putObject('form_def', value);
+                    });
                 }
                 return
             }
@@ -237,31 +235,12 @@ class ProcessGPTBackend implements Backend {
                 // 폼 정보를 불러오기 위해서
                 if(options.type === "form") {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "#")
-                    const data = await storage.getString(`form_def`, { 
-                        column: 'html', 
-                        match: { 
-                            id: defId,
-                            tenant_id: window.$tenantName || null
-                        } 
-                    });
+                    const data = await storage.getString(`form_def/${defId}`, { key: 'id', column: 'html' });
                     if(!data) {
                         return null;
                     }
                     return data;
-                } else if(options.type === "form_def") {
-                    if (defId.includes('/')) defId = defId.replace(/\//g, "#")
-                    const data = await storage.getObject(`form_def`, { 
-                        match: { 
-                            id: defId,
-                            tenant_id: window.$tenantName || null
-                        } 
-                    });
-                    if(!data) {
-                        return null;
-                    }
-                    return data;
-                }
-                else if(options.type === "bpmn") {
+                } else if(options.type === "bpmn") {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "_")
                     let data = null;
                     // ::TODO: 개정된 프로세스 실행에 대한 작업 완료 후 사용
@@ -570,6 +549,12 @@ class ProcessGPTBackend implements Backend {
                 filter.like = {
                     key: 'user_id',
                     value: `%${options.userId}%`
+                }
+            } else {
+                const email = localStorage.getItem("email");
+                filter.like = {
+                    key: 'user_id',
+                    value: `%${email}%`
                 }
             }
 
@@ -1350,7 +1335,7 @@ class ProcessGPTBackend implements Backend {
             var me = this
             if(!options) options = {}
             if(!status) return []
-            if(status.includes('*')) status = ['NEW', 'RUNNING', 'DONE', 'PENDING', 'IN_PROGRESS']
+            if(status.includes('*')) status = ['NEW', 'RUNNING', 'COMPLETED']
             let email = window.localStorage.getItem("email");
             let filter = { 
                 inArray: {
@@ -1585,13 +1570,32 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getDeletedInstances() {
+        try {
+            return await storage.list('bpm_proc_inst', { match: { is_deleted: true } });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async deleteInstance(instId: string) {
         try {
             await Promise.all([
-                await storage.delete('bpm_proc_inst', { match: { proc_inst_id: instId } }),
-                await storage.delete('todolist', { match: { proc_inst_id: instId } }),
-                await storage.delete('chats', { match: { id: instId } })
+                await storage.putObject('bpm_proc_inst', { proc_inst_id: instId, is_deleted: true, deleted_at: new Date().toISOString() }),
+                // await storage.delete('bpm_proc_inst', { match: { proc_inst_id: instId } }),
+                // await storage.delete('todolist', { match: { proc_inst_id: instId } }),
+                // await storage.delete('chats', { match: { id: instId } })
             ]);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async restoreInstance(instId: string) {
+        try {
+            await storage.putObject('bpm_proc_inst', { proc_inst_id: instId, is_deleted: false, deleted_at: null });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1627,37 +1631,28 @@ class ProcessGPTBackend implements Backend {
         }
     }
     
-    async watchNotifications(onNotification?: (notification: any) => void) {
+    async watchChats(callback: (payload: any) => void) {
         try {
-            await storage.watchNotifications(`notifications`, (payload) => {
-                if (payload && payload.new && payload.eventType === "INSERT") { // || payload.eventType === "UPDATE"
-                    const notification = payload.new;
-                    if (onNotification) {
-                        onNotification(notification);
-                    }
-                }
+            return await storage._watch({
+                channel: 'chats',
+                table: 'chats',
+            },(payload) => {
+                callback(payload);  
             });
-            
-            return true;
         } catch (error) {
-            console.error('알림 감시 설정 실패:', error);
-            throw error;
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 
-    async getNotifications(callback: (data: any) => void) {
+    async watchNotifications(callback: (payload: any) => void) {
         try {
-            const uid = localStorage.getItem('uid');
-            const channelName = `notifications_${uid}_${Date.now()}`;
-            const subscription = await storage.watch('notifications', channelName, (data: any) => {
-                if(data && data.new) {
-                    callback(data);
-                }
-            }, {
-                filter: `user_id=eq.${uid} AND is_checked=false`
+            return await storage._watch({
+                channel: 'notifications',
+                table: 'notifications',
+            },(payload) => {
+                callback(payload);  
             });
-
-            return subscription;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2026,20 +2021,6 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getDeletedTenants() {
-        try {
-            const tenants = await storage.list('tenants', {
-                match: {
-                    is_deleted: true
-                }
-            });
-            return tenants;
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
-
     async getTenants() {
         try {
             const uid: string = localStorage.getItem('uid') || '';
@@ -2138,8 +2119,16 @@ class ProcessGPTBackend implements Backend {
 
     async deleteTenant(tenantId: string) {
         try {
-            await storage.putObject('tenants', { id: tenantId, is_deleted: true, deleted_at: new Date().toISOString() });
-            // await storage.delete('tenants', { match: { id: tenantId } });
+            await storage.delete('tenants', { match: { id: tenantId } });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async restoreTenant(tenantId: string) {
+        try {
+            await storage.putObject('tenants', { id: tenantId, is_deleted: false, deleted_at: null });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3068,7 +3057,9 @@ class ProcessGPTBackend implements Backend {
             startDate: item.start_date,
             endDate: item.end_date,
             dueDate: item.due_date,
-            updatedAt: item.updated_at
+            updatedAt: item.updated_at,
+            is_deleted: item.is_deleted,
+            deleted_at: item.deleted_at
         }
     }
 
@@ -3117,6 +3108,27 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async getMCPByTenant() {
+        try {
+            const tenantId = window.$tenantName;
+            const mcp = await storage.getString('tenants', { match: { id: tenantId }, column: 'mcp' });
+            return mcp;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
+    async setMCPByTenant(mcp: any) {
+        try {
+            const tenantId = window.$tenantName;
+            await storage.putObject('tenants', { id: tenantId, mcp: mcp });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
     
 
 
@@ -3151,9 +3163,6 @@ class ProcessGPTBackend implements Backend {
         }
     }
       
-      
-
-
     async getSchedule(defId: string, eventId: string) {
         try {
             const tenantId = window.$tenantName;
@@ -3176,8 +3185,6 @@ class ProcessGPTBackend implements Backend {
         }
     }
       
-
-
     async deleteSchedule(job: any) {
         try {
             const jobName = job.jobname;
@@ -3189,6 +3196,67 @@ class ProcessGPTBackend implements Backend {
             console.log(`✅ pg_cron 잡 ${jobName} 삭제 완료`);
         } catch (e) {
             throw new Error('deleteSchedule failed: ' + (e instanceof Error ? e.message : ''));
+        }
+    }
+
+    async getData(path: string, options: any) {
+        try {
+            return await storage.getObject(path, options);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getMessages(chatRoomId: string) {
+        try {
+            let messages = await storage.list('chats', {
+                match: {
+                    id: chatRoomId
+                }
+            });
+            return messages;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getChatRoomList(path: string) {
+        try {
+            return await storage.list(path);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async putObject(path: string, obj: any, options: any) {
+        try {
+            return await storage.putObject(path, obj, options);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async pushObject(path: string, obj: any, options: any) {
+        try {
+            return await storage.pushObject(path, obj, options);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    // async setObject(path: string, obj: any, options: any) {
+    //     try {
+    //         return await storage.setObject(`db://${path}`, obj, options);
+    //     } catch (error) {
+    //         throw new Error(error.message);
+    //     }
+    // }
+
+    async delete(path: string, options: any) {
+        try {
+            return await storage.delete(path, options);
+        } catch (error) {
+            throw new Error(error.message);
         }
     }
       

@@ -1,6 +1,6 @@
 <template>
     <!-- <div> -->
-    <div style="height: 100%; position: relative;" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }">
+    <div style="height: 100%; position: relative;" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }" v-hammer:pan="onPan" v-hammer:pinch="onPinch">
         <div :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
@@ -96,6 +96,8 @@ export default {
             isViewMode: true,
             resizeObserver: null,
             resizeTimeout: null,
+            panStart: { x: 0, y: 0 },
+            pinchStartZoom: 1
         };
     },
     computed: {
@@ -216,84 +218,55 @@ export default {
             var self = this;
             var canvas = self.bpmnViewer.get('canvas');
             var elementRegistry = self.bpmnViewer.get('elementRegistry');
+            var zoomScroll = self.bpmnViewer.get('zoomScroll');
+            var moveCanvas = self.bpmnViewer.get('MoveCanvas');
+
             var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-            const zoomScroll = self.bpmnViewer.get('zoomScroll');
-            const moveCanvas = self.bpmnViewer.get('MoveCanvas');
+
             zoomScroll.reset();
 
+            // ✅ 1) 기본 줌: 캔버스 꽉 채우기
+            canvas.zoom('fit-viewport', 'auto');
 
+            // ✅ 2) 줌 제한 핸들러
             canvas._eventBus.on('zoom', function(event) {
                 let zoomLevel = event.scale;
 
-                // 줌 범위를 0.2 ~ 2로 제한
                 if (zoomLevel < 0.2) {
-                    zoomLevel = 0.2;
+                zoomLevel = 0.2;
                 } else if (zoomLevel > 2) {
-                    zoomLevel = 2;
+                zoomLevel = 2;
                 }
 
-                // 줌 레벨을 제한된 값으로 설정
                 canvas.zoom(zoomLevel, {
-                    x: canvas._cachedViewbox.inner.width / 2,
-                    y: canvas._cachedViewbox.inner.height / 2
+                x: canvas._cachedViewbox.inner.width / 2,
+                y: canvas._cachedViewbox.inner.height / 2
                 });
             });
 
-            var x = 0;
-            var y = 0;
-            var width = 0;
-            var height = 0;
-                
-            if (allPools.length > 1) {
-                var firstPool = allPools[0];
-                var lastPool = allPools[allPools.length - 1];
-                var firstBbox = canvas.getAbsoluteBBox(firstPool);
-                var lastBbox = canvas.getAbsoluteBBox(lastPool);
-                x = firstBbox.x;
-                y = firstBbox.y;
-                width = lastBbox.x + lastBbox.width + 100;
-                height = lastBbox.y + lastBbox.height + 100;
-            } 
-            // else if(allPools.length == 1){
-            //     var firstPool = allPools[0];
-            //     var firstBbox = canvas.getAbsoluteBBox(firstPool);
-            //     x = firstBbox.x - 50;
-            //     y = firstBbox.y - 50;
-            //     width = firstBbox.x + firstBbox.width + 100;
-            //     height = firstBbox.y + firstBbox.height + 100;
-            // }
-             else {
-                var viewbox = canvas.viewbox();
-                x = viewbox.x - 50;
-                y = viewbox.y - 50;
-                width = viewbox.x + viewbox.width + 100;
-                height = viewbox.y + viewbox.height + 100;
-            }
+            // ✅ 3) 꽉 찬 상태의 bbox 가져오기
+            const bbox = canvas.viewbox();
 
-            canvas.viewbox({
-                x: x,
-                y: y,
-                width: width,
-                height: height
-            });
+            // ✅ 4) 필요하면 여기서 padding / 이동 조정하고 싶으면 scroll 사용
+            // 예: canvas.scroll({ dx: 50, dy: 50 });
 
-            
+            // ✅ 5) zoomScroll, moveCanvas 동기화
             moveCanvas.canvasSize = {
-                height: height,
-                width: width,
-                x: x,
-                y: y
-            }
-            moveCanvas.scaleOffset = canvas.viewbox().scale;
+                height: bbox.height,
+                width: bbox.width,
+                x: bbox.x,
+                y: bbox.y
+            };
+            moveCanvas.scaleOffset = bbox.scale;
             moveCanvas.resetMovedDistance();
 
             zoomScroll.canvasSize = {
-                height: height,
-                width: width,
-                x: x,
-                y: y
-            }
-            zoomScroll.scaleOffset = canvas.viewbox().scale;
+                height: bbox.height,
+                width: bbox.width,
+                x: bbox.x,
+                y: bbox.y
+            };
+            zoomScroll.scaleOffset = bbox.scale;
             zoomScroll.resetMovedDistance();
         },
         zoomIn() {
@@ -562,21 +535,78 @@ export default {
         setTaskStatus(val) {
             let self = this;
             var canvas = self.bpmnViewer.get('canvas');
+            var elementRegistry = self.bpmnViewer.get('elementRegistry');
+            
             if(val) {
                 try {
+                    // 현재 러닝 상태인 태스크들을 먼저 파악
+                    const currentRunningTasks = [];
+                    Object.keys(val).forEach((task) => {
+                        if(val[task] === 'Running') {
+                            currentRunningTasks.push(task);
+                        }
+                    });
+
+                    // 모든 SequenceFlow 요소에서 기존 running-task-line 클래스 제거
+                    const allElements = elementRegistry.getAll();
+                    allElements.forEach((element) => {
+                        if (element.type === 'bpmn:SequenceFlow') {
+                            try {
+                                const flowGfx = canvas.getGraphics(element);
+                                if (flowGfx && flowGfx.classList.contains('running-task-line')) {
+                                    flowGfx.classList.remove('running-task-line');
+                                }
+                            } catch (e) {
+                                // 개별 flow 처리 실패 시 계속 진행
+                            }
+                        }
+                    });
+
+                    // 태스크 상태별 처리
                     Object.keys(val).forEach((task) => {
                         let taskStatus = val[task];
-                        if(taskStatus == 'Completed') {
-                            canvas.addMarker(task, 'completed');
-                        } else if(taskStatus == 'Running') {
-                            canvas.addMarker(task, 'running');
-                        } else if(taskStatus == 'Stopped') {
-                            canvas.addMarker(task, 'stopped');
-                        } else if(taskStatus == 'Cancelled') {
-                        canvas.addMarker(task, 'cancelled');
+                        
+                        try {
+                            if(taskStatus == 'Completed') {
+                                canvas.addMarker(task, 'completed');
+                            } else if(taskStatus == 'Running') {
+                                canvas.addMarker(task, 'running');
+                                
+                                // 러닝 상태인 태스크에서 나가는 연결선에 애니메이션 적용
+                                const taskElement = elementRegistry.get(task);
+                                if (taskElement && taskElement.businessObject.outgoing) {
+                                    taskElement.businessObject.outgoing.forEach((flow) => {
+                                        try {
+                                            const flowElement = elementRegistry.get(flow.id);
+                                            if (flowElement) {
+                                                const flowGfx = canvas.getGraphics(flowElement);
+                                                if (flowGfx) {
+                                                    let connectionElement = flowGfx;
+                                                    if (!flowGfx.classList.contains('djs-connection')) {
+                                                        connectionElement = flowGfx.closest('.djs-connection') || flowGfx;
+                                                    }
+                                                    
+                                                    if (connectionElement) {
+                                                        connectionElement.classList.add('running-task-line');
+                                                    }
+                                                }
+                                            }
+                                        } catch (e) {
+                                            // 개별 flow 처리 실패 시 계속 진행
+                                        }
+                                    });
+                                }
+                            } else if(taskStatus == 'Stopped') {
+                                canvas.addMarker(task, 'stopped');
+                            } else if(taskStatus == 'Cancelled') {
+                                canvas.addMarker(task, 'cancelled');
+                            }
+                        } catch (e) {
+                            console.warn(`태스크 ${task} 상태 처리 중 오류:`, e);
                         }
                     });
                 } catch (error) {
+                    console.error('setTaskStatus error:', error);
                 }
             }
         },
@@ -675,6 +705,50 @@ export default {
             } else {
                 this.initDefaultOrientation('vertical');
             }
+        },
+        onPan(ev) {
+            const canvas = this.bpmnViewer.get('canvas');
+            
+            if (ev.type === 'panstart') {
+            const viewbox = canvas.viewbox();
+            this.panStart = { x: viewbox.x, y: viewbox.y };
+            }
+
+            if (ev.type === 'panmove') {
+            const viewbox = canvas.viewbox();
+            const scale = viewbox.scale || 1;
+
+            canvas.viewbox({
+                x: this.panStart.x - ev.deltaX / scale,
+                y: this.panStart.y - ev.deltaY / scale,
+                width: viewbox.width,
+                height: viewbox.height
+            });
+            }
+
+            if (ev.type === 'panend') {
+            }
+            
+            ev.srcEvent.stopPropagation();
+            ev.srcEvent.preventDefault();
+        },
+        onPinch(ev) {
+            const canvas = this.bpmnViewer.get('canvas');
+
+            if (ev.type === 'pinchstart') {
+            this.pinchStartZoom = canvas.zoom();
+            }
+
+            if (ev.type === 'pinchmove') {
+            const newZoom = this.pinchStartZoom * ev.scale;
+            canvas.zoom(newZoom);
+            }
+
+            if (ev.type === 'pinchend') {
+            }
+            
+            ev.srcEvent.stopPropagation();
+            ev.srcEvent.preventDefault();
         }
     }
 };

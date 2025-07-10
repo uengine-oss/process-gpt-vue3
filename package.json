@@ -143,7 +143,8 @@
         "xml2js": "^0.6.2",
         "yamljs": "^0.3.0",
         "yup": "^0.32.11",
-        "docx": "^8.0.0"
+        "docx": "^8.0.0",
+        "hammerjs": "^2.0.8"
     },
     "devDependencies": {
         "@4tw/cypress-drag-drop": "^2.2.5",
@@ -214,7 +215,8 @@
         "vue-tsc": "^2.1.10",
         "vue3-treeview": "^0.4.2",
         "vuetify": "3.4.10",
-        "docx": "^8.0.0"
+        "docx": "^8.0.0",
+        "hammerjs": "^2.0.8"
     },
     "packageManager": "yarn@1.22.18",
     "resolutions": {

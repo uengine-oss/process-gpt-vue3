@@ -15,7 +15,15 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    async watchNotifications(onNotification?: (notification: any) => void) {
+    async getMCPByTenant() {
+        return null;
+    }
+    
+    async setMCPByTenant(mcp: any) {
+        return null;
+    }
+
+    async watchNotifications(callback: (notification: any) => void) {
         return null;
     }
 

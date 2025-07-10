@@ -87,6 +87,17 @@ hr {
     }
 }
 
+@keyframes line-running-animation {
+    0% {
+        stroke-dashoffset: 30;
+        stroke: #68369A;
+    }
+    100% {
+        stroke-dashoffset: -30;
+        stroke: #68369A;
+    }
+}
+
 .completed.djs-connection .djs-visual > path {
     stroke: #68369a !important;
 }
@@ -96,7 +107,16 @@ hr {
     fill: #68369a !important;
 }
 
+.running-task-line.djs-connection .djs-visual > path {
+    stroke-width: 3px !important;
+    stroke-dasharray: 18, 12 !important;
+    animation: line-running-animation 1.5s linear infinite !important;
+}
 
+.running-task-line.djs-connection .djs-visual > defs > marker > path {
+    stroke: #68369A !important;
+    fill: #68369A !important;
+}
 
 .running:not(.djs-connection):not(.generated) .djs-visual > :nth-child(2) {
     stroke-width: 5px !important;
@@ -609,6 +629,13 @@ hr {
     height: 100%
 }
 
+.feedback-form .form-definition-box,
+.feedback-form .form-definition-chat-box {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+}
+
 .chat-info-view-wrapper {
     display: flex;
     flex-direction: column;
@@ -657,7 +684,7 @@ hr {
 .mobile-side-bar-btn {
     position: fixed;
     left: 16px;
-    bottom: 16px;
+    bottom: 48px;
     z-index: 999;
 }
 .todolist-card-box {
