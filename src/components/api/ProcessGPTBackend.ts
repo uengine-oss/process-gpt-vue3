@@ -587,6 +587,7 @@ class ProcessGPTBackend implements Backend {
         try {
             // id와 변경할 필드만 포함하여 upsert
             const putObj = { id: taskId, ...workItem };
+            console.log('putObj', putObj);
             return await storage.putObject('todolist', putObj);
         } catch (error) {
             //@ts-ignore
