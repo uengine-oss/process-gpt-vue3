@@ -210,19 +210,6 @@ ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS activity_id tex
 ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS html text;
 ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS author_uid text;
 
--- agents table
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS id text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS name text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS role text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS goal text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS persona text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS tenant_id text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS url text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS description text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS tools text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS profile text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS skills text;
-
 -- tenant_oauth table
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS id UUID DEFAULT uuid_generate_v4();
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS tenant_id TEXT;
