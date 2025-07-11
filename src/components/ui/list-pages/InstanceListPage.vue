@@ -136,8 +136,7 @@ export default {
             });
         },
         handleRowClick(item) {
-            const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
-            this.$router.push(`/instancelist/${route}`);
+            this.$router.push(`/instancelist/${item.instId.replace(/\./g, '_DOT_')}`);
         },
         handleSearch(searchWord){
             var me = this

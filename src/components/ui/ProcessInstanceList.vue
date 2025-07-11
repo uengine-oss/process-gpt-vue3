@@ -59,12 +59,11 @@ export default {
             const inst = callback.value
             const index = this.instanceList.findIndex(item => item.instId == instId);
             if (inst) {
-                const route = window.$mode == 'ProcessGPT'? btoa(encodeURIComponent(instId)) : instId
                 // 삽입 또는 수정
                 const newProject = {
                     instId: instId,
                     title: inst.status == 'NEW' ? inst.name + this.$t('runningInstance.running') : inst.name,
-                    to: `/instancelist/${route}`,
+                    to: `/instancelist/${instId.replace(/\./g, '_DOT_')}`,
                     BgColor: 'primary',
                     updatedAt: inst.updatedAt,
                     isNew: inst.status === 'NEW',
@@ -106,12 +105,11 @@ export default {
             if (!result) result = [];
             this.instanceList = result.map((item) => {
                 const title = item.name;
-                const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
                 item = {
                     // icon: 'ph:cube',
                     instId: item.instId,
                     title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
-                    to: `/instancelist/${route}`,
+                    to: `/instancelist/${item.instId.replace(/\./g, '_DOT_')}`,
                     BgColor:'primary',
                     updatedAt: item.updatedAt,
                     isNew: item.status == 'NEW',
@@ -139,11 +137,10 @@ export default {
             const roleList = await backend.getInstanceListByRole(roles);
             if(!roleList) return;
             this.instanceList = roleList.map((item) => {
-                const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
                 const title = item.instName;
                 return {
                     title: title,
-                    to: `/instancelist/${route}`,
+                    to: `/instancelist/${item.instId.replace(/\./g, '_DOT_')}`,
                     BgColor:'primary'
                 };
             });
@@ -153,11 +150,10 @@ export default {
             if(!groups) return;
             const groupList = await backend.getInstanceListByGroup(groups);
             this.myGroupInstanceList = groupList.map((item) => {
-                const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
                 const title = item.instName;
                 return {
                     title: title,
-                    to: `/instancelist/${route}`,
+                    to: `/instancelist/${item.instId.replace(/\./g, '_DOT_')}`,
                     BgColor:'primary'
                 };
             });

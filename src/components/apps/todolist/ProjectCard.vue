@@ -120,15 +120,8 @@ export default {
         },
     },
     computed: {
-        mode() {
-            return window.$mode;
-        },
         projectId() {
-            if ($mode == "ProcessGPT") {
-                return decodeURIComponent(atob(this.$route.params.projectId))
-            } else {
-                return this.$route.params.projectId
-            }
+            return this.$route.params.projectId.replace(/_DOT_/g, '.');
         }
     },
     methods: {
@@ -234,8 +227,7 @@ export default {
             }
         },
         onItemClick(item) {
-            const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.instId)) : item.instId;
-            this.$router.push(`/instancelist/${route}`);
+            this.$router.push(`/instancelist/${item.instId}`);
         },
     }
 };

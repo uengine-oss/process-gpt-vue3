@@ -58,12 +58,12 @@ class CustomRenderer extends BaseRenderer {
       
       // 화살표 점들 계산
       const arrowPoint1 = {
-        x: firstPoint.x + arrowSize * Math.cos(angle - Math.PI / 6),
-        y: firstPoint.y + arrowSize * Math.sin(angle - Math.PI / 6)
+        x: firstPoint.x + arrowSize * Math.cos(angle - Math.PI / 12),
+        y: firstPoint.y + arrowSize * Math.sin(angle - Math.PI / 12)
       };
       const arrowPoint2 = {
-        x: firstPoint.x + arrowSize * Math.cos(angle + Math.PI / 6),
-        y: firstPoint.y + arrowSize * Math.sin(angle + Math.PI / 6)
+        x: firstPoint.x + arrowSize * Math.cos(angle + Math.PI / 12),
+        y: firstPoint.y + arrowSize * Math.sin(angle + Math.PI / 12)
       };
       
       // 화살표 삼각형 생성
