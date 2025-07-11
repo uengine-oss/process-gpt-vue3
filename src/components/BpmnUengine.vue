@@ -872,6 +872,7 @@ export default {
             ev.srcEvent.preventDefault();
         },
         onPinch(ev) {
+            const srcEvent = ev.srcEvent;
             if (srcEvent.pointerType === 'mouse' || srcEvent.type.startsWith('mouse')) {
                 return;
             }

@@ -338,7 +338,6 @@ create table if not exists public.documents (
 
 create table if not exists public.events (
   id text not null,
-  run_id text not null,
   job_id text not null,
   todo_id text null,
   proc_inst_id text null,
