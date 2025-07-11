@@ -251,10 +251,10 @@ ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS task_id uuid;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS depends_id uuid; 
 
 -- project
-CREATE POLICY project_insert_policy ON project FOR INSERT TO authenticated WITH CHECK ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
-CREATE POLICY project_select_policy ON project FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
-CREATE POLICY project_update_policy ON project FOR UPDATE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
-CREATE POLICY project_delete_policy ON project FOR DELETE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
+-- CREATE POLICY project_insert_policy ON project FOR INSERT TO authenticated WITH CHECK ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
+-- CREATE POLICY project_select_policy ON project FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+-- CREATE POLICY project_update_policy ON project FOR UPDATE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
+-- CREATE POLICY project_delete_policy ON project FOR DELETE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
 
 
 DROP TRIGGER IF EXISTS encrypt_credentials_trigger ON public.users;
@@ -307,7 +307,6 @@ DROP TABLE IF EXISTS public.agents;
 
 --events table
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS id text;
-ALTER TABLE public.events ADD COLUMN IF NOT EXISTS run_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS job_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS todo_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS proc_inst_id text;
