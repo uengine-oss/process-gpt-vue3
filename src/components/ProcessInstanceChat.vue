@@ -201,9 +201,9 @@ export default {
             }
 
             if (this.processInstance) {
-                if (this.processInstance.currentUserIds &&
-                    this.processInstance.currentUserIds.length > 0 &&
-                    !this.processInstance.currentUserIds.includes(this.userInfo.email)
+                if (this.processInstance.participants &&
+                    this.processInstance.participants.length > 0 &&
+                    !this.processInstance.participants.includes(this.userInfo.email)
                 ) {
                     this.disableChat = true;
                 }

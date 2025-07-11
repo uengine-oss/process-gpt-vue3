@@ -107,7 +107,7 @@ ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS proc_def_id text;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS proc_inst_id text;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS proc_inst_name text;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS current_activity_ids text[];
-ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS current_user_ids text[];
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS participants text[];
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS role_bindings jsonb;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS variables_data jsonb;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS status text;
@@ -120,6 +120,29 @@ ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS due_date timestamp wit
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
+
+-- Properly migrate current_user_ids to participants
+DO $$
+BEGIN
+    -- Check if current_user_ids column exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'bpm_proc_inst' 
+        AND column_name = 'current_user_ids'
+    ) THEN
+        -- Copy data from current_user_ids to participants for all rows
+        UPDATE public.bpm_proc_inst 
+        SET participants = current_user_ids 
+        WHERE current_user_ids IS NOT NULL;
+        
+        -- Drop the old column
+        ALTER TABLE public.bpm_proc_inst DROP COLUMN current_user_ids;
+        
+        RAISE NOTICE 'Successfully migrated current_user_ids to participants and dropped old column';
+    ELSE
+        RAISE NOTICE 'current_user_ids column does not exist, migration not needed';
+    END IF;
+END $$;
 
 -- todolist table
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS id uuid;
@@ -248,7 +271,7 @@ ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS lead_time integer;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS type character varying;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS created_date date;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS task_id uuid;
-ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS depends_id uuid; 
+ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS depends_id uuid;
 
 DROP TRIGGER IF EXISTS encrypt_credentials_trigger ON public.users;
 
