@@ -98,7 +98,7 @@
                         {{ task.description }}
                     </div>
                 </div>
-                <v-row class="pa-0 ma-0 mt-1 d-flex align-center">
+                <v-row v-if="!isTodolistPath" class="pa-0 ma-0 mt-1 d-flex align-center">
                     <div class="mr-1" style="width: 24px;" :class="{'mr-4': isMultiUser}">
                         <div v-if="isMultiUser" class="d-flex"> 
                             <v-img v-for="user in userInfoForTask"
@@ -109,7 +109,7 @@
                                 style="border-radius: 50%; margin-right: -8px;"
                             />
                         </div>
-                        <v-img v-else-if="isMyTask && !isTodolistPath"
+                        <v-img v-else-if="isMyTask"
                             :src="userInfoForTask && userInfoForTask.profile ? userInfoForTask.profile : '/images/defaultUser.png'"
                             alt="profile"
                             width="24"
@@ -129,7 +129,7 @@
                     <div class="body-text-2 text-dark mr-2">
                         <!-- isMyTask가 아니면 '내 업무'로 표시, 맞으면 기존 이름/이메일 표시 -->
                         <span v-if="isMultiUser">{{ userInfoForTask.map(user => user.username).join(', ') }}</span>
-                        <span v-else-if="isMyTask && !isTodolistPath">{{ $t('TodoTaskItemCard.myTask') }}</span>
+                        <span v-else-if="isMyTask">{{ $t('TodoTaskItemCard.myTask') }}</span>
                         <span v-else-if="userInfoForTask">{{ userInfoForTask.username }}</span>
                         <!-- 프로필 이미지를 v-img로 표시, 없으면 기본 이미지 사용 -->
                     </div>
