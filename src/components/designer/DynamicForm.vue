@@ -77,13 +77,15 @@ export default {
     },
 
     formValues: {
-      handler() {
-        if (this.formValues && typeof this.formValues === 'object' && this.formValues.isTrusted !== undefined && Object.keys(this.formValues).length <= 3) {
+      handler(newVal, oldVal) {
+        if (newVal && typeof newVal === 'object' && newVal.isTrusted !== undefined && Object.keys(newVal).length <= 3) {
+          this.lastValidFormValues = oldVal;
           return;
         }
-        if(JSON.stringify(this.formValues) === JSON.stringify(this.modelValue)) return
 
-        this.$emit('update:modelValue', this.formValues)
+        if(JSON.stringify(newVal) === JSON.stringify(this.modelValue)) return
+
+        this.$emit('update:modelValue', newVal)
       },
       deep: true,
       immediate: true
@@ -96,7 +98,8 @@ export default {
       formValues: {},
       cachedHFunc: null, // 중복 렌더링을 피하기 위해서
       codeInfos: {},
-      copyFormHTML: ''
+      copyFormHTML: '',
+      lastValidFormValues: {} // 입력한 폼 값이 유실되는 걸 방지하기 위해서
     }
   },
 

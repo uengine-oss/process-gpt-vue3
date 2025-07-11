@@ -104,14 +104,23 @@
                                                             <pre class="text-body-1"
                                                                 v-if="message.replyContent">{{ message.replyContent }}</pre>
                                                             <v-divider v-if="message.replyContent"></v-divider>
-    
-                                                            <pre v-if="message.content" class="text-body-1" v-html="linkify(message.content)"></pre>
+   
+                                                            <div v-if="message.contentType && message.contentType == 'html'" class="w-100">
+                                                                <DynamicForm 
+                                                                    ref="dynamicForm" 
+                                                                    :formHTML="message.htmlContent" 
+                                                                    v-model="message.jsonContent"
+                                                                    :readonly="true"
+                                                                ></DynamicForm>
+                                                            </div>
+
+                                                            <pre v-if="message.content && message.contentType != 'html'" class="text-body-1" v-html="linkify(message.content)"></pre>
 
                                                             <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp my-timestamp">
                                                                 {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
                                                             </div>
-    
-                                                            <pre v-if="message.jsonContent"
+
+                                                            <pre v-if="message.jsonContent && message.contentType != 'html'"
                                                                 class="text-body-1">{{ message.jsonContent }}</pre>
                                                             <v-row class="ma-0 pa-0">
                                                                 <v-spacer></v-spacer>
