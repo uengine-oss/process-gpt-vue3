@@ -2,7 +2,8 @@
      <div>
         <v-card elevation="10" class="cursor-pointer pa-2 pt-1" @click="executeTask"
             :class="[
-                { 'choice-background-color': isMyTask && !isTodolistPath &&  task.status !== 'DONE'}
+                { 'choice-background-color': isMyTask && !isTodolistPath && task.status !== 'DONE'},
+                { 'todo-status-opacity': task.status === 'TODO' }
             ]"
         >
             <div class="ma-0 pa-0 mt-1" style="line-height:100%;">
@@ -333,3 +334,9 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.todo-status-opacity {
+    opacity: 0.5;
+}
+</style>
