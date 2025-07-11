@@ -178,6 +178,7 @@ export default {
         async setRoleMapping() {
             let self = this;
             const instance = await backend.getInstance(this.instanceId);
+            const userList = await backend.getUserList();
             if (!instance) return;
             const roleMapping = instance.roleBindings;
 
@@ -187,16 +188,16 @@ export default {
                 const elementRegistry = self.bpmnViewer.get('elementRegistry');
 
                 const roleElement = elementRegistry.filter(el => {
-                return el.businessObject && el.businessObject.name === role.name;
+                    return el.businessObject && el.businessObject.name === role.name;
                 })[0];
 
                 if (roleElement) {
-                const roleName = roleElement.businessObject.name + "\n" + role.endpoint;
+                    const user = userList.find(user => user.email === role.endpoint);
+                    const roleName = roleElement.businessObject.name + "\n" + (user ? user.username : role.endpoint);
 
-                modeling.updateProperties(roleElement, {
-                    name: roleName
-                });
-
+                    modeling.updateProperties(roleElement, {
+                        name: roleName
+                    });
                 } else {
                     console.warn(`❗ Role element not found for name: ${role.name}`);
                 }
@@ -739,7 +740,7 @@ export default {
             if (srcEvent.pointerType === 'mouse' || srcEvent.type.startsWith('mouse')) {
                 return;
             }
-            
+
             const canvas = this.bpmnViewer.get('canvas');
             
             if (ev.type === 'panstart') {
