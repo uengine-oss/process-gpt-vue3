@@ -175,6 +175,33 @@ export default {
         }
     },
     methods: {
+        async setRoleMapping() {
+            let self = this;
+            const instance = await backend.getInstance(this.instanceId);
+            if (!instance) return;
+            const roleMapping = instance.roleBindings;
+
+            const modeling = self.bpmnViewer.get('modeling');
+
+            roleMapping.forEach(role => {
+                const elementRegistry = self.bpmnViewer.get('elementRegistry');
+
+                const roleElement = elementRegistry.filter(el => {
+                return el.businessObject && el.businessObject.name === role.name;
+                })[0];
+
+                if (roleElement) {
+                const roleName = roleElement.businessObject.name + "\n" + role.endpoint;
+
+                modeling.updateProperties(roleElement, {
+                    name: roleName
+                });
+
+                } else {
+                    console.warn(`❗ Role element not found for name: ${role.name}`);
+                }
+            });
+        },
         async getVariables(instanceId) {
             const variables = await backend.getProcessVariables(instanceId);
             return variables;
@@ -460,6 +487,8 @@ export default {
                     self.activityStatus = self.taskStatus;
                 }
                 self.setTaskStatus(self.activityStatus);
+                
+                self.setRoleMapping();
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
@@ -707,6 +736,10 @@ export default {
             }
         },
         onPan(ev) {
+            if (srcEvent.pointerType === 'mouse' || srcEvent.type.startsWith('mouse')) {
+                return;
+            }
+            
             const canvas = this.bpmnViewer.get('canvas');
             
             if (ev.type === 'panstart') {
@@ -733,6 +766,10 @@ export default {
             ev.srcEvent.preventDefault();
         },
         onPinch(ev) {
+            if (srcEvent.pointerType === 'mouse' || srcEvent.type.startsWith('mouse')) {
+                return;
+            }
+
             const canvas = this.bpmnViewer.get('canvas');
 
             if (ev.type === 'pinchstart') {

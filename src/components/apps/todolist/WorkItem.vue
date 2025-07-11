@@ -154,6 +154,7 @@
                                             :isViewMode="true"
                                             :currentActivities="currentActivities"
                                             :taskStatus="taskStatus"
+                                            :instanceId="workItem?.worklist?.instId"
                                             v-on:error="handleError"
                                             v-on:shown="handleShown"
                                             v-on:openDefinition="(ele) => openSubProcess(ele)"
