@@ -136,8 +136,7 @@ const backend = BackendFactory.createBackend();
             });
         },
         handleRowClick(item) {
-            const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.projectId)) : item.projectId;
-            this.$router.push(`/project/${route}`);
+            this.$router.push(`/project/${item.projectId.replace(/\./g, '_DOT_')}`);
         },
         handleSearch(searchWord){
             var me = this

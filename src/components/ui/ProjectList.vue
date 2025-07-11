@@ -34,13 +34,12 @@ export default {
             const project = callback.value
             const index = this.projectLists.findIndex(item => item.projectId == projectId);
             if (project) {
-                const route = window.$mode == 'ProcessGPT'? btoa(encodeURIComponent(projectId)) : projectId
                 // 삽입 또는 수정
                 const newProject = {
                     projectId: projectId,
                     updatedAt: project.updatedAt,
                     title: project.name,
-                    to: `/project/${route}`,
+                    to: `/project/${projectId}`,
                     BgColor: 'primary',
                     isNew: project.status === 'NEW'
                 };
@@ -68,14 +67,13 @@ export default {
             if (!result) result = [];
             return result.map((item) => {
                 const title = item.name;
-                const route = window.$mode == 'ProcessGPT' ? btoa(encodeURIComponent(item.projectId)) : item.projectId;
                 item = {
                     // icon: 'ph:cube',
                     // title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
                     projectId: item.projectId,
                     updatedAt: item.updatedAt,
                     title: title,
-                    to: `/project/${route}`,
+                    to: `/project/${projectId}`,
                     BgColor:'primary',
                     isNew: item.status == 'NEW'
                 };

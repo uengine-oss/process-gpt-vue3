@@ -6,6 +6,7 @@ import { UserCircleIcon, UsersIcon, BrandGoogleDriveIcon } from 'vue-tabler-icon
 import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
 import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
+import MCPTab from '@/components/pages/account-settings/MCPTab.vue';
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
 // import SecurityTab from '@/components/pages/account-settings/SecurityTab.vue';
@@ -25,12 +26,17 @@ const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
                     <v-tab value="Account">
                         <UserCircleIcon class="mr-2" size="20"/>{{ $t('accountTab.accountSetting') }}
                     </v-tab>
-                    <v-tab v-if="superAdmin" value="ManageAccess">
-                        <UsersIcon class="mr-2" size="20"/>{{ $t('accountTab.manageAccess') }}
-                    </v-tab>
-                    <v-tab value="Drive">
-                        <BrandGoogleDriveIcon class="mr-2" size="20"/>{{ $t('accountTab.drive') }}
-                    </v-tab>
+                    <div v-if="superAdmin">
+                        <v-tab value="ManageAccess">
+                            <UsersIcon class="mr-2" size="20"/>{{ $t('accountTab.manageAccess') }}
+                        </v-tab>
+                        <v-tab value="Drive">
+                            <BrandGoogleDriveIcon class="mr-2" size="20"/>{{ $t('accountTab.drive') }}
+                        </v-tab>
+                        <v-tab value="MCP">
+                            MCP Servers
+                        </v-tab>
+                    </div>
                     <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                     <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
                     <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
@@ -46,6 +52,9 @@ const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
                         </v-window-item>
                         <v-window-item value="Drive">
                             <DriveTab/>
+                        </v-window-item>
+                        <v-window-item value="MCP">
+                            <MCPTab/>
                         </v-window-item>
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>

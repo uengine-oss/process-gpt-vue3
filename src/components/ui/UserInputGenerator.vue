@@ -43,6 +43,10 @@ export default {
         reset: {
             type: Boolean,
             default: false
+        },
+        mcpTools: {
+            type: Object,
+            default: () => ({})
         }
     },
     data() {

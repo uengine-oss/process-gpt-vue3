@@ -20,6 +20,7 @@ create table if not exists public.tenants (
     owner uuid null default auth.uid (),
     is_deleted boolean not null default false,
     deleted_at timestamp with time zone null,
+    mcp jsonb null,
     constraint tenants_pkey primary key (id)
 ) tablespace pg_default;
 

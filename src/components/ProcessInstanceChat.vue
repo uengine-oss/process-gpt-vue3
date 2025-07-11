@@ -171,7 +171,7 @@ export default {
                     me.chatRoomId = taskId;
                 }
             } else if (me.$route.params.instId) {
-                id = decodeURIComponent(atob(me.$route.params.instId));
+                id = me.$route.params.instId.replace(/_DOT_/g, '.');
                 this.chatRoomId = id;
             }
 

@@ -15,7 +15,7 @@
           </template>
 
           <template v-slot:rightpart>
-            <div class="pa-3 mb-4 d-flex flex-wrap gap-2 justify-end">
+            <div class="pa-3 mb-0 d-flex flex-wrap gap-2 justify-end">
                 <v-tooltip bottom>
                     <template v-slot:activator="{ props }">
                         <v-btn color="primary" size="30" elevation="2" v-bind="props" @click="addDialog = true">
@@ -51,6 +51,20 @@
                 <!-- <v-btn @click="onZoomIn">확대</v-btn>
               <v-btn @click="onZoomOut">축소</v-btn>
               <v-btn @click="onResetView">초기화</v-btn> -->
+            </div>
+            <div v-if="isMobile" class="pa-2 d-flex flex-wrap gap-2 align-center">
+              <div class="d-flex align-center gap-1">
+                <div class="legend-color" style="background: #FA896B"></div> 재무
+              </div>
+              <div class="d-flex align-center gap-1">
+                <div class="legend-color" style="background: #0074BA"></div> 고객
+              </div>
+              <div class="d-flex align-center gap-1">
+                <div class="legend-color" style="background: #01C0C8"></div> 내부 프로세스
+              </div>
+              <div class="d-flex align-center gap-1">
+                <div class="legend-color" style="background: #763EBD"></div> 학습 및 성장
+              </div>
             </div>
             <div class="d-flex flex-wrap gap-2" style="width: 100%; height: 100%;">
               <div ref="container" class="strategy-map-container" style="width: 100%; height: 100%;" v-hammer:pan="onPan" v-hammer:pinch="onPinch">
@@ -416,6 +430,14 @@
       this.initData();
     },
     methods: {
+      isMobile() {
+          const container = this.$refs.container;
+          if (!container) return;
+
+          const { width, height } = container.getBoundingClientRect();
+
+          return width - 100 < height;
+      },
       init() {
         this.initDiagram();
         
@@ -486,8 +508,9 @@
       addStrategy(name, perspective, id = null) {
         const elementFactory = this.diagram.get('elementFactory');
         const canvas = this.diagram.get('canvas');
+        const scale = this.isMobile ? 0.5 : 1;
 
-        const totalHeight = canvas._container.clientHeight;
+        const totalHeight = canvas._container.clientHeight - 134;
         const laneCount = 4;
         const laneHeight = totalHeight / laneCount;
 
@@ -497,13 +520,13 @@
 
         const indexInLane = strategiesInLane.findIndex(s => s.id === id || s.name === name);
         const safeIndex = indexInLane >= 0 ? indexInLane : strategiesInLane.length;
-
-        const x = 150 + safeIndex * 180;
-        const y = perspectiveIndex * laneHeight + laneHeight / 2;
+        const padding = this.isMobile ? 20 : 100;
+        const x = padding + safeIndex * 180 * scale;
+        const y = perspectiveIndex * laneHeight + laneHeight / 2.5;
 
         const shape = elementFactory.createShape({
           id: id || 'strategy_' + this.elementId++,
-          width: this.defaultStrategyWidth * this.strategyScale,
+          width: this.defaultStrategyWidth * this.strategyScale * scale,
           height: this.defaultStrategyHeight * this.strategyScale,
           x,
           y,
@@ -547,7 +570,7 @@
         }
 
         const container = this.$refs.container;
-        const totalHeight = container?.clientHeight || 600;
+        const totalHeight = container?.clientHeight - 134 || 600;
 
         const spacing = 20;
         const laneHeight = (totalHeight - spacing * (totalLanes - 1)) / totalLanes;
@@ -567,7 +590,9 @@
           }
         });
 
-        canvas.addShape(shape);
+        if(!this.isMobile) {
+          canvas.addShape(shape);
+        }
       },
       addConnection(sourceId, targetId) {
         const elementRegistry = this.diagram.get('elementRegistry');
@@ -920,9 +945,16 @@
   };
   </script>
   
-  <style>
-  .bjs-powered-by {
-    display: none !important;
-  }
-  </style>
-  
+<style>
+.bjs-powered-by {
+  display: none !important;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  border-radius: 4px;
+}
+
+</style>

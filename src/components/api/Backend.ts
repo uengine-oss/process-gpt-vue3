@@ -53,7 +53,6 @@ export interface Backend {
     getSystem(systemId: String): Promise<any>;
     getCurrentWorkItemByCorrKey(corrKey: number): Promise<any>;
     deleteInstance(instanceId: string): Promise<any>;
-    getNotifications(callback: (data: any) => void): Promise<any>;
     setNotifications(value: any): Promise<any>;
     search(keyword: string): Promise<any>;
     testList(path: string): Promise<any>;
@@ -84,6 +83,8 @@ export interface Backend {
     getTaskList(): Promise<any>;
     watchNotifications(callback: (notification: any) => void): Promise<any>;
     getMCPTools(): Promise<any>;
+    getMCPByTenant(): Promise<any>;
+    setMCPByTenant(mcp: any): Promise<any>;
     getBSCard(): Promise<any>;
     putBSCard(card: any): Promise<any>;
     fetchAgentData(agentUrl: string): Promise<any>;

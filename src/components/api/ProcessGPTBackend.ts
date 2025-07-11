@@ -550,12 +550,6 @@ class ProcessGPTBackend implements Backend {
                     key: 'user_id',
                     value: `%${options.userId}%`
                 }
-            } else {
-                const email = localStorage.getItem("email");
-                filter.like = {
-                    key: 'user_id',
-                    value: `%${email}%`
-                }
             }
 
             const list = await storage.list('todolist', filter);
@@ -3105,6 +3099,27 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.get('/execution/mcp-tools');
             return response.data;
         } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getMCPByTenant() {
+        try {
+            const tenantId = window.$tenantName;
+            const mcp = await storage.getString('tenants', { match: { id: tenantId }, column: 'mcp' });
+            return mcp;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
+    async setMCPByTenant(mcp: any) {
+        try {
+            const tenantId = window.$tenantName;
+            await storage.putObject('tenants', { id: tenantId, mcp: mcp });
+        } catch (error) {
+            //@ts-ignore
             throw new Error(error.message);
         }
     }
