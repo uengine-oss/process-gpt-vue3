@@ -44,7 +44,7 @@
         <v-divider v-if="isMobile"></v-divider>
 
         <div :key="updatedKey">
-            <div v-if="isNew">
+            <div v-if="isNew" class="instance-card-Process-instance-running-box">
                 <ProcessInstanceRunning :instance="instance" @updated="handleInstanceUpdated" />
             </div>
             <div v-else style="height: 100%;">
