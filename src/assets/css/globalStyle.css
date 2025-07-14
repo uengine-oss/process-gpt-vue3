@@ -666,7 +666,14 @@ hr {
 }
 /* 채팅 레이아웃 관련 UI 끝  */
 
+.instance-running-bpmn-viewer {
+    height: calc(100vh - 500px) !important;
+}
 
+.instance-card-Process-instance-running-box {
+    height: calc(100vh - 200px) !important;
+    overflow-y: auto;
+}
 
 
 .no-scrollbar {

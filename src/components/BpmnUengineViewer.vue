@@ -82,6 +82,10 @@ export default {
         diffActivities: {
             type: Object,
             default: () => ({})
+        },
+        lineAnimation: {
+            type: Boolean,
+            default: false
         }
     },
     data: function () {
@@ -604,7 +608,7 @@ export default {
                                 
                                 // 러닝 상태인 태스크에서 나가는 연결선에 애니메이션 적용
                                 const taskElement = elementRegistry.get(task);
-                                if (taskElement && taskElement.businessObject.outgoing) {
+                                if (taskElement && taskElement.businessObject.outgoing  && this.lineAnimation) {
                                     taskElement.businessObject.outgoing.forEach((flow) => {
                                         try {
                                             const flowElement = elementRegistry.get(flow.id);
