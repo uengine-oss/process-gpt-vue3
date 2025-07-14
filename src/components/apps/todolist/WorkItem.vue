@@ -265,6 +265,18 @@
                                 <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
                             </v-btn>
                         </div>
+                        <v-btn v-if="isMobile && hasGeneratedContent"
+                            @click="resetGeneratedContent"
+                            :disabled="isGeneratingExample"
+                            class="mr-1 text-medium-emphasis"
+                            density="comfortable"
+                            icon
+                            variant="outlined"
+                            size="small"
+                            style="border-color: #e0e0e0 !important;"
+                        >
+                            <v-icon>mdi-delete-outline</v-icon>
+                        </v-btn>
                         <v-btn v-if="isMobile"
                             @click="beforeGenerateExample"
                             :loading="isGeneratingExample"
@@ -491,6 +503,28 @@ export default {
         window.removeEventListener('resize', this.handleResize);
     },
     computed: {
+        hasGeneratedContent() {
+            // 생성 중인 경우
+            if (this.isGeneratingExample) return true;
+            
+            // generator가 있고 이전 메시지가 있는 경우
+            if (this.generator && this.generator.previousMessages && this.generator.previousMessages.length > 0) return true;
+            
+            // 오디오 메시지가 있는 경우
+            if (this.newMessage && this.newMessage.trim()) return true;
+            
+            // formData에 실제 값이 있는지 확인
+            if (this.formData && typeof this.formData === 'object') {
+                for (const key of Object.keys(this.formData)) {
+                    const value = this.formData[key];
+                    if (value && typeof value === 'string' && value.trim() !== '') {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        },
         isOwnWorkItem() {
             if (this.isStarted || this.isSimulate == 'true') {
                 return true
@@ -780,6 +814,35 @@ export default {
                     this.generateExample()
                 }
             }
+        },
+        resetGeneratedContent() {
+            // 생성 중인 상태 초기화
+            this.isGeneratingExample = false;
+            
+            // 비전 모드 관련 초기화
+            this.isVisionMode = false;
+            this.imgKeyList = [];
+            
+            // 생성기 초기화
+            if(this.generator) {
+                this.generator.previousMessages = [];
+                this.generator = null;
+            }
+            
+            // 오디오 메시지 초기화
+            this.newMessage = '';
+            
+            // 폼 데이터에서 이미지 데이터 제거
+            if(this.formData && typeof this.formData === 'object') {
+                for (const key of Object.keys(this.formData)) {
+                    if(this.formData[key] && typeof this.formData[key] === 'string' && this.formData[key].includes("data:image/")) {
+                        this.formData[key] = '';
+                    }
+                }
+            }
+            
+            // 컴포넌트 다시 렌더링을 위한 키 업데이트
+            this.updatedKey++;
         },
         async generateExample(response, type){
             var me = this
