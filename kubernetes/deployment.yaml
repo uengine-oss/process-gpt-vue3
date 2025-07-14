@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: ghcr.io/uengine-oss/process-gpt:034ab55
+        image: ghcr.io/uengine-oss/process-gpt:a787c64
         ports:
         - containerPort: 8080
         resources:
@@ -56,7 +56,7 @@ spec:
     spec:
       containers:
       - name: execution
-        image: ghcr.io/uengine-oss/process-gpt-execution:2c35316
+        image: ghcr.io/uengine-oss/process-gpt-execution:ee41747
         ports:
         - containerPort: 8000
         resources:
@@ -109,13 +109,27 @@ spec:
             secretKeyRef:
               name: my-secrets
               key: DB_PORT
+        - name: ENV
+          value: production
+        - name: LANGSMITH_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: langsmith-secrets
+              key: LANGSMITH_API_KEY
+        - name: LANGSMITH_PROJECT
+          valueFrom:
+            secretKeyRef:
+              name: langsmith-secrets
+              key: LANGSMITH_PROJECT
         volumeMounts:
-        - mountPath: /data
-          name: cache-volume
+        - mountPath: /etc/secrets
+          name: firebase-credentials
+          readOnly: true
       volumes:
-      - name: cache-volume
-        persistentVolumeClaim:
-          claimName: langchain-cache-pvc-execution
+      - name: firebase-credentials
+        secret:
+          defaultMode: 420
+          secretName: firebase-credentials
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -167,7 +181,7 @@ spec:
     spec:
       containers:
       - name: memento
-        image: ghcr.io/uengine-oss/process-gpt-memento:041bd80
+        image: ghcr.io/uengine-oss/process-gpt-memento:16cfe7f
         ports:
         - containerPort: 8005
         resources:

@@ -614,7 +614,8 @@ hr {
 
 /* 채팅 레이아웃 관련 UI 시작 */
 .process-definition-map-chat .chat-view-box-col {
-    height: 70vh;
+    height: calc(100vh - 450px);   /* shrink 허용! */
+    overflow-y: auto;
 }
 
 .chat-info-view-wrapper-chats {
@@ -666,7 +667,14 @@ hr {
 }
 /* 채팅 레이아웃 관련 UI 끝  */
 
+.instance-running-bpmn-viewer {
+    height: calc(100vh - 500px) !important;
+}
 
+.instance-card-Process-instance-running-box {
+    height: calc(100vh - 200px) !important;
+    overflow-y: auto;
+}
 
 
 .no-scrollbar {
@@ -742,6 +750,57 @@ hr {
 .organization-edit-dialog-contents {
     height: calc(-300px + 100vh);
     overflow: auto;
+}
+
+.work-item-current-component-box .form-layout-card-contents {
+    padding-top: 32px;
+}
+
+
+/* ... 로딩 애니메이션 */
+.loading-dots span {
+    animation: loading-dot 2s infinite;
+    animation-fill-mode: both;
+    opacity: 0;
+}
+
+.loading-dots span:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+.loading-dots span:nth-child(4) {
+    animation-delay: 0.6s;
+}
+
+.loading-dots span:nth-child(5) {
+    animation-delay: 0.8s;
+}
+
+@keyframes loading-dot {
+    0% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    5% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    65% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    70%, 100% {
+        opacity: 0;
+        transform: scale(0);
+    }
 }
 
 @media only screen and (max-width: 1450px) {

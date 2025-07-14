@@ -238,6 +238,8 @@ import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecut
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
 import ProcessDefinitionMarketPlaceDialog from '@/components/ProcessDefinitionMarketPlaceDialog.vue';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+const storage = StorageBaseFactory.getStorage();
 
 const backend = BackendFactory.createBackend();
 
@@ -308,6 +310,7 @@ export default {
         marketplaceDialog: false,
         isAIGenerated: false,
         organizationChart: [],
+        strategy: null,
     }),
     async created() {
         $try(async () => {
@@ -367,6 +370,11 @@ export default {
                 if (data.value.chart) {
                     this.organizationChart = data.value.chart;
                 }
+            }
+
+            const card = await backend.getBSCard();
+            if (card) {
+                this.strategy = card.value;
             }
         });
     },
@@ -531,6 +539,10 @@ export default {
 
             if (this.organizationChart) {
                 this.generator.setOrganizationChart(JSON.stringify(this.organizationChart));
+            }
+
+            if (this.strategy) {
+                this.generator.setStrategy(JSON.stringify(this.strategy));
             }
         },
         // 시퀀스 정보를 활용하여 activities 순서를 재정렬하는 함수
@@ -799,7 +811,7 @@ export default {
                     if (me.lock) {
                         // 잠금 > 수정가능 하도록
                         if (me.processDefinition && me.useLock) {
-                            await me.backend.putObject('lock', {
+                            await backend.setLock({
                                 id: me.processDefinition.processDefinitionId,
                                 user_id: me.userInfo.name
                             });

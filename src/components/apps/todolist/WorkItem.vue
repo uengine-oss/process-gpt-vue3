@@ -13,31 +13,6 @@
                         :style="isMobile ? 'margin: 0px !important;' : ''">
                         {{ workItemStatus }}
                     </v-chip>
-                    <div v-if="isMobile">
-                        <v-btn
-                            class="feedback-btn-mobile align-center" 
-                            elevation="2" 
-                            color="primary" 
-                            density="compact"
-                            rounded
-                            @click="beforeGenerateExample"
-                            :loading="isGeneratingExample"
-                            :disabled="isGeneratingExample"
-                            style="margin-left: 5px; margin-right: 5px;"
-                        >
-                            <span v-if="!isGeneratingExample">
-                                <span v-if="generator">
-                                    <v-icon class="mr-1">mdi-refresh</v-icon>
-                                    <span>예시 재생성</span>
-                                </span>
-                                <span v-else>
-                                    <v-icon class="mr-1">mdi-pencil</v-icon>
-                                    <span>빠른 예시 생성</span>
-                                </span>
-                            </span>
-                            
-                        </v-btn>
-                    </div>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-if="!isMobile" 
@@ -119,7 +94,8 @@
                                 v-for="tab in tabList"
                                 :key="tab.value"
                                 :variant="selectedTab === tab.value ? 'flat' : 'text'"
-                                :color="selectedTab === tab.value ? 'primary' : 'default'"
+                                :color="selectedTab === tab.value ? '' : 'default'"
+                                :style="selectedTab === tab.value ? 'background-color: #808080; color: white;' : ''"
                                 size="small"
                                 @click="selectedTab = tab.value"
                             >
@@ -137,8 +113,9 @@
                     </div>
                     <v-window v-model="selectedTab"
                         :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px); overflow: auto' : 'height: calc(100vh - 257px); color: black; overflow: auto'"
+                        :touch="false"
                     >
-                        <v-window-item value="progress">
+                        <v-window-item v-if="isTabAvailable('progress')" value="progress">
                             <div
                                 class="pa-2"
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 260px); color: black; overflow: auto'"
@@ -153,6 +130,7 @@
                                             :isViewMode="true"
                                             :currentActivities="currentActivities"
                                             :taskStatus="taskStatus"
+                                            :instanceId="workItem?.worklist?.instId"
                                             v-on:error="handleError"
                                             v-on:shown="handleShown"
                                             v-on:openDefinition="(ele) => openSubProcess(ele)"
@@ -180,7 +158,7 @@
                                 </div>
                             </div>
                         </v-window-item>
-                        <v-window-item value="history" class="pa-2">
+                        <v-window-item v-if="isTabAvailable('history')" value="history" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
@@ -194,7 +172,7 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
-                        <v-window-item value="chatbot" class="pa-2">
+                        <v-window-item v-if="isTabAvailable('chatbot')" value="chatbot" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
@@ -207,13 +185,13 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
-                        <v-window-item value="agent-monitor" class="pa-2">
+                        <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <!-- <BrowserAgent :html="html" :workItem="workItem" /> -->
                                 <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
                             </v-card>
                         </v-window-item>
-                        <v-window-item value="agent-feedback" class="pa-2">
+                        <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
                             <v-card elevation="10" class="pa-4">
                                 <AgentFeedback :workItem="workItem"/>
                             </v-card>
@@ -228,7 +206,7 @@
                                 class="dynamic-form">
                             </DynamicForm>
                         </v-window-item>
-                        <v-window-item value="output" class="pa-2">
+                        <v-window-item v-if="isTabAvailable('output')" value="output" class="pa-2">
                             <InstanceOutput :instance="processInstance" :isInWorkItem="true" />
                         </v-window-item>
                     </v-window>
@@ -242,7 +220,80 @@
                 :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 190px); overflow: auto')"
             >
                 <div v-if="currentComponent && !isNotExistDefaultForm" class="work-itme-current-component" style="height: 100%;">
-                    <div :style="isMobile ? 'top: 90px;' : 'top: 70px;'" style="position: absolute; right: 20px; z-index: 9999;">
+                    <div :style="isMobile ? 'top: 90px;' : 'top: 70px;'" style="position: absolute; right: 28px; z-index: 9999;">
+                        <v-btn
+                            v-if="!isMobile"
+                            class="pl-5 pr-6 mr-1" 
+                            density="comfortable"
+                            rounded
+                            style="background-color: #808080; color: white;"
+                            @click="beforeGenerateExample"
+                            :loading="isGeneratingExample"
+                            :disabled="isGeneratingExample"
+                        >
+                            <template v-if="!isGeneratingExample">
+                                <v-row v-if="generator">
+                                    <v-icon>mdi-refresh</v-icon>
+                                    <span class="ms-2">예시 재생성</span>
+                                </v-row>
+                                <v-row v-else>
+                                    <Icons :icon="'sparkles'" :size="20" />
+                                    <div class="ms-1">빠른 예시 생성</div>
+                                </v-row>
+                            </template>
+                            
+                        </v-btn>
+                        <div v-if="isSimulate == 'true'" style="margin-left: 10px;">
+                            <FormDefinition
+                                ref="formDefinition"
+                                type="simulation"
+                                :formId="formId"
+                                :simulation_data="simulation_data"
+                                @addedNewForm="addedNewForm"
+                                v-model="tempFormHtml"
+                                v-if="showFeedbackForm"
+                                class="feedback-form"
+                            />  
+                            <v-btn 
+                                class="feedback-btn" 
+                                fab 
+                                elevation="2" 
+                                color="primary" 
+                                @click="toggleFeedback"
+                                :disabled="isGeneratingExample"
+                            >
+                                <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
+                                <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
+                            </v-btn>
+                        </div>
+                        <v-btn v-if="isMobile && hasGeneratedContent"
+                            @click="resetGeneratedContent"
+                            :disabled="isGeneratingExample"
+                            class="mr-1 text-medium-emphasis"
+                            density="comfortable"
+                            icon
+                            variant="outlined"
+                            size="small"
+                            style="border-color: #e0e0e0 !important;"
+                        >
+                            <v-icon>mdi-delete-outline</v-icon>
+                        </v-btn>
+                        <v-btn v-if="isMobile"
+                            @click="beforeGenerateExample"
+                            :loading="isGeneratingExample"
+                            :disabled="isGeneratingExample"
+                            class="mr-1 text-medium-emphasis"
+                            density="comfortable"
+                            icon
+                            variant="outlined"
+                            size="small"
+                            style="border-color: #e0e0e0 !important;"
+                        >
+                            <template v-if="!isGeneratingExample">
+                                <v-icon v-if="generator">mdi-refresh</v-icon>
+                                <Icons v-else :icon="'sparkles'" :size="'16'" />
+                            </template>
+                        </v-btn>
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             class="mr-1 text-medium-emphasis"
                             density="comfortable"
@@ -268,6 +319,7 @@
                         <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
                     </div>
                     <component 
+                        class="work-item-current-component-box"
                         :is="currentComponent" 
                         :definitionId="definitionId"
                         :work-item="workItem" 
@@ -283,54 +335,6 @@
                         :is-finished-agent-generation="isFinishedAgentGeneration"
                         :processDefinition="processDefinition"
                     ></component>
-                    
-                    <div class="feedback-container">
-                        <v-btn
-                            v-if="!isMobile"
-                            class="feedback-btn" 
-                            fab 
-                            elevation="2" 
-                            color="primary" 
-                            @click="beforeGenerateExample"
-                            :loading="isGeneratingExample"
-                            :disabled="isGeneratingExample"
-                        >
-                            <span v-if="!isGeneratingExample">
-                                <span v-if="generator">
-                                    <v-icon>mdi-refresh</v-icon>
-                                    <span class="ms-2">예시 재생성</span>
-                                </span>
-                                <span v-else>
-                                    <v-icon>mdi-pencil</v-icon>
-                                    <span class="ms-2">빠른 예시 생성</span>
-                                </span>
-                            </span>
-                            
-                        </v-btn>
-                        <div v-if="isSimulate == 'true'" style="margin-left: 10px;">
-                            <FormDefinition
-                                ref="formDefinition"
-                                type="simulation"
-                                :formId="formId"
-                                :simulation_data="simulation_data"
-                                @addedNewForm="addedNewForm"
-                                v-model="tempFormHtml"
-                                v-if="showFeedbackForm"
-                                class="feedback-form"
-                            />   
-                            <v-btn 
-                                class="feedback-btn" 
-                                fab 
-                                elevation="2" 
-                                color="primary" 
-                                @click="toggleFeedback"
-                                :disabled="isGeneratingExample"
-                            >
-                                <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
-                                <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
-                            </v-btn>
-                        </div>
-                    </div>
                 </div>
                 <div v-else-if="isNotExistDefaultForm">
                     <div class="d-flex justify-center align-center" style="height: 100%;">
@@ -438,7 +442,7 @@ export default {
         updatedDefKey: 0,
 
         // WorkItem Tabs
-        selectedTab: 'progress',
+        selectedTab: 'history',
         
         eventList: [],
 
@@ -502,6 +506,28 @@ export default {
         window.removeEventListener('resize', this.handleResize);
     },
     computed: {
+        hasGeneratedContent() {
+            // 생성 중인 경우
+            if (this.isGeneratingExample) return true;
+            
+            // generator가 있고 이전 메시지가 있는 경우
+            if (this.generator && this.generator.previousMessages && this.generator.previousMessages.length > 0) return true;
+            
+            // 오디오 메시지가 있는 경우
+            if (this.newMessage && this.newMessage.trim()) return true;
+            
+            // formData에 실제 값이 있는지 확인
+            if (this.formData && typeof this.formData === 'object') {
+                for (const key of Object.keys(this.formData)) {
+                    const value = this.formData[key];
+                    if (value && typeof value === 'string' && value.trim() !== '') {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        },
         isOwnWorkItem() {
             if (this.isStarted || this.isSimulate == 'true') {
                 return true
@@ -553,23 +579,23 @@ export default {
                     ]
                 } else if (this.bpmn && !this.isStarted && this.isCompleted) {
                     return [
-                        { value: 'output', label: this.$t('InstanceCard.output') },
-                        { value: 'progress', label: this.$t('WorkItem.progress') },
-                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
+                        // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
+                        { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
+                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
                         { value: 'agent-feedback', label: '에이전트 피드백' },
                     ]
                 } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
                     return [
-                        { value: 'output', label: this.$t('InstanceCard.output') },
-                        { value: 'progress', label: this.$t('WorkItem.progress') },
+                        { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
+                        { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
-                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
+                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
                         { value: 'agent-feedback', label: '에이전트 피드백' },
-                        { value: 'history', label: this.$t('WorkItem.history') },
+                        // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                     ]
                 } else {
                     return [
-                        { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
+                        { value: 'chatbot', label: this.$t('WorkItem.chatbot') }, //어시스턴트
                         { value: 'agent-feedback', label: '에이전트 피드백' },
                     ]
                 }
@@ -607,9 +633,22 @@ export default {
         },
         inFormNameTabs(newVal) {
             console.log(newVal);
+        },
+        selectedTab(newTab) {
+            // 현재 탭이 사용 가능한 탭 목록에 있는지 확인
+            if (!this.isTabAvailable(newTab)) {
+                // 사용 가능한 첫 번째 탭으로 변경
+                const firstAvailableTab = this.tabList[0];
+                if (firstAvailableTab) {
+                    this.selectedTab = firstAvailableTab.value;
+                }
+            }
         }
     },
     methods: {
+        isTabAvailable(tabValue) {
+            return this.tabList.some(tab => tab.value === tabValue);
+        },
         async startVoiceRecording() {
             this.isMicRecording = true;
 
@@ -778,6 +817,35 @@ export default {
                     this.generateExample()
                 }
             }
+        },
+        resetGeneratedContent() {
+            // 생성 중인 상태 초기화
+            this.isGeneratingExample = false;
+            
+            // 비전 모드 관련 초기화
+            this.isVisionMode = false;
+            this.imgKeyList = [];
+            
+            // 생성기 초기화
+            if(this.generator) {
+                this.generator.previousMessages = [];
+                this.generator = null;
+            }
+            
+            // 오디오 메시지 초기화
+            this.newMessage = '';
+            
+            // 폼 데이터에서 이미지 데이터 제거
+            if(this.formData && typeof this.formData === 'object') {
+                for (const key of Object.keys(this.formData)) {
+                    if(this.formData[key] && typeof this.formData[key] === 'string' && this.formData[key].includes("data:image/")) {
+                        this.formData[key] = '';
+                    }
+                }
+            }
+            
+            // 컴포넌트 다시 렌더링을 위한 키 업데이트
+            this.updatedKey++;
         },
         async generateExample(response, type){
             var me = this
@@ -1064,8 +1132,8 @@ export default {
 
 .feedback-container {
     position: absolute;
-    bottom: 20px;
-    right: 20px;
+    bottom: 3px;
+    right: 35px;
     display: flex;
     align-items: flex-end;
     z-index: 100;

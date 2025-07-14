@@ -20,6 +20,7 @@ create table if not exists public.tenants (
     owner uuid null default auth.uid (),
     is_deleted boolean not null default false,
     deleted_at timestamp with time zone null,
+    mcp jsonb null,
     constraint tenants_pkey primary key (id)
 ) tablespace pg_default;
 
@@ -140,7 +141,7 @@ create table if not exists public.bpm_proc_inst (
     proc_inst_id text not null,
     proc_inst_name text null,
     current_activity_ids text[] null,
-    current_user_ids text[] null,
+    participants text[] null,
     role_bindings jsonb null,
     variables_data jsonb null,
     status text null,
@@ -337,7 +338,6 @@ create table if not exists public.documents (
 
 create table if not exists public.events (
   id text not null,
-  run_id text not null,
   job_id text not null,
   todo_id text null,
   proc_inst_id text null,
@@ -419,7 +419,7 @@ BEGIN
        OR proc_inst_id ILIKE '%' || keyword || '%'
        OR proc_inst_name ILIKE '%' || keyword || '%'
        OR variables_data::text ILIKE '%' || keyword || '%')
-      AND user_email = ANY(current_user_ids);
+      AND user_email = ANY(participants);
 END;
 $$ LANGUAGE plpgsql;
 

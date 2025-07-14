@@ -121,7 +121,7 @@ export default {
             return this.isSimulate === 'true' || this.isSimulate === 'false' ? this.isSimulate === 'true' : this.isSimulate;
         },
         isCompleted() {
-            return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
+            return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE" || this.workItemStatus == "SUBMITTED"
         },
         isMobile() {
             return window.innerWidth <= 768;
@@ -306,8 +306,7 @@ export default {
                 }
                 
                 backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
-                const path = btoa(encodeURIComponent(me.workItem.worklist.instId));
-                me.$router.push(`/instancelist/${path}?submitted=true`);
+                me.$router.push(`/instancelist/${me.workItem.worklist.instId.replace(/\./g, '_DOT_')}?submitted=true`);
             } else {
                 // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
                 me.$try({

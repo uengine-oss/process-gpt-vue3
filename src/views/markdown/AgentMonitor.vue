@@ -1,6 +1,6 @@
 <template>
   <div class="agent-monitor">
-    <div class="task-area">
+    <div class="task-area" ref="taskArea">
       <div v-if="errorMessage" class="error-banner">
         {{ errorMessage }}
       </div>
@@ -10,85 +10,61 @@
           :key="item.type + '-' + (item.type === 'task' ? item.payload.id : 'chat-' + index)"
           class="timeline-item"
         >
-          <template v-if="item.type === 'task'">
-            <div class="task-card">
-              <div class="task-header">
-                <div class="task-left">
-                  <div class="task-avatar">
-                    <img v-if="item.payload.agentProfile"
-                         :src="item.payload.agentProfile"
-                         alt="Agent"
-                         class="avatar-image"
-                         @load="handleAvatarLoad(item.payload.agentProfile)"
-                         @error="handleAvatarError(item.payload.agentProfile)" />
-                    <span v-else>{{ index + 1 }}</span>
-                  </div>
-                  <div class="task-info">
-                    <h3 class="task-title">{{ getDisplayName(item.payload) }}</h3>
-                    <p class="task-description">{{ item.payload.goal }}</p>
-                  </div>
+          <div v-if="item.type === 'task'" class="task-card">
+            <div class="task-header">
+              <div class="task-left">
+                <div class="task-avatar">
+                  <img v-if="item.payload.agentProfile"
+                       :src="item.payload.agentProfile"
+                       alt="Agent"
+                       class="avatar-image"/>
+                  <span v-else>{{ index + 1 }}</span>
                 </div>
-                <div class="task-header-right">
-                  <div :class="['task-status', item.payload.isCompleted ? (item.payload.isCrewCompleted ? 'crew-completed' : 'completed') : 'running']">
-                    <div class="status-dot"></div>
-                    <span>{{ getStatusText(item.payload) }}</span>
-                  </div>
+                <div class="task-info">
+                  <h3 class="task-title">{{ getDisplayName(item.payload) }}</h3>
+                  <p class="task-description">{{ item.payload.goal }}</p>
                 </div>
               </div>
-
-              <div class="task-meta">
-                <div class="meta-item">
-                  <span class="meta-label">시작시간</span>
-                  <span class="meta-value">{{ formatTime(item.payload.startTime) }}</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-label">유형</span>
-                  <span class="meta-value">{{ item.payload.crewType }}</span>
-                </div>
-                <div v-if="item.payload.isCompleted && isTaskCompleted(item.payload)" class="meta-submit">
-                  <button @click="submitTask(item.payload)" class="submit-button-light">
-                    채택
-                  </button>
+              <div class="task-header-right">
+                <div :class="['task-status', item.payload.isCompleted ? (item.payload.isCrewCompleted ? 'crew-completed' : 'completed') : 'running']">
+                  <div class="status-dot"></div>
+                  <span>{{ getStatusText(item.payload) }}</span>
                 </div>
               </div>
+            </div>
 
-              <div v-if="item.payload.isCompleted && item.payload.output" class="task-result">
-                <div class="result-header">
-                  <h4 class="result-title">작업 결과</h4>
-                  <div class="result-type-badge">
-                    <span class="type-label">{{ getOutputTypeLabel(item.payload.crewType, item.payload.output) }}</span>
-                  </div>
-                </div>
-                <div class="result-content">
-                  <!-- JSON 출력 -->
-                  <div v-if="item.payload.crewType !== 'slide' && isJsonOutput(item.payload.crewType, item.payload.output)" class="json-output">
-                    <div 
-                      :class="['json-container', { expanded: isTaskExpanded(item.payload.id) }]"
-                      @dblclick="toggleTaskExpansion(item.payload.id)"
-                    >
-                      <template v-if="typeof item.payload.output === 'object'">
-                        <div 
-                          v-for="(val, key) in item.payload.output" 
-                          :key="key" 
-                          class="json-value"
-                        >
-                          <div v-html="formatMarkdownOutput(val)"></div>
-                        </div>
-                      </template>
-                      <template v-else>
-                        <pre>{{ formatJsonOutput(item.payload.output) }}</pre>
-                      </template>
-                    </div>
-                    <div v-if="isContentLong(formatJsonOutput(item.payload.output))" class="expand-controls">
-                      <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
-                        {{ isTaskExpanded(item.payload.id) ? '접기' : '더보기' }} 
-                        <span class="expand-icon">{{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}</span>
-                      </button>
-                      <span class="expand-hint">더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다</span>
-                    </div>
-                  </div>
-                  <!-- 슬라이드 출력 -->
-                  <div v-else-if="isSlideOutput(item.payload.crewType, item.payload.output)" class="slides-container">
+            <div class="task-meta">
+              <div class="meta-item">
+                <span class="meta-label">시작시간</span>
+                <span class="meta-value">{{ formatTime(item.payload.startTime) }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">유형</span>
+                <span class="meta-value">{{ item.payload.crewType }}</span>
+              </div>
+              <div
+                v-if="
+                  item.payload.isCompleted && isTaskCompleted(item.payload) && (
+                    (item.payload.crewType === 'report' && item.payload.jobId === 'merge-sales_activity_report') ||
+                    item.payload.crewType === 'slide' ||
+                    item.payload.crewType === 'text'
+                  )
+                "
+                class="meta-submit"
+              >
+                <button @click="submitTask(item.payload)" class="submit-button-light">
+                  채택
+                </button>
+              </div>
+            </div>
+
+            <div v-if="item.payload.isCompleted && item.payload.output" class="task-result">
+              <div class="result-header">
+                <h4 class="result-title">작업 결과</h4>
+              </div>
+              <div class="result-content">
+                <template v-if="item.payload.crewType === 'slide'">
+                  <div class="slides-container">
                     <div class="slides-header">
                       <div class="header-info">
                         <h5>프레젠테이션 모드</h5>
@@ -126,60 +102,51 @@
                       ></span>
                     </div>
                   </div>
-                  <!-- 마크다운 출력 -->
-                  <div v-else class="markdown-output">
-                    <div 
-                      :class="['markdown-container', { expanded: isTaskExpanded(item.payload.id) }]"
-                      @dblclick="toggleTaskExpansion(item.payload.id)"
-                      v-html="formatMarkdownOutput(item.payload.output)"
-                    ></div>
-                    <div v-if="isContentLong(item.payload.output)" class="expand-controls">
-                      <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
-                        {{ isTaskExpanded(item.payload.id) ? '접기' : '더보기' }}
-                        <span class="expand-icon">{{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}</span>
-                      </button>
-                      <span class="expand-hint">더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다</span>
-                    </div>
+                </template>
+                <template v-else-if="item.payload.crewType === 'report'">
+                  <div
+                    :class="['markdown-container', { expanded: isTaskExpanded(item.payload.id) }]"
+                    @dblclick="toggleTaskExpansion(item.payload.id)"
+                    v-html="formatMarkdownOutput(Object.values(item.payload.output)[0] || '')"
+                  ></div>
+                </template>
+                <template v-else>
+                  <div
+                    :class="['json-container', { expanded: isTaskExpanded(item.payload.id) }]"
+                    @dblclick="toggleTaskExpansion(item.payload.id)"
+                  >
+                    <pre>{{ formatJsonOutput(item.payload.output) }}</pre>
                   </div>
-                </div>
+                </template>
               </div>
-
-              <div v-else-if="!item.payload.isCompleted" class="task-progress">
-                <div class="progress-dots">
-                  <div class="dot"></div>
-                  <div class="dot"></div>
-                  <div class="dot"></div>
-                </div>
-                <span>작업을 진행하고 있습니다...</span>
-              </div>
-              <div v-if="!item.payload.isCompleted && toolUsageStatusByTask[item.payload.jobId] && toolUsageStatusByTask[item.payload.jobId].length" class="tool-usage-status-list">
-                <div
-                  v-for="tool in toolUsageStatusByTask[item.payload.jobId]"
-                  :key="tool.tool_name + tool.query"
-                  class="tool-usage-status-item"
-                >
-                  <div class="tool-status-indicator">
-                    <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
-                    <div v-else class="check-mark">✓</div>
-                  </div>
-                  <span v-if="tool.tool_name && tool.tool_name.includes('mem0')">
-                    {{ tool.tool_name }}로 {{ tool.query }} 정보{{ tool.status === 'done' ? ' 검색 완료' : '를 찾는중' }}
+              <div
+                v-if="(item.payload.crewType === 'report' && isContentLong(formatMarkdownOutput(Object.values(item.payload.output)[0] || '')))
+                    || (item.payload.crewType !== 'slide' && item.payload.crewType !== 'report' && isContentLong(formatJsonOutput(item.payload.output)))"
+                class="expand-controls"
+              >
+                <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
+                  {{ isTaskExpanded(item.payload.id) ? '접기' : '더보기' }}
+                  <span class="expand-icon">
+                    {{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}
                   </span>
-                  <span v-else-if="tool.tool_name && tool.tool_name.includes('perplexity')">
-                    {{ tool.tool_name }}로 {{ tool.query }}를 {{ tool.status === 'done' ? '검색 완료' : '검색중' }}
-                  </span>
-                  <span v-else>
-                    {{ tool.tool_name }}({{ tool.query }}) {{ tool.status === 'done' ? '작업 완료' : '작업중' }}
-                  </span>
-                </div>
+                </button>
+                <span class="expand-hint">
+                  더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다
+                </span>
               </div>
             </div>
-          </template>
-          <template v-else>
-            <div class="chat-message">
-              <div class="bubble">{{ item.payload.content }}</div>
+            <div v-else class="task-progress">
+              <div class="progress-dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+              </div>
+              <span>작업을 진행하고 있습니다...</span>
             </div>
-          </template>
+          </div>
+          <div v-else class="chat-message">
+            <div class="bubble">{{ item.payload.content }}</div>
+          </div>
         </div>
       </div>
       <div v-else class="empty-state">
@@ -188,22 +155,37 @@
         <p>작업이 시작되면 여기에 표시됩니다.</p>
         <button v-if="!isQueued" @click="startTask" class="start-button">시작하기</button>
       </div>
-      <div v-if="isFeedbackLoading" class="feedback-loading">
+      <div v-if="isLoading" class="feedback-loading">
         <div class="loading-spinner"></div>
-        <span>피드백 처리 중입니다. 잠시만 기다려주세요...</span>
+        <span v-if="todoStatus.draft_status === 'STARTED'">초안 생성 작업을 진행중입니다...</span>
+        <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED'">피드백을 반영하여 초안을 다시 생성하고 있습니다...</span>
+        <button @click="stopTask" class="stop-button" aria-label="중단">
+          ⏹
+        </button>
       </div>
     </div>
     <div v-if="tasks.length > 0" class="chat-input-wrapper">
-      <textarea v-model="chatInput" :disabled="!isCancelled || isFeedbackLoading" placeholder="메시지를 입력하세요..." rows="3" class="chat-textarea"></textarea>
-      <button class="chat-toggle-button" @click="isCancelled ? submitChat() : stopTask()" :disabled="isFeedbackLoading || (isCancelled && !chatInput)">
-        <i class="fa fa-paper-plane" v-if="isCancelled"></i>
-        <i class="fa fa-stop" v-else></i>
-      </button>
+      <Chat
+        :messages="chatMessages"
+        :agentInfo="{ isRunning: isLoading, isConnection: false }"
+        :disableChat="isLoading"
+        type="chats"
+        :userInfo="{ name: '', email: '' }"
+        :chatRoomId="getTaskIdFromWorkItem()"
+        @sendMessage="submitChat"
+        @stopMessage="stopTask"
+      >
+        <template #custom-tools v-if="isLoading">
+          <button @click="stopTask" class="stop-button">⏹</button>
+        </template>
+      </Chat>
     </div>
   </div>
 </template>
 
 <script>
+import ChatModule from '@/components/ChatModule.vue'
+import Chat from '@/components/ui/Chat.vue'
 import { marked } from 'marked'
 import BackendFactory from '@/components/api/BackendFactory'
 
@@ -211,6 +193,8 @@ const backend = BackendFactory.createBackend()
 
 export default {
   name: 'AgentMonitor',
+  mixins: [ChatModule],
+  components: { Chat },
   props: {
     html: {
       type: String,
@@ -228,86 +212,65 @@ export default {
       expandedTasks: {},
       errorMessage: null,
       todoStatus: null,
-      chatInput: '',
       chatMessages: [],
       isCancelled: false,
-      isFeedbackLoading: false
+      isLoading: false
     }
   },
   computed: {
     tasks() {
-      const sorted = [...this.events].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-      const filtered = sorted.filter(e => e.event_type === 'task_started' || e.event_type === 'task_completed' || e.event_type === 'crew_completed')
-      
-      const tasks = []
       const taskMap = new Map()
-      const crewCompletedTypes = new Set()
-      
-      filtered.forEach(event => {
-        if (event.event_type === 'crew_completed') {
-          crewCompletedTypes.add(event.crew_type)
-        }
-      })
-      
-      filtered.forEach(event => {
-        const data = this.parseData(event)
-        const jobId = event.job_id || data?.job_id || event.id
-        
-        if (event.event_type === 'task_started') {
-          const task = {
-            id: event.id,
+      const crewCompleted = new Set()
+      // 단일 루프로 이벤트 처리
+      this.events.forEach(e => {
+        const { event_type, crew_type, data, job_id, id, timestamp } = e
+        const jobId = job_id || data?.job_id || id
+        if (event_type === 'crew_completed') {
+          crewCompleted.add(crew_type)
+        } else if (event_type === 'task_started') {
+          taskMap.set(jobId, {
+            id,
             jobId,
             goal: data?.goal || 'Task',
             name: data?.name || '',
             role: data?.role || 'Agent',
-            crewType: event.crew_type || 'default',
-            startTime: event.timestamp,
+            crewType: crew_type || 'default',
+            startTime: timestamp,
             isCompleted: false,
             output: null,
             isCrewCompleted: false,
             agentProfile: data?.agent_profile
-          }
-          console.log('agentProfile', data?.agent_profile);
-          tasks.push(task)
-          taskMap.set(jobId, task)
-        } else if (event.event_type === 'task_completed') {
-          if (taskMap.has(jobId)) {
-            const task = taskMap.get(jobId)
-            task.isCompleted = true
-            task.output = data?.final_result || null
-          }
+          })
+        } else if (event_type === 'task_completed' && taskMap.has(jobId)) {
+          const task = taskMap.get(jobId)
+          task.isCompleted = true
+          task.output = data?.final_result || null
         }
       })
-      
-      crewCompletedTypes.forEach(crewType => {
-        const completedTasksOfType = tasks
-          .filter(task => task.crewType === crewType && task.isCompleted)
+      // crew_completed 마킹
+      crewCompleted.forEach(type => {
+        const tasksOfType = Array.from(taskMap.values())
+          .filter(t => t.crewType === type && t.isCompleted)
           .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
-        
-        if (completedTasksOfType.length > 0) {
-          completedTasksOfType[0].isCrewCompleted = true
-        }
+        if (tasksOfType[0]) tasksOfType[0].isCrewCompleted = true
       })
-      
-      return tasks
+      // 시작시간 기준 오름차순 반환
+      return Array.from(taskMap.values()).sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
     },
     toolUsageStatusByTask() {
-      const started = {};
-      const finished = {};
-      this.events.forEach(e => {
-        if (e.event_type === 'tool_usage_started') {
-          const data = this.parseData(e);
-          const jobId = e.job_id || data?.job_id || e.id;
-          if (!started[jobId]) started[jobId] = [];
-          started[jobId].push({ tool_name: data.tool_name, query: data.query });
+      const started = {}, finished = {}
+      // 툴 사용 이벤트를 한번에 reduce로 구성
+      this.events.reduce((acc, e) => {
+        const { event_type, data, job_id, id } = e
+        const j = job_id || data?.job_id || id
+        if (event_type === 'tool_usage_started') {
+          acc.started[j] = [...(acc.started[j]||[]), { tool_name: data.tool_name, query: data.query }]
         }
-        if (e.event_type === 'tool_usage_finished') {
-          const data = this.parseData(e);
-          const jobId = e.job_id || data?.job_id || e.id;
-          if (!finished[jobId]) finished[jobId] = [];
-          finished[jobId].push({ tool_name: data.tool_name, query: data.query });
+        if (event_type === 'tool_usage_finished') {
+          acc.finished[j] = [...(acc.finished[j]||[]), { tool_name: data.tool_name, query: data.query }]
         }
-      });
+        return acc
+      }, { started, finished })
       
       const result = {};
       Object.keys(started).forEach(jobId => {
@@ -330,19 +293,16 @@ export default {
     },
   },
   methods: {
+    extractContent(content) {
+      return (typeof content === 'object' && content.text !== undefined)
+        ? content.text
+        : content
+    },
     getTaskIdFromWorkItem() {
       if (this.workItem && this.workItem.worklist) {
         return this.workItem.worklist.taskId
       }
       return null
-    },
-
-    parseData(event) {
-      try {
-        return typeof event.data === 'string' ? JSON.parse(event.data) : event.data
-      } catch {
-        return null
-      }
     },
 
     formatTime(timestamp) {
@@ -354,64 +314,35 @@ export default {
       })
     },
     
-    isJsonOutput(crewType, output) {
-      if (crewType === 'text' || crewType === 'planning') {
-        return true
-      }
-      
-      return this.detectJsonContent(output)
-    },
-    
-    isSlideOutput(crewType, output) {
-      return crewType === 'slide'
-    },
-
     cleanString(str) {
       return str.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\\t/g, '  ').replace(/\\\\/g, '\\')
     },
 
-    detectJsonContent(output) {
-      if (!output) return false
-      if (typeof output === 'object') return true
-      
-      if (typeof output === 'string') {
-        const trimmed = output.trim()
-        return ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-                (trimmed.startsWith('[') && trimmed.endsWith(']')))
-      }
-      return false
-    },
-
-    getOutputTypeLabel(crewType, output) {
-      if (this.isJsonOutput(crewType, output)) {
-        return crewType === 'planning' ? 'JSON 계획' 
-             : crewType === 'text' ? 'JSON 데이터' 
-             : 'JSON 객체'
-      }
-      
-      return this.isSlideOutput(crewType, output) ? '프레젠테이션' : 'Markdown 문서'
-    },
-
     formatJsonOutput(output) {
-      if (!output) return ''
-      
+      if (!output) return '';
+
+      // 1) 문자열로 넘어올 때—펜스 제거
+      if (typeof output === 'string') {
+        // 이스케이프 복원
+        let str = this.cleanString(output).trim();
+        // ```json … ``` 펜스 제거
+        str = str.replace(/^```json\s*/, '').replace(/```$/, '').trim();
+        try {
+          // 2) JS 객체로 파싱
+          const obj = JSON.parse(str);
+          // 3) 예쁘게 직렬화
+          return JSON.stringify(obj, null, 2);
+        } catch {
+          // 파싱 실패 시, 펜스 없는 원본 문자열 그대로 반환
+          return str;
+        }
+      }
+
+      // 객체로 넘어올 때
       try {
-        if (typeof output === 'object') {
-          return JSON.stringify(output, null, 2)
-        }
-        
-        if (typeof output === 'string') {
-          const cleaned = this.cleanString(output)
-          try {
-            return JSON.stringify(JSON.parse(cleaned), null, 2)
-          } catch {
-            return cleaned
-          }
-        }
-        
-        return String(output)
+        return JSON.stringify(output, null, 2);
       } catch {
-        return String(output)
+        return String(output);
       }
     },
 
@@ -567,7 +498,6 @@ export default {
           this.events = data
           if (this.events.some(e => e.event_type === 'crew_completed')) {
             this.isCancelled = true;
-            this.isFeedbackLoading = false;
           }
         }
       } catch (error) {
@@ -590,10 +520,6 @@ export default {
 
             if (!exists && ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'].includes(row.event_type) && todoId === taskId) {
               this.events = [...this.events, row];
-              if (row.event_type === 'crew_completed') {
-                this.isCancelled = true;
-                this.isFeedbackLoading = false;
-              }
             } else {
               if (todoId !== taskId) {
                 console.warn('[ID 불일치] 이벤트 todo_id:', todoId, 'vs 현재 taskId:', taskId, '이벤트 전체:', row);
@@ -664,6 +590,9 @@ export default {
           throw error;
         }
         this.todoStatus = data;
+        this.isLoading = ['STARTED', 'FB_REQUESTED'].includes(data.draft_status);
+        this.isCancelled = data.draft_status === 'CANCELLED';
+        
         let feedbackArr = [];
         if (data.feedback) {
           try {
@@ -674,14 +603,11 @@ export default {
             feedbackArr = [];
           }
         }
-        this.chatMessages = feedbackArr.map(item => ({ time: item.time, content: item.content }));
+        this.chatMessages = feedbackArr.map(item => ({
+          time: item.time,
+          content: this.extractContent(item.content)
+        }));
         this.chatMessages.sort((a, b) => new Date(a.time) - new Date(b.time));
-        if (data.draft_status === 'CANCELLED') {
-          this.isCancelled = true;
-        }
-        if (data.draft_status === 'FB_REQUESTED') {
-          this.isFeedbackLoading = true;
-        }
       } catch (e) {
         console.error('todolist 상태 조회 실패:', e);
         this.errorMessage = 'todolist 상태 조회 실패: ' + (e.message || e);
@@ -695,21 +621,22 @@ export default {
       }
       try {
         await backend.putWorkItem(taskId, { draft_status: 'CANCELLED' });
+        // 중단 시 상태 초기화
         this.isCancelled = true;
+        this.isLoading = false;
+        if (this.todoStatus) this.todoStatus.draft_status = 'CANCELLED';
       } catch (error) {
         console.error('중단 중 오류:', error);
         this.errorMessage = '중단 중 오류가 발생했습니다.';
       }
     },
-    async submitChat() {
+    async submitChat(content) {
       const taskId = this.getTaskIdFromWorkItem();
       if (!taskId) {
         this.errorMessage = 'taskId를 찾을 수 없습니다.';
         return;
       }
-      if (!this.chatInput) return;
-      this.isCancelled = false;
-      this.isFeedbackLoading = true;
+      if (!content) return;
       try {
         const existing = this.todoStatus.feedback;
         let arr = [];
@@ -721,26 +648,27 @@ export default {
           arr = [];
         }
         const now = new Date().toISOString();
-        arr.push({ time: now, content: this.chatInput });
+        const text = this.extractContent(content);
+        arr.push({ time: now, content: text });
         const updatedFeedback = arr;
         await backend.putWorkItem(taskId, {
           feedback: updatedFeedback,
           draft_status: 'FB_REQUESTED'
         });
+        if (this.todoStatus) this.todoStatus.draft_status = 'FB_REQUESTED';
+        this.isLoading = true;
         this.todoStatus.feedback = updatedFeedback;
-        this.chatMessages.push({ time: now, content: this.chatInput });
-        this.chatInput = '';
+        this.chatMessages.push({ time: now, content: text });
+        this.chatMessages = [...this.chatMessages];
+        this.$nextTick(() => {
+          if (this.$refs.taskArea) {
+            this.$refs.taskArea.scrollTop = this.$refs.taskArea.scrollHeight;
+          }
+        });
       } catch (error) {
         console.error('채팅 전송 중 오류:', error);
         this.errorMessage = '채팅 전송 중 오류가 발생했습니다.';
-        this.isFeedbackLoading = false;
       }
-    },
-    handleAvatarLoad(path) {
-      console.log('agentProfile loaded:', path)
-    },
-    handleAvatarError(path) {
-      console.log('agentProfile failed to load:', path)
     },
     getDisplayName(task) {
       const name = task.name || '';
@@ -1002,22 +930,6 @@ export default {
   letter-spacing: 0.5px;
 }
 
-.result-type-badge {
-  display: flex;
-  align-items: center;
-}
-
-.type-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: #606770;
-  background: #e4e6ea;
-  padding: 4px 8px;
-  border-radius: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 .result-content {
   padding: 16px;
 }
@@ -1054,7 +966,7 @@ export default {
   left: 0;
   right: 0;
   height: 40px;
-  background: linear-gradient(transparent, #1e1e1e);
+  background: linear-gradient(transparent, #f8fafb);
   pointer-events: none;
 }
 
@@ -1579,11 +1491,11 @@ export default {
 .chat-message { display: flex; justify-content: flex-end; margin: 16px 0; }
 .bubble { background: #e5e5ea; border-radius: 12px; padding: 8px 12px; max-width: 70%; }
 .chat-input-wrapper {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
   padding-top: 0;
-  width: 100%;
   margin-top: 16px;
 }
 .chat-textarea {
@@ -1623,5 +1535,45 @@ export default {
   margin-bottom: 12px;
   font-size: 14px;
   color: #606770;
+}
+
+/* 채팅 영역 전체 너비 고정 */
+.chat-input-wrapper {
+  width: 100%;
+  display: flex;
+}
+/* Chat.vue 루트 컨테이너도 너비 100% 적용 */
+.chat-input-wrapper ::v-deep .chat-info-view-wrapper {
+  width: 100% !important;
+}
+
+/* Chat 컴포넌트의 아바타 아이콘 숨기기 */
+.chat-input-wrapper ::v-deep .v-avatar {
+  display: none !important;
+}
+/* Chat 컴포넌트의 사용자 이름 숨기기 */
+.chat-input-wrapper ::v-deep .user-name {
+  display: none !important;
+}
+
+.chat-input-wrapper ::v-deep .chat-view-box {
+  display: none !important;
+}
+
+.chat-input-wrapper ::v-deep .pa-4,
+.chat-input-wrapper ::v-deep .v-divider {
+  display: none !important;
+}
+
+.feedback-loading .stop-button {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #f57c00;
+  font-size: 24px;
+  cursor: pointer;
+}
+.feedback-loading .stop-button:hover {
+  text-decoration: underline;
 }
 </style>

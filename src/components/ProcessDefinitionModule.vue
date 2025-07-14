@@ -395,6 +395,10 @@ export default {
                         }
                         newProcessDefinition.data = me.processVariables;
 
+                        if (!newProcessDefinition.sequences) {
+                            newProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
+                        }
+
                         if (!me.processDefinition) {
                             me.processDefinition = newProcessDefinition
                         } else {
@@ -408,9 +412,9 @@ export default {
                                     return newRole;
                                 });
                             }
-                            if (me.processDefinition && me.processDefinition.sequences) {
-                                me.processDefinition = newProcessDefinition
-                            }
+
+                            newProcessDefinition = me.checkDefinitionSync(newProcessDefinition, me.processDefinition);
+                            me.processDefinition = newProcessDefinition;
                         }
 
                         if (info.name && info.name != '') {
@@ -1094,6 +1098,30 @@ export default {
                     console.log(e);
                 }
             });
+        },
+
+        checkDefinitionSync(newVal, oldVal) {
+            if (newVal && oldVal) {
+                if (newVal.activities && oldVal.activities) {
+                    newVal.activities = newVal.activities.map(newActivity => {
+                        const oldActivity = oldVal.activities.find(oldActivity => oldActivity.id === newActivity.id);
+                        if (oldActivity) {
+                            newActivity.name = oldActivity.name;
+                            newActivity.role = oldActivity.role;
+                            newActivity.tool = oldActivity.tool;
+                            newActivity.type = oldActivity.type;
+                            newActivity.process = oldActivity.process;
+                            newActivity.duration = oldActivity.duration;
+                            newActivity.agentMode = oldActivity.agentMode;
+                            newActivity.description = oldActivity.description;
+                            newActivity.instruction = oldActivity.instruction;
+                            newActivity.properties = oldActivity.properties;
+                        }
+                        return newActivity;
+                    });
+                }
+                return newVal;
+            }
         }
     }
 };

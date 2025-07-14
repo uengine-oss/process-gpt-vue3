@@ -258,7 +258,8 @@ export default {
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: role ? JSON.stringify(message) : message.text,
-                    image: message.image || "",
+                    image: (message.images && message.images.length > 0) ? message.images[0].url : (message.image || ""),
+                    images: message.images || null,
                     replyUserName: this.replyUser.name,
                     replyContent: this.replyUser.content,
                     replyUserEmail: this.replyUser.email,
@@ -270,7 +271,8 @@ export default {
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: role ? (typeof message == 'string' ? message : JSON.stringify(message)) : message.text,
-                    image: typeof message == 'string' ? "" : message.image,
+                    image: typeof message == 'string' ? "" : ((message.images && message.images.length > 0) ? message.images[0].url : (message.image || "")),
+                    images: typeof message == 'string' ? null : (message.images || null),
                     descriptions: message.descriptions,
                     checkPoints: message.checkPoints,
                     attainable: message.attainable,
@@ -287,7 +289,8 @@ export default {
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: role ? (typeof message == 'string' ? message : JSON.stringify(message)) : message.text,
-                    image: typeof message == 'string' ? "" : message.image,
+                    image: typeof message == 'string' ? "" : ((message.images && message.images.length > 0) ? message.images[0].url : (message.image || "")),
+                    images: typeof message == 'string' ? null : (message.images || null),
                 };
 
             }
@@ -295,7 +298,7 @@ export default {
             return obj;
         },
         async sendMessage(message) {
-            if (message.text !== '' || message.image !== null) {
+            if (message.text !== '' || (message.images && message.images.length > 0) || message.image !== null) {
                 // 백그라운드 요청 ID 생성 및 등록
                 const requestId = this.uuid();
                 this.activeBackgroundRequests.set(requestId, {
@@ -323,19 +326,34 @@ export default {
                 if(this.generator){
                     this.generator.model = "gpt-4o";
                 }
-                if (message.image && message.image != '') {
+                if ((message.images && message.images.length > 0) || (message.image && message.image != '')) {
+                    // 텍스트 컨텐츠 추가
                     chatObj.content = [
                         {
                             "type": "text",
                             "text": message.text
-                        },
-                        {
+                        }
+                    ];
+                    
+                    // 다중 이미지 처리
+                    if (message.images && message.images.length > 0) {
+                        message.images.forEach((image, index) => {
+                            chatObj.content.push({
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": image.url
+                                }
+                            });
+                        });
+                    } else if (message.image && message.image != '') {
+                        // 기존 단일 이미지 호환성
+                        chatObj.content.push({
                             "type": "image_url",
                             "image_url": {
                                 "url": message.image
                             }
-                        }
-                    ];
+                        });
+                    }
 
                     this.generator.model = "gpt-4o-mini";
 
@@ -347,8 +365,9 @@ export default {
                 this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
 
                 chatObj = this.createMessageObj(message);
-                if (message.image && message.image != '') {
-                    chatObj['image'] = message.image;
+                if ((message.images && message.images.length > 0) || (message.image && message.image != '')) {
+                    const imageToUse = message.images && message.images.length > 0 ? message.images[0].url : message.image;
+                    chatObj['image'] = imageToUse;
                 }
 
                 if(!this.messages){

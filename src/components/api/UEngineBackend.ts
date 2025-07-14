@@ -15,6 +15,14 @@ class UEngineBackend implements Backend {
         return null;
     }
 
+    async getMCPByTenant() {
+        return null;
+    }
+    
+    async setMCPByTenant(mcp: any) {
+        return null;
+    }
+
     async watchNotifications(callback: (notification: any) => void) {
         return null;
     }
@@ -81,12 +89,6 @@ class UEngineBackend implements Backend {
     }
 
     async getGroupList() {
-        return [];
-    }
-    
-
-    async getNotifications(callback: (data: any) => void) {
-        // Placeholder implementation
         return [];
     }
 

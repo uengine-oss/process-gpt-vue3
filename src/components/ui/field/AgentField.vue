@@ -7,6 +7,7 @@
             :teamInfo="teamInfo"
             :type="type"
             :reset="resetGenerator"
+            :mcpTools="mcpTools"
             @input-generated="onInputGenerated"
             @generation-started="onGenerationStarted"
             @generation-finished="onGenerationFinished"
@@ -93,7 +94,7 @@
                 ></v-textarea>
                 <v-combobox
                     v-model="selectedTools"
-                    :items="tools"
+                    :items="toolList"
                     :label="$t('agentField.agentTools')"
                     multiple
                     chips
@@ -208,7 +209,8 @@ export default {
                 skills: '',
                 model: ''
             },
-            tools: [],
+            mcpTools: {},
+            toolList: [],
             selectedTools: [],
             skills: [],
             selectedSkills: [],
@@ -394,9 +396,15 @@ export default {
         },
         async getTools() {
             const backend = BackendFactory.createBackend();
-            const jsonData = await backend.getMCPTools();
-            const tools = Object.keys(jsonData);
-            this.tools = tools;
+            const jsonData = await backend.getMCPByTenant();
+            if (jsonData) {
+                this.mcpTools = jsonData.mcpServers;
+                const tools = Object.keys(jsonData.mcpServers).filter(tool => jsonData.mcpServers[tool].enabled);
+                this.toolList = tools;
+            } else {
+                alert('MCP 설정이 없습니다.');
+                this.$router.push('/account/settings');
+            }
         },
         async fetchAgentData() {
             if (!this.agent.url) {

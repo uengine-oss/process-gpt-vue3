@@ -667,8 +667,7 @@ export default {
                     };
                     const data = await backend.start(input);
                     if (data.instanceId) {
-                        const route = window.$mode == 'ProcessGPT' ? atob(data.instanceId) : data.instanceId;
-                        me.$router.push(`/instancelist/${route}`);
+                        me.$router.push(`/instancelist/${data.instanceId.replace(/\./g, '_DOT_')}`);
                     }
                     me.EventBus.emit('instances-updated');
                     

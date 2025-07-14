@@ -842,6 +842,11 @@ export default {
 
         },
         onPan(ev) {
+            const srcEvent = ev.srcEvent;
+            if (srcEvent.pointerType === 'mouse' || srcEvent.type.startsWith('mouse')) {
+                return;
+            }
+
             const canvas = this.bpmnViewer.get('canvas');
             
             if (ev.type === 'panstart') {
@@ -867,6 +872,10 @@ export default {
             ev.srcEvent.preventDefault();
         },
         onPinch(ev) {
+            const srcEvent = ev.srcEvent;
+            if (srcEvent.pointerType === 'mouse' || srcEvent.type.startsWith('mouse')) {
+                return;
+            }
             const canvas = this.bpmnViewer.get('canvas');
 
             if (ev.type === 'pinchstart') {

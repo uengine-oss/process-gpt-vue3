@@ -374,7 +374,7 @@ class ProcessGPTBackend implements Backend {
             //     name: instance.proc_inst_name,
             //     projectId: instance.project_id,
             //     currentActivityIds: instance.current_activity_ids,
-            //     currentUserIds: instance.current_user_ids,
+            //     participants: instance.participants,
             //     roleBindings: instance.role_bindings,
             //     variables_data: instance.variables_data,
             //     status: instance.status,
@@ -401,7 +401,7 @@ class ProcessGPTBackend implements Backend {
                 //     name: item.proc_inst_name,
                 //     projectId: item.project_id,
                 //     currentActivityIds: item.current_activity_ids,
-                //     currentUserIds: item.current_user_ids,
+                //     participants: item.participants,
                 //     roleBindings: item.role_bindings,
                 //     variables_data: item.variables_data,
                 //     status: item.status,
@@ -429,7 +429,7 @@ class ProcessGPTBackend implements Backend {
                 //     name: item.proc_inst_name,
                 //     projectId: item.project_id,
                 //     currentActivityIds: item.current_activity_ids,
-                //     currentUserIds: item.current_user_ids,
+                //     participants: item.participants,
                 //     roleBindings: item.role_bindings,
                 //     variables_data: item.variables_data,
                 //     status: item.status,
@@ -550,12 +550,6 @@ class ProcessGPTBackend implements Backend {
                     key: 'user_id',
                     value: `%${options.userId}%`
                 }
-            } else {
-                const email = localStorage.getItem("email");
-                filter.like = {
-                    key: 'user_id',
-                    value: `%${email}%`
-                }
             }
 
             const list = await storage.list('todolist', filter);
@@ -593,6 +587,7 @@ class ProcessGPTBackend implements Backend {
         try {
             // id와 변경할 필드만 포함하여 upsert
             const putObj = { id: taskId, ...workItem };
+            console.log('putObj', putObj);
             return await storage.putObject('todolist', putObj);
         } catch (error) {
             //@ts-ignore
@@ -1296,7 +1291,7 @@ class ProcessGPTBackend implements Backend {
         var me = this
         const list = await storage.list('bpm_proc_inst', { match: { status: status } });
         const email = window.localStorage.getItem("email");
-        const filteredData = list.filter((item: any) => item.current_user_ids.includes(email));
+        const filteredData = list.filter((item: any) => item.participants.includes(email));
 
         if (filteredData && filteredData.length > 0) {
             return filteredData.map((item: any) => {
@@ -1343,7 +1338,7 @@ class ProcessGPTBackend implements Backend {
                     values: status
                 },
                 matchArray: {
-                    column: 'current_user_ids',
+                    column: 'participants',
                     values: [email]
                 },
                 orderBy: 'updated_at',
@@ -1553,7 +1548,7 @@ class ProcessGPTBackend implements Backend {
                 proc_def_version: instItem.procDefVersion,
                 proc_inst_name: instItem.name,
                 current_activity_ids: instItem.currentActivityIds || [],
-                current_user_ids: instItem.currentUserIds || [],
+                participants: instItem.currentUserIds || [],
                 role_bindings: instItem.roleBindings || [],
                 variables_data: instItem.variablesData || [],
                 status: instItem.status,
@@ -3049,7 +3044,7 @@ class ProcessGPTBackend implements Backend {
             name: item.proc_inst_name,
             projectId: item.project_id,
             currentActivityIds: item.current_activity_ids,
-            currentUserIds: item.current_user_ids,
+            participants: item.participants,
             roleBindings: item.role_bindings,
             variables_data: item.variables_data,
             status: item.status,
@@ -3105,6 +3100,27 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.get('/execution/mcp-tools');
             return response.data;
         } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getMCPByTenant() {
+        try {
+            const tenantId = window.$tenantName;
+            const mcp = await storage.getString('tenants', { match: { id: tenantId }, column: 'mcp' });
+            return mcp;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+    
+    async setMCPByTenant(mcp: any) {
+        try {
+            const tenantId = window.$tenantName;
+            await storage.putObject('tenants', { id: tenantId, mcp: mcp });
+        } catch (error) {
+            //@ts-ignore
             throw new Error(error.message);
         }
     }

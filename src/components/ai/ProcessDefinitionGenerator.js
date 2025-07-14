@@ -41,6 +41,13 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
     );
   }
 
+  setStrategy(strategy) {
+    this.previousMessages[0].content = this.previousMessages[0].content.replace(
+      "{{ 전략 맵 }}",
+      JSON.stringify(strategy)
+    );
+  }
+
   buildSystemInstructions(jsonStructure, externalSystems) {
     return [
       this.getDefinitionGuideSection(jsonStructure),
@@ -60,6 +67,10 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
 
     - 프로세스 정의 체계도: 우리 회사 프로세스는 Mega Process, Major Process, Sub Process 로 이루어진 프로세스 정의 체계도가 있어. 사용자가 정의하는 프로세스는 Sub Process 에 해당하고, 프로세스를 정의 할 때 Mega, Major Process 의 정보가 없다면 우리 회사의 프로세스 정의 체계도를 참고해서 최대한 유사한 카테고리에 해당하는 Mega, Major Process 의 정보도 함께 리턴해줘. 만약 유사한 Mega, Major Process 가 없다면 새로운 Mega, Major Process 를 리턴할 수 있도록 해.
 
+    - 회사 조직도: 우리 회사의 조직도가 있어. 사용자가 정의하는 프로세스는 조직도에 해당하는 팀을 참고해서 프로세스 정의를 생성해줘 참고를 했다면 관련 설명 첨부.
+
+    - 전략 맵: 우리 회사의 전략 맵이 있어. 사용자가 정의하는 프로세스는 전략 맵에 해당하는 전략을 참고해서 프로세스 정의를 생성해줘 참고를 했다면 관련 설명 첨부.
+
     만약 이미지를 입력 받았다면 받은 이미지를 분석해서 분석한 내용을 바탕으로 프로세스 정의를 생성해줘.
 
     프로세스 정의 체계도:
@@ -68,8 +79,11 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
     기존 프로세스 정보:
     {{ 기존 프로세스 정보 }}
     
-    회사 조직도: {{ 회사 조직도 정보 }}
+    회사 조직도:
+    {{ 회사 조직도 정보 }}
 
+    전략 맵:
+    {{ 전략 맵 }}
 
     사용자가 설명하는 프로세스를 분석하여 다음 구성요소를 포함한 비즈니스 프로세스 정의를 생성해야 합니다:
     - 프로세스 시작점과 종료점

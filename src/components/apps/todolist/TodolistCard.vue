@@ -44,6 +44,7 @@ export default {
     },
     data: () => ({
         mode: window.$mode,
+        userInfo: null,
         todolist: [
             {
                 id: 'TODO',
@@ -93,10 +94,10 @@ export default {
                 }));
         }
     },
-    mounted() {
+    async mounted() {
         this.mode = window.$mode;
-    },
-    async created() {
+        this.userInfo = await backend.getUserInfo();
+
         await Promise.all([
             this.loadToDo(),
             this.loadCompletedWorkList(),
@@ -121,7 +122,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    let worklist = await backend.getWorkList()
+                    let worklist = await backend.getWorkList({userId: this.userInfo.id})
                     if(!worklist) worklist = []
                     worklist.forEach(function(item) {
                         if (item.status == 'TODO' || item.status == 'NEW' || item.status == 'DRAFT') {

@@ -5,7 +5,7 @@ language sql stable
 as $$
     select 
         nullif(
-            ((current_setting('request.jwt.claims')::jsonb ->>  'app_metadata')::jsonb ->> 'tenant_id'),
+            ((current_setting('request.jwt.claims', true)::jsonb ->>  'app_metadata')::jsonb ->> 'tenant_id'),
             ''
         )::text
 $$;
@@ -15,6 +15,7 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS id text;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS owner uuid DEFAULT auth.uid();
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS mcp jsonb;
 
 -- user_devices table
 ALTER TABLE public.user_devices ADD COLUMN IF NOT EXISTS user_email text;
@@ -106,7 +107,7 @@ ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS proc_def_id text;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS proc_inst_id text;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS proc_inst_name text;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS current_activity_ids text[];
-ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS current_user_ids text[];
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS participants text[];
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS role_bindings jsonb;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS variables_data jsonb;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS status text;
@@ -119,6 +120,29 @@ ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS due_date timestamp wit
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
+
+-- Properly migrate current_user_ids to participants
+DO $$
+BEGIN
+    -- Check if current_user_ids column exists
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'bpm_proc_inst' 
+        AND column_name = 'current_user_ids'
+    ) THEN
+        -- Copy data from current_user_ids to participants for all rows
+        UPDATE public.bpm_proc_inst 
+        SET participants = current_user_ids 
+        WHERE current_user_ids IS NOT NULL;
+        
+        -- Drop the old column
+        ALTER TABLE public.bpm_proc_inst DROP COLUMN current_user_ids;
+        
+        RAISE NOTICE 'Successfully migrated current_user_ids to participants and dropped old column';
+    ELSE
+        RAISE NOTICE 'current_user_ids column does not exist, migration not needed';
+    END IF;
+END $$;
 
 -- todolist table
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS id uuid;
@@ -209,19 +233,6 @@ ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS activity_id tex
 ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS html text;
 ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS author_uid text;
 
--- agents table
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS id text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS name text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS role text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS goal text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS persona text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS tenant_id text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS url text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS description text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS tools text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS profile text;
-ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS skills text;
-
 -- tenant_oauth table
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS id UUID DEFAULT uuid_generate_v4();
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS tenant_id TEXT;
@@ -260,14 +271,7 @@ ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS lead_time integer;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS type character varying;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS created_date date;
 ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS task_id uuid;
-ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS depends_id uuid; 
-
--- project
-CREATE POLICY project_insert_policy ON project FOR INSERT TO authenticated WITH CHECK ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
-CREATE POLICY project_select_policy ON project FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
-CREATE POLICY project_update_policy ON project FOR UPDATE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
-CREATE POLICY project_delete_policy ON project FOR DELETE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
-
+ALTER TABLE public.task_dependency ADD COLUMN IF NOT EXISTS depends_id uuid;
 
 DROP TRIGGER IF EXISTS encrypt_credentials_trigger ON public.users;
 
@@ -276,17 +280,49 @@ DROP FUNCTION IF EXISTS decrypt_credentials(TEXT);
 DROP FUNCTION IF EXISTS encrypt_credentials_trigger();
 
 
-alter publication supabase_realtime add table chats;
-alter publication supabase_realtime add table notifications;
-alter publication supabase_realtime add table todolist;
-alter publication supabase_realtime add table bpm_proc_inst;
-alter publication supabase_realtime add table proc_def;
+-- Add tables to supabase_realtime publication if not already added
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'chats'
+    ) THEN
+        alter publication supabase_realtime add table chats;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'notifications'
+    ) THEN
+        alter publication supabase_realtime add table notifications;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'todolist'
+    ) THEN
+        alter publication supabase_realtime add table todolist;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'bpm_proc_inst'
+    ) THEN
+        alter publication supabase_realtime add table bpm_proc_inst;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'proc_def'
+    ) THEN
+        alter publication supabase_realtime add table proc_def;
+    END IF;
+END $$;
 
 DROP TABLE IF EXISTS public.agents;
 
 --events table
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS id text;
-ALTER TABLE public.events ADD COLUMN IF NOT EXISTS run_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS job_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS todo_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS proc_inst_id text;

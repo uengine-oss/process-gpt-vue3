@@ -171,7 +171,7 @@ export default {
                     me.chatRoomId = taskId;
                 }
             } else if (me.$route.params.instId) {
-                id = decodeURIComponent(atob(me.$route.params.instId));
+                id = me.$route.params.instId.replace(/_DOT_/g, '.');
                 this.chatRoomId = id;
             }
 
@@ -201,9 +201,9 @@ export default {
             }
 
             if (this.processInstance) {
-                if (this.processInstance.currentUserIds &&
-                    this.processInstance.currentUserIds.length > 0 &&
-                    !this.processInstance.currentUserIds.includes(this.userInfo.email)
+                if (this.processInstance.participants &&
+                    this.processInstance.participants.length > 0 &&
+                    !this.processInstance.participants.includes(this.userInfo.email)
                 ) {
                     this.disableChat = true;
                 }
