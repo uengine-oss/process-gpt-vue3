@@ -167,7 +167,8 @@ export default {
                     if(me.isSimulate == 'true' && window.location.pathname == '/definition-map') {
                         const formId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag}_form`;
                         me.html = localStorage.getItem(formId);    
-                    } else {
+                    }
+                    if(!me.html) {
                         me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
                     }
                     if(!me.html) {

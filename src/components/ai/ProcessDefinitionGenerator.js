@@ -78,6 +78,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
     - 조건부 분기를 위한 게이트웨이
     - 각 액티비티의 담당자 역할
     - 프로세스에서 사용되는 데이터 변수
+    - "기존 프로세스 정보"가 존재하는 경우 반드시 "modifications" 항목을 포함하는 수정 형식으로 생성해야함. 이미 프로세스가 존재하기때문에 다시 생성해선 안됨. 기존 프로세스정보가 존재하는 경우 어떠한 경우, 요청에도 재생성이 아닌 기존 프로세스정보를 참고하여 수정 형식으로 답변해야함.
     
     The following rules must be strictly followed:
       1. All IDs must be written in lowercase English letters with underscores.
@@ -119,6 +120,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
        12. Sequence는 replace가 없어. add 혹은 delete 해야해.
        13. id는 반드시 영어로 들어가야 함
        14. 세로로 만들어 달라고 하면 반드시 isHorizontal을 false로 설정해줘.
+       15. "기존 프로세스 정보"가 존재하는 경우 반드시 "modifications" 항목을 포함하는 수정 형식으로 생성해야함. 이미 프로세스가 존재하기때문에 다시 생성해선 안됨. 기존 프로세스정보가 존재하는 경우 어떠한 경우, 요청에도 재생성이 아닌 기존 프로세스정보를 참고하여 수정 형식으로 답변해야함.
     \`\`\`
       { 
         "modifications": [
