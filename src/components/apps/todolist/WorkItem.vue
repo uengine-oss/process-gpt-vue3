@@ -13,29 +13,6 @@
                         :style="isMobile ? 'margin: 0px !important;' : ''">
                         {{ workItemStatus }}
                     </v-chip>
-                    <div v-if="isMobile">
-                        <v-btn
-                            class="pl-5 pr-6 ml-1" 
-                            density="compact"
-                            rounded
-                            style="background-color: #808080; color: white;"
-                            @click="beforeGenerateExample"
-                            :loading="isGeneratingExample"
-                            :disabled="isGeneratingExample"
-                        >
-                            <template v-if="!isGeneratingExample">
-                                <v-row v-if="generator">
-                                    <v-icon>mdi-refresh</v-icon>
-                                    <span class="ms-2">예시 재생성</span>
-                                </v-row>
-                                <v-row v-else>
-                                    <Icons :icon="'sparkles'" :size="20" />
-                                    <div class="ms-1">빠른 예시 생성</div>
-                                </v-row>
-                            </template>
-                            
-                        </v-btn>
-                    </div>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-if="!isMobile" 
@@ -288,6 +265,22 @@
                                 <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
                             </v-btn>
                         </div>
+                        <v-btn v-if="isMobile"
+                            @click="beforeGenerateExample"
+                            :loading="isGeneratingExample"
+                            :disabled="isGeneratingExample"
+                            class="mr-1 text-medium-emphasis"
+                            density="comfortable"
+                            icon
+                            variant="outlined"
+                            size="small"
+                            style="border-color: #e0e0e0 !important;"
+                        >
+                            <template v-if="!isGeneratingExample">
+                                <v-icon v-if="generator">mdi-refresh</v-icon>
+                                <Icons v-else :icon="'sparkles'" :size="'16'" />
+                            </template>
+                        </v-btn>
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             class="mr-1 text-medium-emphasis"
                             density="comfortable"
@@ -434,7 +427,7 @@ export default {
         updatedDefKey: 0,
 
         // WorkItem Tabs
-        selectedTab: 'progress',
+        selectedTab: 'history',
         
         eventList: [],
 
@@ -549,23 +542,23 @@ export default {
                     ]
                 } else if (this.bpmn && !this.isStarted && this.isCompleted) {
                     return [
-                        { value: 'output', label: this.$t('InstanceCard.output') },
-                        { value: 'progress', label: this.$t('WorkItem.progress') },
-                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
+                        // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
+                        { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
+                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
                         { value: 'agent-feedback', label: '에이전트 피드백' },
                     ]
                 } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
                     return [
-                        { value: 'output', label: this.$t('InstanceCard.output') },
-                        { value: 'progress', label: this.$t('WorkItem.progress') },
+                        { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
+                        { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
-                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
+                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
                         { value: 'agent-feedback', label: '에이전트 피드백' },
-                        { value: 'history', label: this.$t('WorkItem.history') },
+                        // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                     ]
                 } else {
                     return [
-                        { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
+                        { value: 'chatbot', label: this.$t('WorkItem.chatbot') }, //어시스턴트
                         { value: 'agent-feedback', label: '에이전트 피드백' },
                     ]
                 }

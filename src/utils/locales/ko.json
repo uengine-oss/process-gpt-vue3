@@ -847,7 +847,7 @@
     },
     "WorkItem": {
         "progress": "프로세스",
-        "history": "워크 히스토리",
+        "history": "액티비티",
         "chatbot": "어시스턴트",
         "agent": "빠른 초안 생성",
         "agentMonitor": "에이전트에 맡기기",
@@ -904,7 +904,7 @@
     "InstanceCard": {
         "progress": "프로세스",
         "workItem": "워크 아이템",
-        "workHistory": "워크 히스토리",
+        "workHistory": "액티비티",
         "ganttChart": "간트 차트",
         "kanbanBoard": "칸반보드",
         "sendEvent": "{event} 이벤트 보내기",

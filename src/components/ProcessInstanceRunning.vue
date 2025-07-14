@@ -47,24 +47,20 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        
-                                        <!-- 업다운 버튼 (항상 표시) -->
-                                        <v-row class="pa-0 ma-0 d-flex justify-end mb-2">
-                                            <v-btn @click="toggleDetails"
-                                                rounded
-                                            >
-                                                <span class="mr-1">생성중 세부내용</span>
-                                                <v-icon v-if="isShowDetails">mdi-chevron-up</v-icon>
-                                                <v-icon v-else>mdi-chevron-down</v-icon>
-                                            </v-btn>
-                                        </v-row>
+                                        <div v-if="!detailContent">생성중입니다
+                                            <span class="loading-dots">
+                                                <span>.</span>
+                                                <span>.</span>
+                                                <span>.</span>
+                                                <span>.</span>
+                                                <span>.</span>
+                                            </span>
+                                        </div>
                                         
                                         <!-- 세부 내용 -->
-                                        <div v-if="isShowDetails">
-                                            <pre class="text-body-1">
-                                                {{ detailContent }}
-                                            </pre>
-                                        </div>
+                                        <pre v-else class="text-body-1">
+                                            {{ detailContent }}
+                                        </pre>
                                         
                                     </v-sheet>
                                 </div>
@@ -95,7 +91,6 @@ export default {
             title: '',
             streamingText: '...',
             detailContent: '',
-            isShowDetails: false, // 기본 접힌 상태
             taskId: '',
             subscription: null,
             bpmn: '',
@@ -119,10 +114,10 @@ export default {
                 this.streamingText = task.log;
                 this.parseTaskLog(task.log);
             }
-            if (task.status == "DONE") {
-                this.EventBus.emit('instances-updated');
-                this.$emit('updated');
-            }
+            // if (task.status == "DONE") {
+            //     this.EventBus.emit('instances-updated');
+            //     this.$emit('updated');
+            // }
         });
     },
     computed: {
@@ -145,16 +140,13 @@ export default {
                 this.detailContent = log;
             }
         },
-        toggleDetails() {
-            this.isShowDetails = !this.isShowDetails;
-        }
     },
-    beforeUnmount() {
-        if (this.subscription) {
-            console.log('Unsubscribing from task log for taskId:', this.taskId);
-            window.$supabase.removeChannel(this.subscription);
-        }
-    }
+    // beforeUnmount() {
+    //     if (this.subscription) {
+    //         console.log('Unsubscribing from task log for taskId:', this.taskId);
+    //         window.$supabase.removeChannel(this.subscription);
+    //     }
+    // }
 }
 </script>
 

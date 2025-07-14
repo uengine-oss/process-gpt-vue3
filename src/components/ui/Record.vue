@@ -545,49 +545,4 @@ export default {
 .chatgpt-waveform canvas {
     border-radius: 10px;
 }
-
-.loading-dots span {
-    animation: loading-dot 2s infinite;
-    animation-fill-mode: both;
-    opacity: 0;
-}
-
-.loading-dots span:nth-child(1) {
-    animation-delay: 0s;
-}
-
-.loading-dots span:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.loading-dots span:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-.loading-dots span:nth-child(4) {
-    animation-delay: 0.6s;
-}
-
-.loading-dots span:nth-child(5) {
-    animation-delay: 0.8s;
-}
-
-@keyframes loading-dot {
-    0% {
-        opacity: 0;
-        transform: scale(0);
-    }
-    5% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    65% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    70%, 100% {
-        opacity: 0;
-        transform: scale(0);
-    }
-}
 </style>
