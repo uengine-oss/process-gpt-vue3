@@ -15,26 +15,24 @@
                     </v-chip>
                     <div v-if="isMobile">
                         <v-btn
-                            class="feedback-btn-mobile align-center" 
-                            elevation="2" 
-                            color="primary" 
+                            class="pl-5 pr-6 ml-1" 
                             density="compact"
                             rounded
+                            style="background-color: #808080; color: white;"
                             @click="beforeGenerateExample"
                             :loading="isGeneratingExample"
                             :disabled="isGeneratingExample"
-                            style="margin-left: 5px; margin-right: 5px;"
                         >
-                            <span v-if="!isGeneratingExample">
-                                <span v-if="generator">
-                                    <v-icon class="mr-1">mdi-refresh</v-icon>
-                                    <span>예시 재생성</span>
-                                </span>
-                                <span v-else>
-                                    <v-icon class="mr-1">mdi-pencil</v-icon>
-                                    <span>빠른 예시 생성</span>
-                                </span>
-                            </span>
+                            <template v-if="!isGeneratingExample">
+                                <v-row v-if="generator">
+                                    <v-icon>mdi-refresh</v-icon>
+                                    <span class="ms-2">예시 재생성</span>
+                                </v-row>
+                                <v-row v-else>
+                                    <Icons :icon="'sparkles'" :size="20" />
+                                    <div class="ms-1">빠른 예시 생성</div>
+                                </v-row>
+                            </template>
                             
                         </v-btn>
                     </div>
@@ -119,7 +117,8 @@
                                 v-for="tab in tabList"
                                 :key="tab.value"
                                 :variant="selectedTab === tab.value ? 'flat' : 'text'"
-                                :color="selectedTab === tab.value ? 'primary' : 'default'"
+                                :color="selectedTab === tab.value ? '' : 'default'"
+                                :style="selectedTab === tab.value ? 'background-color: #808080; color: white;' : ''"
                                 size="small"
                                 @click="selectedTab = tab.value"
                             >
@@ -243,7 +242,52 @@
                 :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 190px); overflow: auto')"
             >
                 <div v-if="currentComponent && !isNotExistDefaultForm" class="work-itme-current-component" style="height: 100%;">
-                    <div :style="isMobile ? 'top: 90px;' : 'top: 70px;'" style="position: absolute; right: 20px; z-index: 9999;">
+                    <div :style="isMobile ? 'top: 90px;' : 'top: 70px;'" style="position: absolute; right: 28px; z-index: 9999;">
+                        <v-btn
+                            v-if="!isMobile"
+                            class="pl-5 pr-6 mr-1" 
+                            density="comfortable"
+                            rounded
+                            style="background-color: #808080; color: white;"
+                            @click="beforeGenerateExample"
+                            :loading="isGeneratingExample"
+                            :disabled="isGeneratingExample"
+                        >
+                            <template v-if="!isGeneratingExample">
+                                <v-row v-if="generator">
+                                    <v-icon>mdi-refresh</v-icon>
+                                    <span class="ms-2">예시 재생성</span>
+                                </v-row>
+                                <v-row v-else>
+                                    <Icons :icon="'sparkles'" :size="20" />
+                                    <div class="ms-1">빠른 예시 생성</div>
+                                </v-row>
+                            </template>
+                            
+                        </v-btn>
+                        <div v-if="isSimulate == 'true'" style="margin-left: 10px;">
+                            <FormDefinition
+                                ref="formDefinition"
+                                type="simulation"
+                                :formId="formId"
+                                :simulation_data="simulation_data"
+                                @addedNewForm="addedNewForm"
+                                v-model="tempFormHtml"
+                                v-if="showFeedbackForm"
+                                class="feedback-form"
+                            />  
+                            <v-btn 
+                                class="feedback-btn" 
+                                fab 
+                                elevation="2" 
+                                color="primary" 
+                                @click="toggleFeedback"
+                                :disabled="isGeneratingExample"
+                            >
+                                <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
+                                <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
+                            </v-btn>
+                        </div>
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             class="mr-1 text-medium-emphasis"
                             density="comfortable"
@@ -269,6 +313,7 @@
                         <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
                     </div>
                     <component 
+                        class="work-item-current-component-box"
                         :is="currentComponent" 
                         :definitionId="definitionId"
                         :work-item="workItem" 
@@ -284,54 +329,6 @@
                         :is-finished-agent-generation="isFinishedAgentGeneration"
                         :processDefinition="processDefinition"
                     ></component>
-                    
-                    <div class="feedback-container">
-                        <v-btn
-                            v-if="!isMobile"
-                            class="feedback-btn" 
-                            fab 
-                            elevation="2" 
-                            color="primary" 
-                            @click="beforeGenerateExample"
-                            :loading="isGeneratingExample"
-                            :disabled="isGeneratingExample"
-                        >
-                            <span v-if="!isGeneratingExample">
-                                <span v-if="generator">
-                                    <v-icon>mdi-refresh</v-icon>
-                                    <span class="ms-2">예시 재생성</span>
-                                </span>
-                                <span v-else>
-                                    <v-icon>mdi-pencil</v-icon>
-                                    <span class="ms-2">빠른 예시 생성</span>
-                                </span>
-                            </span>
-                            
-                        </v-btn>
-                        <div v-if="isSimulate == 'true'" style="margin-left: 10px;">
-                            <FormDefinition
-                                ref="formDefinition"
-                                type="simulation"
-                                :formId="formId"
-                                :simulation_data="simulation_data"
-                                @addedNewForm="addedNewForm"
-                                v-model="tempFormHtml"
-                                v-if="showFeedbackForm"
-                                class="feedback-form"
-                            />   
-                            <v-btn 
-                                class="feedback-btn" 
-                                fab 
-                                elevation="2" 
-                                color="primary" 
-                                @click="toggleFeedback"
-                                :disabled="isGeneratingExample"
-                            >
-                                <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
-                                <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
-                            </v-btn>
-                        </div>
-                    </div>
                 </div>
                 <div v-else-if="isNotExistDefaultForm">
                     <div class="d-flex justify-center align-center" style="height: 100%;">
@@ -1076,8 +1073,8 @@ export default {
 
 .feedback-container {
     position: absolute;
-    bottom: 20px;
-    right: 20px;
+    bottom: 3px;
+    right: 35px;
     display: flex;
     align-items: flex-end;
     z-index: 100;

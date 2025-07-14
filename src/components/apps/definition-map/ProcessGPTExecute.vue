@@ -5,17 +5,27 @@
                 <h2 v-if="isSimulate == 'true'">{{ $t('ProcessGPTExecute.processSimulate') }}</h2>
                 <h2 v-else>{{ $t('ProcessGPTExecute.processStart') }}</h2>
                 <v-spacer></v-spacer>
-                <div class="form-work-item-mobile ml-auto" v-if="!isCompleted">
-                    <v-btn @click="executeProcess" color="primary" rounded>제출 완료</v-btn>
-                </div>
-                <v-btn @click="closeDialog"
-                    class="ml-auto" 
-                    variant="text" 
-                    density="compact"
-                    icon
-                >
-                    <v-icon>mdi-close</v-icon>
+                <v-btn v-if="!isCompleted"
+                    @click="executeProcess"
+                    color="primary" 
+                    class="form-work-item-mobile"
+                    variant="flat"
+                    rounded
+                >제출 완료
                 </v-btn>
+                <div v-if="!isMobile">
+                    <v-btn @click="closeDialog"
+                        class="ml-auto" 
+                        variant="text" 
+                        density="compact"
+                        icon
+                    >
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </div>
+                <div v-else>
+                    <v-btn @click="closeDialog" rounded style="background-color: #808080; color: white;" class="ml-2">닫기</v-btn>
+                </div>
             </v-row>
             
             <div :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">

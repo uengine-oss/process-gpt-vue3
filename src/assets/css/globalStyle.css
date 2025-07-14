@@ -752,6 +752,10 @@ hr {
     overflow: auto;
 }
 
+.work-item-current-component-box .form-layout-card-contents {
+    padding-top: 32px;
+}
+
 @media only screen and (max-width: 1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;

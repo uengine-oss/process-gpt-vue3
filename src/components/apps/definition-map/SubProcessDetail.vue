@@ -70,6 +70,7 @@
                             <v-btn @click="executeProcess('execute')"
                                 class="mr-2"
                                 color="primary"
+                                variant="flat"
                                 rounded
                                 density="comfortable"
                             >
