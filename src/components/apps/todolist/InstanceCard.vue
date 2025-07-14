@@ -308,7 +308,7 @@ export default {
             if (this.instance) {
                 if(this.instance.is_deleted) return false;
                 const email = localStorage.getItem('email');
-                if (this.instance.currentUserIds && this.instance.currentUserIds.length > 0 && this.instance.currentUserIds.includes(email)) {
+                if (this.instance.participants && this.instance.participants.length > 0 && this.instance.participants.includes(email)) {
                     return true;
                 }
             }

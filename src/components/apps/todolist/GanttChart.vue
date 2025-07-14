@@ -78,7 +78,7 @@
                                             담당자
                                         </div>
                                         <div class="issue-desc">
-                                            {{ editItem.currentUserIds }}
+                                            {{ editItem.participants }}
                                         </div>
                                     </v-col>
                                 </div>
