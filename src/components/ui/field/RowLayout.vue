@@ -21,7 +21,9 @@
                 <div>{{(alias && alias.length > 0) ? alias : name}}</div>
             </v-card-title>
             
-            <div class="delete-input-details">
+            <div class="delete-input-details" 
+                :class="alias && alias.length  ? '' : 'form-layout-card-contents'"
+            >
                 <slot :modelValue="localModelValue"></slot>
             </div>
         </v-card>
