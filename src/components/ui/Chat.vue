@@ -60,9 +60,17 @@
                                                 <v-row class="ma-0 pa-0">
                                                     <v-spacer></v-spacer>
                                                     
-                                                    <v-sheet v-if="message.image" class="mb-1">
+                                                    <!-- 단일 이미지 표시 (기존 호환성) -->
+                                                    <v-sheet v-if="message.image && !message.images" class="mb-1">
                                                         <img :src="message.image" class="rounded-md" alt="pro" width="250" />
                                                     </v-sheet>
+                                                    
+                                                    <!-- 다중 이미지 표시 -->
+                                                    <div v-if="message.images && message.images.length > 0" class="d-flex flex-wrap mb-1">
+                                                        <v-sheet v-for="(image, imgIndex) in message.images" :key="imgIndex" class="ma-1">
+                                                            <img :src="image.url || image" class="rounded-md" alt="pro" width="250" />
+                                                        </v-sheet>
+                                                    </div>
                                                 </v-row>
 
                                                 <div v-if="editIndex === index" class="bg-lightprimary"
@@ -246,9 +254,17 @@
                                                 </div>
 
                                                 <div v-else class="w-100 pb-3">
-                                                    <v-sheet v-if="message.image" class="mb-1">
+                                                    <!-- 단일 이미지 표시 (기존 호환성) -->
+                                                    <v-sheet v-if="message.image && !message.images" class="mb-1">
                                                         <img :src="message.image" class="rounded-md" alt="pro" width="250" />
                                                     </v-sheet>
+                                                    
+                                                    <!-- 다중 이미지 표시 -->
+                                                    <div v-if="message.images && message.images.length > 0" class="d-flex flex-wrap mb-1">
+                                                        <v-sheet v-for="(image, imgIndex) in message.images" :key="imgIndex" class="ma-1">
+                                                            <img :src="image.url || image" class="rounded-md" alt="pro" width="250" />
+                                                        </v-sheet>
+                                                    </div>
 
                                                     <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }" >
                                                         <template
@@ -587,18 +603,19 @@
             <div v-if="!hideInput" class="chat-info-message-input-box">
                 <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
                 <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-                <div style="z-index: 9999;" class="d-flex">
-                    <div id="imagePreview"></div>
-                    <v-btn
-                        v-if="delImgBtn"
-                        @click="deleteImage()"
-                        density="compact"
-                        icon
-                        size="16"
-                        style="background-color: black !important; margin: 4px 0px 0px -20px !important;"
-                    >
-                        <v-icon color="white" size="14">mdi-close</v-icon>
-                    </v-btn>
+                <div style="z-index: 9999;" class="d-flex flex-wrap">
+                    <div v-for="(image, index) in attachedImages" :key="index" class="image-preview-item">
+                        <img :src="image.url" width="56" height="56" style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />
+                        <v-btn
+                            @click="deleteImage(index)"
+                            density="compact"
+                            icon
+                            size="16"
+                            style="background-color: black !important; margin: 4px 0px 0px -20px !important; position: absolute; top: 4px; right: 4px;"
+                        >
+                            <v-icon color="white" size="14">mdi-close</v-icon>
+                        </v-btn>
+                    </div>
                 </div>
                 <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                     <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
@@ -711,18 +728,19 @@
         <v-card elevation="10" class="pa-4">
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
             <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-            <div style="z-index: 9999;" class="d-flex">
-                <div id="imagePreview"></div>
-                <v-btn
-                    v-if="delImgBtn"
-                    @click="deleteImage()"
-                    density="compact"
-                    icon
-                    size="16"
-                    style="background-color: black !important; margin: 4px 0px 0px -20px !important;"
-                >
-                    <v-icon color="white" size="14">mdi-close</v-icon>
-                </v-btn>
+            <div style="z-index: 9999;" class="d-flex flex-wrap">
+                <div v-for="(image, index) in attachedImages" :key="index" class="image-preview-item">
+                    <img :src="image.url" width="56" height="56" style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />
+                    <v-btn
+                        @click="deleteImage(index)"
+                        density="compact"
+                        icon
+                        size="16"
+                        style="background-color: black !important; margin: 4px 0px 0px -20px !important; position: absolute; top: 4px; right: 4px;"
+                    >
+                        <v-icon color="white" size="14">mdi-close</v-icon>
+                    </v-btn>
+                </div>
             </div>
             <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
@@ -1013,7 +1031,7 @@ export default {
             replyUser: null,
             isViewJSON: [],
             isviewJSONStatus: false,
-            attachedImg: null,
+            attachedImages: [],
             delImgBtn: false,
             showNewMessageNoti: false,
             lastMessage: { name: '', content: '' },
@@ -1158,7 +1176,7 @@ export default {
             if (this.disableChat) {
                 return true
             } else {
-                if (this.newMessage !== '' || this.attachedImg !== null) {
+                if (this.newMessage !== '' || this.attachedImages.length > 0) {
                     return false
                 } else {
                     return true
@@ -1501,7 +1519,7 @@ export default {
                     this.$emit('stopMessage');
                 }
                 var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
-                if (copyMsg.length > 0 || this.attachedImg != null) {
+                if (copyMsg.length > 0 || this.attachedImages.length > 0) {
                     this.send();
                 }
             }
@@ -1516,7 +1534,7 @@ export default {
 
                     this.defMapMsgData = {
                         text: this.newMessage,
-                        image: this.attachedImg,
+                        images: this.attachedImages,
                         mentionedUsers: this.mentionedUsers
                     };
                     
@@ -1534,18 +1552,14 @@ export default {
 
                 } else {
                     this.$emit('sendMessage', {
-                        image: this.attachedImg,
+                        images: this.attachedImages,
                         text: this.newMessage,
                         mentionedUsers: this.mentionedUsers
                     });
                 }
             }
             if (this.isReply) this.isReply = false;
-            this.attachedImg = null;
-            var imagePreview = document.querySelector("#imagePreview");
-            if(imagePreview) {
-                imagePreview.innerHTML = '';
-            }
+            this.attachedImages = [];
             this.delImgBtn = false;
             this.isAtBottom = true
             setTimeout(() => {
@@ -1592,7 +1606,6 @@ export default {
         },
         uploadImage() {
             this.$refs.uploader.value = '';
-            this.attachedImg = null;
             this.$refs.uploader.click();
         },
         async changeImage(e) {
@@ -1604,9 +1617,11 @@ export default {
                 const data = await backend.uploadImage(fileName, imageFile);
                 if (data && data.path) {
                     const imageUrl = await backend.getImageUrl(data.path);
-                    var html = `<img src=${imageUrl} width='56px' height='56px;' style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />`;
-                    $('#imagePreview').append(html);
-                    me.attachedImg = imageUrl;
+                    me.attachedImages.push({
+                        id: Date.now(),
+                        url: imageUrl,
+                        file: imageFile
+                    });
                 }
             } else {
                 const reader = new FileReader();
@@ -1624,11 +1639,12 @@ export default {
                         ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
                         const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
 
-                        // 이미지 미리보기에 추가
-                        var html = `<img src=${srcEncoded} width='56px' height='56px;' style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />`;
-                        $('#imagePreview').append(html);
-                        me.attachedImg = event.target.result;
-                        me.delImgBtn = true;
+                        // 이미지 배열에 추가
+                        me.attachedImages.push({
+                            id: Date.now(),
+                            url: srcEncoded,
+                            file: imageFile
+                        });
                     };
                 };
                 if (imageFile) {
@@ -1638,14 +1654,10 @@ export default {
         },
         capture() {
             this.$refs.captureImg.value = '';
-            this.attachedImg = null;
             this.$refs.captureImg.click();
         },
-        deleteImage() {
-            this.delImgBtn = false;
-            this.attachedImg = null;
-            var imagePreview = document.querySelector("#imagePreview");
-            imagePreview.innerHTML = '';
+        deleteImage(index) {
+            this.attachedImages.splice(index, 1);
         },
         shouldDisplayUserInfo(message, index) {
             if (index === 0) return true; // 첫 번째 메시지는 항상 유저 정보 표시
@@ -1726,11 +1738,12 @@ export default {
                             ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
                             const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
 
-                            // 이미지 미리보기에 추가
-                            var html = `<img src=${srcEncoded} width='56px' height='56px;' style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />`;
-                            $('#imagePreview').append(html);
-                            this.attachedImg = e.target.result;
-                            this.delImgBtn = true;
+                            // 이미지 배열에 추가
+                            this.attachedImages.push({
+                                id: Date.now(),
+                                url: srcEncoded,
+                                file: blob
+                            });
                         };
                     };
                     reader.readAsDataURL(blob);
@@ -2123,5 +2136,17 @@ pre {
   white-space: nowrap;
   text-align: center;
   min-width: fit-content;
+}
+
+.image-preview-item {
+  position: relative;
+  display: inline-block;
+}
+
+.image-preview-item .v-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 10;
 }
 </style>

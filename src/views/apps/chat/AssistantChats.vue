@@ -102,7 +102,7 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            if (newMessage && (newMessage.text != '' || newMessage.image != null)) {
+            if (newMessage && (newMessage.text != '' || (newMessage.images && newMessage.images.length > 0) || newMessage.image != null)) {
                 newMessage.callType = 'AssistantChats'
                 this.sendMessage(newMessage);
             }

@@ -614,7 +614,8 @@ hr {
 
 /* 채팅 레이아웃 관련 UI 시작 */
 .process-definition-map-chat .chat-view-box-col {
-    height: 70vh;
+    height: calc(100vh - 450px);   /* shrink 허용! */
+    overflow-y: auto;
 }
 
 .chat-info-view-wrapper-chats {

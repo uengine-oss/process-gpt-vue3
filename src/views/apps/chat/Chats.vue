@@ -695,7 +695,7 @@ export default {
             }
         },
         async beforeSendMessage(newMessage) {
-            if (newMessage && (newMessage.text != '' || newMessage.image != null)) {
+            if (newMessage && (newMessage.text != '' || (newMessage.images && newMessage.images.length > 0) || newMessage.image != null)) {
                 this.putMessage(this.createMessageObj(newMessage))
                 if (this.isAgentChat) {
                     this.generator.beforeGenerate(newMessage);

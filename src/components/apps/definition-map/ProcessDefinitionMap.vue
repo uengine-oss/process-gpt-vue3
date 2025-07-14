@@ -187,7 +187,7 @@
             :fullscreen="isMobile"
             :scrim="isSimulateMode ? false : true" persistent
         >
-            <v-card>
+            <v-card class="process-definition-map-chat-card">
                 <v-row class="ma-0 pa-3" style="background-color:rgb(var(--v-theme-primary), 0.2); height:50px;">
                     <v-icon small style="margin-right: 10px;">mdi-auto-fix</v-icon>
                     <div>{{ $t('processDefinitionMap.consultingAI') }}</div>
