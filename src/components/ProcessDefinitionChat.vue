@@ -19,7 +19,7 @@
                         @update:processVariables="(val) => (processVariables = val)"
                     ></process-definition>
                 </div>
-                <div style="position: relative;">
+                <div class="process-consulting-ai-first-screen">
                     <Chat
                         :messages="messages"
                         :userInfo="userInfo"
@@ -124,7 +124,7 @@
                 </v-dialog>
             </template>
             <template v-slot:rightpart>
-                <div v-if="isAdmin" class="no-scrollbar">
+                <div v-if="isAdmin" class="process-consulting-ai-second-screen no-scrollbar">
                     <Chat
                         :prompt="prompt"
                         :name="projectName"
@@ -158,34 +158,36 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat
-                    v-if="isAdmin"
-                    :prompt="prompt"
-                    :name="projectName"
-                    :messages="messages"
-                    :chatInfo="chatInfo"
-                    :userInfo="userInfo"
-                    :allUserList="allUserList"
-                    :lock="lock"
-                    :disableChat="disableChat"
-                    :chatRoomId="chatRoomId"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                    @addTeam="addTeam"
-                    @addTeamMembers="addTeamMembers"
-                >
-                    <template v-slot:custom-title>
-                        <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
-                            :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
-                            :isEditable="isEditable"
-                            :chatMode="chatMode"
-                            @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
-                            @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                            @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                            @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
-                    </template>
-                </Chat>
+                <div class="process-consulting-ai-third-screen">
+                    <Chat
+                        v-if="isAdmin"
+                        :prompt="prompt"
+                        :name="projectName"
+                        :messages="messages"
+                        :chatInfo="chatInfo"
+                        :userInfo="userInfo"
+                        :allUserList="allUserList"
+                        :lock="lock"
+                        :disableChat="disableChat"
+                        :chatRoomId="chatRoomId"
+                        @sendMessage="beforeSendMessage"
+                        @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage"
+                        @addTeam="addTeam"
+                        @addTeamMembers="addTeamMembers"
+                    >
+                        <template v-slot:custom-title>
+                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
+                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                                :isEditable="isEditable"
+                                :chatMode="chatMode"
+                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                @executeProcess="executeProcess" @executeSimulate="executeSimulate"
+                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
+                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
+                        </template>
+                    </Chat>
+                </div>
             </template>
         </AppBaseCard>
         <v-dialog v-model="executeDialog" max-width="80%" persistent

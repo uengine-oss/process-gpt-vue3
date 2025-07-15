@@ -85,7 +85,7 @@
                 </div>
                 
                 <v-window v-model="tab" :class="isMobile ? 'mt-0' : ''">
-                    <v-window-item value="gantt">
+                    <v-window-item value="gantt" class="instance-card-tab-1">
                         <div class="gantt-area" v-if="!isLoading">
                             <GanttChart 
                                 :key="`gantt-${updatedKey}-${instance?.instId}`"
@@ -101,7 +101,7 @@
                             />
                         </div>
                     </v-window-item>
-                    <v-window-item value="progress">
+                    <v-window-item value="progress" class="instance-card-tab-2">
                         <div style="height: 73vh;">
                             <InstanceProgress 
                                 :key="`progress-${updatedKey}-${instance?.instId}`"
@@ -110,7 +110,7 @@
                             />
                         </div>
                     </v-window-item>
-                    <v-window-item value="todo">
+                    <v-window-item value="todo" class="instance-card-tab-3">
                         <div>
                             <div class="pa-4 instance-card-kanban-board-box">
                                 <div :class="buttonContainerClass" :style="buttonContainerStyle">
@@ -143,7 +143,7 @@
                             </v-dialog>
                         </div>
                     </v-window-item>
-                    <v-window-item value="workhistory">
+                    <v-window-item value="workhistory" class="instance-card-tab-4">
                         <InstanceWorkHistory 
                             :key="`workhistory-${updatedKey}-${instance?.instId}`"
                             :instance="instance"

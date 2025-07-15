@@ -613,8 +613,12 @@ hr {
 
 
 /* 채팅 레이아웃 관련 UI 시작 */
-.process-definition-map-chat .chat-view-box-col {
-    height: calc(100vh - 450px);   /* shrink 허용! */
+.process-consulting-ai-first-screen {
+    position: relative;
+}
+
+.process-consulting-ai-first-screen .chat-view-box-col {
+    max-height: calc(100vh - 450px) !important;   /* shrink 허용! */
     overflow-y: auto;
 }
 
@@ -803,6 +807,9 @@ hr {
     }
 }
 
+.instance-card-tab-4 .chat-view-box {
+    max-height: calc(100vh - 250px);
+}
 @media only screen and (max-width: 1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
@@ -824,6 +831,9 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+    .instance-card-tab-4 .chat-view-box {
+        max-height: calc(100vh - 105px);
+    }
     .todo-list-card-box {
         padding-right: 40px !important;
     }
