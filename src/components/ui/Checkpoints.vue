@@ -58,8 +58,7 @@ export default {
                 } else {
                     this.checkpoints = newVal.activity.checkpoints.map((checkpoint) => ({
                         name: checkpoint,
-                        // checked: false
-                        checked: true
+                        checked: false
                     }));
                 }
             }
@@ -75,8 +74,7 @@ export default {
             } else {
                 this.checkpoints = this.workItem.activity.checkpoints.map((checkpoint) => ({
                     name: checkpoint,
-                    // checked: false
-                    checked: true
+                    checked: false
                 }));
             }
         }

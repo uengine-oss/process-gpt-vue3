@@ -1,0 +1,746 @@
+<template>
+    <div class="browser-agent">
+      <div class="header">
+        <h3>AI Browser Agent</h3>
+        <div class="status-indicators">
+          <div class="status-item">
+            <span class="label">연결 상태:</span>
+            <span :class="['status', connectionStatus]">
+              {{ connectionStatusText }}
+            </span>
+          </div>
+        </div>
+      </div>
+  
+      <!-- 로그 출력 영역 -->
+      <div class="log-container" ref="logContainer">
+        <div 
+          v-for="(log, index) in logs" 
+          :key="index"
+          :class="['log-entry', log.type]"
+        >
+          <span class="timestamp">{{ formatTime(log.timestamp) }}</span>
+          <span class="content" v-html="formatLogContent(log.content)"></span>
+        </div>
+        <div v-if="logs.length === 0" class="no-logs">
+          로그가 없습니다. 명령을 입력해주세요.
+        </div>
+      </div>
+  
+      <!-- 입력 영역 -->
+      <div class="input-area">
+        <div v-if="connectionStatus === 'connected'" class="input-group">
+          <input 
+            v-model="command"
+            @keyup.enter="sendCommand"
+            :disabled="isProcessing"
+            placeholder="브라우저 에이전트에게 명령을 입력하세요..."
+            class="command-input"
+          />
+          <button 
+            @click="sendCommand"
+            :disabled="isProcessing || !command.trim()"
+            class="send-button"
+          >
+            {{ isProcessing ? '처리 중...' : '실행' }}
+          </button>
+        </div>
+        <div v-if="connectionStatus !== 'connected'" class="control-buttons">
+          <button v-if="connectionStatus === 'disconnected' && !tryConnect"
+            @click="connectBrowserAgent"
+            class="start-agent-button"
+          >
+            {{ hasTriedConnection ? '재시도' : '연결' }}
+          </button>
+          <div v-else-if="connectionStatus === 'connecting' || tryConnect" class="loading-container">
+            <v-progress-circular
+              indeterminate
+              color="primary"
+              size="24"
+            ></v-progress-circular>
+            <span class="loading-text">
+              {{ tryConnect ? '브라우저 에이전트 시작 중...' : '연결 중...' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+  
+  <script>
+  export default {
+    name: 'BrowserAgent',
+    props: {
+      html: {
+        type: String,
+        required: true
+      },
+      workItem: {
+        type: Object,
+        required: true
+      }
+    },
+    data() {
+      return {
+        // WebSocket 연결
+        ws: null,
+        
+        // 상태 관리 (영어로 변경)
+        connectionStatus: 'disconnected',
+        taskStatus: 'waiting',
+        isProcessing: false,
+        
+        // 입력 및 로그
+        command: '',
+        logs: [],
+        
+        // 설정
+        wsUrl: 'ws://localhost:8999/ws',
+        reconnectInterval: 5000,
+        maxLogs: 1000,
+        retryCount: 0,
+        hasTriedConnection: false,
+
+        tryConnect: false
+      }
+    },
+    computed: {
+      // 한글 표시를 위한 computed 속성들
+      connectionStatusText() {
+        const statusMap = {
+          'connecting': '연결 중',
+          'connected': '연결됨',
+          'disconnected': '연결 끊김',
+          'error': '연결 오류',
+          'failed': '연결 실패'
+        }
+        return statusMap[this.connectionStatus] || this.connectionStatus
+      },
+    },
+    mounted() {
+      // this.connectWebSocket()
+    },
+    beforeUnmount() {
+      this.disconnectWebSocket()
+    },
+    methods: {
+      connectBrowserAgent() {
+        this.tryConnect = true
+        this.connectionStatus = 'connecting'
+        this.hasTriedConnection = true
+        this.retryCount = 0  // 새로운 연결 시도 시 재시도 카운트 초기화
+        const protocolUrl = 'browser-use-agent://start';
+        const newTab = window.open(protocolUrl, '_blank');
+        
+        if (!newTab) {
+          // 팝업이 차단되었거나 실패한 경우
+          this.connectionStatus = 'disconnected'
+          this.tryConnect = false
+          this.addLog('error', '브라우저 에이전트 시작에 실패했습니다. 팝업 차단을 해제해주세요.')
+          return
+        }
+        
+        // 새탭 모니터링 - 사용자가 확인/취소할 때까지 기다림
+        const startTime = Date.now()
+        const checkTab = setInterval(() => {
+          if (newTab.closed) {
+            clearInterval(checkTab);
+            const elapsed = Date.now() - startTime
+            
+            if (elapsed < 1000) {
+              // 1초 미만으로 빠르게 닫힌 경우 - 취소로 간주
+              this.connectionStatus = 'disconnected'
+              this.tryConnect = false
+              this.addLog('error', '브라우저 에이전트 시작이 취소되었습니다.')
+            } else {
+              // 1초 이상 후에 닫힌 경우 - 확인으로 간주
+              this.addLog('info', '브라우저 에이전트 시작 중...')
+              this.connectWebSocket()
+            }
+          }
+        }, 100);
+        
+        // 10초 후에도 탭이 닫히지 않으면 타임아웃
+        setTimeout(() => {
+          if (!newTab.closed) {
+            clearInterval(checkTab);
+            this.connectionStatus = 'disconnected';
+            this.tryConnect = false;
+            this.addLog('error', '연결 시도 시간이 초과되었습니다.');
+          }
+        }, 10000);
+      },
+      // WebSocket 연결
+      connectWebSocket() {
+        try {
+          this.tryConnect = true
+          this.connectionStatus = 'connecting'
+          this.addLog('info', 'WebSocket 연결을 시도합니다...')
+            
+          this.ws = new WebSocket(this.wsUrl)
+          
+          this.ws.onopen = () => {
+            this.connectionStatus = 'connected'
+            this.tryConnect = false
+            this.retryCount = 0
+            this.addLog('info', '✅ 브라우저 에이전트에 연결되었습니다!')
+          }
+          
+          this.ws.onmessage = (event) => {
+            this.handleMessage(event.data)
+          }
+          
+          this.ws.onclose = () => {
+            if (this.connectionStatus === 'connected') {
+              this.connectionStatus = 'disconnected'
+              this.tryConnect = false
+              this.addLog('error', '연결이 끊어졌습니다. 재시도 버튼을 눌러주세요.')
+            }
+          }
+          
+          this.ws.onerror = (error) => {
+            
+            if (this.retryCount < 3) {
+              this.retryCount++
+              this.addLog('info', `연결 재시도 중... (${this.retryCount}/3)`)
+              
+              // 재시도 중에는 connecting 상태와 tryConnect = true 유지
+              setTimeout(() => {
+                if (this.connectionStatus === 'connecting') {
+                  this.connectWebSocket()
+                }
+              }, 3000)
+            } else {
+              // 모든 재시도가 실패했을 때만 disconnected로 변경
+              this.connectionStatus = 'disconnected'
+              this.tryConnect = false
+              this.addLog('error', '❌ 연결에 실패했습니다. 브라우저 에이전트가 실행되지 않았거나 시간이 더 필요할 수 있습니다.')
+              this.retryCount = 0
+            }
+          }
+        } catch (error) {
+          this.connectionStatus = 'disconnected'
+          this.tryConnect = false
+          this.addLog('error', `연결 실패: ${error.message}`)
+        }
+      },
+      
+      // WebSocket 연결 해제
+      disconnectWebSocket() {
+        if (this.ws) {
+          this.ws.close()
+          this.ws = null
+        }
+      },
+      
+      // 메시지 처리
+      handleMessage(data) {
+        try {
+          const message = JSON.parse(data)
+          
+          switch (message.type) {
+          case 'info':
+            this.addLog('info', message.content)
+            if (message.content.includes('Agent ready')) {
+              this.taskStatus = 'ready'
+            }
+            break
+          case 'log':
+            this.addLog('log', message.content)
+            break
+          case 'result':
+            this.addLog('result', message.content)
+            break
+          case 'error':
+            this.addLog('error', message.content)
+            this.taskStatus = 'error'
+            this.isProcessing = false
+            break
+          case 'end':
+            this.taskStatus = 'completed'
+            this.isProcessing = false
+            break
+          default:
+            this.addLog('info', message.content)
+          }
+        } catch (error) {
+          // JSON 파싱 실패시 일반 텍스트로 처리
+          this.addLog('info', data)
+        }
+      },
+      
+      // 로그 추가
+      addLog(type, content) {
+        const log = {
+          type,
+          content,
+          timestamp: Date.now()
+        }
+        
+        this.logs.push(log)
+        
+        // 로그 개수 제한
+        if (this.logs.length > this.maxLogs) {
+          this.logs.shift()
+        }
+        
+        // 스크롤을 맨 아래로
+        this.$nextTick(() => {
+          this.scrollToBottom()
+          console.log(this.logs)
+        })
+      },
+      
+      // 명령 전송
+      sendCommand() {
+        if (!this.command.trim() || this.isProcessing || !this.ws) {
+          return
+        }
+        
+        const command = this.command.trim()
+        
+        // 사용자 입력 로그 추가
+        this.addLog('command', `> ${command}`)
+
+        const prompt = `전달해준 html 과 작업 정보를 기반하여 결과를 생성, 결과의 형식은 html 에 존재하는 키값을 가진 json 형식으로 생성
+        html: ${this.html}
+        workItem: ${JSON.stringify(this.workItem)}
+
+        요청사항: ${command}
+        `
+        
+        // WebSocket으로 명령 전송
+        this.ws.send(JSON.stringify({ command }))
+        
+        // 상태 업데이트
+        this.isProcessing = true
+        this.taskStatus = 'running'
+        this.command = ''
+      },
+      
+      // HTTP API 호출 방식 (WebSocket 대신 사용 가능)
+      async sendCommandHTTP() {
+        if (!this.command.trim() || this.isProcessing) {
+          return
+        }
+        
+        const command = this.command.trim()
+        this.addLog('command', `> ${command}`)
+        
+        try {
+          this.isProcessing = true
+          this.taskStatus = 'running'
+          
+          const response = await fetch('http://localhost:8999/api/execute', { 
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ command })
+          })
+          
+          const result = await response.json()
+          
+          if (result.success) {
+            this.addLog('result', result.result)
+            this.taskStatus = 'completed'
+          } else {
+            this.addLog('error', result.detail || '실행 오류')
+            this.taskStatus = 'error'
+          }
+        } catch (error) {
+          this.addLog('error', `HTTP 요청 오류: ${error.message}`)
+          this.taskStatus = 'error'
+        } finally {
+          this.isProcessing = false
+          this.command = ''
+        }
+      },
+      
+      // 유틸리티 함수들
+      formatTime(timestamp) {
+        return new Date(timestamp).toLocaleTimeString()
+      },
+      
+      formatLogContent(content) {
+        // URL을 링크로 변환
+        return content.replace(
+          /(https?:\/\/[^\s]+)/g,
+          '<a href="$1" target="_blank">$1</a>'
+        )
+      },
+      
+      scrollToBottom() {
+        const container = this.$refs.logContainer
+        if (container) {
+          container.scrollTop = container.scrollHeight
+        }
+      },
+      
+      // 로그 지우기
+      clearLogs() {
+        this.logs = []
+      }
+    }
+  }
+  </script>
+  
+  <style scoped>
+  .browser-agent {
+    display: flex;
+    flex-direction: column;
+    height: 600px;
+    max-height: 80vh;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px 12px 0 0;
+  }
+  
+  .header h3 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  
+  .status-indicators {
+    display: flex;
+    gap: 16px;
+  }
+  
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 6px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .label {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+  }
+  
+  .status {
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .status.connected { background: #10b981; color: #ffffff; }
+  .status.connecting { background: #f59e0b; color: #ffffff; }
+  .status.disconnected { background: #ef4444; color: #ffffff; }
+  .status.error { background: #ef4444; color: #ffffff; }
+  .status.failed { background: #ef4444; color: #ffffff; }
+  .status.ready { background: #10b981; color: #ffffff; }
+  .status.running { background: #3b82f6; color: #ffffff; }
+  .status.completed { background: #10b981; color: #ffffff; }
+  .status.waiting { background: #6b7280; color: #ffffff; }
+  
+  .log-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    background: #f8fafc;
+  }
+  
+  .log-entry {
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 14px;
+    line-height: 1.5;
+    transition: background-color 0.2s ease;
+    position: relative;
+  }
+  
+  .log-entry:hover {
+    background: #f1f5f9;
+  }
+  
+  .log-entry:last-child {
+    border-bottom: none;
+  }
+  
+  .log-entry::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: 0 2px 2px 0;
+  }
+  
+  .log-entry.command {
+    background: #fefefe;
+  }
+  
+  .log-entry.command::before {
+    background: #3b82f6;
+  }
+  
+  .log-entry.info {
+    background: #fefefe;
+  }
+  
+  .log-entry.info::before {
+    background: #8b5cf6;
+  }
+  
+  .log-entry.result {
+    background: #fefefe;
+  }
+  
+  .log-entry.result::before {
+    background: #10b981;
+  }
+  
+  .log-entry.error {
+    background: #fefefe;
+  }
+  
+  .log-entry.error::before {
+    background: #ef4444;
+  }
+
+  .log-entry.log {
+    background: #fefefe;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 13px;
+  }
+
+  .log-entry.log::before {
+    background: #6b7280;
+  }
+  
+  .timestamp {
+    min-width: 70px;
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 500;
+    margin-right: 16px;
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+  
+  .content {
+    flex: 1;
+    word-break: break-word;
+    color: #374151;
+  }
+  
+  .log-entry.command .content {
+    color: #1e40af;
+    font-weight: 500;
+  }
+  
+  .log-entry.error .content {
+    color: #dc2626;
+  }
+  
+  .log-entry.result .content {
+    color: #059669;
+  }
+  
+  .no-logs {
+    text-align: center;
+    color: #9ca3af;
+    font-style: italic;
+    padding: 60px 20px;
+    font-size: 16px;
+  }
+  
+  .input-area {
+    border-top: 1px solid #e5e7eb;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 0 0 12px 12px;
+  }
+  
+  .input-group {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .command-input {
+    flex: 1;
+    padding: 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+    background: #f9fafb;
+  }
+  
+  .command-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: #ffffff;
+  }
+  
+  .command-input:disabled {
+    background: #f3f4f6;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  .send-button {
+    padding: 16px 28px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .send-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.15);
+  }
+  
+  .send-button:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  
+  .send-button:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .control-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 12px;
+  }
+  
+  .loading-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+    padding: 12px 24px;
+  }
+  
+  .loading-text {
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+  }
+  
+  .start-agent-button {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .start-agent-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.15);
+  }
+  
+  .start-agent-button:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  
+  .start-agent-button:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .retry-button {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .retry-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.15);
+  }
+  
+  .retry-button:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  
+  .retry-button:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  /* 스크롤바 스타일 */
+  .log-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .log-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .log-container::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+  }
+  
+  .log-container::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+  
+  /* 링크 스타일 */
+  .content a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .content a:hover {
+    text-decoration: underline;
+  }
+  </style> 

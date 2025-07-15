@@ -13,29 +13,6 @@
                         :style="isMobile ? 'margin: 0px !important;' : ''">
                         {{ workItemStatus }}
                     </v-chip>
-                    <div v-if="isMobile">
-                        <v-btn
-                            class="pl-5 pr-6 ml-1" 
-                            density="compact"
-                            rounded
-                            style="background-color: #808080; color: white;"
-                            @click="beforeGenerateExample"
-                            :loading="isGeneratingExample"
-                            :disabled="isGeneratingExample"
-                        >
-                            <template v-if="!isGeneratingExample">
-                                <v-row v-if="generator">
-                                    <v-icon>mdi-refresh</v-icon>
-                                    <span class="ms-2">예시 재생성</span>
-                                </v-row>
-                                <v-row v-else>
-                                    <Icons :icon="'sparkles'" :size="20" />
-                                    <div class="ms-1">빠른 예시 생성</div>
-                                </v-row>
-                            </template>
-                            
-                        </v-btn>
-                    </div>
                     <v-tooltip :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-if="!isMobile" 
@@ -73,7 +50,7 @@
         <v-row :class="isMobile ? 'ma-0 pa-0' : 'ma-0 pa-0'">
             <!-- Left -->
             <v-col :cols="isMobile ? 12 : 5"
-                :class="isMobile ? 'pa-4 pt-3 order-last' : 'pa-0 pt-3 pl-4 pb-4'"
+                :class="isMobile ? 'pa-4 pt-0 order-last' : 'pa-0 pt-3 pl-4 pb-4'"
             >
                 <v-alert class="pa-0 primary-border" variant="outlined">
                     <!-- 데스크톱: 기존 탭 -->
@@ -210,6 +187,7 @@
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-2">
                             <v-card elevation="10" class="pa-4">
+                                <!-- <BrowserAgent :html="html" :workItem="workItem" /> -->
                                 <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
                             </v-card>
                         </v-window-item>
@@ -243,6 +221,20 @@
             >
                 <div v-if="currentComponent && !isNotExistDefaultForm" class="work-itme-current-component" style="height: 100%;">
                     <div :style="isMobile ? 'top: 90px;' : 'top: 70px;'" style="position: absolute; right: 28px; z-index: 9999;">
+                        <v-btn v-if="hasGeneratedContent"
+                            @click="resetGeneratedContent"
+                            :disabled="isGeneratingExample"
+                            :class="isMobile ? 'mr-1 text-medium-emphasis' : 'pl-5 pr-6 mr-1'"
+                            :icon="isMobile"
+                            :variant="isMobile ? 'outlined' : 'flat'"
+                            :size="isMobile ? 'small' : 'default'"
+                            :rounded="!isMobile"
+                            density="comfortable"
+                            :style="isMobile ? 'border-color: #e0e0e0 !important;' : 'background-color: #808080; color: white;'"
+                        >
+                            <v-icon>mdi-delete-outline</v-icon>
+                            <span v-if="!isMobile" class="ms-1">예시 초기화</span>
+                        </v-btn>
                         <v-btn
                             v-if="!isMobile"
                             class="pl-5 pr-6 mr-1" 
@@ -263,7 +255,6 @@
                                     <div class="ms-1">빠른 예시 생성</div>
                                 </v-row>
                             </template>
-                            
                         </v-btn>
                         <div v-if="isSimulate == 'true'" style="margin-left: 10px;">
                             <FormDefinition
@@ -288,6 +279,22 @@
                                 <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
                             </v-btn>
                         </div>
+                        <v-btn v-if="isMobile"
+                            @click="beforeGenerateExample"
+                            :loading="isGeneratingExample"
+                            :disabled="isGeneratingExample"
+                            class="mr-1 text-medium-emphasis"
+                            density="comfortable"
+                            icon
+                            variant="outlined"
+                            size="small"
+                            style="border-color: #e0e0e0 !important;"
+                        >
+                            <template v-if="!isGeneratingExample">
+                                <v-icon v-if="generator">mdi-refresh</v-icon>
+                                <Icons v-else :icon="'sparkles'" :size="'16'" />
+                            </template>
+                        </v-btn>
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             class="mr-1 text-medium-emphasis"
                             density="comfortable"
@@ -364,6 +371,7 @@ import URLWorkItem from './URLWorkItem.vue';
 import InstanceOutput from './InstanceOutput.vue';
 import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import AgentMonitor from '@/views/markdown/AgentMonitor.vue';
+import BrowserAgent from '@/components/BrowserAgent.vue';
 
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
@@ -412,7 +420,8 @@ export default {
         FormDefinition,
         InstanceOutput,
         AgentMonitor,
-        AgentFeedback
+        AgentFeedback,
+        BrowserAgent
     },
     data: () => ({    
         workItem: null,
@@ -434,7 +443,7 @@ export default {
         updatedDefKey: 0,
 
         // WorkItem Tabs
-        selectedTab: 'progress',
+        selectedTab: 'history',
         
         eventList: [],
 
@@ -498,6 +507,28 @@ export default {
         window.removeEventListener('resize', this.handleResize);
     },
     computed: {
+        hasGeneratedContent() {
+            // 생성 중인 경우
+            if (this.isGeneratingExample) return true;
+            
+            // generator가 있고 이전 메시지가 있는 경우
+            if (this.generator && this.generator.previousMessages && this.generator.previousMessages.length > 0) return true;
+            
+            // 오디오 메시지가 있는 경우
+            if (this.newMessage && this.newMessage.trim()) return true;
+            
+            // formData에 실제 값이 있는지 확인
+            if (this.formData && typeof this.formData === 'object') {
+                for (const key of Object.keys(this.formData)) {
+                    const value = this.formData[key];
+                    if (value && typeof value === 'string' && value.trim() !== '') {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        },
         isOwnWorkItem() {
             if (this.isStarted || this.isSimulate == 'true') {
                 return true
@@ -549,31 +580,31 @@ export default {
                     ]
                 } else if (this.bpmn && !this.isStarted && this.isCompleted) {
                     return [
-                        { value: 'output', label: this.$t('InstanceCard.output') },
-                        { value: 'progress', label: this.$t('WorkItem.progress') },
-                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
+                        // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
+                        { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
+                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
                         { value: 'agent-feedback', label: '에이전트 피드백' },
                     ]
                 } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
                     return [
-                        { value: 'output', label: this.$t('InstanceCard.output') },
-                        { value: 'progress', label: this.$t('WorkItem.progress') },
+                        { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
+                        { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
-                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') },
+                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
                         { value: 'agent-feedback', label: '에이전트 피드백' },
-                        { value: 'history', label: this.$t('WorkItem.history') },
+                        // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                     ]
                 } else {
                     return [
-                        { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
+                        { value: 'chatbot', label: this.$t('WorkItem.chatbot') }, //어시스턴트
                         { value: 'agent-feedback', label: '에이전트 피드백' },
                     ]
                 }
                 
             } else {
                 return[
-                    { value: 'progress', label: this.$t('WorkItem.progress') },
-                    { value: 'history', label: this.$t('WorkItem.history') },
+                    { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
+                    { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                     { value: 'agent-feedback', label: '에이전트 피드백' },
                 ]
 
@@ -787,6 +818,35 @@ export default {
                     this.generateExample()
                 }
             }
+        },
+        resetGeneratedContent() {
+            // 생성 중인 상태 초기화
+            this.isGeneratingExample = false;
+            
+            // 비전 모드 관련 초기화
+            this.isVisionMode = false;
+            this.imgKeyList = [];
+            
+            // 생성기 초기화
+            if(this.generator) {
+                this.generator.previousMessages = [];
+                this.generator = null;
+            }
+            
+            // 오디오 메시지 초기화
+            this.newMessage = '';
+            
+            // 폼 데이터에서 이미지 데이터 제거
+            if(this.formData && typeof this.formData === 'object') {
+                for (const key of Object.keys(this.formData)) {
+                    if(this.formData[key] && typeof this.formData[key] === 'string' && this.formData[key].includes("data:image/")) {
+                        this.formData[key] = '';
+                    }
+                }
+            }
+            
+            // 컴포넌트 다시 렌더링을 위한 키 업데이트
+            this.updatedKey++;
         },
         async generateExample(response, type){
             var me = this

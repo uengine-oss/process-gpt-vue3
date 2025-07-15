@@ -1215,3 +1215,29 @@ grant execute on function public.register_bpm_proc_inst_cleanup() to authenticat
 
 -- bpm_proc_inst 정리 cron job 등록 실행 (한 번 실행하면 매일 자동 실행)
 SELECT public.register_bpm_proc_inst_cleanup();
+
+
+
+-- ==========================================
+-- 📌 데이터소스 테이블
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.data_source (
+    uuid uuid NOT NULL DEFAULT gen_random_uuid(),
+    key text NOT NULL,
+    value jsonb NULL,
+    version integer NOT NULL DEFAULT 1,
+    description text NULL,
+    tenant_id text NULL DEFAULT public.tenant_id(),
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    updated_at timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT data_source_pkey PRIMARY KEY (uuid),
+    CONSTRAINT data_source_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON UPDATE CASCADE ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+-- ✅ 유니크 인덱스 (테넌트별 key + version)
+CREATE UNIQUE INDEX IF NOT EXISTS unique_data_source_key_version_per_tenant
+  ON data_source (key, version, tenant_id);
+
+
+  -- RLS 켜기
+ALTER TABLE data_source ENABLE ROW LEVEL SECURITY;

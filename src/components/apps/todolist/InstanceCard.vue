@@ -24,10 +24,17 @@
                         > {{  $t('InstanceCard.sendEvent', {event: event.name ? event.name : event.type}) }}
                         </v-btn>
                     </div>
-                    <v-btn v-if="deletable" @click="openDeleteDialog" rounded size="small" color="error" class="ml-auto" style="margin-top: 10px;">
+                    <v-btn v-if="deletable"
+                        @click="openDeleteDialog"
+                        class="ml-auto" 
+                        rounded size="small"
+                        color="error" 
+                        :style="isMobile ? '' : 'margin-top: 10px;'">
                         삭제
                     </v-btn>
-                    <div v-else style="margin-top: 10px;" class="ml-auto d-flex flex-column align-end">
+                    <div v-else class="ml-auto d-flex flex-column align-end"
+                         :style="isMobile ? '' : 'margin-top: 10px;'"
+                    >
                         <div class="text-caption">
                             {{ getRemainingTime(instance.deleted_at) }}
                         </div>
@@ -41,7 +48,7 @@
                 </div>
             </div>
         </div>
-        <v-divider v-if="isMobile"></v-divider>
+        <v-divider v-if="isMobile" class="my-2"></v-divider>
 
         <div :key="updatedKey">
             <div v-if="isNew" class="instance-card-Process-instance-running-box">
@@ -214,11 +221,11 @@ export default {
         instance: null,
         eventList: [],
         // tab
-        tab: "progress",
+        tab: "workhistory",
         tabItems: [
+            { value: 'workhistory', label: 'InstanceCard.workHistory', mobile: true},
             { value: 'progress', label: 'InstanceCard.progress', mobile: true},
             { value: 'todo', label: 'InstanceCard.kanbanBoard', mobile: true},
-            { value: 'workhistory', label: 'InstanceCard.workHistory', mobile: true},
             { value: 'gantt', label: 'InstanceCard.ganttChart', mobile: false},
         ],
 

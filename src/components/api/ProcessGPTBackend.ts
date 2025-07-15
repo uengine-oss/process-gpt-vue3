@@ -3254,6 +3254,100 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+
+    async getDataSourceList() {
+        try {
+            const tenant_id = window.$tenantName;
+            return await storage.list('data_source', {
+                match: {
+                    tenant_id: tenant_id
+                }
+            });
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async addDataSource(dataSource: any) {
+        try {
+            const tenant_id = window.$tenantName;
+            dataSource.tenant_id = tenant_id;
+            return await storage.putObject('data_source', dataSource);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async updateDataSource(dataSource: any) {
+        try {
+            const tenant_id = window.$tenantName;
+            dataSource.tenant_id = tenant_id;
+            return await storage.putObject('data_source', dataSource);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteDataSource(dataSource: any) {
+        try {
+            const tenant_id = window.$tenantName;
+            // tenant_id 확인 후 삭제
+            if (dataSource.tenant_id !== tenant_id) {
+                throw new Error('권한이 없습니다.');
+            }
+            return await storage.delete('data_source', { match: { uuid: dataSource.uuid } });
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async callDataSource(dataSource: any, bodyData: any = null) {
+        const config = dataSource.value;
+      
+        let url = config.endpoint;
+      
+        if (config.method === 'GET' && Array.isArray(config.parameters)) {
+          const params = config.parameters
+            .filter(p => p.key && p.value)
+            .map(p => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
+            .join('&');
+      
+          if (params) {
+            url += (url.includes('?') ? '&' : '?') + params;
+          }
+        }
+      
+        const headers: Record<string, string> = {};
+        if (Array.isArray(config.headers)) {
+          config.headers.forEach(h => {
+            if (h.key && h.value) {
+              headers[h.key] = h.value;
+            }
+          });
+        }
+      
+        if (config.auth?.enabled && config.auth.username) {
+          const authString = btoa(`${config.auth.username}:${config.auth.password || ''}`);
+          headers['Authorization'] = `Basic ${authString}`;
+        }
+      
+        const fetchOptions: RequestInit = {
+          method: config.method || 'GET',
+          headers
+        };
+      
+        if (['POST', 'PUT', 'PATCH'].includes(config.method.toUpperCase()) && bodyData) {
+          fetchOptions.body = JSON.stringify(bodyData);
+          headers['Content-Type'] = 'application/json';
+        }
+      
+        const response = await fetch(url, fetchOptions);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+        }
+        return await response.json();
+      }
       
 }
 

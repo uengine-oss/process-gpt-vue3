@@ -178,6 +178,10 @@ export default {
             } else {
                 me.tempFormHtml = localStorage.getItem(me.formId);
             }
+
+            if(!me.tempFormHtml) {
+                me.tempFormHtml = await me.backend.getRawDefinition('defaultform', { type: 'form' });
+            }
             
             me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
             me.copyUengineProperties.role = {'name': me.role || ''};
