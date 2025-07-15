@@ -13,16 +13,16 @@
         @load="handleLoad"
     >
         <template v-slot:item-row="{ item }">
-            <v-card @click="handleRowClick(item)">
-                <v-card-title>
+            <v-card @click="handleRowClick(item)" class="completed-instances-style">
+                <v-card-title class="pt-4">
                     <StatusChip :status="item.status" type="instance"/>
-                    <strong style="margin-left:5px;">{{ item.name }}</strong>
+                    <strong style="margin-left: 5px;">{{ item.name }}</strong>
                 </v-card-title>
-                <v-card-text>
+                <v-card-text style="padding: 0 16px 16px !important;">
                     <div>ID: {{ item.instId }}</div>
-                    <div>시작일: {{ formatDateTime(item.startDate) }}</div>
-                    <div>종료일: {{ formatDateTime(item.endDate) }}</div>
-                    <div>만기일: {{ formatDateTime(item.dueDate) }}</div>
+                    <div>{{ $t('filterConfigLabel.startDate') }}: {{ formatDateTime(item.startDate) }}</div>
+                    <div>{{ $t('filterConfigLabel.endDate') }}: {{ formatDateTime(item.endDate) }}</div>
+                    <div>{{ $t('filterConfigLabel.dueDate') }}: {{ formatDateTime(item.dueDate) }}</div>
                 </v-card-text>
             </v-card>
         </template>
@@ -52,7 +52,7 @@ export default {
         type: Object,
         default: {
             show: true,
-            label: '인스턴스 검색...',
+            label: '인스턴스 검색',
         }
       },
       // 기본 설정 관련 설정
@@ -70,23 +70,23 @@ export default {
             list: [],
             filterConfig: {
                 sort: {
-                    label: '정렬',
+                    label: this.$t('filterConfigLabel.sort'),
                     options: [
-                        { text: '최신순', value: 'updated_at' }, // desc
-                        { text: '시작일순', value: 'start_date' }, // asc
-                        { text: '종료일순', value: 'end_date' }, // desc
-                        { text: '만기일순', value: 'due_date' } // desc
+                        { text: this.$t('filterConfigOptions.latest'), value: 'updated_at' }, // desc
+                        { text: this.$t('filterConfigOptions.startDate'), value: 'start_date' }, // asc
+                        { text: this.$t('filterConfigOptions.endDate'), value: 'end_date' }, // desc
+                        { text: this.$t('filterConfigOptions.dueDate'), value: 'due_date' } // desc
                     ]
                 },
                 status: {
-                    label: '상태 필터',
+                    label: this.$t('filterConfigLabel.status'),
                     multiple: true,
                     options: [
-                        { text: '예정 업무', value: 'NEW' },
-                        { text: '진행중', value: 'IN_PROGRESS' },
-                        { text: '보류', value: 'PENDING' },
-                        { text: '완료', value: 'COMPLETED' },
-                        { text: '취소', value: 'CANCELLED' },
+                        { text: this.$t('filterConfigOptions.scheduled'), value: 'NEW' },
+                        { text: this.$t('filterConfigOptions.inProgress'), value: 'IN_PROGRESS' },
+                        { text: this.$t('filterConfigOptions.pending'), value: 'PENDING' },
+                        { text: this.$t('filterConfigOptions.completed'), value: 'COMPLETED' },
+                        { text: this.$t('filterConfigOptions.cancelled'), value: 'CANCELLED' },
                     ]
                 }
             },
@@ -221,3 +221,9 @@ export default {
     }
   }
   </script>
+
+<style scoped>
+.completed-instances-style {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* 연한 그림자 */
+}
+</style>

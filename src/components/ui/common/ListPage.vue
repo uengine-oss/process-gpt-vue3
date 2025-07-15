@@ -1,30 +1,32 @@
 <template>
-    <div class="list-view">
+    <div>
       <!-- 헤더 -->
-      <v-row>
+      <v-row class="ma-0 pa-0">
           <!-- 타이틀 -->
-          <v-col style="max-width: fit-content; margin-right: 20px;">
-            <h2>{{ title }}</h2>
+          <v-col style="max-width: fit-content;" class="mr-5 pa-4 pb-0">
+            <div class="text-h4">{{ $t('completedListPage.title') }}</div>
           </v-col>
 
           <!-- 검색 및 필터 -->
           <v-col style="padding-bottom: 0;">
-            <v-row style="align-items: center;">
+            <v-row class="ma-0 pa-0 align-center">
               <!-- 검색 -->
-              <v-text-field
-                v-if="searchConfig.show"
-                v-model="searchWord"
-                :loading="loading"
-                :label="searchConfig.label"
-                variant="solo"
-                prepend-inner-icon="mdi-magnify"
-                density="compact"
-                hide-details
-                single-line
-                dense
-                style="min-width: 100px; max-width: 300px; margin-right: 10px;"
-                @click:append-inner="search()"
-              ></v-text-field>
+              <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5" style="background-color: #fff;">
+                  <Icons :icon="'magnifer-linear'" :size="22" />
+                  <v-text-field 
+                    v-if="searchConfig.show"
+                    v-model="searchWord" 
+                    :loading="loading"
+                    variant="plain" 
+                    density="compact"
+                    class="position-relative pt-0 ml-3 custom-placeholer-color" 
+                    :placeholder="$t('completedListPage.search')"
+                    single-line 
+                    hide-details
+                    dense
+                    @click:append-inner="search()"
+                  ></v-text-field>
+              </div>
 
               <!-- 필터 -->
               <v-menu
@@ -33,14 +35,21 @@
                 location="end"
               >
                 <template v-slot:activator="{ props }">
-                  <v-icon v-bind="props" size="large">{{ isFilter ? 'mdi-filter' : 'mdi-filter-outline' }}</v-icon>
+                  <!-- <v-icon v-bind="props" size="large">{{ isFilter ? 'mdi-filter' : 'mdi-filter-outline' }}</v-icon> -->
+                  <Icons 
+                    v-bind="props" 
+                    :icon="isFilter ? 'filter-fill' : 'filter'" 
+                    :size="24" 
+                    class="ml-1"
+                    style="cursor: pointer;" 
+                  />
                 </template>
 
                 <v-card min-width="300" v-if="!isLoading">
                   <v-list>
                     <v-list-item v-if="copyFilter.period">
                       <v-card flat>
-                        <v-card-title> 기간 설정 </v-card-title>
+                        <v-card-title>{{ $t('filterConfigLabel.period') }}</v-card-title>
                         <v-divider></v-divider>
                           <v-card-text style="margin-top: 5px; padding: 0;">
                             <v-col>
@@ -56,7 +65,7 @@
                                 <template v-slot:activator="{ props }">
                                   <v-text-field
                                     v-model="copyFilter.period.startDate"
-                                    label="시작일"
+                                    :label="$t('filterConfigLabel.startDate')"
                                     prepend-inner-icon="mdi-calendar"
                                     readonly
                                     clearable
@@ -81,7 +90,7 @@
                                 <template v-slot:activator="{ props }">
                                   <v-text-field
                                     v-model="copyFilter.period.endDate"
-                                    label="종료일"
+                                    :label="$t('filterConfigLabel.endDate')"
                                     prepend-inner-icon="mdi-calendar"
                                     readonly
                                     clearable
@@ -121,14 +130,16 @@
           </v-col>
       </v-row>
    
-      <v-infinite-scroll :height="config.height" @load="load">
-        <template v-for="(item, index) in items" :key="item">
-          <div class="pa-2">
+      <v-infinite-scroll @load="load">
+        <template v-for="item in items" :key="item">
+          <div class="pa-4 pt-2 pb-0">
             <slot name="item-row" :item="item"></slot>
           </div>
         </template>
         <template v-slot:empty>
-          <v-alert type="warning">더 이상 데이터가 없습니다.</v-alert>
+          <div class="pa-2" style="width: 100%;">
+            <v-alert type="warning" class="pa-4">{{ $t('completedListPage.warning') }}</v-alert>
+          </div>
         </template>
       </v-infinite-scroll>
     </div>
@@ -156,11 +167,6 @@ export default {
       loading: {
         type: Boolean,
         default: false
-      },
-      // 스크롤 설정
-      config: {
-        type: Object,
-        required: true
       },
       // 검색 설정
       searchConfig: {
