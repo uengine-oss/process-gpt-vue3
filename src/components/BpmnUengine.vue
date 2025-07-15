@@ -419,14 +419,14 @@ export default {
                 // events.forEach(function (event) {
 
                 // });
-                if(self.isAIGenerated) {
-                    if(self._layoutTimeout) {
-                        clearTimeout(self._layoutTimeout);
-                    }
-                    self._layoutTimeout = setTimeout(() => {
-                        self.applyAutoLayout();
-                    }, 500); // 500ms 안 변하면 실행
-                }
+                // if(self.isAIGenerated) {
+                //     if(self._layoutTimeout) {
+                //         clearTimeout(self._layoutTimeout);
+                //     }
+                //     self._layoutTimeout = setTimeout(() => {
+                //         self.applyAutoLayout();
+                //     }, 500); // 500ms 안 변하면 실행
+                // }
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);

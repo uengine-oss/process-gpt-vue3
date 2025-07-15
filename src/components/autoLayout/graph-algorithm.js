@@ -164,7 +164,7 @@ class SugiyamaLayout {
             
             this.graph.getOutgoingEdges(currentId).filter(e => !e.feedback).forEach(edge => {
                 const targetNode = this.graph.getNode(edge.target);
-                targetNode.layer = Math.max(targetNode.layer, currentNode.layer + 1);
+                targetNode.layer = Math.max(targetNode? targetNode.layer:0, currentNode.layer + 1);
                 
                 if (!assigned.has(edge.target)) {
                     queue.push(edge.target);

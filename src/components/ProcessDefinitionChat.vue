@@ -313,6 +313,7 @@ export default {
         isAIGenerated: false,
         organizationChart: [],
         strategy: null,
+        isHorizontal: false,
     }),
     async created() {
         $try(async () => {
@@ -1016,6 +1017,7 @@ export default {
             let definitions;
             let xmlObj = await modeler.saveXML({ format: true, preamble: true });
             me.bpmn = xmlObj.xml;
+            this.setOrientation();
             let fullPath = me.$route.params.pathMatch.join('/');
             if (fullPath.startsWith('/')) {
                 fullPath = fullPath.substring(1);
@@ -1031,6 +1033,36 @@ export default {
                     me.projectName = definitions.name ? definitions.name : me.processDefinition.processDefinitionName;
                 }
             }
+        },
+        setOrientation() {
+            const store = useBpmnStore();
+            let me = this;
+            let modeler = store.getModeler;
+            const canvas = modeler.get('canvas');
+            const container = canvas.getContainer();
+            const elementRegistry = modeler.get('elementRegistry');
+            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            let isMobile = false;
+            
+            const { width, height } = container.getBoundingClientRect();
+            if(width - 100 > height) {
+                isMobile = false;
+            } else {
+                isMobile = true;
+            }
+
+            participant.forEach(element => {
+                const horizontal = element.di.isHorizontal;
+                if(!isMobile && !horizontal) {
+                    if(element.width < element.height) {
+                        me.isHorizontal = true;
+                    }
+                } else if(isMobile && horizontal) {
+                    if(element.width > element.height) {
+                        me.isHorizontal = false;
+                    }
+                }
+            });
         },
         beforeSendMessage(newMessage) {
             this.waitForCustomer = false
@@ -1085,7 +1117,7 @@ export default {
                             this.processDefinition = unknown;
                             if(!this.processDefinition) this.processDefinition = {};
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
-                            this.bpmn = this.createBpmnXml(unknown);
+                            this.bpmn = this.createBpmnXml(unknown, this.isHorizontal);
                             this.isAIGenerated = true;
                             this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
                             this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
@@ -1476,7 +1508,7 @@ export default {
                                 
                                 // 6. BPMN XML 재생성
                                 try {
-                                    this.bpmn = this.createBpmnXml(this.processDefinition);
+                                    this.bpmn = this.createBpmnXml(this.processDefinition, this.isHorizontal);
                                 } catch (error) {
                                     console.error('Error creating BPMN XML:', error);
                                     // 오류 발생 시 기본 BPMN 구조 유지
@@ -1488,7 +1520,7 @@ export default {
                             if(this.processDefinition['activities'] && this.processDefinition['sequences']) {
                                 this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
                             }
-                            this.bpmn = this.createBpmnXml(this.processDefinition);
+                            this.bpmn = this.createBpmnXml(this.processDefinition, this.isHorizontal);
                         }
                         this.oldProcDefId = unknown.processDefinitionId;
                         this.definitionChangeCount++;
