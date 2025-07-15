@@ -273,8 +273,8 @@
                                                                 :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5"
                                                                 :key="n"></div>
                                                         </template>
-                                                        <v-sheet v-if="message.content" class="chat-message-bubble rounded-md pa-0"
-                                                            :class="'other-message'"
+                                                        <v-sheet v-if="message.content" class="other-message rounded-md pa-0"
+                                                            :class="showTeamMemberSelector === index ? 'chat-message-bubble-select-team-member' : 'chat-message-bubble'"
                                                             @mouseover="replyIndex = index" @mouseleave="replyIndex = -1"
                                                         >
                                                             <div class="pa-2">
@@ -286,24 +286,46 @@
                                                                 <div v-else-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
                                                                 <pre v-else class="text-body-1" v-html="setMessageForUser(message.content)"></pre>
 
-                                                                <v-btn v-if="message.type && message.type === 'add_role'"
-                                                                    style="border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-                                                                    :style="replyIndex === index ? 'margin-bottom: 10px;' : ''"
-                                                                    color="white"
-                                                                    variant="elevated" 
-                                                                    size="small"
-                                                                    class="mt-2"
-                                                                    @click="addRole(message, index)"
-                                                                    :disabled="message.added"
-                                                                >
-                                                                    <template v-if="message.added">
-                                                                        <v-icon style="margin-right: 3px;">mdi-check</v-icon>
-                                                                        추가됨
-                                                                    </template>
-                                                                    <template v-else>
-                                                                        추가
-                                                                    </template>
-                                                                </v-btn>
+                                                                <div v-if="message.type && message.type === 'add_team'" class="mt-2">
+                                                                    <v-btn 
+                                                                        style="border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                                                        :style="replyIndex === index ? 'margin-bottom: 10px;' : ''"
+                                                                        color="white"
+                                                                        variant="elevated" 
+                                                                        size="small"
+                                                                        class="mr-2"
+                                                                        @click="addTeam(message, index)"
+                                                                        :disabled="message.added || message.adding"
+                                                                    >
+                                                                        <template v-if="message.adding">
+                                                                            <v-progress-circular 
+                                                                                indeterminate 
+                                                                                color="primary" 
+                                                                                size="16"
+                                                                                width="2"
+                                                                                style="margin-right: 5px;"
+                                                                            ></v-progress-circular>
+                                                                        </template>
+                                                                        <template v-else-if="message.added">
+                                                                            <v-icon style="margin-right: 3px;">mdi-check</v-icon>
+                                                                            추가됨
+                                                                        </template>
+                                                                        <template v-else>
+                                                                            추가
+                                                                        </template>
+                                                                    </v-btn>
+                                                                    
+                                                                    <v-btn v-if="message.added"
+                                                                        style="border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                                                        color="white"
+                                                                        variant="elevated" 
+                                                                        size="small"
+                                                                        @click="toggleTeamMemberSelector(index)"
+                                                                    >
+                                                                        <v-icon style="margin-right: 3px;">mdi-account-edit</v-icon>
+                                                                        팀원 관리
+                                                                    </v-btn>
+                                                                </div>
 
                                                                 <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp other-timestamp">
                                                                     {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
@@ -337,6 +359,73 @@
                                                                         </v-btn>
                                                                     </div>
                                                                 </v-row>
+                                                                
+                                                                <!-- 팀원 선택 UI -->
+                                                                <v-card v-if="showTeamMemberSelector === index" class="mt-3" outlined>
+                                                                    <v-card-title class="pb-2">
+                                                                        <div class="d-flex align-center justify-space-between">
+                                                                            <span>팀원 선택</span>
+                                                                            <v-btn @click="closeTeamMemberSelector()" 
+                                                                                variant="text" size="small" icon>
+                                                                                <v-icon>mdi-close</v-icon>
+                                                                            </v-btn>
+                                                                        </div>
+                                                                    </v-card-title>
+                                                                    
+                                                                    <v-card-text>
+                                                                        <v-text-field
+                                                                            v-model="teamMemberSearch"
+                                                                            label="팀원 검색"
+                                                                            prepend-inner-icon="mdi-magnify"
+                                                                            variant="outlined"
+                                                                            density="compact"
+                                                                            hide-details
+                                                                            class="mb-3"
+                                                                        ></v-text-field>
+                                                                        
+                                                                        <div class="team-member-list" style="max-height: 200px; overflow-y: auto;">
+                                                                            <v-list density="compact">
+                                                                                <v-list-item
+                                                                                    v-for="user in filteredTeamMembers"
+                                                                                    :key="user.id"
+                                                                                    @click="toggleTeamMemberSelection(user, index)"
+                                                                                    class="team-member-item"
+                                                                                    :class="{ 'selected': (selectedTeamMembersByMessage[index] || []).includes(user.id) }"
+                                                                                >
+                                                                                    <template v-slot:prepend>
+                                                                                        <v-avatar size="32">
+                                                                                            <img :src="user.profile || '/images/defaultUser.png'" />
+                                                                                        </v-avatar>
+                                                                                    </template>
+                                                                                    
+                                                                                    <v-list-item-title>{{ user.username }}</v-list-item-title>
+                                                                                    <v-list-item-subtitle>{{ user.email }}</v-list-item-subtitle>
+                                                                                    
+                                                                                    <template v-slot:append>
+                                                                                        <v-checkbox
+                                                                                            :model-value="(selectedTeamMembersByMessage[index] || []).includes(user.id)"
+                                                                                            @update:model-value="toggleTeamMemberSelection(user, index)"
+                                                                                            hide-details
+                                                                                        ></v-checkbox>
+                                                                                    </template>
+                                                                                </v-list-item>
+                                                                            </v-list>
+                                                                        </div>
+                                                                    </v-card-text>
+                                                                    
+                                                                    <v-card-actions>
+                                                                        <v-spacer></v-spacer>
+                                                                        <v-btn @click="closeTeamMemberSelector()" 
+                                                                            variant="text" size="small">
+                                                                            닫기
+                                                                        </v-btn>
+                                                                        <v-btn @click="addSelectedTeamMembers(message, index)" 
+                                                                            color="primary" variant="elevated" size="small"
+                                                                            :disabled="(selectedTeamMembersByMessage[index] || []).length === 0">
+                                                                            확인 ({{ (selectedTeamMembersByMessage[index] || []).length }})
+                                                                        </v-btn>
+                                                                    </v-card-actions>
+                                                                </v-card>
 
                                                                 <v-row v-if="message.tableData" class="my-5">
                                                                     <v-col cols="12">
@@ -623,6 +712,7 @@
                         auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
                         @input="handleTextareaInput"
                         @paste="handlePaste"
+                        @keydown="handleMessageHistoryNavigation"
                     >
                     </v-textarea>
                     
@@ -748,6 +838,7 @@
                     auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
                     @input="handleTextareaInput"
                     @paste="handlePaste"
+                    @keydown="handleMessageHistoryNavigation"
                 >
                 </v-textarea>
                 <div class="d-flex justify-space-between align-center w-100 pl-1">
@@ -1000,6 +1091,10 @@ export default {
         definitionMapOnlyInput: {
             type: Boolean,
             default: false
+        },
+        allUserList: {
+            type: Array,
+            default: []
         }
     },
     data() {
@@ -1055,6 +1150,15 @@ export default {
 
             generator: null,
             isGenerationFinished: false,
+            
+            // 메시지 히스토리 탐색 관련 변수
+            messageHistoryIndex: -1,
+            originalMessage: '', // 사용자가 타이핑하던 원본 메시지 저장
+            
+            // 팀원 추가 관련 상태
+            showTeamMemberSelector: null, // 팀원 선택 UI를 표시할 메시지 인덱스
+            selectedTeamMembersByMessage: {}, // 메시지별 선택된 팀원들
+            teamMemberSearch: '', // 팀원 검색 텍스트
         };
     },
     created() {
@@ -1182,6 +1286,30 @@ export default {
                     return true
                 }
             }
+        },
+        // 내가 보낸 메시지들만 필터링
+        myMessages() {
+            if (!this.messages || this.messages.length === 0) return [];
+            return this.messages
+                .filter(message => message.email === this.userInfo.email && message.content && message.content.trim() !== '')
+                .reverse(); // 최신 메시지가 먼저 오도록
+        },
+        // 팀원 검색 필터링
+        filteredTeamMembers() {
+            if (!this.allUserList) return [];
+            
+            let users = this.allUserList;
+            
+            // 검색 텍스트로 필터링
+            if (this.teamMemberSearch) {
+                const searchLower = this.teamMemberSearch.toLowerCase();
+                users = users.filter(user => 
+                    user.username.toLowerCase().includes(searchLower) ||
+                    user.email.toLowerCase().includes(searchLower)
+                );
+            }
+            
+            return users;
         }
     },
     methods: {
@@ -1404,6 +1532,11 @@ export default {
             if (text.startsWith('>') || text.startsWith('!')) {
                 // 명령어 목록 표시 로직 추가
             }
+            
+            // 사용자가 직접 입력하는 경우 히스토리 인덱스 초기화
+            if (this.messageHistoryIndex !== -1 && text !== this.myMessages[this.messageHistoryIndex]?.content) {
+                this.resetMessageHistory();
+            }
         },
         selectUser(user) {
             const beforeMention = this.newMessage.substring(0, this.mentionStartIndex);
@@ -1567,6 +1700,7 @@ export default {
                     this.newMessage = "";
                     this.mentionedUsers = [];
                     this.showUserList = false;
+                    this.resetMessageHistory(); // 메시지 전송 후 히스토리 초기화
                 }
             }, 100);
         },
@@ -1807,9 +1941,12 @@ export default {
             // 다른 해
             return this.$t('chats.otherYear', { year: year, month: month, day: day, dayName: dayName });
         },
-        async addRole(message, index) {
-            this.$emit('addRole', message.newRoleInfo);
-            this.filteredMessages[index].added = true;
+        addTeam(message, index) {
+            const data = {
+                teamInfo: message.newTeamInfo,
+                index: index
+            }
+            this.$emit('addTeam', data);
         },
         onGenerationFinished(responseObj) {
             if(responseObj && responseObj.includes('{')){
@@ -1829,6 +1966,97 @@ export default {
                     }
                 });
             }
+        },
+        // 메시지 히스토리 탐색 관련 메서드
+        handleMessageHistoryNavigation(event) {
+            // 방향키 위/아래 처리
+            if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                this.navigateMessageHistory('up');
+            } else if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                this.navigateMessageHistory('down');
+            }
+        },
+        navigateMessageHistory(direction) {
+            if (this.myMessages.length === 0) return;
+
+            // 처음 탐색 시작할 때 현재 입력 메시지 저장
+            if (this.messageHistoryIndex === -1) {
+                this.originalMessage = this.newMessage;
+            }
+
+            if (direction === 'up') {
+                // 위 방향키: 이전 메시지로 (인덱스 증가)
+                if (this.messageHistoryIndex < this.myMessages.length - 1) {
+                    this.messageHistoryIndex++;
+                    this.newMessage = this.myMessages[this.messageHistoryIndex].content;
+                }
+            } else if (direction === 'down') {
+                // 아래 방향키: 다음 메시지로 (인덱스 감소)
+                if (this.messageHistoryIndex > 0) {
+                    this.messageHistoryIndex--;
+                    this.newMessage = this.myMessages[this.messageHistoryIndex].content;
+                } else if (this.messageHistoryIndex === 0) {
+                    // 맨 아래로 가면 원본 메시지 복원
+                    this.messageHistoryIndex = -1;
+                    this.newMessage = this.originalMessage;
+                }
+            }
+        },
+        // 메시지 입력 시 히스토리 인덱스 초기화
+        resetMessageHistory() {
+            this.messageHistoryIndex = -1;
+            this.originalMessage = '';
+        },
+        // 팀원 선택 UI 토글
+        toggleTeamMemberSelector(index) {
+            if (this.showTeamMemberSelector === index) {
+                this.closeTeamMemberSelector();
+            } else {
+                this.showTeamMemberSelector = index;
+                // 해당 메시지에 대한 선택된 팀원이 없으면 빈 배열로 초기화
+                if (!this.selectedTeamMembersByMessage[index]) {
+                    this.selectedTeamMembersByMessage[index] = [];
+                }
+                this.teamMemberSearch = '';
+            }
+        },
+        // 팀원 선택 UI 닫기
+        closeTeamMemberSelector() {
+            this.showTeamMemberSelector = null;
+            this.teamMemberSearch = '';
+        },
+        // 팀원 선택 토글
+        toggleTeamMemberSelection(user, messageIndex) {
+            if (!this.selectedTeamMembersByMessage[messageIndex]) {
+                this.selectedTeamMembersByMessage[messageIndex] = [];
+            }
+            
+            const selectedList = this.selectedTeamMembersByMessage[messageIndex];
+            const index = selectedList.indexOf(user.id);
+            if (index > -1) {
+                selectedList.splice(index, 1);
+            } else {
+                selectedList.push(user.id);
+            }
+        },
+        // 선택된 팀원들 추가
+        addSelectedTeamMembers(message, index) {
+            const selectedList = this.selectedTeamMembersByMessage[index] || [];
+            if (selectedList.length === 0) return;
+            
+            const selectedUsers = this.allUserList.filter(user => 
+                selectedList.includes(user.id)
+            );
+
+            const teamMemberData = {
+                selectedTeamMembers: selectedUsers,
+                selectedTeamInfo: message.newTeamInfo
+            };
+            
+            this.$emit('addTeamMembers', teamMemberData);
+            this.closeTeamMemberSelector();
         },
     }
 };
@@ -2012,6 +2240,13 @@ pre {
   color: rgba(0, 0, 0, 0.87);
 }
 
+.chat-message-bubble-select-team-member {
+  position: relative;
+  max-width: 100%;
+  margin-bottom: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
 .chat-message-bubble {
   position: relative;
   max-width: 70%;
@@ -2055,6 +2290,10 @@ pre {
   top: 17px;
   transform: translateY(-50%);
   display: none;
+}
+
+.chat-message-bubble-select-team-member:hover .message-actions {
+  display: flex;
 }
 
 .chat-message-bubble:hover .message-actions {
@@ -2136,6 +2375,20 @@ pre {
   white-space: nowrap;
   text-align: center;
   min-width: fit-content;
+}
+
+// 팀원 선택 UI 스타일
+.team-member-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+  
+  &.selected {
+    background-color: rgba(var(--v-theme-primary), 0.1);
+  }
 }
 
 .image-preview-item {

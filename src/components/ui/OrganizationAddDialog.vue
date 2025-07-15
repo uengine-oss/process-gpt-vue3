@@ -2,7 +2,7 @@
     <v-card>
         <v-row class="ma-0 pa-4 pb-0 align-center">
             <v-card-title class="pa-0">
-                {{teamInfo.data.name}} {{ $t('OrganizationAddDialog.add') }}
+                {{teamInfo.data ? teamInfo.data.name : teamInfo.name}} {{ $t('OrganizationAddDialog.add') }}
             </v-card-title>
             <v-spacer></v-spacer>
             <v-btn @click="closeDialog"

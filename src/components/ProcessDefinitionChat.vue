@@ -131,13 +131,15 @@
                         :messages="messages"
                         :chatInfo="chatInfo"
                         :userInfo="userInfo"
+                        :allUserList="allUserList"
                         :lock="lock"
                         :disableChat="disableChat"
                         :chatRoomId="chatRoomId"
                         @sendMessage="beforeSendMessage"
                         @sendEditedMessage="sendEditedMessage"
                         @stopMessage="stopMessage"
-                        @addRole="addRole"
+                        @addTeam="addTeam"
+                        @addTeamMembers="addTeamMembers"
                     >
                         <template v-slot:custom-title>
                             <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
@@ -163,13 +165,15 @@
                     :messages="messages"
                     :chatInfo="chatInfo"
                     :userInfo="userInfo"
+                    :allUserList="allUserList"
                     :lock="lock"
                     :disableChat="disableChat"
                     :chatRoomId="chatRoomId"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
-                    @addRole="addRole"
+                    @addTeam="addTeam"
+                    @addTeamMembers="addTeamMembers"
                 >
                     <template v-slot:custom-title>
                         <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
@@ -275,6 +279,7 @@ export default {
         },
     },
     data: () => ({
+        allUserList: [],
         isEditable: false,
         isXmlMode: false,
         prompt: '',
@@ -361,7 +366,7 @@ export default {
 
             const data = await this.getData(`configuration`, { match: { key: 'organization' } });
             if (data && data.value) {
-                // this.organizationChartId = data.uuid;
+                this.organizationChartId = data.uuid;
                 if (data.value.chart) {
                     this.organizationChart = data.value.chart;
                 }
@@ -451,43 +456,78 @@ export default {
         }
     },
     methods: {
-        async addRole(newRoleInfo){
-            let organizationChart = [];
-            let organizationChartId = null;
-            const data = await this.getData(`configuration`, { match: { key: 'organization' } });
-            if (data && data.value) {
-                organizationChartId = data.uuid;
-                if (data.value.chart) {
-                    organizationChart = data.value.chart;
-                    if (!organizationChart) {
-                        organizationChart = [];
-                    }
-                }
-            }
+        async addTeamMembers(teamMemberData){
+            const selectedTeamInfo = teamMemberData.selectedTeamInfo;
+            const selectedTeamMembers = teamMemberData.selectedTeamMembers;
 
-            const newTeam = {
-                id: newRoleInfo.endpoint,
-                data: {
-                    id: newRoleInfo.endpoint,
-                    name: newRoleInfo.name,
-                    isTeam: true,
-                    img: '/images/chat-icon.png'
-                },
-                children: []
+            const team = this.organizationChart.children.find(team => team.data.id === selectedTeamInfo.endpoint);
+            if (team) {
+                team.children = [];
+                team.children.push(...selectedTeamMembers.map(member => ({
+                    data: {
+                        email: member.email,
+                        id: member.id,
+                        img: member.profile,
+                        name: member.username,
+                        pid: selectedTeamInfo.endpoint,
+                        role: member.role
+                    },
+                    id: member.id,
+                    name: member.username
+                })));
             }
-
-            organizationChart.children.push(newTeam);
 
             var putObj =  {
                 key: 'organization',
                 value: {
-                    chart: organizationChart,
+                    chart: this.organizationChart,
                 }
             };
-            if (organizationChartId) {
-                putObj.uuid = organizationChartId;
+            if (this.organizationChartId) {
+                putObj.uuid = this.organizationChartId;
             }
             await this.putObject("configuration", putObj);
+        
+        },
+        async addTeam(newTeamData){
+            try {
+                let teamInfo = newTeamData.teamInfo;
+                let index = newTeamData.index;
+                this.messages[index].adding = true;
+    
+                const newTeam = {
+                    id: teamInfo.endpoint,
+                    data: {
+                        id: teamInfo.endpoint,
+                        name: teamInfo.name,
+                        isTeam: true,
+                        img: '/images/chat-icon.png'
+                    },
+                    children: []
+                }
+    
+                this.organizationChart.children.push(newTeam);
+    
+                var putObj =  {
+                    key: 'organization',
+                    value: {
+                        chart: this.organizationChart,
+                    }
+                };
+                if (this.organizationChartId) {
+                    putObj.uuid = this.organizationChartId;
+                }
+                // await this.putObject("configuration", putObj);
+
+                this.messages[index].added = true;
+                this.messages[index].adding = false;
+
+                this.allUserList = await backend.getUserList();
+            } catch(e) {
+                console.log(e);
+                this.messages[index].added = false;
+                this.messages[index].adding = false;
+            }
         },
         setProcessDefinitionPrompt(){
             if (this.processDefinitionMap) {
@@ -800,7 +840,7 @@ export default {
                 if (info.xml) {
                     me.processDefinition = await me.convertXMLToJSON(info.xml);
                 }
-                await me.storage.putObject('proc_def', {
+                await me.backend.putObject('proc_def', {
                     id: info.id,
                     name: info.name,
                     bpmn: info.xml,
@@ -1453,12 +1493,29 @@ export default {
                     }
 
                     if(!jsonProcess.answerType){
+                        const addTeamMessage = (team) => {
+                            this.messages.push({
+                                "role": "system",
+                                "content": `${team.name} 팀이 새로 추가되었습니다. 해당 팀을 조직도에 추가하시겠습니까?`,
+                                "timeStamp": Date.now(),
+                                "type": "add_team",
+                                "newTeamInfo": team
+                            })
+                        }
                         if(jsonProcess.modifications){
                             this.messages.push({
                                 "role": "system",
                                 "content": `요청하신 내용에 따라 수정을 완료하였습니다.`,
                                 "timeStamp": Date.now()
                             });
+                            jsonProcess.modifications.forEach(modification => {
+                                if(modification.action == 'add' 
+                                && modification.value 
+                                && modification.value.origin 
+                                && modification.value.origin == 'created'){
+                                    addTeamMessage(modification.value)
+                                }
+                            })
                         } else {
                             await this.checkedFormData();
                             this.messages.push({
@@ -1483,13 +1540,7 @@ export default {
                             if(jsonProcess.roles) {
                                 jsonProcess.roles.forEach(role => {
                                     if(role.origin == 'created'){
-                                        this.messages.push({
-                                            "role": "system",
-                                            "content": `${role.name} 역할이 새로 추가되었습니다. 해당 역할을 조직도에 추가하시겠습니까?`,
-                                            "timeStamp": Date.now(),
-                                            "type": "add_role",
-                                            "newRoleInfo": role
-                                        })
+                                        addTeamMessage(role)
                                     }
                                 })
                             }

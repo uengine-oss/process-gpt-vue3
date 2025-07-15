@@ -56,18 +56,39 @@
         
         <template v-else-if="(settingInfo.settingType === 'items') && isShowCheck(settingInfo)">
           <v-tabs v-model="componentProps['localIsDynamicLoad']" color="primary" fixed-tabs>
-              <v-tab :value="false">{{ $t('FormDefinitionPanel.fixed') }}</v-tab>
-              <v-tab :value="true">{{ $t('FormDefinitionPanel.dataBinding') }}</v-tab>
+              <v-tab value="fixed">{{ $t('FormDefinitionPanel.fixed') }}</v-tab>
+              <v-tab value="urlBinding">{{ $t('FormDefinitionPanel.urlBinding') }}</v-tab>
+              <v-tab value="dataBinding">{{ $t('FormDefinitionPanel.dataBinding') }}</v-tab>
           </v-tabs>
           <v-window v-model="componentProps['localIsDynamicLoad']" class="fill-height">
-              <v-window-item :value="false" class="fill-height" style="overflow-y: auto; padding:5px;">
+              <v-window-item value="fixed" class="fill-height" style="overflow-y: auto; padding:5px;">
                 <FormDefinitionPanelItemTable v-model="componentProps[settingInfo.dataToUse]"></FormDefinitionPanelItemTable>
               </v-window-item>
 
-              <v-window-item :value="true" class="fill-height pa-5" style="overflow-y: auto">
+              <v-window-item value="urlBinding" class="fill-height pa-5" style="overflow-y: auto">
                 <v-text-field label="URL" ref="localDynamicLoadURL" v-model.trim="componentProps['localDynamicLoadURL']" @keyup.enter="save"></v-text-field>
                 <v-text-field label="Key JSON Path" ref="localDynamicLoadKeyJsonPath" v-model.trim="componentProps['localDynamicLoadKeyJsonPath']" @keyup.enter="save"></v-text-field>
                 <v-text-field label="Value JSON Path" ref="localDynamicLoadValueJsonPath" v-model.trim="componentProps['localDynamicLoadValueJsonPath']" @keyup.enter="save"></v-text-field>
+              </v-window-item>
+
+              <v-window-item value="dataBinding" class="fill-height pa-5" style="overflow-y: auto">
+                <v-select label="Data Source" ref="localDynamicDataSource" v-model.trim="componentProps['localDynamicDataSource']" :items="dataSources" :item-title="item => item.key" :item-value="item => item.key" @keyup.enter="save"></v-select>
+                <div v-if="componentProps['localDynamicDataSource']">
+                  <v-select label="Data Select" ref="localDynamicLoadURLName" v-model.trim="componentProps['localDynamicLoadURLName']" :items="dataSourcePaths" :item-title="item => item.key" :item-value="item => item.key" @keyup.enter="save"></v-select>
+                  <v-select
+                    label="Key 컬럼 선택"
+                    ref="localDynamicLoadKeyColumn"
+                    v-model="componentProps['localDynamicLoadKeyColumn']"
+                    :items="uniqueColumns"
+                  ></v-select>
+
+                  <v-select
+                    label="Value 컬럼 선택"
+                    ref="localDynamicLoadValueColumn"
+                    v-model="componentProps['localDynamicLoadValueColumn']"
+                    :items="uniqueColumns"
+                  ></v-select>
+                </div>
               </v-window-item>
           </v-window>
         </template>
@@ -84,13 +105,31 @@
   
 <script>
   import FormDefinitionPanelItemTable from '@/components/designer/modeling/FormDefinitionPanelItemTable.vue'
+  import BackendFactory from "@/components/api/BackendFactory";
+  const backend = BackendFactory.createBackend();
 
   export default {
     name: 'form-definition-panel',
     components: {
       FormDefinitionPanelItemTable
     },
-
+    computed: {
+      dataSourcePaths() {
+        if(!this.dataSource) return []
+        return Object.entries(this.dataSource.paths).map(([key, value]) => ({
+          key,
+          value
+        }));
+      },
+      uniqueColumns() {
+        if (!this.dataSourcePath || !this.dataSourcePath.length) return [];
+        const keys = new Set();
+        this.dataSourcePath.forEach(row => {
+          Object.keys(row).forEach(key => keys.add(key));
+        });
+        return Array.from(keys);
+      }
+    },
     emits: [
       "onClose",
       "onSave"
@@ -113,6 +152,9 @@
           <h3>- 예제 4: 여러 줄 입력</h3>
           <p>alert("line1");<br>alert("line2");<br>// 여러 줄 입력시 각 라인의 끝에 ";"를 붙여야 함</p>
         `,
+        dataSources: [],
+        dataSource: null,
+        dataSourcePath: [],
       };
     },
 
@@ -142,10 +184,55 @@
       isShowCheck(settingInfo) {
         if(settingInfo.isShowCheck) return settingInfo.isShowCheck(this.componentProps)
         return true
+      },
+      formatCell(value) {
+        if (typeof value === 'object' && value !== null) {
+          return JSON.stringify(value, null, 2);
+        }
+        return value;
+      },
+      async loadDataSource() {
+        this.dataSources = await backend.getDataSourceList();
+        if(this.dataSources.length === 0) return;
+
+        const dataSource = this.dataSources.find(ds => ds.key === this.componentProps.localDynamicDataSource)
+        if(!dataSource) return
+        const response = await backend.callDataSource(dataSource, {})
+        this.dataSource = response;
+
+        if(this.componentProps.localDynamicLoadURLName) return;
+        let cloned = JSON.parse(JSON.stringify(dataSource))
+        cloned.value.endpoint = cloned.value.endpoint + this.componentProps.localDynamicLoadURLName.replace("/", "");
+
+        const response2 = await backend.callDataSource(cloned, {})
+        this.dataSourcePath = response2
       }
     },
+    watch: {
+      'componentProps.localDynamicDataSource': {
+        async handler(newVal) {
+          const dataSource = this.dataSources.find(ds => ds.key === newVal)
+          if(!dataSource) return
+          const response = await backend.callDataSource(dataSource, {})
+          this.dataSource = response;
+        }
+      },
+      'componentProps.localDynamicLoadURLName': {
+        async handler(newVal) {
+          if(!this.dataSource) return
+          const source = this.componentProps.localDynamicDataSource
+          let dataSource = this.dataSources.find(ds => ds.key === source);
+          if (!dataSource) return
 
-    mounted() {
+          let cloned = JSON.parse(JSON.stringify(dataSource))
+          cloned.value.endpoint = cloned.value.endpoint + newVal.replace("/", "");
+
+          const response = await backend.callDataSource(cloned, {})
+          this.dataSourcePath = response
+        }
+      }
+    },
+    async mounted() {
       this.componentProps = this.componentRef.settingInfos.reduce((acc, cur) => {
           if(cur.settingType === 'items') {
             acc[cur.dataToUse] = JSON.parse(JSON.stringify(this.componentRef[cur.dataToUse]))
@@ -156,6 +243,8 @@
           }
           return acc
       }, {})
+
+      this.loadDataSource();
 
       this.$nextTick(() => {
           if(Object.keys(this.$refs).length > 0)

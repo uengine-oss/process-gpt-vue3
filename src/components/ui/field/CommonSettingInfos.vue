@@ -66,12 +66,18 @@ let commonSettingInfos = {
         settingType: "items_dynamic"
     },
 
+    "localDynamicLoadURLName": {
+        dataToUse: "localDynamicLoadURLName",
+        htmlAttribute: "dynamic_load_url_name",
+        settingType: "items_dynamic"
+    },
+
     "localDynamicLoadURL": {
         dataToUse: "localDynamicLoadURL",
         htmlAttribute: "dynamic_load_url",
         settingType: "items_dynamic",
         validCheck: (value, props) => {
-            if(props.localIsDynamicLoad)
+            if(props.localIsDynamicLoad === "urlBinding")
             {
                 if(!value || value.length <= 0) return "URL 속성에 값을 입력해 주세요."
             }
@@ -84,7 +90,7 @@ let commonSettingInfos = {
         htmlAttribute: "dynamic_load_key_json_path",
         settingType: "items_dynamic",
         validCheck: (value, props) => {
-            if(props.localIsDynamicLoad)
+            if(props.localIsDynamicLoad === "urlBinding")
             {
                 if(!value || value.length <= 0) return "Key JSON Path 속성에 값을 입력해 주세요."
             }
@@ -97,9 +103,47 @@ let commonSettingInfos = {
         htmlAttribute: "dynamic_load_value_json_path",
         settingType: "items_dynamic",
         validCheck: (value, props) => {
-            if(props.localIsDynamicLoad)
+            if(props.localIsDynamicLoad === "urlBinding")
             {
                 if(!value || value.length <= 0) return "Value JSON Path 속성에 값을 입력해 주세요."
+            }
+            return null
+        }
+    },
+
+    "localDynamicLoadKeyColumn": {
+        dataToUse: "localDynamicLoadKeyColumn",
+        htmlAttribute: "dynamic_load_key_column",
+        settingType: "items_dynamic",
+        validCheck: (value, props) => {
+            if(props.localIsDynamicLoad === "dataBinding")
+            {
+                if(!value || value.length <= 0) return "Key Column 속성에 값을 입력해 주세요."
+            }
+            return null
+        }
+    },
+
+    "localDynamicLoadValueColumn": {
+        dataToUse: "localDynamicLoadValueColumn",
+        htmlAttribute: "dynamic_load_value_column",
+        settingType: "items_dynamic",
+        validCheck: (value, props) => {
+            if(props.localIsDynamicLoad === "dataBinding")
+            {
+                if(!value || value.length <= 0) return "Value Column 속성에 값을 입력해 주세요."
+            }
+            return null
+        }
+    },
+    "localDynamicDataSource": {
+        dataToUse: "localDynamicDataSource",
+        htmlAttribute: "dynamic_data_source",
+        settingType: "items_dynamic", 
+        validCheck: (value, props) => {
+            if(props.localIsDynamicLoad === "dataBinding")
+            {
+                if(!value || value.length <= 0) return "Data Source 속성에 값을 입력해 주세요."
             }
             return null
         }
@@ -111,7 +155,11 @@ commonSettingInfos["localItemsWithDynamicList"] = [
     commonSettingInfos["localIsDynamicLoad"],
     commonSettingInfos["localDynamicLoadURL"],
     commonSettingInfos["localDynamicLoadKeyJsonPath"],
-    commonSettingInfos["localDynamicLoadValueJsonPath"]
+    commonSettingInfos["localDynamicLoadValueJsonPath"],
+    commonSettingInfos["localDynamicLoadURLName"],
+    commonSettingInfos["localDynamicLoadKeyColumn"],
+    commonSettingInfos["localDynamicLoadValueColumn"],
+    commonSettingInfos["localDynamicDataSource"]
 ];
 
 export { commonSettingInfos }
