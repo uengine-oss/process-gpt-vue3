@@ -221,11 +221,11 @@ export default {
         instance: null,
         eventList: [],
         // tab
-        tab: "progress",
+        tab: "workhistory",
         tabItems: [
+            { value: 'workhistory', label: 'InstanceCard.workHistory', mobile: true},
             { value: 'progress', label: 'InstanceCard.progress', mobile: true},
             { value: 'todo', label: 'InstanceCard.kanbanBoard', mobile: true},
-            { value: 'workhistory', label: 'InstanceCard.workHistory', mobile: true},
             { value: 'gantt', label: 'InstanceCard.ganttChart', mobile: false},
         ],
 

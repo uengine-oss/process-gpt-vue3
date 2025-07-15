@@ -603,8 +603,8 @@ export default {
                 
             } else {
                 return[
-                    { value: 'progress', label: this.$t('WorkItem.progress') },
-                    { value: 'history', label: this.$t('WorkItem.history') },
+                    { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
+                    { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                     { value: 'agent-feedback', label: '에이전트 피드백' },
                 ]
 
