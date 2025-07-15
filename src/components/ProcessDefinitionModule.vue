@@ -161,11 +161,14 @@ export default {
                         retry();
                     }
                 };
-                formGenerator.previousMessages = [formGenerator.prevMessageFormat];
-                formGenerator.previousMessages.push({
-                    role: 'user',
-                    content: generateMsg
-                });
+                formGenerator.previousMessages = [
+                    ...formGenerator.previousMessageFormats,
+                    {
+                        role: 'user',
+                        content: generateMsg
+                    }
+                ];
+
                 formGenerator.generate();
                 me.messages.push({
                     "role": "system",
