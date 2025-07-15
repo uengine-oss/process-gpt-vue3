@@ -1275,5 +1275,29 @@
         "noProcessModel": "정의된 프로세스 모델이 없습니다.",
         "editProcess": "프로세스 편집",
         "processDefinitionSaved": "프로세스 정의가 저장되었습니다."
+    },
+    "completedListPage": {
+        "search": "인스턴스 검색",
+        "title": "완료된 인스턴스",
+        "warning": "더 이상 데이터가 없습니다."        
+    },
+    "filterConfigLabel": {
+        "period": "기간 설정",
+        "startDate": "시작일",
+        "endDate": "종료일",
+        "dueDate": "만기일",
+        "sort": "정렬",
+        "status": "상태 필터"
+    },
+    "filterConfigOptions": {
+        "latest": "최신순",
+        "startDate": "시작일순",
+        "endDate": "종료일순",
+        "dueDate": "만기일순",
+        "scheduled": "예정 업무",
+        "inProgress": "진행중",
+        "pending": "보류",
+        "completed": "완료",
+        "cancelled": "취소"
     }
 }

@@ -1274,5 +1274,29 @@
         "noProcessModel": "No defined process model.",
         "editProcess": "Edit Process",
         "processDefinitionSaved": "Process definition has been saved."
+    },
+    "completedListPage": {
+        "search": "Instance Search",
+        "title": "Completed Instances",
+        "warning": "No more data."
+    },
+    "filterConfigLabel": {
+        "period": "Period Setting",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "dueDate": "Due Date",
+        "sort": "Sort",
+        "status": "Status Filter"
+    },
+    "filterConfigOptions": {
+        "latest": "Latest",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "dueDate": "Due Date",
+        "scheduled": "Scheduled",
+        "inProgress": "In Progress",
+        "pending": "Pending",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
     }
 }
