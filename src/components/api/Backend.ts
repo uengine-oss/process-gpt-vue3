@@ -91,6 +91,11 @@ export interface Backend {
     getSchedule(id: string, version: string): Promise<any>;
     setSchedule(json: any): Promise<any>;
     deleteSchedule(defId: string, eventId: string): Promise<any>;
+    getDataSourceList(): Promise<any>;
+    addDataSource(dataSource: any): Promise<any>;
+    updateDataSource(dataSource: any): Promise<any>;
+    deleteDataSource(dataSource: any): Promise<any>;
+    callDataSource(dataSource: any, bodyData: any): Promise<any>;
 }
 
 // export type { Backend }
