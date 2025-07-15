@@ -43,9 +43,9 @@ const formDesignGeneratorPromptSnipptsData = {
             tagName: "select-field",
             tag: `<select-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<true|false>' ` + 
                  `items='<options_list_when_is_dynamic_load_is_false>' ` + 
-                 `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_true>' ` +
-                 `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_true>' ` + 
-                 `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_true>' ` +
+                 `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
+                 `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` + 
+                 `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_urlBinding>' ` +
                  `disabled='<true|false>' readonly='<true|false>'></select-field>`,
             purpose: "To select one option from multiple choices",
             limit: `When is_dynamic_load is false, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +
@@ -56,9 +56,9 @@ const formDesignGeneratorPromptSnipptsData = {
             tagName: "checkbox-field",
             tag: `<checkbox-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<true|false>' ` + 
                  `items='<options_list_when_is_dynamic_load_is_false>' ` + 
-                 `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_true>' ` +
-                 `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_true>' ` + 
-                 `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_true>' ` +
+                 `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
+                 `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` + 
+                 `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_urlBinding>' ` +
                  `disabled='<true|false>' readonly='<true|false>'></checkbox-field>`,
             purpose: "To select multiple options from a list of choices",
             limit: `When is_dynamic_load is false, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +
@@ -69,9 +69,9 @@ const formDesignGeneratorPromptSnipptsData = {
             tagName: "radio-field",
             tag: `<radio-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<true|false>' ` + 
                  `items='<options_list_when_is_dynamic_load_is_false>' ` + 
-                 `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_true>' ` +
-                 `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_true>' ` + 
-                 `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_true>' ` +
+                 `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
+                 `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` + 
+                 `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_urlBinding>' ` +
                  `disabled='<true|false>' readonly='<true|false>'></radio-field>`,
             purpose: "To select one option from multiple listed choices (displayed as radio buttons)",
             limit: `When is_dynamic_load is false, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +

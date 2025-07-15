@@ -2,7 +2,7 @@
     <div>
         <v-row class="ma-0 pa-0 task-btn">
             <v-spacer></v-spacer>
-            <div v-if="(!isCompleted && isOwnWorkItem) || isSimulate == 'true'" class="from-work-item-pc" style="margin-right: 10px;">
+            <div v-if="(!isCompleted && isOwnWorkItem) || isSimulate == 'true'" class="from-work-item-pc">
                 <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded variant="flat">중간 저장</v-btn>
                 <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
                     class="bouncing-arrow-horizontal" 
@@ -11,10 +11,26 @@
                 >
                     mdi-arrow-right-bold
                 </v-icon>
-                <v-btn @click="executeProcess" color="primary" density="compact" rounded variant="flat" :disabled="isLoading" :loading="isLoading">제출 완료</v-btn>
+                <v-btn @click="executeProcess"
+                    color="primary"
+                    density="compact"
+                    rounded variant="flat"
+                    :disabled="isLoading"
+                    :loading="isLoading"
+                >제출 완료</v-btn>
             </div>
-            <div v-if="!isCompleted && !isOwnWorkItem && isSimulate != 'true'" class="from-work-item-pc" style="margin-right: 10px;">
-                <v-btn @click="openDelegateTask()" color="primary" density="compact" rounded variant="flat" :disabled="isLoading" :loading="isLoading">위임 하기</v-btn>
+            <div v-if="!isCompleted && !isOwnWorkItem && isSimulate != 'true'"
+                class="from-work-item-pc"
+                style="margin-right: 10px;"
+            >
+                <v-btn @click="openDelegateTask()"
+                    color="primary"
+                    density="compact"
+                    rounded
+                    variant="flat"
+                    :disabled="isLoading"
+                    :loading="isLoading"
+                >위임 하기</v-btn>
             </div>
             <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
                 <v-tooltip v-if="isMobile"
@@ -468,9 +484,6 @@ export default {
 }
 
 @media only screen and (max-width:1080px) {
-    .from-work-item-pc {
-        display: none;
-    }
     .form-work-item-mobile {
         display: block;
     }

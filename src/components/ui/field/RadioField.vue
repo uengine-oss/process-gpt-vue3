@@ -18,6 +18,8 @@
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
 import axios from 'axios';
 import jp from 'jsonpath';
+import BackendFactory from "@/components/api/BackendFactory";
+const backend = BackendFactory.createBackend();
 
 export default {
     props: {
@@ -41,10 +43,17 @@ export default {
         readonly: String,
 
         items: String,
-        is_dynamic_load: String,
-        dynamic_load_url: String,
+        is_dynamic_load: {
+            type: String,
+            default: "fixed"
+        },
+        dynamic_load_url_name: String,
         dynamic_load_key_json_path: String,
-        dynamic_load_value_json_path: String
+        dynamic_load_value_json_path: String,
+        dynamic_load_url: String,
+        dynamic_load_key_column: String,
+        dynamic_load_value_column: String,
+        dynamic_data_source: String
     },
 
     data() {
@@ -57,10 +66,14 @@ export default {
             localDisabled: false,
             localReadonly: false,
 
-            localIsDynamicLoad: false,
+            localIsDynamicLoad: "",
             localDynamicLoadURL: "",
             localDynamicLoadKeyJsonPath: "",
             localDynamicLoadValueJsonPath: "",
+            localDynamicLoadURLName: "",
+            localDynamicLoadKeyColumn: "",
+            localDynamicLoadValueColumn: "",
+            localDynamicDataSource: "",
 
             controlItems: [],
 
@@ -70,19 +83,29 @@ export default {
                 commonSettingInfos["localDisabled"],
                 commonSettingInfos["localReadonly"],
                 ...commonSettingInfos["localItemsWithDynamicList"]
-            ]
+            ],
+            dataSource: {},
+            dataSources: []
         };
     },
 
     watch: {
         modelValue: {
-            handler() {
-                this.loadControlItems()
-                
+            async handler() {
+                await this.loadControlItems()
+
                 if(this.modelValue && this.modelValue.length > 0)
-                    this.localModelValue = this.modelValue
-                else if(this.controlItems.length > 0)
-                    this.localModelValue = Object.keys(this.controlItems[0])[0]
+                {
+                    const foundItem = this.controlItems.find(item => Object.keys(item)[0] === this.modelValue)
+                    if(!foundItem) return
+
+                    this.localModelValue = Object.keys(foundItem)[0]
+                }
+                else
+                {
+                    if(this.controlItems.length > 0)
+                        this.localModelValue = Object.keys(this.controlItems[0])[0]
+                }
             },
             deep: true,
             immediate: true
@@ -98,34 +121,73 @@ export default {
 
         localItems: {handler() {this.loadControlItems()}, deep: true, immediate: true},
         localIsDynamicLoad: {handler() {this.loadControlItems()}, deep: true, immediate: true},
+        localDynamicLoadURLName: {handler() {this.loadControlItems()}, deep: true, immediate: true},
+        localDynamicLoadKeyColumn: {handler() {this.loadControlItems()}, deep: true, immediate: true},
+        localDynamicLoadValueColumn: {handler() {this.loadControlItems()}, deep: true, immediate: true},
         localDynamicLoadURL: {handler() {this.loadControlItems()}, deep: true, immediate: true},
         localDynamicLoadKeyJsonPath: {handler() {this.loadControlItems()}, deep: true, immediate: true},
-        localDynamicLoadValueJsonPath: {handler() {this.loadControlItems()}, deep: true, immediate: true}
+        localDynamicLoadValueJsonPath: {handler() {this.loadControlItems()}, deep: true, immediate: true},
+        localDynamicDataSource: {handler() {this.loadControlItems()}, deep: true, immediate: true}
     },
     
     methods: {
         // 문자열로 형태로 items의 값이 전달되었을 경우, 리스트 형태로 변환해서 반영시키기 위해서
         async loadControlItems() {
-            if(this.localIsDynamicLoad) {
+            if(this.localIsDynamicLoad === "urlBinding") {
                 if(!this.localDynamicLoadURL || this.localDynamicLoadURL.length === 0) return
-                if(!this.localDynamicLoadKeyJsonPath || this.localDynamicLoadKeyJsonPath.length === 0) return
-                if(!this.localDynamicLoadValueJsonPath || this.localDynamicLoadValueJsonPath.length === 0) return
+                // if(!this.localDynamicLoadKeyJsonPath || this.localDynamicLoadKeyJsonPath.length === 0) return
+                // if(!this.localDynamicLoadValueJsonPath || this.localDynamicLoadValueJsonPath.length === 0) return
 
                 try {
                     const response = await axios.get(this.localDynamicLoadURL)
-                    
-                    const keys = jp.query(response.data, this.localDynamicLoadKeyJsonPath)
-                    const values = jp.query(response.data, this.localDynamicLoadValueJsonPath)
 
-                    if(keys.length !== values.length) throw new Error("keys.length != values.length")
-                    this.controlItems = keys.map((key, index) => ({ [key]: values[index] }))
+                    if(this.localDynamicLoadKeyJsonPath &&
+                     this.localDynamicLoadKeyJsonPath.length > 0 && 
+                     this.localDynamicLoadValueJsonPath &&
+                      this.localDynamicLoadValueJsonPath.length > 0) {
+                        const keys = jp.query(response.data, this.localDynamicLoadKeyJsonPath)
+                        const values = jp.query(response.data, this.localDynamicLoadValueJsonPath)
+
+                        if(keys.length !== values.length) throw new Error("keys.length != values.length")
+                        this.controlItems = keys.map((key, index) => ({ [key]: values[index] }))
+                    } else {
+                        let keys = [];
+                        let values = [];
+                        Object.keys(response.data).forEach(item => {
+                            keys.push(item)
+                            values.push(response.data[item])
+                        })
+                        this.controlItems = keys.map((key, index) => ({ [key]: values[index] }))
+                    }
+                    
                 } catch(e) {
                     console.log("### items 동적 로드 에러 ###")
                     console.error(e)
                 }
 
-            } else
+            } else if(this.localIsDynamicLoad === "dataBinding" && this.localDynamicLoadKeyColumn.length > 0 && this.localDynamicDataSource.length > 0) {
+                const response = this.dataSource;
+                const keyPath = "$[*]." + this.localDynamicLoadKeyColumn;
+                const valuePath = "$[*]." + this.localDynamicLoadValueColumn;
+                const keys = jp.query(response, keyPath);
+                const values = jp.query(response, valuePath);
+
+                if(keys.length !== values.length) throw new Error("keys.length != values.length")
+                this.controlItems = keys.map((key, index) => ({ [key]: values[index] }))
+            } else {
                 this.controlItems = this.localItems
+            }
+        },
+        async loadDataSource() {
+            this.dataSources = await backend.getDataSourceList();
+            const dataSource = this.dataSources.find(ds => ds.key === this.localDynamicDataSource)
+            if(!dataSource) return
+
+            let cloned = JSON.parse(JSON.stringify(dataSource))
+            cloned.value.endpoint = cloned.value.endpoint + this.localDynamicLoadURLName.replace("/", "");
+
+            const response = await backend.callDataSource(cloned, {})
+            this.dataSource = response
         }
     },
 
@@ -150,14 +212,18 @@ export default {
             console.error(e);
             this.localItems = []
         }
-        this.localIsDynamicLoad = this.is_dynamic_load === "true"
+        this.localIsDynamicLoad = this.is_dynamic_load ?? "fixed"
+        this.localDynamicLoadURLName = this.dynamic_load_url_name ?? ""
+        this.localDynamicLoadKeyColumn = this.dynamic_load_key_column ?? ""
+        this.localDynamicLoadValueColumn = this.dynamic_load_value_column ?? ""
         this.localDynamicLoadURL = this.dynamic_load_url ?? ""
         this.localDynamicLoadKeyJsonPath = this.dynamic_load_key_json_path ?? ""
         this.localDynamicLoadValueJsonPath = this.dynamic_load_value_json_path ?? ""
+        this.localDynamicDataSource = this.dynamic_data_source ?? ""
 
-        
-        await this.loadControlItems()
-        if(this.controlItems.length > 0 && !this.localModelValue)
+        await this.loadDataSource();
+        await this.loadControlItems();
+        if((this.controlItems.length > 0) && !this.localModelValue)
             this.localModelValue = Object.keys(this.controlItems[0])[0]
     }
 };

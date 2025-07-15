@@ -362,7 +362,26 @@
         "clientSecret": "Client Secret",
         "folderId": "Folder ID",
         "edit": "Edit",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "dataSource": "Data Source",
+        "addDataSource": "Add Data Source",
+        "editDataSource": "Edit Data Source",
+        "addConnectionInfo": "Add Connection Info",
+        "connectionInfo": "Connection Info",
+        "key": "Key",
+        "value": "Value",
+        "description": "Description",
+        "delete": "Delete",
+        "addHeader": "Add Header",
+        "parameters": "Parameters",
+        "addParameter": "Add Parameter",
+        "authentication": "Authentication",
+        "addAuthentication": "Add Authentication",
+        "method": "Method",
+        "endpoint": "Endpoint",
+        "headers": "Headers",
+        "username": "Username",
+        "password": "Password"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -514,7 +533,8 @@
         "readOnly": "Read-Only Mode",
         "save": "Save",
         "fixed": "Fixed Options",
-        "dataBinding": "Data Binding"
+        "dataBinding": "Data Binding",
+        "urlBinding": "URL Binding"
     },
     "ContainerSettingPanel": {
         "title": "Edit Container Attribute",
@@ -1274,5 +1294,29 @@
         "noProcessModel": "No defined process model.",
         "editProcess": "Edit Process",
         "processDefinitionSaved": "Process definition has been saved."
+    },
+    "completedListPage": {
+        "search": "Instance Search",
+        "title": "Completed Instances",
+        "warning": "No more data."
+    },
+    "filterConfigLabel": {
+        "period": "Period Setting",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "dueDate": "Due Date",
+        "sort": "Sort",
+        "status": "Status Filter"
+    },
+    "filterConfigOptions": {
+        "latest": "Latest",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "dueDate": "Due Date",
+        "scheduled": "Scheduled",
+        "inProgress": "In Progress",
+        "pending": "Pending",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
     }
 }

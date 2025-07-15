@@ -363,7 +363,26 @@
         "clientSecret": "클라이언트 Secret",
         "folderId": "폴더 ID",
         "edit": "수정",
-        "cancel": "취소"
+        "cancel": "취소",
+        "dataSource": "데이터소스",
+        "addDataSource": "데이터소스 추가",
+        "editDataSource": "데이터소스 수정",
+        "addConnectionInfo": "접속 정보 추가",
+        "connectionInfo": "접속 정보",
+        "key": "키",
+        "value": "값",
+        "description": "설명",
+        "delete": "삭제",
+        "addHeader": "헤더 추가",
+        "parameters": "파라미터",
+        "addParameter": "파라미터 추가",
+        "authentication": "인증",
+        "addAuthentication": "인증 추가",
+        "method": "메서드",
+        "endpoint": "엔드포인트",
+        "headers": "헤더",
+        "username": "유저명",
+        "password": "비밀번호"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -515,6 +534,7 @@
         "readOnly": "읽기 모드",
         "save": "저장",
         "fixed": "고정 옵션",
+        "urlBinding": "URL 바인딩",
         "dataBinding": "데이터 바인딩"
     },
     "ContainerSettingPanel": {
@@ -1275,5 +1295,29 @@
         "noProcessModel": "정의된 프로세스 모델이 없습니다.",
         "editProcess": "프로세스 편집",
         "processDefinitionSaved": "프로세스 정의가 저장되었습니다."
+    },
+    "completedListPage": {
+        "search": "인스턴스 검색",
+        "title": "완료된 인스턴스",
+        "warning": "더 이상 데이터가 없습니다."        
+    },
+    "filterConfigLabel": {
+        "period": "기간 설정",
+        "startDate": "시작일",
+        "endDate": "종료일",
+        "dueDate": "만기일",
+        "sort": "정렬",
+        "status": "상태 필터"
+    },
+    "filterConfigOptions": {
+        "latest": "최신순",
+        "startDate": "시작일순",
+        "endDate": "종료일순",
+        "dueDate": "만기일순",
+        "scheduled": "예정 업무",
+        "inProgress": "진행중",
+        "pending": "보류",
+        "completed": "완료",
+        "cancelled": "취소"
     }
 }

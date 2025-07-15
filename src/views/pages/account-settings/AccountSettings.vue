@@ -7,6 +7,7 @@ import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
 import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
 import MCPTab from '@/components/pages/account-settings/MCPTab.vue';
+import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
 // import SecurityTab from '@/components/pages/account-settings/SecurityTab.vue';
@@ -36,6 +37,9 @@ const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
                         <v-tab value="MCP">
                             MCP Servers
                         </v-tab>
+	                    <v-tab value="ConnectionInfo">
+	                        <DatabaseIcon class="mr-2" size="20"/>{{ $t('accountTab.connectionInfo') }}
+	                    </v-tab>
                     </div>
                     <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                     <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
@@ -55,6 +59,9 @@ const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
                         </v-window-item>
                         <v-window-item value="MCP">
                             <MCPTab/>
+                        </v-window-item>
+                        <v-window-item value="ConnectionInfo">
+                            <ConnectionInfoTab/>
                         </v-window-item>
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>
