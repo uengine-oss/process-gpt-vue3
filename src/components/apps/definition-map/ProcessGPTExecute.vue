@@ -5,14 +5,15 @@
                 <h2 v-if="isSimulate == 'true'">{{ $t('ProcessGPTExecute.processSimulate') }}</h2>
                 <h2 v-else>{{ $t('ProcessGPTExecute.processStart') }}</h2>
                 <v-spacer></v-spacer>
-                <v-btn v-if="!isCompleted"
+                <!-- 기존 모바일일 때 상단에 제출 완료 버튼 -->
+                <!-- <v-btn v-if="!isCompleted"
                     @click="executeProcess"
                     color="primary" 
                     class="form-work-item-mobile"
                     variant="flat"
                     rounded
                 >제출 완료
-                </v-btn>
+                </v-btn> -->
                 <div v-if="!isMobile">
                     <v-btn @click="closeDialog"
                         class="ml-auto" 
