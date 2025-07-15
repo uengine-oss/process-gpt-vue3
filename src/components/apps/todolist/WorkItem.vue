@@ -50,7 +50,7 @@
         <v-row :class="isMobile ? 'ma-0 pa-0' : 'ma-0 pa-0'">
             <!-- Left -->
             <v-col :cols="isMobile ? 12 : 5"
-                :class="isMobile ? 'pa-4 pt-3 order-last' : 'pa-0 pt-3 pl-4 pb-4'"
+                :class="isMobile ? 'pa-4 pt-0 order-last' : 'pa-0 pt-3 pl-4 pb-4'"
             >
                 <v-alert class="pa-0 primary-border" variant="outlined">
                     <!-- 데스크톱: 기존 탭 -->
@@ -220,6 +220,20 @@
             >
                 <div v-if="currentComponent && !isNotExistDefaultForm" class="work-itme-current-component" style="height: 100%;">
                     <div :style="isMobile ? 'top: 90px;' : 'top: 70px;'" style="position: absolute; right: 28px; z-index: 9999;">
+                        <v-btn v-if="hasGeneratedContent"
+                            @click="resetGeneratedContent"
+                            :disabled="isGeneratingExample"
+                            :class="isMobile ? 'mr-1 text-medium-emphasis' : 'pl-5 pr-6 mr-1'"
+                            :icon="isMobile"
+                            :variant="isMobile ? 'outlined' : 'flat'"
+                            :size="isMobile ? 'small' : 'default'"
+                            :rounded="!isMobile"
+                            density="comfortable"
+                            :style="isMobile ? 'border-color: #e0e0e0 !important;' : 'background-color: #808080; color: white;'"
+                        >
+                            <v-icon>mdi-delete-outline</v-icon>
+                            <span v-if="!isMobile" class="ms-1">예시 초기화</span>
+                        </v-btn>
                         <v-btn
                             v-if="!isMobile"
                             class="pl-5 pr-6 mr-1" 
@@ -240,7 +254,6 @@
                                     <div class="ms-1">빠른 예시 생성</div>
                                 </v-row>
                             </template>
-                            
                         </v-btn>
                         <div v-if="isSimulate == 'true'" style="margin-left: 10px;">
                             <FormDefinition
@@ -265,18 +278,6 @@
                                 <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
                             </v-btn>
                         </div>
-                        <v-btn v-if="isMobile && hasGeneratedContent"
-                            @click="resetGeneratedContent"
-                            :disabled="isGeneratingExample"
-                            class="mr-1 text-medium-emphasis"
-                            density="comfortable"
-                            icon
-                            variant="outlined"
-                            size="small"
-                            style="border-color: #e0e0e0 !important;"
-                        >
-                            <v-icon>mdi-delete-outline</v-icon>
-                        </v-btn>
                         <v-btn v-if="isMobile"
                             @click="beforeGenerateExample"
                             :loading="isGeneratingExample"
