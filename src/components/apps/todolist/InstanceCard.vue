@@ -24,15 +24,17 @@
                         > {{  $t('InstanceCard.sendEvent', {event: event.name ? event.name : event.type}) }}
                         </v-btn>
                     </div>
-                    <v-btn v-if="deletable" @click="openDeleteDialog" rounded size="small" color="error" class="ml-auto" style="margin-top: 10px;">
-                        삭제
-                    </v-btn>
-                    <div v-else style="margin-top: 10px;" class="ml-auto d-flex flex-column align-end">
-                        <div class="text-caption">
-                            {{ getRemainingTime(instance.deleted_at) }}
+                    <div v-if="isParticipant">
+                        <div v-if="instance.is_deleted" style="margin-top: 10px;" class="ml-auto d-flex flex-column align-end">
+                            <div class="text-caption">
+                                {{ getRemainingTime(instance.deleted_at) }}
+                            </div>
+                            <v-btn @click="restoreInstance" color="error" rounded>
+                                삭제 취소
+                            </v-btn>
                         </div>
-                        <v-btn @click="restoreInstance" color="error" rounded>
-                            삭제 취소
+                        <v-btn v-else @click="openDeleteDialog" rounded size="small" color="error" class="ml-auto" style="margin-top: 10px;">
+                            삭제
                         </v-btn>
                     </div>
                 </v-row>
@@ -304,9 +306,8 @@ export default {
         isCompleted() {
             return this.instance.status == "COMPLETED"
         },
-        deletable() {
+        isParticipant() {
             if (this.instance) {
-                if(this.instance.is_deleted) return false;
                 const email = localStorage.getItem('email');
                 if (this.instance.participants && this.instance.participants.length > 0 && this.instance.participants.includes(email)) {
                     return true;
