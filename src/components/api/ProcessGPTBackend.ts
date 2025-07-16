@@ -1799,6 +1799,20 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getDeletedTenants() {
+        try {
+            const tenants = await storage.list('tenants', {
+                match: {
+                    is_deleted: true
+                }
+            });
+            return tenants;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getUserAllTenants() {
         try {
             const uid: string = localStorage.getItem('uid') || '';

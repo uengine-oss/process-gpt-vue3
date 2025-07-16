@@ -302,12 +302,9 @@
         // 사용자 입력 로그 추가
         this.addLog('command', `> ${command}`)
 
-        const prompt = `전달해준 html 과 작업 정보를 기반하여 결과를 생성, 결과의 형식은 html 에 존재하는 키값을 가진 json 형식으로 생성
-        html: ${this.html}
-        workItem: ${JSON.stringify(this.workItem)}
-
-        요청사항: ${command}
-        `
+        // const prompt = `요청 사항에 맞게 결과를 생성, ppt 를 생성하여 다운로드 받는다면 다운로드 받은 path 나 ppt 파일을 첨부하여 전달
+        // 요청사항: ${command}
+        // `
         
         // WebSocket으로 명령 전송
         this.ws.send(JSON.stringify({ command }))
