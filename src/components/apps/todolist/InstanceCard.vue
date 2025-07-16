@@ -5,7 +5,7 @@
         <div>
             <div>
                 <!-- 한글: 세로 기준 중앙정렬을 위해 align-center 클래스 추가 -->
-                <v-row class="ma-0 pa-4 pb-0 pt-0 align-center instance-card-title">
+                <v-row class="ma-0 pa-4 pb-0 align-center instance-card-title">
                     <!-- 한글: 인스턴스 이름이 길 경우 줄바꿈이 가능하도록 스타일 추가 -->
                     <div class="text-h5 font-weight-semibold align-center"
                         style="word-break: break-all; white-space: normal; margin-right: 5px;"
@@ -24,8 +24,9 @@
                         > {{  $t('InstanceCard.sendEvent', {event: event.name ? event.name : event.type}) }}
                         </v-btn>
                     </div>
-                    <div v-if="isParticipant">
-                        <div v-if="instance.is_deleted" :style="isMobile ? '' : 'margin-top: 10px;'" class="ml-auto d-flex flex-column align-end">
+                    <v-spacer></v-spacer>
+                    <div v-if="isParticipant && !isNew">
+                        <div v-if="instance.is_deleted">
                             <div class="text-caption">
                                 {{ getRemainingTime(instance.deleted_at) }}
                             </div>
@@ -33,7 +34,7 @@
                                 삭제 취소
                             </v-btn>
                         </div>
-                        <v-btn v-else @click="openDeleteDialog" rounded size="small" color="error" class="ml-auto" :style="isMobile ? '' : 'margin-top: 10px;'">
+                        <v-btn v-else @click="openDeleteDialog" rounded size="small" color="error" class="ml-auto" :style="isMobile ? '' : ''">
                             삭제
                         </v-btn>
                     </div>
@@ -70,7 +71,8 @@
                             v-for="item in filteredTabItems"
                             :key="item.value"
                             :variant="tab === item.value ? 'flat' : 'text'"
-                            :color="tab === item.value ? 'primary' : 'default'"
+                            :color="tab === item.value ? '' : 'default'"
+                            :style="tab === item.value ? 'background: #808080; color: white;' : ''"
                             size="small"
                             @click="tab = item.value"
                         >
@@ -256,7 +258,7 @@ export default {
                     if (this.$route.query && this.$route.query.submitted) {
                         this.tab = "workhistory";
                     } else {
-                        this.tab = "progress";
+                        this.tab = "workhistory";
                     }
                 }
             }
