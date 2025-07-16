@@ -47,7 +47,8 @@
 
             <div class="sub-process-detail-btn-box">
                 <div v-if="onLoad && bpmn" class="d-flex align-center">
-                    <div class="sub-process-start-btn">
+                    <v-row class="sub-process-start-btn ma-0 pa-0">
+                        <v-spacer></v-spacer>
                         <template v-if="!JMS && !Pal">
                             <v-btn @click="executeProcess('simulate')"
                                 class="mr-2"
@@ -68,7 +69,6 @@
                                 {{ isViewMode ? $t('subProcessDetail.edit') : $t('subProcessDetail.save') }}
                             </v-btn>
                             <v-btn @click="executeProcess('execute')"
-                                class="mr-2"
                                 color="primary"
                                 variant="flat"
                                 rounded
@@ -77,7 +77,7 @@
                                 {{ $t('subProcessDetail.execute') }}
                             </v-btn>
                         </template>
-                    </div>
+                    </v-row>
 
                     <v-tooltip v-if="isEditable" location="bottom">
                         <template v-slot:activator="{ props }">
