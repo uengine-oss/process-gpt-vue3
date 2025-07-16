@@ -19,7 +19,7 @@
                         @update:processVariables="(val) => (processVariables = val)"
                     ></process-definition>
                 </div>
-                <div style="position: relative;">
+                <div class="process-consulting-ai-first-screen">
                     <Chat
                         :messages="messages"
                         :userInfo="userInfo"
@@ -124,7 +124,7 @@
                 </v-dialog>
             </template>
             <template v-slot:rightpart>
-                <div v-if="isAdmin" class="no-scrollbar">
+                <div v-if="isAdmin" class="process-consulting-ai-second-screen no-scrollbar">
                     <Chat
                         :prompt="prompt"
                         :name="projectName"
@@ -158,34 +158,36 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat
-                    v-if="isAdmin"
-                    :prompt="prompt"
-                    :name="projectName"
-                    :messages="messages"
-                    :chatInfo="chatInfo"
-                    :userInfo="userInfo"
-                    :allUserList="allUserList"
-                    :lock="lock"
-                    :disableChat="disableChat"
-                    :chatRoomId="chatRoomId"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                    @addTeam="addTeam"
-                    @addTeamMembers="addTeamMembers"
-                >
-                    <template v-slot:custom-title>
-                        <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
-                            :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
-                            :isEditable="isEditable"
-                            :chatMode="chatMode"
-                            @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
-                            @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                            @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                            @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
-                    </template>
-                </Chat>
+                <div class="process-consulting-ai-third-screen">
+                    <Chat
+                        v-if="isAdmin"
+                        :prompt="prompt"
+                        :name="projectName"
+                        :messages="messages"
+                        :chatInfo="chatInfo"
+                        :userInfo="userInfo"
+                        :allUserList="allUserList"
+                        :lock="lock"
+                        :disableChat="disableChat"
+                        :chatRoomId="chatRoomId"
+                        @sendMessage="beforeSendMessage"
+                        @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage"
+                        @addTeam="addTeam"
+                        @addTeamMembers="addTeamMembers"
+                    >
+                        <template v-slot:custom-title>
+                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
+                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                                :isEditable="isEditable"
+                                :chatMode="chatMode"
+                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                @executeProcess="executeProcess" @executeSimulate="executeSimulate"
+                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
+                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
+                        </template>
+                    </Chat>
+                </div>
             </template>
         </AppBaseCard>
         <v-dialog v-model="executeDialog" max-width="80%" persistent
@@ -311,6 +313,7 @@ export default {
         isAIGenerated: false,
         organizationChart: [],
         strategy: null,
+        isHorizontal: false,
     }),
     async created() {
         $try(async () => {
@@ -1014,6 +1017,7 @@ export default {
             let definitions;
             let xmlObj = await modeler.saveXML({ format: true, preamble: true });
             me.bpmn = xmlObj.xml;
+            this.setOrientation();
             let fullPath = me.$route.params.pathMatch.join('/');
             if (fullPath.startsWith('/')) {
                 fullPath = fullPath.substring(1);
@@ -1029,6 +1033,36 @@ export default {
                     me.projectName = definitions.name ? definitions.name : me.processDefinition.processDefinitionName;
                 }
             }
+        },
+        setOrientation() {
+            const store = useBpmnStore();
+            let me = this;
+            let modeler = store.getModeler;
+            const canvas = modeler.get('canvas');
+            const container = canvas.getContainer();
+            const elementRegistry = modeler.get('elementRegistry');
+            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            let isMobile = false;
+            
+            const { width, height } = container.getBoundingClientRect();
+            if(width - 100 > height) {
+                isMobile = false;
+            } else {
+                isMobile = true;
+            }
+
+            participant.forEach(element => {
+                const horizontal = element.di.isHorizontal;
+                if(!isMobile && !horizontal) {
+                    if(element.width < element.height) {
+                        me.isHorizontal = true;
+                    }
+                } else if(isMobile && horizontal) {
+                    if(element.width > element.height) {
+                        me.isHorizontal = false;
+                    }
+                }
+            });
         },
         beforeSendMessage(newMessage) {
             this.waitForCustomer = false
@@ -1083,7 +1117,7 @@ export default {
                             this.processDefinition = unknown;
                             if(!this.processDefinition) this.processDefinition = {};
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
-                            this.bpmn = this.createBpmnXml(unknown);
+                            this.bpmn = this.createBpmnXml(unknown, this.isHorizontal);
                             this.isAIGenerated = true;
                             this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
                             this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
@@ -1474,7 +1508,7 @@ export default {
                                 
                                 // 6. BPMN XML 재생성
                                 try {
-                                    this.bpmn = this.createBpmnXml(this.processDefinition);
+                                    this.bpmn = this.createBpmnXml(this.processDefinition, this.isHorizontal);
                                 } catch (error) {
                                     console.error('Error creating BPMN XML:', error);
                                     // 오류 발생 시 기본 BPMN 구조 유지
@@ -1486,7 +1520,7 @@ export default {
                             if(this.processDefinition['activities'] && this.processDefinition['sequences']) {
                                 this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
                             }
-                            this.bpmn = this.createBpmnXml(this.processDefinition);
+                            this.bpmn = this.createBpmnXml(this.processDefinition, this.isHorizontal);
                         }
                         this.oldProcDefId = unknown.processDefinitionId;
                         this.definitionChangeCount++;

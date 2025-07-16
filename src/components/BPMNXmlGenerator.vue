@@ -1430,7 +1430,15 @@ export default {
                  
       return { inComing, outGoing, positionMapping };
     },
-    createBpmnXml(jsonModel) {
+    createBpmnXml(jsonModel, horizontal) {
+        jsonModel.isAutoLayout = true;
+        
+        // jsonModel의 isHorizontal 값을 사용하거나 기본값으로 false 사용
+        let isHorizontal = jsonModel.isHorizontal;
+        if(horizontal != undefined) {
+          isHorizontal = horizontal;
+          jsonModel.isHorizontal = horizontal;
+        }
         jsonModel = this.createAutoLayout(jsonModel);
         console.log('createBpmnXml 시작, 모델 구조:', jsonModel);
         // 모델 변환 로직
@@ -1441,11 +1449,6 @@ export default {
             console.log('elements 포함된 모델 발견:', Object.keys(jsonModel.elements).length + '개 요소');
         }
 
-        jsonModel.isHorizontal = false;
-        jsonModel.isAutoLayout = true;
-        
-        // jsonModel의 isHorizontal 값을 사용하거나 기본값으로 false 사용
-        const isHorizontal = jsonModel.isHorizontal === true;
         const xmlDoc = this.initializeXmlDocument(jsonModel);
         const bpmnDefinitions = xmlDoc.documentElement;
         
@@ -1534,10 +1537,10 @@ export default {
                 const paddingY = isHorizontal ? 0 : 30;
                 
                 // 참가자 경계 설정
-                dcBoundsParticipant.setAttribute('x', (minX).toString());
-                dcBoundsParticipant.setAttribute('y', (minY).toString());
-                dcBoundsParticipant.setAttribute('width', (maxX - minX).toString());
-                dcBoundsParticipant.setAttribute('height', (maxY - minY).toString());
+                dcBoundsParticipant.setAttribute('x', (minX -paddingX).toString());
+                dcBoundsParticipant.setAttribute('y', (minY - paddingY).toString());
+                dcBoundsParticipant.setAttribute('width', (maxX - minX + paddingX).toString());
+                dcBoundsParticipant.setAttribute('height', (maxY - minY + paddingY).toString());
                 
             } else {
                 // 경계 정보가 없는 경우 기본값 사용
@@ -1649,15 +1652,25 @@ export default {
         graph.addNode(element.id, element.name);
         const node = graph.getNode(element.id);
         
-        node.width = 100;
-        node.height = 80;
+        if(jsonModel.isHorizontal) {
+          node.width = 80;
+          node.height = 100;
+        } else {
+          node.width = 100;
+          node.height = 80;
+        }
 
         if (element.elementType === "Gateway") {
           node.width = 50;
           node.height = 50;
         } else if(element.elementType === "Activity"){
-          node.width = 100;
-          node.height = 80;
+          if(jsonModel.isHorizontal) {
+            node.width = 80;
+            node.height = 100;
+          } else {
+            node.width = 100;
+            node.height = 80;
+          }
         } else if(element.elementType === "Event") {
           node.width = 34;
           node.height = 34;
@@ -1708,18 +1721,24 @@ export default {
           // Sequence가 아닌 요소만 처리
           if (element.elementType !== 'Sequence') {
             const node = graph.getNode(element.id);
+            
             if (node) {
-              // 노드 위치 및 크기 정보 추가
-              updatedElement.x = node.x;
-              updatedElement.y = node.y;
+              let x = node.x;
+              let y = node.y;
+
+              if (jsonModel.isHorizontal) {
+                x = node.y;
+                y = node.x;
+              }
+
+              updatedElement.x = x;
+              updatedElement.y = y;
               updatedElement.width = node.width || 100;
               updatedElement.height = node.height || 80;
-              
-              // 계층 구조 정보 추가
+
               if (node.layer !== undefined) updatedElement.layer = node.layer;
               if (node.order !== undefined) updatedElement.order = node.order;
-              
-              // BPMN 타입 정보 추가
+
               updatedElement.bpmnType = node.nodeType || this.getBpmnType(element.type);
             }
           } else if(element.elementType === 'Sequence') {
@@ -1727,8 +1746,16 @@ export default {
               edge.source === element.source && edge.target === element.target
             );
             if (graphSequence && graphSequence.waypoints) {
-              updatedElement.waypoints = graphSequence.waypoints;
+              if (jsonModel.isHorizontal) {
+                updatedElement.waypoints = graphSequence.waypoints.map(pt => ({
+                  x: pt.y,
+                  y: pt.x
+                }));
+              } else {
+                updatedElement.waypoints = graphSequence.waypoints;
+              }
             }
+
           }
           
           updatedElements.push(updatedElement);
@@ -1742,25 +1769,38 @@ export default {
           if (element.elementType !== 'Sequence') {
             const node = graph.getNode(element.id);
             if (node) {
-              // 노드 위치 및 크기 정보 추가
-              updatedElement.x = node.x;
-              updatedElement.y = node.y;
+              let x = node.x;
+              let y = node.y;
+
+              if (jsonModel.isHorizontal) {
+                x = node.y;
+                y = node.x;
+              }
+
+              updatedElement.x = x;
+              updatedElement.y = y;
               updatedElement.width = node.width || 100;
               updatedElement.height = node.height || 80;
-              
-              // 계층 구조 정보 추가
+
               if (node.layer !== undefined) updatedElement.layer = node.layer;
               if (node.order !== undefined) updatedElement.order = node.order;
-              
-              // BPMN 타입 정보 추가
+
               updatedElement.bpmnType = node.nodeType || this.getBpmnType(element.type);
             }
           } else if(element.elementType === 'Sequence') {
             const graphSequence = graph.edges.find(edge => 
               edge.source === element.source && edge.target === element.target
             );
+            
             if (graphSequence && graphSequence.waypoints) {
-              updatedElement.waypoints = graphSequence.waypoints;
+              if (jsonModel.isHorizontal) {
+                updatedElement.waypoints = graphSequence.waypoints.map(pt => ({
+                  x: pt.y,
+                  y: pt.x
+                }));
+              } else {
+                updatedElement.waypoints = graphSequence.waypoints;
+              }
             }
           }
           
@@ -1775,16 +1815,30 @@ export default {
       graph.groups.forEach(group => {
         const role = jsonModel.roles.find(role => role.name === group.id);
         if (role) {
-          role.boundary = {
-            minX: group.minX,
-            maxX: group.maxX,
-            minY: group.minY,
-            maxY: group.maxY,
-            width: group.maxX - group.minX,
-            height: group.maxY - group.minY
-          };
+          if (jsonModel.isHorizontal) {
+            // 수평 모드: X/Y 축 스왑
+            role.boundary = {
+              minX: group.minY,
+              maxX: group.maxY,
+              minY: group.minX,
+              maxY: group.maxX,
+              width: group.maxY - group.minY,
+              height: group.maxX - group.minX
+            };
+          } else {
+            // 기본 수직 모드
+            role.boundary = {
+              minX: group.minX,
+              maxX: group.maxX,
+              minY: group.minY,
+              maxY: group.maxY,
+              width: group.maxX - group.minX,
+              height: group.maxY - group.minY
+            };
+          }
         }
       });
+
 
       return jsonModel;
     },
