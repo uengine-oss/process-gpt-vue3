@@ -30,27 +30,6 @@
                                 <div class="w-100 pb-3">
                                     <div class="progress-border">
                                         <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message">
-                                            <!-- Instance 정보 고정 표시 -->
-                                            <div class="instance-info mb-3">
-                                                <div class="instance-details">
-                                                    <div class="detail-item">
-                                                        <div class="detail-label">프로세스 ID:</div>
-                                                        <div class="detail-value">{{ instance.defId }}</div>
-                                                    </div>
-                                                    <div class="detail-item">
-                                                        <div class="detail-label">시작 시간:</div>
-                                                        <div class="detail-value">{{ formattedStartDate }}</div>
-                                                    </div>
-                                                    <div class="detail-item" v-if="instance.roleBindings && instance.roleBindings.length > 0">
-                                                        <div class="detail-label">역할 바인딩:</div>
-                                                        <div class="detail-value">
-                                                            <div v-for="role in instance.roleBindings" :key="role.name">
-                                                                {{ role.name }} : {{ role.default }}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
                                             <div v-if="!detailContent">생성중입니다
                                                 <span class="loading-dots">
                                                     <span>.</span>
