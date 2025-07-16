@@ -125,7 +125,7 @@
     },
     "runningInstance": {
         "title": "Running Instance",
-        "running": " Running..."
+        "running": "Starting..."
     },
     "admin": {
         "title": "Administrator Menu",

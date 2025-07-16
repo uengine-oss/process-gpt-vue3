@@ -320,6 +320,7 @@
                         <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
                     </div>
                     <component 
+                        ref="currentWorkItemComponent"
                         class="work-item-current-component-box"
                         :is="currentComponent" 
                         :definitionId="definitionId"
@@ -1101,6 +1102,12 @@ export default {
         executeProcess(value) {
             this.showFeedbackForm = false
             this.$emit('executeProcess', value)
+        },
+        triggerExecuteProcess() {
+            // 동적 컴포넌트의 executeProcess 메서드를 호출하여 폼 데이터 수집
+            if (this.$refs.currentWorkItemComponent && this.$refs.currentWorkItemComponent.executeProcess) {
+                this.$refs.currentWorkItemComponent.executeProcess();
+            }
         },
         backToPrevStep() {
             this.$emit('backToPrevStep');

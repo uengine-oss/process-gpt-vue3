@@ -831,6 +831,15 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+    .instance-running-bpmn-viewer {
+        height: calc(100vh - 260px) !important;
+    }
+
+    .instance-card-Process-instance-running-box {
+        height: calc(100vh - 100px) !important;
+        overflow-y: auto;
+    }
+
     .instance-card-tab-4 .chat-view-box {
         max-height: calc(100vh - 105px);
     }

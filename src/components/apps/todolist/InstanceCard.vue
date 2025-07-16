@@ -25,7 +25,7 @@
                         </v-btn>
                     </div>
                     <v-spacer></v-spacer>
-                    <div v-if="isParticipant">
+                    <div v-if="isParticipant && !isNew">
                         <div v-if="instance.is_deleted">
                             <div class="text-caption">
                                 {{ getRemainingTime(instance.deleted_at) }}
@@ -71,7 +71,8 @@
                             v-for="item in filteredTabItems"
                             :key="item.value"
                             :variant="tab === item.value ? 'flat' : 'text'"
-                            :color="tab === item.value ? 'gray' : 'default'"
+                            :color="tab === item.value ? '' : 'default'"
+                            :style="tab === item.value ? 'background: #808080; color: white;' : ''"
                             size="small"
                             @click="tab = item.value"
                         >
@@ -257,7 +258,7 @@ export default {
                     if (this.$route.query && this.$route.query.submitted) {
                         this.tab = "workhistory";
                     } else {
-                        this.tab = "progress";
+                        this.tab = "workhistory";
                     }
                 }
             }

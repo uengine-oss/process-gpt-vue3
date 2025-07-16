@@ -2,7 +2,7 @@
     <div>
         <v-row class="ma-0 pa-0 task-btn">
             <v-spacer></v-spacer>
-            <div v-if="(!isCompleted && isOwnWorkItem) || isSimulate == 'true'" class="from-work-item-pc">
+            <div v-if="(!isCompleted && isOwnWorkItem) || isSimulate == 'true'" class="from-work-item-pc mr-2">
                 <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded variant="flat">중간 저장</v-btn>
                 <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
                     class="bouncing-arrow-horizontal" 
@@ -11,7 +11,9 @@
                 >
                     mdi-arrow-right-bold
                 </v-icon>
+                <!-- PC일 때 제출 완료 -->
                 <v-btn @click="executeProcess"
+                    class="submit-complete-pc"
                     color="primary"
                     density="compact"
                     rounded variant="flat"
@@ -486,6 +488,13 @@ export default {
 @media only screen and (max-width:1080px) {
     .form-work-item-mobile {
         display: block;
+    }
+}
+
+
+@media only screen and (max-width:768px) {
+    .submit-complete-pc {
+        display: none;
     }
 }
 </style>
