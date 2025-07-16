@@ -301,7 +301,6 @@ export default class StorageBaseSupabase {
                     document.cookie = 'access_token=; path=/';
                     document.cookie = 'refresh_token=; path=/';
                 }
-                sessionStorage.removeItem('validated-tenants');
             }
 
             return await window.$supabase.auth.signOut();
