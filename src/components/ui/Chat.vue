@@ -327,7 +327,7 @@
                                                                         @click="toggleTeamMemberSelector(index)"
                                                                     >
                                                                         <v-icon style="margin-right: 3px;">mdi-account-edit</v-icon>
-                                                                        팀원 관리
+                                                                        팀원 관리({{ (selectedTeamMembersByMessage[index] || []).length }})
                                                                     </v-btn>
                                                                 </div>
 
