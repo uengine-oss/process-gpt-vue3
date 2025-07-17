@@ -162,6 +162,7 @@ class ProcessGPTBackend implements Backend {
                     match: {
                         proc_def_id: options.proc_def_id,
                         activity_id: options.activity_id,
+                        tenant_id: window.$tenantName
                     }
                 });
                 if(formDef) {
