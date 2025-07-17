@@ -220,105 +220,107 @@
                 :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 190px); overflow: auto')"
             >
                 <div v-if="currentComponent && !isNotExistDefaultForm" class="work-itme-current-component" style="height: 100%;">
-                    <div :style="isMobile ? 'top: 90px;' : 'top: 70px;'" style="position: absolute; right: 28px; z-index: 9999;">
-                        <v-btn v-if="hasGeneratedContent"
-                            @click="resetGeneratedContent"
-                            :disabled="isGeneratingExample"
-                            :class="isMobile ? 'mr-1 text-medium-emphasis' : 'pl-5 pr-6 mr-1'"
-                            :icon="isMobile"
-                            :variant="isMobile ? 'outlined' : 'flat'"
-                            :size="isMobile ? 'small' : 'default'"
-                            :rounded="!isMobile"
-                            density="comfortable"
-                            :style="isMobile ? 'border-color: #e0e0e0 !important;' : 'background-color: #808080; color: white;'"
-                        >
-                            <v-icon>mdi-delete-outline</v-icon>
-                            <span v-if="!isMobile" class="ms-1">예시 초기화</span>
-                        </v-btn>
-                        <v-btn
-                            v-if="!isMobile"
-                            class="pl-5 pr-6 mr-1" 
-                            density="comfortable"
-                            rounded
-                            style="background-color: #808080; color: white;"
-                            @click="beforeGenerateExample"
-                            :loading="isGeneratingExample"
-                            :disabled="isGeneratingExample"
-                        >
-                            <template v-if="!isGeneratingExample">
-                                <v-row v-if="generator">
-                                    <v-icon>mdi-refresh</v-icon>
-                                    <span class="ms-2">예시 재생성</span>
-                                </v-row>
-                                <v-row v-else>
-                                    <Icons :icon="'sparkles'" :size="20" />
-                                    <div class="ms-1">빠른 예시 생성</div>
-                                </v-row>
-                            </template>
-                        </v-btn>
-                        <div v-if="isSimulate == 'true'" style="margin-left: 10px;">
-                            <FormDefinition
-                                ref="formDefinition"
-                                type="simulation"
-                                :formId="formId"
-                                :simulation_data="simulation_data"
-                                @addedNewForm="addedNewForm"
-                                v-model="tempFormHtml"
-                                v-if="showFeedbackForm"
-                                class="feedback-form"
-                            />  
-                            <v-btn 
-                                class="feedback-btn" 
-                                fab 
-                                elevation="2" 
-                                color="primary" 
-                                @click="toggleFeedback"
+                    <template v-if="formData && Object.keys(formData).length > 0">
+                        <div :style="isMobile ? 'top: 90px;' : 'top: 70px;'" style="position: absolute; right: 28px; z-index: 9999;">
+                            <v-btn v-if="hasGeneratedContent"
+                                @click="resetGeneratedContent"
+                                :disabled="isGeneratingExample"
+                                :class="isMobile ? 'mr-1 text-medium-emphasis' : 'pl-5 pr-6 mr-1'"
+                                :icon="isMobile"
+                                :variant="isMobile ? 'outlined' : 'flat'"
+                                :size="isMobile ? 'small' : 'default'"
+                                :rounded="!isMobile"
+                                density="comfortable"
+                                :style="isMobile ? 'border-color: #e0e0e0 !important;' : 'background-color: #808080; color: white;'"
+                            >
+                                <v-icon>mdi-delete-outline</v-icon>
+                                <span v-if="!isMobile" class="ms-1">내용 초기화</span>
+                            </v-btn>
+                            <v-btn
+                                v-if="!isMobile"
+                                class="pl-5 pr-6 mr-1" 
+                                density="comfortable"
+                                rounded
+                                style="background-color: #808080; color: white;"
+                                @click="beforeGenerateExample"
+                                :loading="isGeneratingExample"
                                 :disabled="isGeneratingExample"
                             >
-                                <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
-                                <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
+                                <template v-if="!isGeneratingExample">
+                                    <v-row v-if="generator">
+                                        <v-icon>mdi-refresh</v-icon>
+                                        <span class="ms-2">예시 재생성</span>
+                                    </v-row>
+                                    <v-row v-else>
+                                        <Icons :icon="'sparkles'" :size="20" />
+                                        <div class="ms-1">빠른 예시 생성</div>
+                                    </v-row>
+                                </template>
                             </v-btn>
+                            <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                                class="mr-1 text-medium-emphasis"
+                                density="comfortable"
+                                icon
+                                variant="outlined"
+                                size="small"
+                                style="border-color: #e0e0e0 !important;"
+                                :disabled="isGenerationFinished"
+                            >
+                                <Icons :icon="'sharp-mic'" :size="'16'" />
+                            </v-btn>
+                            <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                                class="mr-1 text-medium-emphasis"
+                                density="comfortable"
+                                icon
+                                variant="outlined"
+                                size="small"
+                                style="border-color: #e0e0e0 !important;"
+                                :disabled="isGenerationFinished"
+                            >
+                                <Icons :icon="'stop'" :size="'16'" />
+                            </v-btn>
+                            <div v-if="isSimulate == 'true'" style="margin-left: 10px;">
+                                <FormDefinition
+                                    ref="formDefinition"
+                                    type="simulation"
+                                    :formId="formId"
+                                    :simulation_data="simulation_data"
+                                    @addedNewForm="addedNewForm"
+                                    v-model="tempFormHtml"
+                                    v-if="showFeedbackForm"
+                                    class="feedback-form"
+                                />  
+                                <v-btn 
+                                    class="feedback-btn" 
+                                    fab 
+                                    elevation="2" 
+                                    color="primary" 
+                                    @click="toggleFeedback"
+                                    :disabled="isGeneratingExample"
+                                >
+                                    <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
+                                    <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
+                                </v-btn>
+                            </div>
+                            <v-btn v-if="isMobile"
+                                @click="beforeGenerateExample"
+                                :loading="isGeneratingExample"
+                                :disabled="isGeneratingExample"
+                                class="mr-1 text-medium-emphasis"
+                                density="comfortable"
+                                icon
+                                variant="outlined"
+                                size="small"
+                                style="border-color: #e0e0e0 !important;"
+                            >
+                                <template v-if="!isGeneratingExample">
+                                    <v-icon v-if="generator">mdi-refresh</v-icon>
+                                    <Icons v-else :icon="'sparkles'" :size="'16'" />
+                                </template>
+                            </v-btn>
+                            <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
                         </div>
-                        <v-btn v-if="isMobile"
-                            @click="beforeGenerateExample"
-                            :loading="isGeneratingExample"
-                            :disabled="isGeneratingExample"
-                            class="mr-1 text-medium-emphasis"
-                            density="comfortable"
-                            icon
-                            variant="outlined"
-                            size="small"
-                            style="border-color: #e0e0e0 !important;"
-                        >
-                            <template v-if="!isGeneratingExample">
-                                <v-icon v-if="generator">mdi-refresh</v-icon>
-                                <Icons v-else :icon="'sparkles'" :size="'16'" />
-                            </template>
-                        </v-btn>
-                        <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
-                            class="mr-1 text-medium-emphasis"
-                            density="comfortable"
-                            icon
-                            variant="outlined"
-                            size="small"
-                            style="border-color: #e0e0e0 !important;"
-                            :disabled="isGenerationFinished"
-                        >
-                            <Icons :icon="'sharp-mic'" :size="'16'" />
-                        </v-btn>
-                        <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
-                            class="mr-1 text-medium-emphasis"
-                            density="comfortable"
-                            icon
-                            variant="outlined"
-                            size="small"
-                            style="border-color: #e0e0e0 !important;"
-                            :disabled="isGenerationFinished"
-                        >
-                            <Icons :icon="'stop'" :size="'16'" />
-                        </v-btn>
-                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
-                    </div>
+                    </template>
                     <component 
                         ref="currentWorkItemComponent"
                         class="work-item-current-component-box"

@@ -1,7 +1,7 @@
 <template>
     <div :key="renderKey">
         <v-card flat class="w-100">
-            <v-row class="ma-0 pa-4 pb-0 align-center">
+            <v-row :class="isMobile ? 'ma-0 pa-4 pb-0 flex-column align-start' : 'ma-0 pa-4 pb-0 align-center'">
                 <div v-if="isSimulate == 'true'"
                     class="text-h4 font-weight-semibold" 
                 >{{ $t('ProcessGPTExecute.processSimulate') }}
@@ -10,17 +10,26 @@
                     class="text-h4 font-weight-semibold"
                 >{{ processDefinition.processDefinitionName }}
                 </div>
-                <v-spacer></v-spacer>
-                <!-- 모바일일 때 상단에 제출 완료 버튼 - FormWorkItem을 통해 폼 데이터 수집 -->
-                <v-btn v-if="!isCompleted && isMobile"
-                    @click="executeFromHeader"
-                    color="primary" 
-                    density="compact"
-                    variant="flat"
-                    rounded
-                >제출 완료
-                </v-btn>
-                <div v-if="!isMobile">
+                <v-spacer v-if="!isMobile"></v-spacer>
+                <div v-if="isMobile" class="d-flex align-center mt-2 ml-auto">
+                    <!-- 모바일일 때 상단에 제출 완료 버튼 - FormWorkItem을 통해 폼 데이터 수집 -->
+                    <v-btn v-if="!isCompleted"
+                        @click="executeFromHeader"
+                        color="primary" 
+                        density="compact"
+                        variant="flat"
+                        rounded
+                        class="mr-2"
+                    >제출 완료
+                    </v-btn>
+                    <v-btn @click="closeDialog"
+                        rounded 
+                        density="compact"
+                        style="background-color: #808080;
+                        color: white;"
+                    >닫기</v-btn>
+                </div>
+                <div v-else>
                     <v-btn @click="closeDialog"
                         class="ml-auto" 
                         variant="text" 
@@ -29,15 +38,6 @@
                     >
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
-                </div>
-                <div v-else>
-                    <v-btn @click="closeDialog"
-                        class="ml-2"
-                        rounded 
-                        density="compact"
-                        style="background-color: #808080;
-                        color: white;"
-                    >닫기</v-btn>
                 </div>
             </v-row>
             
@@ -353,7 +353,7 @@ export default {
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
         checkIfMobile() {
-            this.isMobile = window.innerWidth <= 1080;
+            this.isMobile = window.innerWidth <= 768;
         },
         handleError(error) {
             var me = this;
