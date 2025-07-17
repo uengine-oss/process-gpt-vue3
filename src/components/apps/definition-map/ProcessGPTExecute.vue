@@ -61,7 +61,7 @@
                     <div v-if="workItem != null">
                         <WorkItem 
                             ref="workItemRef"
-                            :definitionId="definition.id" 
+                            :definitionId="definitionId" 
                             :dryRunWorkItem="workItem" 
                             :isDryRun="true"
                             :isSimulate="isSimulate"
@@ -113,7 +113,6 @@ export default {
     },
     props: {
         definitionId: String,
-        definition: Object,
         isSimulate: String,
         bpmn: String,
         processDefinition: Object,
