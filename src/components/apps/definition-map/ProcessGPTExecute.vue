@@ -112,6 +112,7 @@ export default {
         UserSelectField
     },
     props: {
+        definitionId: String,
         definition: Object,
         isSimulate: String,
         bpmn: String,
@@ -311,7 +312,7 @@ export default {
                 }
 
                 let input = {
-                    process_definition_id: me.definition.id,
+                    process_definition_id: me.definitionId,
                     activity_id: me.workItem.activity.tracingTag,
                     role_mappings: me.roleMappings,
                     answer: answer,
@@ -335,6 +336,8 @@ export default {
                                 me.$router.push(path);
                             }
                         }
+                    }).catch(error => {
+                        me.handleError(error);
                     });
                     me.closeDialog();
                 }
