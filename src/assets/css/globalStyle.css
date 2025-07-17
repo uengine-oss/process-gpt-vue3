@@ -841,7 +841,7 @@ hr {
     }
 
     .instance-card-tab-4 .chat-view-box {
-        max-height: calc(100vh - 105px);
+        max-height: calc(100vh - 160px);
     }
     .todo-list-card-box {
         padding-right: 40px !important;
@@ -882,8 +882,13 @@ hr {
     .instance-card-kanban-board .todo-list-card-box {
         height: 100vh !important;
     }
+
+    .isMobile-add-todo-dialog-box {
+        height: 100vh;
+    }
+
     .isMobile-add-todo-dialog {
-        height: calc(100vh - 108px);
+        height: calc(100% - 96px);
         overflow: auto;
     }
     .mobile-menu-nav {
