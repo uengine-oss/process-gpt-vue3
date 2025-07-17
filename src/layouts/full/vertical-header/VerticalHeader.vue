@@ -225,6 +225,7 @@ function handleNotificationBadgeUpdate(event: Event) {
                 <v-row class="ma-0 mt-2">
                     <Searchbar />
                     <v-spacer></v-spacer>
+                    <ProfileDD />
                     <NotificationDD @newNotification="newNotification" />
                 </v-row>
                 <!-- 네비게이션 버튼들 - 세로 배치 -->

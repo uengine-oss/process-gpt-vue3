@@ -173,6 +173,7 @@
             :fullscreen="isMobile"
         >
             <process-gpt-execute v-if="mode === 'ProcessGPT'"
+                :definitionId="processDefinition.id"
                 :processDefinition="processDefinitionData"    
                 :definition="processDefinition"
                 :isSimulate="isSimulate"

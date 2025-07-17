@@ -98,6 +98,12 @@ export interface Backend {
     callDataSource(dataSource: any, bodyData: any): Promise<any>;
     getEnvByTenant(): Promise<any>;
     getSecretByTenant(): Promise<any>;
+    deleteEnvByTenant(name: string): Promise<any>;
+    deleteSecretByTenant(name: string): Promise<any>;
+    createEnvByTenant(data: any): Promise<any>;
+    createSecretByTenant(data: any): Promise<any>;
+    updateEnvByTenant(data: any): Promise<any>;
+    updateSecretByTenant(data: any): Promise<any>;
 }
 
 // export type { Backend }

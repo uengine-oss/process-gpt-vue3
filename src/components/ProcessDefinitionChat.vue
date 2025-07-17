@@ -931,23 +931,25 @@ export default {
                             me.afterLoadBpmn();
                         }
 
-                        const role = localStorage.getItem('role');
-                        if (role !== 'superAdmin') {
-                            // 수정 권한 체크
-                            const permission = await me.checkPermission(lastPath);
-                            if (permission && permission.writable) {
-                                me.isEditable = true;
-                                me.checkedLock(lastPath);
-                            } else if (permission && !permission.writable) {
-                                me.isEditable = false;
-                                me.lock = true;
-                                me.disableChat = true;
-                                me.isViewMode = true;
-                            }
-                        } else {
-                            me.isEditable = true;
-                            me.checkedLock(lastPath);
-                        }
+                        // const role = localStorage.getItem('role');
+                        // if (role !== 'superAdmin') {
+                        //     // 수정 권한 체크
+                        //     const permission = await me.checkPermission(lastPath);
+                        //     if (permission && permission.writable) {
+                        //         me.isEditable = true;
+                        //         me.checkedLock(lastPath);
+                        //     } else if (permission && !permission.writable) {
+                        //         me.isEditable = false;
+                        //         me.lock = true;
+                        //         me.disableChat = true;
+                        //         me.isViewMode = true;
+                        //     }
+                        // } else {
+                        //     me.isEditable = true;
+                        //     me.checkedLock(lastPath);
+                        // }
+                        me.isEditable = true;
+                        me.checkedLock(lastPath);
                     } else {
                         // uEngine 모드
                         me.isEditable = true;
