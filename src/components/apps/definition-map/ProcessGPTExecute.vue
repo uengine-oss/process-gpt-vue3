@@ -1,20 +1,35 @@
 <template>
     <div :key="renderKey">
         <v-card flat class="w-100">
-            <v-row class="ma-0 pa-4 pb-0 align-center">
-                <h2 v-if="isSimulate == 'true'">{{ $t('ProcessGPTExecute.processSimulate') }}</h2>
-                <h2 v-else>{{ $t('ProcessGPTExecute.processStart') }}</h2>
-                <v-spacer></v-spacer>
-                <!-- 기존 모바일일 때 상단에 제출 완료 버튼 -->
-                <!-- <v-btn v-if="!isCompleted"
-                    @click="executeProcess"
-                    color="primary" 
-                    class="form-work-item-mobile"
-                    variant="flat"
-                    rounded
-                >제출 완료
-                </v-btn> -->
-                <div v-if="!isMobile">
+            <v-row :class="isMobile ? 'ma-0 pa-4 pb-0 flex-column align-start' : 'ma-0 pa-4 pb-0 align-center'">
+                <div v-if="isSimulate == 'true'"
+                    class="text-h4 font-weight-semibold" 
+                >{{ $t('ProcessGPTExecute.processSimulate') }}
+                </div>
+                <div v-else 
+                    class="text-h4 font-weight-semibold"
+                >{{ definition.name }}
+                </div>
+                <v-spacer v-if="!isMobile"></v-spacer>
+                <div v-if="isMobile" class="d-flex align-center mt-2 ml-auto">
+                    <!-- 모바일일 때 상단에 제출 완료 버튼 - FormWorkItem을 통해 폼 데이터 수집 -->
+                    <v-btn v-if="!isCompleted"
+                        @click="executeFromHeader"
+                        color="primary" 
+                        density="compact"
+                        variant="flat"
+                        rounded
+                        class="mr-2"
+                    >제출 완료
+                    </v-btn>
+                    <v-btn @click="closeDialog"
+                        rounded 
+                        density="compact"
+                        style="background-color: #808080;
+                        color: white;"
+                    >닫기</v-btn>
+                </div>
+                <div v-else>
                     <v-btn @click="closeDialog"
                         class="ml-auto" 
                         variant="text" 
@@ -24,15 +39,12 @@
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </div>
-                <div v-else>
-                    <v-btn @click="closeDialog" rounded style="background-color: #808080; color: white;" class="ml-2">닫기</v-btn>
-                </div>
             </v-row>
             
             <div :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">
                 <div v-if="isSimulate == 'false'" :class="isMobile ? 'pa-4 pb-0' : 'pa-4'" style="min-width: 300px;">
                     <v-row class="ma-0 pa-0">
-                        <div style="font-size: 20px; font-weight: 500">{{ $t('ProcessGPTExecute.roleMapping') }}</div>
+                        <div class="text-h5 font-weight-semibold">{{ $t('ProcessGPTExecute.roleMapping') }}</div>
                     </v-row>
                     <div class="mt-4">
                         <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
@@ -48,6 +60,7 @@
                 <div class="w-100">
                     <div v-if="workItem != null">
                         <WorkItem 
+                            ref="workItemRef"
                             :definitionId="definitionId" 
                             :dryRunWorkItem="workItem" 
                             :isDryRun="true"
@@ -176,12 +189,12 @@ export default {
                 }
 
                 if(startActivity.tool && startActivity.tool.includes("formHandler:definition-map_")){
-                    startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.definitionId + '_')
+                    startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.definition.id + '_')
                 }
 
                 me.workItem = {
                     worklist: {
-                        defId: me.definitionId,
+                        defId: me.definition.id,
                         role: startActivity.role,
                         endpoint: "",
                         instId: "",
@@ -225,7 +238,7 @@ export default {
                 });
 
                 if (!hasDefaultRole) {
-                    const roleBindings = await backend.bindRole(me.definition.roles, me.definitionId);
+                    const roleBindings = await backend.bindRole(me.definition.roles, me.definition.id);
                     if (roleBindings && roleBindings.length > 0) {
                         roleBindings.forEach((roleBinding) => {
                             let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
@@ -261,6 +274,15 @@ export default {
         backToPrevStep() {
             this.activityIndex--;
             this.init();
+        },
+        executeFromHeader() {
+            // WorkItem 컴포넌트를 통해 FormWorkItem의 executeProcess를 호출하여 폼 데이터 수집
+            if (this.$refs.workItemRef && this.$refs.workItemRef.triggerExecuteProcess) {
+                this.$refs.workItemRef.triggerExecuteProcess();
+            } else {
+                // 대체 방법으로 빈 객체로 실행
+                this.executeProcess({});
+            }
         },
         async executeProcess(value) {
             var me = this;
@@ -313,6 +335,8 @@ export default {
                                 me.$router.push(path);
                             }
                         }
+                    }).catch(error => {
+                        me.handleError(error);
                     });
                     me.closeDialog();
                 }
@@ -329,7 +353,7 @@ export default {
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
         checkIfMobile() {
-            this.isMobile = window.innerWidth <= 1080;
+            this.isMobile = window.innerWidth <= 768;
         },
         handleError(error) {
             var me = this;

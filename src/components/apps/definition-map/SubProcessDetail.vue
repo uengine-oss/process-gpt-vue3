@@ -31,9 +31,9 @@
                     </div>
                 </div>
                 <div v-if="processDefinition" class="d-flex align-center">
-                    <h6 class="text-h6 font-weight-semibold sub-process-text-ellipsis">
+                    <div class="text-h4 font-weight-semibold">
                         {{ processDefinition ? processDefinition.name : "" }}
-                    </h6>
+                    </div>
                 </div>
                 <div v-for="(subProcess, idx) in subProcessBreadCrumb" :key="idx">
                     <div class="d-flex align-center" @click="goHistory(idx)">
@@ -47,7 +47,8 @@
 
             <div class="sub-process-detail-btn-box">
                 <div v-if="onLoad && bpmn" class="d-flex align-center">
-                    <div class="sub-process-start-btn">
+                    <v-row class="sub-process-start-btn ma-0 pa-0">
+                        <v-spacer></v-spacer>
                         <template v-if="!JMS && !Pal">
                             <v-btn @click="executeProcess('simulate')"
                                 class="mr-2"
@@ -68,7 +69,6 @@
                                 {{ isViewMode ? $t('subProcessDetail.edit') : $t('subProcessDetail.save') }}
                             </v-btn>
                             <v-btn @click="executeProcess('execute')"
-                                class="mr-2"
                                 color="primary"
                                 variant="flat"
                                 rounded
@@ -77,7 +77,7 @@
                                 {{ $t('subProcessDetail.execute') }}
                             </v-btn>
                         </template>
-                    </div>
+                    </v-row>
 
                     <v-tooltip v-if="isEditable" location="bottom">
                         <template v-slot:activator="{ props }">
@@ -172,8 +172,13 @@
         <v-dialog v-model="executeDialog" persistent
             :fullscreen="isMobile"
         >
-            <process-gpt-execute v-if="mode === 'ProcessGPT'" :processDefinition="processDefinitionData" :definitionId="processDefinition.id" :isSimulate="isSimulate"
-                @close="executeDialog = false"></process-gpt-execute>
+            <process-gpt-execute v-if="mode === 'ProcessGPT'"
+                :definitionId="processDefinition.id"
+                :processDefinition="processDefinitionData"    
+                :definition="processDefinition"
+                :isSimulate="isSimulate"
+                @close="executeDialog = false"
+            ></process-gpt-execute>
             <div v-else>
                 <!-- <process-execute-dialog :definitionId="processDefinition.id" @close="executeDialog = false"></process-execute-dialog> -->
                 <dry-run-process :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
@@ -490,9 +495,6 @@ export default {
     .mega-text-ellipsis,
     .major-text-ellipsis {
         display: none !important;
-    }
-    .sub-process-text-ellipsis {
-        font-size: 16px !important;
     }
     .is-mobile-sub-process-name {
         display: block !important;

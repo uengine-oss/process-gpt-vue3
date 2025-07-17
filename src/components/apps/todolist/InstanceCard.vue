@@ -5,7 +5,7 @@
         <div>
             <div>
                 <!-- 한글: 세로 기준 중앙정렬을 위해 align-center 클래스 추가 -->
-                <v-row class="ma-0 pa-4 pb-0 pt-0 align-center instance-card-title">
+                <v-row class="ma-0 pa-4 pb-0 align-center instance-card-title">
                     <!-- 한글: 인스턴스 이름이 길 경우 줄바꿈이 가능하도록 스타일 추가 -->
                     <div class="text-h5 font-weight-semibold align-center"
                         style="word-break: break-all; white-space: normal; margin-right: 5px;"
@@ -24,8 +24,9 @@
                         > {{  $t('InstanceCard.sendEvent', {event: event.name ? event.name : event.type}) }}
                         </v-btn>
                     </div>
-                    <div v-if="isParticipant">
-                        <div v-if="instance.is_deleted" :style="isMobile ? '' : 'margin-top: 10px;'" class="ml-auto d-flex flex-column align-end">
+                    <v-spacer></v-spacer>
+                    <div v-if="isParticipant && !isNew">
+                        <div v-if="instance.is_deleted">
                             <div class="text-caption">
                                 {{ getRemainingTime(instance.deleted_at) }}
                             </div>
@@ -33,7 +34,7 @@
                                 삭제 취소
                             </v-btn>
                         </div>
-                        <v-btn v-else @click="openDeleteDialog" rounded size="small" color="error" class="ml-auto" :style="isMobile ? '' : 'margin-top: 10px;'">
+                        <v-btn v-else @click="openDeleteDialog" rounded size="small" color="error" class="ml-auto" :style="isMobile ? '' : ''">
                             삭제
                         </v-btn>
                     </div>
@@ -70,7 +71,8 @@
                             v-for="item in filteredTabItems"
                             :key="item.value"
                             :variant="tab === item.value ? 'flat' : 'text'"
-                            :color="tab === item.value ? 'primary' : 'default'"
+                            :color="tab === item.value ? '' : 'default'"
+                            :style="tab === item.value ? 'background: #808080; color: white;' : ''"
                             size="small"
                             @click="tab = item.value"
                         >
@@ -80,7 +82,7 @@
                 </div>
                 
                 <v-window v-model="tab" :class="isMobile ? 'mt-0' : ''">
-                    <v-window-item value="gantt">
+                    <v-window-item value="gantt" class="instance-card-tab-1">
                         <div class="gantt-area" v-if="!isLoading">
                             <GanttChart 
                                 :key="`gantt-${updatedKey}-${instance?.instId}`"
@@ -96,7 +98,7 @@
                             />
                         </div>
                     </v-window-item>
-                    <v-window-item value="progress">
+                    <v-window-item value="progress" class="instance-card-tab-2">
                         <div style="height: 73vh;">
                             <InstanceProgress 
                                 :key="`progress-${updatedKey}-${instance?.instId}`"
@@ -105,7 +107,7 @@
                             />
                         </div>
                     </v-window-item>
-                    <v-window-item value="todo">
+                    <v-window-item value="todo" class="instance-card-tab-3">
                         <div>
                             <div class="pa-4 instance-card-kanban-board-box">
                                 <div :class="buttonContainerClass" :style="buttonContainerStyle">
@@ -131,14 +133,14 @@
 
                             <v-dialog v-model="dialog" persistent
                                 :fullscreen="isMobile"
-                                width="90vw"
-                                max-width="400px"
+                                width="100vw"
+                                max-width="500px"
                             >
                                 <TodoDialog  :instId="instance.instId" :defId="instance.defId" :todolist="columns" @close="closeDialog" />
                             </v-dialog>
                         </div>
                     </v-window-item>
-                    <v-window-item value="workhistory">
+                    <v-window-item value="workhistory" class="instance-card-tab-4">
                         <InstanceWorkHistory 
                             :key="`workhistory-${updatedKey}-${instance?.instId}`"
                             :instance="instance"
@@ -256,7 +258,7 @@ export default {
                     if (this.$route.query && this.$route.query.submitted) {
                         this.tab = "workhistory";
                     } else {
-                        this.tab = "progress";
+                        this.tab = "workhistory";
                     }
                 }
             }

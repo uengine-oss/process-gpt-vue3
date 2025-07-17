@@ -116,7 +116,6 @@
                     class="pa-4"
                 >
                     <v-card
-                        
                         @click="openConsultingDialog = true, ProcessPreviewMode = false"
                         class="consulting-card"
                         elevation="3"
@@ -186,6 +185,7 @@
             :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'"
             :fullscreen="isMobile"
             :scrim="isSimulateMode ? false : true" persistent
+            class="process-definition-map-chat-card-dialog"
         >
             <v-card class="process-definition-map-chat-card">
                 <v-row class="ma-0 pa-3" style="background-color:rgb(var(--v-theme-primary), 0.2); height:50px;">

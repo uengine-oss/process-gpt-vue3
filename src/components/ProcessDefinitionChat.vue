@@ -19,7 +19,7 @@
                         @update:processVariables="(val) => (processVariables = val)"
                     ></process-definition>
                 </div>
-                <div style="position: relative;">
+                <div class="process-consulting-ai-first-screen">
                     <Chat
                         :messages="messages"
                         :userInfo="userInfo"
@@ -66,6 +66,7 @@
                     @changeElement="changeElement"
                     @onLoaded="onLoadBpmn()"
                     @update:processVariables="(val) => (processVariables = val)"
+                    @update:isAIGenerated="isAIGenerated = false"
                 ></process-definition>
                 <process-definition-version-dialog
                     :process="processDefinition"
@@ -124,7 +125,7 @@
                 </v-dialog>
             </template>
             <template v-slot:rightpart>
-                <div v-if="isAdmin" class="no-scrollbar">
+                <div v-if="isAdmin" class="process-consulting-ai-second-screen no-scrollbar">
                     <Chat
                         :prompt="prompt"
                         :name="projectName"
@@ -158,34 +159,36 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat
-                    v-if="isAdmin"
-                    :prompt="prompt"
-                    :name="projectName"
-                    :messages="messages"
-                    :chatInfo="chatInfo"
-                    :userInfo="userInfo"
-                    :allUserList="allUserList"
-                    :lock="lock"
-                    :disableChat="disableChat"
-                    :chatRoomId="chatRoomId"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                    @addTeam="addTeam"
-                    @addTeamMembers="addTeamMembers"
-                >
-                    <template v-slot:custom-title>
-                        <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
-                            :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
-                            :isEditable="isEditable"
-                            :chatMode="chatMode"
-                            @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
-                            @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                            @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                            @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
-                    </template>
-                </Chat>
+                <div class="process-consulting-ai-third-screen">
+                    <Chat
+                        v-if="isAdmin"
+                        :prompt="prompt"
+                        :name="projectName"
+                        :messages="messages"
+                        :chatInfo="chatInfo"
+                        :userInfo="userInfo"
+                        :allUserList="allUserList"
+                        :lock="lock"
+                        :disableChat="disableChat"
+                        :chatRoomId="chatRoomId"
+                        @sendMessage="beforeSendMessage"
+                        @sendEditedMessage="sendEditedMessage"
+                        @stopMessage="stopMessage"
+                        @addTeam="addTeam"
+                        @addTeamMembers="addTeamMembers"
+                    >
+                        <template v-slot:custom-title>
+                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
+                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                                :isEditable="isEditable"
+                                :chatMode="chatMode"
+                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                @executeProcess="executeProcess" @executeSimulate="executeSimulate"
+                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
+                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
+                        </template>
+                    </Chat>
+                </div>
             </template>
         </AppBaseCard>
         <v-dialog v-model="executeDialog" max-width="80%" persistent
@@ -929,23 +932,25 @@ export default {
                             me.afterLoadBpmn();
                         }
 
-                        const role = localStorage.getItem('role');
-                        if (role !== 'superAdmin') {
-                            // 수정 권한 체크
-                            const permission = await me.checkPermission(lastPath);
-                            if (permission && permission.writable) {
-                                me.isEditable = true;
-                                me.checkedLock(lastPath);
-                            } else if (permission && !permission.writable) {
-                                me.isEditable = false;
-                                me.lock = true;
-                                me.disableChat = true;
-                                me.isViewMode = true;
-                            }
-                        } else {
-                            me.isEditable = true;
-                            me.checkedLock(lastPath);
-                        }
+                        // const role = localStorage.getItem('role');
+                        // if (role !== 'superAdmin') {
+                        //     // 수정 권한 체크
+                        //     const permission = await me.checkPermission(lastPath);
+                        //     if (permission && permission.writable) {
+                        //         me.isEditable = true;
+                        //         me.checkedLock(lastPath);
+                        //     } else if (permission && !permission.writable) {
+                        //         me.isEditable = false;
+                        //         me.lock = true;
+                        //         me.disableChat = true;
+                        //         me.isViewMode = true;
+                        //     }
+                        // } else {
+                        //     me.isEditable = true;
+                        //     me.checkedLock(lastPath);
+                        // }
+                        me.isEditable = true;
+                        me.checkedLock(lastPath);
                     } else {
                         // uEngine 모드
                         me.isEditable = true;
@@ -1116,7 +1121,6 @@ export default {
                             if(!this.processDefinition) this.processDefinition = {};
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
                             this.bpmn = this.createBpmnXml(unknown, this.isHorizontal);
-                            this.isAIGenerated = true;
                             this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
                             this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
                             this.projectName = unknown.processDefinitionName
@@ -1600,7 +1604,8 @@ export default {
                     this.beforeStartGenerate()
                 }
             }
-
+            this.isAIGenerated = true;
+            this.definitionChangeCount++;
         },
         generateElement(name, x, y, width, height, id, canvas) {
             var me = this;

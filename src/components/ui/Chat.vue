@@ -27,7 +27,11 @@
                         <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
                     </slot>
 
-                    <perfect-scrollbar v-if="!definitionMapOnlyInput" class="h-100 chat-view-box" ref="scrollContainer" @scroll="handleScroll">
+                    <perfect-scrollbar v-if="!definitionMapOnlyInput"
+                        class="h-100 chat-view-box"
+                        ref="scrollContainer"
+                        @scroll="handleScroll"
+                    >
                         <div class="d-flex w-100"
                             :style="$globalState.state.isRightZoomed ? 'height:100vh;' : ''"
                         >
@@ -323,7 +327,7 @@
                                                                         @click="toggleTeamMemberSelector(index)"
                                                                     >
                                                                         <v-icon style="margin-right: 3px;">mdi-account-edit</v-icon>
-                                                                        팀원 관리
+                                                                        팀원 관리({{ (selectedTeamMembersByMessage[index] || []).length }})
                                                                     </v-btn>
                                                                 </div>
 
