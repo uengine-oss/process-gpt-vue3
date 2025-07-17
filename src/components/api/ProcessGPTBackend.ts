@@ -238,7 +238,7 @@ class ProcessGPTBackend implements Backend {
                     if (!options.match) {
                         options.match = {
                             id: defId,
-                            activity_id: options.activity_id
+                            tenant_id: window.$tenantName
                         }
                     } else {
                         options.match.tenant_id = window.$tenantName
