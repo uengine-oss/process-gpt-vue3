@@ -6,7 +6,8 @@ import { UserCircleIcon, UsersIcon, BrandGoogleDriveIcon } from 'vue-tabler-icon
 import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
 import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
-import MCPTab from '@/components/pages/account-settings/MCPTab.vue';
+import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
+import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
@@ -22,24 +23,15 @@ const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
     <v-row class="justify-center">
         <!--Account Settings tabs-->
         <v-col cols="12" md="12">
-            <v-card elevation="10" >
+            <v-card elevation="10">
                 <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="primary">
-                    <v-tab value="Account">
-                        <UserCircleIcon class="mr-2" size="20"/>{{ $t('accountTab.accountSetting') }}
-                    </v-tab>
+                    <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
                     <div v-if="superAdmin">
-                        <v-tab value="ManageAccess">
-                            <UsersIcon class="mr-2" size="20"/>{{ $t('accountTab.manageAccess') }}
-                        </v-tab>
-                        <v-tab value="Drive">
-                            <BrandGoogleDriveIcon class="mr-2" size="20"/>{{ $t('accountTab.drive') }}
-                        </v-tab>
-                        <v-tab value="MCP">
-                            MCP Servers
-                        </v-tab>
-	                    <v-tab value="ConnectionInfo">
-	                        <DatabaseIcon class="mr-2" size="20"/>{{ $t('accountTab.connectionInfo') }}
-	                    </v-tab>
+                        <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
+                        <v-tab value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
+                        <v-tab value="ConnectionInfo"> <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.connectionInfo') }} </v-tab>
+                        <v-tab value="MCP-Servers"> MCP - Servers </v-tab>
+                        <v-tab value="MCP-Environments"> MCP - Environments </v-tab>
                     </div>
                     <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                     <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
@@ -55,13 +47,16 @@ const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
                             <ManageAccessTab />
                         </v-window-item>
                         <v-window-item value="Drive">
-                            <DriveTab/>
-                        </v-window-item>
-                        <v-window-item value="MCP">
-                            <MCPTab/>
+                            <DriveTab />
                         </v-window-item>
                         <v-window-item value="ConnectionInfo">
-                            <ConnectionInfoTab/>
+                            <ConnectionInfoTab />
+                        </v-window-item>
+                        <v-window-item value="MCP-Servers">
+                            <MCPServerTab />
+                        </v-window-item>
+                        <v-window-item value="MCP-Environments">
+                            <MCPEnvSecretTab />
                         </v-window-item>
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>

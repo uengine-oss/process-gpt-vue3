@@ -3362,7 +3362,26 @@ class ProcessGPTBackend implements Backend {
         }
         return await response.json();
       }
-      
+
+    async getEnvByTenant() {
+        try {
+            const configmaps = await axios.get('/mcp/configmaps');
+            return configmaps.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getSecretByTenant() {
+        try {
+            const secret = await axios.get('/mcp/secrets');
+            return secret.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
 }
 
 export default ProcessGPTBackend;
