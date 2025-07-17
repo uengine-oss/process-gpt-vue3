@@ -153,7 +153,20 @@
         <div class="empty-icon">📋</div>
         <h3>{{ isQueued ? '작업이 대기열에 등록되었습니다' : '진행중인 작업이 없습니다' }}</h3>
         <p>작업이 시작되면 여기에 표시됩니다.</p>
-        <button v-if="!isQueued" @click="startTask" class="start-button">시작하기</button>
+        <div v-if="!isQueued" class="start-controls">
+          <div class="method-selector">
+            <label for="research-method" class="method-label">연구 방식:</label>
+            <select 
+              id="research-method" 
+              v-model="selectedResearchMethod" 
+              class="method-dropdown"
+            >
+              <option value="crewai">CrewAI (기본값)</option>
+              <option value="openai-deep-research">OpenAI Deep Research API</option>
+            </select>
+          </div>
+          <button @click="startTask" class="start-button">시작하기</button>
+        </div>
       </div>
       <div v-if="isLoading" class="feedback-loading">
         <div class="loading-spinner"></div>
@@ -214,7 +227,8 @@ export default {
       todoStatus: null,
       chatMessages: [],
       isCancelled: false,
-      isLoading: false
+      isLoading: false,
+      selectedResearchMethod: 'crewai'
     }
   },
   computed: {
@@ -570,7 +584,14 @@ export default {
         return;
       }
       try {
-        await backend.putWorkItem(taskId, { agent_mode: 'DRAFT', status: 'IN_PROGRESS' });
+        // 선택된 연구 방식에 따라 agent_orch 값 결정
+        const agentOrch = this.selectedResearchMethod === 'openai-deep-research' ? 'openai' : 'crewai';
+        
+        await backend.putWorkItem(taskId, { 
+          agent_mode: 'DRAFT', 
+          status: 'IN_PROGRESS',
+          agent_orch: agentOrch
+        });
         this.todoStatus = { ...this.todoStatus, agent_mode: 'DRAFT', status: 'IN_PROGRESS' };
       } catch (error) {
         console.error('작업 시작 중 오류:', error);
@@ -1480,6 +1501,67 @@ export default {
 
 .start-button:hover {
   background: #005bb5;
+}
+
+/* 시작 컨트롤 스타일 */
+.start-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.method-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.method-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.method-dropdown {
+  background: white;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 13px;
+  color: #495057;
+  cursor: pointer;
+  min-width: 200px;
+  transition: border-color 0.2s ease;
+}
+
+.method-dropdown:focus {
+  outline: none;
+  border-color: #60A5FA;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+.method-dropdown:hover {
+  border-color: #adb5bd;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .method-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  
+  .method-dropdown {
+    min-width: auto;
+  }
 }
 
 /* 채팅 UI 스타일 */
