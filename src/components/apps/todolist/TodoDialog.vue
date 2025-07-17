@@ -34,7 +34,9 @@
             </v-card-actions>
         </v-card>
 
-        <v-card v-else>
+        <v-card v-else 
+            class="isMobile-add-todo-dialog-box"
+        >
             <v-row class="ma-0 pa-4 pb-0 align-center">
                 <div v-if="type && type == 'edit'" class="d-flex">
                     <v-card-title  class="pa-0">할 일 수정</v-card-title>
