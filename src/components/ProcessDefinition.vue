@@ -84,6 +84,7 @@
                         v-on:add-shape="onAddShape"
                         v-on:done="setDefinition"
                         @changeElement="changeElement"
+                        @update:isAIGenerated="updateIsAIGenerated"
                         style="height: 100%"
                     ></BpmnuEngine>
                     
@@ -1011,6 +1012,9 @@ export default {
         },
         closePDFDialog() {
             this.$emit('closePDFDialog');
+        },
+        updateIsAIGenerated(isAIGenerated) {
+            this.$emit('update:isAIGenerated', isAIGenerated);
         }
     }
 };

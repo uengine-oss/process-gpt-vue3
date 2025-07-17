@@ -1,26 +1,35 @@
 <template>
     <div :key="renderKey">
         <v-card flat class="w-100">
-            <v-row class="ma-0 pa-4 pb-0 align-center">
+            <v-row :class="isMobile ? 'ma-0 pa-4 pb-0 flex-column align-start' : 'ma-0 pa-4 pb-0 align-center'">
                 <div v-if="isSimulate == 'true'"
                     class="text-h4 font-weight-semibold" 
                 >{{ $t('ProcessGPTExecute.processSimulate') }}
                 </div>
                 <div v-else 
                     class="text-h4 font-weight-semibold"
-                >{{ definition.name }}
+                >{{ processDefinition.processDefinitionName }}
                 </div>
-                <v-spacer></v-spacer>
-                <!-- 모바일일 때 상단에 제출 완료 버튼 - FormWorkItem을 통해 폼 데이터 수집 -->
-                <v-btn v-if="!isCompleted && isMobile"
-                    @click="executeFromHeader"
-                    color="primary" 
-                    density="compact"
-                    variant="flat"
-                    rounded
-                >제출 완료
-                </v-btn>
-                <div v-if="!isMobile">
+                <v-spacer v-if="!isMobile"></v-spacer>
+                <div v-if="isMobile" class="d-flex align-center mt-2 ml-auto">
+                    <!-- 모바일일 때 상단에 제출 완료 버튼 - FormWorkItem을 통해 폼 데이터 수집 -->
+                    <v-btn v-if="!isCompleted"
+                        @click="executeFromHeader"
+                        color="primary" 
+                        density="compact"
+                        variant="flat"
+                        rounded
+                        class="mr-2"
+                    >제출 완료
+                    </v-btn>
+                    <v-btn @click="closeDialog"
+                        rounded 
+                        density="compact"
+                        style="background-color: #808080;
+                        color: white;"
+                    >닫기</v-btn>
+                </div>
+                <div v-else>
                     <v-btn @click="closeDialog"
                         class="ml-auto" 
                         variant="text" 
@@ -29,15 +38,6 @@
                     >
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
-                </div>
-                <div v-else>
-                    <v-btn @click="closeDialog"
-                        class="ml-2"
-                        rounded 
-                        density="compact"
-                        style="background-color: #808080;
-                        color: white;"
-                    >닫기</v-btn>
                 </div>
             </v-row>
             
@@ -61,7 +61,7 @@
                     <div v-if="workItem != null">
                         <WorkItem 
                             ref="workItemRef"
-                            :definitionId="definition.id" 
+                            :definitionId="definitionId" 
                             :dryRunWorkItem="workItem" 
                             :isDryRun="true"
                             :isSimulate="isSimulate"
@@ -113,7 +113,6 @@ export default {
     },
     props: {
         definitionId: String,
-        definition: Object,
         isSimulate: String,
         bpmn: String,
         processDefinition: Object,
@@ -123,7 +122,7 @@ export default {
         },
     },
     data: () => ({
-        definition: null,
+        definition: {},
         workItem: null,
         roleMappings: [],
         isMobile: false,
@@ -141,11 +140,11 @@ export default {
     },
     methods: {
         findStartActivity() {
-            const startSequence = this.definition.sequences.find(sequence => sequence.source === 'start_event');
+            const startSequence = this.processDefinition.sequences.find(sequence => sequence.source === 'start_event');
             if (startSequence) {
-                return this.definition.activities.find(activity => activity.id === startSequence.target);
+                return this.processDefinition.activities.find(activity => activity.id === startSequence.target);
             }
-            return this.definition.activities[0];
+            return this.processDefinition.activities[0];
         },
         async init() {
             var me = this;
@@ -190,12 +189,12 @@ export default {
                 }
 
                 if(startActivity.tool && startActivity.tool.includes("formHandler:definition-map_")){
-                    startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.definition.id + '_')
+                    startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.processDefinition.id + '_')
                 }
 
                 me.workItem = {
                     worklist: {
-                        defId: me.definition.id,
+                        defId: me.processDefinition.id,
                         role: startActivity.role,
                         endpoint: "",
                         instId: "",
@@ -222,8 +221,8 @@ export default {
                 }
                 me.renderKey++;
 
-                let activities = me.definition.activities.filter((activity) => activity.agentMode && activity.agentMode != 'none');
-                const roles = me.definition.roles;
+                let activities = me.processDefinition.activities.filter((activity) => activity.agentMode && activity.agentMode != 'none');
+                const roles = me.processDefinition.roles;
                 let hasDefaultRole = false;
                 me.roleMappings = roles.map((role) => {
                     if(role.default && role.default.length > 0) {
@@ -239,7 +238,7 @@ export default {
                 });
 
                 if (!hasDefaultRole) {
-                    const roleBindings = await backend.bindRole(me.definition.roles, me.definition.id);
+                    const roleBindings = await backend.bindRole(me.processDefinition.roles, me.processDefinition.id);
                     if (roleBindings && roleBindings.length > 0) {
                         roleBindings.forEach((roleBinding) => {
                             let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
@@ -354,12 +353,12 @@ export default {
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
         checkIfMobile() {
-            this.isMobile = window.innerWidth <= 1080;
+            this.isMobile = window.innerWidth <= 768;
         },
         handleError(error) {
             var me = this;
             me.$try({}, null, {
-                errorMsg: `${me.definition.processDefinitionName} 실행 중 오류가 발생했습니다: ${error}`
+                errorMsg: `${me.processDefinition.processDefinitionName} 실행 중 오류가 발생했습니다: ${error}`
             })
         }
     }

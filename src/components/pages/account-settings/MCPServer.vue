@@ -69,11 +69,16 @@
                 <v-card-item>
                     <h5 class="text-h5 mb-3">{{ formatServerName(editingKey) }}</h5>
                     <div style="height: 40vh;">
-                        <vue-monaco-editor
+                        <!-- <vue-monaco-editor
                             v-model:value="mcpJsonText"
                             language="json"
                             :options="MONACO_EDITOR_OPTIONS"
                             @mount="handleMount"
+                        /> -->
+                        <v-textarea
+                            v-model="mcpJsonText"
+                            label="MCP JSON"
+                            rows="10"
                         />
                     </div>
 
@@ -112,11 +117,16 @@
                 <v-card-item>
                     <h5 class="text-h5 mb-3">New MCP</h5>
                     <div style="height: 40vh;">
-                        <vue-monaco-editor
+                        <!-- <vue-monaco-editor
                             v-model:value="newJsonText"
                             language="json"
                             :options="MONACO_EDITOR_OPTIONS"
                             @mount="handleMount"
+                        /> -->
+                        <v-textarea
+                            v-model="newJsonText"
+                            label="MCP JSON"
+                            rows="10"
                         />
                     </div>
 
@@ -168,7 +178,7 @@
             
             <v-card-text class="pa-4">
                 <div style="height: 40vh;">
-                    <vue-monaco-editor
+                    <!-- <vue-monaco-editor
                         v-if="editingKey"
                         v-model:value="mcpJsonText"
                         language="json"
@@ -181,6 +191,18 @@
                         language="json"
                         :options="MONACO_EDITOR_OPTIONS"
                         @mount="handleMount"
+                    /> -->
+                    <v-textarea
+                        v-if="editingKey"
+                        v-model="mcpJsonText"
+                        label="MCP JSON"
+                        rows="10"
+                    />
+                    <v-textarea
+                        v-else
+                        v-model="newJsonText"
+                        label="MCP JSON"
+                        rows="10"
                     />
                 </div>
             </v-card-text>
