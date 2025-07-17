@@ -403,7 +403,7 @@ export default {
                 this.toolList = tools;
             } else {
                 alert('MCP 설정이 없습니다.');
-                this.$router.push('/account/settings');
+                this.$router.push('/account-settings');
             }
         },
         async fetchAgentData() {
