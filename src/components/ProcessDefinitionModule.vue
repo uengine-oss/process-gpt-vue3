@@ -102,12 +102,16 @@ export default {
                         "timeStamp": Date.now()
                     });
 
-                    this.$try({
-                        context: this,
-                        action: () => {
-                        },
-                        successMsg: this.$t('successMsg.formGenerationCompleted')
-                    })
+                    
+                    const isUseDataSource = localStorage.getItem('isUseDataSource');
+                    if(!isUseDataSource || isUseDataSource === 'false') {
+                        this.$try({
+                            context: this,
+                            action: () => {
+                            },
+                            successMsg: this.$t('successMsg.formGenerationCompleted')
+                        })
+                    }
 
                     this.scanFormQueue();
                 }
@@ -1132,7 +1136,6 @@ export default {
             }
         },
         notifyFormModificationComplete(html, formId) {
-            this.generateFormTask = {};
             if (!html || !formId) {
                 this.onFormScanCompleted(null);
                 return;
@@ -1156,6 +1159,17 @@ export default {
             }
             console.log('[notifyFormModificationComplete] ✅ 폼 수정 완료:', formId);
             console.log('[notifyFormModificationComplete] 📄 수정된 HTML 길이:', html?.length || 0);
+            this.generateFormTask = {};
+        },
+        resetGenerateFormTask() {
+            const userActivities = this.processDefinition.elements.filter(activity => 
+                activity.elementType === 'Activity' && 
+                activity.type === 'UserActivity'
+            );
+
+            userActivities.forEach(activity => {
+                this.generateFormTask[activity.id] = 'finished';
+            });
         },
         scanFormQueue() {
             const isUseDataSource = localStorage.getItem('isUseDataSource');
@@ -1214,7 +1228,8 @@ export default {
             }
 
             // 현재 처리 중으로 상태 변경
-            this.generateFormTask = {};
+            
+            this.resetGenerateFormTask();
             this.generateFormTask[nextItem.activityId] = 'generating';
             nextItem.status = 'processing';
             console.log(`[processNextFormInQueue] 🔄 처리 시작: ${nextItem.activityName} (${nextItem.activityId})`);
@@ -1285,8 +1300,6 @@ export default {
             console.log(`[finalizeFormProcessing] 📊 처리 완료: ${completedCount}/${totalCount}`);
             
             // 전체 완료 메시지 추가
-            let messageWriting = this.messages[this.messages.length - 1];
-            messageWriting.isLoading = false;
             this.messages.push({
                 "role": "system",
                 "content": `모든 활동의 폼 스캔을 완료했습니다. (변경된 폼: ${completedCount}/${totalCount})`,
@@ -1295,7 +1308,6 @@ export default {
             
             // 큐 초기화
             this.formScanQueue = [];
-            this.generateFormTask = {};
             
             // 성공 메시지 표시
             if (completedCount > 0) {
@@ -1307,6 +1319,16 @@ export default {
                     successMsg: `${completedCount}개 활동의 폼 스캔이 완료되었습니다.`
                 });
             }
+            let messageWriting = this.messages[this.messages.length - 1];
+            messageWriting.isLoading = false;
+            this.resetGenerateFormTask();
+
+            this.$try({
+                context: this,
+                action: () => {
+                },
+                successMsg: this.$t('successMsg.formGenerationCompleted')
+            })
         }
     }
 };
