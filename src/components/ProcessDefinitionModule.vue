@@ -1109,7 +1109,7 @@ export default {
 
         checkDefinitionSync(newVal, oldVal) {
             if (newVal && oldVal) {
-                if (newVal.activities && oldVal.activities) {
+                if (newVal.activities && oldVal.activities && newVal.activities.length == oldVal.activities.length) {
                     newVal.activities = newVal.activities.map(newActivity => {
                         const oldActivity = oldVal.activities.find(oldActivity => oldActivity.id === newActivity.id);
                         if (oldActivity) {
