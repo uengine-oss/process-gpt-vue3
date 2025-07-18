@@ -24,7 +24,8 @@ export default {
         loading: false,
         isChanged: false,
         generateFormTask: null,
-        oldProcDefId: ''
+        oldProcDefId: '',
+        userInputs: null
     }),
     computed: {
         lastPath() {
@@ -147,7 +148,7 @@ export default {
                                 retryCount++;
                                 formGenerator.generate();
                             } else {
-                                messageWriting = me.messages[me.messages.length - 1];
+                                let messageWriting = me.messages[me.messages.length - 1];
                                 messageWriting.isLoading = false;
                                 me.messages.push({
                                     "role": "system",
@@ -162,12 +163,15 @@ export default {
                     }
                 };
                 formGenerator.previousMessages = [
-                    ...formGenerator.previousMessageFormats,
-                    {
-                        role: 'user',
-                        content: generateMsg
-                    }
+                    ...formGenerator.previousMessageFormats
                 ];
+
+                this.userInputs = {
+                    requestType: "Create",
+                    request: generateMsg,
+                    existingForm: "",
+                    imageUrl: null
+                };
 
                 formGenerator.generate();
                 me.messages.push({
