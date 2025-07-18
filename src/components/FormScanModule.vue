@@ -865,24 +865,34 @@ Output format:
             
             // 요청 메시지 구성
             const requestText = `
-Based on the mapped field candidates, please modify the form to add dynamic loading attributes and return the complete modified HTML.
+                You are given a mapped list of fields that need to be dynamically connected to external data sources. Please update the provided HTML form accordingly.
 
-Mapped Field Candidates:
-${JSON.stringify(this.mappedFieldCandidates, null, 2)}
+                Mapped Field Candidates:
+                ${JSON.stringify(this.mappedFieldCandidates, null, 2)}
 
-Instructions:
-1. For each field in mappedFieldCandidates, find the corresponding form element by fieldName
-2. Add the following dynamic loading attributes to enable URL-based data binding:
-   - localIsDynamicLoad="urlBinding"
-   - localDynamicLoadURL="{candidate.url}"
-   - localDynamicLoadKeyJsonPath="$[*].{candidate.key}"
-   - localDynamicLoadValueJsonPath="$[*].{candidate.value}"
-   - is_dynamic_load="urlBinding"
+                Instructions:
+                1. For each field in mappedFieldCandidates:
+                - Locate the form element using the 'fieldName'
+                - If a 'suggestedTag' is provided (e.g., "select-field", "checkbox-field", "radio-field"):
+                    - Replace the original tag (e.g., <text-field>) with the new tag (e.g., <select-field>)
+                - Then, add or update the following attributes:
+                    - is_dynamic_load="urlBinding"
+                    - dynamic_load_url="{candidate.url}"
+                    - dynamic_load_key_json_path="$[*].{candidate.key}"
+                    - dynamic_load_value_json_path="$[*].{candidate.value}"
 
-3. Ensure all existing form structure and other attributes remain intact
-4. Only modify the fields that have corresponding entries in mappedFieldCandidates
-5. Return the complete modified HTML form as htmlOutput (not modifications)
-            `;
+                2. Do not modify other fields that are not in the mapped list.
+                3. Preserve all other attributes (e.g., alias, type, disabled, etc.)
+                4. Return the **full modified HTML form**, wrapped in the following JSON format:
+
+                \`\`\`json
+                {
+                "htmlOutput": "<modified full form here>"
+                }
+                \`\`\`
+                `;
+
+
             
             // userInputs 설정 (참조 코드 방식)
             this.formDesignGenerator.userInputs = {
@@ -947,7 +957,7 @@ Instructions:
             
             // notifyFormModificationComplete 메서드가 존재하면 호출
             if (this.notifyFormModificationComplete && typeof this.notifyFormModificationComplete === 'function') {
-                this.notifyFormModificationComplete(cleanHtml, formId);
+                this.notifyFormModificationComplete(cleanHtml, this.currentActivityId);
                 console.log('[handleFormModificationResponse] ✅ notifyFormModificationComplete 리스너 호출됨');
             }
             

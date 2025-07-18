@@ -123,7 +123,7 @@ export default {
         /**
          * KEditor에서 추출한 내용을 실제로 DynamicForm 컴포넌트에 적용할 수 있는 형태로 변환시키기 위해서
          */
-        keditorContentHTMLToDynamicFormHTML(html) {
+        keditorContentHTMLToDynamicFormHTML(html, isRewrite = false) {
             const dom = new DOMParser().parseFromString(html, 'text/html');
 
 

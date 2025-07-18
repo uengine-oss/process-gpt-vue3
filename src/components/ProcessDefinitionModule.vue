@@ -1135,29 +1135,22 @@ export default {
                 return newVal;
             }
         },
-        notifyFormModificationComplete(html, formId) {
-            if (!html || !formId) {
+        async notifyFormModificationComplete(html, activityId) {
+            if (!html || !activityId) {
+                console.log(`[notifyFormModificationComplete] 🔍 실패한 폼 스캔`);
                 this.onFormScanCompleted(null);
                 return;
             }
-            
-            // formId에서 activityId 추출 (형식: processDefId_activityId_form)
-            const parts = formId.split('_');
-            if (parts.length >= 3) {
-                const activityId = parts[parts.length - 2]; // 끝에서 두 번째가 activityId
-                console.log(`[notifyFormModificationComplete] 🔍 추출된 activityId: ${activityId}`);
-                
-                // 해당 활동의 스캔 완료 처리
-                this.onFormScanCompleted(activityId);
-            } else {
-                console.error('[notifyFormModificationComplete] ❌ formId 형식 오류:', formId);
-                // fallback: 첫 번째 processing 상태 항목을 완료 처리
-                const processingItem = this.formScanQueue.find(item => item.status === 'processing');
-                if (processingItem) {
-                    this.onFormScanCompleted(processingItem.activityId);
-                }
+
+            // const convertedHtml = await this.keditorContentHTMLToDynamicFormHTML(html, true);
+            const formHtml = await this.saveFormData(html, activityId);
+            if (formHtml) {
+                this.generateFormTask[activityId] = 'finished';
             }
-            console.log('[notifyFormModificationComplete] ✅ 폼 수정 완료:', formId);
+            
+            this.onFormScanCompleted(activityId);
+            
+            console.log('[notifyFormModificationComplete] ✅ 폼 수정 완료:', activityId);
             console.log('[notifyFormModificationComplete] 📄 수정된 HTML 길이:', html?.length || 0);
             this.generateFormTask = {};
         },
