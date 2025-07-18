@@ -5,13 +5,14 @@ import BackendFactory from '@/components/api/BackendFactory';
 import FormGenerator from './ai/FormDesignGenerator';
 import FormDefinitionModule from './FormDefinitionModule.vue';
 import BPMNXmlGenerator from './BPMNXmlGenerator.vue';
+import FormScanModule from './FormScanModule.vue';
 import partialParse from "partial-json-parser";
 import JSON5 from 'json5';
 
 const backend = BackendFactory.createBackend();
 
 export default {
-    mixins: [FormDefinitionModule, BPMNXmlGenerator],
+    mixins: [FormDefinitionModule, BPMNXmlGenerator, FormScanModule],
     data: () => ({
         processVariables: [],
         processDefinition: null,
@@ -25,7 +26,8 @@ export default {
         isChanged: false,
         generateFormTask: null,
         oldProcDefId: '',
-        userInputs: null
+        userInputs: null,
+        formScanQueue: [] // 폼 스캔 큐 추가
     }),
     computed: {
         lastPath() {
@@ -106,6 +108,8 @@ export default {
                         },
                         successMsg: this.$t('successMsg.formGenerationCompleted')
                     })
+
+                    this.scanFormQueue();
                 }
                 
                 this.generateFormTask = {};
@@ -1125,6 +1129,183 @@ export default {
                     });
                 }
                 return newVal;
+            }
+        },
+        notifyFormModificationComplete(html, formId) {
+            this.generateFormTask = {};
+            if (!html || !formId) {
+                this.onFormScanCompleted(null);
+                return;
+            }
+            
+            // formId에서 activityId 추출 (형식: processDefId_activityId_form)
+            const parts = formId.split('_');
+            if (parts.length >= 3) {
+                const activityId = parts[parts.length - 2]; // 끝에서 두 번째가 activityId
+                console.log(`[notifyFormModificationComplete] 🔍 추출된 activityId: ${activityId}`);
+                
+                // 해당 활동의 스캔 완료 처리
+                this.onFormScanCompleted(activityId);
+            } else {
+                console.error('[notifyFormModificationComplete] ❌ formId 형식 오류:', formId);
+                // fallback: 첫 번째 processing 상태 항목을 완료 처리
+                const processingItem = this.formScanQueue.find(item => item.status === 'processing');
+                if (processingItem) {
+                    this.onFormScanCompleted(processingItem.activityId);
+                }
+            }
+            console.log('[notifyFormModificationComplete] ✅ 폼 수정 완료:', formId);
+            console.log('[notifyFormModificationComplete] 📄 수정된 HTML 길이:', html?.length || 0);
+        },
+        scanFormQueue() {
+            const isUseDataSource = localStorage.getItem('isUseDataSource');
+            if(!isUseDataSource || isUseDataSource === 'false')return;
+            console.log('[scanFormQueue] ======== 폼 스캔 큐 시작 ========');
+            
+            if (!this.processDefinition || !this.processDefinition.elements) {
+                console.error('[scanFormQueue] ❌ processDefinition 또는 activities가 없음');
+                return;
+            }
+
+            // UserActivity만 필터링
+            const userActivities = this.processDefinition.elements.filter(activity => 
+                activity.elementType === 'Activity' && 
+                activity.type === 'UserActivity'
+            );
+
+            if (userActivities.length === 0) {
+                console.log('[scanFormQueue] ℹ️ UserActivity가 없음 - 큐 처리 종료');
+                return;
+            }
+
+            console.log(`[scanFormQueue] 📋 처리할 UserActivity: ${userActivities.length}개`);
+            
+            // 폼 스캔 큐 초기화
+            this.formScanQueue = userActivities.map(activity => ({
+                processDefinitionId: this.processDefinition.processDefinitionId,
+                activityId: activity.id,
+                activityName: activity.name,
+                status: 'pending'
+            }));
+
+            console.log('[scanFormQueue] 📋 큐 초기화 완료:', this.formScanQueue);
+            
+            // 폼 스캔 시작 메시지 추가
+            this.messages.push({
+                "role": "system",
+                "content": `데이터 소스를 사용 가능한지 확인하기 위해 ${userActivities.length}개 활동의 폼 스캔을 시작합니다.`,
+                "timeStamp": Date.now()
+            });
+            
+            // 첫 번째 활동 처리 시작
+            this.processNextFormInQueue();
+        },
+
+        processNextFormInQueue() {
+            console.log('[processNextFormInQueue] 🔄 다음 폼 처리 시작');
+            
+            // 대기 중인 첫 번째 항목 찾기
+            const nextItem = this.formScanQueue.find(item => item.status === 'pending');
+            
+            if (!nextItem) {
+                console.log('[processNextFormInQueue] ✅ 모든 폼 처리 완료');
+                this.onAllFormsProcessed();
+                return;
+            }
+
+            // 현재 처리 중으로 상태 변경
+            this.generateFormTask = {};
+            this.generateFormTask[nextItem.activityId] = 'generating';
+            nextItem.status = 'processing';
+            console.log(`[processNextFormInQueue] 🔄 처리 시작: ${nextItem.activityName} (${nextItem.activityId})`);
+
+            // 개별 활동 스캔 시작 메시지 추가
+            this.messages.push({
+                "role": "system",
+                "content": `"${nextItem.activityName}" 활동의 폼을 스캔하고 있습니다...`,
+                "timeStamp": Date.now(),
+                "isLoading": true
+            });
+
+            // FormScanModule의 scanActivity 호출
+            this.scanActivity(nextItem.processDefinitionId, {
+                activityId: nextItem.activityId,
+                activityName: nextItem.activityName
+            });
+        },
+
+        onFormScanCompleted(activityId) {
+            if (!activityId) {
+                this.processNextFormInQueue();
+                return;
+            }
+            console.log(`[onFormScanCompleted] ✅ 폼 스캔 완료: ${activityId}`);
+            
+            // 해당 활동의 상태를 완료로 변경
+            const item = this.formScanQueue.find(item => item.activityId === activityId);
+            if (item) {
+                item.status = 'completed';
+                console.log(`[onFormScanCompleted] 📋 상태 업데이트: ${item.activityName} -> completed`);
+                
+                // 로딩 중인 마지막 메시지 찾아서 완료 처리
+                for (let i = this.messages.length - 1; i >= 0; i--) {
+                    if (this.messages[i].isLoading) {
+                        this.messages[i].isLoading = false;
+                        break;
+                    }
+                }
+                
+                // 개별 활동 완료 메시지 추가
+                this.messages.push({
+                    "role": "system",
+                    "content": `"${item.activityName}" 활동의 폼 스캔이 완료되었습니다.`,
+                    "timeStamp": Date.now()
+                });
+            }
+
+            // 다음 폼 처리
+            this.processNextFormInQueue();
+        },
+
+        onAllFormsProcessed() {
+            console.log('[onAllFormsProcessed] 🎉 모든 폼 스캔 및 처리 완료!');
+            console.log('[onAllFormsProcessed] 📊 처리 결과:', this.formScanQueue);
+            
+            // 필요시 추가 후처리 로직
+            this.finalizeFormProcessing();
+        },
+
+        finalizeFormProcessing() {
+            console.log('[finalizeFormProcessing] 🏁 폼 처리 마무리 작업 시작');
+            
+            // 완료된 활동 수 계산
+            const completedCount = this.formScanQueue.filter(item => item.status === 'completed').length;
+            const totalCount = this.formScanQueue.length;
+            
+            console.log(`[finalizeFormProcessing] 📊 처리 완료: ${completedCount}/${totalCount}`);
+            
+            // 전체 완료 메시지 추가
+            let messageWriting = this.messages[this.messages.length - 1];
+            messageWriting.isLoading = false;
+            this.messages.push({
+                "role": "system",
+                "content": `모든 활동의 폼 스캔을 완료했습니다. (변경된 폼: ${completedCount}/${totalCount})`,
+                "timeStamp": Date.now()
+            });
+            
+            // 큐 초기화
+            this.formScanQueue = [];
+            this.generateFormTask = {};
+            
+            // 성공 메시지 표시
+            if (completedCount > 0) {
+                this.$try({
+                    context: this,
+                    action: () => {
+                        console.log('[finalizeFormProcessing] ✅ 폼 스캔 프로세스 성공적으로 완료');
+                    },
+                    successMsg: `${completedCount}개 활동의 폼 스캔이 완료되었습니다.`
+                });
             }
         }
     }

@@ -1,8 +1,74 @@
 <template>
   <div>
+    <!-- DataSource 사용 여부 토글 - 개선된 UI -->
+    <v-card class="mb-6 pa-4" elevation="2">
+      <v-row align="center" no-gutters>
+        <v-col cols="auto" class="mr-3">
+          <v-icon size="24" color="primary">mdi-database-settings</v-icon>
+        </v-col>
+        <v-col>
+          <div class="d-flex align-center">
+            <h3 class="text-h6 font-weight-medium mr-2">DataSource 연동</h3>
+            <v-chip 
+              small 
+              color="orange" 
+              text-color="white"
+              class="mr-2"
+            >
+              <v-icon small left>mdi-flask</v-icon>
+              실험 기능
+            </v-chip>
+            <v-chip 
+              :color="isUseDataSource ? 'success' : 'grey'" 
+              :text-color="isUseDataSource ? 'white' : 'white'"
+              small
+            >
+              {{ isUseDataSource ? 'ON' : 'OFF' }}
+            </v-chip>
+          </div>
+          <p class="text-body-2 text--secondary ma-0 mt-1">
+            {{ isUseDataSource ? '폼 스캔 시 외부 DataSource를 자동으로 연동합니다' : '폼 스캔 시 DataSource 연동을 사용하지 않습니다' }}
+          </p>
+        </v-col>
+        <v-col cols="auto">
+          <v-switch
+            v-model="isUseDataSource"
+            color="primary"
+            hide-details
+            @change="toggleDataSourceUsage"
+          ></v-switch>
+        </v-col>
+      </v-row>
+
+      <!-- 실험 기능 안내 -->
+      <v-divider class="my-3"></v-divider>
+      <v-alert
+        dense
+        outlined
+        type="info"
+        color="orange"
+        class="ma-0"
+      >
+        <div class="d-flex align-center">
+          <v-icon color="orange" class="mr-2">mdi-information-outline</v-icon>
+          <span class="text-body-2">
+            <strong>실험 기능:</strong> 이 기능은 현재 테스트 중이며, 예상과 다르게 동작할 수 있습니다. 
+            피드백은 개발팀에 전달해 주세요.
+          </span>
+        </div>
+      </v-alert>
+    </v-card>
+
     <!-- 데이터소스 추가 버튼 -->
     <div class="d-flex justify-end mb-4">
-      <v-btn color="primary" elevation="2" @click="openAddDialog">
+      <v-btn 
+        color="primary" 
+        elevation="2" 
+        @click="openAddDialog"
+        :disabled="!isUseDataSource"
+        class="text-none"
+      >
+        <v-icon left>mdi-plus</v-icon>
         {{ $t('accountTab.addConnectionInfo') }}
       </v-btn>
     </div>
@@ -10,11 +76,22 @@
     <!-- 데이터소스 다이얼로그 -->
     <v-dialog v-model="dialog" max-width="700">
       <v-card>
-        <v-card-title>
-          <span class="text-h5">{{ $t('accountTab.addConnectionInfo') }}</span>
+        <v-card-title class="headline">
+          <v-icon left color="primary">mdi-database-plus</v-icon>
+          <span>{{ $t('accountTab.addConnectionInfo') }}</span>
+          <v-spacer></v-spacer>
+          <v-chip small color="orange" text-color="white">
+            <v-icon small left>mdi-flask</v-icon>
+            실험 기능
+          </v-chip>
         </v-card-title>
         <v-card-text max-height="500" style="overflow-y: auto;">
-          <v-text-field v-model="newDataSource.name" label="Name" />
+          <v-text-field 
+            v-model="newDataSource.name" 
+            label="Name" 
+            outlined
+            dense
+          />
 
           <!-- Method + Endpoint -->
           <v-row>
@@ -23,115 +100,256 @@
                 v-model="newDataSource.method"
                 :items="['GET', 'POST', 'PUT', 'DELETE', 'PATCH']"
                 label="Method"
+                outlined
+                dense
               />
             </v-col>
             <v-col cols="8">
-              <v-text-field v-model="newDataSource.endpoint" label="Endpoint" />
+              <v-text-field 
+                v-model="newDataSource.endpoint" 
+                label="Endpoint" 
+                outlined
+                dense
+              />
             </v-col>
           </v-row>
 
           <!-- Headers -->
           <div class="mt-4">
-            <strong>Headers:</strong>
+            <h4 class="text-subtitle-1 mb-2">
+              <v-icon left small>mdi-format-header-1</v-icon>
+              Headers:
+            </h4>
             <v-row v-for="(header, idx) in newDataSource.headers" :key="'header-'+idx" align="center">
               <v-col cols="5">
-                <v-text-field v-model="header.key" label="Header Name"/>
+                <v-text-field 
+                  v-model="header.key" 
+                  label="Header Name"
+                  outlined
+                  dense
+                />
               </v-col>
               <v-col cols="5">
-                <v-text-field v-model="header.value" label="Header Value"/>
+                <v-text-field 
+                  v-model="header.value" 
+                  label="Header Value"
+                  outlined
+                  dense
+                />
               </v-col>
               <v-col cols="2">
-                <v-btn icon @click="removeHeader(idx)">
-                  <v-icon>mdi-delete</v-icon>
+                <v-btn icon small @click="removeHeader(idx)">
+                  <v-icon color="error">mdi-delete</v-icon>
                 </v-btn>
               </v-col>
             </v-row>
-            <v-btn small color="secondary" class="mt-2" @click="addHeader">{{ $t('accountTab.addHeader') }}</v-btn>
+            <v-btn 
+              outlined 
+              color="primary" 
+              small 
+              class="mt-2" 
+              @click="addHeader"
+            >
+              <v-icon left small>mdi-plus</v-icon>
+              {{ $t('accountTab.addHeader') }}
+            </v-btn>
           </div>
 
           <!-- Parameters -->
           <div class="mt-4">
-            <strong>{{ $t('accountTab.parameters') }}:</strong>
+            <h4 class="text-subtitle-1 mb-2">
+              <v-icon left small>mdi-tune</v-icon>
+              {{ $t('accountTab.parameters') }}:
+            </h4>
             <v-row v-for="(param, idx) in newDataSource.parameters" :key="'param-'+idx" align="center">
               <v-col cols="5">
-                <v-text-field v-model="param.key" label="Parameter Name"/>
+                <v-text-field 
+                  v-model="param.key" 
+                  label="Parameter Name"
+                  outlined
+                  dense
+                />
               </v-col>
               <v-col cols="5">
-                <v-text-field v-model="param.value" label="Parameter Value"/>
+                <v-text-field 
+                  v-model="param.value" 
+                  label="Parameter Value"
+                  outlined
+                  dense
+                />
               </v-col>
               <v-col cols="2">
-                <v-btn icon @click="removeParameter(idx)">
-                  <v-icon>mdi-delete</v-icon>
+                <v-btn icon small @click="removeParameter(idx)">
+                  <v-icon color="error">mdi-delete</v-icon>
                 </v-btn>
               </v-col>
             </v-row>
-            <v-btn small color="secondary" class="mt-2" @click="addParameter">{{ $t('accountTab.addParameter') }}</v-btn>
+            <v-btn 
+              outlined 
+              color="primary" 
+              small 
+              class="mt-2" 
+              @click="addParameter"
+            >
+              <v-icon left small>mdi-plus</v-icon>
+              {{ $t('accountTab.addParameter') }}
+            </v-btn>
           </div>
 
           <!-- Authentication -->
           <div class="mt-4">
-            <strong>{{ $t('accountTab.authentication') }}:</strong>
+            <h4 class="text-subtitle-1 mb-2">
+              <v-icon left small>mdi-lock</v-icon>
+              {{ $t('accountTab.authentication') }}:
+            </h4>
             <div v-if="newDataSource.auth.enabled">
               <v-row align="center">
                 <v-col cols="5">
-                  <v-text-field v-model="newDataSource.auth.username" label="Username" />
+                  <v-text-field 
+                    v-model="newDataSource.auth.username" 
+                    label="Username" 
+                    outlined
+                    dense
+                  />
                 </v-col>
                 <v-col cols="5">
-                  <v-text-field v-model="newDataSource.auth.password" label="Password" type="password"/>
+                  <v-text-field 
+                    v-model="newDataSource.auth.password" 
+                    label="Password" 
+                    type="password"
+                    outlined
+                    dense
+                  />
                 </v-col>
                 <v-col cols="2">
-                  <v-btn icon @click="removeAuth">
-                    <v-icon>mdi-close</v-icon>
+                  <v-btn icon small @click="removeAuth">
+                    <v-icon color="error">mdi-close</v-icon>
                   </v-btn>
                 </v-col>
               </v-row>
             </div>
             <div v-else>
-              <v-btn small color="secondary" @click="addAuth">{{ $t('accountTab.addAuthentication') }}</v-btn>
+              <v-btn 
+                outlined 
+                color="primary" 
+                small 
+                @click="addAuth"
+              >
+                <v-icon left small>mdi-plus</v-icon>
+                {{ $t('accountTab.addAuthentication') }}
+              </v-btn>
             </div>
           </div>
         </v-card-text>
-        <v-card-actions>
+        <v-card-actions class="pa-4">
           <v-spacer></v-spacer>
-          <v-btn color="primary" @click="saveDataSource">{{ $t('accountTab.save') }}</v-btn>
-          <v-btn color="secondary" @click="dialog = false">{{ $t('accountTab.cancel') }}</v-btn>
+          <v-btn 
+            color="primary" 
+            @click="saveDataSource"
+            class="text-none"
+          >
+            <v-icon left>mdi-content-save</v-icon>
+            {{ $t('accountTab.save') }}
+          </v-btn>
+          <v-btn 
+            outlined 
+            @click="dialog = false"
+            class="text-none"
+          >
+            {{ $t('accountTab.cancel') }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <!-- 저장된 데이터소스 리스트 -->
-    <v-card class="mt-4 pa-4" v-for="(ds, index) in dataSources" :key="index">
-      <div><strong>{{ $t('accountTab.name') }}:</strong> {{ ds.name }}</div>
-      <div><strong>{{ $t('accountTab.method') }}:</strong> {{ ds.method }}</div>
-      <div><strong>{{ $t('accountTab.endpoint') }}:</strong> {{ ds.endpoint }}</div>
+    <div :class="{ 'datasource-disabled': !isUseDataSource }">
+      <v-card 
+        class="mt-4" 
+        elevation="2" 
+        v-for="(ds, index) in dataSources" 
+        :key="index"
+      >
+        <v-card-text class="pa-4">
+          <div class="d-flex align-center mb-3">
+            <v-icon color="primary" class="mr-2">mdi-database</v-icon>
+            <h4 class="text-h6">{{ ds.name }}</h4>
+            <v-spacer></v-spacer>
+            <v-chip small :color="ds.method === 'GET' ? 'success' : 'primary'" dark>
+              {{ ds.method }}
+            </v-chip>
+          </div>
 
-      <div><strong>{{ $t('accountTab.headers') }}:</strong>
-        <div v-for="(h, i) in ds.headers" :key="'h-'+i">
-          {{ h.key }}: {{ '*'.repeat(h.value.length) }}
-        </div>
-      </div>
+          <v-divider class="mb-3"></v-divider>
 
+          <div class="mb-2">
+            <strong class="text-subtitle-2">{{ $t('accountTab.endpoint') }}:</strong>
+            <code class="ml-2 pa-1 grey lighten-4 rounded">{{ ds.endpoint }}</code>
+          </div>
 
-      <div><strong>{{ $t('accountTab.parameters') }}:</strong>
-        <div v-for="(p, i) in ds.parameters" :key="'p-'+i">
-          {{ p.key }}: {{ p.value }}
-        </div>
-      </div>
+          <div class="mb-2" v-if="ds.headers && ds.headers.length > 0">
+            <strong class="text-subtitle-2">{{ $t('accountTab.headers') }}:</strong>
+            <div class="ml-4 mt-1">
+              <v-chip 
+                v-for="(h, i) in ds.headers" 
+                :key="'h-'+i"
+                x-small
+                class="mr-1 mb-1"
+                outlined
+              >
+                {{ h.key }}: {{ '*'.repeat(h.value.length) }}
+              </v-chip>
+            </div>
+          </div>
 
-      <div v-if="ds.auth.enabled"><strong>{{ $t('accountTab.authentication') }}:</strong>
-        {{ $t('accountTab.username') }}: {{ ds.auth.username }} / {{ $t('accountTab.password') }}: (•••)
-      </div>
+          <div class="mb-2" v-if="ds.parameters && ds.parameters.length > 0">
+            <strong class="text-subtitle-2">{{ $t('accountTab.parameters') }}:</strong>
+            <div class="ml-4 mt-1">
+              <v-chip 
+                v-for="(p, i) in ds.parameters" 
+                :key="'p-'+i"
+                x-small
+                class="mr-1 mb-1"
+                color="blue-grey"
+                text-color="white"
+              >
+                {{ p.key }}: {{ p.value }}
+              </v-chip>
+            </div>
+          </div>
 
-      <v-row align="center" class="mt-2">
-        <v-spacer></v-spacer>
-        <v-btn icon @click="editDataSource(ds)">
-          <v-icon>mdi-pencil</v-icon>
-        </v-btn>
-        <v-btn icon @click="deleteDataSource(ds)">
-          <v-icon>mdi-delete</v-icon>
-        </v-btn>
-      </v-row>
-    </v-card>
+          <div v-if="ds.auth.enabled" class="mb-2">
+            <strong class="text-subtitle-2">{{ $t('accountTab.authentication') }}:</strong>
+            <v-chip x-small color="orange" text-color="white" class="ml-2">
+              <v-icon x-small left>mdi-lock</v-icon>
+              {{ ds.auth.username }} / (•••)
+            </v-chip>
+          </div>
+        </v-card-text>
+
+        <v-card-actions class="pa-4 pt-0">
+          <v-spacer></v-spacer>
+          <v-btn 
+            icon 
+            small
+            @click="editDataSource(ds)" 
+            :disabled="!isUseDataSource"
+            color="primary"
+          >
+            <v-icon>mdi-pencil</v-icon>
+          </v-btn>
+          <v-btn 
+            icon 
+            small
+            @click="deleteDataSource(ds)" 
+            :disabled="!isUseDataSource"
+            color="error"
+          >
+            <v-icon>mdi-delete</v-icon>
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </div>
   </div>
 </template>
 
@@ -144,7 +362,8 @@ export default {
   data() {
     return {
       dialog: false,
-      isEditMode: false,  // ✅ 수정 모드 여부 플래그
+      isEditMode: false,
+      isUseDataSource: false, // ✅ DataSource 사용 여부
       newDataSource: {
         uuid: null,  // ✅ uuid 저장
         name: '',
@@ -162,9 +381,44 @@ export default {
     }
   },
   mounted() {
+    this.loadDataSourceUsage();
     this.loadDataSourceList();
   },
   methods: {
+    // ✅ localStorage에서 DataSource 사용 여부 로드
+    loadDataSourceUsage() {
+      const stored = localStorage.getItem('isUseDataSource');
+      if (stored !== null) {
+        this.isUseDataSource = stored === 'true';
+      } else {
+        // 기본값은 true
+        this.isUseDataSource = true;
+        localStorage.setItem('isUseDataSource', 'true');
+      }
+      console.log('[ConnectionInfoTab] DataSource 사용 여부 로드됨:', this.isUseDataSource);
+    },
+
+    // ✅ DataSource 사용 여부 토글
+    toggleDataSourceUsage() {
+      const newValue = this.isUseDataSource.toString();
+      localStorage.setItem('isUseDataSource', newValue);
+      console.log('[ConnectionInfoTab] DataSource 사용 여부 변경됨:', newValue);
+      
+      // 토글 피드백
+      this.$nextTick(() => {
+        const message = this.isUseDataSource 
+          ? 'DataSource 사용이 활성화되었습니다.' 
+          : 'DataSource 사용이 비활성화되었습니다.';
+        
+        // Vuetify snackbar가 있다면 사용
+        if (this.$root.$children[0].$refs?.snackbar) {
+          this.$root.$children[0].$refs.snackbar.show(message);
+        } else {
+          console.log('[ConnectionInfoTab]', message);
+        }
+      });
+    },
+
     async loadDataSourceList() {
       try {
         const res = await backend.getDataSourceList();
@@ -188,6 +442,10 @@ export default {
       }
     },
     openAddDialog() {
+      if (!this.isUseDataSource) {
+        console.warn('[ConnectionInfoTab] DataSource가 비활성화되어 있습니다.');
+        return;
+      }
       this.isEditMode = false;  // ✅ 새로 추가면 edit 모드 꺼줌
       this.newDataSource = {
         uuid: null,
@@ -281,5 +539,18 @@ export default {
 </script>
 
 <style scoped>
-/* 필요하면 스타일 조정 */
+.datasource-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+  filter: grayscale(0.3);
+}
+
+code {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+
+.text-none {
+  text-transform: none !important;
+}
 </style>
