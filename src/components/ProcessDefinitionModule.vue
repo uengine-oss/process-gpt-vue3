@@ -24,7 +24,8 @@ export default {
         loading: false,
         isChanged: false,
         generateFormTask: null,
-        oldProcDefId: ''
+        oldProcDefId: '',
+        userInputs: null
     }),
     computed: {
         lastPath() {
@@ -147,7 +148,7 @@ export default {
                                 retryCount++;
                                 formGenerator.generate();
                             } else {
-                                messageWriting = me.messages[me.messages.length - 1];
+                                let messageWriting = me.messages[me.messages.length - 1];
                                 messageWriting.isLoading = false;
                                 me.messages.push({
                                     "role": "system",
@@ -162,12 +163,15 @@ export default {
                     }
                 };
                 formGenerator.previousMessages = [
-                    ...formGenerator.previousMessageFormats,
-                    {
-                        role: 'user',
-                        content: generateMsg
-                    }
+                    ...formGenerator.previousMessageFormats
                 ];
+
+                this.userInputs = {
+                    requestType: "Create",
+                    request: generateMsg,
+                    existingForm: "",
+                    imageUrl: null
+                };
 
                 formGenerator.generate();
                 me.messages.push({
@@ -1105,19 +1109,16 @@ export default {
 
         checkDefinitionSync(newVal, oldVal) {
             if (newVal && oldVal) {
-                if (newVal.activities && oldVal.activities) {
+                if (newVal.activities && oldVal.activities && newVal.activities.length == oldVal.activities.length) {
                     newVal.activities = newVal.activities.map(newActivity => {
                         const oldActivity = oldVal.activities.find(oldActivity => oldActivity.id === newActivity.id);
                         if (oldActivity) {
-                            newActivity.name = oldActivity.name;
-                            newActivity.role = oldActivity.role;
-                            newActivity.tool = oldActivity.tool;
                             newActivity.type = oldActivity.type;
-                            newActivity.process = oldActivity.process;
                             newActivity.duration = oldActivity.duration;
                             newActivity.agentMode = oldActivity.agentMode;
                             newActivity.description = oldActivity.description;
                             newActivity.instruction = oldActivity.instruction;
+                            newActivity.checkpoints = oldActivity.checkpoints;
                             newActivity.properties = oldActivity.properties;
                         }
                         return newActivity;
