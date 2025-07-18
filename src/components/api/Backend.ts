@@ -104,6 +104,7 @@ export interface Backend {
     createSecretByTenant(data: any): Promise<any>;
     updateEnvByTenant(data: any): Promise<any>;
     updateSecretByTenant(data: any): Promise<any>;
+    getMCPLists(): Promise<any>;
 }
 
 // export type { Backend }

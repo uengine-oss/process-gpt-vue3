@@ -3454,6 +3454,16 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async getMCPLists(){
+        try {
+            const response = await axios.get('https://dev.process-gpt.io/mcp/tools');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+
+    }
 }
 
 export default ProcessGPTBackend;
