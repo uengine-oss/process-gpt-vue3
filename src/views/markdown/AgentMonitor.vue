@@ -45,7 +45,7 @@
               <div
                 v-if="
                   item.payload.isCompleted && isTaskCompleted(item.payload) && (
-                    (item.payload.crewType === 'report' && item.payload.jobId === 'merge-sales_activity_report') ||
+                    (item.payload.crewType === 'report' && item.payload.jobId.includes('final_report_merge')) ||
                     item.payload.crewType === 'slide' ||
                     item.payload.crewType === 'text'
                   )
@@ -135,13 +135,28 @@
                 </span>
               </div>
             </div>
-            <div v-else class="task-progress">
+            <div v-else-if="!item.payload.isCompleted" class="task-progress">
               <div class="progress-dots">
                 <div class="dot"></div>
                 <div class="dot"></div>
                 <div class="dot"></div>
               </div>
               <span>작업을 진행하고 있습니다...</span>
+            </div>
+            <div v-if="!item.payload.isCompleted && toolUsageStatusByTask[item.payload.jobId] && toolUsageStatusByTask[item.payload.jobId].length" class="tool-usage-status-list">
+              <div
+                v-for="(tool, idx) in toolUsageStatusByTask[item.payload.jobId]"
+                :key="item.payload.jobId + '-' + tool.tool_name + '-' + idx"
+                class="tool-usage-status-item"
+              >
+                <div class="tool-status-indicator">
+                  <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
+                  <div v-else class="check-mark">✓</div>
+                </div>
+                <span>
+                  {{ tool.tool_name }} 도구 {{ tool.status === 'done' ? '사용 완료' : '사용 중입니다' }}<span v-if="tool.query || tool.info">: {{ tool.query || tool.info }}</span>
+                </span>
+              </div>
             </div>
           </div>
           <div v-else class="chat-message">
@@ -168,7 +183,7 @@
           <button @click="startTask" class="start-button">시작하기</button>
         </div>
       </div>
-      <div v-if="isLoading" class="feedback-loading">
+      <div v-if="isLoading && timeline.length > 0" class="feedback-loading">
         <div class="loading-spinner"></div>
         <span v-if="todoStatus.draft_status === 'STARTED'">초안 생성 작업을 진행중입니다...</span>
         <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED'">피드백을 반영하여 초안을 다시 생성하고 있습니다...</span>
@@ -272,29 +287,36 @@ export default {
       return Array.from(taskMap.values()).sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
     },
     toolUsageStatusByTask() {
-      const started = {}, finished = {}
-      // 툴 사용 이벤트를 한번에 reduce로 구성
-      this.events.reduce((acc, e) => {
-        const { event_type, data, job_id, id } = e
-        const j = job_id || data?.job_id || id
-        if (event_type === 'tool_usage_started') {
-          acc.started[j] = [...(acc.started[j]||[]), { tool_name: data.tool_name, query: data.query }]
-        }
-        if (event_type === 'tool_usage_finished') {
-          acc.finished[j] = [...(acc.finished[j]||[]), { tool_name: data.tool_name, query: data.query }]
-        }
-        return acc
-      }, { started, finished })
-      
-      const result = {};
-      Object.keys(started).forEach(jobId => {
-        result[jobId] = started[jobId].map(s => {
-          const isDone = (finished[jobId] || []).some(f => f.tool_name === s.tool_name);
-          return { ...s, status: isDone ? 'done' : 'searching' };
-        });
-      });
-      
-      return result;
+      const usageMap = {}
+      // 이벤트를 시간 순으로 처리하고, 도구 시작-완료 매칭을 스택(LIFO) 방식으로 처리
+      this.events
+        .slice()
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+        .forEach(e => {
+          const { event_type, data, job_id, id } = e
+          const jobId = job_id || data?.job_id || id
+          if (!usageMap[jobId]) usageMap[jobId] = []
+
+          if (event_type === 'tool_usage_started') {
+            usageMap[jobId].push({
+              tool_name: data.tool_name,
+              query: data.query,
+              info: null,
+              status: 'searching'
+            })
+          } else if (event_type === 'tool_usage_finished') {
+            const list = usageMap[jobId]
+            // LIFO 방식으로 마지막 시작 이벤트를 먼저 처리
+            for (let i = list.length - 1; i >= 0; i--) {
+              if (list[i].tool_name === data.tool_name && list[i].status === 'searching') {
+                list[i].status = 'done'
+                list[i].info = data.info
+                break
+              }
+            }
+          }
+        })
+      return usageMap
     },
     isQueued() {
       return this.todoStatus &&
@@ -534,6 +556,10 @@ export default {
 
             if (!exists && ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'].includes(row.event_type) && todoId === taskId) {
               this.events = [...this.events, row];
+              // crew_completed 수신 시 로딩 상태 해제
+              if (row.event_type === 'crew_completed') {
+                this.isLoading = false;
+              }
             } else {
               if (todoId !== taskId) {
                 console.warn('[ID 불일치] 이벤트 todo_id:', todoId, 'vs 현재 taskId:', taskId, '이벤트 전체:', row);
@@ -583,6 +609,9 @@ export default {
         this.errorMessage = 'taskId를 찾을 수 없습니다.';
         return;
       }
+      // 로딩 상태 활성화 및 draft_status 설정
+      this.isLoading = true;
+      this.todoStatus = { ...this.todoStatus, agent_mode: 'DRAFT', status: 'IN_PROGRESS', draft_status: 'STARTED' };
       try {
         // 선택된 연구 방식에 따라 agent_orch 값 결정
         const agentOrch = this.selectedResearchMethod === 'openai-deep-research' ? 'openai' : 'crewai';
@@ -592,7 +621,6 @@ export default {
           status: 'IN_PROGRESS',
           agent_orch: agentOrch
         });
-        this.todoStatus = { ...this.todoStatus, agent_mode: 'DRAFT', status: 'IN_PROGRESS' };
       } catch (error) {
         console.error('작업 시작 중 오류:', error);
         this.errorMessage = '작업 시작 중 오류가 발생했습니다.';
@@ -1431,6 +1459,8 @@ export default {
   margin-top: 8px;
   padding-left: 20px;
   border-left: 2px solid #e9ecef;
+  max-height: 120px;
+  overflow-y: auto;
 }
 .tool-usage-status-item {
   display: flex;
