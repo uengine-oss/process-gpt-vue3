@@ -1113,15 +1113,12 @@ export default {
                     newVal.activities = newVal.activities.map(newActivity => {
                         const oldActivity = oldVal.activities.find(oldActivity => oldActivity.id === newActivity.id);
                         if (oldActivity) {
-                            newActivity.name = oldActivity.name;
-                            newActivity.role = oldActivity.role;
-                            newActivity.tool = oldActivity.tool;
                             newActivity.type = oldActivity.type;
-                            newActivity.process = oldActivity.process;
                             newActivity.duration = oldActivity.duration;
                             newActivity.agentMode = oldActivity.agentMode;
                             newActivity.description = oldActivity.description;
                             newActivity.instruction = oldActivity.instruction;
+                            newActivity.checkpoints = oldActivity.checkpoints;
                             newActivity.properties = oldActivity.properties;
                         }
                         return newActivity;
