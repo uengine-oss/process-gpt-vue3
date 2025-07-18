@@ -556,7 +556,7 @@ export default {
                 const parent = document.createElement('div');
                 parent.setAttribute('id', `vuemount_${getUUID()}`);
 
-                if (this.generator.avaliableComponentTagNames.includes(component.tagName.toLowerCase())) {
+                if (this.generator.availableComponentTagNames.includes(component.tagName.toLowerCase())) {
                     component.parentNode.insertBefore(parent, component);
                     parent.appendChild(component);
                 }
