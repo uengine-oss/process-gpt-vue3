@@ -43,7 +43,7 @@
                                         color="primary"
                                         hide-details
                                         density="compact"
-                                        @update:model-value="toggleServer(key, server)"
+                                        @update:model-value="toggleServer(key, server.enabled)"
                                     ></v-switch>
                                 </div>
                             </template>
@@ -287,15 +287,12 @@ export default {
             this.mcpJsonText = '';
             this.editDialog = false;
         },
-        async toggleServer(key, newValue) {
+        async toggleServer(key, value) {
             try {
-                this.mcpServers[key].enabled = newValue;
-                const dataToSave = {
-                    mcpServers: JSON.parse(JSON.stringify(this.mcpServers))
-                };
-                await backend.setMCPByTenant(dataToSave);
+                this.mcpServers[key].enabled = !value;
+                await backend.setMCPByTenant(this.mcpServers);
             } catch (error) {
-                this.mcpServers[key].enabled = !newValue;
+                this.mcpServers[key].enabled = !value;
                 console.error('서버 토글 중 오류:', error);
             }
         },
