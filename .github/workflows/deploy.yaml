@@ -42,26 +42,52 @@ jobs:
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v1
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v3
         with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+          repository: uengine-oss/process-gpt-k8s
+          token: ${{ secrets.GITOPS_PAT }}
+          path: gitops-repo
 
-      - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v1
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update image tag in GitOps repository
+        run: |
+          cd gitops-repo
+          
+          # Update frontend deployment image
+          yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i environments/prod/frontend-deployment.yaml
+          
+          # Update any other deployments that use the same image
+          # yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i environments/staging/frontend-deployment.yaml
+          
+          echo "Updated image to: $IMAGE_NAME"
+
+      - name: Commit and push changes
+        run: |
+          cd gitops-repo
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add .
+          git commit -m "Update frontend image to $IMAGE_TAG" || exit 0
+          git push
+
+      - name: Create deployment comment
+        uses: actions/github-script@v6
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      
-      - name: Install GKE Auth Plugin
-        run: |
-          gcloud components install gke-gcloud-auth-plugin --quiet
-
-      - name: Get GKE credentials
-        run: |
-          gcloud container clusters get-credentials ${{ secrets.GCP_CLUSTER_NAME }} \
-            --region ${{ secrets.GCP_REGION }} \
-            --project ${{ secrets.GCP_PROJECT_ID }}
-
-      - name: Deploy to GKE using GHCR image
-        run: |
-          kubectl set image deployment/frontend-deployment frontend=$IMAGE_NAME
+          script: |
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `🚀 **Deployment Started**
+              
+              **Image:** \`${{ env.IMAGE_NAME }}\`
+              **Tag:** \`${{ env.IMAGE_TAG }}\`
+              
+              ArgoCD will automatically sync the changes from [process-gpt-k8s](https://github.com/uengine-oss/process-gpt-k8s)`
+            })
