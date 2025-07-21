@@ -122,16 +122,18 @@
         </v-menu>
       </v-row>
       <v-divider class="my-2 mb-0"></v-divider>
-      <v-infinite-scroll @load="load">
+      <v-infinite-scroll @load="load"
+          class="list-page-completed-box"
+      >
         <template v-for="item in items" :key="item">
-          <div class="pa-4 pt-0 pb-0">
+          <div class="pa-4 pt-0 pb-0 mt-2">
             <slot name="item-row" :item="item"></slot>
           </div>
         </template>
         <template v-slot:empty>
-          <div class="pa-2" style="width: 100%;">
-            <v-alert type="warning" class="pa-4" color="grey-lighten-2" text-color="grey-darken-3">{{ $t('completedListPage.warning') }}</v-alert>
-          </div>
+            <div v-if="!loading && items.length === 0 && searchWord" class="pa-2" style="width: 100%;">
+              <v-alert type="info" class="pa-4" color="grey-lighten-2" text-color="grey-darken-3">{{ $t('completedListPage.noSearchResults') }}</v-alert>
+            </div>
         </template>
       </v-infinite-scroll>
     </div>
@@ -270,3 +272,10 @@ export default {
     
   }
   </script>
+
+<style>
+  .list-page-completed-box {
+    height: calc(100vh - 240px);
+    overflow-y: auto;
+  }
+</style>

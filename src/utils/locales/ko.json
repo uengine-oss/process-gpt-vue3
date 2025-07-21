@@ -1299,7 +1299,8 @@
     "completedListPage": {
         "search": "인스턴스 검색",
         "title": "완료된 인스턴스",
-        "warning": "더 이상 완료된 인스턴스가 없습니다."
+        "warning": "모든 항목을 불러왔습니다.",
+        "noSearchResults": "검색 결과가 없습니다."
     },
     "filterConfigLabel": {
         "period": "기간 설정",
