@@ -974,6 +974,45 @@ class UEngineBackend implements Backend {
         console.warn("method is not implemented only use Process-GPT Mode");
     }
 
+    async getEnvByTenant(): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
+    }
+
+    async getSecretByTenant(): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
+    }
+
+    async deleteEnvByTenant(name: string): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+    }
+
+    async deleteSecretByTenant(name: string): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+    }
+
+    async createEnvByTenant(data: any): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+    }
+
+    async createSecretByTenant(data: any): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+    }
+
+    async updateEnvByTenant(data: any): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+    }
+
+    async updateSecretByTenant(data: any): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+    }
+
+    async getMCPLists(): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
+    }
+
 }
 
 export default UEngineBackend;
