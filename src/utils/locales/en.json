@@ -1298,7 +1298,8 @@
     "completedListPage": {
         "search": "Instance Search",
         "title": "Completed Instances",
-        "warning": "No more completed instances."
+        "warning": "All items have been loaded.",
+        "noSearchResults": "No search results found."
     },
     "filterConfigLabel": {
         "period": "Period Setting",

@@ -1,8 +1,6 @@
 <template>
     <div>
-        <v-row class="ma-0 pa-0"
-            style="height: calc(100vh - 260px);"
-        >
+        <v-row class="ma-0 pa-0 form-definition-chat-box">
             <v-col v-if="type === 'edit'"
                 class="pa-0 pl-10 overflow-y-auto"
                 style="height: calc(100vh - 260px);"
@@ -43,7 +41,7 @@
             <v-col v-if="!isMobile && type != 'preview'"
                 :class="type == 'simulation' ? '':'ml-auto'"
                 :style="type == 'simulation' ? '' : 'max-width: 250px; height: calc(100vh - 260px) !important; overflow: auto;'"
-                class="pa-0"
+                class="pa-0 form-definition-simulation-chat-box"
             >
                 <Chat :chatInfo="chatInfo"
                     :messages="messages"

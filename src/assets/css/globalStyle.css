@@ -637,12 +637,51 @@ hr {
     flex-direction: column;
     height: 100%
 }
+.feedback-form {
+    position: fixed;
+    right: 36px;
+    bottom: 16px;
+    width: 400px;
+    z-index: 999;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    background-color: white;
+    transition: all 0.3s ease;
+    height: calc(100vh - 250px);
+} 
 
 .feedback-form .form-definition-box,
 .feedback-form .form-definition-chat-box {
     display: flex !important;
     flex-direction: column !important;
     height: 100% !important;
+}
+.work-item-form-btn-box {
+    position: absolute;
+    z-index: 9999;
+}
+
+.work-item-form-btn-box-pc {
+    position: absolute;
+    z-index: 9999;
+    top: 70px;
+    right: 36px;
+}
+
+.work-item-form-btn-box-mobile {
+    position: absolute;
+    z-index: 9999;
+    top: 86px;
+    right: 16px;
+}
+.feedback-form .form-definition-simulation-chat-box {
+    height: calc(100vh - 300px);
+}
+
+.form-definition-chat-box {
+    height: calc(100vh - 260px);
+}
+.feedback-form .chat-view-box-col {
+    height: 100%;
 }
 
 .chat-info-view-wrapper {

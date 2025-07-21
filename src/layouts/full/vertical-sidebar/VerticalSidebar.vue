@@ -113,7 +113,7 @@
                             <div v-if="!item.icon" style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
                                 {{ $t(item.title) }}
                             </div>
-                            <div v-else>
+                            <div v-else-if="item.disable">
                                 <v-tooltip location="bottom" :text="$t(item.title)">
                                     <template v-slot:activator="{ props }">
                                         <v-btn
@@ -123,7 +123,7 @@
                                             class="text-medium-emphasis cp-menu"
                                             density="comfortable"
                                         >
-                                            <Icons :icon="item.icon" :size="item.size ? item.size : 20" />   
+                                            <Icons :icon="item.icon" :size="item.size ? item.size : 20" />
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
@@ -358,7 +358,7 @@ export default {
                     this.definitionList = [];
                 }
             }
-        });
+                });
     },
     methods: {
         updateNotiCount(count) {
@@ -475,6 +475,29 @@ export default {
                         item.disable = false;
                     }
                 });
+            }
+            
+            // 완료된 인스턴스가 있는지 직접 확인
+            this.checkCompletedInstances();
+        },
+        async checkCompletedInstances() {
+            try {
+                // COMPLETED 상태의 인스턴스가 있는지 직접 확인
+                const completedList = await backend.getInstanceListByStatus(['COMPLETED'], {
+                    range: { from: 0, to: 0 } // 1개만 가져와서 존재 여부만 확인
+                });
+                
+                const hasCompleted = completedList && completedList.length > 0;
+                
+                // 버튼 상태 즉시 업데이트
+                if (this.instanceItem && this.instanceItem.length > 1) {
+                    this.instanceItem[1].disable = hasCompleted;
+                }
+            } catch (error) {
+                // 오류 시 기본적으로 숨김
+                if (this.instanceItem && this.instanceItem.length > 1) {
+                    this.instanceItem[1].disable = false;
+                }
             }
         },
         openCompletedList(){
