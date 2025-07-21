@@ -70,7 +70,7 @@
         height: 18px;
         width: 18px;
         z-index: 10;
-        border: 2px solid rgba(var(--v-theme-success));
+        border: 2px solid rgba(var(--v-theme-primary));
         border-radius: 70px;
         animation: heartbit 1s ease-out;
         -moz-animation: heartbit 1s ease-out;
@@ -88,7 +88,7 @@
         position: absolute;
         right: 5px;
         top: 2px;
-        background-color:rgba(var(--v-theme-success));
+        background-color: rgba(var(--v-theme-primary));
         position: absolute;
     }
 

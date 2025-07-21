@@ -1,5 +1,9 @@
 <template>
-    <v-card elevation="10" v-if="currentComponent" :key="updatedKey"  :style="isMobile ? 'margin-top: 10px;' : ''">
+    <v-card v-if="currentComponent"
+        class="work-item-top-box"
+        elevation="10" 
+        :key="updatedKey"
+    >
         <div class="pa-2 pb-0 pl-4 align-center">
             <div class="d-flex align-center"
                 :style="isMobile ? 'display: block !important;' : ''"
@@ -162,7 +166,7 @@
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
-                                        <component
+                                        <component :class="mode == 'ProcessGPT' && isMobile ? 'work-item-activity-box' : ''"
                                             :is="'work-history-' + mode"
                                             :messages="messages"
                                             :isCompleted="isCompleted"

@@ -5,7 +5,7 @@
             <v-card flat>
                 <v-card-item>
                     <h5 class="text-h5 mb-4">MCP Servers</h5>
-                    
+
                     <v-list>
                         <v-list-item
                             v-for="(server, key) in mcpServers"
@@ -14,30 +14,20 @@
                             :class="{ 'bg-grey-lighten-4': editingKey === key }"
                         >
                             <template v-slot:prepend>
-                                <v-icon
-                                    :icon="getServerIcon(server)"
-                                    :color="getServerColor(server)"
-                                    size="24"
-                                ></v-icon>
+                                <v-icon :icon="getServerIcon(server)" :color="getServerColor(server)" size="24"></v-icon>
                             </template>
-                            
+
                             <v-list-item-title class="font-weight-medium">
                                 {{ formatServerName(key) }}
                             </v-list-item-title>
-                            
+
                             <v-list-item-subtitle class="text-caption">
                                 {{ getServerDescription(server) }}
                             </v-list-item-subtitle>
-                            
+
                             <template v-slot:append>
                                 <div class="d-flex align-center">
-                                    <v-btn
-                                        icon="mdi-pencil"
-                                        variant="text"
-                                        size="small"
-                                        class="mr-2"
-                                        @click.stop="editJson(key)"
-                                    ></v-btn>
+                                    <v-btn icon="mdi-pencil" variant="text" size="small" class="mr-2" @click.stop="editJson(key)"></v-btn>
                                     <v-switch
                                         :model-value="server.enabled"
                                         color="primary"
@@ -48,15 +38,13 @@
                                 </div>
                             </template>
                         </v-list-item>
-                        
+
                         <v-list-item class="mt-4" @click="addNewMCP">
                             <template v-slot:prepend>
                                 <v-icon icon="mdi-plus" color="primary" size="24"></v-icon>
                             </template>
-                            
-                            <v-list-item-title class="font-weight-medium text-primary">
-                                새 MCP 서버 추가
-                            </v-list-item-title>
+
+                            <v-list-item-title class="font-weight-medium text-primary"> 새 MCP 서버 추가 </v-list-item-title>
                         </v-list-item>
                     </v-list>
                 </v-card-item>
@@ -68,90 +56,47 @@
             <v-card v-if="editingKey && !isAddMode" flat>
                 <v-card-item>
                     <h5 class="text-h5 mb-3">{{ formatServerName(editingKey) }}</h5>
-                    <div style="height: 40vh;">
+                    <div style="height: 40vh">
                         <!-- <vue-monaco-editor
                             v-model:value="mcpJsonText"
                             language="json"
                             :options="MONACO_EDITOR_OPTIONS"
                             @mount="handleMount"
                         /> -->
-                        <v-textarea
-                            v-model="mcpJsonText"
-                            label="MCP JSON"
-                            rows="10"
-                        />
+                        <v-textarea v-model="mcpJsonText" label="MCP JSON" rows="10" />
                     </div>
 
                     <div class="d-flex justify-space-between pb-2">
-                        <v-btn
-                            color="error"
-                            rounded
-                            class="mr-auto"
-                            @click="deleteServer"
-                        >
-                            삭제
-                        </v-btn>
+                        <v-btn color="error" rounded class="mr-auto" @click="deleteServer"> 삭제 </v-btn>
                         <div class="d-flex align-center">
-                            <v-btn
-                                color="grey"
-                                rounded
-                                class="mr-2"
-                                @click="closeEdit"
-                            >
-                                취소
-                            </v-btn>
-                            <v-btn
-                                color="primary"
-                                rounded
-                                @click="saveServerChanges"
-                                :loading="saving"
-                            >
-                                저장
-                            </v-btn>
+                            <v-btn color="grey" rounded class="mr-2" @click="closeEdit"> 취소 </v-btn>
+                            <v-btn color="primary" rounded @click="saveServerChanges" :loading="saving"> 저장 </v-btn>
                         </div>
                     </div>
                 </v-card-item>
             </v-card>
-            
+
             <v-card v-else-if="isAddMode && !editingKey" flat>
                 <v-card-item>
                     <h5 class="text-h5 mb-3">New MCP</h5>
-                    <div style="height: 40vh;">
+                    <div style="height: 40vh">
                         <!-- <vue-monaco-editor
                             v-model:value="newJsonText"
                             language="json"
                             :options="MONACO_EDITOR_OPTIONS"
                             @mount="handleMount"
                         /> -->
-                        <v-textarea
-                            v-model="newJsonText"
-                            label="MCP JSON"
-                            rows="10"
-                        />
+                        <v-textarea v-model="newJsonText" label="MCP JSON" rows="10" />
                     </div>
 
                     <div class="d-flex justify-end pb-2">
-                        <v-btn
-                            color="grey"
-                            rounded
-                            class="mr-2"
-                            @click="closeEdit"
-                        >
-                            취소
-                        </v-btn>
-                        <v-btn
-                            color="primary"
-                            rounded
-                            @click="saveNewMCP"
-                            :loading="adding"
-                        >
-                            추가
-                        </v-btn>
+                        <v-btn color="grey" rounded class="mr-2" @click="closeEdit"> 취소 </v-btn>
+                        <v-btn color="primary" rounded @click="saveNewMCP" :loading="adding"> 추가 </v-btn>
                     </div>
                 </v-card-item>
             </v-card>
 
-            <v-card v-else elevation="10" class="d-flex align-center justify-center" style="height: 400px;">
+            <v-card v-else elevation="10" class="d-flex align-center justify-center" style="height: 400px">
                 <div class="text-center">
                     <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-server</v-icon>
                     <h6 class="text-h6 text-grey">서버를 선택하여 설정을 편집하세요</h6>
@@ -175,9 +120,9 @@
                     {{ editingKey ? '저장' : '추가' }}
                 </v-btn>
             </v-toolbar>
-            
+
             <v-card-text class="pa-4">
-                <div style="height: 40vh;">
+                <div style="height: 40vh">
                     <!-- <vue-monaco-editor
                         v-if="editingKey"
                         v-model:value="mcpJsonText"
@@ -192,18 +137,8 @@
                         :options="MONACO_EDITOR_OPTIONS"
                         @mount="handleMount"
                     /> -->
-                    <v-textarea
-                        v-if="editingKey"
-                        v-model="mcpJsonText"
-                        label="MCP JSON"
-                        rows="10"
-                    />
-                    <v-textarea
-                        v-else
-                        v-model="newJsonText"
-                        label="MCP JSON"
-                        rows="10"
-                    />
+                    <v-textarea v-if="editingKey" v-model="mcpJsonText" label="MCP JSON" rows="10" />
+                    <v-textarea v-else v-model="newJsonText" label="MCP JSON" rows="10" />
                 </div>
             </v-card-text>
         </v-card>
@@ -234,17 +169,22 @@ export default {
         await this.loadData();
     },
     methods: {
+        async getMCPLists() {
+            console.log('getMCPLists');
+            const mcpLists = await backend.getMCPLists();
+            this.mcpLists = mcpLists;
+        },
         async loadData() {
             const configuredData = await backend.getMCPByTenant();
             if (configuredData && configuredData.mcpServers) {
-                Object.keys(configuredData.mcpServers).forEach(key => {
+                Object.keys(configuredData.mcpServers).forEach((key) => {
                     if (configuredData.mcpServers[key].enabled === undefined) {
                         configuredData.mcpServers[key].enabled = true;
                     }
                 });
                 this.mcpServers = configuredData.mcpServers;
             } else if (configuredData) {
-                Object.keys(configuredData).forEach(key => {
+                Object.keys(configuredData).forEach((key) => {
                     if (configuredData[key].enabled === undefined) {
                         configuredData[key].enabled = true;
                     }
@@ -260,7 +200,7 @@ export default {
                 mcpServers: {
                     [serverKey]: server
                 }
-            }
+            };
             this.mcpJsonText = JSON.stringify(jsonData);
 
             if (window.innerWidth < 1024) {
@@ -273,9 +213,9 @@ export default {
             this.selectedToolToAdd = null;
             this.isAddMode = true;
 
-            const newJson = { mcpServers: {} }
+            const newJson = { mcpServers: {} };
             this.newJsonText = JSON.stringify(newJson);
-            
+
             if (window.innerWidth < 1024) {
                 this.editDialog = true;
             }
@@ -298,7 +238,7 @@ export default {
         },
         async saveServerChanges() {
             if (!this.editingKey) return;
-            
+
             this.saving = true;
             try {
                 let parsedJson = {};
@@ -307,27 +247,31 @@ export default {
                 } catch (e) {
                     return;
                 }
-                
+                console.log(parsedJson);
+                console.log(parsedJson.mcpServers);
                 const updatedServer = {
+                    ...parsedJson.mcpServers[this.editingKey],
                     command: parsedJson.command || '',
                     args: parsedJson.args || [],
                     transport: parsedJson.transport || 'stdio',
                     enabled: parsedJson.enabled !== undefined ? parsedJson.enabled : true
                 };
-                
+
                 if (parsedJson.env) {
                     updatedServer.env = parsedJson.env;
                 }
-                
+
+                console.log(updatedServer);
+
                 const updatedServers = {
                     ...JSON.parse(JSON.stringify(this.mcpServers)),
                     [this.editingKey]: updatedServer
                 };
-                
+
                 const dataToSave = {
                     mcpServers: updatedServers
                 };
-                
+
                 await backend.setMCPByTenant(dataToSave);
                 this.mcpServers = updatedServers;
                 this.closeEdit();
@@ -339,7 +283,7 @@ export default {
         },
         async deleteServer() {
             if (!this.editingKey) return;
-            
+
             try {
                 const updatedServers = { ...this.mcpServers };
                 delete updatedServers[this.editingKey];
@@ -354,9 +298,10 @@ export default {
             }
         },
         formatServerName(key) {
-            return key.split('-').map(word => 
-                word.charAt(0).toUpperCase() + word.slice(1)
-            ).join(' ');
+            return key
+                .split('-')
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
         },
         getServerIcon(server) {
             if (server.command === 'npx') return 'mdi-npm';
@@ -381,7 +326,7 @@ export default {
         },
         async saveNewMCP() {
             if (!this.newJsonText.trim()) return;
-            
+
             this.adding = true;
             try {
                 let parsedJson = {};
@@ -399,18 +344,19 @@ export default {
                 } else {
                     serverKey = `custom-server-${Date.now()}`;
                 }
-                
+
                 const newServer = {
+                    ...parsedJson,
                     command: mcpServers[serverKey].command || '',
                     args: mcpServers[serverKey].args || [],
                     transport: mcpServers[serverKey].transport || 'stdio',
                     enabled: mcpServers[serverKey].enabled !== undefined ? mcpServers[serverKey].enabled : true
                 };
-                
+
                 if (mcpServers[serverKey].env) {
                     newServer.env = mcpServers[serverKey].env;
                 }
-                
+
                 const updatedServers = {
                     ...this.mcpServers,
                     [serverKey]: newServer

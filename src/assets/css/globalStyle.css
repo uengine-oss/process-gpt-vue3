@@ -617,6 +617,10 @@ hr {
     position: relative;
 }
 
+.work-item-activity-box .chat-view-box {
+    height: calc(100vh - 310px) !important
+}
+
 .process-consulting-ai-first-screen .chat-view-box-col {
     max-height: calc(100vh - 450px) !important;   /* shrink 허용! */
     overflow-y: auto;
