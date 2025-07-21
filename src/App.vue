@@ -14,7 +14,7 @@
             :color="snackbarColor"
             elevation="24"
             location="top"
-        >{{ snackbarMessage }}
+        ><span v-html="snackbarMessage"></span>
             <v-btn v-if="snackbarMessageDetail" variant="plain" @click="show = !show">
                 {{ show ? $t('App.view') : $t('App.view') }}
             </v-btn>
@@ -65,7 +65,8 @@ export default {
         notificationsWatched: false,
         currentChatRoomId: null,
         notificationChannel: null,
-        backend: null
+        backend: null,
+        clickCount: 0
     }),
     async created() {
         window.$app_ = this;
@@ -151,9 +152,17 @@ export default {
     },
     methods: {
         closeSnackbarOnEvent() {
-            // 클릭 이벤트 발생 시 스낵바 닫기
+            // 스낵바가 열려있을 때만 클릭 카운트
             if (this.snackbar) {
-                this.snackbar = false;
+                this.clickCount++;
+                console.log('스낵바 외부 클릭 감지:', this.clickCount, '번째');
+                
+                // 2번째 클릭에서 스낵바 닫기
+                if (this.clickCount >= 2) {
+                    this.snackbar = false;
+                    this.clickCount = 0; // 카운터 리셋
+                    console.log('스낵바 닫힘');
+                }
             }
         },
         showNotifications(notification){
@@ -229,6 +238,7 @@ export default {
                     window.$app_.snackbarColor = 'success';
                     window.$app_.snackbar = true;
                     window.$app_.snackbarSuccessStatus = true;
+                    window.$app_.clickCount = 0; // 스낵바 표시 시 클릭 카운터 리셋
                 }
             } catch (e) {
                 if (options && options.onFail) {
@@ -239,6 +249,7 @@ export default {
                     window.$app_.snackbarColor = 'error';
                     window.$app_.snackbar = true;
                     window.$app_.snackbarSuccessStatus = false;
+                    window.$app_.clickCount = 0; // 스낵바 표시 시 클릭 카운터 리셋
                 } else {
                     let errorMessage = e.message;
                     let currentException = e;
@@ -252,6 +263,7 @@ export default {
                         window.$app_.snackbarColor = 'error';
                         window.$app_.snackbar = true;
                         window.$app_.snackbarSuccessStatus = false;
+                        window.$app_.clickCount = 0; // 스낵바 표시 시 클릭 카운터 리셋
                         if (e.response && e.response.data && e.response.data.message) {
                             window.$app_.snackbarMessageDetail = e.response.data.message;
                         }
