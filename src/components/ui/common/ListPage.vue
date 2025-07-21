@@ -1,144 +1,136 @@
 <template>
     <div>
-      <!-- 헤더 -->
-      <v-row class="ma-0 pa-0">
-          <!-- 타이틀 -->
-          <v-col style="max-width: fit-content;" class="mr-5 pa-4 pb-0">
-            <div class="text-h4">{{ $t('completedListPage.title') }}</div>
-          </v-col>
+      <!-- 타이틀 -->
+      <div class="text-h4 pa-4">{{ $t('completedListPage.title') }}</div>
+      <!-- 검색 및 필터 -->
+      <v-row class="ma-0 pa-0 pl-4 align-center">
+        <!-- 검색 -->
+        <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5" style="background-color: #fff;">
+            <Icons :icon="'magnifer-linear'" :size="22" />
+            <v-text-field 
+              v-if="searchConfig.show"
+              v-model="searchWord" 
+              :loading="loading"
+              variant="plain" 
+              density="compact"
+              class="position-relative pt-0 ml-3 custom-placeholer-color" 
+              :placeholder="$t('completedListPage.search')"
+              single-line 
+              hide-details
+              dense
+              @click:append-inner="search()"
+            ></v-text-field>
+        </div>
 
-          <!-- 검색 및 필터 -->
-          <v-col style="padding-bottom: 0;">
-            <v-row class="ma-0 pa-0 align-center">
-              <!-- 검색 -->
-              <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5" style="background-color: #fff;">
-                  <Icons :icon="'magnifer-linear'" :size="22" />
-                  <v-text-field 
-                    v-if="searchConfig.show"
-                    v-model="searchWord" 
-                    :loading="loading"
-                    variant="plain" 
-                    density="compact"
-                    class="position-relative pt-0 ml-3 custom-placeholer-color" 
-                    :placeholder="$t('completedListPage.search')"
-                    single-line 
-                    hide-details
-                    dense
-                    @click:append-inner="search()"
-                  ></v-text-field>
-              </div>
+        <!-- 필터 -->
+        <v-menu
+          v-model="showFilter"
+          :close-on-content-click="false"
+          location="end"
+        >
+          <template v-slot:activator="{ props }">
+            <!-- <v-icon v-bind="props" size="large">{{ isFilter ? 'mdi-filter' : 'mdi-filter-outline' }}</v-icon> -->
+            <Icons 
+              v-bind="props" 
+              :icon="isFilter ? 'filter-fill' : 'filter'" 
+              :size="24" 
+              class="ml-1"
+              style="cursor: pointer;" 
+            />
+          </template>
 
-              <!-- 필터 -->
-              <v-menu
-                v-model="showFilter"
-                :close-on-content-click="false"
-                location="end"
-              >
-                <template v-slot:activator="{ props }">
-                  <!-- <v-icon v-bind="props" size="large">{{ isFilter ? 'mdi-filter' : 'mdi-filter-outline' }}</v-icon> -->
-                  <Icons 
-                    v-bind="props" 
-                    :icon="isFilter ? 'filter-fill' : 'filter'" 
-                    :size="24" 
-                    class="ml-1"
-                    style="cursor: pointer;" 
-                  />
-                </template>
+          <v-card min-width="300" v-if="!isLoading">
+            <v-list>
+              <v-list-item v-if="copyFilter.period">
+                <v-card flat>
+                  <v-card-title>{{ $t('filterConfigLabel.period') }}</v-card-title>
+                  <v-divider></v-divider>
+                    <v-card-text style="margin-top: 5px; padding: 0;">
+                      <v-col>
+                        <!-- 시작일 -->
+                        <v-menu
+                          v-model="showStartFilter"
+                          :close-on-content-click="false"
+                          transition="scale-transition"
+                          location="end"
+                          offset-y
+                          min-width="290px"
+                        >
+                          <template v-slot:activator="{ props }">
+                            <v-text-field
+                              v-model="copyFilter.period.startDate"
+                              :label="$t('filterConfigLabel.startDate')"
+                              prepend-inner-icon="mdi-calendar"
+                              readonly
+                              clearable
+                              v-bind="props"
+                              @click="showStartFilter = true"
+                            ></v-text-field>
+                          </template>
+                          <v-date-picker
+                            v-model="startDateByPicker"
+                            @update:model-value="(value) => { startDateByPicker = value; showStartFilter = false; }"
+                          ></v-date-picker>
+                        </v-menu>
 
-                <v-card min-width="300" v-if="!isLoading">
-                  <v-list>
-                    <v-list-item v-if="copyFilter.period">
-                      <v-card flat>
-                        <v-card-title>{{ $t('filterConfigLabel.period') }}</v-card-title>
-                        <v-divider></v-divider>
-                          <v-card-text style="margin-top: 5px; padding: 0;">
-                            <v-col>
-                              <!-- 시작일 -->
-                              <v-menu
-                                v-model="showStartFilter"
-                                :close-on-content-click="false"
-                                transition="scale-transition"
-                                location="end"
-                                offset-y
-                                min-width="290px"
-                              >
-                                <template v-slot:activator="{ props }">
-                                  <v-text-field
-                                    v-model="copyFilter.period.startDate"
-                                    :label="$t('filterConfigLabel.startDate')"
-                                    prepend-inner-icon="mdi-calendar"
-                                    readonly
-                                    clearable
-                                    v-bind="props"
-                                    @click="showStartFilter = true"
-                                  ></v-text-field>
-                                </template>
-                                <v-date-picker
-                                  v-model="startDateByPicker"
-                                  @update:model-value="(value) => { startDateByPicker = value; showStartFilter = false; }"
-                                ></v-date-picker>
-                              </v-menu>
-
-                              <!-- 종료일 -->
-                              <v-menu
-                                v-model="showEndFilter"
-                                :close-on-content-click="false"
-                                transition="scale-transition"
-                                offset-y
-                                min-width="290px"
-                              >
-                                <template v-slot:activator="{ props }">
-                                  <v-text-field
-                                    v-model="copyFilter.period.endDate"
-                                    :label="$t('filterConfigLabel.endDate')"
-                                    prepend-inner-icon="mdi-calendar"
-                                    readonly
-                                    clearable
-                                    v-bind="props"
-                                    hide-details
-                                  ></v-text-field>
-                                </template>
-                                <v-date-picker
-                                  v-model="endDateByPicker"
-                                  @update:model-value="(value) => { endDateByPicker = value; showEndFilter = false; }"
-                                ></v-date-picker>
-                              </v-menu>
-                          </v-col>
-                        </v-card-text>
-                      </v-card>
-                    </v-list-item>
-                    <v-list-item v-if="filterConfig" v-for="key in Object.keys(filterConfig)" :key="key">
-                        <v-card flat>
-                          <v-card-title> {{ filterConfig[key].label }} </v-card-title>
-                          <v-divider></v-divider>
-                          <v-card-text style="margin-top: 10px; padding: 0;">
-                            <v-select
-                              v-model="copyFilter[key]"
-                              :label="filterConfig[key].label"
-                              :items="filterConfig[key].options"
-                              item-title="text"
-                              item-value="value"
-                              :multiple="filterConfig[key].multiple"
-                            ></v-select>
-                          </v-card-text>
-                        </v-card>
-                    </v-list-item>
-                  </v-list>
+                        <!-- 종료일 -->
+                        <v-menu
+                          v-model="showEndFilter"
+                          :close-on-content-click="false"
+                          transition="scale-transition"
+                          offset-y
+                          min-width="290px"
+                        >
+                          <template v-slot:activator="{ props }">
+                            <v-text-field
+                              v-model="copyFilter.period.endDate"
+                              :label="$t('filterConfigLabel.endDate')"
+                              prepend-inner-icon="mdi-calendar"
+                              readonly
+                              clearable
+                              v-bind="props"
+                              hide-details
+                            ></v-text-field>
+                          </template>
+                          <v-date-picker
+                            v-model="endDateByPicker"
+                            @update:model-value="(value) => { endDateByPicker = value; showEndFilter = false; }"
+                          ></v-date-picker>
+                        </v-menu>
+                    </v-col>
+                  </v-card-text>
                 </v-card>
-              </v-menu>
-            </v-row>
-          </v-col>
+              </v-list-item>
+              <v-list-item v-if="filterConfig" v-for="key in Object.keys(filterConfig)" :key="key">
+                  <v-card flat>
+                    <v-card-title> {{ filterConfig[key].label }} </v-card-title>
+                    <v-divider></v-divider>
+                    <v-card-text style="margin-top: 10px; padding: 0;">
+                      <v-select
+                        v-model="copyFilter[key]"
+                        :label="filterConfig[key].label"
+                        :items="filterConfig[key].options"
+                        item-title="text"
+                        item-value="value"
+                        :multiple="filterConfig[key].multiple"
+                      ></v-select>
+                    </v-card-text>
+                  </v-card>
+              </v-list-item>
+            </v-list>
+          </v-card>
+        </v-menu>
       </v-row>
-   
+      <v-divider class="my-2 mb-0"></v-divider>
       <v-infinite-scroll @load="load">
         <template v-for="item in items" :key="item">
-          <div class="pa-4 pt-2 pb-0">
+          <div class="pa-4 pt-0 pb-0">
             <slot name="item-row" :item="item"></slot>
           </div>
         </template>
         <template v-slot:empty>
           <div class="pa-2" style="width: 100%;">
-            <v-alert type="warning" class="pa-4">{{ $t('completedListPage.warning') }}</v-alert>
+            <v-alert type="warning" class="pa-4" color="grey-lighten-2" text-color="grey-darken-3">{{ $t('completedListPage.warning') }}</v-alert>
           </div>
         </template>
       </v-infinite-scroll>
