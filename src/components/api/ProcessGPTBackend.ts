@@ -162,6 +162,7 @@ class ProcessGPTBackend implements Backend {
                     match: {
                         proc_def_id: options.proc_def_id,
                         activity_id: options.activity_id,
+                        tenant_id: window.$tenantName
                     }
                 });
                 if(formDef) {
@@ -235,7 +236,18 @@ class ProcessGPTBackend implements Backend {
                 // 폼 정보를 불러오기 위해서
                 if(options.type === "form") {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "#")
-                    const data = await storage.getString(`form_def/${defId}`, { key: 'id', column: 'html' });
+                    if (!options.match) {
+                        options.match = {
+                            id: defId,
+                            tenant_id: window.$tenantName
+                        }
+                    } else {
+                        options.match.tenant_id = window.$tenantName
+                    }
+                    const data = await storage.getString(`form_def`, {
+                        match: options.match,
+                        column: 'html'
+                    });
                     if(!data) {
                         return null;
                     }

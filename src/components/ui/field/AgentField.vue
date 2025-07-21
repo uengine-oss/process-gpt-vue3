@@ -399,11 +399,11 @@ export default {
             const jsonData = await backend.getMCPByTenant();
             if (jsonData) {
                 this.mcpTools = jsonData.mcpServers;
-                const tools = Object.keys(jsonData.mcpServers).filter(tool => jsonData.mcpServers[tool].enabled);
+                const tools = Object.keys(jsonData.mcpServers);
                 this.toolList = tools;
             } else {
                 alert('MCP 설정이 없습니다.');
-                this.$router.push('/account/settings');
+                this.$router.push('/account-settings');
             }
         },
         async fetchAgentData() {

@@ -66,6 +66,7 @@
                     @changeElement="changeElement"
                     @onLoaded="onLoadBpmn()"
                     @update:processVariables="(val) => (processVariables = val)"
+                    @update:isAIGenerated="isAIGenerated = false"
                 ></process-definition>
                 <process-definition-version-dialog
                     :process="processDefinition"
@@ -1120,7 +1121,6 @@ export default {
                             if(!this.processDefinition) this.processDefinition = {};
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
                             this.bpmn = this.createBpmnXml(unknown, this.isHorizontal);
-                            this.isAIGenerated = true;
                             this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
                             this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
                             this.projectName = unknown.processDefinitionName
@@ -1604,7 +1604,8 @@ export default {
                     this.beforeStartGenerate()
                 }
             }
-
+            this.isAIGenerated = true;
+            this.definitionChangeCount++;
         },
         generateElement(name, x, y, width, height, id, canvas) {
             var me = this;

@@ -8,7 +8,7 @@
                 </div>
                 <div v-else 
                     class="text-h4 font-weight-semibold"
-                >{{ definition.name }}
+                >{{ processDefinition.processDefinitionName }}
                 </div>
                 <v-spacer v-if="!isMobile"></v-spacer>
                 <div v-if="isMobile" class="d-flex align-center mt-2 ml-auto">
@@ -122,7 +122,7 @@ export default {
         },
     },
     data: () => ({
-        definition: null,
+        definition: {},
         workItem: null,
         roleMappings: [],
         isMobile: false,
@@ -140,11 +140,11 @@ export default {
     },
     methods: {
         findStartActivity() {
-            const startSequence = this.definition.sequences.find(sequence => sequence.source === 'start_event');
+            const startSequence = this.processDefinition.sequences.find(sequence => sequence.source === 'start_event');
             if (startSequence) {
-                return this.definition.activities.find(activity => activity.id === startSequence.target);
+                return this.processDefinition.activities.find(activity => activity.id === startSequence.target);
             }
-            return this.definition.activities[0];
+            return this.processDefinition.activities[0];
         },
         async init() {
             var me = this;
@@ -189,12 +189,12 @@ export default {
                 }
 
                 if(startActivity.tool && startActivity.tool.includes("formHandler:definition-map_")){
-                    startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.definition.id + '_')
+                    startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.processDefinition.id + '_')
                 }
 
                 me.workItem = {
                     worklist: {
-                        defId: me.definition.id,
+                        defId: me.processDefinition.id,
                         role: startActivity.role,
                         endpoint: "",
                         instId: "",
@@ -221,8 +221,8 @@ export default {
                 }
                 me.renderKey++;
 
-                let activities = me.definition.activities.filter((activity) => activity.agentMode && activity.agentMode != 'none');
-                const roles = me.definition.roles;
+                let activities = me.processDefinition.activities.filter((activity) => activity.agentMode && activity.agentMode != 'none');
+                const roles = me.processDefinition.roles;
                 let hasDefaultRole = false;
                 me.roleMappings = roles.map((role) => {
                     if(role.default && role.default.length > 0) {
@@ -238,7 +238,7 @@ export default {
                 });
 
                 if (!hasDefaultRole) {
-                    const roleBindings = await backend.bindRole(me.definition.roles, me.definition.id);
+                    const roleBindings = await backend.bindRole(me.processDefinition.roles, me.processDefinition.id);
                     if (roleBindings && roleBindings.length > 0) {
                         roleBindings.forEach((roleBinding) => {
                             let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
@@ -358,7 +358,7 @@ export default {
         handleError(error) {
             var me = this;
             me.$try({}, null, {
-                errorMsg: `${me.definition.processDefinitionName} 실행 중 오류가 발생했습니다: ${error}`
+                errorMsg: `${me.processDefinition.processDefinitionName} 실행 중 오류가 발생했습니다: ${error}`
             })
         }
     }
