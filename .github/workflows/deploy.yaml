@@ -59,10 +59,10 @@ jobs:
           cd gitops-repo
           
           # Update frontend deployment image
-          yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i frontend-deployment.yaml
+          yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i environments/prod/frontend-deployment.yaml
           
           # Update any other deployments that use the same image
-          # yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i frontend-deployment.yaml
+          # yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i environments/staging/frontend-deployment.yaml
           
           echo "Updated image to: $IMAGE_NAME"
 
@@ -76,18 +76,61 @@ jobs:
           git commit -m "Update frontend image to $IMAGE_TAG" || exit 0
           git push
 
-      - name: Create deployment comment
+      - name: Create deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image** | \`${{ env.IMAGE_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tag** | \`${{ env.IMAGE_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | [\`${{ github.sha }}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **GitOps Repo** | [process-gpt-k8s](https://github.com/uengine-oss/process-gpt-k8s) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ ArgoCD will automatically sync the changes from the GitOps repository." >> $GITHUB_STEP_SUMMARY
+
+      - name: Create deployment comment (with retry)
+        continue-on-error: true
         uses: actions/github-script@v6
         with:
+          retries: 3
+          retry-exempt-status-codes: 400,401,403,404,422
           script: |
-            github.rest.repos.createCommitComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.sha,
-              body: `🚀 **Deployment Started**
-              
-              **Image:** \`${{ env.IMAGE_NAME }}\`
-              **Tag:** \`${{ env.IMAGE_TAG }}\`
-              
-              ArgoCD will automatically sync the changes from [process-gpt-k8s](https://github.com/uengine-oss/process-gpt-k8s)`
-            })
+            const maxRetries = 3;
+            let attempt = 0;
+            
+            while (attempt < maxRetries) {
+              try {
+                const commentBody = [
+                  '🚀 **Deployment Started**',
+                  '',
+                  '**Image:** `${{ env.IMAGE_NAME }}`',
+                  '**Tag:** `${{ env.IMAGE_TAG }}`',
+                  '',
+                  'ArgoCD will automatically sync the changes from [process-gpt-k8s](https://github.com/uengine-oss/process-gpt-k8s)',
+                  '',
+                  '---',
+                  '*Deployed via GitHub Actions*'
+                ].join('\n');
+                
+                await github.rest.repos.createCommitComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  commit_sha: context.sha,
+                  body: commentBody
+                });
+                console.log('Successfully created commit comment');
+                break;
+              } catch (error) {
+                attempt++;
+                console.log(`Attempt ${attempt} failed:`, error.message);
+                
+                if (attempt >= maxRetries) {
+                  console.log('All attempts failed, but deployment was successful');
+                  core.warning('Failed to create commit comment, but deployment completed successfully');
+                } else {
+                  console.log(`Retrying in ${attempt * 2} seconds...`);
+                  await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+                }
+              }
+            }
