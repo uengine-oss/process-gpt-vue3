@@ -962,7 +962,7 @@
     "auth": {
         "emailRateLimitExceeded": "Please change the SMTP settings of the connected Supabase to adjust the email sending limit or try again later.\n\nYou can find the SMTP settings in the Supabase dashboard under Project Settings > Authentication > SMTP Settings.",
         "userAlreadyRegistered": "This email is already registered.",
-        "verificationEmailSent": "A verification email has been sent. Please check your email and log in again.",
+        "verificationEmailSent": "A verification email has been sent. Please check your email and log in again.<br>If you do not see the email, please check your spam folder.",
         "registrationSuccess": "Registration successful.",
         "emailSent": "An email has been sent.",
         "passwordUpdated": "Your password has been updated."
@@ -1298,7 +1298,8 @@
     "completedListPage": {
         "search": "Instance Search",
         "title": "Completed Instances",
-        "warning": "No more data."
+        "warning": "All items have been loaded.",
+        "noSearchResults": "No search results found."
     },
     "filterConfigLabel": {
         "period": "Period Setting",

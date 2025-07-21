@@ -7,7 +7,7 @@ export default class FormDesignGenerator extends AIGenerator{
         super(client, language);
 
         // 유효한 컴포넌트 이름 목록을 형성해서 향후 유효성 검증시에 시용
-        this.avaliableComponentTagNames = promptSnippetData.componentInfos.map((componentInfo) => componentInfo.tag.match(/\<\/(.*)\>/)[1].toLowerCase())
+        this.availableComponentTagNames = promptSnippetData.componentInfos.map((componentInfo) => componentInfo.tag.match(/\<\/(.*)\>/)[1].toLowerCase())
         
         // 컨테이너 조합, 컴포넌트 정보, 예시를 프롬프트에 적용하기 위한 문자열을 생성하기 위해서
         this.containerSpaceSetsPromptStr = 
@@ -295,6 +295,9 @@ ${userInputs.request ? `\n\n# Additional User Request
 
 
     createMessages() {
+      if(!this.userInputs && this.client.userInputs)  {
+        this.userInputs = this.client.userInputs
+      }
       return null
     }
 

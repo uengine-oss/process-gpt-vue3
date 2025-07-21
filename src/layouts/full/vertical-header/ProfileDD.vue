@@ -24,7 +24,7 @@ onMounted(() => {
         <template v-slot:activator="{ props }">
             <router-link class="custom-hover-primary text-left px-0 cursor-pointer text-decoration-none" variant="text" :to="`/account-settings`">
                 <div class="d-flex align-center">
-                    <v-btn style="margin-left: -10px;" icon flat size="small" v-bind="props">
+                    <v-btn style="margin-left: -4px;" icon flat size="small" v-bind="props">
                         <SettingsIcon />
                     </v-btn>
                 </div>

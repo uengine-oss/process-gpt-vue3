@@ -162,6 +162,7 @@ class ProcessGPTBackend implements Backend {
                     match: {
                         proc_def_id: options.proc_def_id,
                         activity_id: options.activity_id,
+                        tenant_id: window.$tenantName
                     }
                 });
                 if(formDef) {
@@ -235,7 +236,18 @@ class ProcessGPTBackend implements Backend {
                 // 폼 정보를 불러오기 위해서
                 if(options.type === "form") {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "#")
-                    const data = await storage.getString(`form_def/${defId}`, { key: 'id', column: 'html' });
+                    if (!options.match) {
+                        options.match = {
+                            id: defId,
+                            tenant_id: window.$tenantName
+                        }
+                    } else {
+                        options.match.tenant_id = window.$tenantName
+                    }
+                    const data = await storage.getString(`form_def`, {
+                        match: options.match,
+                        column: 'html'
+                    });
                     if(!data) {
                         return null;
                     }
@@ -3362,7 +3374,96 @@ class ProcessGPTBackend implements Backend {
         }
         return await response.json();
       }
-      
+
+    async getEnvByTenant() {
+        try {
+            const configmaps = await axios.get('https://dev.process-gpt.io/mcp/configmaps');
+            return configmaps.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getSecretByTenant() {
+        try {
+            const secret = await axios.get('https://dev.process-gpt.io/mcp/secrets');
+            return secret.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteEnvByTenant(name: string) {
+        try {
+            const response = await axios.delete(`https://dev.process-gpt.io/mcp/configmaps?name=${name}`);
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteSecretByTenant(name: string) {
+        try {
+            const response = await axios.delete(`https://dev.process-gpt.io/mcp/secrets?name=${name}`);
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async createEnvByTenant(data: any) {
+        try {
+            const response = await axios.post(`https://dev.process-gpt.io/mcp/configmaps`, data);
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async createSecretByTenant(data: any) {
+        try {
+            const response = await axios.post(`https://dev.process-gpt.io/mcp/secrets`, data);
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async updateEnvByTenant(data: any) {
+        try {
+            const response = await axios.put(`https://dev.process-gpt.io/mcp/configmaps`, data);
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async updateSecretByTenant(data: any) {
+        try {
+            const response = await axios.put(`https://dev.process-gpt.io/mcp/secrets`, data);
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getMCPLists(){
+        try {
+            const response = await axios.get('https://dev.process-gpt.io/mcp/tools');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+
+    }
 }
 
 export default ProcessGPTBackend;

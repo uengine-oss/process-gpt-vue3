@@ -183,6 +183,7 @@ create table if not exists public.todolist (
     project_id uuid null,
     draft jsonb null,
     agent_mode text null,
+    agent_orch text null check (agent_orch in ('crewai', 'openai')),
     feedback jsonb null,
     draft_status text null,
     updated_at timestamp with time zone default now(),

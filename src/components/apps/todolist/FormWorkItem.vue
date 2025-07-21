@@ -5,7 +5,7 @@
             <div v-if="(!isCompleted && isOwnWorkItem) || isSimulate == 'true'" class="from-work-item-pc mr-2">
                 <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded variant="flat">중간 저장</v-btn>
                 <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
-                    class="bouncing-arrow-horizontal" 
+                    class="bouncing-arrow-horizontal submit-complete-pc" 
                     color="primary" 
                     size="large"
                 >
@@ -57,12 +57,28 @@
 
         <v-card flat>
             <v-card-text class="pa-4 pt-3">
-                <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted"></DynamicForm>
-                <!-- <div v-if="!isCompleted" class="mb-4">
-                    <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
-                    <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
-                </div> -->
-                <Checkpoints v-if="workItem.activity.checkpoints.length > 0" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
+                <!-- 등록된 폼 정보가 없을 때 표시되는 메시지 -->
+                <div v-if="(!html || html === 'null') && Object.keys(formData).length === 0 && workItem.activity.checkpoints.length === 0" 
+                     class="text-center py-8">
+                    
+                    <v-icon size="64" color="grey-lighten-1" class="mb-4">
+                        mdi-file-document-outline
+                    </v-icon>
+                    <h3 class="text-h6 text-grey-darken-1 mb-2">등록된 폼 정보가 없습니다</h3>
+                    <p class="text-body-2 text-grey">
+                        현재 작업에 대한 폼 데이터를 찾을 수 없습니다.
+                    </p>
+                </div>
+                
+                <!-- 기존 폼 컨텐츠 -->
+                <div v-else>
+                    <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted"></DynamicForm>
+                    <!-- <div v-if="!isCompleted" class="mb-4">
+                        <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
+                        <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
+                    </div> -->
+                    <Checkpoints v-if="workItem.activity.checkpoints.length > 0" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
+                </div>
             </v-card-text>
         </v-card>
         <v-dialog v-model="delegateTaskDialog" width="500">

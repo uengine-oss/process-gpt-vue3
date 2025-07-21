@@ -26,7 +26,7 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
     private static final Logger logger = LoggerFactory.getLogger(ForwardHostHeaderFilter.class);
 
     private static final String SECRET_KEY = Optional.ofNullable(System.getenv("SECRET_KEY"))
-        .orElse("super-secret-jwt-token-with-at-least-32-characters-long");
+            .orElse("super-secret-jwt-token-with-at-least-32-characters-long");
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -45,10 +45,9 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
         String subdomain = extractSubdomain(originalHost);
 
         List<String> protectedPaths = Arrays.asList(
-            "/execution/(?!set-tenant|complete|vision-complete).*",
-            "/autonomous/.*",
-            "/memento/.*"
-        );
+                "/execution/(?!set-tenant|complete|vision-complete).*",
+                "/autonomous/.*",
+                "/memento/.*");
 
         boolean requiresAuth = false;
 
@@ -68,9 +67,10 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
             }
         }
 
+        // 안전한 헤더 수정 방식 사용
         ServerHttpRequest updatedRequest = request.mutate()
-            .header("X-Forwarded-Host", originalHost)
-            .build();
+                .header("X-Forwarded-Host", originalHost)
+                .build();
 
         return chain.filter(exchange.mutate().request(updatedRequest).build());
     }
@@ -78,13 +78,24 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
     private boolean isValidToken(String token, String expectedSubdomain) {
         try {
             Claims claims = Jwts.parser()
-                .setSigningKey(SECRET_KEY.getBytes(StandardCharsets.UTF_8))
-                .parseClaimsJws(token)
-                .getBody();
+                    .setSigningKey(SECRET_KEY.getBytes(StandardCharsets.UTF_8))
+                    .parseClaimsJws(token)
+                    .getBody();
 
             @SuppressWarnings("unchecked")
             Map<String, Object> appMetadata = claims.get("app_metadata", Map.class);
-            String tenantId = ((Map<String, Object>) appMetadata).get("tenant_id").toString();
+            if (appMetadata == null) {
+                logger.warn("No app_metadata found in token");
+                return false;
+            }
+
+            Object tenantIdObj = appMetadata.get("tenant_id");
+            if (tenantIdObj == null) {
+                logger.warn("No tenant_id found in app_metadata");
+                return false;
+            }
+
+            String tenantId = tenantIdObj.toString();
             if (!expectedSubdomain.equals(tenantId)) {
                 logger.warn("Invalid tenant ID: expected {}, found {}", expectedSubdomain, tenantId);
                 return false;
@@ -101,6 +112,8 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
     }
 
     private String extractSubdomain(String host) {
+    
+
         String[] parts = host.split("\\.");
         if (parts.length > 2) {
             return parts[0];
