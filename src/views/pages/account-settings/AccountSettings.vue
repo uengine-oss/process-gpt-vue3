@@ -2,25 +2,18 @@
     <v-row class="justify-center">
         <!--Account Settings tabs-->
         <v-col cols="12" md="12">
-            <v-card elevation="10" >
+            <v-card elevation="10">
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
                     <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default">
-                        <v-tab value="Account">
-                            <UserCircleIcon class="mr-2" size="20"/>{{ $t('accountTab.accountSetting') }}
-                        </v-tab>
+                        <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
                         <div v-if="superAdmin">
-                            <v-tab value="ManageAccess">
-                                <UsersIcon class="mr-2" size="20"/>{{ $t('accountTab.manageAccess') }}
-                            </v-tab>
-                            <v-tab value="Drive">
-                                <BrandGoogleDriveIcon class="mr-2" size="20"/>{{ $t('accountTab.drive') }}
-                            </v-tab>
-                            <v-tab value="MCP">
-                                MCP Servers
-                            </v-tab>
+                            <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
+                            <v-tab value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
+                            <v-tab value="MCP-Servers"> MCP - Servers </v-tab>
+                            <v-tab value="MCP-Environments"> MCP - Environments </v-tab>
                             <v-tab value="ConnectionInfo">
-                                <DatabaseIcon class="mr-2" size="20"/>{{ $t('accountTab.connectionInfo') }}
+                                <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.connectionInfo') }}
                             </v-tab>
                         </div>
                         <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
@@ -28,7 +21,7 @@
                         <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
                     </v-tabs>
                 </div>
-                
+
                 <!-- 모바일: 버튼 형태 -->
                 <div v-else class="pa-2">
                     <div class="d-flex flex-wrap ga-2">
@@ -39,9 +32,9 @@
                             @click="tab = 'Account'"
                             :class="{ 'selected-tab': tab === 'Account' }"
                         >
-                            <UserCircleIcon class="mr-2" size="16"/>{{ $t('accountTab.accountSetting') }}
+                            <UserCircleIcon class="mr-2" size="16" />{{ $t('accountTab.accountSetting') }}
                         </v-btn>
-                        
+
                         <template v-if="superAdmin">
                             <v-btn
                                 variant="text"
@@ -50,9 +43,9 @@
                                 @click="tab = 'ManageAccess'"
                                 :class="{ 'selected-tab': tab === 'ManageAccess' }"
                             >
-                                <UsersIcon class="mr-2" size="16"/>{{ $t('accountTab.manageAccess') }}
+                                <UsersIcon class="mr-2" size="16" />{{ $t('accountTab.manageAccess') }}
                             </v-btn>
-                            
+
                             <v-btn
                                 variant="text"
                                 color="default"
@@ -60,19 +53,27 @@
                                 @click="tab = 'Drive'"
                                 :class="{ 'selected-tab': tab === 'Drive' }"
                             >
-                                <BrandGoogleDriveIcon class="mr-2" size="16"/>{{ $t('accountTab.drive') }}
+                                <BrandGoogleDriveIcon class="mr-2" size="16" />{{ $t('accountTab.drive') }}
                             </v-btn>
-                            
+
                             <v-btn
                                 variant="text"
                                 color="default"
                                 size="small"
-                                @click="tab = 'MCP'"
-                                :class="{ 'selected-tab': tab === 'MCP' }"
+                                @click="tab = 'MCP-Servers'"
+                                :class="{ 'selected-tab': tab === 'MCP-Servers' }"
                             >
-                                MCP Servers
+                                MCP - Servers
                             </v-btn>
-                            
+                            <v-btn
+                                variant="text"
+                                color="default"
+                                size="small"
+                                @click="tab = 'MCP-Environments'"
+                                :class="{ 'selected-tab': tab === 'MCP-Environments' }"
+                            >
+                                MCP - Environments
+                            </v-btn>
                             <v-btn
                                 variant="text"
                                 color="default"
@@ -80,12 +81,12 @@
                                 @click="tab = 'ConnectionInfo'"
                                 :class="{ 'selected-tab': tab === 'ConnectionInfo' }"
                             >
-                                <DatabaseIcon class="mr-2" size="16"/>{{ $t('accountTab.connectionInfo') }}
+                                <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.connectionInfo') }}
                             </v-btn>
                         </template>
                     </div>
                 </div>
-                
+
                 <v-divider></v-divider>
                 <v-card-text class="pa-sm-6 pa-3 pb-sm-6 pb-6">
                     <v-window v-model="tab">
@@ -96,13 +97,16 @@
                             <ManageAccessTab />
                         </v-window-item>
                         <v-window-item value="Drive">
-                            <DriveTab/>
-                        </v-window-item>
-                        <v-window-item value="MCP">
-                            <MCPTab/>
+                            <DriveTab />
                         </v-window-item>
                         <v-window-item value="ConnectionInfo">
-                            <ConnectionInfoTab/>
+                            <ConnectionInfoTab />
+                        </v-window-item>
+                        <v-window-item value="MCP-Servers">
+                            <MCPServerTab />
+                        </v-window-item>
+                        <v-window-item value="MCP-Environments">
+                            <MCPEnvSecretTab />
                         </v-window-item>
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>
@@ -127,7 +131,8 @@ import { UserCircleIcon, UsersIcon, BrandGoogleDriveIcon, DatabaseIcon } from 'v
 import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
 import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
-import MCPTab from '@/components/pages/account-settings/MCPTab.vue';
+import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
+import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
@@ -136,13 +141,14 @@ import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInf
 export default {
     components: {
         UserCircleIcon,
-        UsersIcon, 
+        UsersIcon,
         BrandGoogleDriveIcon,
         DatabaseIcon,
         AccountTab,
         ManageAccessTab,
         DriveTab,
-        MCPTab,
+        MCPServerTab,
+        MCPEnvSecretTab,
         ConnectionInfoTab
     },
     data() {
@@ -154,18 +160,17 @@ export default {
                 { value: 'ManageAccess', label: 'Manage Access' },
                 { value: 'Drive', label: 'Drive' },
                 { value: 'MCP', label: 'MCP Servers' },
-                { value: 'ConnectionInfo', label: 'Connection Info' },
+                { value: 'ConnectionInfo', label: 'Connection Info' }
             ]
-        }
+        };
     },
-    mounted() {
-    },
+    mounted() {},
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
         }
-    },
-}
+    }
+};
 </script>
 
 <style scoped>
