@@ -198,7 +198,6 @@
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-2">
                             <v-card elevation="10" class="pa-4">
-                                <!-- <BrowserAgent :html="html" :workItem="workItem" /> -->
                                 <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
                             </v-card>
                         </v-window-item>
@@ -399,7 +398,6 @@ import URLWorkItem from './URLWorkItem.vue';
 import InstanceOutput from './InstanceOutput.vue';
 import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import AgentMonitor from '@/views/markdown/AgentMonitor.vue';
-import BrowserAgent from '@/components/BrowserAgent.vue';
 
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
@@ -448,8 +446,7 @@ export default {
         FormDefinition,
         InstanceOutput,
         AgentMonitor,
-        AgentFeedback,
-        BrowserAgent
+        AgentFeedback
     },
     data: () => ({    
         workItem: null,

@@ -1370,28 +1370,28 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
-    
 
-    async watchInstanceList(callback: (payload: any) => void){
+
+    async watchInstanceList(callback: (payload: any) => void, options?: any){
         try {
+            if(!options) options = {}
+            if(!options.status) return []
+            if(options.status.includes('*')) options.status = ['NEW', 'RUNNING', 'DONE', 'PENDING', 'IN_PROGRESS']
+            let email = window.localStorage.getItem("email");
+            let filter = `status=in.(${options.status.join(',')})`
+            
             return await storage._watch({
                 channel: 'instance',
                 table: 'bpm_proc_inst',
-                // filter: "status=in.(RUNNING,NEW)"
+                filter: filter
             },(payload) => {
-                let obj = payload
-                if(payload.eventType === 'UPDATE'){
-                    if(payload.new.status == 'RUNNING'|| payload.new.status == 'NEW') {
-                        obj = {id: payload.old.proc_inst_id, value: this.returnInstanceObject(payload.new)}
-                    } else {
-                        obj = {id: payload.old.proc_inst_id, value: null}
+                if(payload.eventType === 'DELETE') {
+                    callback(payload);
+                } else {
+                    if(payload.new.participants.includes(email)) {
+                        callback(payload);
                     }
-                } else if(payload.eventType === 'INSERT'){
-                    obj = {id: payload.new.proc_inst_id, value: this.returnInstanceObject(payload.new)}
-                } else if(payload.eventType === 'DELETE'){
-                    obj = {id: payload.old.proc_inst_id, value: null}
                 }
-                callback(obj);
             });
         } catch (error) {
             //@ts-ignore
