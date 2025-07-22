@@ -59,10 +59,10 @@ jobs:
           cd gitops-repo
           
           # Update frontend deployment image
-          yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i environments/prod/frontend-deployment.yaml
+          yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i frontend-deployment.yaml
           
           # Update any other deployments that use the same image
-          # yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i environments/staging/frontend-deployment.yaml
+          # yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i frontend-deployment.yaml
           
           echo "Updated image to: $IMAGE_NAME"
 
