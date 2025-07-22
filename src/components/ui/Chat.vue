@@ -716,7 +716,6 @@
                         auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
                         @input="handleTextareaInput"
                         @paste="handlePaste"
-                        @keydown="handleMessageHistoryNavigation"
                     >
                     </v-textarea>
                     
@@ -842,7 +841,6 @@
                     auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
                     @input="handleTextareaInput"
                     @paste="handlePaste"
-                    @keydown="handleMessageHistoryNavigation"
                 >
                 </v-textarea>
                 <div class="d-flex justify-space-between align-center w-100 pl-1">
@@ -1538,9 +1536,9 @@ export default {
             }
             
             // 사용자가 직접 입력하는 경우 히스토리 인덱스 초기화
-            if (this.messageHistoryIndex !== -1 && text !== this.myMessages[this.messageHistoryIndex]?.content) {
-                this.resetMessageHistory();
-            }
+            // if (this.messageHistoryIndex !== -1 && text !== this.myMessages[this.messageHistoryIndex]?.content) {
+            //     this.resetMessageHistory();
+            // }
         },
         selectUser(user) {
             const beforeMention = this.newMessage.substring(0, this.mentionStartIndex);
@@ -1704,7 +1702,7 @@ export default {
                     this.newMessage = "";
                     this.mentionedUsers = [];
                     this.showUserList = false;
-                    this.resetMessageHistory(); // 메시지 전송 후 히스토리 초기화
+                    // this.resetMessageHistory(); // 메시지 전송 후 히스토리 초기화
                 }
             }, 100);
         },
