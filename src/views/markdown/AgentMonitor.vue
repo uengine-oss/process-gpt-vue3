@@ -185,7 +185,7 @@
           </div>
           <button v-if="selectedResearchMethod === 'brower-use' && !downloadedBrowserAgent" @click="downloadBrowserAgent" class="start-button">다운로드</button>
           <div v-if="selectedResearchMethod === 'brower-use' && !downloadedBrowserAgent" style="margin-top: 8px; color: #888; font-size: 0.95em;">
-            Browser use 기능을 사용하기 위해서는 다운로드 후 압축을 풀어야 합니다. (용량: 114MB)
+            Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)
           </div>
           <button v-else @click="startTask" class="start-button">시작하기</button>
         </div>
