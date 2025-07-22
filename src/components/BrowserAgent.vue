@@ -125,7 +125,7 @@
       },
     },
     mounted() {
-      // this.connectWebSocket()
+      this.connectBrowserAgent()
     },
     beforeUnmount() {
       this.disconnectWebSocket()
@@ -191,6 +191,12 @@
             this.tryConnect = false
             this.retryCount = 0
             this.addLog('info', '✅ 브라우저 에이전트에 연결되었습니다!')
+            if(this.workItem && this.workItem.worklist
+            && this.workItem.worklist.description 
+            && this.workItem.worklist.description != '' && this.workItem.worklist.description != null) {
+              this.command = this.workItem.worklist.description
+              this.sendCommand()
+            }
           }
           
           this.ws.onmessage = (event) => {

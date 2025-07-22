@@ -1,5 +1,6 @@
 <template>
-  <div class="agent-monitor">
+  <BrowserAgent v-if="openBrowserAgent" :html="html" :workItem="workItem" />
+  <div v-else class="agent-monitor">
     <div class="task-area" ref="taskArea">
       <div v-if="errorMessage" class="error-banner">
         {{ errorMessage }}
@@ -180,9 +181,14 @@
               <option value="crewai">CrewAI Deep Research</option>
               <option value="crewai-action">CrewAI Action</option>
               <option value="openai">OpenAI Deep Research</option>
+              <option value="brower-use">Browser Use</option>
             </select>
           </div>
-          <button @click="startTask" class="start-button">시작하기</button>
+          <button v-if="selectedResearchMethod === 'brower-use' && !downloadedBrowserAgent" @click="downloadBrowserAgent" class="start-button">다운로드</button>
+          <div v-if="selectedResearchMethod === 'brower-use' && !downloadedBrowserAgent" style="margin-top: 8px; color: #888; font-size: 0.95em;">
+            Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)
+          </div>
+          <button v-else @click="startTask" class="start-button">시작하기</button>
         </div>
       </div>
       <div v-if="isLoading && timeline.length > 0" class="feedback-loading">
@@ -220,13 +226,14 @@ import ChatModule from '@/components/ChatModule.vue'
 import Chat from '@/components/ui/Chat.vue'
 import { marked } from 'marked'
 import BackendFactory from '@/components/api/BackendFactory'
+import BrowserAgent from '@/components/BrowserAgent.vue'
 
 const backend = BackendFactory.createBackend()
 
 export default {
   name: 'AgentMonitor',
   mixins: [ChatModule],
-  components: { Chat },
+  components: { Chat, BrowserAgent },
   props: {
     html: {
       type: String,
@@ -247,7 +254,9 @@ export default {
       chatMessages: [],
       isCancelled: false,
       isLoading: false,
-      selectedResearchMethod: 'crewai'
+      selectedResearchMethod: 'crewai',
+      openBrowserAgent: false,
+      downloadedBrowserAgent: false
     }
   },
   computed: {
@@ -333,6 +342,12 @@ export default {
     },
   },
   methods: {
+    downloadBrowserAgent() {
+      const url = 'https://drive.google.com/uc?export=download&id=1-yFl3h8hzoxOPqc0vZbawLAlKAVmdEyY';
+      window.open(url, '_blank');
+      localStorage.setItem('downloadedBrowserAgent', 'true');
+      this.downloadedBrowserAgent = true;
+    },
     extractContent(content) {
       return (typeof content === 'object' && content.text !== undefined)
         ? content.text
@@ -517,6 +532,9 @@ export default {
 
     async loadData() {
       try {
+        if(localStorage.getItem('downloadedBrowserAgent') === 'true') {
+          this.downloadedBrowserAgent = true;
+        }
         this.errorMessage = null;
         this.events = [];
         const taskId = this.getTaskIdFromWorkItem();
@@ -608,6 +626,10 @@ export default {
       return '작업완료'
     },
     async startTask() {
+      if(this.selectedResearchMethod === 'brower-use') {
+        this.openBrowserAgent = true;
+        return;
+      }
       const taskId = this.getTaskIdFromWorkItem();
       if (!taskId) {
         this.errorMessage = 'taskId를 찾을 수 없습니다.';
