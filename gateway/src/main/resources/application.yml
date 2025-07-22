@@ -1,88 +1,153 @@
 server:
-  port: 8088
-
+    port: 8088
 ---
-
 spring:
-  profiles: default
-  cloud:
-    gateway:
-#<<< API Gateway / Routes
-      routes:
-        - id: execution
-          uri: http://localhost:8000
-          predicates:
-            - Path=/execution/**,
-          filters:
-            - RewritePath=/execution/?(?<segment>.*), /$\{segment}
-        - id: autonomous
-          uri: http://localhost:6789
-          predicates:
-            - Path=/autonomous/**, 
-          filters:
-            - RewritePath=/autonomous/?(?<segment>.*), /$\{segment}
-        - id: memento
-          uri: http://localhost:8005
-          predicates:
-            - Path=/memento/**,
-          filters:
-            - RewritePath=/memento/?(?<segment>.*), /$\{segment}
-        - id: frontend
-          uri: http://localhost:5173
-          predicates:
-            - Path=/**
-#>>> API Gateway / Routes
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins:
-              - "*"
-            allowedMethods:
-              - "*"
-            allowedHeaders:
-              - "*"
-            allowCredentials: true
-
-
+    profiles: default
+    cloud:
+        gateway:
+            #<<< API Gateway / Routes
+            routes:
+                - id: execution
+                  uri: http://localhost:8000
+                  predicates:
+                      - Path=/execution/**,
+                  filters:
+                      - RewritePath=/execution/?(?<segment>.*), /$\{segment}
+                - id: autonomous
+                  uri: http://localhost:6789
+                  predicates:
+                      - Path=/autonomous/**,
+                  filters:
+                      - RewritePath=/autonomous/?(?<segment>.*), /$\{segment}
+                - id: memento
+                  uri: http://localhost:8005
+                  predicates:
+                      - Path=/memento/**,
+                  filters:
+                      - RewritePath=/memento/?(?<segment>.*), /$\{segment}
+                - id: frontend
+                  uri: http://localhost:5173
+                  predicates:
+                      - Path=/**
+            #>>> API Gateway / Routes
+            globalcors:
+                corsConfigurations:
+                    '[/**]':
+                        allowedOrigins:
+                            - '*'
+                        allowedMethods:
+                            - '*'
+                        allowedHeaders:
+                            - '*'
+                        allowCredentials: true
 ---
-
 spring:
-  profiles: docker
-  cloud:
-    gateway:
-      routes:
-        - id: execution
-          uri: http://execution-service:8000
-          predicates:
-            - Path=/execution/**,
-          filters:
-            - RewritePath=/execution/?(?<segment>.*), /$\{segment}
-        - id: autonomous
-          uri: http://autonomous-service:6789
-          predicates:
-            - Path=/autonomous/**, 
-          filters:
-            - RewritePath=/autonomous/?(?<segment>.*), /$\{segment}
-        - id: memento
-          uri: http://memento-service:8005
-          predicates:
-            - Path=/memento/**,
-          filters:
-            - RewritePath=/memento/?(?<segment>.*), /$\{segment}
-        - id: frontend
-          uri: http://frontend-service:8080
-          predicates:
-            - Path=/**
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins:
-              - "*"
-            allowedMethods:
-              - "*"
-            allowedHeaders:
-              - "*"
-            allowCredentials: true
+    profiles: docker
+    cloud:
+        gateway:
+            # 기본 타임아웃 설정
+            httpclient:
+                connect-timeout: 10000
+                response-timeout: 60000 # 기본 응답 타임아웃: 60초
+                pool:
+                    type: ELASTIC
+                    max-connections: 100
+                    acquire-timeout: 45000
+
+            # 라우트별 설정
+            routes:
+                # 1. MCP SSE 라우트: 무제한 타임아웃
+                - id: mcp-sse
+                  uri: http://mcp-proxy-service.default.svc.cluster.local:80
+                  predicates:
+                      - Path=/mcp/*/sse/**
+                #   metadata:
+                #       response-timeout: 0 # 무제한
+                  filters:
+                      - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
+                  order: 1
+
+                # ===================================================================
+                # 2. MCP 서버 생성/상태 확인 라우트 (중간 우선순위)
+                # ===================================================================
+                - id: mcp-control
+                  uri: http://mcp-proxy-service.default.svc.cluster.local:80
+                  predicates:
+                      # 정규식에서 비캡처 그룹 (?:...) 사용
+                      - Path=/mcp/*/{action:(?:create|status)}
+                  metadata:
+                      response-timeout: 300000 # 300초 = 5분
+                  filters:
+                      - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
+                  order: 2
+
+                # 3. MCP 일반 API 라우트: 기본 타임아웃(60초) 사용
+                - id: mcp-api
+                  uri: http://mcp-proxy-service.default.svc.cluster.local:80
+                  predicates:
+                      - Path=/mcp/**
+                  filters:
+                      - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
+                  order: 3
+
+                # Execution 서비스
+                - id: execution
+                  uri: http://execution-service:8000
+                  predicates:
+                      - Path=/execution/**
+                  filters:
+                      - RewritePath=/execution/?(?<segment>.*), /$\{segment}
+                  order: 10
+
+                # Autonomous 서비스
+                - id: autonomous
+                  uri: http://autonomous-service:6789
+                  predicates:
+                      - Path=/autonomous/**
+                  filters:
+                      - RewritePath=/autonomous/?(?<segment>.*), /$\{segment}
+                  order: 20
+
+                # Memento 서비스
+                - id: memento
+                  uri: http://memento-service:8005
+                  predicates:
+                      - Path=/memento/**
+                  filters:
+                      - RewritePath=/memento/?(?<segment>.*), /$\{segment}
+                  order: 30
+
+                # Frontend 서비스 (catch-all)
+                - id: frontend
+                  uri: http://frontend-service:5173
+                  predicates:
+                      - Path=/**
+                  order: 999
+
+            globalcors:
+                corsConfigurations:
+                    '[/**]':
+                        allowedOrigins:
+                            - '*'
+                        allowedMethods:
+                            - '*'
+                        allowedHeaders:
+                            - '*'
+                        allowCredentials: true
+                        exposedHeaders:
+                            - 'Cache-Control'
+                            - 'Connection'
+                            - 'Content-Type'
+                            - 'Transfer-Encoding'
+                            - 'X-Accel-Buffering'
+
+# 로깅 레벨
+logging:
+    level:
+        org.springframework.cloud.gateway: INFO
+        reactor.netty.http.client: INFO
+        shop.ForwardHostHeaderFilter: INFO
 
 server:
-  port: 8080
+    port: 8080

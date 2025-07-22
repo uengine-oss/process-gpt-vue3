@@ -906,7 +906,7 @@ export default {
                     if(responseObj.work == 'CompanyQuery'){
                         try{
                             const token = localStorage.getItem('accessToken');
-                            let mementoRes = await axios.post(`/memento/query`, {
+                            let mementoRes = await axios.get(`/memento/query`, {
                                 params: {
                                     query: responseObj.content,
                                     tenant_id: window.$tenantName
@@ -916,7 +916,6 @@ export default {
                                     'Authorization': `Bearer ${token}`
                                 }
                             });
-                            console.log(mementoRes)
                             obj.memento = {}
                             obj.memento.response = mementoRes.data.response
                             if (!mementoRes.data.metadata) return {};

@@ -133,7 +133,14 @@ export default {
                 // if(!this.localDynamicLoadValueJsonPath || this.localDynamicLoadValueJsonPath.length === 0) return
 
                 try {
-                    const response = await axios.get(this.localDynamicLoadURL)
+                    let config = {}
+                    if (this.localDynamicLoadURL.includes(':54321')) {
+                        config.headers = {
+                            'Authorization': 'Bearer ' + window.$supabase.supabaseKey
+                        };
+                    }
+
+                    const response = await axios.get(this.localDynamicLoadURL, config)
 
                     if(this.localDynamicLoadKeyJsonPath &&
                      this.localDynamicLoadKeyJsonPath.length > 0 && 

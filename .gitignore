@@ -12,7 +12,7 @@ acebase/package-lock.json
 acebase/mydb.acebase
 *.db
 *.idx
-
+spikeadmin*
 cypress.config.ts
 
 # Compiled Java class files

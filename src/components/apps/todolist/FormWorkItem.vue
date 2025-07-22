@@ -5,7 +5,7 @@
             <div v-if="(!isCompleted && isOwnWorkItem) || isSimulate == 'true'" class="from-work-item-pc mr-2">
                 <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded variant="flat">중간 저장</v-btn>
                 <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
-                    class="bouncing-arrow-horizontal" 
+                    class="bouncing-arrow-horizontal submit-complete-pc" 
                     color="primary" 
                     size="large"
                 >

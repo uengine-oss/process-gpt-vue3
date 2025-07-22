@@ -33,7 +33,7 @@ const formDesignGeneratorPromptSnipptsData = {
       },
       {
           tagName: "select-field",
-          tag: `<select-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<true|false>' ` + 
+          tag: `<select-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<fixed|urlBinding>' ` + 
                `items='<options_list_when_is_dynamic_load_is_false>' ` + 
                `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
                `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` + 
@@ -46,7 +46,7 @@ const formDesignGeneratorPromptSnipptsData = {
 
       {
           tagName: "checkbox-field",
-          tag: `<checkbox-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<true|false>' ` + 
+          tag: `<checkbox-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<fixed|urlBinding>' ` + 
                `items='<options_list_when_is_dynamic_load_is_false>' ` + 
                `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
                `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` + 
@@ -59,7 +59,7 @@ const formDesignGeneratorPromptSnipptsData = {
 
       {
           tagName: "radio-field",
-          tag: `<radio-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<true|false>' ` + 
+          tag: `<radio-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<fixed|urlBinding>' ` + 
                `items='<options_list_when_is_dynamic_load_is_false>' ` + 
                `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
                `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` + 
