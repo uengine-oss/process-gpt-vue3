@@ -169,11 +169,10 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS log text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS project_id uuid;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_mode text;
-ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch text check (agent_orch in ('crewai', 'openai'));
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch text check (agent_orch in ('crewai', 'openai', 'crewai-action'));
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone default now();
-
 
 -- chat_rooms table
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS id text;

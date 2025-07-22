@@ -176,8 +176,9 @@
               v-model="selectedResearchMethod" 
               class="method-dropdown"
             >
-              <option value="crewai">CrewAI (기본값)</option>
-              <option value="openai-deep-research">OpenAI Deep Research API</option>
+              <option value="crewai">CrewAI Deep Research</option>
+              <option value="crewai-action">CrewAI Action</option>
+              <option value="openai">OpenAI Deep Research</option>
             </select>
           </div>
           <button @click="startTask" class="start-button">시작하기</button>
@@ -611,13 +612,14 @@ export default {
       }
       // 로딩 상태 활성화 및 draft_status 설정
       this.isLoading = true;
-      this.todoStatus = { ...this.todoStatus, agent_mode: 'DRAFT', status: 'IN_PROGRESS', draft_status: 'STARTED' };
+      const agentMode = this.selectedResearchMethod === 'crewai-action' ? 'COMPLETE' : 'DRAFT';
+      this.todoStatus = { ...this.todoStatus, agent_mode: agentMode, status: 'IN_PROGRESS', draft_status: 'STARTED' };
       try {
         // 선택된 연구 방식에 따라 agent_orch 값 결정
         const agentOrch = this.selectedResearchMethod === 'openai-deep-research' ? 'openai' : 'crewai';
         
         await backend.putWorkItem(taskId, { 
-          agent_mode: 'DRAFT', 
+          agent_mode: agentMode, 
           status: 'IN_PROGRESS',
           agent_orch: agentOrch
         });

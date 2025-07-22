@@ -33,16 +33,23 @@
           <input 
             v-model="command"
             @keyup.enter="sendCommand"
-            :disabled="isProcessing"
             placeholder="브라우저 에이전트에게 명령을 입력하세요..."
             class="command-input"
           />
           <button 
+            v-if="!isProcessing"
             @click="sendCommand"
-            :disabled="isProcessing || !command.trim()"
+            :disabled="!command.trim()"
             class="send-button"
           >
-            {{ isProcessing ? '처리 중...' : '실행' }}
+            실행
+          </button>
+          <button 
+            v-if="isProcessing"
+            @click="stopProcessing"
+            class="stop-button"
+          >
+            중지
           </button>
         </div>
         <div v-if="connectionStatus !== 'connected'" class="control-buttons">
@@ -237,31 +244,24 @@
       handleMessage(data) {
         try {
           const message = JSON.parse(data)
+          this.addLog(message.type, message.content)
           
           switch (message.type) {
-          case 'info':
-            this.addLog('info', message.content)
-            if (message.content.includes('Agent ready')) {
-              this.taskStatus = 'ready'
-            }
-            break
-          case 'log':
-            this.addLog('log', message.content)
-            break
-          case 'result':
-            this.addLog('result', message.content)
-            break
-          case 'error':
-            this.addLog('error', message.content)
-            this.taskStatus = 'error'
-            this.isProcessing = false
-            break
-          case 'end':
-            this.taskStatus = 'completed'
-            this.isProcessing = false
-            break
-          default:
-            this.addLog('info', message.content)
+            case 'info':
+              if (message.content.includes('Agent ready')) {
+                this.taskStatus = 'ready'
+              }
+              break
+            case 'error':
+              this.taskStatus = 'error'
+              this.isProcessing = false
+              break
+            case 'end':
+              this.taskStatus = 'completed'
+              this.isProcessing = false
+              break
+            default:
+              break
           }
         } catch (error) {
           // JSON 파싱 실패시 일반 텍스트로 처리
@@ -293,7 +293,7 @@
       
       // 명령 전송
       sendCommand() {
-        if (!this.command.trim() || this.isProcessing || !this.ws) {
+        if (!this.command.trim() || !this.ws) {
           return
         }
         
@@ -302,12 +302,13 @@
         // 사용자 입력 로그 추가
         this.addLog('command', `> ${command}`)
 
-        // const prompt = `요청 사항에 맞게 결과를 생성, ppt 를 생성하여 다운로드 받는다면 다운로드 받은 path 나 ppt 파일을 첨부하여 전달
-        // 요청사항: ${command}
-        // `
+        const prompt = `전달해준 정보를 기반하여 결과를 생성
+입력 형식(html): ${this.html}
+작업 정보(workItem): ${JSON.stringify(this.workItem)}
+사용자 요청 사항(command): ${command}`
         
         // WebSocket으로 명령 전송
-        this.ws.send(JSON.stringify({ command }))
+        this.ws.send(JSON.stringify({ prompt }))
         
         // 상태 업데이트
         this.isProcessing = true
@@ -377,6 +378,31 @@
       // 로그 지우기
       clearLogs() {
         this.logs = []
+      },
+
+      // 중지 버튼 클릭 시 호출될 메서드
+      stopProcessing() {
+        try {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            // 중지 명령 전송
+            this.ws.send(JSON.stringify({ 
+              command: 'stop', 
+              type: 'stop_request' 
+            }));
+            this.addLog('info', '🛑 명령 중지 요청을 보냈습니다.');
+          }
+          
+          // 로컬 상태 즉시 변경
+          this.isProcessing = false;
+          this.taskStatus = 'stopped';
+          this.addLog('info', '⏹️ 작업이 중지되었습니다.');
+          
+        } catch (error) {
+          this.addLog('error', `중지 실패: ${error.message}`);
+          // 에러가 발생해도 로컬 상태는 변경
+          this.isProcessing = false;
+          this.taskStatus = 'error';
+        }
       }
     }
   }
@@ -627,6 +653,35 @@
   }
   
   .send-button:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .stop-button {
+    padding: 16px 28px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .stop-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.15);
+  }
+
+  .stop-button:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .stop-button:disabled {
     background: #d1d5db;
     cursor: not-allowed;
     transform: none;
