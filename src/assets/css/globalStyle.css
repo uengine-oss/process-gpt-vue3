@@ -6,6 +6,12 @@ hr {
     opacity: 1 !important;
 }
 
+.dynamic-form .v-field--disabled {
+    opacity: 1 !important;
+    background-color: #eaeaea !important;
+    pointer-events: none !important;
+}
+
 .tenant-back-btn {
     position:absolute;
     left:15px; top:15px;
@@ -370,6 +376,11 @@ hr {
     align-items: center;
 }
 
+.list-page-completed-box {
+    height: calc(100vh - 240px);
+    overflow-y: auto;
+}
+
 .node-content-img {
     width: 40px;
     height: 40px;
@@ -671,8 +682,10 @@ hr {
     position: absolute;
     z-index: 9999;
     top: 86px;
-    right: 16px;
+    right: 20px;
+    background: white;
 }
+
 .feedback-form .form-definition-simulation-chat-box {
     height: calc(100vh - 300px);
 }
@@ -730,6 +743,10 @@ hr {
 
 .instance-card-kanban-board .todo-list-card-box {
     height: calc(100vh - 360px) !important;
+}
+
+.form-work-item-delegate-task-form-dialog {
+    width: 40vw;
 }
     
 .is-work-height {
@@ -949,6 +966,22 @@ hr {
     .organization-edit-dialog-contents {
         height: calc(100vh - 100px);
         overflow: auto;
+    }
+
+    .list-page-completed-box {
+        height: calc(100vh - 110px);
+        overflow-y: auto;
+    }
+
+    .feedback-form {
+        width: 50vw;
+        right: 4px;
+        bottom: 4px;
+        height: calc(100vh - 200px);
+    }
+    .dynamic-form {   
+        height: calc(100vh - 200px);
+        overflow-y: auto;
     }
 }
 

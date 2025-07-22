@@ -81,7 +81,9 @@
                 </div>
             </v-card-text>
         </v-card>
-        <v-dialog v-model="delegateTaskDialog" width="500">
+        <v-dialog v-model="delegateTaskDialog"
+            class="form-work-item-delegate-task-form-dialog"
+        >
             <DelegateTaskForm 
                 :task="workItem"
                 @delegate="delegateTask"
@@ -469,12 +471,6 @@ export default {
 </script>
 
 <style>
-.dynamic-form .v-field--disabled {
-    opacity: 1 !important;
-    background-color: #eaeaea !important;
-    pointer-events: none !important;
-}
-
 .form-work-item-mobile {
     display: none;
 }
