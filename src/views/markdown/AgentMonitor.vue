@@ -321,7 +321,7 @@ export default {
     },
     isQueued() {
       return this.todoStatus &&
-        (this.todoStatus.status === 'IN_PROGRESS' && this.todoStatus.agent_mode === 'DRAFT')
+        (this.todoStatus.status === 'IN_PROGRESS' && (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE'))
     },
     timeline() {
       const taskItems = this.tasks.map(task => ({ type: 'task', time: task.startTime, payload: task }));
@@ -616,7 +616,14 @@ export default {
       this.todoStatus = { ...this.todoStatus, agent_mode: agentMode, status: 'IN_PROGRESS', draft_status: 'STARTED' };
       try {
         // 선택된 연구 방식에 따라 agent_orch 값 결정
-        const agentOrch = this.selectedResearchMethod === 'openai-deep-research' ? 'openai' : 'crewai';
+        let agentOrch;
+        if (this.selectedResearchMethod === 'openai') {
+          agentOrch = 'openai';
+        } else if (this.selectedResearchMethod === 'crewai-action') {
+          agentOrch = 'crewai-action';
+        } else {
+          agentOrch = 'crewai'; // crewai 기본값
+        }
         
         await backend.putWorkItem(taskId, { 
           agent_mode: agentMode, 
