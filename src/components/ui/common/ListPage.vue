@@ -274,8 +274,4 @@ export default {
   </script>
 
 <style>
-  .list-page-completed-box {
-    height: calc(100vh - 240px);
-    overflow-y: auto;
-  }
 </style>

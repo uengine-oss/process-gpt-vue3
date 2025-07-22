@@ -469,12 +469,6 @@ export default {
 </script>
 
 <style>
-.dynamic-form .v-field--disabled {
-    opacity: 1 !important;
-    background-color: #eaeaea !important;
-    pointer-events: none !important;
-}
-
 .form-work-item-mobile {
     display: none;
 }

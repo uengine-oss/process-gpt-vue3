@@ -38,7 +38,7 @@
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
                 </div>
             </v-col>
-            <v-col v-if="!isMobile && type != 'preview'"
+            <v-col v-if="type != 'preview'"
                 :class="type == 'simulation' ? '':'ml-auto'"
                 :style="type == 'simulation' ? '' : 'max-width: 250px; height: calc(100vh - 260px) !important; overflow: auto;'"
                 class="pa-0 form-definition-simulation-chat-box"
