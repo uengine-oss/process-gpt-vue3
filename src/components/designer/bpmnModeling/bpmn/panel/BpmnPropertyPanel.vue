@@ -207,7 +207,7 @@ export default {
                 type = 'pal-user-task';
             }
             if (this.isGPTMode) {
-                if(type == 'user-task' || type == 'script-task') {
+                if(type == 'user-task' || type == 'script-task' || type == 'service-task') {
                     type = 'gpt-' + type;
                 }
             }
