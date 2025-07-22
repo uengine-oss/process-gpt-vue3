@@ -1390,6 +1390,8 @@ class ProcessGPTBackend implements Backend {
                 } else {
                     if(payload.new.participants.includes(email)) {
                         callback(payload);
+                    } else if(payload.old.participants.includes(email)) {
+                        callback(payload);
                     }
                 }
             });
