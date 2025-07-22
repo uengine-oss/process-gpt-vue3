@@ -41,6 +41,12 @@
                     <v-select v-model="activity.agentMode" :items="agentModeItems" hide-details density="compact" label="에이전트 모드 사용">
                     </v-select>
                 </div>
+                <!-- Orchestration -->
+                <div class="mt-4">
+                    <v-select v-model="activity.orchestration" :items="orchestrationItems" hide-details density="compact" label="에이전트 연구 방식">
+                    </v-select>
+                </div>
+
             </v-window-item>
             <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
                 <FormDefinition
@@ -93,7 +99,8 @@ export default {
                 attachments: [],
                 instruction: '',
                 checkpoints: [''],
-                agentMode: 'none'
+                agentMode: 'none',
+                orchestration: 'none'
             },
             formId: '',
             tempFormHtml: '',
@@ -103,6 +110,12 @@ export default {
                 { title: 'None', value: 'none' },
                 { title: 'Draft', value: 'draft' },
                 { title: 'Complete', value: 'complete' }
+            ],
+            orchestrationItems: [
+                { title: 'None', value: 'none' },
+                { title: 'Crewai Deep Research', value: 'crewai' },
+                { title: 'Crewai Action', value: 'crewai-action' },
+                { title: 'OpenAI Deep Research', value: 'openai' }
             ]
         };
     },
@@ -113,7 +126,9 @@ export default {
             if (activity) {
                 this.activity = activity;
                 if (!this.activity.agentMode) this.activity.agentMode = 'none';
+                if (!this.activity.orchestration) this.activity.orchestration = 'none';
                 if (this.activity.isDraft) delete this.activity.isDraft;
+                
             } else {
                 console.log('Activity not found');
             }

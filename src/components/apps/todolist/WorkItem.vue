@@ -213,7 +213,8 @@
                                 :formHTML="inFormValues[index]?.html" 
                                 v-model="inFormValues[index].formData" 
                                 :readonly="true"
-                                class="dynamic-form">
+                                class="dynamic-form"
+                            >
                             </DynamicForm>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('output')" value="output" class="pa-2">
@@ -262,8 +263,8 @@
                                         <v-icon>mdi-refresh</v-icon>
                                         <span class="ms-2">예시 재생성</span>
                                     </v-row>
-                                    <v-row v-else>
-                                        <Icons :icon="'sparkles'" :size="20" class="ma-0 pa-0" />
+                                    <v-row v-else class="ma-0 pa-0" >
+                                        <Icons :icon="'sparkles'" :size="20"/>
                                         <div class="ms-1">빠른 예시 생성</div>
                                     </v-row>
                                 </template>

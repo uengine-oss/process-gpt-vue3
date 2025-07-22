@@ -1124,6 +1124,7 @@ export default {
                             newActivity.type = oldActivity.type;
                             newActivity.duration = oldActivity.duration;
                             newActivity.agentMode = oldActivity.agentMode;
+                            newActivity.orchestration = oldActivity.orchestration;
                             newActivity.description = oldActivity.description;
                             newActivity.instruction = oldActivity.instruction;
                             newActivity.checkpoints = oldActivity.checkpoints;
