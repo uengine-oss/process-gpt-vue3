@@ -214,7 +214,8 @@
                                 :formHTML="inFormValues[index]?.html" 
                                 v-model="inFormValues[index].formData" 
                                 :readonly="true"
-                                class="dynamic-form">
+                                class="dynamic-form"
+                            >
                             </DynamicForm>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('output')" value="output" class="pa-2">

@@ -852,4 +852,28 @@ export default {
 .view-mode .djs-palette {
   display: none !important;
 }
+
+/* 읽기모드에서 텍스트 편집 비활성화 */
+.view-mode .djs-direct-editing-content {
+  display: none !important;
+}
+
+.view-mode .djs-direct-editing-parent {
+  pointer-events: none !important;
+}
+
+/* 읽기모드에서 인라인 텍스트 편집 차단 */
+.view-mode .djs-element .djs-label {
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+/* 읽기모드에서 더블클릭 비활성화 */
+.view-mode .djs-element {
+  pointer-events: auto !important;
+}
+
+.view-mode .djs-element * {
+  pointer-events: none !important;
+}
 </style>
