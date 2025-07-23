@@ -173,7 +173,10 @@ export default {
             }
             me.formId = me.copyUengineProperties.variableForHtmlFormContext? me.copyUengineProperties.variableForHtmlFormContext.name : '';
             if (!me.formId || me.formId == '') {
-                me.formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
+                let formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
+                formId = formId.toLowerCase();
+                formId = formId.replace(/[/.]/g, "_");
+                me.formId = formId;
             }
             const options = {
                 type: 'form',
@@ -207,7 +210,10 @@ export default {
         async beforeSave() {
             var me = this;
             if (me.formId == '' || me.formId == null) {
-                me.formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
+                let formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
+                formId = formId.toLowerCase();
+                formId = formId.replace(/[/.]/g, "_");
+                me.formId = formId;
             }
             
             me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';

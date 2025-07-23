@@ -259,7 +259,7 @@ export default {
                     if (roleBindings && roleBindings.length > 0) {
                         roleBindings.forEach((roleBinding) => {
                             let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
-                            if(role) {
+                            if(role && role.endpoint == '') {
                                 role['endpoint'] = roleBinding.userId;
                                 role['default'] = roleBinding.userId;
                             }

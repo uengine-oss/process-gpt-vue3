@@ -1280,7 +1280,11 @@
         "assignee": "Assignee",
         "selectAssignee": "Select Delegatee",
         "equalDelegate": "Delegatee is the same as the assignee.",
-        "sucessMsg": "Delegated successfully."
+        "successMsg": "Delegated successfully.",
+        "searchUser": "Search",
+        "profile": "Profile",
+        "userInfo": "User info",
+        "delegateToMyself": "Delegate to myself"
     },
     "UserInputGenerator": {
         "inputLabel": "Enter the agent you want to generate",
