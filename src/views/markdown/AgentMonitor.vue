@@ -1,5 +1,5 @@
 <template>
-  <BrowserAgent v-if="openBrowserAgent" :html="html" :workItem="workItem" />
+  <BrowserAgent v-if="openBrowserAgent" :html="html" :workItem="workItem" :doneWorkItemList="doneWorkItemList" />
   <div v-else class="agent-monitor">
     <div class="task-area" ref="taskArea">
       <div v-if="errorMessage" class="error-banner">
@@ -256,7 +256,8 @@ export default {
       isLoading: false,
       selectedResearchMethod: 'crewai',
       openBrowserAgent: false,
-      downloadedBrowserAgent: false
+      downloadedBrowserAgent: false,
+      doneWorkItemList: []
     }
   },
   computed: {
@@ -627,6 +628,16 @@ export default {
     },
     async startTask() {
       if(this.selectedResearchMethod === 'brower-use') {
+        const workItemList = await backend.getWorkListByInstId(this.workItem.worklist.instId);
+        if(workItemList) {
+          let doneWorkItemList = workItemList.filter(item => item.status === 'DONE' && item.task && item.task.output);
+          if(doneWorkItemList.length > 0) {
+            this.doneWorkItemList = doneWorkItemList.map(item => ({
+              name: item.name,
+              output: item.task.output
+            }));
+          }
+        }
         this.openBrowserAgent = true;
         return;
       }
