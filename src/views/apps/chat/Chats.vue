@@ -330,15 +330,6 @@ export default {
                 }
             }
         },
-        "$route": {
-            deep: true,
-            async handler(newVal) {
-                console.log(newVal)
-                if (newVal && newVal.query && newVal.query.code && newVal.query.state && newVal.query.scope) {
-                    await this.getOAuth();
-                }
-            }
-        }
     },
     async mounted() {
         await this.init();
@@ -382,8 +373,6 @@ export default {
 
         if (this.$route.query.id) {
             this.chatRoomSelected(this.chatRoomList.find(room => room.id === this.$route.query.id));
-        } else if (this.$route.query.code && this.$route.query.state && this.$route.query.scope) {
-            await this.getOAuth();
         }
         
         // 정의 맵에서 업무지시 버튼 클릭으로 이동한 경우 다이얼로그 열기
@@ -401,27 +390,6 @@ export default {
         this.EventBus.emit('chat-room-unselected');
     },
     methods: {
-        async getOAuth() {
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const code = urlParams.get('code');
-                const state = urlParams.get('state');
-                const scope = urlParams.get('scope');
-                const email = this.userInfo.email;
-
-                const response = await fetch('/memento/auth/google/callback', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code, state, scope, user_email: email })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    this.$route.query = {}
-                }
-            } catch (error) {
-                console.error('OAuth 실패:', error);
-            }
-        },
         toggleAttachments() {
             this.isAttachmentsOpen = !this.isAttachmentsOpen;
         },
