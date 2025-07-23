@@ -3377,7 +3377,7 @@ class ProcessGPTBackend implements Backend {
 
     async getEnvByTenant() {
         try {
-            const configmaps = await axios.get('https://dev.process-gpt.io/mcp/configmaps');
+            const configmaps = await axios.get('/mcp/configmaps');
             return configmaps.data;
         } catch (error) {
             //@ts-ignore
@@ -3387,7 +3387,7 @@ class ProcessGPTBackend implements Backend {
 
     async getSecretByTenant() {
         try {
-            const secret = await axios.get('https://dev.process-gpt.io/mcp/secrets');
+            const secret = await axios.get('/mcp/secrets');
             return secret.data;
         } catch (error) {
             //@ts-ignore
@@ -3397,7 +3397,7 @@ class ProcessGPTBackend implements Backend {
 
     async deleteEnvByTenant(name: string) {
         try {
-            const response = await axios.delete(`https://dev.process-gpt.io/mcp/configmaps?name=${name}`);
+            const response = await axios.delete(`/mcp/configmaps?name=${name}`);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3407,7 +3407,7 @@ class ProcessGPTBackend implements Backend {
 
     async deleteSecretByTenant(name: string) {
         try {
-            const response = await axios.delete(`https://dev.process-gpt.io/mcp/secrets?name=${name}`);
+            const response = await axios.delete(`/mcp/secrets?name=${name}`);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3417,7 +3417,7 @@ class ProcessGPTBackend implements Backend {
 
     async createEnvByTenant(data: any) {
         try {
-            const response = await axios.post(`https://dev.process-gpt.io/mcp/configmaps`, data);
+            const response = await axios.post(`/mcp/configmaps`, data);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3427,7 +3427,7 @@ class ProcessGPTBackend implements Backend {
 
     async createSecretByTenant(data: any) {
         try {
-            const response = await axios.post(`https://dev.process-gpt.io/mcp/secrets`, data);
+            const response = await axios.post(`/mcp/secrets`, data);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3437,7 +3437,7 @@ class ProcessGPTBackend implements Backend {
 
     async updateEnvByTenant(data: any) {
         try {
-            const response = await axios.put(`https://dev.process-gpt.io/mcp/configmaps`, data);
+            const response = await axios.put(`/mcp/configmaps`, data);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3447,7 +3447,7 @@ class ProcessGPTBackend implements Backend {
 
     async updateSecretByTenant(data: any) {
         try {
-            const response = await axios.put(`https://dev.process-gpt.io/mcp/secrets`, data);
+            const response = await axios.put(`/mcp/secrets`, data);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3457,7 +3457,7 @@ class ProcessGPTBackend implements Backend {
 
     async getMCPLists(){
         try {
-            const response = await axios.get('https://dev.process-gpt.io/mcp/tools');
+            const response = await axios.get('/mcp/tools');
             return response.data;
         } catch (error) {
             throw new Error(error.message);

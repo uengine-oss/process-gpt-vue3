@@ -42,7 +42,7 @@ spring:
                         allowCredentials: true
 ---
 spring:
-    profiles: dev
+    profiles: prod
     cloud:
         gateway:
             # 기본 타임아웃 설정
@@ -58,11 +58,11 @@ spring:
             routes:
                 # 1. MCP SSE 라우트: 무제한 타임아웃
                 - id: mcp-sse
-                  uri: http://mcp-proxy-service.default.svc.cluster.local:80
+                  uri: http://mcp-proxy-service-prod.default.svc.cluster.local:80
                   predicates:
                       - Path=/mcp/*/sse/**
-                  #   metadata:
-                  #       response-timeout: 0 # 무제한
+                #   metadata:
+                #       response-timeout: 0 # 무제한
                   filters:
                       - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
@@ -72,7 +72,7 @@ spring:
                 # 2. MCP 서버 생성/상태 확인 라우트 (중간 우선순위)
                 # ===================================================================
                 - id: mcp-control
-                  uri: http://mcp-proxy-service.default.svc.cluster.local:80
+                  uri: http://mcp-proxy-service-prod.default.svc.cluster.local:80
                   predicates:
                       # 정규식에서 비캡처 그룹 (?:...) 사용
                       - Path=/mcp/*/{action:(?:create|status)}
@@ -84,7 +84,7 @@ spring:
 
                 # 3. MCP 일반 API 라우트: 기본 타임아웃(60초) 사용
                 - id: mcp-api
-                  uri: http://mcp-proxy-service.default.svc.cluster.local:80
+                  uri: http://mcp-proxy-service-prod.default.svc.cluster.local:80
                   predicates:
                       - Path=/mcp/**
                   filters:
@@ -93,7 +93,7 @@ spring:
 
                 # Execution 서비스
                 - id: execution
-                  uri: http://execution-service:8000
+                  uri: http://execution-service-prod:8000
                   predicates:
                       - Path=/execution/**
                   filters:
@@ -102,7 +102,7 @@ spring:
 
                 # Autonomous 서비스
                 - id: autonomous
-                  uri: http://autonomous-service:6789
+                  uri: http://autonomous-service-prod:6789
                   predicates:
                       - Path=/autonomous/**
                   filters:
@@ -111,7 +111,7 @@ spring:
 
                 # Memento 서비스
                 - id: memento
-                  uri: http://memento-service:8005
+                  uri: http://memento-service-prod:8005
                   predicates:
                       - Path=/memento/**
                   filters:
@@ -120,7 +120,7 @@ spring:
 
                 # Frontend 서비스 (catch-all)
                 - id: frontend
-                  uri: http://frontend-service:5173
+                  uri: http://frontend-deployment-prod:5173
                   predicates:
                       - Path=/**
                   order: 999
@@ -151,4 +151,3 @@ logging:
 
 server:
     port: 8080
-# Production 환경의 설정은 application-prod.yml 파일에서 관리됩니다.
