@@ -42,7 +42,7 @@
                     </v-select>
                 </div>
                 <!-- Orchestration -->
-                <div class="mt-4">
+                <div v-if="activity.agentMode === 'draft' || activity.agentMode === 'complete'" class="mt-4">
                     <v-select v-model="activity.orchestration" :items="orchestrationItems" hide-details density="compact" label="에이전트 연구 방식">
                     </v-select>
                 </div>

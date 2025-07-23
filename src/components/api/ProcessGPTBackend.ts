@@ -1367,28 +1367,30 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
-    
 
-    async watchInstanceList(callback: (payload: any) => void){
+
+    async watchInstanceList(callback: (payload: any) => void, options?: any){
         try {
+            if(!options) options = {}
+            if(!options.status) return []
+            if(options.status.includes('*')) options.status = ['NEW', 'RUNNING', 'DONE', 'PENDING', 'IN_PROGRESS']
+            let email = window.localStorage.getItem("email");
+            let filter = `status=in.(${options.status.join(',')})`
+            
             return await storage._watch({
                 channel: 'instance',
                 table: 'bpm_proc_inst',
-                // filter: "status=in.(RUNNING,NEW)"
+                filter: filter
             },(payload) => {
-                let obj = payload
-                if(payload.eventType === 'UPDATE'){
-                    if(payload.new.status == 'RUNNING'|| payload.new.status == 'NEW') {
-                        obj = {id: payload.old.proc_inst_id, value: this.returnInstanceObject(payload.new)}
-                    } else {
-                        obj = {id: payload.old.proc_inst_id, value: null}
+                if(payload.eventType === 'DELETE') {
+                    callback(payload);
+                } else {
+                    if(payload.new.participants.includes(email)) {
+                        callback(payload);
+                    } else if(payload.old.participants.includes(email)) {
+                        callback(payload);
                     }
-                } else if(payload.eventType === 'INSERT'){
-                    obj = {id: payload.new.proc_inst_id, value: this.returnInstanceObject(payload.new)}
-                } else if(payload.eventType === 'DELETE'){
-                    obj = {id: payload.old.proc_inst_id, value: null}
                 }
-                callback(obj);
             });
         } catch (error) {
             //@ts-ignore
@@ -3374,7 +3376,7 @@ class ProcessGPTBackend implements Backend {
 
     async getEnvByTenant() {
         try {
-            const configmaps = await axios.get('https://dev.process-gpt.io/mcp/configmaps');
+            const configmaps = await axios.get('/mcp/configmaps');
             return configmaps.data;
         } catch (error) {
             //@ts-ignore
@@ -3384,7 +3386,7 @@ class ProcessGPTBackend implements Backend {
 
     async getSecretByTenant() {
         try {
-            const secret = await axios.get('https://dev.process-gpt.io/mcp/secrets');
+            const secret = await axios.get('/mcp/secrets');
             return secret.data;
         } catch (error) {
             //@ts-ignore
@@ -3394,7 +3396,7 @@ class ProcessGPTBackend implements Backend {
 
     async deleteEnvByTenant(name: string) {
         try {
-            const response = await axios.delete(`https://dev.process-gpt.io/mcp/configmaps?name=${name}`);
+            const response = await axios.delete(`/mcp/configmaps?name=${name}`);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3404,7 +3406,7 @@ class ProcessGPTBackend implements Backend {
 
     async deleteSecretByTenant(name: string) {
         try {
-            const response = await axios.delete(`https://dev.process-gpt.io/mcp/secrets?name=${name}`);
+            const response = await axios.delete(`/mcp/secrets?name=${name}`);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3414,7 +3416,7 @@ class ProcessGPTBackend implements Backend {
 
     async createEnvByTenant(data: any) {
         try {
-            const response = await axios.post(`https://dev.process-gpt.io/mcp/configmaps`, data);
+            const response = await axios.post(`/mcp/configmaps`, data);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3424,7 +3426,7 @@ class ProcessGPTBackend implements Backend {
 
     async createSecretByTenant(data: any) {
         try {
-            const response = await axios.post(`https://dev.process-gpt.io/mcp/secrets`, data);
+            const response = await axios.post(`/mcp/secrets`, data);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3434,7 +3436,7 @@ class ProcessGPTBackend implements Backend {
 
     async updateEnvByTenant(data: any) {
         try {
-            const response = await axios.put(`https://dev.process-gpt.io/mcp/configmaps`, data);
+            const response = await axios.put(`/mcp/configmaps`, data);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3444,7 +3446,7 @@ class ProcessGPTBackend implements Backend {
 
     async updateSecretByTenant(data: any) {
         try {
-            const response = await axios.put(`https://dev.process-gpt.io/mcp/secrets`, data);
+            const response = await axios.put(`/mcp/secrets`, data);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -3454,7 +3456,7 @@ class ProcessGPTBackend implements Backend {
 
     async getMCPLists(){
         try {
-            const response = await axios.get('https://dev.process-gpt.io/mcp/tools');
+            const response = await axios.get('/mcp/tools');
             return response.data;
         } catch (error) {
             throw new Error(error.message);
