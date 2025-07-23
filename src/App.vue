@@ -155,13 +155,10 @@ export default {
             // 스낵바가 열려있을 때만 클릭 카운트
             if (this.snackbar) {
                 this.clickCount++;
-                console.log('스낵바 외부 클릭 감지:', this.clickCount, '번째');
-                
                 // 2번째 클릭에서 스낵바 닫기
                 if (this.clickCount >= 2) {
                     this.snackbar = false;
                     this.clickCount = 0; // 카운터 리셋
-                    console.log('스낵바 닫힘');
                 }
             }
         },

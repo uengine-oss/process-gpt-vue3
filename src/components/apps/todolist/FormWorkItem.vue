@@ -82,7 +82,7 @@
             </v-card-text>
         </v-card>
         <v-dialog v-model="delegateTaskDialog"
-            class="form-work-item-delegate-task-form-dialog"
+            :class="isMobile ? 'form-work-item-delegate-task-form-dialog-mobile' : 'form-work-item-delegate-task-form-dialog-pc'"
         >
             <DelegateTaskForm 
                 :task="workItem"

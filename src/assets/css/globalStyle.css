@@ -6,6 +6,16 @@ hr {
     opacity: 1 !important;
 }
 
+/* BODY 또는 상위 컨테이너에 적용 */
+body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    box-sizing: border-box;
+  }
+  
+
 .dynamic-form .v-field--disabled {
     opacity: 1 !important;
     background-color: #eaeaea !important;
@@ -171,6 +181,10 @@ hr {
     fill: #ffa500 !important;
 }
 
+.default-greay-btn {
+    background-color: #808080;
+    color: white;
+}
 
 .warning:not(.djs-connection) .djs-visual > :nth-child(1) {
     stroke-width: 5px !important;
@@ -249,6 +263,10 @@ hr {
 }
 
 .dry-run-process-dialog .v-overlay__content .dry-run-process-card .dry-run-process-card-text {
+    padding: 0px !important;
+}
+
+.delegate-task-form-search .v-field__input{
     padding: 0px !important;
 }
 
@@ -745,8 +763,21 @@ hr {
     height: calc(100vh - 360px) !important;
 }
 
-.form-work-item-delegate-task-form-dialog {
+.form-work-item-delegate-task-form-dialog-pc {
     width: 40vw;
+    min-width: 375px;
+}
+
+.form-work-item-delegate-task-form-dialog-mobile {
+    width: 100vw;
+    height: 100vh;
+}  
+.form-work-item-delegate-task-form-dialog-mobile .v-overlay__content {
+    margin: 0px !important; 
+    max-width: 100vw !important; 
+    height: 100vh !important;
+    width: 100vw !important; 
+    max-height: 100vh !important;
 }
     
 .is-work-height {
