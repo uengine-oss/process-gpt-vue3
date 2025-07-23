@@ -333,7 +333,7 @@ export default {
     },
     isQueued() {
       return this.todoStatus &&
-        (this.todoStatus.status === 'IN_PROGRESS' && (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE'))
+        (this.todoStatus.status === 'IN_PROGRESS' && (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') && this.todoStatus.agent_orch)
     },
     timeline() {
       const taskItems = this.tasks.map(task => ({ type: 'task', time: task.startTime, payload: task }));
@@ -638,17 +638,19 @@ export default {
       // 로딩 상태 활성화 및 draft_status 설정
       this.isLoading = true;
       const agentMode = this.selectedResearchMethod === 'crewai-action' ? 'COMPLETE' : 'DRAFT';
-      this.todoStatus = { ...this.todoStatus, agent_mode: agentMode, status: 'IN_PROGRESS', draft_status: 'STARTED' };
+      
+      // 선택된 연구 방식에 따라 agent_orch 값 결정
+      let agentOrch;
+      if (this.selectedResearchMethod === 'openai') {
+        agentOrch = 'openai';
+      } else if (this.selectedResearchMethod === 'crewai-action') {
+        agentOrch = 'crewai-action';
+      } else {
+        agentOrch = 'crewai'; // crewai 기본값
+      }
+      
+      this.todoStatus = { ...this.todoStatus, agent_mode: agentMode, status: 'IN_PROGRESS', draft_status: 'STARTED', agent_orch: agentOrch };
       try {
-        // 선택된 연구 방식에 따라 agent_orch 값 결정
-        let agentOrch;
-        if (this.selectedResearchMethod === 'openai') {
-          agentOrch = 'openai';
-        } else if (this.selectedResearchMethod === 'crewai-action') {
-          agentOrch = 'crewai-action';
-        } else {
-          agentOrch = 'crewai'; // crewai 기본값
-        }
         
         await backend.putWorkItem(taskId, { 
           agent_mode: agentMode, 
@@ -666,7 +668,7 @@ export default {
       try {
         const { data, error } = await window.$supabase
           .from('todolist')
-          .select('status, agent_mode, draft_status, feedback')
+          .select('status, agent_mode, draft_status, feedback, agent_orch')
           .eq('id', taskId)
           .single();
         if (error) {
