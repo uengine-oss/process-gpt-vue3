@@ -1,7 +1,7 @@
 <template>
     <div class="browser-agent">
       <div class="header">
-        <h3>AI Browser Agent</h3>
+        <h3>Browser Agent</h3>
         <div class="status-indicators">
           <div class="status-item">
             <span class="label">연결 상태:</span>
@@ -9,6 +9,14 @@
               {{ connectionStatusText }}
             </span>
           </div>
+          <v-progress-circular
+            v-if="isProcessing"
+            indeterminate
+            color="primary"
+            size="20"
+            width="2"
+            style="margin-top: 7px;"
+          ></v-progress-circular>
         </div>
       </div>
   
@@ -78,12 +86,16 @@
   export default {
     name: 'BrowserAgent',
     props: {
-      html: {
-        type: String,
-        required: true
-      },
+      // html: {
+      //   type: String,
+      //   required: true
+      // },
       workItem: {
         type: Object,
+        required: true
+      },
+      doneWorkItemList: {
+        type: Array,
         required: true
       }
     },
@@ -309,8 +321,8 @@
         this.addLog('command', `> ${command}`)
 
         const prompt = `전달해준 정보를 기반하여 결과를 생성
-입력 형식(html): ${this.html}
-작업 정보(workItem): ${JSON.stringify(this.workItem)}
+현재 작업 정보(workItem): ${JSON.stringify(this.workItem)},
+이전 작업 정보(doneWorkItemList): ${JSON.stringify(this.doneWorkItemList)}
 사용자 요청 사항(command): ${command}`
         
         // WebSocket으로 명령 전송
