@@ -47,7 +47,8 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
         List<String> protectedPaths = Arrays.asList(
                 "/execution/(?!set-tenant|complete|vision-complete).*",
                 "/autonomous/.*",
-                "/memento/.*");
+                "/memento/.*",
+                "/mcp/.*");
 
         boolean requiresAuth = false;
 

@@ -1,6 +1,3 @@
-server:
-    port: 8088
----
 spring:
     profiles: default
     cloud:
@@ -141,13 +138,11 @@ spring:
                             - 'Content-Type'
                             - 'Transfer-Encoding'
                             - 'X-Accel-Buffering'
-
 # 로깅 레벨
 logging:
     level:
         org.springframework.cloud.gateway: INFO
         reactor.netty.http.client: INFO
         shop.ForwardHostHeaderFilter: INFO
-
 server:
     port: 8080

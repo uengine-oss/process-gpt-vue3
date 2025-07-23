@@ -141,14 +141,12 @@ spring:
                             - 'Content-Type'
                             - 'Transfer-Encoding'
                             - 'X-Accel-Buffering'
-
 # 로깅 레벨
 logging:
     level:
         org.springframework.cloud.gateway: INFO
         reactor.netty.http.client: INFO
         shop.ForwardHostHeaderFilter: INFO
-
 server:
     port: 8080
 # Production 환경의 설정은 application-prod.yml 파일에서 관리됩니다.
