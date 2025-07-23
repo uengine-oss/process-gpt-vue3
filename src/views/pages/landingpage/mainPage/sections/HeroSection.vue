@@ -3,7 +3,9 @@
     <div class="container">
       <div class="hero-content">
         <h1>{{ $t('HeroSection.title') }}</h1>
-        <p>{{ $t('HeroSection.description') }}</p>
+        <p class="pa-0 ma-0 pt-4">{{ $t('HeroSection.description1') }}</p>
+        <p class="pa-0 ma-0">{{ $t('HeroSection.description2') }}</p>
+        <p class="pa-0 ma-0 pb-4">{{ $t('HeroSection.description3') }}</p>
         <div class="hero-buttons">
           <!-- 텍스트를 중앙 정렬하기 위해 flex와 justify-center 클래스 추가 -->
           <!-- '시작하기' 버튼과 동일한 구조로 마켓플레이스 버튼 정렬 (to, color, class, height 순서로 통일) -->
@@ -18,7 +20,8 @@
               class="rounded-pill"
               height="48"
           >
-            <a href="https://www.youtube.com/watch?v=kd6_hKSQDYc&list=PLEr96Fo5umW9KIzFLelvN4pc8jsdcEl65" target="_blank">{{ $t('HeroSection.galleryButton') }}</a>
+            <!-- <a href="https://www.youtube.com/watch?v=kd6_hKSQDYc&list=PLEr96Fo5umW9KIzFLelvN4pc8jsdcEl65" target="_blank">{{ $t('HeroSection.galleryButton') }}</a> -->
+            <a href="https://www.uengine.org/contents/educationforai.html" target="_blank">{{ $t('HeroSection.educationButton') }}</a>
           </v-btn>
           <!-- <v-btn 
               to="/marketplace"
@@ -32,7 +35,7 @@
         <div class="mt-6">
             <a
                 class="font-medium text-decoration-none"
-                href="/assets/images/mainPages/process_gpt_presentation.pdf"
+                href="/3_steps_to_building_agentic_ai&a2a_and_mcp.pdf"
                 target="_blank"
                 rel="noopener"
                 style="width: fit-content; display: block; color: #1976D2;"
@@ -45,7 +48,7 @@
         </div>
       </div>
       <div class="hero-image">
-        <img src="@/assets/images/mainPages/main-img-gpt.png" alt="Process GPT 대시보드" />
+        <img src="@/assets/images/mainPages/how-02.gif" alt="Process GPT 프로세스 정의관리 gif 이미지" />
       </div>
     </div>
   </section>
@@ -175,6 +178,7 @@ export default {
   width: 100%;
   height: auto;
   border-radius: 10px;
+  border: 4px solid #b1dbf6;
   /* box-shadow: 0 10px 30px var(--shadow-color); */
 }
 
@@ -196,6 +200,7 @@ export default {
   
   .hero-image {
     max-width: 100%;
+    margin-bottom: 50px;
   }
 }
 
