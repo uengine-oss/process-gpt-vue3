@@ -15,7 +15,7 @@
                 <!-- Duration -->
                 <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
                 <!-- Instruction -->
-                <Instruction v-model="activity.description" class="mb-4"></Instruction>
+                <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <!-- Checkpoints -->
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
                 <!-- Attachments -->
