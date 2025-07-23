@@ -1,5 +1,6 @@
 <template>
-  <div class="agent-monitor">
+  <BrowserAgent v-if="openBrowserAgent" :html="html" :workItem="workItem" :doneWorkItemList="doneWorkItemList" />
+  <div v-else class="agent-monitor">
     <div class="task-area" ref="taskArea">
       <div v-if="errorMessage" class="error-banner">
         {{ errorMessage }}
@@ -47,7 +48,8 @@
                   item.payload.isCompleted && isTaskCompleted(item.payload) && (
                     (item.payload.crewType === 'report' && item.payload.jobId.includes('final_report_merge')) ||
                     item.payload.crewType === 'slide' ||
-                    item.payload.crewType === 'text'
+                    item.payload.crewType === 'text' ||
+                    (item.payload.crewType === 'action' && isLastCompletedActionTask(item.payload))
                   )
                 "
                 class="meta-submit"
@@ -179,14 +181,21 @@
               <option value="crewai">CrewAI Deep Research</option>
               <option value="crewai-action">CrewAI Action</option>
               <option value="openai">OpenAI Deep Research</option>
+              <option value="brower-use">Browser Use</option>
             </select>
           </div>
-          <button @click="startTask" class="start-button">시작하기</button>
+          <button v-if="selectedResearchMethod === 'brower-use' && !downloadedBrowserAgent" @click="downloadBrowserAgent" class="start-button">다운로드</button>
+          <div v-if="selectedResearchMethod === 'brower-use' && !downloadedBrowserAgent" style="margin-top: 8px; color: #888; font-size: 0.95em;">
+            Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)
+          </div>
+          <button v-else @click="startTask" class="start-button">시작하기</button>
         </div>
       </div>
       <div v-if="isLoading && timeline.length > 0" class="feedback-loading">
         <div class="loading-spinner"></div>
-        <span v-if="todoStatus.draft_status === 'STARTED'">초안 생성 작업을 진행중입니다...</span>
+        <span v-if="todoStatus.draft_status === 'STARTED' && todoStatus.agent_mode === 'COMPLETE'">액션 실행 작업을 진행중입니다...</span>
+        <span v-else-if="todoStatus.draft_status === 'STARTED'">초안 생성 작업을 진행중입니다...</span>
+        <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED' && todoStatus.agent_mode === 'COMPLETE'">피드백을 반영하여 액션을 다시 실행하고 있습니다...</span>
         <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED'">피드백을 반영하여 초안을 다시 생성하고 있습니다...</span>
         <button @click="stopTask" class="stop-button" aria-label="중단">
           ⏹
@@ -217,13 +226,14 @@ import ChatModule from '@/components/ChatModule.vue'
 import Chat from '@/components/ui/Chat.vue'
 import { marked } from 'marked'
 import BackendFactory from '@/components/api/BackendFactory'
+import BrowserAgent from '@/components/BrowserAgent.vue'
 
 const backend = BackendFactory.createBackend()
 
 export default {
   name: 'AgentMonitor',
   mixins: [ChatModule],
-  components: { Chat },
+  components: { Chat, BrowserAgent },
   props: {
     html: {
       type: String,
@@ -244,7 +254,10 @@ export default {
       chatMessages: [],
       isCancelled: false,
       isLoading: false,
-      selectedResearchMethod: 'crewai'
+      selectedResearchMethod: 'crewai',
+      openBrowserAgent: false,
+      downloadedBrowserAgent: false,
+      doneWorkItemList: []
     }
   },
   computed: {
@@ -321,7 +334,7 @@ export default {
     },
     isQueued() {
       return this.todoStatus &&
-        (this.todoStatus.status === 'IN_PROGRESS' && this.todoStatus.agent_mode === 'DRAFT')
+        (this.todoStatus.status === 'IN_PROGRESS' && (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE'))
     },
     timeline() {
       const taskItems = this.tasks.map(task => ({ type: 'task', time: task.startTime, payload: task }));
@@ -330,6 +343,12 @@ export default {
     },
   },
   methods: {
+    downloadBrowserAgent() {
+      const url = 'https://drive.google.com/uc?export=download&id=1-yFl3h8hzoxOPqc0vZbawLAlKAVmdEyY';
+      window.open(url, '_blank');
+      localStorage.setItem('downloadedBrowserAgent', 'true');
+      this.downloadedBrowserAgent = true;
+    },
     extractContent(content) {
       return (typeof content === 'object' && content.text !== undefined)
         ? content.text
@@ -514,6 +533,9 @@ export default {
 
     async loadData() {
       try {
+        if(localStorage.getItem('downloadedBrowserAgent') === 'true') {
+          this.downloadedBrowserAgent = true;
+        }
         this.errorMessage = null;
         this.events = [];
         const taskId = this.getTaskIdFromWorkItem();
@@ -605,6 +627,20 @@ export default {
       return '작업완료'
     },
     async startTask() {
+      if(this.selectedResearchMethod === 'brower-use') {
+        const workItemList = await backend.getWorkListByInstId(this.workItem.worklist.instId);
+        if(workItemList) {
+          let doneWorkItemList = workItemList.filter(item => item.status === 'DONE' && item.task && item.task.output);
+          if(doneWorkItemList.length > 0) {
+            this.doneWorkItemList = doneWorkItemList.map(item => ({
+              name: item.name,
+              output: item.task.output
+            }));
+          }
+        }
+        this.openBrowserAgent = true;
+        return;
+      }
       const taskId = this.getTaskIdFromWorkItem();
       if (!taskId) {
         this.errorMessage = 'taskId를 찾을 수 없습니다.';
@@ -616,7 +652,14 @@ export default {
       this.todoStatus = { ...this.todoStatus, agent_mode: agentMode, status: 'IN_PROGRESS', draft_status: 'STARTED' };
       try {
         // 선택된 연구 방식에 따라 agent_orch 값 결정
-        const agentOrch = this.selectedResearchMethod === 'openai-deep-research' ? 'openai' : 'crewai';
+        let agentOrch;
+        if (this.selectedResearchMethod === 'openai') {
+          agentOrch = 'openai';
+        } else if (this.selectedResearchMethod === 'crewai-action') {
+          agentOrch = 'crewai-action';
+        } else {
+          agentOrch = 'crewai'; // crewai 기본값
+        }
         
         await backend.putWorkItem(taskId, { 
           agent_mode: agentMode, 
@@ -728,6 +771,24 @@ export default {
         return task.role;
       }
       return task.name;
+    },
+    
+    isLastCompletedActionTask(task) {
+      if (task.crewType !== 'action') return false;
+      
+      // action 타입 중에서 완료된 task들만 필터링
+      const actionTasks = this.tasks.filter(t => 
+        t.crewType === 'action' && t.isCompleted && this.isTaskCompleted(t)
+      );
+      
+      if (actionTasks.length === 0) return false;
+      
+      // 시작시간 기준으로 정렬하여 가장 마지막 task 찾기
+      const lastActionTask = actionTasks.sort((a, b) => 
+        new Date(b.startTime) - new Date(a.startTime)
+      )[0];
+      
+      return task.id === lastActionTask.id;
     },
   },
   async created() {
