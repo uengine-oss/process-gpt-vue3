@@ -196,7 +196,9 @@ export default {
                 proc_def_id: this.processDefinition.processDefinitionId,
                 activity_id: activityId
             };
-            const formId = `${options.proc_def_id}_${options.activity_id}_form`;
+            let formId = `${options.proc_def_id}_${options.activity_id}_form`;
+            formId = formId.toLowerCase();
+            formId = formId.replace(/[/.]/g, "_");
             if (this.lastPath) {
                 if (this.lastPath == 'chat' || this.lastPath == 'definition-map') {
                     localStorage.setItem(formId, html);
@@ -774,10 +776,13 @@ export default {
                                 }
                                 const form = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']);
                                 if (window.$mode == 'ProcessGPT') {
-                                    task.tool = 'formHandler:' + processDefinitionId + '_' + task.id + '_form';
+                                    let formId = `${processDefinitionId}_${task.id}_form`;
+                                    formId = formId.toLowerCase();
+                                    formId = formId.replace(/[/.]/g, "_");
+                                    task.tool = `formHandler:${formId}`;
                                 } else {
                                     if (form && form.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
-                                        task.tool = 'formHandler:' + form.variableForHtmlFormContext.name;
+                                        task.tool = `formHandler:${form.variableForHtmlFormContext.name}`;
                                     } else {
                                         task.tool = '';
                                     }
@@ -1017,20 +1022,24 @@ export default {
                                 me.processDefinition.data = [];
                                 me.processDefinition.activities.forEach(async (activity) => {
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
-                                        let formHtml = null;
-                                        const formId = info.proc_def_id + '_' + activity.id + '_form';
+                                        let formHtml = null;    
+                                        let formId = `${info.proc_def_id}_${activity.id}_form`;
+                                        formId = formId.toLowerCase();
+                                        formId = formId.replace(/[/.]/g, "_");
                                         activity.tool = `formHandler:${formId}`;
                                         const currentFormHtml = localStorage.getItem(formId);
                                         if (currentFormHtml) {
                                             formHtml = currentFormHtml;
                                         } else {
                                             if (me.oldProcDefId && me.oldProcDefId !== info.proc_def_id) {
-                                                const oldFormId = me.oldProcDefId + '_' + activity.id + '_form';
+                                                let oldFormId = `${me.oldProcDefId}_${activity.id}_form`;
+                                                oldFormId = oldFormId.toLowerCase();
+                                                oldFormId = oldFormId.replace(/[/.]/g, "_");
                                                 const oldFormHtml = localStorage.getItem(oldFormId);
                                                 if (oldFormHtml) {
                                                     formHtml = oldFormHtml;
-                                                    activity.tool = 'formHandler:' + formId;
-                                                }
+                                                    activity.tool =  `formHandler:${formId}`;
+                                                } 
                                             }
                                         }
                                         if (formHtml) {
