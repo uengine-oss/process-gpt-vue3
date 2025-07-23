@@ -106,13 +106,10 @@ export default {
             try {
                 let url = null;
                 if (window.location.href.includes("https://")){
-                    url = `wss://${window.location.host}/ws`
-                } else if(window.location.href.includes("localhost")){
-                    url = `ws://localhost:3000/ws`
+                    url = `wss://${window.location.host}/voice/ws`
                 } else {
-                    url = `ws://${window.location.host}/ws`
+                    url = `ws://${window.location.host}/voice/ws`
                 }
-                console.log(url);
                 this.ws = new WebSocket(url);
                 this.userEmail = localStorage.getItem('email');
                 this.ws.onopen = () => {

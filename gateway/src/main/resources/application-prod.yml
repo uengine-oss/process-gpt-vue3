@@ -25,6 +25,12 @@ spring:
                       - Path=/memento/**,
                   filters:
                       - RewritePath=/memento/?(?<segment>.*), /$\{segment}
+                - id: voice
+                  uri: http://localhost:3000
+                  predicates:
+                      - Path=/voice/**,
+                  filters:
+                      - RewritePath=/voice/?(?<segment>.*), /$\{segment}
                 - id: frontend
                   uri: http://localhost:5173
                   predicates:
@@ -117,6 +123,15 @@ spring:
                   filters:
                       - RewritePath=/memento/?(?<segment>.*), /$\{segment}
                   order: 30
+
+                # Voice 서비스
+                - id: voice
+                  uri: http://react-voice-agent-service-prod:3000
+                  predicates:
+                      - Path=/voice/**
+                  filters:
+                      - RewritePath=/voice/?(?<segment>.*), /$\{segment}
+                  order: 40
 
                 # Frontend 서비스 (catch-all)
                 - id: frontend
