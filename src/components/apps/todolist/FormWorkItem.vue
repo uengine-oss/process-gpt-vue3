@@ -81,7 +81,9 @@
                 </div>
             </v-card-text>
         </v-card>
-        <v-dialog v-model="delegateTaskDialog" width="500">
+        <v-dialog v-model="delegateTaskDialog"
+            class="form-work-item-delegate-task-form-dialog"
+        >
             <DelegateTaskForm 
                 :task="workItem"
                 @delegate="delegateTask"

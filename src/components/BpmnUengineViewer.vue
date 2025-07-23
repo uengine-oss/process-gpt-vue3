@@ -624,6 +624,12 @@ export default {
                                                         connectionElement.classList.add('running-task-line');
                                                     }
                                                 }
+                                                
+                                                // 연결선의 목적지 태스크에도 running 마커 적용
+                                                const targetRef = flow.targetRef;
+                                                if (targetRef && targetRef.id) {
+                                                    canvas.addMarker(targetRef.id, 'running');
+                                                }
                                             }
                                         } catch (e) {
                                             // 개별 flow 처리 실패 시 계속 진행

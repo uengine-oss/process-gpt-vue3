@@ -55,36 +55,8 @@ export default {
         // }, 10000);
 
         this.watchRef = await backend.watchInstanceList((callback => {
-            const instId = callback.id
-            const inst = callback.value
-            const index = this.instanceList.findIndex(item => item.instId == instId);
-            if (inst) {
-                // 삽입 또는 수정
-                const newProject = {
-                    instId: instId,
-                    title: inst.status == 'NEW' ? inst.name + this.$t('runningInstance.running') : inst.name,
-                    to: `/instancelist/${instId.replace(/\./g, '_DOT_')}`,
-                    BgColor: 'primary',
-                    updatedAt: inst.updatedAt,
-                    isNew: inst.status === 'NEW',
-                    isDeleted: inst.is_deleted,
-                    deletedAt: inst.deleted_at
-                };
-
-                if (index !== -1) {
-                    // 수정
-                    this.instanceList.splice(index, 1, newProject);
-                } else {
-                    // 삽입
-                    this.instanceList.push(newProject);
-                }
-                
-                this.instanceList.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-            } else if (index !== -1) {
-                // 삭제
-                this.instanceList.splice(index, 1);
-            }
-        }));
+            this.loadInstances();           
+        }),{status: ['NEW', 'RUNNING']});
     },
     computed: {
         JMS() {

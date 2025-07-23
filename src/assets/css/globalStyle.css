@@ -685,6 +685,7 @@ hr {
     right: 20px;
     background: white;
 }
+
 .feedback-form .form-definition-simulation-chat-box {
     height: calc(100vh - 300px);
 }
@@ -742,6 +743,10 @@ hr {
 
 .instance-card-kanban-board .todo-list-card-box {
     height: calc(100vh - 360px) !important;
+}
+
+.form-work-item-delegate-task-form-dialog {
+    width: 40vw;
 }
     
 .is-work-height {
