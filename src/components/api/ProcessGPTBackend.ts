@@ -152,9 +152,6 @@ class ProcessGPTBackend implements Backend {
     
     async putRawDefinition(xml: any, defId: string, options: any) {
         try {
-            defId = defId.toLowerCase();
-            defId = defId.replace(/[/.]/g, "_");
-
             // 폼 정보를 저장하기 위해서
             if(options && options.type === "form") {
                 const fieldsJson = this.extractFields(xml);
@@ -1562,7 +1559,7 @@ class ProcessGPTBackend implements Backend {
                 proc_def_version: instItem.procDefVersion,
                 proc_inst_name: instItem.name,
                 current_activity_ids: instItem.currentActivityIds || [],
-                participants: instItem.currentUserIds || [],
+                participants: instItem.participants || [],
                 role_bindings: instItem.roleBindings || [],
                 variables_data: instItem.variablesData || [],
                 status: instItem.status,

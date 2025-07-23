@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-card>
+        <v-card elevation="10">
             <v-row class="ma-0 pa-4 pb-0 align-center">
                 <v-card-title class="pa-0">
                    {{ $t('DelegateTask.title') }}
@@ -15,8 +15,11 @@
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>
-            <v-card-text class="pa-4 pb-0">
-                <v-card>
+            <v-card-text class="pa-4 pb-0"
+                :style="isMobile ? 'height: calc(100vh - 100px);' : ''"
+                style="overflow: auto;"
+            >
+                <v-card  elevation="10">
                     <v-card-title>
                         <v-row style="margin: 0px; place-content: space-between;">
                             <div>
@@ -31,7 +34,7 @@
                             </div>
                         </v-row>
                     </v-card-title>
-                    <v-card-text style="padding-bottom: 5px;">
+                    <v-card-text class="pa-4 pt-0">
                         <p>{{ $t('DelegateTask.description') }}: {{ description }}</p>
                         <p>{{ $t('DelegateTask.endDate') }}: {{ dueDate }}</p>
                         <p>{{ $t('DelegateTask.startDate') }}: {{ startDate }}</p>
@@ -40,61 +43,139 @@
                             <v-skeleton type="list-item-two-line" height="48"></v-skeleton>
                         </div>
                         <div v-else>
-                            <div v-if="!assigneeUserInfo">
+                            <v-divider class="my-2"></v-divider>
+                            <div v-if="!assigneeUserInfo || assigneeUserInfo.length == 0">
                                 {{ $t('DelegateTask.noAssignee') }}
                             </div>
-                            <div v-else-if="assigneeUserInfo.length == 0">
-                                {{ $t('DelegateTask.notification') }}
-                            </div>
                             <div v-else>
-                                <div v-for="user in assigneeUserInfo">
-                                    <v-col cols="9">
-                                        <div class="d-flex align-center">
-                                            <div class="pl-5">
-                                                <v-img v-if="user.profile" :src="user.profile" width="45px" 
-                                                    class="rounded-circle img-fluid" />
-                                                <v-avatar v-else>
-                                                    <Icons :icon="'user-circle-bold'" :size="50" />
-                                                </v-avatar>
-                                            </div>
-                                            <div class="ml-5">
-                                                <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ user.username }}</h4>
-                                                <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ user.email }}</div>
-                                            </div>
+                                <div v-for="user in assigneeUserInfo" :key="user.email">
+                                    <div class="d-flex align-center">
+                                        <div>
+                                            <v-img v-if="user.profile" :src="user.profile" width="45px" 
+                                                class="rounded-circle img-fluid" />
+                                            <v-avatar v-else>
+                                                <Icons :icon="'user-circle-bold'" :size="50" />
+                                            </v-avatar>
                                         </div>
-                                    </v-col>
+                                        <div class="ml-5">
+                                            <div class="d-flex align-center">
+                                                <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ user.username }}</h4>
+                                                <v-chip v-if="user.email === currentUserEmail" 
+                                                    size="x-small" 
+                                                    color="primary" 
+                                                    variant="outlined"
+                                                    class="ml-2"
+                                                >나</v-chip>
+                                            </div>
+                                            <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ user.email }}</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </v-card-text>
                 </v-card>
-                <v-icon size="48" color="primary" class="mx-auto d-block">mdi-arrow-down-bold</v-icon>
-                <v-card>
-                    <v-card-title  v-if="delegateUser">{{ $t('DelegateTask.delegateTitle') }}</v-card-title>
-                    <v-card-text v-if="delegateUser" style="padding-bottom: 5px;">
-                        <v-col cols="9">
+                <v-icon v-if="delegateUser"
+                    class="mx-auto d-block"
+                    size="48" color="primary"
+                >mdi-arrow-down-bold
+                </v-icon>
+                <div>
+                    <v-card elevation="10" class="pa-0 ma-0 mb-2">
+                        <v-card-title v-if="delegateUser"
+                            class="ma-0 pa-4"
+                        >{{ $t('DelegateTask.delegateTitle') }}</v-card-title>
+                        <v-card-text v-if="delegateUser"
+                            class="ma-0 pa-4 pt-0"
+                        >
                             <div class="d-flex align-center">
-                                <div class="pl-5">
+                                <div class="mr-2">
                                     <v-img v-if="delegateUser.profile" :src="delegateUser.profile" width="45px" 
                                         class="rounded-circle img-fluid" />
                                     <v-avatar v-else>
                                         <Icons :icon="'user-circle-bold'" :size="50" />
                                     </v-avatar>
                                 </div>
-                                <div class="ml-5">
+                                <div>
                                     <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ delegateUser.username }}</h4>
                                     <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ delegateUser.email }}</div>
                                 </div>
                             </div>
-                        </v-col>
-                        <v-divider></v-divider>
+                        </v-card-text>
+                    </v-card>
+                    <v-card-text class="pa-0">
+                        <!-- 데스크탑 버전: v-data-table -->
+                        <div class="mb-1">
+                            <v-data-table
+                                :headers="tableHeaders"
+                                :items="filteredUserList"
+                                :loading="isUserLoading"
+                                item-value="email"
+                                density="compact"
+                                :items-per-page="10"
+                                :items-per-page-options="[5, 10, 25]"
+                                @click:row="handleUserRowClick"
+                                class="elevation-1"
+                                style="height: 400px; border-radius: 20px;"
+                                fixed-header
+                            >
+                                <template v-slot:top>
+                                    <div class="d-flex align-center justify-end pa-3 pb-0">
+                                        <div class="d-flex align-center border border-borderColor rounded-pill px-3"
+                                            style="width: 100%;"
+                                        >
+                                            <Icons :icon="'magnifer-linear'" :size="18" />
+                                            <v-text-field v-model="searchText"
+                                                @input="debounceSearch"
+                                                @click:clear="handleClearSearch"
+                                                variant="plain"
+                                                density="compact"
+                                                class="position-relative pt-0 ml-2 custom-placeholer-color delegate-task-form-search"
+                                                :placeholder="$t('DelegateTask.searchUser')"
+                                                single-line hide-details
+                                            ></v-text-field>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template v-slot:item="{ item }">
+                                    <tr :class="['cursor-pointer', 'user-table-row']">
+                                        <td class="text-center">
+                                            <div class="d-flex justify-center align-center">
+                                                <v-avatar size="32">
+                                                    <v-img v-if="item.profile" :src="item.profile" width="32px" height="32px" 
+                                                        class="rounded-circle img-fluid"
+                                                    />
+                                                    <Icons v-else :icon="'user-circle-bold'" :size="32" />
+                                                </v-avatar>
+                                            </div>
+                                        </td>
+                                        <td @click="selectUserFromTable(item)">
+                                            <div class="font-weight-medium">{{ item.username }}</div>
+                                            <div class="text-caption text-medium-emphasis">{{ item.email }}</div>
+                                        </td>
+                                        <td class="text-center">
+                                            <v-btn v-if="item.email === currentUserEmail"
+                                                @click.stop="selectMyself(item)"
+                                                variant="elevated" 
+                                                class="rounded-pill default-greay-btn"
+                                                density="compact"
+                                                prepend-icon="mdi-account"
+                                            >{{ $t('DelegateTask.delegateToMyself') }}
+                                            </v-btn>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </v-data-table>
+                        </div>
+                        
+                        <!-- 모바일 버전: 기존 UserListPage -->
+                        <!-- <div v-else>
+                            <UserListPage :config="{itemsPerPage: 1, height: 200}" @selected-user="selectedUser"></UserListPage>
+                        </div> -->
                     </v-card-text>
-                    <v-card-text>
-                        <UserListPage :config="{itemsPerPage: 1, height: 200}" @selected-user="selectedUser"></UserListPage>
-                    </v-card-text>
-                </v-card>
+                </div>
             </v-card-text>
-            <v-row class="ma-0 pa-4 pr-2">
+            <v-row class="ma-0 pa-4 pr-2 align-center">
                 <v-spacer></v-spacer>
                 <div v-if="message" style="margin-right: 7px; font-size: small;">{{message}}</div>
                 <v-btn @click="delegate()"
@@ -129,6 +210,16 @@ export default {
             isLoading: true,
             assigneeUserInfo: null,
             delegateUser: null,
+            searchText: '',
+            userList: [],
+            isUserLoading: false,
+            searchTimeout: null,
+            currentEndpoint: null, // 현재 실제 담당자 이메일
+            tableHeaders: [
+                { title: this.$t('DelegateTask.profile'), key: 'profile', align: 'center', sortable: false },
+                { title: this.$t('DelegateTask.userInfo'), key: 'userInfo', align: 'start' },
+                { title: '', key: 'action', align: 'center', sortable: false, width: '120px' },
+            ],
         }
     },
     computed: {
@@ -165,38 +256,90 @@ export default {
             return this.task.worklist.defId
         },
         isDisabled(){
-            if(!this.delegateUser) return true
-            if(this.delegateUser.email == this.task.worklist.endpoint) return true
-
-            return false
+            return !this.delegateUser;
         },
         message(){
             if(!this.delegateUser) {
                 return this.$t('DelegateTask.selectAssignee')
             }
-            if(this.delegateUser.email == this.task.worklist.endpoint) {
-                return this.$t('DelegateTask.equalDelegate')
-            }
             return null
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
+        filteredUserList() {
+            if (!this.userList) {
+                return [];
+            }
+            
+            let filteredList = [];
+            
+            // 현재 담당자를 제외한 사용자 목록
+            if (this.currentEndpoint) {
+                filteredList = this.userList.filter(user => user.email !== this.currentEndpoint);
+            } else {
+                filteredList = [...this.userList];
+            }
+            
+            // 현재 로그인한 사용자를 최상단으로 이동
+            const currentUserEmail = this.currentUserEmail;
+            if (currentUserEmail) {
+                const currentUserIndex = filteredList.findIndex(user => user.email === currentUserEmail);
+                if (currentUserIndex > 0) {
+                    // 현재 사용자를 찾아서 맨 앞으로 이동
+                    const currentUser = filteredList.splice(currentUserIndex, 1)[0];
+                    filteredList.unshift(currentUser);
+                }
+            }
+            
+            return filteredList;
+        },
+        currentUserEmail() {
+            return localStorage.getItem('email');
         },
     },
     created() {
-        var me = this
-        me.$try({
-            action: async () => {
-                me.isLoading = true
-                if(me.task.worklist.endpoint){
-                    me.assigneeUserInfo = await backend.getUserList({
-                        orderBy: 'email',
-                        startAt: me.task.worklist.endpoint,
-                        endAt: me.task.worklist.endpoint
-                    })
-                }
-                me.isLoading = false
-            }
-        })  
+        this.loadAssigneeInfo();
+    },
+    watch: {
+        task: {
+            handler() {
+                this.loadAssigneeInfo();
+            },
+            deep: true
+        }
     },
     methods: {
+        async loadAssigneeInfo() {
+            var me = this
+            me.$try({
+                action: async () => {
+                    me.isLoading = true
+                    
+                    // 현재 할당된 사용자 정보를 최신으로 다시 로딩
+                    if(me.task && me.task.worklist && me.task.worklist.taskId){
+                        // taskId로 최신 워크아이템 정보를 가져와서 현재 담당자 확인
+                        const latestWorkItem = await backend.getWorkItem(me.task.worklist.taskId);
+                        if(latestWorkItem && latestWorkItem.worklist.endpoint){
+                            me.currentEndpoint = latestWorkItem.worklist.endpoint; // 현재 실제 담당자 저장
+                            me.assigneeUserInfo = await backend.getUserList({
+                                orderBy: 'email',
+                                startAt: latestWorkItem.worklist.endpoint,
+                                endAt: latestWorkItem.worklist.endpoint
+                            })
+                        } else {
+                            me.currentEndpoint = null;
+                            me.assigneeUserInfo = null;
+                        }
+                    }
+                    
+                    me.isLoading = false
+                    
+                    // 위임 가능한 사용자 목록 로딩
+                    me.loadInitialUsers()
+                }
+            })  
+        },
         selectedUser(user){
             this.delegateUser = user
         },
@@ -205,7 +348,95 @@ export default {
         },
         close(){
             this.$emit('close');
+        },
+        async searchUsers() {
+             var me = this
+             me.$try({
+                 action: async () => {
+                     me.isUserLoading = true;
+
+                     if(me.searchText && me.searchText.trim().length > 0){
+                         // 이메일로 검색
+                         const emailResults = await backend.getUserList({
+                             orderBy: 'email', 
+                             range: {from: 0, to: 19},
+                             like: {key: 'email', value: `%${me.searchText.trim()}%`},
+                         });
+                         
+                         // 사용자명으로 검색
+                         const usernameResults = await backend.getUserList({
+                             orderBy: 'username', 
+                             range: {from: 0, to: 19},
+                             like: {key: 'username', value: `%${me.searchText.trim()}%`},
+                         });
+                         
+                         // 두 결과를 합치고 중복 제거 (이메일 기준)
+                         const allResults = [...(emailResults || []), ...(usernameResults || [])];
+                         const uniqueResults = allResults.filter((user, index, self) => 
+                             index === self.findIndex(u => u.email === user.email)
+                         );
+                         me.userList = uniqueResults;
+                     } else {
+                         me.userList = await backend.getUserList({
+                             orderBy: 'email',
+                             range: {from: 0, to: 9}
+                         });
+                     }
+                     me.isUserLoading = false;
+                 }
+             });
+         },
+         handleUserRowClick(event) {
+             const user = this.filteredUserList.find(u => u.email === event.email);
+             if (user) {
+                 this.delegateUser = user;
+             }
+         },
+        selectUserFromTable(item) {
+            this.delegateUser = item;
+        },
+        async loadInitialUsers() {
+            this.isUserLoading = true;
+            try {
+                const users = await backend.getUserList({
+                    orderBy: 'email',
+                    range: {from: 0, to: 9}
+                });
+                this.userList = users || [];
+            } catch (error) {
+                console.error('초기 사용자 목록 로딩 실패:', error);
+                this.userList = [];
+            } finally {
+                this.isUserLoading = false;
+            }
+        },
+        debounceSearch() {
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                this.searchUsers();
+            }, 500);
+        },
+        handleClearSearch() {
+            this.searchText = '';
+            this.loadInitialUsers();
+        },
+        selectMyself(item) {
+            // 나에게로 위임 기능 - 바로 위임 실행
+            this.delegateUser = {
+                email: item.email,
+                username: item.username,
+                profile: item.profile
+            };
+            
+            // 바로 위임 실행
+            this.delegate();
         }
     }
 }
 </script>
+
+<style scoped>
+.user-table-row:hover {
+    background-color: rgb(var(--v-theme-primary), 0.3) !important;
+}
+</style>

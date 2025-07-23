@@ -1,172 +1,221 @@
 <template>
-    <div>
-        <audio ref="audioPlay"></audio>
-    </div>
+    <div></div>
 </template>
 
 <script>
+const BUFFER_SIZE = 4800;
+
+class Player {
+    constructor() {
+        this.playbackNode = null;
+    }
+    async init(sampleRate) {
+        const audioContext = new AudioContext({ sampleRate });
+        await audioContext.audioWorklet.addModule("/static/audio-playback-worklet.js");
+        this.playbackNode = new AudioWorkletNode(audioContext, "audio-playback-worklet");
+        this.playbackNode.connect(audioContext.destination);
+    }
+    play(buffer) {
+        if (this.playbackNode) {
+            this.playbackNode.port.postMessage(buffer);
+        }
+    }
+    stop() {
+        if (this.playbackNode) {
+            this.playbackNode.port.postMessage(null);
+        }
+    }
+}
+
+class Recorder {
+    constructor(onDataAvailable) {
+        this.onDataAvailable = onDataAvailable;
+        this.audioContext = null;
+        this.mediaStream = null;
+        this.mediaStreamSource = null;
+        this.workletNode = null;
+    }
+    async start(stream) {
+        try {
+            if (this.audioContext) {
+                await this.audioContext.close();
+            }
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+            await this.audioContext.audioWorklet.addModule("/static/audio-processor-worklet.js");
+            this.mediaStream = stream;
+            this.mediaStreamSource = this.audioContext.createMediaStreamSource(this.mediaStream);
+            this.workletNode = new AudioWorkletNode(this.audioContext, "audio-processor-worklet");
+            this.workletNode.port.onmessage = event => {
+                this.onDataAvailable(event.data.buffer);
+            };
+            this.mediaStreamSource.connect(this.workletNode);
+        } catch (error) {
+            this.stop();
+        }
+    }
+    async stop() {
+        if (this.mediaStream) {
+            this.mediaStream.getTracks().forEach(track => track.stop());
+            this.mediaStream = null;
+        }
+        if (this.audioContext) {
+            await this.audioContext.close();
+            this.audioContext = null;
+        }
+        this.mediaStreamSource = null;
+        this.workletNode = null;
+    }
+}
+
 export default {
     props: {
-        audioResponse: String,
-        isLoading: Boolean,
-        offStream: Boolean,
-        stopAudioStreamStatus: Boolean,
         chatRoomId: String,
+        startAudioStream: Boolean,
+        stopAudioStreamStatus: Boolean
     },
     data() {
         return {
-            audio: null,
-            sourceBuffer: null,
-            abortController: null, // AbortController 인스턴스 추가
-            audioContext: null,
+            ws: null,
+            audioPlayer: null,
+            audioRecorder: null,
+            buffer: new Uint8Array(),
+            userEmail: '',
+            isAudioOn: false,
             analyser: null,
             dataArray: null,
-            audioQueue: [], // 오디오 버퍼를 저장할 큐
-            isPlaying: false, // 현재 오디오가 재생 중인지 여부
+            analyserAnimationId: null,
         }
-    },
-    mounted() {
-        this.setupAudioStream();
     },
     watch: {
-        stopAudioStreamStatus(newVal) {
-            if(newVal) {
-                this.stopStream()
+        startAudioStream(newVal) {
+            if (newVal && !this.isAudioOn) {
+                this.startAudio();
             }
         },
-        audioResponse(newVal) {
-            if(newVal == "" || newVal == null) return
-            let result = newVal.replace(/[\n\r]/g, '');
-            this.playResponseData(result);
-        },
-        offStream(newVal) {
-            if (newVal === true) {
-                this.streamOff();
+        stopAudioStreamStatus(newVal) {
+            if (newVal) {
+                this.stopAudio();
             }
         }
     },
+    beforeUnmount() {
+        this.stopAudio();
+    },
     methods: {
-        setupAudioStream() {
-            this.audio = this.$refs.audioPlay;
-            this.audio.autoplay = true;
-
-            // AudioContext 생성
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            this.analyser = this.audioContext.createAnalyser();
+        async startAudio() {
+            try {
+                let url = null;
+                if (window.location.href.includes("https://")){
+                    url = `wss://${window.location.host}/voice/ws`
+                } else {
+                    url = `ws://${window.location.host}/voice/ws`
+                }
+                this.ws = new WebSocket(url);
+                this.userEmail = localStorage.getItem('email');
+                this.ws.onopen = () => {
+                    this.ws.send(JSON.stringify({
+                        type: 'user_info',
+                        email: this.userEmail,
+                        chat_room_id: this.chatRoomId,
+                        tenant_id: window.$tenantName
+                    }));
+                };
+                this.audioPlayer = new Player();
+                await this.audioPlayer.init(24000);
+                this.ws.onmessage = event => {
+                    const data = JSON.parse(event.data);
+                    if (data?.type !== 'response.audio.delta') return;
+                    const binary = atob(data.delta);
+                    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+                    const pcmData = new Int16Array(bytes.buffer);
+                    this.audioPlayer.play(pcmData);
+                };
+                const appendToBuffer = (newData) => {
+                    const newBuffer = new Uint8Array(this.buffer.length + newData.length);
+                    newBuffer.set(this.buffer);
+                    newBuffer.set(newData, this.buffer.length);
+                    this.buffer = newBuffer;
+                };
+                const handleAudioData = (data) => {
+                    const uint8Array = new Uint8Array(data);
+                    appendToBuffer(uint8Array);
+                    if (this.buffer.length >= BUFFER_SIZE) {
+                        const toSend = new Uint8Array(this.buffer.slice(0, BUFFER_SIZE));
+                        this.buffer = new Uint8Array(this.buffer.slice(BUFFER_SIZE));
+                        const regularArray = String.fromCharCode(...toSend);
+                        const base64 = btoa(regularArray);
+                        this.ws.send(JSON.stringify({type: 'input_audio_buffer.append', audio: base64}));
+                    }
+                };
+                this.audioRecorder = new Recorder(handleAudioData);
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                await this.audioRecorder.start(stream);
+                this.setupAnalyser(this.audioRecorder.audioContext, this.audioRecorder.mediaStreamSource);
+                this.isAudioOn = true;
+                this.$emit('audio:start');
+            } catch (error) {
+                this.isAudioOn = false;
+            }
+        },
+        setupAnalyser(audioContext, sourceNode) {
+            this.analyser = audioContext.createAnalyser();
             this.analyser.fftSize = 256;
             this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
-
-            const audioElement = this.$refs.audioPlay;
-            const source = this.audioContext.createMediaElementSource(audioElement);
-            source.connect(this.analyser);
-            this.analyser.connect(this.audioContext.destination);
-
+            sourceNode.connect(this.analyser);
             this.updateAudioBars();
-        },
-        stopStream() {
-            if (this.abortController) {
-                this.abortController.abort(); // fetch 요청 중단
-            }
-            if (this.audio) {
-                this.audio.pause();
-                this.audio.currentTime = 0;
-            }
-            if (this.sourceBuffer && this.sourceBuffer.updating) {
-                this.sourceBuffer.abort();
-            }
-            this.audioQueue = []; // Clear the audio queue
-            this.isPlaying = false; // Reset the playing state
-            this.$emit('audio:stop');
-        },
-        async playResponseData(response) {
-            var me = this;
-            me.abortController = new AbortController();
-            const signal = me.abortController.signal;
-            var email = localStorage.getItem('email');
-            var input = {
-                query: response,
-                chat_room_id: me.chatRoomId,
-                email: email
-            }
-            const token = localStorage.getItem('accessToken');
-            fetch(`/execution/audio-stream`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'text/plain',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(input),
-                signal: signal
-            }).then(response => {
-                const reader = response.body.getReader();
-                const push = () => {
-                    reader.read().then(async ({ done, value }) => {
-                        if (done) {
-                            return;
-                        }
-                        try {
-                            const audioBuffer = await me.audioContext.decodeAudioData(value.buffer);
-                            me.audioQueue.push(audioBuffer); // 큐에 오디오 버퍼 추가
-                            me.playNextInQueue(); // 큐에서 다음 오디오 재생 시도
-                        } catch (error) {
-                            console.error('Error decoding audio data', error);
-                        }
-
-                        me.$emit('update:isLoading', false);
-                        me.$emit('audio:start');
-                        me.updateAudioBars();
-
-                        push();
-                    }).catch(error => {
-                        console.error('Error fetching audio stream', error);
-                        me.$emit('update:isLoading', false);
-                    });
-                };
-                push();
-            }).catch(error => {
-                if (error.name === 'AbortError') {
-                    console.log('Fetch aborted');
-                } else {
-                    console.error('Fetch error:', error);
-                }
-            });
-        },
-        playNextInQueue() {
-            if (this.isPlaying || this.audioQueue.length === 0) {
-                return;
-            }
-
-            const audioBuffer = this.audioQueue.shift(); // 큐에서 다음 오디오 버퍼 꺼내기
-            const source = this.audioContext.createBufferSource();
-            source.buffer = audioBuffer;
-
-            // 소스를 분석기 노드에 연결한 후, 오디오 컨텍스트의 목적지에 연결
-            source.connect(this.analyser);
-            this.analyser.connect(this.audioContext.destination);
-
-            source.onended = () => {
-                this.isPlaying = false;
-                this.playNextInQueue(); // 현재 오디오가 끝나면 다음 오디오 재생
-            };
-
-            source.start();
-            this.isPlaying = true;
         },
         updateAudioBars() {
             if (this.analyser) {
-                if (this.audioContext.state === 'suspended') {
-                    this.audioContext.resume();
-                }
                 this.analyser.getByteFrequencyData(this.dataArray);
                 this.$emit('update:audioBars', Array.from(this.dataArray));
-                requestAnimationFrame(this.updateAudioBars);
+                
+                // 사용자 음성 감지 - AI 오디오 중단
+                this.checkUserSpeech();
+                
+                this.analyserAnimationId = requestAnimationFrame(this.updateAudioBars);
             }
+        },
+        checkUserSpeech() {
+            if (!this.dataArray || this.dataArray.length === 0) return;
+            
+            // 볼륨 계산
+            let sum = 0;
+            for (let i = 0; i < this.dataArray.length; i++) {
+                sum += this.dataArray[i];
+            }
+            const volume = sum / this.dataArray.length;
+            
+            if (volume > 40 && this.audioPlayer) {
+                // console.log('User speaking detected, stopping AI audio. Volume:', volume);
+                this.audioPlayer.stop();
+            }
+        },
+        stopAudio() {
+            if (this.ws) {
+                this.ws.close();
+                this.ws = null;
+            }
+            if (this.audioPlayer) {
+                this.audioPlayer.stop();
+                this.audioPlayer = null;
+            }
+            if (this.audioRecorder) {
+                this.audioRecorder.stop();
+                this.audioRecorder = null;
+            }
+            if (this.analyserAnimationId) {
+                cancelAnimationFrame(this.analyserAnimationId);
+                this.analyserAnimationId = null;
+            }
+            this.analyser = null;
+            this.dataArray = null;
+            this.buffer = new Uint8Array();
+            this.isAudioOn = false;
+            this.$emit('audio:stop');
         },
     }
 };
 </script>
 
-
 <style scoped>
-/* 필요에 따라 스타일 추가 */
 </style>
