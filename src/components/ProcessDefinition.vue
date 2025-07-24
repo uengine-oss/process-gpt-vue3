@@ -919,6 +919,18 @@ export default {
         },
         openPanel(id) {
             console.log(id);
+            
+            // BPMN 바탕을 더블클릭했을 때 viewMode면 알림 출력
+            if (id && id.startsWith('Collaboration_') && this.isViewMode) {
+                this.$try({
+                    action: async () => {
+                        // 아무것도 하지 않음
+                    },
+                    warningMsg: '읽기 모드입니다.'
+                });
+                return;
+            }
+            
             this.element = this.findElement(this.definitions, 'id', id);
 
             if (this.element) {

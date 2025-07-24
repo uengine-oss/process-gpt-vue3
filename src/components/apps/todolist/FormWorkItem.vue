@@ -13,7 +13,7 @@
                 </v-icon>
                 <!-- PC일 때 제출 완료 -->
                 <v-btn @click="executeProcess"
-                    class="submit-complete-pc"
+                    :class="{ 'submit-complete-pc': !$route.path.startsWith('/todolist') }"
                     color="primary"
                     density="compact"
                     rounded variant="flat"
@@ -32,7 +32,7 @@
                     variant="flat"
                     :disabled="isLoading"
                     :loading="isLoading"
-                >위임 하기</v-btn>
+                >위임하기</v-btn>
             </div>
             <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
                 <v-tooltip v-if="isMobile"
@@ -455,6 +455,10 @@ export default {
                         }),
                         backend.putWorkItem(me.workItem.worklist.taskId, {'user_id': delegateUser.email})
                     ]);
+                    
+                    // 위임 성공 후 workItem 정보 업데이트
+                    me.workItem.worklist.endpoint = delegateUser.email;
+                    
                     me.closeDelegateTask();
                 },
                 successMsg: this.$t('DelegateTask.successMsg')

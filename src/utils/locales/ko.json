@@ -1285,7 +1285,7 @@
         "searchUser": "검색",
         "profile": "프로필",
         "userInfo": "대상 정보",
-        "delegateToMyself": "나에게로 위임"
+        "delegateToMyself": "나에게 위임"
     },
     "UserInputGenerator": {
         "inputLabel": "생성하고싶은 에이전트를 입력하세요",

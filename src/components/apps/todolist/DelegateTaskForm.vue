@@ -30,7 +30,8 @@
                                 <v-chip v-if="!adhoc && defId"
                                     color="primary"
                                     size="small" variant="outlined"
-                                    density="comfortable">BPM</v-chip>
+                                    density="comfortable"
+                                >BPM</v-chip>
                             </div>
                         </v-row>
                     </v-card-title>
@@ -61,10 +62,9 @@
                                             <div class="d-flex align-center">
                                                 <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ user.username }}</h4>
                                                 <v-chip v-if="user.email === currentUserEmail" 
-                                                    size="x-small" 
-                                                    color="primary" 
-                                                    variant="outlined"
-                                                    class="ml-2"
+                                                    color="primary"
+                                                    size="small" variant="outlined"
+                                                    density="comfortable"
                                                 >나</v-chip>
                                             </div>
                                             <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ user.email }}</div>
@@ -216,7 +216,7 @@ export default {
             searchTimeout: null,
             currentEndpoint: null, // 현재 실제 담당자 이메일
             tableHeaders: [
-                { title: this.$t('DelegateTask.profile'), key: 'profile', align: 'center', sortable: false },
+                { title: this.$t('DelegateTask.profile'), key: 'profile', align: 'center', sortable: false, minWidth: '80px' },
                 { title: this.$t('DelegateTask.userInfo'), key: 'userInfo', align: 'start' },
                 { title: '', key: 'action', align: 'center', sortable: false, width: '120px' },
             ],

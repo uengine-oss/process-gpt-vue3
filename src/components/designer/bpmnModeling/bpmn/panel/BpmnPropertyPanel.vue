@@ -171,7 +171,8 @@ export default {
             html: '',
             templateOptions: [],
             taskList: [],
-            componentKey: 0
+            componentKey: 0,
+            eventBusListener: null
         };
     },
     async mounted() {
@@ -180,12 +181,19 @@ export default {
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
 
+        // BPMN 모델 변경 이벤트 리스너 추가
+        this.setupModelChangeListener();
+
         // 템플릿 목록 불러오기
         if (this.isPALMode) {
             await this.loadTaskList();
         }
 
         // this.$refs.cursor.focus();
+    },
+    beforeUnmount() {
+        // 이벤트 리스너 정리
+        this.removeModelChangeListener();
     },
     computed: {
         filteredTemplateOptions() {
@@ -334,6 +342,33 @@ export default {
             this.$emit('close');
 
             console.log(task.businessObject.extensionElements.values[0]);
+        },
+        setupModelChangeListener() {
+            if (!this.bpmnModeler) return;
+
+            const eventBus = this.bpmnModeler.get('eventBus');
+            
+            // BPMN 요소 변경 이벤트 리스너 설정
+            this.eventBusListener = (event) => {
+                // 현재 패널이 열려있는 요소와 변경된 요소가 같은지 확인
+                if (event.element && event.element.id === this.element.id) {
+                    // 이름이 변경된 경우 입력 필드 업데이트
+                    if (event.element.businessObject.name !== this.name) {
+                        console.log('BPMN 모델 이름이 변경되었습니다:', event.element.businessObject.name);
+                        this.name = event.element.businessObject.name || '';
+                    }
+                }
+            };
+
+            // 'element.changed' 이벤트 리스닝
+            eventBus.on('element.changed', this.eventBusListener);
+        },
+        removeModelChangeListener() {
+            if (this.bpmnModeler && this.eventBusListener) {
+                const eventBus = this.bpmnModeler.get('eventBus');
+                eventBus.off('element.changed', this.eventBusListener);
+                this.eventBusListener = null;
+            }
         },
         checkValidation() {
             let key = Object.keys(this.validationList).filter((item) => item === this.element.id);
