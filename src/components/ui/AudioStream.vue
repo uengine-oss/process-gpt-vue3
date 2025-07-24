@@ -104,7 +104,13 @@ export default {
     methods: {
         async startAudio() {
             try {
-                this.ws = new WebSocket("ws://localhost:3000/ws");
+                let url = null;
+                if (window.location.href.includes("https://")){
+                    url = `wss://${window.location.host}/voice/ws`
+                } else {
+                    url = `ws://${window.location.host}/voice/ws`
+                }
+                this.ws = new WebSocket(url);
                 this.userEmail = localStorage.getItem('email');
                 this.ws.onopen = () => {
                     this.ws.send(JSON.stringify({
@@ -179,8 +185,8 @@ export default {
             }
             const volume = sum / this.dataArray.length;
             
-            if (volume > 30 && this.audioPlayer) {
-                console.log('User speaking detected, stopping AI audio. Volume:', volume);
+            if (volume > 40 && this.audioPlayer) {
+                // console.log('User speaking detected, stopping AI audio. Volume:', volume);
                 this.audioPlayer.stop();
             }
         },

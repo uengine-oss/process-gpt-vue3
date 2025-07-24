@@ -8,10 +8,10 @@
       <nav class="nav">
         <ul>
           <li><a class="nav-link" @click.prevent="navigateToSection('intro')">{{ $t('Header.intro') }}</a></li>
-          <li><a class="nav-link" @click.prevent="navigateToSection('consulting')">{{ $t('Header.consulting') }}</a></li>
-          <li><a class="nav-link" @click.prevent="navigateToSection('features')">{{ $t('Header.features') }}</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('why')">{{ $t('Header.why') }}</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('works')">{{ $t('Header.works') }}</a></li>
           <li><a class="nav-link" @click.prevent="navigateToSection('movie-gallery')">{{ $t('Header.movieGallery') }}</a></li>
-          <li><a class="nav-link" @click.prevent="navigateToSection('tech')">{{ $t('Header.tech') }}</a></li>
+          <!-- <li><a class="nav-link" @click.prevent="navigateToSection('tech')">{{ $t('Header.tech') }}</a></li> -->
           <li><a class="nav-link" @click.prevent="navigateToSection('download')">{{ $t('Header.download') }}</a></li>
           <!-- <li><router-link class="nav-link" to="/marketplace" @click="scrollToTop">Marketplace</router-link></li> -->
         </ul>

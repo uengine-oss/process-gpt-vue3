@@ -2,7 +2,10 @@
     <v-row class="justify-center">
         <!--Account Settings tabs-->
         <v-col cols="12" md="12">
-            <v-card elevation="10">
+            <v-card elevation="10" 
+                class="is-work-height"
+                style="overflow: auto;"
+            >
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
                     <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default">

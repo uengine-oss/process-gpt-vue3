@@ -2790,7 +2790,8 @@ class ProcessGPTBackend implements Backend {
                     const prevWorkItem = await storage.getObject('todolist', {
                         match: {
                             proc_inst_id: workItem.proc_inst_id,
-                            activity_id: referenceId
+                            activity_id: referenceId,
+                            status: 'DONE'
                         }
                     });
                     

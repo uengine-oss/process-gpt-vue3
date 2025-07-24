@@ -8,7 +8,7 @@
           <!-- Vuetify3 버튼 컴포넌트로 변경, a 태그 사용하지 않음 -->
           <div class="cta-buttons">
               <!-- '시작하기' 버튼: 외부 링크 이동을 위해 Vuetify의 v-btn에 href 사용 -->
-              <v-btn
+              <!-- <v-btn
                   class="btn btn-primary-cta rounded-pill"
                   to="/definition-map"
                   target="_blank"
@@ -16,7 +16,7 @@
                   variant="flat"
                 >
                   {{ $t('CTASection.betaTestButton') }}
-              </v-btn>
+              </v-btn> -->
               <!-- '문의하기' 버튼: 클릭 시 폼 오픈 -->
               <!-- Vuetify3의 라운드 설정은 rounded 속성에 값을 지정하여 사용합니다. -->
               <v-btn

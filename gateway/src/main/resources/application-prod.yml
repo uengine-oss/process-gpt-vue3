@@ -1,6 +1,3 @@
-server:
-    port: 8088
----
 spring:
     profiles: default
     cloud:
@@ -25,6 +22,12 @@ spring:
                       - Path=/memento/**,
                   filters:
                       - RewritePath=/memento/?(?<segment>.*), /$\{segment}
+                - id: voice
+                  uri: http://localhost:3000
+                  predicates:
+                      - Path=/voice/**,
+                  filters:
+                      - RewritePath=/voice/?(?<segment>.*), /$\{segment}
                 - id: frontend
                   uri: http://localhost:5173
                   predicates:
@@ -118,6 +121,15 @@ spring:
                       - RewritePath=/memento/?(?<segment>.*), /$\{segment}
                   order: 30
 
+                # Voice 서비스
+                - id: voice
+                  uri: http://react-voice-agent-service-prod:3000
+                  predicates:
+                      - Path=/voice/**
+                  filters:
+                      - RewritePath=/voice/?(?<segment>.*), /$\{segment}
+                  order: 40
+
                 # Frontend 서비스 (catch-all)
                 - id: frontend
                   uri: http://frontend-deployment-prod:5173
@@ -141,13 +153,11 @@ spring:
                             - 'Content-Type'
                             - 'Transfer-Encoding'
                             - 'X-Accel-Buffering'
-
 # 로깅 레벨
 logging:
     level:
         org.springframework.cloud.gateway: INFO
         reactor.netty.http.client: INFO
         shop.ForwardHostHeaderFilter: INFO
-
 server:
     port: 8080
