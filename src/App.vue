@@ -10,7 +10,7 @@
         <v-snackbar
             v-model="snackbar"
             class="custom-snackbar"
-            :timeout="-1"
+            :timeout="5000"
             :color="snackbarColor"
             elevation="24"
             location="top"
@@ -235,6 +235,13 @@ export default {
                     window.$app_.snackbarColor = 'success';
                     window.$app_.snackbar = true;
                     window.$app_.snackbarSuccessStatus = true;
+                    window.$app_.clickCount = 0; // 스낵바 표시 시 클릭 카운터 리셋
+                }
+                if (options.warningMsg) {
+                    window.$app_.snackbarMessage = options.warningMsg;
+                    window.$app_.snackbarColor = 'warning';
+                    window.$app_.snackbar = true;
+                    window.$app_.snackbarSuccessStatus = false;
                     window.$app_.clickCount = 0; // 스낵바 표시 시 클릭 카운터 리셋
                 }
             } catch (e) {
