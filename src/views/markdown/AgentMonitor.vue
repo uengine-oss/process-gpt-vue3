@@ -193,9 +193,9 @@
       </div>
       <div v-if="isLoading && timeline.length > 0" class="feedback-loading">
         <div class="loading-spinner"></div>
-        <span v-if="todoStatus.draft_status === 'STARTED' && todoStatus.agent_mode === 'COMPLETE'">액션 실행 작업을 진행중입니다...</span>
+        <span v-if="todoStatus.draft_status === 'STARTED' && todoStatus.agent_orch === 'crewai-action'">액션 실행 작업을 진행중입니다...</span>
         <span v-else-if="todoStatus.draft_status === 'STARTED'">초안 생성 작업을 진행중입니다...</span>
-        <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED' && todoStatus.agent_mode === 'COMPLETE'">피드백을 반영하여 액션을 다시 실행하고 있습니다...</span>
+        <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED' && todoStatus.agent_orch === 'crewai-action'">피드백을 반영하여 액션을 다시 실행하고 있습니다...</span>
         <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED'">피드백을 반영하여 초안을 다시 생성하고 있습니다...</span>
         <button @click="stopTask" class="stop-button" aria-label="중단">
           ⏹
@@ -648,7 +648,7 @@ export default {
       }
       // 로딩 상태 활성화 및 draft_status 설정
       this.isLoading = true;
-      const agentMode = this.selectedResearchMethod === 'crewai-action' ? 'COMPLETE' : 'DRAFT';
+      const agentMode = 'DRAFT';
       
       // 선택된 연구 방식에 따라 agent_orch 값 결정
       let agentOrch;
