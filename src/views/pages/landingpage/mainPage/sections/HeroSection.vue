@@ -96,7 +96,7 @@ export default {
 
 <style scoped>
 .hero {
-  padding: 60px 0;
+  padding: 100px 0;
   background-color: var(--bg-color-light);
   position: relative;
   overflow: hidden;
