@@ -178,9 +178,9 @@
               v-model="selectedResearchMethod" 
               class="method-dropdown"
             >
-              <option value="crewai">CrewAI Deep Research</option>
+              <option value="crewai-deep-research">CrewAI Deep Research</option>
               <option value="crewai-action">CrewAI Action</option>
-              <option value="openai">OpenAI Deep Research</option>
+              <option value="openai-deep-research">OpenAI Deep Research</option>
               <option value="brower-use">Browser Use</option>
             </select>
           </div>
@@ -193,9 +193,9 @@
       </div>
       <div v-if="isLoading && timeline.length > 0" class="feedback-loading">
         <div class="loading-spinner"></div>
-        <span v-if="todoStatus.draft_status === 'STARTED' && todoStatus.agent_mode === 'COMPLETE'">액션 실행 작업을 진행중입니다...</span>
+        <span v-if="todoStatus.draft_status === 'STARTED' && todoStatus.agent_orch === 'crewai-action'">액션 실행 작업을 진행중입니다...</span>
         <span v-else-if="todoStatus.draft_status === 'STARTED'">초안 생성 작업을 진행중입니다...</span>
-        <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED' && todoStatus.agent_mode === 'COMPLETE'">피드백을 반영하여 액션을 다시 실행하고 있습니다...</span>
+        <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED' && todoStatus.agent_orch === 'crewai-action'">피드백을 반영하여 액션을 다시 실행하고 있습니다...</span>
         <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED'">피드백을 반영하여 초안을 다시 생성하고 있습니다...</span>
         <button @click="stopTask" class="stop-button" aria-label="중단">
           ⏹
@@ -254,7 +254,7 @@ export default {
       chatMessages: [],
       isCancelled: false,
       isLoading: false,
-      selectedResearchMethod: 'crewai',
+      selectedResearchMethod: 'crewai-deep-research',
       openBrowserAgent: false,
       downloadedBrowserAgent: false,
       doneWorkItemList: []
@@ -648,16 +648,16 @@ export default {
       }
       // 로딩 상태 활성화 및 draft_status 설정
       this.isLoading = true;
-      const agentMode = this.selectedResearchMethod === 'crewai-action' ? 'COMPLETE' : 'DRAFT';
+      const agentMode = 'DRAFT';
       
       // 선택된 연구 방식에 따라 agent_orch 값 결정
       let agentOrch;
-      if (this.selectedResearchMethod === 'openai') {
-        agentOrch = 'openai';
+      if (this.selectedResearchMethod === 'openai-deep-research') {
+        agentOrch = 'openai-deep-research';
       } else if (this.selectedResearchMethod === 'crewai-action') {
         agentOrch = 'crewai-action';
       } else {
-        agentOrch = 'crewai'; // crewai 기본값
+        agentOrch = 'crewai-deep-research'; // crewai 기본값
       }
       
       this.todoStatus = { ...this.todoStatus, agent_mode: agentMode, status: 'IN_PROGRESS', draft_status: 'STARTED', agent_orch: agentOrch };
