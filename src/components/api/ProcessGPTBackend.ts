@@ -156,6 +156,9 @@ class ProcessGPTBackend implements Backend {
             // 폼 정보를 저장하기 위해서
             if(options && options.type === "form") {
                 const fieldsJson = this.extractFields(xml);
+                if (!fieldsJson) {
+                    throw new Error("An error occurred while analyzing the form fields.");
+                }
                 var formDef: any = await storage.getObject('form_def', {
                     match: {
                         proc_def_id: options.proc_def_id,
