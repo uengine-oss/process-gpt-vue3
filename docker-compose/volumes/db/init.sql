@@ -563,7 +563,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION duplicate_definition_from_marketplace(
     p_definition_id TEXT,
     p_definition_name TEXT,
-    p_author_uid TEXT
+    p_author_uid TEXT,
+    p_tenant_id TEXT
 )
 RETURNS JSONB AS $$
 DECLARE
@@ -594,7 +595,7 @@ BEGIN
         v_proc_def_record.name,
         v_proc_def_record.definition,
         v_proc_def_record.bpmn,
-        public.tenant_id()
+        p_tenant_id
     )
     ON CONFLICT (id, tenant_id) DO UPDATE SET
         name = EXCLUDED.name,
@@ -619,7 +620,7 @@ BEGIN
             v_form_def_record.html,
             v_form_def_record.proc_def_id,
             v_form_def_record.activity_id,
-            public.tenant_id(),
+            p_tenant_id,
             v_form_def_record.id,
             NULL
         )

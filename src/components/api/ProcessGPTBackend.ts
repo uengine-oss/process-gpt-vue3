@@ -2,6 +2,7 @@ import axios from '@/utils/axios';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 import type { Backend } from './Backend';
+import defaultProcessesData from './defaultProcesses.json';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -2131,6 +2132,20 @@ class ProcessGPTBackend implements Backend {
                 is_admin: true,
                 tenant_id: tenantId
             });
+            
+            if (window.$tenantName !== 'localhost') {
+                for (const process of defaultProcessesData.defaultProcesses) {
+                    try {
+                        await this.duplicateDefinition({
+                            id: process.id,
+                            name: process.name,
+                            author_uid: process.author_uid,
+                        }, tenantId);
+                    } catch (error) {
+                        console.warn(`Failed to duplicate process ${process.id}:`, error);
+                    }
+                }
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2710,13 +2725,14 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
-    async duplicateDefinition(definition: any) {
+    async duplicateDefinition(definition: any, tenantId?: string) {
         try {
             // Supabase function을 사용하여 프로세스 정의 복사
             const result = await storage.callProcedure('duplicate_definition_from_marketplace', {
                 p_definition_id: definition.id,
                 p_definition_name: definition.name,
-                p_author_uid: definition.author_uid
+                p_author_uid: definition.author_uid,
+                p_tenant_id: tenantId || window.$tenantName
             });
 
             if (result && result.success) {
@@ -2790,7 +2806,8 @@ class ProcessGPTBackend implements Backend {
                     const prevWorkItem = await storage.getObject('todolist', {
                         match: {
                             proc_inst_id: workItem.proc_inst_id,
-                            activity_id: referenceId
+                            activity_id: referenceId,
+                            status: 'DONE'
                         }
                     });
                     

@@ -206,8 +206,10 @@
             if(this.workItem && this.workItem.activity
             && this.workItem.activity.instruction
             && this.workItem.activity.instruction != '' && this.workItem.activity.instruction != null) {
-              this.command = this.workItem.activity.instruction
-              this.sendCommand()
+              setTimeout(() => {
+                this.command = this.workItem.activity.instruction
+                this.sendCommand()
+              }, 500)
             }
           }
           

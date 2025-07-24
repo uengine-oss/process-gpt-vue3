@@ -1,19 +1,19 @@
 <template>
-    <v-card elevation="10">
+    <div elevation="10">
         <v-row class="ma-sm-n2 ma-n1">
             <v-col cols="12" sm="6">
                 <v-card elevation="10">
-                    <v-card-item>
-                        <h5 class="text-h5">{{ $t('accountTab.profileImageChange') }}</h5>
+                    <v-card-item class="pa-0">
+                        <h5 class="text-h5 ma-4">{{ $t('accountTab.profileImageChange') }}</h5>
                         <div class="text-center mt-6 mb-6">
                             <v-avatar size="120">
                                 <img :src="selectedProfileImage || picture || ''" height="120" alt="image" />
                             </v-avatar>
                         </div>
-                        <div class="d-flex justify-center">
+                        <div class="d-flex justify-center mb-7">
                             <v-dialog width="650" v-model="imageChangeDialog">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" color="primary" class="mx-2" rounded="pill" text="이미지 선택">{{
+                                    <v-btn v-bind="props" color="secondary" class="mx-2" rounded="pill" variant="flat" text="이미지 선택">{{
                                         $t('accountTab.imageSelect') }}</v-btn>
                                 </template>
 
@@ -32,19 +32,19 @@
                             </v-dialog>
                             <!-- <v-btn color="error" class="mx-2" variant="outlined" rounded="pill">Reset</v-btn> -->
                         </div>
-                        <div class="text-subtitle-1 text-grey100 text-center my-sm-8 my-6">
+                        <!-- <div class="text-subtitle-1 text-grey100 text-center my-sm-8 my-6">
                             {{ $t('accountTab.imageSelect') }}
-                        </div>
+                        </div> -->
                     </v-card-item>
                 </v-card>
             </v-col>
             <v-col cols="12" sm="6">
                 <v-card elevation="10">
-                    <v-card-item>
-                        <h5 class="text-h5">{{ $t('accountTab.personalDetails') }}</h5>
-                        <div class="text-subtitle-1 text-grey100 mt-2">{{ $t('accountTab.personalDetailsExplanation') }}
+                    <v-card-item class="pa-0">
+                        <h5 class="text-h5 pa-4">{{ $t('accountTab.personalDetails') }}</h5>
+                        <div class="text-subtitle-1 text-grey100 pl-4">{{ $t('accountTab.personalDetailsExplanation') }}
                         </div>
-                        <div class="mt-5">
+                        <div class="mt-5 pa-4 pb-6">
                             <v-row>
                                 <v-col cols="12" md="6">
                                     <v-label class="mb-2 font-weight-medium">{{ $t('accountTab.name') }}</v-label>
@@ -73,15 +73,15 @@
             </v-col>
         </v-row>
         <div class="d-flex justify-end mt-5 pb-3">
-            <v-btn @click="changeTenant" size="large" color="secondary" rounded="pill" class="mr-4">
+            <v-btn @click="changeTenant" size="large" color="secondary" rounded="pill" class="mr-4" variant="flat">
                 {{ $t('accountTab.changeTenant') }}
             </v-btn>
-            <v-btn @click="updateUser" size="large" color="primary" rounded="pill" class="mr-4">
+            <v-btn @click="updateUser" size="large" color="primary" rounded="pill" class="mr-4" variant="flat">
                 {{ $t('accountTab.save') }}
             </v-btn>
             <!-- <v-btn size="large" class="bg-lighterror text-error"  rounded="pill">닫기</v-btn> -->
         </div>
-    </v-card>
+    </div>
 </template>
 
 <script>

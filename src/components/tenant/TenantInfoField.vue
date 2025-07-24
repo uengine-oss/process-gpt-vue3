@@ -46,7 +46,7 @@
                                 :ref="textField.ref"
                                 :readonly="isEdit || textField.disabled"
                                 class="tenant-info-text-filed"
-                                hint="* 영어, 숫자, 하이픈(-), 언더스코어(_)만 입력 가능합니다."
+                                hint="* 영어, 숫자, 하이픈(-)만 입력 가능합니다."
                                 persistent-hint
                                 required
                             ></VTextField>
@@ -424,8 +424,8 @@ export default {
         },
 
         filterDomainInput(event) {
-            // 영어, 숫자, 하이픈(-), 언더스코어(_)만 허용
-            const filtered = event.target.value.replace(/[^a-zA-Z0-9\-_]/g, '');
+            // 영어, 숫자, 하이픈(-)만 허용
+            const filtered = event.target.value.replace(/[^a-zA-Z0-9\-]/g, '');
             this.value.id = filtered;
         }
     }
