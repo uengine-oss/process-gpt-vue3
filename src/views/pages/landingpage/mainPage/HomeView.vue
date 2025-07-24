@@ -4,12 +4,14 @@
             <v-col cols="12">
                 <HeroSection />
                 <IntroSection />
-                <DemoSection />
-                <ConsultingSection />
-                <FeaturesSection />
+                <!-- <DemoSection /> -->
+                <WhySection />
+                <!-- <ConsultingSection /> -->
+                <!-- <FeaturesSection /> -->
+                <HowSection />
                 <SpecialSection />
-                <CasesSection />
-                <TechSection />
+                <!-- <CasesSection /> -->
+                <!-- <TechSection /> -->
                 <ExtensibilitySection />
                 <CTASection />
                 <DownloadSection />
@@ -35,12 +37,14 @@
 <script>
 import HeroSection from './sections/HeroSection.vue'
 import IntroSection from './sections/IntroSection.vue'
-import DemoSection from './sections/DemoSection.vue'
-import ConsultingSection from './sections/ConsultingSection.vue'
-import FeaturesSection from './sections/FeaturesSection.vue'
+// import DemoSection from './sections/DemoSection.vue'
+import WhySection from './sections/WhySection.vue'
+// import ConsultingSection from './sections/ConsultingSection.vue'
+// import FeaturesSection from './sections/FeaturesSection.vue'
+import HowSection from './sections/HowSection.vue'
 import SpecialSection from './sections/SpecialSection.vue'
-import CasesSection from './sections/CasesSection.vue'
-import TechSection from './sections/TechSection.vue'
+// import CasesSection from './sections/CasesSection.vue'
+// import TechSection from './sections/TechSection.vue'
 import ExtensibilitySection from './sections/ExtensibilitySection.vue'
 import CTASection from './sections/CTASection.vue'
 import DownloadSection from './sections/DownloadSection.vue'
@@ -50,12 +54,14 @@ export default {
     components: {
         HeroSection,
         IntroSection,
-        DemoSection,
-        ConsultingSection,
-        FeaturesSection,
+        // DemoSection,
+        WhySection,
+        // ConsultingSection,
+        // FeaturesSection,
+        HowSection,
         SpecialSection,
-        CasesSection,
-        TechSection,
+        // CasesSection,
+        // TechSection,
         ExtensibilitySection,
         CTASection,
         DownloadSection

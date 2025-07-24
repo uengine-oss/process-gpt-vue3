@@ -203,11 +203,13 @@
             this.tryConnect = false
             this.retryCount = 0
             this.addLog('info', '✅ 브라우저 에이전트에 연결되었습니다!')
-            if(this.workItem && this.workItem.worklist
-            && this.workItem.worklist.description 
-            && this.workItem.worklist.description != '' && this.workItem.worklist.description != null) {
-              this.command = this.workItem.worklist.description
-              this.sendCommand()
+            if(this.workItem && this.workItem.activity
+            && this.workItem.activity.instruction
+            && this.workItem.activity.instruction != '' && this.workItem.activity.instruction != null) {
+              setTimeout(() => {
+                this.command = this.workItem.activity.instruction
+                this.sendCommand()
+              }, 500)
             }
           }
           

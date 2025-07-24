@@ -67,7 +67,7 @@
     </div>
   </section>
 
-  <section class="special bg-blue-50" id="special"> 
+  <!-- <section class="special bg-blue-50" id="special"> 
     <div class="container mx-auto pb-12">
       <div class="section-header">
         <h2>{{ $t('SpecialSection.coreDistinctionTitle') }}</h2>
@@ -113,7 +113,7 @@
         </div>
       </div>
     </div>
-  </section>
+  </section> -->
 </template>
 
 <script>
