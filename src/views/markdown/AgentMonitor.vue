@@ -178,9 +178,9 @@
               v-model="selectedResearchMethod" 
               class="method-dropdown"
             >
-              <option value="crewai">CrewAI Deep Research</option>
+              <option value="crewai-deep-research">CrewAI Deep Research</option>
               <option value="crewai-action">CrewAI Action</option>
-              <option value="openai">OpenAI Deep Research</option>
+              <option value="openai-deep-research">OpenAI Deep Research</option>
               <option value="brower-use">Browser Use</option>
             </select>
           </div>
@@ -254,7 +254,7 @@ export default {
       chatMessages: [],
       isCancelled: false,
       isLoading: false,
-      selectedResearchMethod: 'crewai',
+      selectedResearchMethod: 'crewai-deep-research',
       openBrowserAgent: false,
       downloadedBrowserAgent: false,
       doneWorkItemList: []
@@ -652,12 +652,12 @@ export default {
       
       // 선택된 연구 방식에 따라 agent_orch 값 결정
       let agentOrch;
-      if (this.selectedResearchMethod === 'openai') {
-        agentOrch = 'openai';
+      if (this.selectedResearchMethod === 'openai-deep-research') {
+        agentOrch = 'openai-deep-research';
       } else if (this.selectedResearchMethod === 'crewai-action') {
         agentOrch = 'crewai-action';
       } else {
-        agentOrch = 'crewai'; // crewai 기본값
+        agentOrch = 'crewai-deep-research'; // crewai 기본값
       }
       
       this.todoStatus = { ...this.todoStatus, agent_mode: agentMode, status: 'IN_PROGRESS', draft_status: 'STARTED', agent_orch: agentOrch };
