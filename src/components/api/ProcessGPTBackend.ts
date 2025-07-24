@@ -2,6 +2,7 @@ import axios from '@/utils/axios';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 import type { Backend } from './Backend';
+import defaultProcessesData from './defaultProcesses.json';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -2131,6 +2132,20 @@ class ProcessGPTBackend implements Backend {
                 is_admin: true,
                 tenant_id: tenantId
             });
+            
+            if (window.$tenantName !== 'localhost') {
+                for (const process of defaultProcessesData.defaultProcesses) {
+                    try {
+                        await this.duplicateDefinition({
+                            id: process.id,
+                            name: process.name,
+                            author_uid: process.author_uid,
+                        });
+                    } catch (error) {
+                        console.warn(`Failed to duplicate process ${process.id}:`, error);
+                    }
+                }
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
