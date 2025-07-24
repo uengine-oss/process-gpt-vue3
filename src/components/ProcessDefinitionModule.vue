@@ -422,9 +422,10 @@ export default {
                             if (me.processDefinition.roles) {
                                 newProcessDefinition.roles = newProcessDefinition.roles.map(newRole => {
                                     const oldRole = me.processDefinition.roles.find(oldRole => oldRole.name === newRole.name);
-                                    if (oldRole) {
+                                    if (oldRole && oldRole.endpoint && oldRole.endpoint != '' && oldRole.default && oldRole.default != '') {
                                         newRole.resolutionRule = oldRole.resolutionRule;
                                         newRole.endpoint = oldRole.endpoint;
+                                        newRole.default = oldRole.default;
                                     }
                                     return newRole;
                                 });
@@ -689,6 +690,7 @@ export default {
                     data: data,
                     roles: lanes.map((lane) => {
                         let endpoint = '';
+                        let defaultEndpoint = '';
                         if (!lane.endpoint) {
                             if (lane['bpmn:extensionElements'] && lane['bpmn:extensionElements']['uengine:properties'] && lane['bpmn:extensionElements']['uengine:properties']['uengine:json']) {
                                 let laneJson = JSON.parse(lane['bpmn:extensionElements']['uengine:properties']['uengine:json']);
@@ -696,16 +698,20 @@ export default {
                                     if (laneJson.roleResolutionContext.endpoint) {
                                         endpoint = laneJson.roleResolutionContext.endpoint;
                                     }
+                                    if (laneJson.roleResolutionContext._type == 'org.uengine.kernel.DirectRoleResolutionContext') {
+                                        defaultEndpoint = endpoint;
+                                    }
                                 }
                             }
                         } else {
                             endpoint = lane.endpoint;
+                            defaultEndpoint = endpoint;
                         }
                         return {
                             name: lane.name,
                             endpoint: endpoint,
                             resolutionRule: lane.resolutionRule,
-                            default: ""
+                            default: defaultEndpoint
                         }
                     }),
                     events: [

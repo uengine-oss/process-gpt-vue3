@@ -1113,8 +1113,8 @@
     },
     "IntroSection": {
         "title": "Introduction to Process GPT",
-        "subtitle": "Easily design and manage business processes through natural language-based AI chat",
-        "description": "Process GPT leverages the capabilities of Generative AI (LLM) to define business processes in natural language and convert them into executable models. This simplifies traditional BPM work and reduces costs and effort, seamlessly integrating LangChain and Chat-GPT models for execution and definition.",
+        "subtitle": "Just define your goal, and Process GPT will execute it.",
+        "description": "Process GPT is not just a simple GPT that answers questions. When you enter your goal, an executable work chart is automatically generated, and an AI Agent team is configured to actually perform the tasks.",
         "card1Title": "Natural Language-based Process Understanding",
         "card1Description": "Automatically generates business processes by analyzing user input through AI chat.",
         "card2Title": "Customized Process Recommendations",
@@ -1123,17 +1123,51 @@
         "card3Description": "Improves process management efficiency and strengthens collaboration between teams."
     },
     "HeroSection": {
-        "title": "Easily start from AI-based process management to execution",
-        "description": "Define business processes in natural language with Process GPT and convert them into executable models. Simplify traditional BPM work and reduce costs and effort.",
+        "title": "Define processes in natural language, and Process GPT will execute them.",
+        "description1": "✔️ Just enter your goal, and Process GPT will automatically connect it to execution.",
+        "description2": "✔️ You are the Agent Boss. Now take charge of your tasks.",
+        "description3": "✔️ The more you do, the smarter you get. The agent handles repetition, and you handle strategy.",
         "betaTestButton": "Try Beta",
         "galleryButton": "View Gallery",
+        "educationButton": "View Education Course",
         "technicalReportLink": "View Technical Report"
+    },
+    "WhySection": {
+        "subtitle1": "There are many tools that help you with your work.",
+        "subtitle2": "But the only one that takes responsibility for execution is Process GPT."
     },
     "DemoSection": {
         "title": "AI-based Business Process Innovation",
         "description1": "Process GPT is an innovative open-source system based on BPMN (Business Process Model and Notation). It implements a user-centric AI agent system utilizing business process notation accumulated over about 20 years. You can define, automate, and continuously improve complex business processes in natural language.",
         "description2": "Unlike traditional BPM systems, Process GPT leverages the power of AI to simplify all stages from business process definition to execution and optimization. This enables companies to achieve more efficient and flexible process management while saving time and resources.",
         "diagramImg": "diagram-en.png"
+    },
+    "HowSection": {
+        "subtitle": "Various business tasks, now Process-GPT will execute them",
+        "subtitle1": "Automatic management of agent knowledge",
+        "subtitle2": "Automated human-agent team process definition for achieving organizational goals",
+        "subtitle3": "Agent draft generation",
+        "subtitle4": "Multi-modal",
+        "subtitle5": "A2A call & service exposure",
+        "description1": "Enter the persona, skills, etc. of the agent to register, and Agent Boss will train it in natural language for knowledge training",
+        "description2": "As part of the organization, you participate in the necessary processes, and grow and monitor your performance through feedback from multiple work instance results",
+        "list1": "Search for registered human/agent resources to configure the appropriate team (work chart)",
+        "list2": "Create a process for achieving the goal – task, goal output format (form), completion condition (checkpoint)",
+        "list3": "Process improvement through feedback loop after process execution",
+        "list4": "Detailed modifications can also be described in natural language, and those familiar with BPMN process modelers can modify them directly",
+        "listTitle1": "Multi-agent configuration",
+        "listTitle2": "Agent execution",
+        "listTitle3": "Various tools used",
+        "listDesc1": "Create a multi-agent (Crew) configuration",
+        "listDesc2": "Select Task, Goal, Tool",
+        "listDesc3": "Process in process",
+        "listDesc4": "Execute until the goal of each agent is achieved",
+        "listDesc5": "Autonomous and creative process execution through delegation, inquiry, etc. between agents",
+        "listDesc6": "Search for internal documents",
+        "listDesc7": "Create documents using office tools",
+        "listDesc8": "Various MCP tool calls",
+        "list5": "Interpret A2A Discovery and Open API Spec of internal/external systems to automatically generate how to connect to process data values",
+        "list6": "Expose processes and agents of Process GPT as A2A services"
     },
     "ConsultingSection": {
         "title": "Process Consulting AI and Management",
