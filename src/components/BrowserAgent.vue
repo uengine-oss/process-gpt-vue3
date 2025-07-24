@@ -41,7 +41,7 @@
           <input 
             v-model="command"
             @keyup.enter="sendCommand"
-            placeholder="브라우저 에이전트에게 명령을 입력하세요"
+            placeholder="브라우저 에이전트에게 명령을 입력하세요."
             class="command-input"
           />
           <button 
@@ -185,7 +185,7 @@
         } else {
           // 백엔드가 실행되지 않은 경우에만 새 탭 열기
           this.tryConnect = true
-          this.addLog('info', '브라우저 에이전트를 시작합니다...')
+          this.addLog('info', '브라우저 에이전트를 시작합니다.')
           
           const protocolUrl = 'browser-use-agent://start'
           const newTab = window.open(protocolUrl, '_blank')
@@ -234,7 +234,7 @@
         try {
           this.tryConnect = true
           this.connectionStatus = 'connecting'
-          this.addLog('info', 'WebSocket 연결을 시도합니다...')
+          this.addLog('info', 'WebSocket 연결을 시도합니다.')
             
           this.ws = new WebSocket(this.wsUrl)
           
@@ -314,7 +314,7 @@
           
           // Starting task 메시지 간소화
           if (message.content && message.content.startsWith('Starting task:')) {
-            this.addLog('info', '📋 작업을 처리하고 있습니다')
+            this.addLog('info', '📋 작업을 처리하고 있습니다.')
           } else if (message.content === 'No result') {
             // 중지 시 No result 대신 적절한 메시지 표시 (이미 stopProcessing에서 처리하므로 무시)
             return
@@ -380,7 +380,7 @@
         
         // 사용자 입력 로그 추가 (간단하게)
         this.addLog('command', `> ${command}`)
-        this.addLog('info', '작업을 시작합니다...')
+        this.addLog('info', '작업을 시작합니다.')
 
         const prompt = `전달해준 정보를 기반하여 결과를 생성
 현재 작업 정보(workItem): ${JSON.stringify(this.workItem)},
@@ -466,7 +466,7 @@
               // 중지 버튼 클릭 시 호출될 메서드
         async stopProcessing() {
           try {
-            this.addLog('info', '🛑 작업 중지를 요청합니다');
+            this.addLog('info', '🛑 작업 중지를 요청합니다.');
             
             const response = await fetch('http://localhost:8999/api/task/stop', {
                 method: 'POST',
