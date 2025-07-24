@@ -41,7 +41,7 @@
           <input 
             v-model="command"
             @keyup.enter="sendCommand"
-            placeholder="브라우저 에이전트에게 명령을 입력하세요..."
+            placeholder="브라우저 에이전트에게 명령을 입력하세요"
             class="command-input"
           />
           <button 
@@ -143,51 +143,91 @@
       this.disconnectWebSocket()
     },
     methods: {
-      connectBrowserAgent() {
-        this.tryConnect = true
+      // 백엔드 상태를 먼저 확인하는 메소드 (WebSocket 연결 시도)
+      async checkBackendStatus() {
+        return new Promise((resolve) => {
+          try {
+            const testWs = new WebSocket(this.wsUrl)
+            
+            const timeout = setTimeout(() => {
+              testWs.close()
+              resolve(false)
+            }, 1000)
+            
+            testWs.onopen = () => {
+              clearTimeout(timeout)
+              testWs.close()
+              resolve(true)
+            }
+            
+            testWs.onerror = () => {
+              clearTimeout(timeout)
+              resolve(false)
+            }
+          } catch (error) {
+            resolve(false)
+          }
+        })
+      },
+
+      async connectBrowserAgent() {
         this.connectionStatus = 'connecting'
         this.hasTriedConnection = true
-        this.retryCount = 0  // 새로운 연결 시도 시 재시도 카운트 초기화
-        const protocolUrl = 'browser-use-agent://start';
-        const newTab = window.open(protocolUrl, '_blank');
+        this.retryCount = 0
         
-        if (!newTab) {
-          // 팝업이 차단되었거나 실패한 경우
-          this.connectionStatus = 'disconnected'
-          this.tryConnect = false
-          this.addLog('error', '브라우저 에이전트 시작에 실패했습니다. 팝업 차단을 해제해주세요.')
-          return
-        }
+        // 먼저 백엔드가 실행 중인지 확인
+        const isBackendRunning = await this.checkBackendStatus()
         
-        // 새탭 모니터링 - 사용자가 확인/취소할 때까지 기다림
-        const startTime = Date.now()
-        const checkTab = setInterval(() => {
-          if (newTab.closed) {
-            clearInterval(checkTab);
-            const elapsed = Date.now() - startTime
-            
-            if (elapsed < 1000) {
-              // 1초 미만으로 빠르게 닫힌 경우 - 취소로 간주
+        if (isBackendRunning) {
+          // 백엔드가 이미 실행 중이면 바로 WebSocket 연결
+          this.addLog('info', '브라우저 에이전트가 이미 실행 중입니다. 연결 중...')
+          this.connectWebSocket()
+        } else {
+          // 백엔드가 실행되지 않은 경우에만 새 탭 열기
+          this.tryConnect = true
+          this.addLog('info', '브라우저 에이전트를 시작합니다...')
+          
+          const protocolUrl = 'browser-use-agent://start'
+          const newTab = window.open(protocolUrl, '_blank')
+          
+          if (!newTab) {
+            // 팝업이 차단되었거나 실패한 경우
+            this.connectionStatus = 'disconnected'
+            this.tryConnect = false
+            this.addLog('error', '브라우저 에이전트 시작에 실패했습니다. 팝업 차단을 해제해주세요.')
+            return
+          }
+          
+          // 새탭 모니터링 - 사용자가 확인/취소할 때까지 기다림
+          const startTime = Date.now()
+          const checkTab = setInterval(() => {
+            if (newTab.closed) {
+              clearInterval(checkTab)
+              const elapsed = Date.now() - startTime
+              
+              if (elapsed < 1000) {
+                // 1초 미만으로 빠르게 닫힌 경우 - 취소로 간주
+                this.connectionStatus = 'disconnected'
+                this.tryConnect = false
+                this.addLog('error', '브라우저 에이전트 시작이 취소되었습니다.')
+              } else {
+                // 1초 이상 후에 닫힌 경우 - 확인으로 간주
+                this.addLog('info', '브라우저 에이전트 시작 중...')
+                this.connectWebSocket()
+              }
+            }
+          }, 100)
+          
+          // 10초 후에도 탭이 닫히지 않으면 타임아웃
+          setTimeout(() => {
+            if (!newTab.closed) {
+              clearInterval(checkTab)
               this.connectionStatus = 'disconnected'
               this.tryConnect = false
-              this.addLog('error', '브라우저 에이전트 시작이 취소되었습니다.')
-            } else {
-              // 1초 이상 후에 닫힌 경우 - 확인으로 간주
-              this.addLog('info', '브라우저 에이전트 시작 중...')
-              this.connectWebSocket()
+              this.addLog('error', '연결 시도 시간이 초과되었습니다.')
             }
-          }
-        }, 100);
-        
-        // 10초 후에도 탭이 닫히지 않으면 타임아웃
-        setTimeout(() => {
-          if (!newTab.closed) {
-            clearInterval(checkTab);
-            this.connectionStatus = 'disconnected';
-            this.tryConnect = false;
-            this.addLog('error', '연결 시도 시간이 초과되었습니다.');
-          }
-        }, 10000);
+          }, 10000)
+        }
       },
       // WebSocket 연결
       connectWebSocket() {
@@ -208,7 +248,7 @@
             && this.workItem.activity.instruction != '' && this.workItem.activity.instruction != null) {
               setTimeout(() => {
                 this.command = this.workItem.activity.instruction
-                this.sendCommand()
+                // this.sendCommand()
               }, 500)
             }
           }
@@ -227,9 +267,9 @@
           
           this.ws.onerror = (error) => {
             
-            if (this.retryCount < 3) {
+            if (this.retryCount < 5) {
               this.retryCount++
-              this.addLog('info', `연결 재시도 중... (${this.retryCount}/3)`)
+              this.addLog('info', `연결 시도 중... (${this.retryCount}/5)`)
               
               // 재시도 중에는 connecting 상태와 tryConnect = true 유지
               setTimeout(() => {
@@ -264,7 +304,23 @@
       handleMessage(data) {
         try {
           const message = JSON.parse(data)
-          this.addLog(message.type, message.content)
+          
+          // 디버그 메시지 필터링
+          if (message.content && message.content.includes('🔍 Raw WebSocket message') ||
+              message.content && message.content.includes('🔍 Parsed command_data') ||
+              message.content && message.content.includes('🔍 Message type')) {
+            return // 디버그 메시지는 로그에 추가하지 않음
+          }
+          
+          // Starting task 메시지 간소화
+          if (message.content && message.content.startsWith('Starting task:')) {
+            this.addLog('info', '📋 작업을 처리하고 있습니다')
+          } else if (message.content === 'No result') {
+            // 중지 시 No result 대신 적절한 메시지 표시 (이미 stopProcessing에서 처리하므로 무시)
+            return
+          } else {
+            this.addLog(message.type, message.content)
+          }
           
           switch (message.type) {
             case 'info':
@@ -285,6 +341,9 @@
           }
         } catch (error) {
           // JSON 파싱 실패시 일반 텍스트로 처리
+          if (data === 'No result') {
+            return // 중지 시 No result 메시지 무시
+          }
           this.addLog('info', data)
         }
       },
@@ -319,8 +378,9 @@
         
         const command = this.command.trim()
         
-        // 사용자 입력 로그 추가
+        // 사용자 입력 로그 추가 (간단하게)
         this.addLog('command', `> ${command}`)
+        this.addLog('info', '작업을 시작합니다...')
 
         const prompt = `전달해준 정보를 기반하여 결과를 생성
 현재 작업 정보(workItem): ${JSON.stringify(this.workItem)},
@@ -328,7 +388,10 @@
 사용자 요청 사항(command): ${command}`
         
         // WebSocket으로 명령 전송
-        this.ws.send(JSON.stringify({ prompt }))
+        this.ws.send(JSON.stringify({ 
+          prompt,
+          type: 'execute'
+        }))
         
         // 상태 업데이트
         this.isProcessing = true
@@ -400,30 +463,40 @@
         this.logs = []
       },
 
-      // 중지 버튼 클릭 시 호출될 메서드
-      stopProcessing() {
-        try {
-          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            // 중지 명령 전송
-            this.ws.send(JSON.stringify({ 
-              command: 'stop', 
-              type: 'stop_request' 
-            }));
-            this.addLog('info', '🛑 명령 중지 요청을 보냈습니다.');
+              // 중지 버튼 클릭 시 호출될 메서드
+        async stopProcessing() {
+          try {
+            this.addLog('info', '🛑 작업 중지를 요청합니다');
+            
+            const response = await fetch('http://localhost:8999/api/task/stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            console.log('Stop result:', result);
+            
+            if (result.success) {
+                console.log('✅ Task stopped successfully');
+                this.addLog('info', '⏹️ 작업이 성공적으로 중지되었습니다.');
+            } else {
+                console.log('ℹ️ No active task to stop');
+                this.addLog('info', '⏹️ 중지할 활성 작업이 없습니다.');
+            }
+            
+            // 로컬 상태 즉시 변경
+            this.isProcessing = false;
+            this.taskStatus = 'stopped';
+            
+          } catch (error) {
+            this.addLog('error', `중지 실패: ${error.message}`);
+            // 에러가 발생해도 로컬 상태는 변경
+            this.isProcessing = false;
+            this.taskStatus = 'error';
           }
-          
-          // 로컬 상태 즉시 변경
-          this.isProcessing = false;
-          this.taskStatus = 'stopped';
-          this.addLog('info', '⏹️ 작업이 중지되었습니다.');
-          
-        } catch (error) {
-          this.addLog('error', `중지 실패: ${error.message}`);
-          // 에러가 발생해도 로컬 상태는 변경
-          this.isProcessing = false;
-          this.taskStatus = 'error';
         }
-      }
     }
   }
   </script>
