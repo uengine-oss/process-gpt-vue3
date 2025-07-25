@@ -8,12 +8,11 @@ hr {
 
 /* BODY 또는 상위 컨테이너에 적용 */
 body {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    margin-top: env(safe-area-inset-top);
+    margin-bottom: env(safe-area-inset-bottom);
     box-sizing: border-box;
-  }
+    background-color: rgba(0, 0, 0, 0.5);
+}
   
 
 .dynamic-form .v-field--disabled {
