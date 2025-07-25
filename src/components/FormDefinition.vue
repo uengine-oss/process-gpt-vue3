@@ -68,7 +68,9 @@ import ChatGenerator from './ai/FormDesignGenerator';
 import Chat from './ui/Chat.vue';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import FormDefinitionModule from './FormDefinitionModule.vue';
+import BackendFactory from '@/components/api/BackendFactory';
 
+const backend = BackendFactory.createBackend();
 
 export default {
     mixins: [ChatModule, FormDefinitionModule],
@@ -125,6 +127,8 @@ export default {
 
         isAIUpdated: false,
         isRoutedWithUnsaved: false,
+        datasourceURL: null,
+        datasourceSchema: null,
     }),
     async created() {
         // const reloadOnConnectionFailure = async () => {
@@ -143,6 +147,8 @@ export default {
         if (this.modelValue != '') {
             this.kEditorInput = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);
         }
+        this.datasourceSchema = await backend.extractDatasourceSchema();
+        this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
 
         this.generator = new ChatGenerator(this, {
             isStream: true,
