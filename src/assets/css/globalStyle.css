@@ -78,39 +78,15 @@ body {
     border-radius: 20px;
 }
 
-@keyframes border-dance {
-    0% {
-        background-position: 0 0, 0 100%, 0 0, 100% 0;
-    }
-    100% {
-        background-position: 30px 0, -30px 100%, 0 -30px, 100% 30px;
-    }
+/* AI thinking 효과 - 왼쪽에서 오른쪽으로 흐르는 색상 변화 */
+.thinking-wave-text {
+    display: inline-block;
 }
 
-@keyframes running-animation {
-    0% {
-        stroke-dashoffset: 80;
-        stroke: #68369A;
-    }
-    50% {
-        stroke-dashoffset: 40;
-        stroke: #68369A;
-    }
-    100% {
-        stroke-dashoffset: 0;
-        stroke: #68369A;
-    }
-}
-
-@keyframes line-running-animation {
-    0% {
-        stroke-dashoffset: 30;
-        stroke: #68369A;
-    }
-    100% {
-        stroke-dashoffset: -30;
-        stroke: #68369A;
-    }
+.thinking-char {
+    display: inline-block;
+    color: #333333;
+    animation: char-shimmer 2s ease-in-out infinite;
 }
 
 .completed.djs-connection .djs-visual > path {
@@ -462,26 +438,31 @@ body {
 .work-itme-current-component .v-checkbox .v-input__details {
     display: none;
 }
-.work-itme-current-component .v-checkbox {
-    height: 40px;
+
+.form-layout-card-contents .v-checkbox {
+    min-height: 40px;
+    border-radius: 10px;
+    border: solid 1px rgba(0,0,0,0.2) !important;
+    margin-bottom: 4px;
 }
+
 .work-itme-current-component .v-checkbox label {
     opacity: 0.6 !important;
 }
 .work-itme-current-component .form-checkbox-label {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 500;
 }
 .work-itme-current-component .form-radio-field .v-radio-group {
     margin-top: 8px;
 }
 .work-itme-current-component .form-radio-field .form-radio-label {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 500;
 }
 
 .work-itme-current-component .form-label {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 500;
 }
 
@@ -693,6 +674,7 @@ body {
     z-index: 9999;
     top: 70px;
     right: 36px;
+    background: white;
 }
 
 .work-item-form-btn-box-mobile {
@@ -759,7 +741,7 @@ body {
 }
 
 .instance-card-kanban-board .todo-list-card-box {
-    height: calc(100vh - 360px) !important;
+    height: calc(100vh - 360px);
 }
 
 .form-work-item-delegate-task-form-dialog-pc {
@@ -846,11 +828,6 @@ body {
     overflow: auto;
 }
 
-.work-item-current-component-box .form-layout-card-contents {
-    padding-top: 32px;
-}
-
-
 /* ... 로딩 애니메이션 */
 .loading-dots span {
     animation: loading-dot 2s infinite;
@@ -877,6 +854,9 @@ body {
 .loading-dots span:nth-child(5) {
     animation-delay: 0.8s;
 }
+.instance-card-tab-4 .chat-view-box {
+    max-height: calc(100vh - 250px);
+}
 
 @keyframes loading-dot {
     0% {
@@ -897,8 +877,49 @@ body {
     }
 }
 
-.instance-card-tab-4 .chat-view-box {
-    max-height: calc(100vh - 250px);
+
+@keyframes border-dance {
+    0% {
+        background-position: 0 0, 0 100%, 0 0, 100% 0;
+    }
+    100% {
+        background-position: 30px 0, -30px 100%, 0 -30px, 100% 30px;
+    }
+}
+
+@keyframes running-animation {
+    0% {
+        stroke-dashoffset: 80;
+        stroke: #68369A;
+    }
+    50% {
+        stroke-dashoffset: 40;
+        stroke: #68369A;
+    }
+    100% {
+        stroke-dashoffset: 0;
+        stroke: #68369A;
+    }
+}
+
+@keyframes line-running-animation {
+    0% {
+        stroke-dashoffset: 30;
+        stroke: #68369A;
+    }
+    100% {
+        stroke-dashoffset: -30;
+        stroke: #68369A;
+    }
+}
+
+@keyframes char-shimmer {
+    0%, 70%, 100% {
+        color: #333333;
+    }
+    15%, 35% {
+        color: #bababa;
+    }
 }
 @media only screen and (max-width: 1450px) {
     .vue-bpmn-diagram-container .djs-palette {
@@ -921,6 +942,29 @@ body {
 }
 
 @media only screen and (max-width: 768px) {
+
+    .work-itme-current-component .v-checkbox {
+        border: none !important;
+    }
+
+    .form-layout-card-contents-mobile {
+        .row {
+            flex-direction: column !important;
+        }
+        
+        [class*="col-"] {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            max-width: 100% !important;
+            margin-bottom: 1rem;
+        }
+        
+        /* 여러 개의 컬럼이 있을 때만 border-bottom 적용 */
+        [class*="col-"]:not(:only-child):not(:last-child) {
+            border-bottom: solid 1px rgba(0, 0, 0, 0.2);
+        }
+    }
+
     .instance-running-bpmn-viewer {
         height: calc(100vh - 260px) !important;
     }
@@ -938,7 +982,6 @@ body {
     }
     .todo-list-card-box {
         max-height: calc(-216px + 100vh) !important;
-        min-height: calc(-556px + 100vh) !important;
         height: 100% !important;
         overflow: auto;
     }
@@ -967,10 +1010,6 @@ body {
 
     .instance-card-kanban-board-box {
         height: 100%;
-    }
-
-    .instance-card-kanban-board .todo-list-card-box {
-        height: 100vh !important;
     }
 
     .isMobile-add-todo-dialog-box {

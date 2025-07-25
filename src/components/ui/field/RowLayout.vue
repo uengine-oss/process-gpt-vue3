@@ -1,7 +1,7 @@
 <template>
     <template v-if="is_multidata_mode === 'true'">
         <v-card-title class="d-flex justify-space-between pa-0">
-            <div class="mt-2">{{(alias && alias.length > 0) ? alias : name}}</div>
+            <div class="mt-2 text-h5 font-weight-semibold">{{(alias && alias.length > 0) ? alias : name}}</div>
 
             <v-btn @click="addItem" color="primary"
                 variant="text"
@@ -16,14 +16,11 @@
         </div>
     </template>
     <template v-else>
-        <v-card class="pa-0 form-layout-card" variant="outlined">           
+        <v-card class="pa-0 mb-4 form-layout-card" variant="outlined">           
             <v-card-title v-if="alias && alias.length" class="d-flex justify-space-between">
-                <div>{{(alias && alias.length > 0) ? alias : name}}</div>
+                <div class="text-h5 font-weight-semibold" style="white-space: normal; word-break: break-all;">{{(alias && alias.length > 0) ? alias : name}}</div>
             </v-card-title>
-            
-            <div class="delete-input-details" 
-                :class="alias && alias.length  ? '' : 'form-layout-card-contents'"
-            >
+            <div class="delete-input-details form-layout-card-contents-mobile">
                 <slot :modelValue="localModelValue"></slot>
             </div>
         </v-card>
@@ -87,7 +84,3 @@ export default {
     }
 }
 </script>
-
-<style lang="scss">
-
-</style>

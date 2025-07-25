@@ -98,10 +98,10 @@ export default {
                 this.streamingText = task.log;
                 this.parseTaskLog(task.log);
             }
-            if (task.status == "DONE") {
-                this.EventBus.emit('instances-updated');
-                this.$emit('updated');
-            }
+            // if (task.status == "DONE") {
+            //     this.EventBus.emit('instances-updated');
+            //     this.$emit('updated');
+            // }
         });
     },
     computed: {
@@ -128,12 +128,12 @@ export default {
             }
         },
     },
-    beforeUnmount() {
-        if (this.subscription) {
-            console.log('Unsubscribing from task log for taskId:', this.taskId);
-            window.$supabase.removeChannel(this.subscription);
-        }
-    }
+    // beforeUnmount() {
+    //     if (this.subscription) {
+    //         console.log('Unsubscribing from task log for taskId:', this.taskId);
+    //         window.$supabase.removeChannel(this.subscription);
+    //     }
+    // }
 }
 </script>
 

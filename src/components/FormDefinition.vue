@@ -2,7 +2,7 @@
     <div>
         <v-row class="ma-0 pa-0 form-definition-chat-box">
             <v-col v-if="type === 'edit'"
-                class="pa-0 pl-10 overflow-y-auto"
+                class="pa-0 overflow-y-auto"
                 style="height: calc(100vh - 260px);"
             >
                 <div v-if="isShowMashup">

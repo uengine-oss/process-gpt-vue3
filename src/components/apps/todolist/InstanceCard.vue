@@ -9,7 +9,14 @@
                     <!-- 한글: 인스턴스 이름이 길 경우 줄바꿈이 가능하도록 스타일 추가 -->
                     <div class="text-h5 font-weight-semibold align-center"
                         style="word-break: break-all; white-space: normal; margin-right: 5px;"
-                    >{{ instanceName }}</div>
+                    >
+                        <span v-if="isNew" class="thinking-wave-text">
+                            <span v-for="(char, index) in instanceName" :key="index" 
+                                  :style="{ animationDelay: `${index * 0.1}s` }"
+                                  class="thinking-char">{{ char === ' ' ? '\u00A0' : char }}</span>
+                        </span>
+                        <span v-else>{{ instanceName }}</span>
+                    </div>
 
                     <v-chip v-if="instance.status" size="x-small" variant="outlined" class="align-center">
                         {{ instance.is_deleted ? 'DELETED' : instance.status }}
