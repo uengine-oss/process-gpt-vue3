@@ -153,9 +153,30 @@ export default {
         }
     },
     methods: {
+        filterDefinition(definition) {
+            if (definition.roles && definition.roles.length > 0) {
+                definition.roles.map(role => {
+                    if (role.default) {
+                        role.default = '';
+                    }
+                    role.endpoint = '';
+                    return role;
+                });
+            }
+            return definition;
+        },
         async addDefinition() {
-            await backend.putTemplateDefinition(this.newDefinition);
-            this.close();
+            const definition = this.newDefinition.definition;
+            const filteredDef = this.filterDefinition(definition);
+            this.newDefinition.definition = filteredDef;
+            this.$try({
+                context: this,
+                action: async () => {
+                    await backend.putTemplateDefinition(this.newDefinition);
+                    this.close();
+                },
+                successMsg: this.$t('successMsg.savedMarketplace')
+            });
         },
         close() {
             this.$emit('toggleMarketplaceDialog', false);

@@ -1049,13 +1049,6 @@ export default {
                                             }
                                         }
                                         if (formHtml) {
-                                            let fieldData = me.extractFields(formHtml);
-                                            fieldData = fieldData.map((field) => ({
-                                                name: field.key,
-                                                description: field.text,
-                                                type: field.type
-                                            }));
-                                            me.processDefinition.data = me.processDefinition.data.concat(fieldData);
                                             const options = {
                                                 type: 'form',
                                                 proc_def_id: info.proc_def_id,
