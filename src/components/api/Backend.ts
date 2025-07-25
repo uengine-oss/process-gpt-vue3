@@ -95,6 +95,7 @@ export interface Backend {
     addDataSource(dataSource: any): Promise<any>;
     updateDataSource(dataSource: any): Promise<any>;
     deleteDataSource(dataSource: any): Promise<any>;
+    extractDatasourceSchema(): Promise<any>;
     callDataSource(dataSource: any, bodyData: any): Promise<any>;
     getEnvByTenant(): Promise<any>;
     getSecretByTenant(): Promise<any>;

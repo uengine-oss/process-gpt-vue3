@@ -2,7 +2,7 @@
     <div>
         <v-row class="ma-0 pa-0 form-definition-chat-box">
             <v-col v-if="type === 'edit'"
-                class="pa-0 pl-10 overflow-y-auto"
+                class="pa-0 overflow-y-auto"
                 style="height: calc(100vh - 260px);"
             >
                 <div v-if="isShowMashup">
@@ -68,7 +68,9 @@ import ChatGenerator from './ai/FormDesignGenerator';
 import Chat from './ui/Chat.vue';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import FormDefinitionModule from './FormDefinitionModule.vue';
+import BackendFactory from '@/components/api/BackendFactory';
 
+const backend = BackendFactory.createBackend();
 
 export default {
     mixins: [ChatModule, FormDefinitionModule],
@@ -125,6 +127,8 @@ export default {
 
         isAIUpdated: false,
         isRoutedWithUnsaved: false,
+        datasourceURL: null,
+        datasourceSchema: null,
     }),
     async created() {
         // const reloadOnConnectionFailure = async () => {
@@ -143,6 +147,8 @@ export default {
         if (this.modelValue != '') {
             this.kEditorInput = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);
         }
+        this.datasourceSchema = await backend.extractDatasourceSchema();
+        this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
 
         this.generator = new ChatGenerator(this, {
             isStream: true,

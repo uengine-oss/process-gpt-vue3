@@ -404,7 +404,7 @@ export default {
              * 새롭게 컴포넌트를 드래그해서 추가시에 Vue 컴포넌트인 경우, 렌더링을 시키기 위해서
              */
             onContentChanged: function (event, snippetContent, vueRenderUUID) {
-                $("#initGuide").css("opacity", "0")
+                $("#initGuide").css("display", "none")
 
                 if(snippetContent && vueRenderUUID && vueRenderUUID.includes("vuemount_"))
                     window.mashup.renderWithDynamicComponent(snippetContent, vueRenderUUID, false)
@@ -529,7 +529,7 @@ export default {
         // 처음 로드시에 Vue 컴포넌트들을 각각 별도의 createApp으로 렌더링시키고, 참조자 딕셔너리를 구성하기 위해서
         window.mashup.componentRefs = {}
         if (window.mashup.modelValue) {
-            $("#initGuide").css("opacity", "0")
+            $("#initGuide").css("display", "none")
             const parser = new DOMParser();
             const doc = parser.parseFromString(window.mashup.modelValue, 'text/html');
 

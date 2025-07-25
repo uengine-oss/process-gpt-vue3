@@ -156,6 +156,9 @@ class ProcessGPTBackend implements Backend {
             // 폼 정보를 저장하기 위해서
             if(options && options.type === "form") {
                 const fieldsJson = this.extractFields(xml);
+                if (!fieldsJson) {
+                    throw new Error("An error occurred while analyzing the form fields.");
+                }
                 var formDef: any = await storage.getObject('form_def', {
                     match: {
                         proc_def_id: options.proc_def_id,
@@ -3342,6 +3345,57 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             throw new Error(error.message);
         }
+    }
+    
+    async extractDatasourceSchema() {
+        const datasource = await this.getDataSourceList();
+        let datasourceResult = [];
+        await Promise.all(datasource.map(async item => {
+            const endpoint = item.value.endpoint;
+            if (endpoint.includes(':54321')) {
+                const authKey = 'Authorization';
+                const authValue = 'Bearer ' + window.$supabase.supabaseKey;
+                
+                const authHeader = item.value.headers.find(h => h.key === authKey);
+                if (authHeader) {
+                  authHeader.value = authValue;
+                } else {
+                  item.value.headers.push({ key: authKey, value: authValue });
+                }
+                
+            }
+
+            const response = await this.callDataSource(item);
+            
+
+            let result = [];
+
+            for (const path in response.paths) {
+                const pathItem = response.paths[path];
+                const getMethod = pathItem.get;
+
+                if (getMethod && getMethod.responses?.['200']?.schema?.items?.$ref) {
+                    const ref = getMethod.responses['200'].schema.items.$ref;
+                    const defName = ref.replace('#/definitions/', '');
+                    const definition = response.definitions[defName];
+
+                    const columns = Object.keys(definition.properties || {});
+                    
+                    result.push({
+                        path,
+                        description: getMethod.summary || '',
+                        availableColumns: columns
+                    });
+                }
+            }
+            datasourceResult.push({
+                endpoint : endpoint,
+                result : result
+            });
+        }));
+
+
+        return datasourceResult;
     }
 
     async callDataSource(dataSource: any, bodyData: any = null) {
