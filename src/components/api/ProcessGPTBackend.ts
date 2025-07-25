@@ -2,6 +2,7 @@ import axios from '@/utils/axios';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 import type { Backend } from './Backend';
+import defaultProcessesData from './defaultProcesses.json';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -155,6 +156,9 @@ class ProcessGPTBackend implements Backend {
             // 폼 정보를 저장하기 위해서
             if(options && options.type === "form") {
                 const fieldsJson = this.extractFields(xml);
+                if (!fieldsJson) {
+                    throw new Error("An error occurred while analyzing the form fields.");
+                }
                 var formDef: any = await storage.getObject('form_def', {
                     match: {
                         proc_def_id: options.proc_def_id,
@@ -2131,6 +2135,20 @@ class ProcessGPTBackend implements Backend {
                 is_admin: true,
                 tenant_id: tenantId
             });
+            
+            if (window.$tenantName !== 'localhost') {
+                for (const process of defaultProcessesData.defaultProcesses) {
+                    try {
+                        await this.duplicateDefinition({
+                            id: process.id,
+                            name: process.name,
+                            author_uid: process.author_uid,
+                        }, tenantId);
+                    } catch (error) {
+                        console.warn(`Failed to duplicate process ${process.id}:`, error);
+                    }
+                }
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2710,13 +2728,14 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
-    async duplicateDefinition(definition: any) {
+    async duplicateDefinition(definition: any, tenantId?: string) {
         try {
             // Supabase function을 사용하여 프로세스 정의 복사
             const result = await storage.callProcedure('duplicate_definition_from_marketplace', {
                 p_definition_id: definition.id,
                 p_definition_name: definition.name,
-                p_author_uid: definition.author_uid
+                p_author_uid: definition.author_uid,
+                p_tenant_id: tenantId || window.$tenantName
             });
 
             if (result && result.success) {
