@@ -43,14 +43,6 @@
             </v-list>
           </v-menu>
         </div>
-        
-        <input 
-          type="file" 
-          ref="importFile"
-          accept=".md,.txt" 
-          @change="importMarkdown" 
-          style="display: none;" 
-        />
       </div>
     </div>
     
@@ -160,11 +152,6 @@ export default {
           label: this.i18n.global.t('SlideEditor.exportWord'), 
           action: this.openWordExport,
           icon: 'mdi-microsoft-word'
-        },
-        { 
-          label: this.i18n.global.t('SlideEditor.import'), 
-          action: () => this.$refs.importFile.click(),
-          icon: 'mdi-file-import'
         },
         { 
           label: this.i18n.global.t('SlideEditor.presentation'), 

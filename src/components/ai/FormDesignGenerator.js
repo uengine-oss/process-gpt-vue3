@@ -1,10 +1,17 @@
 import AIGenerator from "@/components/ai/AIGenerator";
 import promptSnippetData from "./FormDesignGeneratorPromptSnipptsData";
+import BackendFactory from '@/components/api/BackendFactory';
+import { aW } from "@fullcalendar/core/internal-common";
+
+const backend = BackendFactory.createBackend();
 
 // '화면 정의' 메뉴에서 AI를 통한 폼 생성을 위한 생성기 클래스
 export default class FormDesignGenerator extends AIGenerator{
     constructor(client, language){
         super(client, language);
+
+        this.datasourceURL = this.client.datasourceURL;
+        this.datasourcePrompt = this.getDatasourcePrompt();
 
         // 유효한 컴포넌트 이름 목록을 형성해서 향후 유효성 검증시에 시용
         this.availableComponentTagNames = promptSnippetData.componentInfos.map((componentInfo) => componentInfo.tag.match(/\<\/(.*)\>/)[1].toLowerCase())
@@ -23,9 +30,9 @@ ${componentInfo.purpose}${componentInfo.limit ? `\n\n3. Limitation\n${componentI
 `}).join("\n")
 
 
-        this.previousMessageFormats = [
+this.previousMessageFormats = [
   {
-    role: 'system', 
+    role: 'system',
     content: `\
 # Role
 You are an HTML form creator assistant for process management systems, designed to generate and modify structured forms with precision and adherence to specific component guidelines. As a specialized form design expert, you understand the intricacies of form layout, component placement, and responsive design principles.
@@ -37,6 +44,7 @@ You are an HTML form creator assistant for process management systems, designed 
 - Specialized in component organization and responsive column distribution
 - Attentive to naming conventions and attribute consistency
 
+
 ## Behavior Guidelines
 - Generate forms that strictly adhere to the provided component specifications
 - Maintain consistency in naming patterns and attribute formats
@@ -47,6 +55,7 @@ You are an HTML form creator assistant for process management systems, designed 
 - Apply logical grouping to related form elements
 - Respect column space distribution requirements
 
+
 ## Output Standards
 - Provide only valid HTML that conforms to the specified tag structure
 - Ensure all generated code follows the exact format requested
@@ -54,7 +63,26 @@ You are an HTML form creator assistant for process management systems, designed 
 - Return responses in the exact JSON format specified in the guidelines
 - Verify uniqueness of all name attributes across the entire form
 
+
+# Instruction for DataSource Use
+
+You are also given a set of available dataSources **before generating fields**.
+
+For every new field you generate:
+- **Before deciding the field tag**, check if the field label (alias) or name closely matches any \`availableColumns\` in the provided dataSources.
+- If a match is found:
+  - Use \`select-field\` for dropdowns, or \`checkbox-field\`/\`radio-field\` for multi-options.
+  - Set the following attributes:
+    - \`is_dynamic_load="urlBinding"\`
+    - \`dynamic_load_url="${this.datasourceURL}<endpoint>"\`
+    - \`dynamic_load_key_json_path="$[*]['<keyField>']"\`
+    - \`dynamic_load_value_json_path="$[*]['<valueField>']"\`
+- If no match is found, use standard \`text-field\`.
+
+⚠️ This logic must be applied at **field generation time**, not after.
+
 You represent a professional form design system that prioritizes structural integrity, usability, and adherence to established component guidelines.`
+
   },
 
   {
@@ -128,6 +156,44 @@ After creating the layout, add components following these rules:
 ### Available components
 ${componentInfosPromptStr}
 
+${this.datasourcePrompt}
+# Datasource URL
+${this.datasourceURL}
+
+### Instruction for DataSource Use
+You are also given a set of available dataSources.
+
+For each field:
+- If there is no datasource or null, do not use dataSources.
+- If there is no datasourceURL or null, do not use dataSources.
+- Determine if a datasource can be used by checking for a matching column in any datasource.
+- If there is a match, follow these exact rules:
+
+#### Step-by-step:
+1. Replace the tag (e.g., \`<text-field>\`) with appropriate one like \`<select-field>\`, \`<radio-field>\`, or \`<checkbox-field>\` if needed.
+2. Add the following attributes:
+   - \`is_dynamic_load="urlBinding"\`
+   - \`dynamic_load_url="${this.datasourceURL}<datasourcePath>"\`
+   - \`dynamic_load_key_json_path="$[*]['<keyColumn>']"\`
+   - \`dynamic_load_value_json_path="$[*]['<valueColumn>']"\`
+
+⚠️ Do not use the \`data-source\` attribute. Only use the above attributes.
+
+#### Example:
+If datasourceURL is not null, a field has the label "물품명" and the datasource has path "/product" with key: "제품코드" and value: "제품명", then use:
+
+<select-field
+  name="product_name"
+  alias="물품명"
+  is_dynamic_load="urlBinding"
+  dynamic_load_url="${this.datasourceURL}/product"
+  dynamic_load_key_json_path="$[*]['제품코드']"
+  dynamic_load_value_json_path="$[*]['제품명']">
+</select-field>
+
+If no match is found, use any Available components
+
+
 ### Output Format
 When responding, provide only the JSON response as output in markdown format, wrapped in triple backticks:
 \`\`\`json
@@ -170,8 +236,7 @@ When you're ready, please output 'Approved.' Then I will begin user input.`
   },
   {
     role: 'assistant',
-    content: `\
-Approved.`
+    content: `Approved.`
   }
 ]
     }
@@ -293,6 +358,17 @@ ${userInputs.request ? `\n\n# Additional User Request
       return messagesToSend
     }
 
+    getDatasourcePrompt() {
+      const datasourceSchema = this.client?.datasourceSchema;
+      if (!datasourceSchema) {
+        return null;
+      }
+
+      return `
+    # Datasource
+    ${JSON.stringify(datasourceSchema, null, 2)}
+    `;
+    }
 
     createMessages() {
       if(!this.userInputs && this.client.userInputs)  {

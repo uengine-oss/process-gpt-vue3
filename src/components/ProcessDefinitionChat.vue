@@ -315,6 +315,8 @@ export default {
         organizationChart: [],
         strategy: null,
         isHorizontal: false,
+        datasourceURL: null,
+        datasourceSchema: null,
     }),
     async created() {
         $try(async () => {
@@ -346,6 +348,10 @@ export default {
 
             } else {
                 await this.init();
+
+                this.datasourceSchema = await backend.extractDatasourceSchema();
+                this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+
                 this.generator = new ChatGenerator(this, {
                     isStream: true,
                     preferredLanguage: 'Korean'

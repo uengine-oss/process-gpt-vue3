@@ -81,7 +81,7 @@
                     </div>
                 </div>
                 
-                <v-window v-model="tab" :class="isMobile ? 'mt-0' : ''">
+                <v-window v-model="tab" :class="isMobile ? 'mt-0' : ''" :touch="false">
                     <v-window-item value="gantt" class="instance-card-tab-1">
                         <div class="gantt-area" v-if="!isLoading">
                             <GanttChart 
