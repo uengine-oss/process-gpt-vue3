@@ -130,7 +130,7 @@ export default {
         },
         async generateForm(generateMsg, activity) {
             var me = this;
-            return new Promise((resolve, reject) => {
+            return new Promise(async (resolve, reject) => {
                 let retryCount = 0;
                 let formHtml = null;
                 const formGenerator = new FormGenerator(me, {
