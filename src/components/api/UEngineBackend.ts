@@ -970,6 +970,11 @@ class UEngineBackend implements Backend {
         console.warn("method is not implemented only use Process-GPT Mode");
     }
 
+    async extractDatasourceSchema(): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
+    }
+
     async callDataSource(dataSource: any, bodyData: any) {
         console.warn("method is not implemented only use Process-GPT Mode");
     }
