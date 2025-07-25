@@ -3,7 +3,18 @@
       <div class="header">
         <h3>Browser Agent</h3>
         <div class="status-indicators">
+          <v-btn
+            style="margin-right: -10px;"
+            icon
+            size="small"
+            @click="openConfigDialog"
+            class="config-icon"
+            title="API 키 설정"
+          >
+            <v-icon size="16">mdi-cog</v-icon>
+          </v-btn>
           <div class="status-item">
+            <!-- 설정 아이콘 추가 -->
             <span class="label">연결 상태:</span>
             <span :class="['status', connectionStatus]">
               {{ connectionStatusText }}
@@ -79,6 +90,129 @@
           </div>
         </div>
       </div>
+
+      <!-- API 키 설정 다이얼로그 -->
+      <v-dialog
+        v-model="configDialog"
+        max-width="500"
+        persistent
+      >
+        <v-card>
+          <v-card-title class="config-header">
+            <v-icon class="mr-2">mdi-cog</v-icon>
+            API 키 설정
+          </v-card-title>
+          
+          <v-card-text class="config-content">
+            <v-form ref="configForm" v-model="configFormValid">
+              <!-- 필수 항목 섹션 -->
+              <div class="config-section">
+                <div class="section-header">
+                  <h4 class="section-title">필수 항목</h4>
+                </div>
+                <v-divider class="mb-4"></v-divider>
+
+                <!-- OpenAI API Key (필수) -->
+                <v-text-field
+                  v-model="configData.OPENAI_API_KEY"
+                  label="OpenAI API Key"
+                  placeholder="sk-proj-..."
+                  :rules="[v => !!v || 'OpenAI API Key는 필수입니다']"
+                  required
+                  :type="showOpenAIKey ? 'text' : 'password'"
+                  hint="기본적인 Browser use 기능을 사용하기 위해 반드시 필요합니다"
+                  persistent-hint
+                  class="mb-4"
+                >
+                  <template v-slot:prepend-inner>
+                    <v-icon color="primary">mdi-key</v-icon>
+                  </template>
+                  <template v-slot:append-inner>
+                    <v-btn 
+                      icon 
+                      size="small"
+                      @click="showOpenAIKey = !showOpenAIKey"
+                      class="password-toggle"
+                    >
+                      <v-icon :color="showOpenAIKey ? 'primary' : 'grey'">
+                        {{ showOpenAIKey ? 'mdi-eye' : 'mdi-eye-off' }}
+                      </v-icon>
+                    </v-btn>
+                  </template>
+                </v-text-field>
+              </div>
+
+              <!-- 선택 항목 섹션 -->
+              <div class="config-section">
+                <div class="section-header">
+                  <h4 class="section-title">선택 항목</h4>
+                  <span class="section-subtitle">Google 로그인이 필요한 작업에 사용됩니다</span>
+                </div>
+                <v-divider class="mb-4"></v-divider>
+
+                <!-- Google Email (선택사항) -->
+                <v-text-field
+                  v-model="configData.GOOGLE_EMAIL"
+                  label="Google Email"
+                  placeholder="example@gmail.com"
+                  type="email"
+                  persistent-hint
+                  class="mb-3"
+                >
+                  <template v-slot:prepend-inner>
+                    <v-icon color="orange">mdi-email</v-icon>
+                  </template>
+                </v-text-field>
+
+                <!-- Google Password (선택사항) -->
+                <v-text-field
+                  v-model="configData.GOOGLE_PASSWORD"
+                  label="Google Password"
+                  placeholder="Google 계정 비밀번호"
+                  :type="showGooglePassword ? 'text' : 'password'"
+                  persistent-hint
+                  class="mb-3"
+                >
+                  <template v-slot:prepend-inner>
+                    <v-icon color="orange">mdi-lock</v-icon>
+                  </template>
+                  <template v-slot:append-inner>
+                    <v-btn 
+                      icon 
+                      size="small"
+                      @click="showGooglePassword = !showGooglePassword"
+                      class="password-toggle"
+                    >
+                      <v-icon :color="showGooglePassword ? 'orange' : 'grey'">
+                        {{ showGooglePassword ? 'mdi-eye' : 'mdi-eye-off' }}
+                      </v-icon>
+                    </v-btn>
+                  </template>
+                </v-text-field>
+              </div>
+            </v-form>
+          </v-card-text>
+
+          <v-card-actions class="config-actions">
+            <v-spacer></v-spacer>
+            <v-btn
+              text
+              @click="closeConfigDialog"
+              :disabled="configSaving"
+            >
+              취소
+            </v-btn>
+            <v-btn
+              color="primary"
+              @click="saveConfig"
+              :loading="configSaving"
+              :disabled="!configFormValid"
+            >
+              저장
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </div>
   </template>
   
@@ -120,7 +254,20 @@
         retryCount: 0,
         hasTriedConnection: false,
 
-        tryConnect: false
+        tryConnect: false,
+
+        // API 키 설정 관련
+        configDialog: false,
+        configFormValid: false,
+        configSaving: false,
+        configData: {
+          OPENAI_API_KEY: '',
+          GOOGLE_EMAIL: '',
+          GOOGLE_PASSWORD: ''
+        },
+        // 비밀번호 표시 토글
+        showOpenAIKey: false,
+        showGooglePassword: false
       }
     },
     computed: {
@@ -143,6 +290,76 @@
       this.disconnectWebSocket()
     },
     methods: {
+      // API 키 설정 관련 메서드들
+      async loadConfig() {
+        try {
+          const response = await fetch('http://localhost:8999/api/config')
+          const result = await response.json()
+          
+          if (result.success && result.config) {
+            this.configData.OPENAI_API_KEY = result.config.OPENAI_API_KEY || ''
+            this.configData.GOOGLE_EMAIL = result.config.GOOGLE_EMAIL || ''
+            this.configData.GOOGLE_PASSWORD = result.config.GOOGLE_PASSWORD || ''
+          }
+        } catch (error) {
+          console.error('설정 로드 실패:', error)
+        }
+      },
+
+      openConfigDialog() {
+        this.loadConfig()
+        this.configDialog = true
+      },
+
+      closeConfigDialog() {
+        this.configDialog = false
+        // 비밀번호 표시 토글 상태 초기화
+        this.showOpenAIKey = false
+        this.showGooglePassword = false
+      },
+
+      async saveConfig() {
+        if (!this.configFormValid) {
+          return
+        }
+
+        this.configSaving = true
+        
+        try {
+          const response = await fetch('http://localhost:8999/api/config', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(this.configData)
+          })
+          
+          const result = await response.json()
+          
+          if (result.success) {
+            this.addLog('info', '✅ API 키 설정이 저장되었습니다.')
+            this.closeConfigDialog()
+          } else {
+            this.addLog('error', '❌ 설정 저장에 실패했습니다.')
+          }
+        } catch (error) {
+          this.addLog('error', `설정 저장 오류: ${error.message}`)
+        } finally {
+          this.configSaving = false
+        }
+      },
+
+      checkRequiredConfig() {
+        if (!this.configData.OPENAI_API_KEY || this.configData.OPENAI_API_KEY.trim() === '') {
+          this.addLog('error', '⚠️ OpenAI API Key가 설정되지 않았습니다. 설정 아이콘을 클릭하여 API 키를 입력해주세요.')
+          setTimeout(() => {
+            this.openConfigDialog()
+          }, 1000)
+          return false
+        }
+        return true
+      },
+
       // 백엔드 상태를 먼저 확인하는 메소드 (WebSocket 연결 시도)
       async checkBackendStatus() {
         return new Promise((resolve) => {
@@ -375,6 +592,11 @@
         if (!this.command.trim() || !this.ws) {
           return
         }
+
+        // 필수 설정 확인
+        if (!this.checkRequiredConfig()) {
+          return
+        }
         
         const command = this.command.trim()
         
@@ -545,6 +767,16 @@
     padding: 6px 12px;
     border-radius: 20px;
     backdrop-filter: blur(10px);
+  }
+
+  .config-icon {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    margin-right: 8px;
+  }
+
+  .config-icon:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
   }
   
   .label {
@@ -858,6 +1090,103 @@
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+  }
+
+  /* 설정 다이얼로그 스타일 */
+  .config-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+    padding: 20px 24px;
+  }
+
+  .config-content {
+    padding: 24px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .config-actions {
+    padding: 12px 24px 24px 24px;
+  }
+
+  /* 설정 섹션 스타일 */
+  .config-section {
+    margin-bottom: 32px;
+  }
+
+  .config-section:last-child {
+    margin-bottom: 16px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #374151;
+    flex: 1;
+  }
+
+  .section-subtitle {
+    font-size: 12px;
+    color: #6b7280;
+    font-style: italic;
+    margin-left: auto;
+  }
+
+  /* 비밀번호 토글 버튼 스타일 */
+  .password-toggle {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+  }
+
+  .password-toggle:hover {
+    opacity: 1;
+  }
+
+  /* 필수 항목 섹션 스타일링 */
+  .config-section:first-child {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.02) 0%, rgba(239, 68, 68, 0.01) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+  }
+
+  .config-section:first-child::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-radius: 12px 12px 0 0;
+  }
+
+  /* 선택 항목 섹션 스타일링 */
+  .config-section:last-child {
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.02) 0%, rgba(251, 146, 60, 0.01) 100%);
+    border: 1px solid rgba(251, 146, 60, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+  }
+
+  .config-section:last-child::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-radius: 12px 12px 0 0;
   }
   
   /* 스크롤바 스타일 */
