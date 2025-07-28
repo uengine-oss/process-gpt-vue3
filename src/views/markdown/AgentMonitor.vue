@@ -344,8 +344,20 @@ export default {
   },
   methods: {
     downloadBrowserAgent() {
-      const url = 'https://drive.google.com/uc?export=download&id=1-yFl3h8hzoxOPqc0vZbawLAlKAVmdEyY';
-      window.open(url, '_blank');
+      // 플랫폼 감지
+      const userAgent = navigator.userAgent.toLowerCase();
+      const baseUrl = 'https://github.com/jhyg/browser-use-electron/releases/download/v1.0.0/';
+      let downloadUrl;
+      
+      if (userAgent.includes('mac')) {
+        downloadUrl = baseUrl + 'Process-GPT-App-1.0.0.dmg';
+      } else if (userAgent.includes('linux')) {
+        downloadUrl = baseUrl + 'Process-GPT-App-1.0.0.AppImage';
+      } else {
+        downloadUrl = baseUrl + 'browser-use-agent-setup.exe';
+      }
+      
+      window.open(downloadUrl, '_blank');
       localStorage.setItem('downloadedBrowserAgent', 'true');
       this.downloadedBrowserAgent = true;
     },
