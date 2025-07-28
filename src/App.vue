@@ -1,11 +1,16 @@
 <template>
-    <div :class="{ 'mobile-safe-area': isMobile }">
-        <v-progress-linear
-            v-if="loading"
-            style="position: absolute; z-index: 999"
-            indeterminate
-            class="my-progress-linear"
-        ></v-progress-linear>
+    <div>
+        <!-- 상단 안전영역 -->
+        <div v-if="isMobile" class="safe-area-top"></div>
+        
+        <!-- 모든 내용 -->
+        <div class="app-content">
+            <v-progress-linear
+                v-if="loading"
+                style="position: absolute; z-index: 999"
+                indeterminate
+                class="my-progress-linear"
+            ></v-progress-linear>
         <v-overlay v-model="loading" :scrim="true" :persistent="true"></v-overlay>
         <v-snackbar
             v-model="snackbar"
@@ -40,6 +45,10 @@
             </v-row>
         </div>
         <RouterView v-else></RouterView>
+        </div>
+        
+        <!-- 하단 안전영역 -->
+        <div v-if="isMobile" class="safe-area-bottom"></div>
     </div>
 </template>
 
@@ -80,12 +89,6 @@ export default {
         document.addEventListener('click', this.closeSnackbarOnEvent);
     },
     async mounted() {
-        // 모바일에서 안전영역 고정값 설정
-        if (this.isMobile) {
-            this.setSafeAreaConstants();
-            this.setupDialogSafeArea();
-        }
-        
         if (window.$mode == 'ProcessGPT') {
             if (window.location.pathname.includes('external-forms') || window.location.pathname.includes('privacy')) {
                 this.loadScreen = true;
@@ -162,77 +165,6 @@ export default {
         },
     },
     methods: {
-        setSafeAreaConstants() {
-            // 초기 안전영역 값을 한 번 계산해서 고정
-            const calculateSafeArea = (position) => {
-                const testDiv = document.createElement('div');
-                testDiv.style.cssText = `position:fixed; ${position}:0; height:env(safe-area-inset-${position}); width:1px; visibility:hidden;`;
-                document.body.appendChild(testDiv);
-                const value = getComputedStyle(testDiv).height;
-                document.body.removeChild(testDiv);
-                return value && value !== '0px' && value !== 'auto' ? value : '0px';
-            };
-            
-            const topValue = calculateSafeArea('top');
-            const bottomValue = calculateSafeArea('bottom');
-            
-            // CSS 변수로 고정값 설정
-            document.documentElement.style.setProperty('--safe-area-inset-top-fixed', topValue);
-            document.documentElement.style.setProperty('--safe-area-inset-bottom-fixed', bottomValue);
-            
-            console.log('안전영역 고정값 설정됨:', { top: topValue, bottom: bottomValue });
-        },
-        
-        setupDialogSafeArea() {
-            // 다이얼로그 감지 및 안전영역 적용
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === 1) { // Element node
-                            // 다이얼로그 오버레이 찾기
-                            const overlays = node.querySelectorAll ? node.querySelectorAll('.v-overlay') : [];
-                            if (node.classList && node.classList.contains('v-overlay')) {
-                                this.applyDialogSafeArea(node);
-                            }
-                            overlays.forEach((overlay) => this.applyDialogSafeArea(overlay));
-                        }
-                    });
-                });
-            });
-            
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-            
-            console.log('다이얼로그 안전영역 감지 시작됨');
-        },
-        
-        applyDialogSafeArea(overlay) {
-            const content = overlay.querySelector('.v-overlay__content');
-            if (content) {
-                setTimeout(() => {
-                    // 고정된 안전영역 값 사용
-                    const topValue = getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-top-fixed') || '0px';
-                    const bottomValue = getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-bottom-fixed') || '0px';
-                    
-                    if (topValue !== '0px') {
-                        content.style.marginTop = topValue;
-                        content.style.paddingTop = topValue;
-                    }
-                    if (bottomValue !== '0px') {
-                        content.style.marginBottom = bottomValue;
-                        content.style.paddingBottom = bottomValue;
-                    }
-                    
-                    if (topValue !== '0px' || bottomValue !== '0px') {
-                        content.style.maxHeight = `calc(100vh - ${topValue} - ${bottomValue})`;
-                        console.log('다이얼로그에 안전영역 적용됨:', topValue, bottomValue);
-                    }
-                }, 50);
-            }
-        },
-        
         closeSnackbarOnEvent() {
             // 스낵바가 열려있을 때만 클릭 카운트
             if (this.snackbar) {
@@ -392,43 +324,19 @@ export default {
     font-weight: 500 !important;
 }
 
-/* 모바일 안전영역 - 실제 영역 확보 (고정값 사용) */
-.mobile-safe-area {
-    padding-top: var(--safe-area-inset-top-fixed, 0px) !important;
-    padding-bottom: var(--safe-area-inset-bottom-fixed, 0px) !important;
-    min-height: 100vh;
-    box-sizing: border-box;
+/* 안전영역 - 단순 구조 */
+.safe-area-top {
+    height: env(safe-area-inset-top);
+    background-color: rgba(0, 0, 0, 0.8);
 }
 
-/* 모바일에서 전체 앱 영역 조정 */
-@media only screen and (max-width: 768px) {
-    /* body도 안전영역 고려 (고정값) */
-    body {
-        padding-top: var(--safe-area-inset-top-fixed, 0px) !important;
-        padding-bottom: var(--safe-area-inset-bottom-fixed, 0px) !important;
-        box-sizing: border-box !important;
-    }
-    
-    /* 다이얼로그 안전영역 적용 (고정값) */
-    .v-dialog .v-overlay__content {
-        margin-top: var(--safe-area-inset-top-fixed, 0px) !important;
-        margin-bottom: var(--safe-area-inset-bottom-fixed, 0px) !important;
-        max-height: calc(100vh - var(--safe-area-inset-top-fixed, 0px) - var(--safe-area-inset-bottom-fixed, 0px)) !important;
-    }
-    
-    .v-dialog .v-overlay__content .v-card {
-        max-height: calc(100vh - var(--safe-area-inset-top-fixed, 0px) - var(--safe-area-inset-bottom-fixed, 0px)) !important;
-    }
-    
-    /* 스낵바도 안전영역 고려 (고정값) */
-    .v-snackbar {
-        margin-top: var(--safe-area-inset-top-fixed, 0px) !important;
-        margin-bottom: var(--safe-area-inset-bottom-fixed, 0px) !important;
-    }
-    
-    /* 전체 앱 높이 조정 (고정값) */
-    #app {
-        min-height: calc(100vh - var(--safe-area-inset-top-fixed, 0px) - var(--safe-area-inset-bottom-fixed, 0px)) !important;
-    }
+.safe-area-bottom {
+    height: env(safe-area-inset-bottom);
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.app-content {
+    flex: 1;
+    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 </style>
