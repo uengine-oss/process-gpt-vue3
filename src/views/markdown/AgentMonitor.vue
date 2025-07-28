@@ -350,7 +350,7 @@ export default {
       let downloadUrl;
       
       if (userAgent.includes('mac')) {
-        downloadUrl = baseUrl + 'Process-GPT-App-1.0.0.dmg';
+        downloadUrl = baseUrl + 'browser-use-agent.dmg';
       } else if (userAgent.includes('linux')) {
         downloadUrl = baseUrl + 'Process-GPT-App-1.0.0.AppImage';
       } else {
