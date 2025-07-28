@@ -1,9 +1,5 @@
 <template>
-    <div>
-        <!-- 모바일 안전영역 오버레이 -->
-        <div v-if="isMobile" id="safe-area-top" class="safe-area-overlay safe-area-top"></div>
-        <div v-if="isMobile" id="safe-area-bottom" class="safe-area-overlay safe-area-bottom"></div>
-        
+    <div :class="{ 'mobile-safe-area': isMobile }">
         <v-progress-linear
             v-if="loading"
             style="position: absolute; z-index: 999"
@@ -319,43 +315,39 @@ export default {
     font-weight: 500 !important;
 }
 
-/* 모바일 안전영역 스타일 */
-.safe-area-overlay {
-    position: fixed;
-    left: 0;
-    right: 0;
-    z-index: 9999;
-    pointer-events: none;
-    background-color: rgba(0, 0, 0, 0.8);
+/* 모바일 안전영역 - 실제 영역 확보 */
+.mobile-safe-area {
+    padding-top: env(safe-area-inset-top) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+    min-height: 100vh;
+    box-sizing: border-box;
 }
 
-.safe-area-top {
-    top: 0;
-    height: env(safe-area-inset-top);
-}
-
-.safe-area-bottom {
-    bottom: 0;
-    height: env(safe-area-inset-bottom);
-}
-
-/* 안전영역이 없는 경우 숨김 */
-@supports not (height: env(safe-area-inset-top)) {
-    .safe-area-overlay {
-        display: none;
-    }
-}
-
-/* 다이얼로그 안전영역 적용 (모바일에서만) */
+/* 모바일에서 전체 앱 영역 조정 */
 @media only screen and (max-width: 768px) {
+    /* body도 안전영역 고려 */
+    body {
+        padding-top: env(safe-area-inset-top) !important;
+        padding-bottom: env(safe-area-inset-bottom) !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* 다이얼로그 안전영역 적용 */
     .v-dialog .v-overlay__content {
         margin-top: env(safe-area-inset-top) !important;
         margin-bottom: env(safe-area-inset-bottom) !important;
         max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
     }
     
-    .v-dialog .v-overlay__content .v-card {
-        max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    /* 스낵바도 안전영역 고려 */
+    .v-snackbar {
+        margin-top: env(safe-area-inset-top) !important;
+        margin-bottom: env(safe-area-inset-bottom) !important;
+    }
+    
+    /* 전체 앱 높이 조정 */
+    #app {
+        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
     }
 }
 </style>
