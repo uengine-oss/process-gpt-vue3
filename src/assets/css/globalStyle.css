@@ -664,26 +664,6 @@ body {
     flex-direction: column !important;
     height: 100% !important;
 }
-.work-item-form-btn-box {
-    position: absolute;
-    z-index: 9999;
-}
-
-.work-item-form-btn-box-pc {
-    position: absolute;
-    z-index: 9999;
-    top: 70px;
-    right: 36px;
-    background: white;
-}
-
-.work-item-form-btn-box-mobile {
-    position: absolute;
-    z-index: 9999;
-    top: 86px;
-    right: 20px;
-    background: white;
-}
 
 .feedback-form .form-definition-simulation-chat-box {
     height: calc(100vh - 300px);
@@ -827,6 +807,7 @@ body {
     height: calc(-300px + 100vh);
     overflow: auto;
 }
+
 
 /* ... 로딩 애니메이션 */
 .loading-dots span {
