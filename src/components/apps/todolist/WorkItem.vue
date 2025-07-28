@@ -94,6 +94,7 @@
                                                         <div class="text-caption text-grey-darken-1 text-no-wrap" style="font-size: 10px;">{{ user.email }}</div>
                                                     </div>
                                                 </div>
+                                                <Icons :icon="'delegation'" :size="18" class="ml-2" />
                                             </div>
                                         </div>
                                     </div>

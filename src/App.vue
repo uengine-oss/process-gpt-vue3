@@ -1,5 +1,9 @@
 <template>
     <div>
+        <!-- 모바일 안전영역 오버레이 -->
+        <div v-if="isMobile" id="safe-area-top" class="safe-area-overlay safe-area-top"></div>
+        <div v-if="isMobile" id="safe-area-bottom" class="safe-area-overlay safe-area-bottom"></div>
+        
         <v-progress-linear
             v-if="loading"
             style="position: absolute; z-index: 999"
@@ -149,6 +153,11 @@ export default {
                 this.requestNotificationPermission();
             }
         }
+    },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
     },
     methods: {
         closeSnackbarOnEvent() {
@@ -308,5 +317,45 @@ export default {
     text-align: center;
     font-size: 16px !important;
     font-weight: 500 !important;
+}
+
+/* 모바일 안전영역 스타일 */
+.safe-area-overlay {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.safe-area-top {
+    top: 0;
+    height: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+    bottom: 0;
+    height: env(safe-area-inset-bottom);
+}
+
+/* 안전영역이 없는 경우 숨김 */
+@supports not (height: env(safe-area-inset-top)) {
+    .safe-area-overlay {
+        display: none;
+    }
+}
+
+/* 다이얼로그 안전영역 적용 (모바일에서만) */
+@media only screen and (max-width: 768px) {
+    .v-dialog .v-overlay__content {
+        margin-top: env(safe-area-inset-top) !important;
+        margin-bottom: env(safe-area-inset-bottom) !important;
+        max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    }
+    
+    .v-dialog .v-overlay__content .v-card {
+        max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    }
 }
 </style>

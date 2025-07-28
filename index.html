@@ -22,56 +22,6 @@
     <script type="text/javascript" src="/static/lib/jquery-ui.min.js"></script>
     <link href="/static/lib/materialdesignicons.min.css" rel="stylesheet">
     <link href="/static/bpmn/css/bpmn.css" rel="stylesheet" type="text/css" />
-    
-    <!-- 안전영역 스타일 -->
-    <style>
-        :root {
-            --safe-area-inset-top: env(safe-area-inset-top);
-            --safe-area-inset-bottom: env(safe-area-inset-bottom);
-        }
-        
-        #safe-area-top {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: var(--safe-area-inset-top);
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 9999;
-            pointer-events: none;
-        }
-        
-        #safe-area-bottom {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: var(--safe-area-inset-bottom);
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 9999;
-            pointer-events: none;
-        }
-        
-        /* 다이얼로그 안전영역 적용 */
-        .v-dialog .v-overlay__content {
-            margin-top: var(--safe-area-inset-top) !important;
-            margin-bottom: var(--safe-area-inset-bottom) !important;
-            max-height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom)) !important;
-        }
-        
-        /* 풀스크린 다이얼로그 안전영역 적용 */
-        .v-dialog .v-overlay__content .v-card {
-            max-height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom)) !important;
-        }
-        
-        /* 안전영역이 없는 경우 숨김 */
-        @supports not (height: env(safe-area-inset-top)) {
-            #safe-area-top, #safe-area-bottom {
-                display: none;
-            }
-        }
-    </style>
-    
     <script
       type="javascript"
       src="/static/lib/jqueryXML2JSON/jquery.xml2json.js"
@@ -96,94 +46,12 @@
     </script>
 </head>
 <body>
-    <!-- 안전영역 오버레이 -->
-    <div id="safe-area-top"></div>
-    <div id="safe-area-bottom"></div>
-    
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
     <script src="/static/config.js"></script>
     <script>
-      // 안전영역 값 업데이트 함수
-      function updateSafeAreaValues() {
-        const root = document.documentElement;
-        const testDiv = document.createElement('div');
-        testDiv.style.cssText = 'position:fixed; top:0; height:env(safe-area-inset-top); visibility:hidden;';
-        document.body.appendChild(testDiv);
-        
-        const topValue = getComputedStyle(testDiv).height;
-        document.body.removeChild(testDiv);
-        
-        // 안전영역 값이 실제로 있을 때만 적용
-        if (topValue && topValue !== '0px' && topValue !== 'auto') {
-          root.style.setProperty('--safe-area-inset-top', topValue);
-          console.log('상단 안전영역 적용됨:', topValue);
-        }
-        
-        const testDiv2 = document.createElement('div');
-        testDiv2.style.cssText = 'position:fixed; bottom:0; height:env(safe-area-inset-bottom); visibility:hidden;';
-        document.body.appendChild(testDiv2);
-        
-        const bottomValue = getComputedStyle(testDiv2).height;
-        document.body.removeChild(testDiv2);
-        
-        if (bottomValue && bottomValue !== '0px' && bottomValue !== 'auto') {
-          root.style.setProperty('--safe-area-inset-bottom', bottomValue);
-          console.log('하단 안전영역 적용됨:', bottomValue);
-        }
-      }
-
-      // 다이얼로그 감지 및 안전영역 적용
-      function observeDialogs() {
-        const observer = new MutationObserver(function(mutations) {
-          mutations.forEach(function(mutation) {
-            mutation.addedNodes.forEach(function(node) {
-              if (node.nodeType === 1) { // Element node
-                // 다이얼로그 오버레이 찾기
-                const overlays = node.querySelectorAll ? node.querySelectorAll('.v-overlay') : [];
-                if (node.classList && node.classList.contains('v-overlay')) {
-                  applyDialogSafeArea(node);
-                }
-                overlays.forEach(applyDialogSafeArea);
-              }
-            });
-          });
-        });
-        
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true
-        });
-      }
-
-      function applyDialogSafeArea(overlay) {
-        const content = overlay.querySelector('.v-overlay__content');
-        if (content) {
-          setTimeout(() => {
-            const topValue = getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-top') || '0px';
-            const bottomValue = getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-bottom') || '0px';
-            
-            content.style.marginTop = topValue;
-            content.style.marginBottom = bottomValue;
-            content.style.maxHeight = `calc(100vh - ${topValue} - ${bottomValue})`;
-            
-            console.log('다이얼로그에 안전영역 적용됨:', topValue, bottomValue);
-          }, 50);
-        }
-      }
-
       // 조건에 따라 제목 및 파비콘 변경
       document.addEventListener("DOMContentLoaded", function () {
-        // 안전영역 값 업데이트
-        updateSafeAreaValues();
-        
-        // 다이얼로그 감지 시작
-        observeDialogs();
-        
-        // 화면 방향 변경 시 안전영역 재계산
-        window.addEventListener('orientationchange', function() {
-          setTimeout(updateSafeAreaValues, 200);
-        });
         // 전역 변수 $mode의 값을 확인
         var mode = window.$mode || 'ProcessGPT'; // 기본값을 'ProcessGPT'로 설정
 
