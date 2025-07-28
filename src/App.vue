@@ -327,8 +327,6 @@ export default {
 @media only screen and (max-width: 768px) {
     /* body도 안전영역 고려 */
     body {
-        padding-top: env(safe-area-inset-top) !important;
-        padding-bottom: env(safe-area-inset-bottom) !important;
         box-sizing: border-box !important;
     }
     
@@ -348,6 +346,7 @@ export default {
     /* 전체 앱 높이 조정 */
     #app {
         min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+        bakcground: rgba(0, 0, 0, 0.8);
     }
 }
 </style>
