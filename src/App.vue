@@ -1,11 +1,16 @@
 <template>
     <div>
-        <v-progress-linear
-            v-if="loading"
-            style="position: absolute; z-index: 999"
-            indeterminate
-            class="my-progress-linear"
-        ></v-progress-linear>
+        <!-- 상단 안전영역 -->
+        <div v-if="isMobile" class="safe-area-top"></div>
+        
+        <!-- 모든 내용 -->
+        <div class="app-content">
+            <v-progress-linear
+                v-if="loading"
+                style="position: absolute; z-index: 999"
+                indeterminate
+                class="my-progress-linear"
+            ></v-progress-linear>
         <v-overlay v-model="loading" :scrim="true" :persistent="true"></v-overlay>
         <v-snackbar
             v-model="snackbar"
@@ -40,6 +45,10 @@
             </v-row>
         </div>
         <RouterView v-else></RouterView>
+        </div>
+        
+        <!-- 하단 안전영역 -->
+        <div v-if="isMobile" class="safe-area-bottom"></div>
     </div>
 </template>
 
@@ -149,6 +158,11 @@ export default {
                 this.requestNotificationPermission();
             }
         }
+    },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
     },
     methods: {
         closeSnackbarOnEvent() {
@@ -308,5 +322,21 @@ export default {
     text-align: center;
     font-size: 16px !important;
     font-weight: 500 !important;
+}
+
+/* 안전영역 - 단순 구조 */
+.safe-area-top {
+    height: env(safe-area-inset-top);
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.safe-area-bottom {
+    height: env(safe-area-inset-bottom);
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.app-content {
+    flex: 1;
+    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 </style>

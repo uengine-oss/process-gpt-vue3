@@ -21,7 +21,8 @@
                     :loading="isLoading"
                 >제출 완료</v-btn>
             </div>
-            <div v-if="!isCompleted && !isOwnWorkItem && isSimulate != 'true'"
+            <!-- workItem.vue로 위임하기 이동 -->
+            <!-- <div v-if="!isCompleted && !isOwnWorkItem && isSimulate != 'true'"
                 class="from-work-item-pc"
                 style="margin-right: 10px;"
             >
@@ -33,7 +34,7 @@
                     :disabled="isLoading"
                     :loading="isLoading"
                 >위임하기</v-btn>
-            </div>
+            </div> -->
             <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
                 <v-tooltip v-if="isMobile"
                     text="중간 저장"
@@ -57,6 +58,7 @@
 
         <v-card flat>
             <v-card-text class="pa-4 pt-3">
+
                 <!-- 등록된 폼 정보가 없을 때 표시되는 메시지 -->
                 <div v-if="(!html || html === 'null') && Object.keys(formData).length === 0 && workItem.activity.checkpoints.length === 0" 
                      class="text-center py-8">
@@ -72,6 +74,7 @@
                 
                 <!-- 기존 폼 컨텐츠 -->
                 <div v-else>
+                    <!-- 슬랏으로 버튼 추가 영역  -->
                     <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted"></DynamicForm>
                     <!-- <div v-if="!isCompleted" class="mb-4">
                         <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
@@ -81,7 +84,8 @@
                 </div>
             </v-card-text>
         </v-card>
-        <v-dialog v-model="delegateTaskDialog"
+        <!-- workItem.vue로 위임하기 이동 -->
+        <!-- <v-dialog v-model="delegateTaskDialog"
             :class="isMobile ? 'form-work-item-delegate-task-form-dialog-mobile' : 'form-work-item-delegate-task-form-dialog-pc'"
         >
             <DelegateTaskForm 
@@ -89,7 +93,7 @@
                 @delegate="delegateTask"
                 @close="closeDelegateTask"
             />
-        </v-dialog>
+        </v-dialog> -->
     </div>
 
 
