@@ -447,7 +447,7 @@ export default {
                 },
                 {
                     title: 'definitionManagement.completedList',
-                    icon: 'search',
+                    icon: 'completed-task',
                     BgColor: 'primary',
                     disable: true,
                     to: '/list-pages/completed',

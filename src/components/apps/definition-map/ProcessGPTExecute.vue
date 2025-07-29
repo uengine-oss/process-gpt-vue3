@@ -12,7 +12,7 @@
                 </div>
                 <v-spacer v-if="!isMobile"></v-spacer>
                 <div v-if="isMobile" class="d-flex align-center mt-2 ml-auto">
-                    <!-- 모바일일 때 상단에 제출 완료 버튼 - FormWorkItem을 통해 폼 데이터 수집 -->
+                    <!-- 모바일일 때 상단에 제출 완료 버튼 - FormWorkItem을 통해 폼 데이터 수집 (프로세스 정의 체계도에서 프로세스 실행시 나타나는 지출 완료) -->
                     <v-row class="ma-0 pa-0 align-center">
                         <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
                             class="bouncing-arrow-horizontal" 

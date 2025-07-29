@@ -971,11 +971,6 @@ hr {
         height: 100vh;
     }
 
-    .chat-info-view-wrapper-chats
-    .chat-info-message-input-box {
-        padding-bottom: 60px;
-    } 
-
     .leftSidebar {
         width: 300px !important;
     }
