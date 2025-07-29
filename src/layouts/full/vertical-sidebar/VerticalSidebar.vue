@@ -447,11 +447,11 @@ export default {
                 },
                 {
                     title: 'definitionManagement.completedList',
-                    icon: 'completed-task',
+                    icon: 'search',
                     BgColor: 'primary',
                     disable: true,
                     to: '/list-pages/completed',
-                    size: 24
+                    size: 20
                 },
             ]
             if (this.mode === 'ProcessGPT') {
