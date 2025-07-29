@@ -23,8 +23,8 @@
                 <v-list-item-content>
                     <v-list-item-title class="text-subtitle-1 w-100 font-weight-semibold">{{ user.username }}</v-list-item-title>
                     <v-list-item-subtitle class="text-subtitle-2">{{ user.email }}</v-list-item-subtitle>
-                    <div v-if="selectedUserInfo && selectedUserInfo.id === user.id">
-                        <v-tooltip location="bottom" :text="$t('userListing.chat')">
+                    <!-- <div v-if="selectedUserInfo && selectedUserInfo.id === user.id"> -->
+                        <!-- <v-tooltip location="bottom" :text="$t('userListing.chat')">
                             <template v-slot:activator="{ props }">
                                 <v-btn @click="startChat('chat')" v-bind="props" 
                                     icon variant="text"
@@ -46,8 +46,8 @@
                                     <v-icon>mdi-file-document-outline</v-icon>
                                 </v-btn>
                             </template> 
-                        </v-tooltip>
-                    </div>
+                        </v-tooltip> -->
+                    <!-- </div> -->
                 </v-list-item-content>
             </v-list-item>
 
@@ -114,6 +114,7 @@ const selectedUserInfo = ref(null);
 const selectedUser = (user) => {
     selectedUserInfo.value = user;
     emit('selectedUser', user);
+    startChat('chat')
 };
 
 const startChat = (type) => {
