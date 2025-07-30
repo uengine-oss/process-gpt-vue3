@@ -75,6 +75,7 @@
                     :definitionPath="fullPath"
                     :processName="projectName"
                     :type="'bpmn'"
+                    :analysisResult="analysisResult"
                     @close="toggleVersionDialog"
                     @save="beforeSaveDefinition"
                 ></process-definition-version-dialog>
