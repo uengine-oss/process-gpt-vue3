@@ -334,7 +334,7 @@
         "document": "Work Instruction",
         "camera": "Camera",
         "user": "User",
-        "chatRoom": "Chat Room",
+        "chatRoom": "Chat List",
         "viewDetails": "View Details",
         "executeProcess": "Execute Process"
     },
@@ -926,6 +926,7 @@
         "workItem": "Work Item",
         "workHistory": "Work History",
         "ganttChart": "Gantt Chart",
+        "chat": "Chat",
         "kanbanBoard": "Kanban Board",
         "sendEvent": "Send {event} event",
         "output": "Output"

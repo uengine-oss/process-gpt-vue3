@@ -335,7 +335,7 @@
         "document": "업무 지시",
         "camera": "카메라",
         "user": "유저",
-        "chatRoom": "대화방",
+        "chatRoom": "대화 목록",
         "viewDetails": "상세보기",
         "executeProcess": "프로세스 실행"
     },
@@ -927,6 +927,7 @@
         "workItem": "워크 아이템",
         "workHistory": "액티비티",
         "ganttChart": "간트 차트",
+        "chat": "채팅",
         "kanbanBoard": "칸반보드",
         "sendEvent": "{event} 이벤트 보내기",
         "output": "산출물"

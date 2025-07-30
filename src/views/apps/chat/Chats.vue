@@ -1,20 +1,20 @@
 <template>
     <v-card elevation="10">
-        <AppBaseCard>
-            <template v-slot:leftpart="{ closeDrawer }">
+        <AppBaseCard :isInstanceChat="isInstanceChat">
+            <template v-if="!isInstanceChat" v-slot:leftpart="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab" grow color="primary">
-                        <v-tab>
+                        <!-- <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-account</v-icon>
                             {{ $t('chat.user') }}
-                        </v-tab>
+                        </v-tab> -->
                         <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-message</v-icon>
                             {{ $t('chat.chatRoom') }}
                         </v-tab>
                     </v-tabs>
                     <v-tabs-items v-model="activeTab">
-                        <v-tab-item v-if="activeTab == 0">
+                        <!-- <v-tab-item v-if="activeTab == 0">
                             <ChatProfile style="margin-bottom: -15px;" />
                             <v-divider class="my-2"></v-divider>
                             <UserListing 
@@ -22,8 +22,8 @@
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
-                        </v-tab-item>
-                        <v-tab-item v-else>
+                        </v-tab-item> -->
+                        <v-tab-item v-if="activeTab == 0">
                             <ChatListing 
                                 :chatRoomList="filteredChatRoomList" 
                                 :userList="userList" 
@@ -95,20 +95,20 @@
                 </div>
             </template>
 
-            <template v-slot:mobileLeftContent="{ closeDrawer }">
+            <template v-if="!isInstanceChat" v-slot:mobileLeftContent="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab">
-                        <v-tab>
+                        <!-- <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-account</v-icon>
                             {{ $t('chat.user') }}
-                        </v-tab>
+                        </v-tab> -->
                         <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-message</v-icon>
                             {{ $t('chat.chatRoom') }}
                         </v-tab>
                     </v-tabs>
                     <v-tabs-items v-model="activeTab">
-                        <v-tab-item v-if="activeTab == 0">
+                        <!-- <v-tab-item v-if="activeTab == 0">
                             <ChatProfile style="margin-bottom: -15px;" />
                             <v-divider class="my-2"></v-divider>
                             <UserListing 
@@ -116,8 +116,8 @@
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
-                        </v-tab-item>
-                        <v-tab-item v-else>
+                        </v-tab-item> -->
+                        <v-tab-item v-if="activeTab == 0">
                             <ChatListing 
                                 :chatRoomList="filteredChatRoomList" 
                                 :userList="userList" 
@@ -239,7 +239,7 @@ import ChatModule from "@/components/ChatModule.vue";
 import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
 import AgentChatGenerator from "@/components/ai/AgentChatGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
-import UserListing from '@/components/apps/chats/UserListing.vue';
+// import UserListing from '@/components/apps/chats/UserListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
@@ -255,11 +255,21 @@ export default {
         Chat,
         AppBaseCard,
         ChatListing,
-        UserListing,
+        // UserListing,
         ChatProfile,
         VDataTable,
         AssistantChats,
         Attachments
+    },
+    props: {
+        isInstanceChat: {
+            type: Boolean,
+            default: false
+        },
+        instanceInfo: {
+            type: Object,
+            default: null
+        }
     },
     data: () => ({
         headers: [
@@ -277,7 +287,7 @@ export default {
         userList: [],
         chatRenderKey: 0,
         generatedWorkList: [],
-        activeTab: 1,
+        activeTab: 0,
         
         // assistantChat
         checked: true,
@@ -348,11 +358,18 @@ export default {
 
         this.userInfo = await this.backend.getUserInfo();
 
-        await this.getChatRoomList();
+        await this.getUserList();   
 
-        await this.getUserList();        
+        if(this.isInstanceChat){
+            await this.getChatRoom();
+        } else {
+            await this.getChatRoomList();
+        }
+
         await this.getCalendar();
         await this.getAttachments();
+
+
 
         this.EventBus.on('messages-updated', () => {
             this.chatRenderKey++;
@@ -441,7 +458,7 @@ export default {
                 }
             }
 
-            this.activeTab = 1
+            this.activeTab = 0
 
             if(type == 'work'){
                 this.startWorkOrder()
@@ -504,6 +521,40 @@ export default {
                 }
             });
         },
+        async getChatRoom(){
+            var me = this
+            let chatRoom = await me.backend.getChatRoom(this.instanceInfo.instId + '_chat')
+            if(chatRoom){
+                me.chatRoomList.push(chatRoom)
+                me.currentChatRoom = chatRoom;
+                me.chatRoomSelected(chatRoom);
+            } else {
+                // 인스턴스 참가자들을 채팅 참가자로 추가
+                let participants = [];
+
+                this.instanceInfo.participants.forEach(participant => {
+                    const user = this.userList.find(user => user.email === participant)
+                    if(user){
+                        participants.push(user)
+                    }
+                })
+                
+                let instanceChatRoom = {
+                    "id": this.instanceInfo.instId + '_chat',
+                    "name": `인스턴스: ${this.instanceInfo.name}`,
+                    "participants": participants
+                };
+                
+                // createChatRoom 호출해서 채팅방 생성
+                me.createChatRoom(instanceChatRoom);
+                me.chatRoomSelected(instanceChatRoom);
+            }
+
+            if(me.chatRoomList.length > 0){
+                me.myChatRoomIds.push(me.currentChatRoom.id)
+                me.setWatchChatList(me.myChatRoomIds);
+            }
+        },
         async getChatRoomList(){
             var me = this
             let chatRooms = await me.backend.getChatRoomList(`chat_rooms`)
@@ -565,12 +616,14 @@ export default {
             // chatRoomInfo.participants.forEach(participant => {
             //     delete participant.profile;
             // });
-            let userInfo = {
-                "id": this.userInfo.uid,
-                "username": this.userInfo.name,
-                "email": this.userInfo.email,
+            if(!chatRoomInfo.participants.find(p => p.email === this.userInfo.email)){
+                let userInfo = {
+                    "id": this.userInfo.uid,
+                    "username": this.userInfo.name,
+                    "email": this.userInfo.email,
+                }
+                chatRoomInfo.participants.push(userInfo)
             }
-            chatRoomInfo.participants.push(userInfo)
             let currentTimestamp = Date.now()
             chatRoomInfo.message = {
                 "msg": "NEW",

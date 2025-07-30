@@ -3260,6 +3260,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getChatRoom(instId: string) {
+        try {
+            return await storage.getObject('chat_rooms', { match: { id: instId } });
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
     async getChatRoomList(path: string) {
         try {
             return await storage.list(path);
