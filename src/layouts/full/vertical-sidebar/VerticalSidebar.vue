@@ -451,7 +451,7 @@ export default {
                     BgColor: 'primary',
                     disable: true,
                     to: '/list-pages/completed',
-                    size: 24
+                    size: 20
                 },
             ]
             if (this.mode === 'ProcessGPT') {

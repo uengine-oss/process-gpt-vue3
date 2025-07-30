@@ -23,6 +23,37 @@
                     <div>{{ $t('filterConfigLabel.startDate') }}: {{ formatDateTime(item.startDate) }}</div>
                     <div>{{ $t('filterConfigLabel.endDate') }}: {{ formatDateTime(item.endDate) }}</div>
                     <div>{{ $t('filterConfigLabel.dueDate') }}: {{ formatDateTime(item.dueDate) }}</div>
+                    
+                    <!-- 참여자 정보 표시 -->
+                    <div v-if="getParticipantsForItem(item).length > 0" class="mt-2">
+                        <div :class="isMobile ? 'd-block' : 'd-flex flex-wrap align-center'" class="mt-1">
+                            <!-- 모든 참여자를 개별적으로 표시 -->
+                            <span class="text-caption text-grey-600 mr-2">참여자:</span>
+                            <div :class="isMobile ? 'd-block mt-1' : 'd-flex flex-wrap align-center'">
+                                <div 
+                                    v-for="(participant, index) in getParticipantsForItem(item)"
+                                    :key="participant.email"
+                                    :class="isMobile ? 'd-flex align-center mb-1 participant-item' : 'd-flex align-center participant-item'"
+                                >
+                                    <v-avatar size="20" class="mr-1">
+                                        <v-img
+                                            :src="getParticipantProfile(participant)"
+                                            :alt="participant.username"
+                                            style="border-radius: 50%;"
+                                        />
+                                    </v-avatar>
+                                    <span class="text-caption">{{ participant.username }}</span>
+                                    <!-- 구분자 표시 (데스크톱에서만, 마지막 항목이 아닐 때) -->
+                                    <v-divider
+                                        v-if="!isMobile && index < getParticipantsForItem(item).length - 1"
+                                        vertical
+                                        color="grey-darken-2"
+                                        class="mx-1 ml-2 custom-divider"
+                                    ></v-divider>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </v-card-text>
             </v-card>
         </template>
@@ -68,6 +99,8 @@ export default {
         return {
             loading: true,
             list: [],
+            userList: [], // 사용자 목록 데이터 추가
+            windowWidth: window.innerWidth, // 윈도우 크기 추적
             filterConfig: {
                 sort: {
                     label: this.$t('filterConfigLabel.sort'),
@@ -104,18 +137,31 @@ export default {
     },
     created() {
        this.init()
+       this.handleResize = () => {
+           this.windowWidth = window.innerWidth;
+       };
+       window.addEventListener('resize', this.handleResize);
+    },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.handleResize);
     },
     computed: {
         filteredList(){
             return this.list
+        },
+        isMobile() {
+            return this.windowWidth <= 768;
         }
     },
     methods: {
-        init(){
+        async init(){
             var me = this
             me.$try({
                 action: async () => {
                     me.loading = true;
+
+                    // 사용자 목록 로드
+                    await me.loadUserList();
 
                     let itemsPerPage = me.config.itemsPerPage ? me.config.itemsPerPage : 1
                     if(me.listType != '*') {
@@ -134,6 +180,45 @@ export default {
                     me.loading = false                
                 },
             });
+        },
+        // 사용자 목록 로드
+        async loadUserList() {
+            try {
+                this.userList = await backend.getUserList({});
+                console.log('사용자 목록 로드됨:', this.userList);
+            } catch (error) {
+                console.error('사용자 목록 로드 실패:', error);
+                this.userList = [];
+            }
+        },
+        // 인스턴스의 참여자 정보 가져오기
+        getParticipantsForItem(item) {
+            if (!item.participants || !Array.isArray(item.participants)) {
+                return [];
+            }
+            
+            return item.participants.map(email => {
+                const user = this.userList.find(u => u.email === email);
+                return user || { 
+                    email: email, 
+                    username: email.split('@')[0], 
+                    profile: null 
+                };
+            }).filter(Boolean);
+        },
+        // 참여자 프로필 이미지 가져오기
+        getParticipantProfile(participant) {
+            let basePath = window.location.port == '' ? window.location.origin : '';
+            
+            if (participant.profile) {
+                if (participant.profile.includes("defaultUser.png")) {
+                    return `${basePath}/images/defaultUser.png`;
+                } else {
+                    return participant.profile;
+                }
+            } else {
+                return `${basePath}/images/defaultUser.png`;
+            }
         },
         handleRowClick(item) {
             this.$router.push(`/instancelist/${item.instId.replace(/\./g, '_DOT_')}`);
@@ -225,5 +310,25 @@ export default {
 <style scoped>
 .completed-instances-style {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* 연한 그림자 */
+}
+
+.border-white {
+    border: 2px solid white !important;
+}
+
+.participant-item {
+    transition: background-color 0.2s ease;
+    padding: 2px 4px;
+    border-radius: 12px;
+}
+
+.participant-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.custom-divider {
+    height: 20px !important;
+    opacity: 0.8 !important;
+    border-color: #424242 !important;
 }
 </style>

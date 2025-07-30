@@ -151,7 +151,9 @@
             </div>
         </div>
 
-        <v-card-text style="width: 100%; height: calc(100vh - 180px); padding: 10px;">
+        <v-card-text style="width: 100%;"
+            :style="isMobile ? 'height: calc(100vh - 80px); padding: 10px 10px 0px 10px;' : 'height: calc(100vh - 180px); padding: 10px;'"
+        >
             <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinitionData"
                 :isViewMode="isViewMode"

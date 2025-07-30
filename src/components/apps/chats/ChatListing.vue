@@ -91,6 +91,32 @@ const filteredChats = computed(() => {
     });
 });
 
+const getChatRoomName = (chat) => {
+    // 참가자가 2명인 경우
+    if (chat.participants.length === 2) {
+        // 상대방 찾기 (나가 아닌 참가자)
+        const otherParticipant = chat.participants.find(participant => participant.email !== props.userInfo.email);
+        
+        if (otherParticipant) {
+            // system chat인 경우
+            if (otherParticipant.email === "system@uengine.org") {
+                return "Assistant";
+            } else {
+                // 일반 사용자인 경우 상대방 이름 표시
+                return otherParticipant.username || otherParticipant.email;
+            }
+        }
+    }
+    
+    // 참가자가 3명 이상인 경우 설정된 채팅방 이름 사용
+    if (chat.participants.length >= 3) {
+        return chat.name || chat.participants.map(participant => participant.username).join(', ');
+    }
+    
+    // 기본값 (예외 상황)
+    return chat.name || chat.participants.map(participant => participant.username).join(', ');
+}
+
 const getProfile = (participant) => {
     let basePath = window.location.port == '' ? window.location.origin:'' 
     if(participant.email == "system@uengine.org"){
@@ -319,7 +345,7 @@ const deleteChatRoom = () => {
                     </v-avatar>
                 </template>
                 <!---Name-->
-                <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">{{ chat.name}}</v-list-item-title>
+                <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">{{ getChatRoomName(chat) }}</v-list-item-title>
                 <!---Subtitle-->
                 <v-sheet v-if="chat.message.type == 'img'">
                     <small class="textPrimary text-subtitle-2">Sent a Photo</small>

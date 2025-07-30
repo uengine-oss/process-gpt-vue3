@@ -424,7 +424,7 @@ export default {
                         const participantEmails = chatRoom.participants.map(participant => participant.email);
                         const participantNames = chatRoom.participants.map(participant => participant.username);
                         chatRoomInfo = chatRoom
-                        return participantEmails.includes(currentUserEmail) && participantEmails.includes(selectedUserEmail) && participantNames.includes(currentUserEmail) && participantNames.includes(selectedUserEmail);
+                        return participantEmails.includes(currentUserEmail) && participantEmails.includes(selectedUserEmail);
                     } else {
                         return false
                     }
@@ -840,7 +840,7 @@ export default {
 
                 systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
 
-                if(this.currentChatRoom.id == chatRoomId){
+                if(this.currentChatRoom.id == this.chatRoomId){
                     const systemMsgObj = me.createMessageObj(systemMsg, 'system')
                     if(this.messages[this.messages.length - 1].content === '...' && this.messages[this.messages.length - 1].isLoading){
                         this.messages.pop()
@@ -874,8 +874,8 @@ export default {
                     if(responseObj.work == 'CompanyQuery'){
                         try{
                             const token = localStorage.getItem('accessToken');
-                            let mementoRes = await axios.get(`/memento/query`, {
-                                params: {
+                            let mementoRes = await axios.post(`/memento/query`, {
+                                input: {
                                     query: responseObj.content,
                                     tenant_id: window.$tenantName
                                 },
@@ -895,7 +895,7 @@ export default {
                                 }
                             });
                             obj.memento.sources = sources
-                            if(this.currentChatRoom.id == chatRoomId && this.messages.length > 0){
+                            if(this.currentChatRoom.id == chatRoomId && this.messages.length > 0 && this.messages[this.messages.length - 1].email == 'system@uengine.org'){
                                 this.messages[this.messages.length - 1].content = '테이블 생성 중...'
                             }
                             const responseTable = await axios.post(`/execution/process-data-query`, {
