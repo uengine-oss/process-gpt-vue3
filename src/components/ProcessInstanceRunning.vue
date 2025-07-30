@@ -41,9 +41,7 @@
                                             </div>
                                             
                                             <!-- 세부 내용 -->
-                                            <pre v-else class="text-body-1">
-                                                {{ detailContent }}
-                                            </pre>
+                                            <pre v-else class="text-body-1">{{ detailContent }}</pre>
                                             
                                         </v-sheet>
                                     </div>
@@ -119,12 +117,15 @@ export default {
                 return;
             }
             
+            // ```json 마크다운 표시 제거 (줄바꿈 포함)
+            let cleanLog = log.replace(/```json[\s\n]*/g, '').replace(/```[\s\n]*/g, '').trim();
+            
             try {
-                const parsedLog = JSON.parse(log);
+                const parsedLog = JSON.parse(cleanLog);
                 this.detailContent = JSON.stringify(parsedLog, null, 2);
             } catch (error) {
-                // JSON 파싱 실패 시 원본 텍스트 사용
-                this.detailContent = log;
+                // JSON 파싱 실패 시 정리된 텍스트 사용
+                this.detailContent = cleanLog;
             }
         },
     },
