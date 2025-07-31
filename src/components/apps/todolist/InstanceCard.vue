@@ -106,7 +106,7 @@
                         </div>
                     </v-window-item>
                     <v-window-item value="progress" class="instance-card-tab-2">
-                        <div style="height: 73vh;">
+                        <div class="instance-card-process-box">
                             <InstanceProgress 
                                 :key="`progress-${updatedKey}-${instance?.instId}`"
                                 :instance="instance"
