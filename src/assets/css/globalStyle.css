@@ -6,15 +6,6 @@ hr {
     opacity: 1 !important;
 }
 
-/* BODY 또는 상위 컨테이너에 적용 */
-body {
-    margin-top: env(safe-area-inset-top);
-    margin-bottom: env(safe-area-inset-bottom);
-    box-sizing: border-box;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-  
-
 .dynamic-form .v-field--disabled {
     opacity: 1 !important;
     background-color: #eaeaea !important;
@@ -664,26 +655,6 @@ body {
     flex-direction: column !important;
     height: 100% !important;
 }
-.work-item-form-btn-box {
-    position: absolute;
-    z-index: 9999;
-}
-
-.work-item-form-btn-box-pc {
-    position: absolute;
-    z-index: 9999;
-    top: 70px;
-    right: 36px;
-    background: white;
-}
-
-.work-item-form-btn-box-mobile {
-    position: absolute;
-    z-index: 9999;
-    top: 86px;
-    right: 20px;
-    background: white;
-}
 
 .feedback-form .form-definition-simulation-chat-box {
     height: calc(100vh - 300px);
@@ -828,6 +799,7 @@ body {
     overflow: auto;
 }
 
+
 /* ... 로딩 애니메이션 */
 .loading-dots span {
     animation: loading-dot 2s infinite;
@@ -856,6 +828,10 @@ body {
 }
 .instance-card-tab-4 .chat-view-box {
     max-height: calc(100vh - 250px);
+}
+
+.instance-card-process-box {
+    height: 73vh;
 }
 
 @keyframes loading-dot {
@@ -942,6 +918,9 @@ body {
 }
 
 @media only screen and (max-width: 768px) {
+    .instance-card-process-box {
+        height: calc(100vh - 110px);
+    }
 
     .work-itme-current-component .v-checkbox {
         border: none !important;
@@ -998,11 +977,6 @@ body {
     .is-work-height {
         height: 100vh;
     }
-
-    .chat-info-view-wrapper-chats
-    .chat-info-message-input-box {
-        padding-bottom: 60px;
-    } 
 
     .leftSidebar {
         width: 300px !important;

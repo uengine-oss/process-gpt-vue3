@@ -484,7 +484,7 @@
           
           this.ws.onerror = (error) => {
             
-            if (this.retryCount < 5) {
+            if (this.retryCount < 10) {
               this.retryCount++
               this.addLog('info', `연결 시도 중... (${this.retryCount}/5)`)
               
@@ -493,7 +493,7 @@
                 if (this.connectionStatus === 'connecting') {
                   this.connectWebSocket()
                 }
-              }, 3000)
+              }, 5000)
             } else {
               // 모든 재시도가 실패했을 때만 disconnected로 변경
               this.connectionStatus = 'disconnected'
@@ -589,6 +589,10 @@
       
       // 명령 전송
       sendCommand() {
+        if(this.configData.OPENAI_API_KEY == '' || this.configData.OPENAI_API_KEY == null) {
+          this.openConfigDialog()
+          return
+        }
         if (!this.command.trim() || !this.ws) {
           return
         }

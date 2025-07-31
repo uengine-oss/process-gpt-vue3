@@ -3,6 +3,13 @@ import { ref, computed, getCurrentInstance, watch, onMounted, onUnmounted, injec
 import { useDisplay } from 'vuetify';
 import { useRoute } from 'vue-router';
 
+const props = defineProps({
+    isInstanceChat: {
+        type: Boolean,
+        default: false
+    }
+});
+
 const { lgAndUp } = useDisplay();
 const sDrawer = ref(false);
 const route = useRoute();
@@ -89,7 +96,7 @@ const menuName = computed(() => {
         :style="!$globalState.state.isRightZoomed ? '' : 'height:100vh;'"
         style="overflow: auto;"
     >
-        <div class="left-part" v-if="lgAndUp" :style="canvasReSize">
+        <div class="left-part" v-if="lgAndUp && !props.isInstanceChat" :style="canvasReSize">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>
             <!-- </perfect-scrollbar> -->

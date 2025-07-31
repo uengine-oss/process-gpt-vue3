@@ -1,5 +1,6 @@
 <template>
     <div>
+        <!-- 모든 내용 -->
         <v-progress-linear
             v-if="loading"
             style="position: absolute; z-index: 999"
@@ -149,6 +150,11 @@ export default {
                 this.requestNotificationPermission();
             }
         }
+    },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
     },
     methods: {
         closeSnackbarOnEvent() {

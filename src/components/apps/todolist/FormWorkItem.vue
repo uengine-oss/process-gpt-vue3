@@ -1,9 +1,23 @@
 <template>
     <div>
-        <v-row class="ma-0 pa-0 task-btn">
+        <!-- PC일 때 제출 완료 -->
+        <v-row v-if="!isMobile"
+            class="ma-0 pa-0 task-btn"
+        >
             <v-spacer></v-spacer>
-            <div v-if="(!isCompleted && isOwnWorkItem) || isSimulate == 'true'" class="from-work-item-pc mr-2">
-                <v-btn v-if="!isDryRun" @click="saveTask" color="primary" density="compact" class="mr-2" rounded variant="flat">중간 저장</v-btn>
+            <div v-if="!isInWorkItem && ((!isCompleted && isOwnWorkItem) || isSimulate == 'true')" class="from-work-item-pc mr-2">
+                <v-btn v-if="isSimulate == 'true'" 
+                    :disabled="activityIndex == 0"
+                    @click="backToPrevStep"
+                    variant="elevated" 
+                    class="rounded-pill mr-2"
+                    density="compact"
+                    style="background-color: #808080; color: white;"
+                >이전 단계</v-btn>
+                <v-btn v-if="!isDryRun" @click="saveTask" 
+                    density="compact"
+                    class="mr-2 default-greay-btn" rounded variant="flat"
+                >중간 저장</v-btn>
                 <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
                     class="bouncing-arrow-horizontal submit-complete-pc" 
                     color="primary" 
@@ -11,7 +25,6 @@
                 >
                     mdi-arrow-right-bold
                 </v-icon>
-                <!-- PC일 때 제출 완료 -->
                 <v-btn @click="executeProcess"
                     :class="{ 'submit-complete-pc': !$route.path.startsWith('/todolist') }"
                     color="primary"
@@ -19,46 +32,49 @@
                     rounded variant="flat"
                     :disabled="isLoading"
                     :loading="isLoading"
-                >제출 완료</v-btn>
+                >제출 완료
+                </v-btn>
             </div>
-            <div v-if="!isCompleted && !isOwnWorkItem && isSimulate != 'true'"
-                class="from-work-item-pc"
-                style="margin-right: 10px;"
-            >
-                <v-btn @click="openDelegateTask()"
-                    color="primary"
-                    density="compact"
-                    rounded
-                    variant="flat"
-                    :disabled="isLoading"
-                    :loading="isLoading"
-                >위임하기</v-btn>
-            </div>
-            <!-- <div class="form-work-item-mobile" v-if="!isCompleted">
-                <v-tooltip v-if="isMobile"
-                    text="중간 저장"
-                >
-                    <template v-slot:activator="{ props }">
-                        <v-btn @click="saveTask" icon v-bind="props" density="comfortable">
-                            <Icons :icon="'save'" :width="32" :height="32"/>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                <v-tooltip text="제출 완료">
-                    <template v-slot:activator="{ props }">
-                        <v-btn @click="executeProcess" icon v-bind="props"
-                            density="comfortable">
-                            <Icons :icon="'submit-document'" :width="28" :height="28"/>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-            </div> -->
         </v-row>
 
         <v-card flat>
             <v-card-text class="pa-4 pt-3">
+                <!-- 참고해야 할 이전 산출물이 있는 경우 -->
+                <div v-if="hasInputFields">
+                    <v-card variant="outlined" class="mb-4">
+                        <v-card-title class="text-h6">
+                            <v-icon class="mr-2" color="primary">mdi-information-outline</v-icon>
+                            참고 정보
+                        </v-card-title>
+                        <v-card-text class="pa-4 pt-0">
+                            <div v-for="field in inputFields" :key="field.formId" class="mb-4">
+                                <v-card variant="outlined" class="mb-2">
+                                    <v-card-title class="text-subtitle-1 pa-3 pb-1">
+                                        {{ field.formId }}
+                                    </v-card-title>
+                                    <v-card-text class="pa-3 pt-0">
+                                        <v-row>
+                                            <v-col v-for="(value, key) in field.formValue" :key="key" cols="12" md="6">
+                                                <v-text-field
+                                                    :label="key"
+                                                    :model-value="formatValue(value)"
+                                                    readonly
+                                                    variant="outlined"
+                                                    density="compact"
+                                                    hide-details
+                                                    class="mb-2"
+                                                ></v-text-field>
+                                            </v-col>
+                                        </v-row>
+                                    </v-card-text>
+                                </v-card>
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </div>
+
                 <!-- 등록된 폼 정보가 없을 때 표시되는 메시지 -->
-                <div v-if="(!html || html === 'null') && Object.keys(formData).length === 0 && workItem.activity.checkpoints.length === 0" 
+                <div v-if="isInitialized && (!html || html === 'null') && Object.keys(formData).length === 0 && workItem.activity.checkpoints.length === 0" 
                      class="text-center py-8">
                     
                     <v-icon size="64" color="grey-lighten-1" class="mb-4">
@@ -72,16 +88,50 @@
                 
                 <!-- 기존 폼 컨텐츠 -->
                 <div v-else>
-                    <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted"></DynamicForm>
+                    <!-- 슬랏으로 버튼 추가 영역  -->
+                    <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem"></DynamicForm>
                     <!-- <div v-if="!isCompleted" class="mb-4">
                         <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
                         <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
                     </div> -->
                     <Checkpoints v-if="workItem.activity.checkpoints.length > 0" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
+                    <!-- 모바일 상태에서 나오는 버튼 -->
+                    <v-row v-if="!isCompleted && isOwnWorkItem && isMobile && (html || workItem.activity.checkpoints.length > 0)" class="ma-0 pa-0">
+                        <v-spacer></v-spacer>
+                        <v-btn v-if="isSimulate == 'true'" 
+                            :disabled="activityIndex == 0"
+                            @click="backToPrevStep"
+                            variant="elevated" 
+                            class="rounded-pill mr-2"
+                            density="compact"
+                            style="background-color: #808080; color: white;"
+                        >이전 단계</v-btn>
+                        <v-btn v-if="!isDryRun && isSimulate != 'true'"
+                            @click="saveTask"
+                            class="mr-2  default-greay-btn"
+                            density="compact"
+                            rounded variant="flat"
+                        >중간 저장</v-btn>
+                        <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
+                            class="bouncing-arrow-horizontal"
+                            color="primary"
+                            size="large"
+                        >
+                            mdi-arrow-right-bold
+                        </v-icon>
+                        <v-btn @click="executeProcess"
+                            color="primary"
+                            density="compact"
+                            rounded variant="flat"
+                            :disabled="isLoading"
+                            :loading="isLoading"
+                        >제출 완료 </v-btn>
+                    </v-row>
                 </div>
             </v-card-text>
         </v-card>
-        <v-dialog v-model="delegateTaskDialog"
+        <!-- workItem.vue로 위임하기 이동 -->
+        <!-- <v-dialog v-model="delegateTaskDialog"
             :class="isMobile ? 'form-work-item-delegate-task-form-dialog-mobile' : 'form-work-item-delegate-task-form-dialog-pc'"
         >
             <DelegateTaskForm 
@@ -89,7 +139,7 @@
                 @delegate="delegateTask"
                 @close="closeDelegateTask"
             />
-        </v-dialog>
+        </v-dialog> -->
     </div>
 
 
@@ -141,7 +191,15 @@ export default {
         },
         isFinishedAgentGeneration: Boolean,
         processDefinition: Object,
-        isOwnWorkItem: Boolean
+        isOwnWorkItem: Boolean,
+        isInWorkItem: {
+            type: Boolean,
+            default: false
+        },
+        activityIndex: {
+            type: Number,
+            default: 0
+        }
     },
     data: () => ({
         html: null,
@@ -151,6 +209,8 @@ export default {
         useTextAudio: false,
         isLoading: false,
         delegateTaskDialog: false,
+        inputFields: null,
+        isInitialized: false,
     }),
     computed: {
         simulate() {
@@ -165,8 +225,16 @@ export default {
         mode() {
             return window.$mode;
         },
+        hasInputFields() {
+            return this.inputFields && this.inputFields.length > 0
+        }
     },
     watch:  {
+        isLoading(newVal) {
+            if (this.isInWorkItem) {
+                this.$emit('loading-changed', newVal);
+            }
+        },
         html() {
             if (this.isCompleted) {
                 this.html = this.disableFormHTML(this.html);
@@ -179,8 +247,8 @@ export default {
             }
         },
     },
-    mounted() {
-        this.init();
+    async mounted() {
+        await this.init();
     },
     methods: {
         async init() {
@@ -225,7 +293,10 @@ export default {
                         if(currentActivity && currentActivity.inputFormData) {
                             me.formData = currentActivity.inputFormData
                         }
+                    } else {
+                        await me.loadInputData()
                     }
+                    
 
                     me.EventBus.on('form-values-updated', (formValues) => {
                         if(formValues){
@@ -234,6 +305,8 @@ export default {
                             })
                         }
                     });
+                    
+                    me.isInitialized = true;
                 }
             });
         },
@@ -470,6 +543,69 @@ export default {
         closeDelegateTask(){
             this.delegateTaskDialog = false
         },
+        formatValue(value) {
+            if (value === null || value === undefined) {
+                return '';
+            }
+            if (typeof value === 'string') {
+                return value;
+            }
+            if (typeof value === 'object') {
+                if (Array.isArray(value)) {
+                    return value.join(', ');
+                }
+                // 객체인 경우 JSON.stringify로 변환하되, 너무 길면 잘라서 표시
+                const jsonString = JSON.stringify(value, null, 2);
+                if (jsonString.length > 100) {
+                    return jsonString.substring(0, 100) + '...';
+                }
+                return jsonString;
+            }
+            return String(value);
+        },
+        async loadInputData() {
+            var me = this;
+            if (!me.workItem || !me.workItem.worklist || !me.workItem.worklist.instId) {
+                return;
+            }
+            const procDefId = me.workItem.worklist.defId;
+            const process = await backend.getRawDefinition(procDefId);
+            if (!process) {
+                return;
+            }
+            const definition = process.definition;
+            if (!definition) {
+                return;
+            }
+            if (!definition.activities) {
+                return;
+            }
+            const activity = definition.activities.find(x => x.id == me.workItem.activity.tracingTag);
+            if (!activity) {
+                return;
+            }
+            let inputFields = {};
+            if (activity.inputData && activity.inputData.length > 0) {
+                const fieldValuePromises = activity.inputData.map(async (fieldInfo) => {
+                    const fieldValue = await backend.getFieldValue(fieldInfo, procDefId, me.workItem.worklist.instId);
+                    if (fieldValue) {
+                        inputFields[fieldInfo] = fieldValue;
+                    }
+                });
+                await Promise.all(fieldValuePromises);
+            }
+            inputFields = await backend.groupFieldsByForm(inputFields);
+            me.inputFields = [];
+            Object.keys(inputFields).forEach(key => {
+                me.inputFields.push({
+                    formId: key,
+                    formValue: inputFields[key]
+                });
+            });
+        },
+        backToPrevStep() {
+            this.$emit('backToPrevStep');
+        }
     }
 };
 </script>

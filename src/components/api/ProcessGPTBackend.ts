@@ -44,10 +44,23 @@ class ProcessGPTBackend implements Backend {
         try {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
             if (path == 'form_def') {
+                if (options && options.match) {
+                    options.match.tenant_id = window.$tenantName;
+                } else {
+                    options = {
+                        match: {
+                            tenant_id: window.$tenantName
+                        }
+                    }
+                }
                 let formDefs = await storage.list('form_def', options);
                 formDefs.map((item: any) => {
-                    item.path = `${item.id}`
-                    item.name = item.name || item.path 
+                    item.path = item.id
+                    item.name = item.name || item.path
+                    item.fieldsJson = item.fields_json || {}
+                    item.html = item.html || ''
+                    item.procDefId = item.proc_def_id || ''
+                    item.activityId = item.activity_id || ''
                 });
                 return formDefs
             } else {
@@ -3260,6 +3273,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getChatRoom(instId: string) {
+        try {
+            return await storage.getObject('chat_rooms', { match: { id: instId } });
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
     async getChatRoomList(path: string) {
         try {
             return await storage.list(path);
@@ -3532,8 +3553,71 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             throw new Error(error.message);
         }
-
     }
+
+    async getFieldValue(field: string, procDefId: string, instanceId: string) {
+        try {
+            if (!field || !procDefId || !instanceId) {
+                throw new Error('field, procDefId, instanceId is required');
+            }
+
+            let fieldValue = {};
+
+            const fieldInfo = field.split('.');
+            const formId = fieldInfo[0];
+            const fieldId = fieldInfo[1];
+            const activityId = formId.replace(`${procDefId}_`, '').replace('_form', '');
+
+            const workitem = await storage.getObject('todolist', {
+                match: {
+                    proc_inst_id: instanceId,
+                    activity_id: activityId
+                }
+            });
+
+            if (!workitem) {
+                throw new Error('workitem not found');
+            }
+
+            const output = workitem.output;
+            if (!output) {
+                throw new Error('output not found');
+            }
+
+            fieldValue[formId] = {
+                [fieldId]: output[formId][fieldId]
+            }
+            return fieldValue;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+    
+    groupFieldsByForm(fieldValues: any) {
+        const formGroups = {}
+        
+        for (const key in fieldValues) {
+            if (!fieldValues[key]) {
+                continue
+            }
+                
+            const form_id = key.split('.')[0]
+            if (!formGroups[form_id]) {
+                formGroups[form_id] = {}
+            }
+            
+            const field_id = key.split('.')[1]
+            
+            if (fieldValues[key] && form_id in fieldValues[key]) {
+                const actual_value = fieldValues[key][form_id][field_id]
+                if (actual_value) {
+                    formGroups[form_id][field_id] = actual_value
+                }
+            }
+        }
+        return formGroups;
+    }
+
 }
 
 export default ProcessGPTBackend;
