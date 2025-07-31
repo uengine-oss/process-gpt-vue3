@@ -4,35 +4,59 @@
         elevation="10" 
         :key="updatedKey"
     >
-        <div class="pa-2 pb-0 mb-1 pl-4 align-center">
+        <div class="pa-2 pb-0 mb-1 pl-4 pr-4 align-center">
             <div class="d-flex align-center"
                 :style="isMobile ? 'display: block !important;' : ''"
             >
-                <h5 class="text-h5 font-weight-semibold">
-                    {{ activityName }}
-                </h5>
                 <v-row class="pa-0 pt-1 pb-1 ma-0 align-center">
-                    <v-chip v-if="workItemStatus" size="x-small" variant="outlined" 
+                    <h5 class="text-h5 font-weight-semibold mr-2">
+                        {{ activityName }}
+                    </h5>
+                    <v-chip v-if="workItemStatus"
+                        size="x-small" variant="outlined" 
                         style = "margin: 2px 0px 0px 5px !important; display: flex; align-items: center"
                         :style="isMobile ? 'margin: 0px !important;' : ''">
                         {{ workItemStatus }}
                     </v-chip>
-                    <v-tooltip :text="$t('processDefinition.zoom')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-if="!isMobile" 
-                                @click="$globalState.methods.toggleZoom()"
-                                class="ml-1"
-                                size="x-small"
-                                icon="$vuetify" variant="text"
-                                v-bind="props"
-                            >
-                                <Icons
-                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                    :size="20"
-                                />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
+                    <v-spacer></v-spacer>
+                    <!-- 위임하기 UI -->
+                    <v-row class="ma-0 pa-0"  v-if="!isCompleted && !isOwnWorkItem && isSimulate != 'true'">
+                        <v-spacer></v-spacer>
+                        <v-tooltip text="위임하기">
+                            <template v-slot:activator="{ props }">
+                                <div
+                                    @click="openDelegateTask()"
+                                    class="d-flex align-center"
+                                    v-bind="props"
+                                    style="cursor: pointer;"
+                                >
+                                    <!-- 현재 담당자 정보 표시 -->
+                                    <div v-if="assigneeUserInfo && assigneeUserInfo.length > 0">
+                                        <div v-for="user in assigneeUserInfo" :key="user.email">
+                                            <div class="d-flex align-center">
+                                                <div>
+                                                    <v-img v-if="user.profile" :src="user.profile" width="32px" height="32px"
+                                                        class="rounded-circle img-fluid"
+                                                    />
+                                                    <v-avatar v-else size="32">
+                                                        <Icons :icon="'user-circle-bold'" :size="32" />
+                                                    </v-avatar>
+                                                </div>
+                                                <!-- <div class="ml-3">
+                                                    <div class="d-flex align-center">
+                                                        <span class="text-subtitle-2 font-weight-medium text-no-wrap">{{ user.username }} </span>
+                                                    </div>
+                                                </div> -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </v-tooltip>
+                    </v-row>
+                </v-row>
+                <v-divider v-if="isMobile" class="my-2"></v-divider>
+                <v-row v-if="isSimulate == 'true'" class="pa-0 pt-1 pb-1 ma-0 align-center">
                     <!-- <v-tooltip v-if="isSimulate == 'true'" text="이전 단계">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="backToPrevStep"
@@ -46,7 +70,7 @@
                             </v-btn>
                         </template>
                     </v-tooltip> -->
-                    <v-btn v-if="isSimulate == 'true'"
+                    <v-btn v-if="isSimulate == 'true'" 
                         :disabled="activityIndex == 0"
                         @click="backToPrevStep"
                         variant="elevated" 
@@ -54,54 +78,6 @@
                         density="compact"
                         style="background-color: #808080; color: white;"
                     >이전 단계</v-btn>
-                </v-row>
-                <!-- 위임하기 UI -->
-                <v-row class="ma-0 pa-0">
-                    <v-spacer></v-spacer>
-                    <v-tooltip text="위임하기">
-                        <template v-slot:activator="{ props }">
-                            <v-btn @click="openDelegateTask()"
-                                v-if="!isCompleted && !isOwnWorkItem && isSimulate != 'true'"
-                                class="pa-2 work-item-delegate-task-form-ui h-100"
-                                variant="elevated"
-                                rounded
-                                color="primary"
-                                v-bind="props"
-                            >
-                                <div class="d-flex align-center">
-                                    <!-- 현재 담당자 정보 표시 -->
-                                    <div v-if="assigneeUserInfo && assigneeUserInfo.length > 0" class="mr-2">
-                                        <div v-for="user in assigneeUserInfo" :key="user.email">
-                                            <div class="d-flex align-center">
-                                                <div>
-                                                    <v-img v-if="user.profile" :src="user.profile" width="20px" height="20px"
-                                                        class="rounded-circle img-fluid"
-                                                    />
-                                                    <v-avatar v-else size="20">
-                                                        <Icons :icon="'user-circle-bold'" :size="20" />
-                                                    </v-avatar>
-                                                </div>
-                                                <div class="ml-3">
-                                                    <div class="d-flex align-center">
-                                                        <span class="text-subtitle-2 font-weight-medium text-no-wrap">{{ user.username }} </span>
-                                                        <v-chip v-if="user.email === currentUserEmail" 
-                                                            color="primary"
-                                                            size="x-small" variant="outlined"
-                                                            density="comfortable"
-                                                            class="ml-2"
-                                                        >나</v-chip>
-                                                        <v-divider vertical class="mx-2" style="height: 18px;"></v-divider>
-                                                        <div class="text-caption text-grey-darken-1 text-no-wrap" style="font-size: 10px;">{{ user.email }}</div>
-                                                    </div>
-                                                </div>
-                                                <Icons :icon="'delegation'" :size="18" class="ml-2" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
                 </v-row>
             </div>
         </div>
@@ -280,8 +256,8 @@
             >
                 <div v-if="currentComponent && !isNotExistDefaultForm" class="work-itme-current-component" style="height: 100%;">
                     <template v-if="formData && Object.keys(formData).length > 0">
-                        <div v-if="!isCompleted"
-                            class="work-item-form-btn-box d-flex justify-end pr-3"
+                        <div v-if="!isCompleted && isOwnWorkItem"
+                            class="work-item-form-btn-box d-flex justify-end align-center pr-3"
                         >
                             <v-btn v-if="hasGeneratedContent"
                                 @click="resetGeneratedContent"
@@ -1291,7 +1267,7 @@ export default {
                 },
                 successMsg: this.$t('DelegateTask.successMsg')
             });
-        }
+        },
     }
 };
 </script>
