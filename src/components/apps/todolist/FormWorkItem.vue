@@ -31,6 +31,39 @@
 
         <v-card flat>
             <v-card-text class="pa-4 pt-3">
+                <!-- 참고해야 할 이전 산출물이 있는 경우 -->
+                <div v-if="hasInputFields">
+                    <v-card variant="outlined" class="mb-4">
+                        <v-card-title class="text-h6">
+                            <v-icon class="mr-2" color="primary">mdi-information-outline</v-icon>
+                            참고 정보
+                        </v-card-title>
+                        <v-card-text class="pa-4 pt-0">
+                            <div v-for="field in inputFields" :key="field.formId" class="mb-4">
+                                <v-card variant="outlined" class="mb-2">
+                                    <v-card-title class="text-subtitle-1 pa-3 pb-1">
+                                        {{ field.formId }}
+                                    </v-card-title>
+                                    <v-card-text class="pa-3 pt-0">
+                                        <v-row>
+                                            <v-col v-for="(value, key) in field.formValue" :key="key" cols="12" md="6">
+                                                <v-text-field
+                                                    :label="key"
+                                                    :model-value="formatValue(value)"
+                                                    readonly
+                                                    variant="outlined"
+                                                    density="compact"
+                                                    hide-details
+                                                    class="mb-2"
+                                                ></v-text-field>
+                                            </v-col>
+                                        </v-row>
+                                    </v-card-text>
+                                </v-card>
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </div>
 
                 <!-- 등록된 폼 정보가 없을 때 표시되는 메시지 -->
                 <div v-if="isInitialized && (!html || html === 'null') && Object.keys(formData).length === 0 && workItem.activity.checkpoints.length === 0" 
@@ -155,6 +188,7 @@ export default {
         useTextAudio: false,
         isLoading: false,
         delegateTaskDialog: false,
+        inputFields: null,
         isInitialized: false,
     }),
     computed: {
@@ -170,6 +204,9 @@ export default {
         mode() {
             return window.$mode;
         },
+        hasInputFields() {
+            return this.inputFields && this.inputFields.length > 0
+        }
     },
     watch:  {
         isLoading(newVal) {
@@ -189,8 +226,8 @@ export default {
             }
         },
     },
-    mounted() {
-        this.init();
+    async mounted() {
+        await this.init();
     },
     methods: {
         async init() {
@@ -235,7 +272,10 @@ export default {
                         if(currentActivity && currentActivity.inputFormData) {
                             me.formData = currentActivity.inputFormData
                         }
+                    } else {
+                        await me.loadInputData()
                     }
+                    
 
                     me.EventBus.on('form-values-updated', (formValues) => {
                         if(formValues){
@@ -482,6 +522,66 @@ export default {
         closeDelegateTask(){
             this.delegateTaskDialog = false
         },
+        formatValue(value) {
+            if (value === null || value === undefined) {
+                return '';
+            }
+            if (typeof value === 'string') {
+                return value;
+            }
+            if (typeof value === 'object') {
+                if (Array.isArray(value)) {
+                    return value.join(', ');
+                }
+                // 객체인 경우 JSON.stringify로 변환하되, 너무 길면 잘라서 표시
+                const jsonString = JSON.stringify(value, null, 2);
+                if (jsonString.length > 100) {
+                    return jsonString.substring(0, 100) + '...';
+                }
+                return jsonString;
+            }
+            return String(value);
+        },
+        async loadInputData() {
+            var me = this;
+            if (!me.workItem || !me.workItem.worklist || !me.workItem.worklist.instId) {
+                return;
+            }
+            const procDefId = me.workItem.worklist.defId;
+            const process = await backend.getRawDefinition(procDefId);
+            if (!process) {
+                return;
+            }
+            const definition = process.definition;
+            if (!definition) {
+                return;
+            }
+            if (!definition.activities) {
+                return;
+            }
+            const activity = definition.activities.find(x => x.id == me.workItem.activity.tracingTag);
+            if (!activity) {
+                return;
+            }
+            let inputFields = {};
+            if (activity.inputData && activity.inputData.length > 0) {
+                const fieldValuePromises = activity.inputData.map(async (fieldInfo) => {
+                    const fieldValue = await backend.getFieldValue(fieldInfo, procDefId, me.workItem.worklist.instId);
+                    if (fieldValue) {
+                        inputFields[fieldInfo] = fieldValue;
+                    }
+                });
+                await Promise.all(fieldValuePromises);
+            }
+            inputFields = await backend.groupFieldsByForm(inputFields);
+            me.inputFields = [];
+            Object.keys(inputFields).forEach(key => {
+                me.inputFields.push({
+                    formId: key,
+                    formValue: inputFields[key]
+                });
+            });
+        }
     }
 };
 </script>

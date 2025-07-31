@@ -69,6 +69,10 @@
                     </div>
                 </v-card-text>
                 <v-row class="ma-0 pa-4 pt-0 pr-5">
+                    <span v-if="analysisResult && loading" class="text-body-2">
+                        <v-icon>mdi-information</v-icon>
+                        프로세스 정의 분석 중...
+                    </span>
                     <v-spacer></v-spacer>
                     <v-btn v-if="!loading" @click="save()" color="primary" rounded>{{ $t('ProcessDefinitionVersionDialog.save') }}</v-btn>
                     <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate style="margin: 5px"></v-progress-circular>
@@ -91,7 +95,8 @@ export default {
         process: Object,
         definition: Object,
         loading: Boolean,
-        processName: String
+        processName: String,
+        analysisResult: String
     },
     data: () => ({
         isVersion: false,
@@ -133,7 +138,7 @@ export default {
         },
         mode() {
             return window.$mode;
-        }
+        },
     },
     watch: {
         open: {

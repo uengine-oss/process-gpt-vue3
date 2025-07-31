@@ -155,6 +155,9 @@
                             ref="workhistory"
                         />
                     </v-window-item>
+                    <v-window-item value="chat" class="instance-card-tab-5">
+                        <Chats :isInstanceChat="true" :instanceInfo="instance" />
+                    </v-window-item>
                 </v-window>
             </div>
         </div>
@@ -206,6 +209,7 @@ import GanttChart from '@/components/apps/todolist/GanttChart.vue';
 import KanbanBoard from '@/components/apps/todolist/KanbanBoard.vue';
 import KanbanColumnConfig from './KanbanColumnConfig.vue';
 import TodoDialog from './TodoDialog.vue';
+import Chats from '@/views/apps/chat/Chats.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -218,7 +222,8 @@ export default {
         ProcessInstanceRunning,
         GanttChart,
         KanbanBoard,
-        TodoDialog
+        TodoDialog,
+        Chats
     },
     data: () => ({
         isLoading: true,
@@ -231,6 +236,7 @@ export default {
             { value: 'progress', label: 'InstanceCard.progress', mobile: true},
             { value: 'todo', label: 'InstanceCard.kanbanBoard', mobile: true},
             { value: 'gantt', label: 'InstanceCard.ganttChart', mobile: false},
+            { value: 'chat', label: 'InstanceCard.chat', mobile: true},
         ],
 
         updatedKey: 0,

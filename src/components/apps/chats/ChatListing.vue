@@ -220,13 +220,13 @@ const deleteChatRoom = () => {
                         single-line hide-details
                     ></v-text-field>
                 </div>
-                <v-btn @click="openDialog"
+                <!-- <v-btn @click="openDialog"
                     density="comfortable" 
                     icon
                     class="ml-auto"
                 >
                     <v-icon>mdi-chat-plus</v-icon>
-                </v-btn>
+                </v-btn> -->
             </div>
             <!-- <v-menu>
                 <template v-slot:activator="{ props }">
