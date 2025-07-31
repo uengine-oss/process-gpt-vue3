@@ -830,6 +830,10 @@ hr {
     max-height: calc(100vh - 250px);
 }
 
+.instance-card-process-box {
+    height: 73vh;
+}
+
 @keyframes loading-dot {
     0% {
         opacity: 0;
@@ -914,6 +918,9 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+    .instance-card-process-box {
+        height: calc(100vh - 110px);
+    }
 
     .work-itme-current-component .v-checkbox {
         border: none !important;
