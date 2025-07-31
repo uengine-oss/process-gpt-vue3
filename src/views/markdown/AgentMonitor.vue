@@ -780,6 +780,10 @@ export default {
           arr = existing
             ? (typeof existing === 'string' ? JSON.parse(existing) : existing)
             : [];
+          // 배열이 아닌 경우 빈 배열로 초기화
+          if (!Array.isArray(arr)) {
+            arr = [];
+          }
         } catch {
           arr = [];
         }
