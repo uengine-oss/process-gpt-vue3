@@ -196,10 +196,8 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
-                        <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-2">
-                            <v-card elevation="10" class="pa-4">
-                                <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
-                            </v-card>
+                        <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-3" style="height: 100%;">
+                            <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
                             <v-card elevation="10" class="pa-4">

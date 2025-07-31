@@ -732,6 +732,7 @@
                                 <v-icon v-if="!isOpenedChatMenu">mdi-plus</v-icon>
                                 <v-icon v-else>mdi-close</v-icon>
                             </v-btn>
+                            <slot name="custom-input-tools"></slot>
                         </div>
                         
                         <div>
