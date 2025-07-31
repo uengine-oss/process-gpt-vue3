@@ -6,6 +6,14 @@
         >
             <v-spacer></v-spacer>
             <div v-if="!isInWorkItem && ((!isCompleted && isOwnWorkItem) || isSimulate == 'true')" class="from-work-item-pc mr-2">
+                <v-btn v-if="isSimulate == 'true'" 
+                    :disabled="activityIndex == 0"
+                    @click="backToPrevStep"
+                    variant="elevated" 
+                    class="rounded-pill mr-2"
+                    density="compact"
+                    style="background-color: #808080; color: white;"
+                >이전 단계</v-btn>
                 <v-btn v-if="!isDryRun" @click="saveTask" 
                     density="compact"
                     class="mr-2 default-greay-btn" rounded variant="flat"
@@ -88,16 +96,25 @@
                     </div> -->
                     <Checkpoints v-if="workItem.activity.checkpoints.length > 0" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
                     <!-- 모바일 상태에서 나오는 버튼 -->
-                    <v-row  v-if="!isCompleted && isOwnWorkItem && isSimulate != 'true' && isMobile" class="ma-0 pa-0">
+                    <v-row v-if="!isCompleted && isOwnWorkItem && isMobile && (html || workItem.activity.checkpoints.length > 0)" class="ma-0 pa-0">
                         <v-spacer></v-spacer>
-                        <v-btn v-if="!isDryRun"
+                        <v-btn v-if="isSimulate == 'true'" 
+                            :disabled="activityIndex == 0"
+                            @click="backToPrevStep"
+                            variant="elevated" 
+                            class="rounded-pill mr-2"
+                            density="compact"
+                            style="background-color: #808080; color: white;"
+                        >이전 단계</v-btn>
+                        <v-btn v-if="!isDryRun && isSimulate != 'true'"
                             @click="saveTask"
                             class="mr-2  default-greay-btn"
                             density="compact"
                             rounded variant="flat"
                         >중간 저장</v-btn>
                         <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
-                            class="bouncing-arrow-horizontal default-greay-btn"
+                            class="bouncing-arrow-horizontal"
+                            color="primary"
                             size="large"
                         >
                             mdi-arrow-right-bold
@@ -178,6 +195,10 @@ export default {
         isInWorkItem: {
             type: Boolean,
             default: false
+        },
+        activityIndex: {
+            type: Number,
+            default: 0
         }
     },
     data: () => ({
@@ -581,6 +602,9 @@ export default {
                     formValue: inputFields[key]
                 });
             });
+        },
+        backToPrevStep() {
+            this.$emit('backToPrevStep');
         }
     }
 };
