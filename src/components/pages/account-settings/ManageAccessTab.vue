@@ -1,21 +1,36 @@
 <template>
     <v-card elevation="10">
         <div>
-            <div class="d-flex justify-end mb-4">
-                <v-btn
+            <div class="d-flex justify-space-between align-center mb-4">
+                <!-- 검색 -->
+                <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5" style="background-color: #fff;">
+                    <Icons :icon="'magnifer-linear'" :size="22" />
+                    <v-text-field 
+                    v-model="search" 
+                    variant="plain" 
+                    density="compact"
+                    class="position-relative pt-0 ml-3 custom-placeholer-color" 
+                    :placeholder="$t('accountTab.search')"
+                    single-line 
+                    hide-details
+                    dense
+                    ></v-text-field>
+                </div>
+                <!-- <v-text-field v-model="search" label="Search User" hide-details prepend-inner-icon="mdi-magnify"></v-text-field> -->
+
+                <v-btn @click="openInviteUserCard = true"
                     color="primary"
-                    elevation="2"
-                    @click="openInviteUserCard = true"
-                    class="add-user-btn"
+                    variant="flat"
+                    rounded
+                    density="comfortable"
                 >
                     <v-icon left>mdi-account-plus</v-icon>
-                    {{ $t('accountTab.addUser') }}
+                    <span class="ml-2">{{ $t('accountTab.addUser') }}</span>
                 </v-btn>
+
             </div>
         </div>
-        <div class="mt-2 mb-5">
-            <v-text-field v-model="search" label="Search User" hide-details prepend-inner-icon="mdi-magnify"></v-text-field>
-        </div>
+
         <div class="mt-8">
             <v-data-table :items="users" :search="search" :filter-keys="searchKey" :headers="headers" items-per-page="5">
                 <template v-slot:default="{ items }">
@@ -52,10 +67,20 @@
         persistent
     >
         <v-card>
-            <div class="d-flex justify-end pa-2">
-                <v-btn
+            <div v-if="isMobile" class="d-flex justify-end mt-2 ml-auto">
+                <v-btn @click="openInviteUserCard = false"
+                    rounded 
+                    density="compact"
+                    style="background-color: #808080;
+                    color: white;"
+                >닫기</v-btn>
+            </div>
+            <div v-else class="d-flex justify-end pa-2">
+                <v-btn @click="openInviteUserCard = false"
+                    class="ml-auto" 
+                    variant="text" 
+                    density="compact"
                     icon
-                    @click="openInviteUserCard = false"
                 >
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
@@ -81,6 +106,7 @@ export default {
         InviteUserCard
     },
     data: () => ({
+        isMobile: false,
         search: '',
         searchKey: ['name', 'email'],
         users: [],
@@ -95,6 +121,13 @@ export default {
         ],
         openInviteUserCard: false,
     }),
+    async mounted() {
+        this.checkIfMobile();
+        window.addEventListener('resize', this.checkIfMobile);
+    },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.checkIfMobile);
+    },
     created() {
         this.getUserList();
     },
@@ -124,6 +157,9 @@ export default {
         },
         async deleteUser(user) {
             await backend.updateUserInfo({ type: 'delete', user: user });
+        },
+        checkIfMobile() {
+            this.isMobile = window.innerWidth <= 768;
         }
     }
 };

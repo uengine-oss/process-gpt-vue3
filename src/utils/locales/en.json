@@ -367,8 +367,8 @@
         "dataSource": "Data Source",
         "addDataSource": "Add Data Source",
         "editDataSource": "Edit Data Source",
-        "addConnectionInfo": "Add Connection Info",
-        "connectionInfo": "Connection Info",
+        "addConnectionInfo": "Add Data Source",
+        "connectionInfo": "Data Source",
         "key": "Key",
         "value": "Value",
         "description": "Description",
@@ -382,7 +382,8 @@
         "endpoint": "Endpoint",
         "headers": "Headers",
         "username": "Username",
-        "password": "Password"
+        "password": "Password",
+        "search": "Search User"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
