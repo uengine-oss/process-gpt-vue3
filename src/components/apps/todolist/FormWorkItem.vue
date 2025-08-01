@@ -40,38 +40,7 @@
         <v-card flat>
             <v-card-text class="pa-4 pt-3">
                 <!-- 참고해야 할 이전 산출물이 있는 경우 -->
-                <div v-if="hasInputFields">
-                    <v-card variant="outlined" class="mb-4">
-                        <v-card-title class="text-h6">
-                            <v-icon class="mr-2" color="primary">mdi-information-outline</v-icon>
-                            참고 정보
-                        </v-card-title>
-                        <v-card-text class="pa-4 pt-0">
-                            <div v-for="field in inputFields" :key="field.formId" class="mb-4">
-                                <v-card variant="outlined" class="mb-2">
-                                    <v-card-title class="text-subtitle-1 pa-3 pb-1">
-                                        {{ field.formId }}
-                                    </v-card-title>
-                                    <v-card-text class="pa-3 pt-0">
-                                        <v-row>
-                                            <v-col v-for="(value, key) in field.formValue" :key="key" cols="12" md="6">
-                                                <v-text-field
-                                                    :label="key"
-                                                    :model-value="formatValue(value)"
-                                                    readonly
-                                                    variant="outlined"
-                                                    density="compact"
-                                                    hide-details
-                                                    class="mb-2"
-                                                ></v-text-field>
-                                            </v-col>
-                                        </v-row>
-                                    </v-card-text>
-                                </v-card>
-                            </div>
-                        </v-card-text>
-                    </v-card>
-                </div>
+                <ActivityInputData v-if="hasInputFields" :inputFields="inputFields" />
 
                 <!-- 등록된 폼 정보가 없을 때 표시되는 메시지 -->
                 <div v-if="isInitialized && (!html || html === 'null') && Object.keys(formData).length === 0 && workItem.activity.checkpoints.length === 0" 
@@ -147,6 +116,7 @@
 
 <script>
 import DynamicForm from '@/components/designer/DynamicForm.vue';
+import ActivityInputData from '@/components/ui/ActivityInputData.vue';
 
 import Instruction from '@/components/ui/Instruction.vue';
 import AudioTextarea from '@/components/ui/AudioTextarea.vue';
@@ -161,7 +131,8 @@ export default {
         Instruction,
         AudioTextarea,
         Checkpoints,
-        DelegateTaskForm
+        DelegateTaskForm,
+        ActivityInputData
     },
     props: {
         definitionId: String,
@@ -543,26 +514,7 @@ export default {
         closeDelegateTask(){
             this.delegateTaskDialog = false
         },
-        formatValue(value) {
-            if (value === null || value === undefined) {
-                return '';
-            }
-            if (typeof value === 'string') {
-                return value;
-            }
-            if (typeof value === 'object') {
-                if (Array.isArray(value)) {
-                    return value.join(', ');
-                }
-                // 객체인 경우 JSON.stringify로 변환하되, 너무 길면 잘라서 표시
-                const jsonString = JSON.stringify(value, null, 2);
-                if (jsonString.length > 100) {
-                    return jsonString.substring(0, 100) + '...';
-                }
-                return jsonString;
-            }
-            return String(value);
-        },
+        
         async loadInputData() {
             var me = this;
             if (!me.workItem || !me.workItem.worklist || !me.workItem.worklist.instId) {

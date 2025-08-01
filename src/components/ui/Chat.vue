@@ -257,6 +257,10 @@
                                                     ></DynamicForm>
                                                 </div>
 
+                                                <div v-else-if="message.contentType && message.contentType == 'json' && type == 'instances'">
+                                                    <ProcessWorkResult :message="message" />
+                                                </div>
+
                                                 <div v-else class="w-100 pb-3">
                                                     <!-- 단일 이미지 표시 (기존 호환성) -->
                                                     <v-sheet v-if="message.image && !message.images" class="mb-1">
@@ -1051,6 +1055,7 @@ import Record from './Record.vue';
 import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ChatRoomNameGenerator from "@/components/ai/ChatRoomNameGenerator.js";
+import ProcessWorkResult from './ProcessWorkResult.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -1061,7 +1066,8 @@ export default {
         RetrievalBox,
         AgentsChat,
         Record,
-        DynamicForm
+        DynamicForm,
+        ProcessWorkResult
     },
     mixins: [
         ProgressAnimated,

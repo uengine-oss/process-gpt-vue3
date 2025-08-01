@@ -3618,6 +3618,16 @@ class ProcessGPTBackend implements Backend {
         return formGroups;
     }
 
+
+    async getFeedbackItems(obj: any) {
+        try {
+            const response = await axios.post('/execution/get-feedback', obj);
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
 }
 
 export default ProcessGPTBackend;
