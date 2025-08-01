@@ -455,8 +455,19 @@ CREATE OR REPLACE FUNCTION handle_todolist_change()
 RETURNS TRIGGER AS $$
 DECLARE
     v_proc_inst_name text;
+    should_notify boolean := false;
 BEGIN
-    IF (TG_OP = 'INSERT' AND NEW.status != 'SUBMITTED') THEN
+    -- INSERT: 새로운 todolist가 추가되고 상태가 'IN_PROGRESS'인 경우
+    IF (TG_OP = 'INSERT' AND NEW.status = 'IN_PROGRESS') THEN
+        should_notify := true;
+    END IF;
+    
+    -- UPDATE: 기존 todolist가 업데이트되고 상태가 'IN_PROGRESS'로 변경된 경우
+    IF (TG_OP = 'UPDATE' AND NEW.status = 'IN_PROGRESS' AND (OLD.status IS NULL OR OLD.status != 'IN_PROGRESS')) THEN
+        should_notify := true;
+    END IF;
+    
+    IF should_notify THEN
         SELECT proc_inst_name, tenant_id INTO v_proc_inst_name 
         FROM bpm_proc_inst 
         WHERE proc_inst_id = NEW.proc_inst_id;
@@ -471,7 +482,7 @@ BEGIN
                 ELSE 'workitem'
             END,
             COALESCE(v_proc_inst_name, NEW.activity_name),
-            CASE WHEN NEW.status = 'DONE' THEN true ELSE false END,
+            false, -- in_progress 상태이므로 항상 미체크
             now(),
             NEW.tenant_id,
             '/todolist/' || NEW.id
@@ -720,7 +731,7 @@ CREATE TRIGGER on_first_tenant_inserted
     EXECUTE PROCEDURE public.update_tenant_id_for_first_tenant();
 
 CREATE TRIGGER todolist_change_trigger
-    AFTER INSERT ON todolist
+    AFTER INSERT OR UPDATE ON todolist
     FOR EACH ROW
     EXECUTE FUNCTION handle_todolist_change();
 

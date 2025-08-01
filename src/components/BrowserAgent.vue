@@ -486,7 +486,7 @@
             
             if (this.retryCount < 10) {
               this.retryCount++
-              this.addLog('info', `연결 시도 중... (${this.retryCount}/5)`)
+              this.addLog('info', `연결 시도 중... (${this.retryCount}/10)`)
               
               // 재시도 중에는 connecting 상태와 tryConnect = true 유지
               setTimeout(() => {

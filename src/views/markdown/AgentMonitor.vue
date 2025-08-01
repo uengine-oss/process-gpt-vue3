@@ -731,6 +731,10 @@ export default {
             feedbackArr = typeof data.feedback === 'string'
               ? JSON.parse(data.feedback)
               : data.feedback;
+            // 배열이 아닌 경우 빈 배열로 초기화
+            if (!Array.isArray(feedbackArr)) {
+              feedbackArr = [];
+            }
           } catch {
             feedbackArr = [];
           }
@@ -776,6 +780,10 @@ export default {
           arr = existing
             ? (typeof existing === 'string' ? JSON.parse(existing) : existing)
             : [];
+          // 배열이 아닌 경우 빈 배열로 초기화
+          if (!Array.isArray(arr)) {
+            arr = [];
+          }
         } catch {
           arr = [];
         }
