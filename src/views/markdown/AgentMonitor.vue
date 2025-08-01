@@ -48,8 +48,7 @@
                   item.payload.isCompleted && isTaskCompleted(item.payload) && (
                     (item.payload.crewType === 'report' && item.payload.jobId.includes('final_report_merge')) ||
                     item.payload.crewType === 'slide' ||
-                    item.payload.crewType === 'text' ||
-                    (item.payload.crewType === 'action' && isLastCompletedActionTask(item.payload))
+                    item.payload.crewType === 'text'
                   )
                 "
                 class="meta-submit"
@@ -105,11 +104,11 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="item.payload.crewType === 'report'">
+                <template v-else-if="item.payload.crewType === 'report' || item.payload.crewType === 'action'">
                   <div
                     :class="['markdown-container', { expanded: isTaskExpanded(item.payload.id) }]"
                     @dblclick="toggleTaskExpansion(item.payload.id)"
-                    v-html="formatMarkdownOutput(Object.values(item.payload.output)[0] || '')"
+                    v-html="formatMarkdownOutput(item.payload.crewType === 'action' ? item.payload.output : (Object.values(item.payload.output)[0] || ''))"
                   ></div>
                 </template>
                 <template v-else>
@@ -122,8 +121,7 @@
                 </template>
               </div>
               <div
-                v-if="(item.payload.crewType === 'report' && isContentLong(formatMarkdownOutput(Object.values(item.payload.output)[0] || '')))
-                    || (item.payload.crewType !== 'slide' && item.payload.crewType !== 'report' && isContentLong(formatJsonOutput(item.payload.output)))"
+                v-if="((item.payload.crewType === 'report') && isContentLong(formatMarkdownOutput(Object.values(item.payload.output)[0] || ''))) || ((item.payload.crewType === 'action') && isContentLong(formatMarkdownOutput(item.payload.output))) || (item.payload.crewType !== 'slide' && item.payload.crewType !== 'report' && item.payload.crewType !== 'action' && isContentLong(formatJsonOutput(item.payload.output)))"
                 class="expand-controls"
               >
                 <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
@@ -364,8 +362,13 @@ export default {
       return usageMap
     },
     isQueued() {
+      // 유효한 orchestration 값 목록 생성
+      const validOrchs = this.orchestrationOptions.map(o => o.value)
+      // 상태가 진행중이고, 모드가 DRAFT 또는 COMPLETE 이며, agent_orch가 유효 목록에 포함되어야 작업 대기중 표시
       return this.todoStatus &&
-        (this.todoStatus.status === 'IN_PROGRESS' && (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') && this.todoStatus.agent_orch)
+        this.todoStatus.status === 'IN_PROGRESS' &&
+        (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') &&
+        validOrchs.includes(this.todoStatus.agent_orch)
     },
     timeline() {
       const taskItems = this.tasks.map(task => ({ type: 'task', time: task.startTime, payload: task }));
@@ -691,7 +694,12 @@ export default {
       }
       // 로딩 상태 활성화 및 draft_status 설정
       this.isLoading = true;
-      const agentMode = 'DRAFT';
+      
+      // agent_mode 처리: 기존이 DRAFT 또는 COMPLETED이면 유지, 그 외에는 DRAFT로 설정
+      const currentAgentMode = this.todoStatus?.agent_mode;
+      const agentMode = (currentAgentMode === 'DRAFT' || currentAgentMode === 'COMPLETE') 
+        ? currentAgentMode 
+        : 'DRAFT';
       
       // 선택된 연구 방식에 따라 agent_orch 값 결정
       const agentOrch = this.selectedOrchestrationMethod;
@@ -744,6 +752,12 @@ export default {
           content: this.extractContent(item.content)
         }));
         this.chatMessages.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+        // agent_orch 값이 유효한 옵션이면 dropdown 선택값 동기화
+        const validOrchs = this.orchestrationOptions.map(o => o.value);
+        if (data.agent_orch && validOrchs.includes(data.agent_orch)) {
+          this.selectedOrchestrationMethod = data.agent_orch;
+        }
       } catch (e) {
         console.error('todolist 상태 조회 실패:', e);
         this.errorMessage = 'todolist 상태 조회 실패: ' + (e.message || e);
@@ -826,24 +840,6 @@ export default {
       return task.name;
     },
     
-    isLastCompletedActionTask(task) {
-      if (task.crewType !== 'action') return false;
-      
-      // action 타입 중에서 완료된 task들만 필터링
-      const actionTasks = this.tasks.filter(t => 
-        t.crewType === 'action' && t.isCompleted && this.isTaskCompleted(t)
-      );
-      
-      if (actionTasks.length === 0) return false;
-      
-      // 시작시간 기준으로 정렬하여 가장 마지막 task 찾기
-      const lastActionTask = actionTasks.sort((a, b) => 
-        new Date(b.startTime) - new Date(a.startTime)
-      )[0];
-      
-      return task.id === lastActionTask.id;
-    },
-
     // 커스텀 드롭다운 관련 메서드
     toggleDropdown() {
       this.isDropdownOpen = !this.isDropdownOpen;
