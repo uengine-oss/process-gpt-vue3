@@ -368,8 +368,8 @@
         "dataSource": "데이터소스",
         "addDataSource": "데이터소스 추가",
         "editDataSource": "데이터소스 수정",
-        "addConnectionInfo": "접속 정보 추가",
-        "connectionInfo": "접속 정보",
+        "addConnectionInfo": "데이터 소스 추가",
+        "connectionInfo": "데이터 소스",
         "key": "키",
         "value": "값",
         "description": "설명",
@@ -383,7 +383,8 @@
         "endpoint": "엔드포인트",
         "headers": "헤더",
         "username": "유저명",
-        "password": "비밀번호"
+        "password": "비밀번호",
+        "search": "사용자 검색"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
