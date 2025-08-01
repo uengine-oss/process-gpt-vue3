@@ -1254,3 +1254,76 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_data_source_key_version_per_tenant
 
   -- RLS 켜기
 ALTER TABLE data_source ENABLE ROW LEVEL SECURITY;
+
+
+create or replace function register_cron_intermidiated(
+  p_job_name text,
+  p_cron_expr text,
+  p_input jsonb
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_job_name text;
+begin
+  -- 기존 job이 있으면 unschedule
+  select jobname into v_job_name
+  from cron.job
+  where jobname = p_job_name;
+
+  if v_job_name is not null then
+    perform cron.unschedule(v_job_name);
+  end if;
+
+  -- 새로 schedule
+  perform cron.schedule(
+    p_job_name,
+    p_cron_expr,
+    format(
+      E'select public.update_todolist_status(''%s'', ''%s'');',
+      p_input->>'proc_inst_id',
+      p_input->>'activity_id'
+    )
+  );
+end;
+$$;
+
+create or replace function update_todolist_status(
+  p_proc_inst_id text,
+  p_activity_id text
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_job_name text := p_proc_inst_id || '__' || p_activity_id;
+begin
+  -- 상태를 SUBMITTED로 업데이트
+  update todolist
+  set status = 'SUBMITTED',
+      updated_at = now()
+  where proc_inst_id = p_proc_inst_id
+    and activity_id = p_activity_id;
+
+  -- 스케줄에서 job 제거
+  perform cron.unschedule(v_job_name);
+end;
+$$;
+
+
+create or replace function exec_sql(query text)
+returns json
+language plpgsql
+as $$
+declare
+  result json;
+begin
+  execute query into result;
+  return result;
+end;
+$$;
+
+
+grant usage on schema cron to service_role;
+grant execute on all functions in schema cron to service_role;
