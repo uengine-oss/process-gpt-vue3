@@ -38,9 +38,6 @@
                                                     <v-img v-if="user.profile" :src="user.profile" width="32px" height="32px"
                                                         class="rounded-circle img-fluid"
                                                     />
-                                                    <v-avatar v-else size="32">
-                                                        <Icons :icon="'user-circle-bold'" :size="32" />
-                                                    </v-avatar>
                                                 </div>
                                                 <!-- <div class="ml-3">
                                                     <div class="d-flex align-center">
@@ -50,6 +47,9 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <v-avatar v-else size="32">
+                                        <Icons :icon="'user-circle-bold'" :size="32" />
+                                    </v-avatar>
                                 </div>
                             </template>
                         </v-tooltip>
