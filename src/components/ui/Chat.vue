@@ -7,7 +7,9 @@
                 <div class="chat-info-view-area">
                     <slot name="custom-chat-top"></slot>
                     <slot name="custom-title" v-if="!definitionMapOnlyInput">
-                        <div class="pa-4">
+                        <div v-if="name && name !== '' || chatInfo"
+                            class="pa-4"
+                        >
                             <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                                 <div>
                                     <h5 class="text-h5 mb-n1">{{ name }}</h5>

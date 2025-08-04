@@ -1,19 +1,33 @@
 <template>
     <v-dialog v-model="recordingMode" fullscreen>
-        <div class="container" :style="containerStyle">
+        <div class="record-container">
             <v-btn class="record-close-btn" icon density="comfortable" @click="closeRecording"
                 :style="!$globalState.state.isRightZoomed ? '' : 'top:10px; z-index: 9999;'"
             >
                 <v-icon>mdi-close</v-icon>
             </v-btn>
-            <PaintWaveAnimation 
-                :size="circleSize" 
-                :isActive="isLoading"
-                :isAudioPlaying="isAudioPlaying"
-                :audioBars="audioBars"
-                :volume="volume"
-                :threshold="threshold"
-            />
+            <div style="position: relative;">
+               <!-- <div style="color: white;">{{ isAudioPlaying }}</div>  -->
+                <!-- WebGL 지원 여부에 따른 조건부 렌더링 webglSupported -> 3D // !webglSupported -> 2D -->
+                <ThreeWaveAnimation 
+                    v-if="webglSupported"
+                    :size="circleSize" 
+                    :isActive="isLoading"
+                    :isAudioPlaying="isAudioPlaying"
+                    :audioBars="audioBars"
+                    :volume="volume"
+                    :threshold="threshold"
+                />
+                <PaintWaveAnimation
+                    v-else
+                    :size="circleSize" 
+                    :isActive="isLoading"
+                    :isAudioPlaying="isAudioPlaying"
+                    :audioBars="audioBars"
+                    :volume="volume"
+                    :threshold="threshold"
+                />
+            </div>
             <AudioStream
                 @audio:start="startAudio"
                 @audio:stop="stopAudio"
@@ -55,13 +69,16 @@
 import { Icon } from '@iconify/vue';
 import AudioStream from './AudioStream.vue';
 import { getPrimary } from '@/utils/UpdateColors';
+// 기존 오디오 스트림 애니메이션(PaintWaveAnimation)
 import PaintWaveAnimation from './PaintWaveAnimation.vue';
+import ThreeWaveAnimation from './ThreeWaveAnimation.vue';
 
 export default {
     components: {
         Icon,
         AudioStream,
         PaintWaveAnimation,
+        ThreeWaveAnimation,
     },
     props: {
         recordingMode: Boolean,
@@ -72,6 +89,7 @@ export default {
             isRecording: false,
             isLoading: false,
             isAudioPlaying: false,
+            isPCResponding: false, // PC 응답 상태 추가
             stopAudioStreamStatus: false,
             sendRecordingStatus: false,
             audioBars: [],
@@ -79,9 +97,48 @@ export default {
             canvasHeight: 100,
             volume: 0,
             threshold: 15,
+            webglSupported: false, // WebGL 지원 여부
         };
     },
+
+    mounted() {
+        this.checkWebGLSupport();
+    },
     methods: {
+        checkWebGLSupport() {
+            try {
+                const canvas = document.createElement('canvas');
+                let gl = canvas.getContext('webgl2');
+                let version = '';
+                
+                if (gl) {
+                    version = 'WebGL 2.0';
+                } else {
+                    gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                    if (gl) {
+                        version = 'WebGL 1.0';
+                    }
+                }
+                
+                if (gl) {
+                    // 추가 검증: 실제로 렌더링이 가능한지 확인
+                    const supported = gl.getParameter(gl.VERSION);
+                    
+                    // GPU 정보도 출력
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    if (debugInfo) {
+                        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                    }
+                    
+                    this.webglSupported = true;
+                } else {
+                    this.webglSupported = false;
+                }
+            } catch (e) {
+                this.webglSupported = false;
+            }
+        },
+        
         updateAudioBars(dataArray) {
             this.audioBars = dataArray;
             if (dataArray && dataArray.length > 0) {
@@ -126,12 +183,11 @@ export default {
     },
     computed: {
         circleSize() {
-            if (this.volume < this.threshold) return 250;
-            return 250 + ((this.volume - this.threshold) / (100 - this.threshold)) * 20;
+            if (this.volume < this.threshold) return 200;
+            return 200 + ((this.volume - this.threshold) / (100 - this.threshold)) * 20;
         },
         containerStyle() {
             return {
-                backgroundColor: getPrimary.value,
                 height: '100vh'
             };
         }
@@ -309,12 +365,16 @@ export default {
     right: 10px;
 }
 
-.container {
+.record-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     max-width: 100% !important;
+    background: black;
+    height: 100vh;
+    width: 100vw;
+    z-index: 999;
 }
 
 .circle {
@@ -356,19 +416,13 @@ export default {
     top: 50px !important;
     right: 30px;
   }
-  .container {
-    height: calc(100vh - 194px);
-  }
 }
 
-@media only screen and (max-width: 700px) {
+@media only screen and (max-width: 768px) {
   .record-close-btn {
     position: absolute;
     top: 10px !important;
     right:10px;
-  }
-  .container {
-    height: calc(100vh - 194px);
   }
 }
 
