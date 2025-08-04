@@ -632,6 +632,14 @@ hr {
     min-height: 0; /* 중요! 안 주면 flexbox에서 스크롤 안 생기는 경우 있음 */
 }
 
+.app-base-card-is-mobile-height {
+    max-height: calc(100vh - 110px);
+}
+
+.app-base-card-is-pc-height {
+    max-height: calc(100vh - 246px);
+}
+
 .mobile-left-menu {
     display: flex;
     flex-direction: column;
@@ -830,6 +838,9 @@ hr {
     max-height: calc(100vh - 250px);
 }
 
+.instance-card-tab-5 .chat-view-box {
+}
+
 .instance-card-process-box {
     height: 73vh;
 }
@@ -918,6 +929,10 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+    .process-consulting-ai-third-screen {
+        height: calc(100vh - 110px);
+    }
+
     .instance-card-process-box {
         height: calc(100vh - 110px);
     }
@@ -949,12 +964,12 @@ hr {
     }
 
     .instance-card-Process-instance-running-box {
-        height: calc(100vh - 100px) !important;
+        height: calc(100vh - 70px) !important;
         overflow-y: auto;
     }
 
     .instance-card-tab-4 .chat-view-box {
-        max-height: calc(100vh - 160px);
+        max-height: calc(100vh - 110px);
     }
     .todo-list-card-box {
         padding-right: 40px !important;
@@ -996,7 +1011,7 @@ hr {
     }
     .mobile-menu-nav {
         top:0px !important;
-        height: calc(100% - 60px) !important;
+        height: calc(100% - 90px) !important;
         border-radius: 10px !important;
         width: 100vw !important;
     }
