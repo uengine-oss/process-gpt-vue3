@@ -1026,6 +1026,7 @@ export default {
                             }
                         }
                         if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
+                            console.log('[WorkItem] form-values-updated', jsonData['formValues']);
                             me.EventBus.emit('form-values-updated', jsonData['formValues']);
                             me.agentGenerationFinished(jsonData);
                         } else {
