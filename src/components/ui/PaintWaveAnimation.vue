@@ -18,7 +18,7 @@ export default {
     props: {
         size: {
             type: Number,
-            default: 250
+            default: 200
         },
         primaryColor: {
             type: String,
@@ -69,19 +69,19 @@ export default {
                     ? this.audioBars.reduce((a, b) => a + b, 0) / this.audioBars.length / 255
                     : 0;
                 
-                // 기본 크기 1에서 확장만 (1.0 ~ 2.5 범위)
-                scale = 1.0 + (avgAudioLevel * 1.5);
+                // 모바일 안정성을 위해 증폭 배율 조정 (1.0 ~ 1.8 범위)
+                scale = 0.9 + (avgAudioLevel * 0.4);
                 
-                // 오디오 레벨에 따른 밝기와 채도 조절
-                brightness = 1 + (avgAudioLevel * 0.8);
-                saturation = 1 + (avgAudioLevel * 1.2);
+                // 모바일 안정성을 위해 밝기와 채도 증가폭 조정
+                brightness = 1 + (avgAudioLevel * 0.4);
+                saturation = 1 + (avgAudioLevel * 0.6);
                 
                 animationDuration = 'normal';
             } else {
                 // 기본 상태: 마이크 볼륨에 따른 애니메이션
                 animationSpeed = this.volume > this.threshold ? 'running' : 'paused';
                 const volumeScale = this.volume > this.threshold 
-                    ? 0.9 + ((this.volume - this.threshold) / (100 - this.threshold)) * 0.3
+                    ? 0.9 + ((this.volume - this.threshold) / (100 - this.threshold)) * 0.1
                     : 0.9;
                 scale = volumeScale;
                 animationDuration = this.volume > this.threshold ? 'normal' : 'slow';
@@ -92,7 +92,7 @@ export default {
                 height: this.size + 'px',
                 animationPlayState: animationSpeed,
                 transform: `scale(${scale})`,
-                transition: this.isAudioPlaying ? 'transform 0.02s ease-out, filter 0.05s ease-out' : 'transform 0.1s ease-in-out',
+                transition: this.isAudioPlaying ? 'transform 0.1s ease-out, filter 0.1s ease-out' : 'transform 0.1s ease-in-out',
                 filter: `brightness(${brightness}) saturate(${saturation})`,
                 '--animation-speed': animationDuration,
                 '--audio-intensity': this.isAudioPlaying ? (this.audioBars.length > 0 
