@@ -9,7 +9,25 @@
             <template v-slot:custom-title>
                 <div></div>
             </template>
+            <template v-slot:custom-chat>
+                <div v-if="useFeedback" class="position-absolute bottom-0 end-0 ml-2">
+                    <span class="text-body-2">프로세스 실행이 정상인가요?</span>
+                    <v-btn icon size="x-small" variant="text" color="success" @click="selectFeedback('up')">
+                        <v-icon>mdi-thumb-up</v-icon>
+                    </v-btn>
+                    <v-btn icon size="x-small" variant="text" color="error" @click="selectFeedback('down')">
+                        <v-icon>mdi-thumb-down</v-icon>
+                    </v-btn>
+                </div>
+            </template>
         </Chat>
+        <!-- 피드백 팝업 -->
+        <ProcessFeedbackPopup 
+            v-if="showFeedbackPopup"
+            :processInstance="processInstance" 
+            :isOpen="showFeedbackPopup" 
+            @closePopup="closeFeedbackPopup"
+        />
     </div>
 </template>
 
@@ -18,6 +36,7 @@ import ChatModule from '@/components/ChatModule.vue';
 import ChatGenerator from './ai/ProcessInstanceGenerator.js';
 
 import Chat from "@/components/ui/Chat.vue";
+import ProcessFeedbackPopup from "@/components/ui/ProcessFeedbackPopup.vue";
 
 import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
@@ -26,6 +45,7 @@ export default {
     mixins: [ChatModule],
     components: {
         Chat,
+        ProcessFeedbackPopup,
     },
     props:{
         isComplete: Boolean,
@@ -47,6 +67,12 @@ export default {
 
         // mcp agent
         threadId: '',
+
+        streamingText: '',
+
+        // feedback
+        useFeedback: false,
+        showFeedbackPopup: false,
     }),
     computed: {
         chatName() {
@@ -54,6 +80,12 @@ export default {
                 return this.processInstance.name;
             }
             return '';
+        },
+        lastMessage() {
+            if (this.messages.length > 0) {
+                return this.messages[this.messages.length - 1];
+            }
+            return null;
         },
     },
     async mounted() {
@@ -115,6 +147,13 @@ export default {
                 }
             }
         },
+        lastMessage(newVal) {
+            if (newVal && newVal.role == 'system' && !this.isTaskMode) {
+                this.useFeedback = true;
+            } else {
+                this.useFeedback = false;
+            }
+        }
     },
     methods: {
         requestDraftAgent(newVal) {
@@ -275,10 +314,18 @@ export default {
             } else if (this.processInstance && this.processInstance.instId) {
                 id = this.processInstance.instId;
             }
+        },
 
-            if (id != '') {
-                
+        async selectFeedback(type) {
+            if (type == 'up') {
+            } else if (type == 'down') {
+                this.showFeedbackPopup = true;
+                console.log('showFeedbackPopup', this.showFeedbackPopup);
             }
+            // this.useFeedback = false;
+        },
+        closeFeedbackPopup() {
+            this.showFeedbackPopup = false;
         },
     }
 };

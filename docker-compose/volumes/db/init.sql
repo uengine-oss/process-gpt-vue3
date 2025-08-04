@@ -455,8 +455,19 @@ CREATE OR REPLACE FUNCTION handle_todolist_change()
 RETURNS TRIGGER AS $$
 DECLARE
     v_proc_inst_name text;
+    should_notify boolean := false;
 BEGIN
-    IF (TG_OP = 'INSERT' AND NEW.status != 'SUBMITTED') THEN
+    -- INSERT: 새로운 todolist가 추가되고 상태가 'IN_PROGRESS'인 경우
+    IF (TG_OP = 'INSERT' AND NEW.status = 'IN_PROGRESS') THEN
+        should_notify := true;
+    END IF;
+    
+    -- UPDATE: 기존 todolist가 업데이트되고 상태가 'IN_PROGRESS'로 변경된 경우
+    IF (TG_OP = 'UPDATE' AND NEW.status = 'IN_PROGRESS' AND (OLD.status IS NULL OR OLD.status != 'IN_PROGRESS')) THEN
+        should_notify := true;
+    END IF;
+    
+    IF should_notify THEN
         SELECT proc_inst_name, tenant_id INTO v_proc_inst_name 
         FROM bpm_proc_inst 
         WHERE proc_inst_id = NEW.proc_inst_id;
@@ -471,7 +482,7 @@ BEGIN
                 ELSE 'workitem'
             END,
             COALESCE(v_proc_inst_name, NEW.activity_name),
-            CASE WHEN NEW.status = 'DONE' THEN true ELSE false END,
+            false, -- in_progress 상태이므로 항상 미체크
             now(),
             NEW.tenant_id,
             '/todolist/' || NEW.id
@@ -720,7 +731,7 @@ CREATE TRIGGER on_first_tenant_inserted
     EXECUTE PROCEDURE public.update_tenant_id_for_first_tenant();
 
 CREATE TRIGGER todolist_change_trigger
-    AFTER INSERT ON todolist
+    AFTER INSERT OR UPDATE ON todolist
     FOR EACH ROW
     EXECUTE FUNCTION handle_todolist_change();
 
@@ -1243,3 +1254,76 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_data_source_key_version_per_tenant
 
   -- RLS 켜기
 ALTER TABLE data_source ENABLE ROW LEVEL SECURITY;
+
+
+create or replace function register_cron_intermidiated(
+  p_job_name text,
+  p_cron_expr text,
+  p_input jsonb
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_job_name text;
+begin
+  -- 기존 job이 있으면 unschedule
+  select jobname into v_job_name
+  from cron.job
+  where jobname = p_job_name;
+
+  if v_job_name is not null then
+    perform cron.unschedule(v_job_name);
+  end if;
+
+  -- 새로 schedule
+  perform cron.schedule(
+    p_job_name,
+    p_cron_expr,
+    format(
+      E'select public.update_todolist_status(''%s'', ''%s'');',
+      p_input->>'proc_inst_id',
+      p_input->>'activity_id'
+    )
+  );
+end;
+$$;
+
+create or replace function update_todolist_status(
+  p_proc_inst_id text,
+  p_activity_id text
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_job_name text := p_proc_inst_id || '__' || p_activity_id;
+begin
+  -- 상태를 SUBMITTED로 업데이트
+  update todolist
+  set status = 'SUBMITTED',
+      updated_at = now()
+  where proc_inst_id = p_proc_inst_id
+    and activity_id = p_activity_id;
+
+  -- 스케줄에서 job 제거
+  perform cron.unschedule(v_job_name);
+end;
+$$;
+
+
+create or replace function exec_sql(query text)
+returns json
+language plpgsql
+as $$
+declare
+  result json;
+begin
+  execute query into result;
+  return result;
+end;
+$$;
+
+
+grant usage on schema cron to service_role;
+grant execute on all functions in schema cron to service_role;

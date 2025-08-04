@@ -247,21 +247,35 @@ export default {
                 } catch (e) {
                     return;
                 }
-                console.log(parsedJson);
-                console.log(parsedJson.mcpServers);
-                const updatedServer = {
-                    ...parsedJson.mcpServers[this.editingKey],
-                    command: parsedJson.command || '',
-                    args: parsedJson.args || [],
-                    transport: parsedJson.transport || 'stdio',
-                    enabled: parsedJson.enabled !== undefined ? parsedJson.enabled : true
-                };
+                
+                let updatedServer = {};
+                
+                if (parsedJson.mcpServers && parsedJson.mcpServers[this.editingKey]) {
+                    // mcpServers 구조에서 해당 서버 정보 추출
+                    const serverData = parsedJson.mcpServers[this.editingKey];
+                    updatedServer = {
+                        command: serverData.command || '',
+                        args: serverData.args || [],
+                        transport: serverData.transport || 'stdio',
+                        enabled: serverData.enabled !== undefined ? serverData.enabled : true
+                    };
 
-                if (parsedJson.env) {
-                    updatedServer.env = parsedJson.env;
+                    if (serverData.env) {
+                        updatedServer.env = serverData.env;
+                    }
+                } else {
+                    // 직접 서버 설정인 경우
+                    updatedServer = {
+                        command: parsedJson.command || '',
+                        args: parsedJson.args || [],
+                        transport: parsedJson.transport || 'stdio',
+                        enabled: parsedJson.enabled !== undefined ? parsedJson.enabled : true
+                    };
+
+                    if (parsedJson.env) {
+                        updatedServer.env = parsedJson.env;
+                    }
                 }
-
-                console.log(updatedServer);
 
                 const updatedServers = {
                     ...JSON.parse(JSON.stringify(this.mcpServers)),
@@ -337,24 +351,41 @@ export default {
                     return;
                 }
 
-                const mcpServers = parsedJson.mcpServers;
+                // mcpServers 구조가 있는 경우와 없는 경우를 구분하여 처리
                 let serverKey = '';
-                if (mcpServers) {
+                let newServer = {};
+
+                if (parsedJson.mcpServers) {
+                    // mcpServers 구조가 있는 경우
+                    const mcpServers = parsedJson.mcpServers;
                     serverKey = Object.keys(mcpServers)[0];
+                    if (!serverKey) {
+                        serverKey = `custom-server-${Date.now()}`;
+                    }
+                    
+                    newServer = {
+                        command: mcpServers[serverKey].command || '',
+                        args: mcpServers[serverKey].args || [],
+                        transport: mcpServers[serverKey].transport || 'stdio',
+                        enabled: mcpServers[serverKey].enabled !== undefined ? mcpServers[serverKey].enabled : true
+                    };
+
+                    if (mcpServers[serverKey].env) {
+                        newServer.env = mcpServers[serverKey].env;
+                    }
                 } else {
+                    // mcpServers 구조가 없는 경우 (직접 서버 설정)
                     serverKey = `custom-server-${Date.now()}`;
-                }
+                    newServer = {
+                        command: parsedJson.command || '',
+                        args: parsedJson.args || [],
+                        transport: parsedJson.transport || 'stdio',
+                        enabled: parsedJson.enabled !== undefined ? parsedJson.enabled : true
+                    };
 
-                const newServer = {
-                    ...parsedJson,
-                    command: mcpServers[serverKey].command || '',
-                    args: mcpServers[serverKey].args || [],
-                    transport: mcpServers[serverKey].transport || 'stdio',
-                    enabled: mcpServers[serverKey].enabled !== undefined ? mcpServers[serverKey].enabled : true
-                };
-
-                if (mcpServers[serverKey].env) {
-                    newServer.env = mcpServers[serverKey].env;
+                    if (parsedJson.env) {
+                        newServer.env = parsedJson.env;
+                    }
                 }
 
                 const updatedServers = {
@@ -369,6 +400,7 @@ export default {
                 this.mcpServers = updatedServers;
                 this.newJsonText = '';
                 this.selectedToolToAdd = null;
+                this.closeEdit();
             } catch (error) {
                 console.error('사용자 정의 서버 추가 중 오류:', error);
             } finally {

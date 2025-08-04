@@ -48,8 +48,7 @@
                   item.payload.isCompleted && isTaskCompleted(item.payload) && (
                     (item.payload.crewType === 'report' && item.payload.jobId.includes('final_report_merge')) ||
                     item.payload.crewType === 'slide' ||
-                    item.payload.crewType === 'text' ||
-                    (item.payload.crewType === 'action' && isLastCompletedActionTask(item.payload))
+                    item.payload.crewType === 'text'
                   )
                 "
                 class="meta-submit"
@@ -105,11 +104,11 @@
                     </div>
                   </div>
                 </template>
-                <template v-else-if="item.payload.crewType === 'report'">
+                <template v-else-if="item.payload.crewType === 'report' || item.payload.crewType === 'action'">
                   <div
                     :class="['markdown-container', { expanded: isTaskExpanded(item.payload.id) }]"
                     @dblclick="toggleTaskExpansion(item.payload.id)"
-                    v-html="formatMarkdownOutput(Object.values(item.payload.output)[0] || '')"
+                    v-html="formatMarkdownOutput(item.payload.crewType === 'action' ? item.payload.output : (Object.values(item.payload.output)[0] || ''))"
                   ></div>
                 </template>
                 <template v-else>
@@ -122,8 +121,7 @@
                 </template>
               </div>
               <div
-                v-if="(item.payload.crewType === 'report' && isContentLong(formatMarkdownOutput(Object.values(item.payload.output)[0] || '')))
-                    || (item.payload.crewType !== 'slide' && item.payload.crewType !== 'report' && isContentLong(formatJsonOutput(item.payload.output)))"
+                v-if="((item.payload.crewType === 'report') && isContentLong(formatMarkdownOutput(Object.values(item.payload.output)[0] || ''))) || ((item.payload.crewType === 'action') && isContentLong(formatMarkdownOutput(item.payload.output))) || (item.payload.crewType !== 'slide' && item.payload.crewType !== 'report' && item.payload.crewType !== 'action' && isContentLong(formatJsonOutput(item.payload.output)))"
                 class="expand-controls"
               >
                 <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
@@ -175,17 +173,20 @@
             <label for="research-method" class="method-label">연구 방식:</label>
             <select 
               id="research-method" 
-              v-model="selectedResearchMethod" 
+              v-model="selectedOrchestrationMethod" 
               class="method-dropdown"
             >
-              <option value="crewai-deep-research">CrewAI Deep Research</option>
-              <option value="crewai-action">CrewAI Action</option>
-              <option value="openai-deep-research">OpenAI Deep Research</option>
-              <option value="brower-use">Browser Use</option>
+              <option 
+                v-for="option in orchestrationOptions" 
+                :key="option.value" 
+                :value="option.value"
+              >
+                {{ option.startLabel }}
+              </option>
             </select>
           </div>
-          <button v-if="selectedResearchMethod === 'brower-use' && !downloadedBrowserAgent" @click="downloadBrowserAgent" class="start-button">다운로드</button>
-          <div v-if="selectedResearchMethod === 'brower-use' && !downloadedBrowserAgent" style="margin-top: 8px; color: #888; font-size: 0.95em;">
+          <button v-if="selectedOrchestrationMethod === 'browser-use' && !downloadedBrowserAgent" @click="downloadBrowserAgent" class="start-button">다운로드</button>
+          <div v-if="selectedOrchestrationMethod === 'browser-use' && !downloadedBrowserAgent" style="margin-top: 8px; color: #888; font-size: 0.95em;">
             Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)
           </div>
           <button v-else @click="startTask" class="start-button">시작하기</button>
@@ -213,8 +214,28 @@
         @sendMessage="submitChat"
         @stopMessage="stopTask"
       >
-        <template #custom-tools v-if="isLoading">
-          <button @click="stopTask" class="stop-button">⏹</button>
+        <template #custom-input-tools>
+          <!-- ChatGPT 스타일 심플 드롭박스 -->
+          <div class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
+            <div class="dropdown-trigger">
+              <span class="dropdown-label">연구방식</span>
+            </div>
+            <div v-if="isDropdownOpen" class="dropdown-menu">
+              <div 
+                v-for="option in orchestrationOptions" 
+                :key="option.value"
+                class="dropdown-item"
+                :class="{ active: selectedOrchestrationMethod === option.value }"
+                @click.stop="selectOption(option.value)"
+              >
+                <div class="option-left">
+                  <span class="option-icon">{{ option.icon }}</span>
+                  <span class="option-label">{{ option.label }}</span>
+                </div>
+                <span v-if="selectedOrchestrationMethod === option.value" class="check-icon">✓</span>
+              </div>
+            </div>
+          </div>
         </template>
       </Chat>
     </div>
@@ -254,10 +275,18 @@ export default {
       chatMessages: [],
       isCancelled: false,
       isLoading: false,
-      selectedResearchMethod: 'crewai-deep-research',
+      selectedOrchestrationMethod: 'crewai-deep-research', // 통합된 오케스트레이션 방식
+      isDropdownOpen: false, // 드롭다운 열림 상태
       openBrowserAgent: false,
       downloadedBrowserAgent: false,
-      doneWorkItemList: []
+      doneWorkItemList: [],
+      // 공통 옵션 배열
+      orchestrationOptions: [
+        { value: 'crewai-deep-research', label: 'CrewAI 심층 연구', startLabel: 'CrewAI Deep Research', icon: '🔬' },
+        { value: 'crewai-action', label: 'CrewAI 액션', startLabel: 'CrewAI Action', icon: '⚡' },
+        { value: 'openai-deep-research', label: 'OpenAI 심층 연구', startLabel: 'OpenAI Deep Research', icon: '🧠' },
+        { value: 'browser-use', label: 'Browser Use', startLabel: 'Browser Use', icon: '🌐' }
+      ]
     }
   },
   computed: {
@@ -333,8 +362,13 @@ export default {
       return usageMap
     },
     isQueued() {
+      // 유효한 orchestration 값 목록 생성
+      const validOrchs = this.orchestrationOptions.map(o => o.value)
+      // 상태가 진행중이고, 모드가 DRAFT 또는 COMPLETE 이며, agent_orch가 유효 목록에 포함되어야 작업 대기중 표시
       return this.todoStatus &&
-        (this.todoStatus.status === 'IN_PROGRESS' && (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') && this.todoStatus.agent_orch)
+        this.todoStatus.status === 'IN_PROGRESS' &&
+        (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') &&
+        validOrchs.includes(this.todoStatus.agent_orch)
     },
     timeline() {
       const taskItems = this.tasks.map(task => ({ type: 'task', time: task.startTime, payload: task }));
@@ -639,7 +673,7 @@ export default {
       return '작업완료'
     },
     async startTask() {
-      if(this.selectedResearchMethod === 'brower-use') {
+      if(this.selectedOrchestrationMethod === 'browser-use') {
         const workItemList = await backend.getWorkListByInstId(this.workItem.worklist.instId);
         if(workItemList) {
           let doneWorkItemList = workItemList.filter(item => item.status === 'DONE' && item.task && item.task.output);
@@ -660,17 +694,15 @@ export default {
       }
       // 로딩 상태 활성화 및 draft_status 설정
       this.isLoading = true;
-      const agentMode = 'DRAFT';
+      
+      // agent_mode 처리: 기존이 DRAFT 또는 COMPLETED이면 유지, 그 외에는 DRAFT로 설정
+      const currentAgentMode = this.todoStatus?.agent_mode;
+      const agentMode = (currentAgentMode === 'DRAFT' || currentAgentMode === 'COMPLETE') 
+        ? currentAgentMode 
+        : 'DRAFT';
       
       // 선택된 연구 방식에 따라 agent_orch 값 결정
-      let agentOrch;
-      if (this.selectedResearchMethod === 'openai-deep-research') {
-        agentOrch = 'openai-deep-research';
-      } else if (this.selectedResearchMethod === 'crewai-action') {
-        agentOrch = 'crewai-action';
-      } else {
-        agentOrch = 'crewai-deep-research'; // crewai 기본값
-      }
+      const agentOrch = this.selectedOrchestrationMethod;
       
       this.todoStatus = { ...this.todoStatus, agent_mode: agentMode, status: 'IN_PROGRESS', draft_status: 'STARTED', agent_orch: agentOrch };
       try {
@@ -707,6 +739,10 @@ export default {
             feedbackArr = typeof data.feedback === 'string'
               ? JSON.parse(data.feedback)
               : data.feedback;
+            // 배열이 아닌 경우 빈 배열로 초기화
+            if (!Array.isArray(feedbackArr)) {
+              feedbackArr = [];
+            }
           } catch {
             feedbackArr = [];
           }
@@ -716,6 +752,12 @@ export default {
           content: this.extractContent(item.content)
         }));
         this.chatMessages.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+        // agent_orch 값이 유효한 옵션이면 dropdown 선택값 동기화
+        const validOrchs = this.orchestrationOptions.map(o => o.value);
+        if (data.agent_orch && validOrchs.includes(data.agent_orch)) {
+          this.selectedOrchestrationMethod = data.agent_orch;
+        }
       } catch (e) {
         console.error('todolist 상태 조회 실패:', e);
         this.errorMessage = 'todolist 상태 조회 실패: ' + (e.message || e);
@@ -752,6 +794,10 @@ export default {
           arr = existing
             ? (typeof existing === 'string' ? JSON.parse(existing) : existing)
             : [];
+          // 배열이 아닌 경우 빈 배열로 초기화
+          if (!Array.isArray(arr)) {
+            arr = [];
+          }
         } catch {
           arr = [];
         }
@@ -759,11 +805,18 @@ export default {
         const text = this.extractContent(content);
         arr.push({ time: now, content: text });
         const updatedFeedback = arr;
+        // 선택된 오케스트레이션 방식 적용
+        const agentOrch = this.selectedOrchestrationMethod;
+
         await backend.putWorkItem(taskId, {
           feedback: updatedFeedback,
-          draft_status: 'FB_REQUESTED'
+          draft_status: 'FB_REQUESTED',
+          agent_orch: agentOrch
         });
-        if (this.todoStatus) this.todoStatus.draft_status = 'FB_REQUESTED';
+        if (this.todoStatus) {
+          this.todoStatus.draft_status = 'FB_REQUESTED';
+          this.todoStatus.agent_orch = agentOrch;
+        }
         this.isLoading = true;
         this.todoStatus.feedback = updatedFeedback;
         this.chatMessages.push({ time: now, content: text });
@@ -787,22 +840,20 @@ export default {
       return task.name;
     },
     
-    isLastCompletedActionTask(task) {
-      if (task.crewType !== 'action') return false;
-      
-      // action 타입 중에서 완료된 task들만 필터링
-      const actionTasks = this.tasks.filter(t => 
-        t.crewType === 'action' && t.isCompleted && this.isTaskCompleted(t)
-      );
-      
-      if (actionTasks.length === 0) return false;
-      
-      // 시작시간 기준으로 정렬하여 가장 마지막 task 찾기
-      const lastActionTask = actionTasks.sort((a, b) => 
-        new Date(b.startTime) - new Date(a.startTime)
-      )[0];
-      
-      return task.id === lastActionTask.id;
+    // 커스텀 드롭다운 관련 메서드
+    toggleDropdown() {
+      this.isDropdownOpen = !this.isDropdownOpen;
+    },
+
+    selectOption(value) {
+      this.selectedOrchestrationMethod = value;
+      this.isDropdownOpen = false;
+    },
+
+    handleOutsideClick(event) {
+      if (this.$refs.dropdown && !this.$refs.dropdown.contains(event.target)) {
+        this.isDropdownOpen = false;
+      }
     },
   },
   async created() {
@@ -816,8 +867,14 @@ export default {
       await this.fetchTodoStatus()
       this.setupRealtimeSubscription()
   },
+  mounted() {
+    // 외부 클릭 감지를 위한 이벤트 리스너 추가
+    document.addEventListener('click', this.handleOutsideClick);
+  },
   beforeUnmount() {
     this.cleanup()
+    // 이벤트 리스너 제거
+    document.removeEventListener('click', this.handleOutsideClick);
   }
 }
 </script>
@@ -826,16 +883,19 @@ export default {
 .agent-monitor {
   max-width: 800px;
   margin: 0 auto;
-  padding: 20px 16px 0px;
+  padding: 0;
   width: 100%;
-  height: 67vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
 }
 .task-area {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
+  padding: 0;
 }
 .error-banner {
   background: #ffe0e0;
@@ -1309,7 +1369,15 @@ export default {
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-  .agent-monitor { padding: 16px 12px; }
+  .agent-monitor { 
+    padding: 0; 
+    height: 100%;
+  }
+  
+  .task-area {
+    padding: 16px 12px 0px;
+  }
+  
   .task-card { padding: 16px; }
   .task-header { flex-direction: column; gap: 12px; align-items: stretch; }
   .task-header-right { justify-content: flex-start; }
@@ -1680,12 +1748,14 @@ export default {
 .chat-message { display: flex; justify-content: flex-end; margin: 16px 0; }
 .bubble { background: #e5e5ea; border-radius: 12px; padding: 8px 12px; max-width: 70%; }
 .chat-input-wrapper {
+  position: relative;
   width: 100%;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 0;
-  margin-top: 16px;
+  flex-direction: column;
+  padding: 0;
+  flex-shrink: 0;
+  background: white;
+  border-top: 1px solid #e1e8ed;
 }
 .chat-textarea {
   flex: 1;
@@ -1726,11 +1796,7 @@ export default {
   color: #606770;
 }
 
-/* 채팅 영역 전체 너비 고정 */
-.chat-input-wrapper {
-  width: 100%;
-  display: flex;
-}
+
 /* Chat.vue 루트 컨테이너도 너비 100% 적용 */
 .chat-input-wrapper ::v-deep .chat-info-view-wrapper {
   width: 100% !important;
@@ -1764,5 +1830,129 @@ export default {
 }
 .feedback-loading .stop-button:hover {
   text-decoration: underline;
+}
+
+/* ChatGPT 스타일 심플 드롭다운 */
+.simple-dropdown {
+  position: relative;
+  margin-left: 8px;
+  user-select: none;
+}
+
+.dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 400;
+  color: #1f2937;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.dropdown-trigger:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #000000;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  margin-bottom: 4px;
+  min-width: 180px;
+  max-width: 220px;
+  padding: 4px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  transition: background-color 0.1s ease;
+  margin: 0;
+}
+
+.dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.dropdown-item.active {
+  background: #f3f4f6;
+  color: #000;
+  font-weight: 500;
+}
+
+.option-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.option-icon {
+  font-size: 16px;
+  width: 16px;
+  text-align: center;
+}
+
+.option-label {
+  font-size: 13px;
+}
+
+.check-icon {
+  color: #10b981;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+
+
+
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .dropdown-trigger {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  
+
+  
+  .dropdown-menu {
+    min-width: 160px;
+  }
+  
+  .dropdown-item {
+    padding: 6px 12px;
+  }
+  
+  .option-label {
+    font-size: 12px;
+  }
+  
+  .option-icon {
+    font-size: 14px;
+  }
 }
 </style>
