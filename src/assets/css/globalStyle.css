@@ -675,7 +675,11 @@ hr {
     font-size: 12px;
     width: 96px;
 }
-
+.todo-task-unfold-btn,
+.todo-task-fold-btn {
+    cursor: pointer;
+    display: none !important;
+}
 /* 선택된 배경색을 나타내는 클래스 - 영어로 'choice'로 변경 */
 .choice-background-color {
     background-color: rgb(var(--v-theme-primary)) !important;
@@ -1008,6 +1012,15 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+    .kanban-column {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .todo-task-unfold-btn,
+    .todo-task-fold-btn {
+        display: block !important;
+    }
 
     #apexTreeWrapper > svg {
         height: 96% !important;
