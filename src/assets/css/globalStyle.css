@@ -344,20 +344,89 @@ hr {
     transform: rotate(270deg);
 }
 
+.node-content {
+    padding: 0px 8px 8px 8px;
+    display: flex;
+    justify-content: center;
+    height: 100%;
+}
+
 .node-content-text-box {
-    margin-top: 15px; 
-    text-align: center; 
-    padding: 10px; 
+    padding: 4px; 
     border-radius: 10px;
     background-color: white;
     box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.2);
     border-top: 5px solid rgba(var(--v-theme-primary));
-    height: 80px;
+    height: 100%;
     width: 150px;
+}
+
+.node-content-title-box {
+    text-align: center;
+    padding: 4px;
+    height: calc(100% - 30px);
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
+    overflow: hidden;
+}
+
+.node-content-title-box > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.3;
+    margin: 1px 0;
+    max-width: 100%;
+}
+
+.node-text-hover {
+    cursor: help;
+    transition: opacity 0.2s ease;
+}
+
+.node-text-hover:hover {
+    opacity: 0.8;
+}
+
+.node-info-tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    max-width: 250px;
+    min-width: 150px;
+    animation: fadeIn 0.2s ease-in;
+    pointer-events: auto;
+}
+
+.node-info-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+.node-info-content div {
+    margin: 3px 0;
+    line-height: 1.4;
+}
+
+.node-info-content strong {
+    color: #FFF;
+    margin-right: 5px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .list-page-completed-box {
@@ -366,10 +435,9 @@ hr {
 }
 
 .node-content-img {
-    width: 40px;
-    height: 40px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    position:absolute;
     top:0px;
     background-color: #E0E0E0;
 }
@@ -503,31 +571,38 @@ hr {
 }
 
 .node-content-btn-box {
-    position: absolute;
-    right: 0px;
-    top: 5px;
     display: flex;
     flex-direction: row;
     align-items: center;
 }
 
 .node-content-btn {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
     margin-right: 2px;
-    border-radius: 4px;
-    background-color: #FFFFFF;
-    box-shadow: 0 2px 4px 0 rgba(60, 60, 60, 0.10), 0 0.5px 1.5px 0 rgba(60, 60, 60, 0.10);
+    border-radius: 50%;
+    background-color: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    transition:  background-color 0.2s;
+    padding: 8px !important;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: box-shadow 0.2s, background-color 0.2s;
-    padding: 4px !important;
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
 }
+
 .node-content-btn:hover {
-    background-color: #F5F5F5;
-    box-shadow: 0 4px 8px 0 rgba(60, 60, 60, 0.15);
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.node-content-icon {
+    width: 10px;
+    height: 10px;
+    object-fit: contain;
+    filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(100%);
 }
 
 
@@ -600,7 +675,11 @@ hr {
     font-size: 12px;
     width: 96px;
 }
-
+.todo-task-unfold-btn,
+.todo-task-fold-btn {
+    cursor: pointer;
+    display: none !important;
+}
 /* 선택된 배경색을 나타내는 클래스 - 영어로 'choice'로 변경 */
 .choice-background-color {
     background-color: rgb(var(--v-theme-primary)) !important;
@@ -630,6 +709,14 @@ hr {
     flex: 1 1 auto;
     overflow-y: auto;
     min-height: 0; /* 중요! 안 주면 flexbox에서 스크롤 안 생기는 경우 있음 */
+}
+
+.app-base-card-is-mobile-height {
+    max-height: calc(100vh - 110px);
+}
+
+.app-base-card-is-pc-height {
+    max-height: calc(100vh - 246px);
 }
 
 .mobile-left-menu {
@@ -830,8 +917,15 @@ hr {
     max-height: calc(100vh - 250px);
 }
 
+.instance-card-tab-5 .chat-view-box {
+}
+
 .instance-card-process-box {
     height: 73vh;
+}
+
+.node-info-btn {
+    display: none !important;
 }
 
 @keyframes loading-dot {
@@ -918,6 +1012,29 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+    .kanban-column {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+    
+    .todo-task-unfold-btn,
+    .todo-task-fold-btn {
+        display: block !important;
+    }
+
+    #apexTreeWrapper > svg {
+        height: 96% !important;
+        width: 100% !important;
+    }
+
+    .node-info-btn {
+        display: flex !important;
+    }
+
+    .process-consulting-ai-third-screen {
+        height: calc(100vh - 110px);
+    }
+
     .instance-card-process-box {
         height: calc(100vh - 110px);
     }
@@ -949,12 +1066,12 @@ hr {
     }
 
     .instance-card-Process-instance-running-box {
-        height: calc(100vh - 100px) !important;
+        height: calc(100vh - 70px) !important;
         overflow-y: auto;
     }
 
     .instance-card-tab-4 .chat-view-box {
-        max-height: calc(100vh - 160px);
+        max-height: calc(100vh - 110px);
     }
     .todo-list-card-box {
         padding-right: 40px !important;
@@ -996,7 +1113,7 @@ hr {
     }
     .mobile-menu-nav {
         top:0px !important;
-        height: calc(100% - 60px) !important;
+        height: calc(100% - 90px) !important;
         border-radius: 10px !important;
         width: 100vw !important;
     }

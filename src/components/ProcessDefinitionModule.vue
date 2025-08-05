@@ -1164,60 +1164,61 @@ export default {
                             return obj;
                         });
 
-                        this.definitionAnalyzer = new DefinitionAnalyzer(this, {
+                        const definitionAnalyzerClient = {
+                            onGenerationFinished: (response) => {
+                                let jsonData = this.extractJSON(response);
+                                if (jsonData && jsonData.includes('{')){
+                                    try {
+                                        jsonData = JSON.parse(jsonData);
+                                    } catch(e) {
+                                        try {
+                                            jsonData = partialParse(jsonData)
+                                        } catch(e) {
+                                            console.log(e)
+                                        }
+                                    }
+                                } else {
+                                    jsonData = null
+                                }
+
+                                if (jsonData && jsonData.activities && jsonData.activities.length > 0) {
+                                    const activities = jsonData.activities;
+                                    activities.forEach(item => {
+                                        const activityId = item.activity_id;
+                                        const activity = processDefinition.activities.find(activity => activity.id === activityId);
+                                        if (activity) {
+                                            activity.inputData = item.input_fields;
+                                        }
+                                    });
+                                }
+
+                                if (jsonData && jsonData.gateways && jsonData.gateways.length > 0) {
+                                    const gateways = jsonData.gateways;
+                                    gateways.forEach(item => {
+                                        const gatewayId = item.gateway_id;
+                                        const gateway = processDefinition.gateways.find(gateway => gateway.id === gatewayId);
+                                        if (gateway) {
+                                            gateway.conditionData = item.condition_fields;
+                                        }
+                                    });
+                                }
+
+                                this.analysisResult = null;
+                                this.loading = false;
+                                resolve();
+                            },
+                            onModelCreated: (response) => {
+                                this.analysisResult = response;
+                            }
+                        }
+
+                        this.definitionAnalyzer = new DefinitionAnalyzer(definitionAnalyzerClient, {
                             isStream: true,
                             preferredLanguage: "Korean",
                             processDefinition: processDefinition,
                             formFields: formFields
                         });
 
-                        this.definitionAnalyzer.client.onGenerationFinished = (response) => {
-                            let jsonData = this.extractJSON(response);
-                            if (jsonData && jsonData.includes('{')){
-                                try {
-                                    jsonData = JSON.parse(jsonData);
-                                } catch(e) {
-                                    try {
-                                        jsonData = partialParse(jsonData)
-                                    } catch(e) {
-                                        console.log(e)
-                                    }
-                                }
-                            } else {
-                                jsonData = null
-                            }
-
-                            if (jsonData && jsonData.activities && jsonData.activities.length > 0) {
-                                const activities = jsonData.activities;
-                                activities.forEach(item => {
-                                    const activityId = item.activity_id;
-                                    const activity = processDefinition.activities.find(activity => activity.id === activityId);
-                                    if (activity) {
-                                        activity.inputData = item.input_fields;
-                                    }
-                                });
-                            }
-
-                            if (jsonData && jsonData.gateways && jsonData.gateways.length > 0) {
-                                const gateways = jsonData.gateways;
-                                gateways.forEach(item => {
-                                    const gatewayId = item.gateway_id;
-                                    const gateway = processDefinition.gateways.find(gateway => gateway.id === gatewayId);
-                                    if (gateway) {
-                                        gateway.conditionData = item.condition_fields;
-                                    }
-                                });
-                            }
-
-                            this.analysisResult = null;
-                            this.loading = false;
-                            resolve();
-                        }
-                        
-                        this.definitionAnalyzer.client.onModelCreated = (response) => {
-                            this.analysisResult = response;
-                        }
-                        
                         this.analysisResult = "START";
                         this.loading = true;
                         this.definitionAnalyzer.generate();

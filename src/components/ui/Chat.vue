@@ -7,7 +7,9 @@
                 <div class="chat-info-view-area">
                     <slot name="custom-chat-top"></slot>
                     <slot name="custom-title" v-if="!definitionMapOnlyInput">
-                        <div class="pa-4">
+                        <div v-if="name && name !== '' || chatInfo"
+                            class="pa-4"
+                        >
                             <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                                 <div>
                                     <h5 class="text-h5 mb-n1">{{ name }}</h5>
@@ -255,6 +257,10 @@
                                                         v-model="message.jsonContent"
                                                         :readonly="true"
                                                     ></DynamicForm>
+                                                </div>
+
+                                                <div v-else-if="message.contentType && message.contentType == 'json' && type == 'instances'">
+                                                    <ProcessWorkResult :message="message" />
                                                 </div>
 
                                                 <div v-else class="w-100 pb-3">
@@ -1051,6 +1057,7 @@ import Record from './Record.vue';
 import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ChatRoomNameGenerator from "@/components/ai/ChatRoomNameGenerator.js";
+import ProcessWorkResult from './ProcessWorkResult.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -1061,7 +1068,8 @@ export default {
         RetrievalBox,
         AgentsChat,
         Record,
-        DynamicForm
+        DynamicForm,
+        ProcessWorkResult
     },
     mixins: [
         ProgressAnimated,

@@ -2,23 +2,17 @@
   <BrowserAgent v-if="openBrowserAgent" :html="html" :workItem="workItem" :doneWorkItemList="doneWorkItemList" />
   <div v-else class="agent-monitor">
     <div class="task-area" ref="taskArea">
-      <div v-if="errorMessage" class="error-banner">
-        {{ errorMessage }}
-      </div>
+      <div v-if="errorMessage" class="error-banner">{{ errorMessage }}</div>
+      
       <div v-if="timeline.length > 0" class="timeline-list">
-        <div
-          v-for="(item, index) in timeline"
-          :key="item.type + '-' + (item.type === 'task' ? item.payload.id : 'chat-' + index)"
-          class="timeline-item"
-        >
+        <div v-for="(item, index) in timeline" :key="getTimelineKey(item, index)" class="timeline-item">
+          <!-- 작업 카드 -->
           <div v-if="item.type === 'task'" class="task-card">
+            <!-- 작업 헤더 -->
             <div class="task-header">
               <div class="task-left">
                 <div class="task-avatar">
-                  <img v-if="item.payload.agentProfile"
-                       :src="item.payload.agentProfile"
-                       alt="Agent"
-                       class="avatar-image"/>
+                  <img v-if="item.payload.agentProfile" :src="item.payload.agentProfile" alt="Agent" class="avatar-image"/>
                   <span v-else>{{ index + 1 }}</span>
                 </div>
                 <div class="task-info">
@@ -27,116 +21,83 @@
                 </div>
               </div>
               <div class="task-header-right">
-                <div :class="['task-status', item.payload.isCompleted ? (item.payload.isCrewCompleted ? 'crew-completed' : 'completed') : 'running']">
+                <div :class="getTaskStatusClass(item.payload)">
                   <div class="status-dot"></div>
                   <span>{{ getStatusText(item.payload) }}</span>
                 </div>
               </div>
             </div>
 
+            <!-- 작업 메타데이터 -->
             <div class="task-meta">
-              <div class="meta-item">
-                <span class="meta-label">시작시간</span>
-                <span class="meta-value">{{ formatTime(item.payload.startTime) }}</span>
+              <div v-for="meta in getTaskMeta(item.payload)" :key="meta.label" class="meta-item">
+                <span class="meta-label">{{ meta.label }}</span>
+                <span class="meta-value">{{ meta.value }}</span>
               </div>
-              <div class="meta-item">
-                <span class="meta-label">유형</span>
-                <span class="meta-value">{{ item.payload.crewType }}</span>
-              </div>
-              <div
-                v-if="
-                  item.payload.isCompleted && isTaskCompleted(item.payload) && (
-                    (item.payload.crewType === 'report' && item.payload.jobId.includes('final_report_merge')) ||
-                    item.payload.crewType === 'slide' ||
-                    item.payload.crewType === 'text' ||
-                    (item.payload.crewType === 'action' && isLastCompletedActionTask(item.payload))
-                  )
-                "
-                class="meta-submit"
-              >
-                <button @click="submitTask(item.payload)" class="submit-button-light">
-                  채택
-                </button>
+              <div v-if="shouldShowSubmitButton(item.payload)" class="meta-submit">
+                <button @click="submitTask(item.payload)" class="submit-button-light">채택</button>
               </div>
             </div>
 
+            <!-- 작업 결과 -->
             <div v-if="item.payload.isCompleted && item.payload.output" class="task-result">
               <div class="result-header">
                 <h4 class="result-title">작업 결과</h4>
               </div>
               <div class="result-content">
-                <template v-if="item.payload.crewType === 'slide'">
-                  <div class="slides-container">
-                    <div class="slides-header">
-                      <div class="header-info">
-                        <h5>프레젠테이션 모드</h5>
-                        <span class="slide-hint">슬라이드를 클릭하여 탐색하세요</span>
-                      </div>
-                      <div class="slide-navigation">
-                        <button 
-                          @click="previousSlide(item.payload.id)" 
-                          :disabled="getCurrentSlideIndex(item.payload.id) === 0"
-                          class="nav-btn"
-                        >
-                          ←
-                        </button>
-                        <span class="slide-counter">
-                          {{ getCurrentSlideIndex(item.payload.id) + 1 }} / {{ getSlides(item.payload.output).length }}
-                        </span>
-                        <button 
-                          @click="nextSlide(item.payload.id)" 
-                          :disabled="getCurrentSlideIndex(item.payload.id) === getSlides(item.payload.output).length - 1"
-                          class="nav-btn"
-                        >
-                          →
-                        </button>
-                      </div>
+                <!-- 슬라이드 결과 -->
+                <div v-if="item.payload.crewType === 'slide'" class="slides-container">
+                  <div class="slides-header">
+                    <div class="header-info">
+                      <h5>프레젠테이션 모드</h5>
+                      <span class="slide-hint">슬라이드를 클릭하여 탐색하세요</span>
                     </div>
-                    <div class="slide-content">
-                      <div v-html="getCurrentSlide(item.payload)" class="slide-inner"></div>
-                    </div>
-                    <div class="slide-indicators">
-                      <span 
-                        v-for="(slide, index) in getSlides(item.payload.output)" 
-                        :key="index"
-                        :class="['indicator', { active: index === getCurrentSlideIndex(item.payload.id) }]"
-                        @click="goToSlide(item.payload.id, index)"
-                      ></span>
+                    <div class="slide-navigation">
+                      <button @click="previousSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === 0" class="nav-btn">←</button>
+                      <span class="slide-counter">{{ getSlideIndex(item.payload.id) + 1 }} / {{ getSlides(item.payload.output).length }}</span>
+                      <button @click="nextSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === getSlides(item.payload.output).length - 1" class="nav-btn">→</button>
                     </div>
                   </div>
-                </template>
-                <template v-else-if="item.payload.crewType === 'report'">
-                  <div
-                    :class="['markdown-container', { expanded: isTaskExpanded(item.payload.id) }]"
-                    @dblclick="toggleTaskExpansion(item.payload.id)"
-                    v-html="formatMarkdownOutput(Object.values(item.payload.output)[0] || '')"
-                  ></div>
-                </template>
-                <template v-else>
-                  <div
-                    :class="['json-container', { expanded: isTaskExpanded(item.payload.id) }]"
-                    @dblclick="toggleTaskExpansion(item.payload.id)"
-                  >
-                    <pre>{{ formatJsonOutput(item.payload.output) }}</pre>
+                  <div class="slide-content">
+                    <div v-html="getCurrentSlide(item.payload)" class="slide-inner"></div>
                   </div>
-                </template>
+                  <div class="slide-indicators">
+                    <span v-for="(slide, index) in getSlides(item.payload.output)" :key="index"
+                          :class="['indicator', { active: index === getSlideIndex(item.payload.id) }]"
+                          @click="goToSlide(item.payload.id, index)"></span>
+                  </div>
+                </div>
+                
+                <!-- 마크다운 결과 -->
+                <div v-else-if="isMarkdownType(item.payload.crewType)" 
+                     :class="['markdown-container', { 
+                       expanded: isTaskExpanded(item.payload.id),
+                       'has-expand-controls': shouldShowExpandControls(item.payload)
+                     }]"
+                     @dblclick="toggleTaskExpansion(item.payload.id)"
+                     v-html="getMarkdownContent(item.payload)"></div>
+                
+                <!-- JSON 결과 -->
+                <div v-else :class="['json-container', { 
+                       expanded: isTaskExpanded(item.payload.id),
+                       'has-expand-controls': shouldShowExpandControls(item.payload)
+                     }]"
+                     @dblclick="toggleTaskExpansion(item.payload.id)">
+                  <pre>{{ formatJsonOutput(item.payload.output) }}</pre>
+                </div>
               </div>
-              <div
-                v-if="(item.payload.crewType === 'report' && isContentLong(formatMarkdownOutput(Object.values(item.payload.output)[0] || '')))
-                    || (item.payload.crewType !== 'slide' && item.payload.crewType !== 'report' && isContentLong(formatJsonOutput(item.payload.output)))"
-                class="expand-controls"
-              >
+              <div v-if="shouldShowExpandControls(item.payload)" class="expand-controls">
                 <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
                   {{ isTaskExpanded(item.payload.id) ? '접기' : '더보기' }}
-                  <span class="expand-icon">
-                    {{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}
-                  </span>
+                  <span class="expand-icon">{{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}</span>
                 </button>
                 <span class="expand-hint">
                   더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다
                 </span>
               </div>
             </div>
+
+            <!-- 진행 상태 -->
             <div v-else-if="!item.payload.isCompleted" class="task-progress">
               <div class="progress-dots">
                 <div class="dot"></div>
@@ -145,27 +106,27 @@
               </div>
               <span>작업을 진행하고 있습니다...</span>
             </div>
-            <div v-if="!item.payload.isCompleted && toolUsageStatusByTask[item.payload.jobId] && toolUsageStatusByTask[item.payload.jobId].length" class="tool-usage-status-list">
-              <div
-                v-for="(tool, idx) in toolUsageStatusByTask[item.payload.jobId]"
-                :key="item.payload.jobId + '-' + tool.tool_name + '-' + idx"
-                class="tool-usage-status-item"
-              >
+
+            <!-- 도구 사용 상태 -->
+            <div v-if="!item.payload.isCompleted && getToolUsageList(item.payload.jobId).length" class="tool-usage-status-list">
+              <div v-for="(tool, idx) in getToolUsageList(item.payload.jobId)" :key="`${item.payload.jobId}-${tool.tool_name}-${idx}`" class="tool-usage-status-item">
                 <div class="tool-status-indicator">
                   <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
                   <div v-else class="check-mark">✓</div>
                 </div>
-                <span>
-                  {{ tool.tool_name }} 도구 {{ tool.status === 'done' ? '사용 완료' : '사용 중입니다' }}<span v-if="tool.query || tool.info">: {{ tool.query || tool.info }}</span>
-                </span>
+                <span>{{ getToolStatusText(tool) }}</span>
               </div>
             </div>
           </div>
+
+          <!-- 채팅 메시지 -->
           <div v-else class="chat-message">
             <div class="bubble">{{ item.payload.content }}</div>
           </div>
         </div>
       </div>
+
+      <!-- 빈 상태 -->
       <div v-else class="empty-state">
         <div class="empty-icon">📋</div>
         <h3>{{ isQueued ? '작업이 대기열에 등록되었습니다' : '진행중인 작업이 없습니다' }}</h3>
@@ -173,38 +134,29 @@
         <div v-if="!isQueued" class="start-controls">
           <div class="method-selector">
             <label for="research-method" class="method-label">연구 방식:</label>
-            <select 
-              id="research-method" 
-              v-model="selectedOrchestrationMethod" 
-              class="method-dropdown"
-            >
-              <option 
-                v-for="option in orchestrationOptions" 
-                :key="option.value" 
-                :value="option.value"
-              >
+            <select id="research-method" v-model="selectedOrchestrationMethod" class="method-dropdown">
+              <option v-for="option in orchestrationOptions" :key="option.value" :value="option.value">
                 {{ option.startLabel }}
               </option>
             </select>
           </div>
-          <button v-if="selectedOrchestrationMethod === 'browser-use' && !downloadedBrowserAgent" @click="downloadBrowserAgent" class="start-button">다운로드</button>
-          <div v-if="selectedOrchestrationMethod === 'browser-use' && !downloadedBrowserAgent" style="margin-top: 8px; color: #888; font-size: 0.95em;">
+          <button v-if="showDownloadButton" @click="downloadBrowserAgent" class="start-button">다운로드</button>
+          <div v-if="showDownloadButton" style="margin-top: 8px; color: #888; font-size: 0.95em;">
             Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)
           </div>
           <button v-else @click="startTask" class="start-button">시작하기</button>
         </div>
       </div>
+
+      <!-- 로딩 상태 -->
       <div v-if="isLoading && timeline.length > 0" class="feedback-loading">
         <div class="loading-spinner"></div>
-        <span v-if="todoStatus.draft_status === 'STARTED' && todoStatus.agent_orch === 'crewai-action'">액션 실행 작업을 진행중입니다...</span>
-        <span v-else-if="todoStatus.draft_status === 'STARTED'">초안 생성 작업을 진행중입니다...</span>
-        <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED' && todoStatus.agent_orch === 'crewai-action'">피드백을 반영하여 액션을 다시 실행하고 있습니다...</span>
-        <span v-else-if="todoStatus.draft_status === 'FB_REQUESTED'">피드백을 반영하여 초안을 다시 생성하고 있습니다...</span>
-        <button @click="stopTask" class="stop-button" aria-label="중단">
-          ⏹
-        </button>
+        <span>{{ getLoadingMessage() }}</span>
+        <button @click="stopTask" class="stop-button" aria-label="중단">⏹</button>
       </div>
     </div>
+
+    <!-- 채팅 입력 -->
     <div v-if="tasks.length > 0" class="chat-input-wrapper">
       <Chat
         :messages="chatMessages"
@@ -217,19 +169,14 @@
         @stopMessage="stopTask"
       >
         <template #custom-input-tools>
-          <!-- ChatGPT 스타일 심플 드롭박스 -->
           <div class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
             <div class="dropdown-trigger">
               <span class="dropdown-label">연구방식</span>
             </div>
             <div v-if="isDropdownOpen" class="dropdown-menu">
-              <div 
-                v-for="option in orchestrationOptions" 
-                :key="option.value"
-                class="dropdown-item"
-                :class="{ active: selectedOrchestrationMethod === option.value }"
-                @click.stop="selectOption(option.value)"
-              >
+              <div v-for="option in orchestrationOptions" :key="option.value"
+                   class="dropdown-item" :class="{ active: selectedOrchestrationMethod === option.value }"
+                   @click.stop="selectOption(option.value)">
                 <div class="option-left">
                   <span class="option-icon">{{ option.icon }}</span>
                   <span class="option-label">{{ option.label }}</span>
@@ -294,13 +241,13 @@ export default {
   computed: {
     tasks() {
       const taskMap = new Map()
-      const crewCompleted = new Set()
+      const crewCompletedJobIds = new Set()
       // 단일 루프로 이벤트 처리
       this.events.forEach(e => {
         const { event_type, crew_type, data, job_id, id, timestamp } = e
         const jobId = job_id || data?.job_id || id
         if (event_type === 'crew_completed') {
-          crewCompleted.add(crew_type)
+          crewCompletedJobIds.add(jobId)
         } else if (event_type === 'task_started') {
           taskMap.set(jobId, {
             id,
@@ -321,15 +268,17 @@ export default {
           task.output = data?.final_result || null
         }
       })
-      // crew_completed 마킹
-      crewCompleted.forEach(type => {
-        const tasksOfType = Array.from(taskMap.values())
-          .filter(t => t.crewType === type && t.isCompleted)
-          .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
-        if (tasksOfType[0]) tasksOfType[0].isCrewCompleted = true
+      // crew_completed 마킹 - job_id 기반으로 처리
+      crewCompletedJobIds.forEach(jobId => {
+        if (taskMap.has(jobId)) {
+          taskMap.get(jobId).isCrewCompleted = true
+        }
       })
       // 시작시간 기준 오름차순 반환
       return Array.from(taskMap.values()).sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+    },
+    showDownloadButton() {
+      return this.selectedOrchestrationMethod === 'browser-use' && !this.downloadedBrowserAgent
     },
     toolUsageStatusByTask() {
       const usageMap = {}
@@ -364,8 +313,13 @@ export default {
       return usageMap
     },
     isQueued() {
+      // 유효한 orchestration 값 목록 생성
+      const validOrchs = this.orchestrationOptions.map(o => o.value)
+      // 상태가 진행중이고, 모드가 DRAFT 또는 COMPLETE 이며, agent_orch가 유효 목록에 포함되어야 작업 대기중 표시
       return this.todoStatus &&
-        (this.todoStatus.status === 'IN_PROGRESS' && (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') && this.todoStatus.agent_orch)
+        this.todoStatus.status === 'IN_PROGRESS' &&
+        (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') &&
+        validOrchs.includes(this.todoStatus.agent_orch)
     },
     timeline() {
       const taskItems = this.tasks.map(task => ({ type: 'task', time: task.startTime, payload: task }));
@@ -374,6 +328,138 @@ export default {
     },
   },
   methods: {
+    // ========================================
+    // 🔧 공통 유틸리티 메서드들
+    // ========================================
+    handleError(error, defaultMessage = '오류가 발생했습니다') {
+      const message = error?.message || error || defaultMessage;
+      this.errorMessage = message;
+      console.error(message, error);
+    },
+
+    validateTaskId() {
+      const taskId = this.getTaskIdFromWorkItem();
+      if (!taskId) {
+        this.handleError(null, 'taskId를 찾을 수 없습니다.');
+        return null;
+      }
+      return taskId;
+    },
+
+    parseJson(data, fallback = {}) {
+      if (!data) return fallback;
+      try {
+        return typeof data === 'string' ? JSON.parse(data) : data;
+      } catch {
+        return fallback;
+      }
+    },
+
+    safeArrayParse(data) {
+      const parsed = this.parseJson(data, []);
+      return Array.isArray(parsed) ? parsed : [];
+    },
+
+    // HTML 태그를 제거하고 순수 텍스트만 추출
+    stripHtmlTags(html) {
+      if (!html) return '';
+      // HTML 태그 제거 및 HTML 엔티티 디코딩
+      return html
+        .replace(/<[^>]*>/g, '') // HTML 태그 제거
+        .replace(/&nbsp;/g, ' ') // &nbsp; → 공백
+        .replace(/&lt;/g, '<')   // &lt; → <
+        .replace(/&gt;/g, '>')   // &gt; → >
+        .replace(/&amp;/g, '&')  // &amp; → &
+        .replace(/&quot;/g, '"') // &quot; → "
+        .trim();
+    },
+
+    getTaskIdFromWorkItem() {
+      if (this.workItem && this.workItem.worklist) {
+        return this.workItem.worklist.taskId
+      }
+      return null
+    },
+
+    // ========================================
+    // 🎨 템플릿 헬퍼 메서드들 (화면 표시용)
+    // ========================================
+    getTimelineKey(item, index) {
+      return item.type + '-' + (item.type === 'task' ? item.payload.id : 'chat-' + index)
+    },
+
+    getTaskStatusClass(payload) {
+      const baseClass = 'task-status'
+      if (!payload.isCompleted) return [baseClass, 'running']
+      return [baseClass, payload.isCrewCompleted ? 'crew-completed' : 'completed']
+    },
+
+    getTaskMeta(payload) {
+      return [
+        { label: '시작시간', value: this.formatTime(payload.startTime) },
+        { label: '유형', value: payload.crewType }
+      ]
+    },
+
+    shouldShowSubmitButton(payload) {
+      return payload.isCompleted && this.isTaskCompleted(payload) && (
+        (payload.crewType === 'report' && payload.jobId.includes('final_report_merge')) ||
+        payload.crewType === 'slide' ||
+        payload.crewType === 'text'
+      )
+    },
+
+    isMarkdownType(crewType) {
+      return crewType === 'report' || crewType === 'action'
+    },
+
+          shouldShowExpandControls(payload) {
+        if (payload.crewType === 'slide') return false
+        if (payload.crewType === 'report') {
+          const rawContent = Object.values(payload.output)[0] || '';
+          return this.isContentLong(rawContent);
+        }
+        if (payload.crewType === 'action') {
+          return this.isContentLong(payload.output);
+        }
+        // JSON의 경우 원본 데이터를 문자열화해서 판단
+        const rawJson = typeof payload.output === 'string' 
+          ? payload.output 
+          : JSON.stringify(payload.output, null, 2);
+        return this.isContentLong(rawJson);
+      },
+
+    getToolUsageList(jobId) {
+      return (!jobId || !this.toolUsageStatusByTask[jobId]) ? [] : this.toolUsageStatusByTask[jobId]
+    },
+
+    getToolStatusText(tool) {
+      const status = tool.status === 'done' ? '사용 완료' : '사용 중입니다'
+      const detail = tool.query || tool.info
+      return `${tool.tool_name} 도구 ${status}${detail ? ': ' + detail : ''}`
+    },
+
+    getLoadingMessage() {
+      if (this.todoStatus.draft_status === 'STARTED' && this.todoStatus.agent_orch === 'crewai-action') {
+        return '액션 실행 작업을 진행중입니다...'
+      }
+      if (this.todoStatus.draft_status === 'STARTED') {
+        return '초안 생성 작업을 진행중입니다...'
+      }
+      if (this.todoStatus.draft_status === 'FB_REQUESTED' && this.todoStatus.agent_orch === 'crewai-action') {
+        return '피드백을 반영하여 액션을 다시 실행하고 있습니다...'
+      }
+      if (this.todoStatus.draft_status === 'FB_REQUESTED') {
+        return '피드백을 반영하여 초안을 다시 생성하고 있습니다...'
+      }
+      return ''
+    },
+
+
+
+    // ========================================
+    // 🔽 브라우저 에이전트 다운로드
+    // ========================================
     downloadBrowserAgent() {
       // 플랫폼 감지
       const userAgent = navigator.userAgent.toLowerCase();
@@ -392,18 +478,10 @@ export default {
       localStorage.setItem('downloadedBrowserAgent', 'true');
       this.downloadedBrowserAgent = true;
     },
-    extractContent(content) {
-      return (typeof content === 'object' && content.text !== undefined)
-        ? content.text
-        : content
-    },
-    getTaskIdFromWorkItem() {
-      if (this.workItem && this.workItem.worklist) {
-        return this.workItem.worklist.taskId
-      }
-      return null
-    },
 
+    // ========================================
+    // ⏰ 시간 및 문자열 포맷팅
+    // ========================================
     formatTime(timestamp) {
       return new Date(timestamp).toLocaleString('ko-KR', {
         month: 'short',
@@ -413,117 +491,107 @@ export default {
       })
     },
     
+    // === 출력 포맧팅 메서드들 ===
     cleanString(str) {
       return str.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\\t/g, '  ').replace(/\\\\/g, '\\')
     },
 
-    formatJsonOutput(output) {
-      if (!output) return '';
-
-      // 1) 문자열로 넘어올 때—펜스 제거
-      if (typeof output === 'string') {
-        // 이스케이프 복원
-        let str = this.cleanString(output).trim();
-        // ```json … ``` 펜스 제거
-        str = str.replace(/^```json\s*/, '').replace(/```$/, '').trim();
-        try {
-          // 2) JS 객체로 파싱
-          const obj = JSON.parse(str);
-          // 3) 예쁘게 직렬화
-          return JSON.stringify(obj, null, 2);
-        } catch {
-          // 파싱 실패 시, 펜스 없는 원본 문자열 그대로 반환
-          return str;
-        }
-      }
-
-      // 객체로 넘어올 때
-      try {
-        return JSON.stringify(output, null, 2);
-      } catch {
-        return String(output);
-      }
+    removeFences(str) {
+      return str.replace(/^```[a-zA-Z0-9]*\s*/, '').replace(/```$/, '').trim();
     },
 
-    sanitizeMarkdownOutput(output) {
-      if (typeof output === 'string') {
-        let trimmed = output.trim();
-        let loopCount = 0;
-        while (true) {
-          const beforeTrim = trimmed;
-          loopCount++;
-          trimmed = trimmed.replace(/^(```|~~~|""")[a-zA-Z0-9]*\s*\n([\s\S]*?)\n\1\s*$/gm, '$2').trim();
-          if (beforeTrim === trimmed || loopCount > 10) break;
-        }
-        return trimmed;
+    sanitizeOutput(output) {
+      if (typeof output !== 'string') return output;
+      let trimmed = output.trim();
+      let loopCount = 0;
+      while (loopCount < 10) {
+        const beforeTrim = trimmed;
+        trimmed = trimmed.replace(/^(```|~~~|""")[a-zA-Z0-9]*\s*\n([\s\S]*?)\n\1\s*$/gm, '$2').trim();
+        if (beforeTrim === trimmed) break;
+        loopCount++;
       }
-      return output;
+      return trimmed;
+    },
+
+    formatOutput(output, type = 'json') {
+      if (!output) return '';
+      
+      const isString = typeof output === 'string';
+      
+      if (type === 'json') {
+        if (isString) {
+          const cleaned = this.cleanString(this.removeFences(output));
+          const parsed = this.parseJson(cleaned, cleaned);
+          return typeof parsed === 'object' ? JSON.stringify(parsed, null, 2) : cleaned;
+        }
+        return this.parseJson(output, JSON.stringify(output, null, 2));
+      }
+      
+      if (type === 'markdown') {
+        const sanitized = this.sanitizeOutput(output);
+        const outputStr = typeof sanitized === 'object' ? JSON.stringify(sanitized, null, 2) : String(sanitized);
+        const clean = this.cleanString(outputStr);
+        try {
+          return marked(clean, { breaks: true, gfm: true });
+        } catch {
+          return clean.replace(/\n/g, '<br>');
+        }
+      }
+      
+      return String(output);
+    },
+
+    formatJsonOutput(output) {
+      return this.formatOutput(output, 'json');
     },
 
     formatMarkdownOutput(output) {
-      if (!output) return '';
-      const sanitized = this.sanitizeMarkdownOutput(output);
-      const outputStr = typeof sanitized === 'object'
-        ? JSON.stringify(sanitized, null, 2)
-        : String(sanitized);
-      const clean = this.cleanString(outputStr);
-      try {
-        return marked(clean, { breaks: true, gfm: true });
-      } catch {
-        return clean.replace(/\n/g, '<br>');
-      }
+      return this.formatOutput(output, 'markdown');
     },
 
+    // ========================================
+    // 🎬 슬라이드 관리 메서드들
+    // ========================================
     getSlides(output) {
       if (!output) return [];
-      // 객체 형태일 경우 첫 번째 값(슬라이드 마크다운) 사용
-      const source = (typeof output === 'object' && !Array.isArray(output))
-        ? Object.values(output)[0]
-        : output;
-      const sanitized = this.sanitizeMarkdownOutput(source);
+      const source = (typeof output === 'object' && !Array.isArray(output)) ? Object.values(output)[0] : output;
+      const sanitized = this.sanitizeOutput(source);
       return String(sanitized)
         .split(/^\s*---\s*$/gm)
-        .filter(slide => slide.trim().length > 0)
-        .map(slide => {
-          const clean = this.cleanString(slide.trim());
-          try {
-            return marked(clean, { breaks: true, gfm: true });
-          } catch {
-            return clean.replace(/\n/g, '<br>');
-          }
-        });
+        .filter(slide => slide.trim())
+        .map(slide => this.formatOutput(slide.trim(), 'markdown'));
     },
 
-    getCurrentSlideIndex(taskId) {
-      return this.slideIndexes[taskId] || 0
+    getSlideIndex(taskId) {
+      return this.slideIndexes[taskId] || 0;
+    },
+
+    setSlideIndex(taskId, index) {
+      const task = this.tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const slides = this.getSlides(task.output);
+      if (index >= 0 && index < slides.length) {
+        this.slideIndexes = { ...this.slideIndexes, [taskId]: index };
+      }
     },
 
     getCurrentSlide(task) {
-      const slides = this.getSlides(task.output)
-      const index = this.getCurrentSlideIndex(task.id)
-      return slides[index] || ''
+      const slides = this.getSlides(task.output);
+      return slides[this.getSlideIndex(task.id)] || '';
     },
 
     previousSlide(taskId) {
-      const currentIndex = this.getCurrentSlideIndex(taskId)
-      if (currentIndex > 0) {
-        this.slideIndexes = { ...this.slideIndexes, [taskId]: currentIndex - 1 }
-      }
+      const currentIndex = this.getSlideIndex(taskId);
+      if (currentIndex > 0) this.setSlideIndex(taskId, currentIndex - 1);
     },
 
     nextSlide(taskId) {
-      const slides = this.getSlides(this.tasks.find(t => t.id === taskId)?.output)
-      const currentIndex = this.getCurrentSlideIndex(taskId)
-      if (currentIndex < slides.length - 1) {
-        this.slideIndexes = { ...this.slideIndexes, [taskId]: currentIndex + 1 }
-      }
+      const currentIndex = this.getSlideIndex(taskId);
+      this.setSlideIndex(taskId, currentIndex + 1);
     },
 
     goToSlide(taskId, index) {
-      const slides = this.getSlides(this.tasks.find(t => t.id === taskId)?.output)
-      if (index >= 0 && index < slides.length) {
-        this.slideIndexes = { ...this.slideIndexes, [taskId]: index }
-      }
+      this.setSlideIndex(taskId, index);
     },
 
     isTaskCompleted(task) {
@@ -533,82 +601,56 @@ export default {
       )
     },
 
+    // ========================================
+    // ✅ 작업 제출 및 완료 처리
+    // ========================================
     submitTask(task) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(this.html, 'text/html');
-      // task.output이 문자열인 경우 JSON 파싱
-      let parsed;
+      let formValues = {};
       try {
-        parsed = typeof task.output === 'string' ? JSON.parse(task.output) : task.output;
+        formValues = typeof task.output === 'string' ? JSON.parse(task.output) : task.output || {};
       } catch {
-        parsed = {};
+        formValues = {};
       }
-      const formValues = {};
-      // 각 row-layout 그룹별 필드 이름과 값을 매핑
-      const rowLayouts = Array.from(doc.querySelectorAll('row-layout[name]'));
-      rowLayouts.forEach(rl => {
-        const groupName = rl.getAttribute('name');
-        const isMulti = rl.getAttribute('is_multidata_mode') === 'true';
-        // 그룹 내 모든 입력 필드 선택
-        const selector = 'text-field[name], textarea-field[name], report-field[name], slide-field[name], select-field[name]';
-        const fieldEls = Array.from(rl.querySelectorAll(selector));
-        if (isMulti) {
-          // 다중 모드: 배열로 전달
-          const item = {};
-          fieldEls.forEach(el => {
-            const fname = el.getAttribute('name');
-            item[fname] = parsed[fname] !== undefined ? parsed[fname] : '';
-          });
-          formValues[groupName] = [item];
-        } else {
-          // 단일 모드: 개별 키-값으로 전달
-          fieldEls.forEach(el => {
-            const fname = el.getAttribute('name');
-            if (parsed[fname] !== undefined) {
-              formValues[fname] = parsed[fname];
-            }
-          });
-        }
-      });
-      // 이벤트 발행
+      console.log('[AgentMonitor] submitTask', formValues);
       this.EventBus.emit('form-values-updated', formValues);
     },
 
+    // ========================================
+    // 💾 데이터 로딩 및 상태 관리
+    // ========================================
     async loadData() {
+      const taskId = this.validateTaskId();
+      if (!taskId) return;
+
       try {
-        if(localStorage.getItem('downloadedBrowserAgent') === 'true') {
-          this.downloadedBrowserAgent = true;
-        }
+        this.downloadedBrowserAgent = localStorage.getItem('downloadedBrowserAgent') === 'true';
         this.errorMessage = null;
         this.events = [];
-        const taskId = this.getTaskIdFromWorkItem();
-        if (!taskId) {
-          this.errorMessage = 'taskId를 찾을 수 없습니다.';
-          return;
-        }
+
         const { data, error } = await window.$supabase
           .from('events')
           .select('*')
           .eq('todo_id', taskId)
           .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'])
-          .order('timestamp', { ascending: true })
-        if (error) {
-          this.errorMessage = '이벤트 데이터를 불러오는 중 오류가 발생했습니다: ' + error.message;
-          throw error
-        }
+          .order('timestamp', { ascending: true });
+
+        if (error) throw error;
+        
         if (data) {
-          this.events = data
-          if (this.events.some(e => e.event_type === 'crew_completed')) {
-            this.isCancelled = true;
-          }
+          this.events = data;
+          this.isCancelled = data.some(e => e.event_type === 'crew_completed');
         }
       } catch (error) {
-        this.errorMessage = '이벤트 데이터를 불러오는 중 오류가 발생했습니다: ' + (error.message || error);
-        console.error('Failed to load data from Supabase:', error)
+        this.handleError(error, '이벤트 데이터를 불러오는 중 오류가 발생했습니다');
       }
     },
+    // ========================================
+    // 📡 실시간 구독 및 이벤트 처리
+    // ========================================
     setupRealtimeSubscription() {
       try {
+        const validEventTypes = ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'];
+        
         this.channel = window.$supabase
           .channel('events')
           .on('postgres_changes', { 
@@ -617,28 +659,36 @@ export default {
             table: 'events'
           }, ({ new: row }) => {
             const taskId = this.getTaskIdFromWorkItem();
-            const todoId = row.todo_id;
-            const exists = this.events.some(e => e.id === row.id);
+            const { todo_id: todoId, event_type, crew_type, job_id, id } = row;
+            
+            // 이벤트 유효성 검사
+            const isValidEvent = !this.events.some(e => e.id === id) &&
+                               validEventTypes.includes(event_type) &&
+                               todoId === taskId;
 
-            if (!exists && ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'].includes(row.event_type) && todoId === taskId) {
+            if (isValidEvent) {
               this.events = [...this.events, row];
-              // crew_completed 수신 시 로딩 상태 해제
-              if (row.event_type === 'crew_completed') {
+              
+              // 이벤트 타입별 처리
+              if (event_type === 'crew_completed') {
                 this.isLoading = false;
+              } else if (event_type === 'task_completed' && crew_type === 'action' && job_id?.includes('action_')) {
+                this.$nextTick(() => {
+                  const task = this.tasks.find(t => t.jobId === job_id || t.id === id);
+                  if (task?.isCompleted) this.submitTask(task);
+                });
               }
-            } else {
-              if (todoId !== taskId) {
-                console.warn('[ID 불일치] 이벤트 todo_id:', todoId, 'vs 현재 taskId:', taskId, '이벤트 전체:', row);
-              }
+            } else if (todoId !== taskId) {
+              console.warn('[ID 불일치]', { eventTodoId: todoId, currentTaskId: taskId, event: row });
             }
           })
           .subscribe((status) => {
             if (status === 'SUBSCRIPTION_ERROR') {
-              this.errorMessage = '실시간 이벤트 구독에 실패했습니다.';
+              this.handleError(null, '실시간 이벤트 구독에 실패했습니다');
             }
           });
       } catch (error) {
-        this.errorMessage = '실시간 구독 중 오류가 발생했습니다: ' + (error.message || error);
+        this.handleError(error, '실시간 구독 중 오류가 발생했습니다');
       }
     },
     cleanup() {
@@ -646,6 +696,10 @@ export default {
           window.$supabase.removeChannel(this.channel)
       }
     },
+
+    // ========================================
+    // 🎛️ UI 상태 관리 및 인터랙션
+    // ========================================
     isTaskExpanded(taskId) {
       return this.expandedTasks[taskId] || false
     },
@@ -658,132 +712,113 @@ export default {
       return contentStr.length > 500 || contentStr.split('\n').length > 8
     },
 
-    getStatusText(task) {
-      if (!task.isCompleted) {
-        return '진행중'
-      }
-      
-      if (task.isCrewCompleted) {
-        return '전체완료'
-      }
-      
-      return '작업완료'
-    },
+
+    // ========================================
+    // 🚀 작업 실행 관련 메서드들
+    // ========================================
     async startTask() {
-      if(this.selectedOrchestrationMethod === 'browser-use') {
-        const workItemList = await backend.getWorkListByInstId(this.workItem.worklist.instId);
-        if(workItemList) {
-          let doneWorkItemList = workItemList.filter(item => item.status === 'DONE' && item.task && item.task.output);
-          if(doneWorkItemList.length > 0) {
-            this.doneWorkItemList = doneWorkItemList.map(item => ({
-              name: item.name,
-              output: item.task.output
-            }));
+      // Browser Use 특별 처리
+      if (this.selectedOrchestrationMethod === 'browser-use') {
+        try {
+          const workItemList = await backend.getWorkListByInstId(this.workItem.worklist.instId);
+          if (workItemList) {
+            this.doneWorkItemList = workItemList
+              .filter(item => item.status === 'DONE' && item.task?.output)
+              .map(item => ({ name: item.name, output: item.task.output }));
           }
+          this.openBrowserAgent = true;
+        } catch (error) {
+          this.handleError(error, 'Browser Agent 준비 중 오류가 발생했습니다');
         }
-        this.openBrowserAgent = true;
         return;
       }
-      const taskId = this.getTaskIdFromWorkItem();
-      if (!taskId) {
-        this.errorMessage = 'taskId를 찾을 수 없습니다.';
-        return;
-      }
-      // 로딩 상태 활성화 및 draft_status 설정
-      this.isLoading = true;
-      const agentMode = 'DRAFT';
-      
-      // 선택된 연구 방식에 따라 agent_orch 값 결정
-      const agentOrch = this.selectedOrchestrationMethod;
-      
-      this.todoStatus = { ...this.todoStatus, agent_mode: agentMode, status: 'IN_PROGRESS', draft_status: 'STARTED', agent_orch: agentOrch };
+
+      const taskId = this.validateTaskId();
+      if (!taskId) return;
+
       try {
+        this.isLoading = true;
         
+        // agent_mode 처리
+        const currentAgentMode = this.todoStatus?.agent_mode;
+        const agentMode = ['DRAFT', 'COMPLETE'].includes(currentAgentMode) ? currentAgentMode : 'DRAFT';
+        const agentOrch = this.selectedOrchestrationMethod;
+        
+        this.todoStatus = { 
+          ...this.todoStatus, 
+          agent_mode: agentMode, 
+          status: 'IN_PROGRESS', 
+          draft_status: 'STARTED', 
+          agent_orch: agentOrch 
+        };
+
         await backend.putWorkItem(taskId, { 
           agent_mode: agentMode, 
           status: 'IN_PROGRESS',
           agent_orch: agentOrch
         });
       } catch (error) {
-        console.error('작업 시작 중 오류:', error);
-        this.errorMessage = '작업 시작 중 오류가 발생했습니다.';
+        this.handleError(error, '작업 시작 중 오류가 발생했습니다');
       }
     },
     async fetchTodoStatus() {
-      const taskId = this.getTaskIdFromWorkItem();
+      const taskId = this.validateTaskId();
       if (!taskId) return;
+
       try {
         const { data, error } = await window.$supabase
           .from('todolist')
           .select('status, agent_mode, draft_status, feedback, agent_orch')
           .eq('id', taskId)
           .single();
-        if (error) {
-          throw error;
-        }
+
+        if (error) throw error;
+
         this.todoStatus = data;
         this.isLoading = ['STARTED', 'FB_REQUESTED'].includes(data.draft_status);
         this.isCancelled = data.draft_status === 'CANCELLED';
-        
-        let feedbackArr = [];
-        if (data.feedback) {
-          try {
-            feedbackArr = typeof data.feedback === 'string'
-              ? JSON.parse(data.feedback)
-              : data.feedback;
-          } catch {
-            feedbackArr = [];
-          }
+
+        // 피드백 데이터 처리
+        const feedbackArr = this.safeArrayParse(data.feedback);
+        this.chatMessages = feedbackArr
+          .map(item => ({
+            time: item.time,
+            content: this.extractContent(item.content)
+          }))
+          .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+        // agent_orch 동기화
+        const validOrchs = this.orchestrationOptions.map(o => o.value);
+        if (data.agent_orch && validOrchs.includes(data.agent_orch)) {
+          this.selectedOrchestrationMethod = data.agent_orch;
         }
-        this.chatMessages = feedbackArr.map(item => ({
-          time: item.time,
-          content: this.extractContent(item.content)
-        }));
-        this.chatMessages.sort((a, b) => new Date(a.time) - new Date(b.time));
-      } catch (e) {
-        console.error('todolist 상태 조회 실패:', e);
-        this.errorMessage = 'todolist 상태 조회 실패: ' + (e.message || e);
+      } catch (error) {
+        this.handleError(error, 'todolist 상태 조회 실패');
       }
     },
     async stopTask() {
-      const taskId = this.getTaskIdFromWorkItem();
-      if (!taskId) {
-        this.errorMessage = 'taskId를 찾을 수 없습니다.';
-        return;
-      }
+      const taskId = this.validateTaskId();
+      if (!taskId) return;
+
       try {
         await backend.putWorkItem(taskId, { draft_status: 'CANCELLED' });
-        // 중단 시 상태 초기화
         this.isCancelled = true;
         this.isLoading = false;
         if (this.todoStatus) this.todoStatus.draft_status = 'CANCELLED';
       } catch (error) {
-        console.error('중단 중 오류:', error);
-        this.errorMessage = '중단 중 오류가 발생했습니다.';
+        this.handleError(error, '작업 중단 중 오류가 발생했습니다');
       }
     },
     async submitChat(content) {
-      const taskId = this.getTaskIdFromWorkItem();
-      if (!taskId) {
-        this.errorMessage = 'taskId를 찾을 수 없습니다.';
-        return;
-      }
-      if (!content) return;
+      const taskId = this.validateTaskId();
+      if (!taskId || !content) return;
+
       try {
-        const existing = this.todoStatus.feedback;
-        let arr = [];
-        try {
-          arr = existing
-            ? (typeof existing === 'string' ? JSON.parse(existing) : existing)
-            : [];
-        } catch {
-          arr = [];
-        }
+        const existingFeedback = this.safeArrayParse(this.todoStatus.feedback);
         const now = new Date().toISOString();
         const text = this.extractContent(content);
-        arr.push({ time: now, content: text });
-        const updatedFeedback = arr;
-        // 선택된 오케스트레이션 방식 적용
+        
+        const updatedFeedback = [...existingFeedback, { time: now, content: text }];
         const agentOrch = this.selectedOrchestrationMethod;
 
         await backend.putWorkItem(taskId, {
@@ -791,52 +826,31 @@ export default {
           draft_status: 'FB_REQUESTED',
           agent_orch: agentOrch
         });
-        if (this.todoStatus) {
-          this.todoStatus.draft_status = 'FB_REQUESTED';
-          this.todoStatus.agent_orch = agentOrch;
-        }
+
+        // 상태 업데이트
+        Object.assign(this.todoStatus, {
+          draft_status: 'FB_REQUESTED',
+          agent_orch: agentOrch,
+          feedback: updatedFeedback
+        });
+        
         this.isLoading = true;
-        this.todoStatus.feedback = updatedFeedback;
         this.chatMessages.push({ time: now, content: text });
-        this.chatMessages = [...this.chatMessages];
+        
+        // 스크롤 조정
         this.$nextTick(() => {
-          if (this.$refs.taskArea) {
-            this.$refs.taskArea.scrollTop = this.$refs.taskArea.scrollHeight;
-          }
+          const taskArea = this.$refs.taskArea;
+          if (taskArea) taskArea.scrollTop = taskArea.scrollHeight;
         });
       } catch (error) {
-        console.error('채팅 전송 중 오류:', error);
-        this.errorMessage = '채팅 전송 중 오류가 발생했습니다.';
+        this.handleError(error, '채팅 전송 중 오류가 발생했습니다');
       }
-    },
-    getDisplayName(task) {
-      const name = task.name || '';
-      // name이 없거나 'unknown'일 경우 role 사용
-      if (!name.trim() || name.trim().toLowerCase() === 'unknown') {
-        return task.role;
-      }
-      return task.name;
-    },
-    
-    isLastCompletedActionTask(task) {
-      if (task.crewType !== 'action') return false;
-      
-      // action 타입 중에서 완료된 task들만 필터링
-      const actionTasks = this.tasks.filter(t => 
-        t.crewType === 'action' && t.isCompleted && this.isTaskCompleted(t)
-      );
-      
-      if (actionTasks.length === 0) return false;
-      
-      // 시작시간 기준으로 정렬하여 가장 마지막 task 찾기
-      const lastActionTask = actionTasks.sort((a, b) => 
-        new Date(b.startTime) - new Date(a.startTime)
-      )[0];
-      
-      return task.id === lastActionTask.id;
     },
 
-    // 커스텀 드롭다운 관련 메서드
+    
+    // ========================================
+    // 🎮 UI 인터랙션 및 이벤트 핸들러
+    // ========================================
     toggleDropdown() {
       this.isDropdownOpen = !this.isDropdownOpen;
     },
@@ -847,9 +861,33 @@ export default {
     },
 
     handleOutsideClick(event) {
-      if (this.$refs.dropdown && !this.$refs.dropdown.contains(event.target)) {
+      const dropdown = this.$refs.dropdown;
+      if (dropdown && !dropdown.contains(event.target)) {
         this.isDropdownOpen = false;
       }
+    },
+
+
+    // ========================================
+    // 🛠️ 기타 헬퍼 메서드들
+    // ========================================
+    extractContent(content) {
+      return (typeof content === 'object' && content.text !== undefined) ? content.text : content;
+    },
+
+    getDisplayName(task) {
+      const name = task.name?.trim();
+      return (!name || name.toLowerCase() === 'unknown') ? task.role : task.name;
+    },
+
+    getStatusText(task) {
+      if (!task.isCompleted) return '진행중';
+      return task.isCrewCompleted ? '전체완료' : '작업완료';
+    },
+
+    getMarkdownContent(task) {
+      const content = task.crewType === 'action' ? task.output : (Object.values(task.output)[0] || '');
+      return this.formatMarkdownOutput(content);
     },
   },
   async created() {
@@ -904,11 +942,17 @@ export default {
   border: 1px solid #ffbdbd;
 }
 
-.task-list {
+/* 타임라인 스타일 */
+.timeline-list {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
+
+.timeline-item {
+  position: relative;
+}
+
 
 .task-card {
   background: white;
@@ -1116,16 +1160,7 @@ export default {
   padding: 16px;
 }
 
-/* JSON 출력 스타일 */
-.json-output {
-  background: #f8fafb;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e4e6ea;
-  min-height: 400px;
-  display: flex;
-  flex-direction: column;
-}
+
 
 .json-container {
   max-height: 400px;
@@ -1141,7 +1176,7 @@ export default {
   max-height: none;
 }
 
-.json-container:not(.expanded)::after {
+.json-container:not(.expanded).has-expand-controls::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -1365,49 +1400,19 @@ export default {
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-  .agent-monitor { 
-    padding: 0; 
-    height: 100%;
-  }
-  
-  .task-area {
-    padding: 16px 12px 0px;
-  }
-  
+  .agent-monitor { padding: 0; height: 100%; }
+  .task-area { padding: 16px 12px 0px; }
   .task-card { padding: 16px; }
   .task-header { flex-direction: column; gap: 12px; align-items: stretch; }
   .task-header-right { justify-content: flex-start; }
   .task-status { align-self: flex-start; }
   .task-meta { flex-direction: column; gap: 12px; }
   .result-content { padding: 12px; }
-  
-  .slides-header {
-    padding: 12px 16px;
-    flex-direction: column;
-    gap: 12px;
-    text-align: center;
-  }
-  
-  .slide-content {
-    padding: 20px;
-  }
-  
-  .slide-inner :deep(h1) {
-    font-size: 1.8rem;
-  }
-  
-  .slide-inner :deep(h2) {
-    font-size: 1.4rem;
-  }
-  
-  .slide-inner :deep(p) {
-    font-size: 1rem;
-  }
-  
-  .json-output pre {
-    padding: 16px;
-    font-size: 12px;
-  }
+  .slides-header { padding: 12px 16px; flex-direction: column; gap: 12px; text-align: center; }
+  .slide-content { padding: 20px; }
+  .slide-inner :deep(h1) { font-size: 1.8rem; }
+  .slide-inner :deep(h2) { font-size: 1.4rem; }
+  .slide-inner :deep(p) { font-size: 1rem; }
 }
 
 .task-progress {
@@ -1444,11 +1449,6 @@ export default {
   40% { opacity: 1; transform: scale(1); }
 }
 
-@keyframes completedPulse {
-  0% { transform: scale(1); box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3); }
-  50% { transform: scale(1.05); box-shadow: 0 4px 16px rgba(76, 175, 80, 0.5); }
-  100% { transform: scale(1); box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3); }
-}
 
 .empty-state {
   text-align: center;
@@ -1501,14 +1501,14 @@ export default {
   max-height: none;
 }
 
-.markdown-container:not(.expanded)::after {
+.markdown-container:not(.expanded).has-expand-controls::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   height: 40px;
-  background: linear-gradient(transparent, white);
+  background: linear-gradient(transparent, #f8fafb);
   pointer-events: none;
 }
 
@@ -1753,30 +1753,8 @@ export default {
   background: white;
   border-top: 1px solid #e1e8ed;
 }
-.chat-textarea {
-  flex: 1;
-  resize: none;
-  overflow-y: auto;
-  max-height: 72px;
-  font-size: 14px;
-  line-height: 1.4;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 8px;
-}
-.chat-textarea:focus { outline: none; box-shadow: none; }
-.chat-toggle-button {
-  margin-left: 8px;
-  background: transparent;
-  border: none;
-  font-size: 18px;
-  color: #0066cc;
-  cursor: pointer;
-}
-.chat-toggle-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+
+
 
 /* 피드백 처리 로딩 스타일 */
 .feedback-loading {
@@ -1793,28 +1771,13 @@ export default {
 }
 
 
-/* Chat.vue 루트 컨테이너도 너비 100% 적용 */
-.chat-input-wrapper ::v-deep .chat-info-view-wrapper {
-  width: 100% !important;
-}
-
-/* Chat 컴포넌트의 아바타 아이콘 숨기기 */
-.chat-input-wrapper ::v-deep .v-avatar {
-  display: none !important;
-}
-/* Chat 컴포넌트의 사용자 이름 숨기기 */
-.chat-input-wrapper ::v-deep .user-name {
-  display: none !important;
-}
-
-.chat-input-wrapper ::v-deep .chat-view-box {
-  display: none !important;
-}
-
+/* Chat 컴포넌트 숨기기 */
+.chat-input-wrapper ::v-deep .chat-info-view-wrapper { width: 100% !important; }
+.chat-input-wrapper ::v-deep .v-avatar,
+.chat-input-wrapper ::v-deep .user-name,
+.chat-input-wrapper ::v-deep .chat-view-box,
 .chat-input-wrapper ::v-deep .pa-4,
-.chat-input-wrapper ::v-deep .v-divider {
-  display: none !important;
-}
+.chat-input-wrapper ::v-deep .v-divider { display: none !important; }
 
 .feedback-loading .stop-button {
   margin-left: auto;
@@ -1824,9 +1787,7 @@ export default {
   font-size: 24px;
   cursor: pointer;
 }
-.feedback-loading .stop-button:hover {
-  text-decoration: underline;
-}
+.feedback-loading .stop-button:hover { text-decoration: underline; }
 
 /* ChatGPT 스타일 심플 드롭다운 */
 .simple-dropdown {
@@ -1850,7 +1811,6 @@ export default {
   transition: all 0.2s ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
-
 .dropdown-trigger:hover {
   background: #f9fafb;
   border-color: #9ca3af;
@@ -1858,10 +1818,7 @@ export default {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.dropdown-label {
-  flex: 1;
-  white-space: nowrap;
-}
+.dropdown-label { flex: 1; white-space: nowrap; }
 
 .dropdown-menu {
   position: absolute;
@@ -1889,66 +1846,24 @@ export default {
   transition: background-color 0.1s ease;
   margin: 0;
 }
-
-.dropdown-item:hover {
-  background: #f3f4f6;
-}
-
+.dropdown-item:hover { background: #f3f4f6; }
 .dropdown-item.active {
   background: #f3f4f6;
   color: #000;
   font-weight: 500;
 }
 
-.option-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.option-left { display: flex; align-items: center; gap: 8px; }
+.option-icon { font-size: 16px; width: 16px; text-align: center; }
+.option-label { font-size: 13px; }
+.check-icon { color: #10b981; font-weight: 600; font-size: 12px; }
 
-.option-icon {
-  font-size: 16px;
-  width: 16px;
-  text-align: center;
-}
-
-.option-label {
-  font-size: 13px;
-}
-
-.check-icon {
-  color: #10b981;
-  font-weight: 600;
-  font-size: 12px;
-}
-
-
-
-
-
-/* 반응형 디자인 */
+/* 모바일 드롭다운 최적화 */
 @media (max-width: 768px) {
-  .dropdown-trigger {
-    padding: 5px 10px;
-    font-size: 12px;
-  }
-  
-
-  
-  .dropdown-menu {
-    min-width: 160px;
-  }
-  
-  .dropdown-item {
-    padding: 6px 12px;
-  }
-  
-  .option-label {
-    font-size: 12px;
-  }
-  
-  .option-icon {
-    font-size: 14px;
-  }
+  .dropdown-trigger { padding: 5px 10px; font-size: 12px; }
+  .dropdown-menu { min-width: 160px; }
+  .dropdown-item { padding: 6px 12px; }
+  .option-label { font-size: 12px; }
+  .option-icon { font-size: 14px; }
 }
 </style>
