@@ -229,11 +229,12 @@ export default {
 
                     return {
                         name: role.name,
-                        endpoint: role.default || role.endpoint,
+                        endpoint: role.default != role.endpoint ? role.endpoint : '',
                         resolutionRule: role.resolutionRule,
                         default: role.default || "",
                     };
                 });
+
 
                 if (!hasDefaultRole) {
                     const roleBindings = await backend.bindRole(me.processDefinition.roles, me.processDefinition.id);
