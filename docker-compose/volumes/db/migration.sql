@@ -329,7 +329,24 @@ ALTER TABLE public.events ADD COLUMN IF NOT EXISTS proc_inst_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS crew_type text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS data jsonb;
+-- 1) 기존에 같은 이름의 ENUM 타입이 있으면 제거
+DROP TYPE IF EXISTS public.event_type_enum;
 
+-- 2) 새로운 ENUM 타입 생성
+CREATE TYPE public.event_type_enum AS ENUM (
+  'task_started',
+  'task_completed',
+  'tool_usage_started',
+  'tool_usage_finished',
+  'crew_completed',
+  'human_asked'
+);
+
+-- 3) events 테이블이 있으면 event_type 컬럼을 새 ENUM으로 변경
+ALTER TABLE IF EXISTS public.events
+  ALTER COLUMN event_type
+    TYPE public.event_type_enum
+    USING event_type::public.event_type_enum;
 
 --schedule
 
