@@ -318,6 +318,14 @@ export default {
         isHorizontal: false,
         datasourceURL: null,
         datasourceSchema: null,
+        // CrewAI 서비스 연동 관련
+        useCrewAI: false, // 테스트용 플래그
+        crewAIBaseURL: 'http://localhost:8000',
+        crewAISessionId: null,
+        
+        // 실시간 JSON 파싱용
+        accumulatedJSON: '',
+        lastParsedJSON: null,
     }),
     async created() {
         $try(async () => {
@@ -337,11 +345,16 @@ export default {
                     "timeStamp": Date.now(),
                 })
 
-                
-                this.generator = new ConsultingGenerator(this, {
-                    isStream: true,
-                    preferredLanguage: "Korean"
-                });
+                // CrewAI 서비스 사용 여부에 따라 분기
+                if (this.useCrewAI) {
+                    // CrewAI 세션 초기화
+                    await this.initCrewAISession();
+                } else {
+                    this.generator = new ConsultingGenerator(this, {
+                        isStream: true,
+                        preferredLanguage: "Korean"
+                    });
+                }
 
                 this.EventBus.on('messages-updated', () => {
                     this.chatRenderKey++;
@@ -1083,8 +1096,15 @@ export default {
                 });
                 this.generator.client.genType = 'proc_def'
                 this.setProcessDefinitionPrompt();
+                this.sendMessage(newMessage);
+            } else {
+                // 컨설팅 모드에서 CrewAI 사용 여부에 따라 분기
+                if (this.useCrewAI) {
+                    this.sendMessageToCrewAI(newMessage);
+                } else {
+                    this.sendMessage(newMessage);
+                }
             }
-            this.sendMessage(newMessage);
         },
         async afterModelCreated(response) {
             let jsonProcess;
@@ -1689,6 +1709,569 @@ export default {
                 }
             }
 
+        },
+
+        // ====== CrewAI 서비스 연동 메서드들 ======
+        
+        async initCrewAISession() {
+            try {
+                console.log('🤖 CrewAI 세션 초기화 중...');
+                // 세션 ID 생성 (임시)
+                this.crewAISessionId = 'session_' + Date.now();
+                console.log('✅ CrewAI 세션 초기화 완료:', this.crewAISessionId);
+            } catch (error) {
+                console.error('❌ CrewAI 세션 초기화 실패:', error);
+                // 실패 시 기존 방식으로 폴백
+                this.useCrewAI = false;
+                this.generator = new ConsultingGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: "Korean"
+                });
+            }
+        },
+
+        getChatHistory() {
+            // 현재 메시지들을 CrewAI 형식으로 변환
+            return this.messages
+                .filter(msg => msg.role !== 'system' && !msg.isLoading) // 시스템 메시지와 로딩 중인 메시지 제외
+                .map(msg => ({
+                    role: msg.role,
+                    content: msg.content,
+                    timestamp: msg.timeStamp || Date.now()
+                }));
+        },
+
+        async sendMessageToCrewAI(newMessage) {
+            try {
+                console.log('🚀 CrewAI로 스트리밍 메시지 전송:', newMessage);
+                
+                // 메시지가 객체인 경우 텍스트만 추출
+                let messageText = newMessage;
+                if (typeof newMessage === 'object' && newMessage.text) {
+                    messageText = newMessage.text;
+                } else if (typeof newMessage === 'object' && newMessage.content) {
+                    messageText = newMessage.content;
+                }
+                
+                // 사용자 메시지를 채팅에 추가
+                this.messages.push({
+                    role: "user",
+                    content: messageText,
+                    timeStamp: Date.now()
+                });
+
+                // AI 응답을 위한 임시 메시지 추가
+                const aiMessageIndex = this.messages.length;
+                this.messages.push({
+                    role: "assistant",
+                    content: "생각하는 중...",
+                    timeStamp: Date.now(),
+                    isLoading: true,
+                    isStreaming: true
+                });
+
+                // SSE를 사용한 스트리밍 호출
+                await this.callCrewAIStreamingService(newMessage, aiMessageIndex);
+
+            } catch (error) {
+                console.error('❌ CrewAI 스트리밍 메시지 전송 실패:', error);
+                
+                // 에러 메시지 표시
+                if (this.messages[this.messages.length - 1].isLoading) {
+                    this.messages[this.messages.length - 1] = {
+                        role: "assistant",
+                        content: `오류가 발생했습니다: ${error.message}`,
+                        timeStamp: Date.now(),
+                        isLoading: false,
+                        isError: true
+                    };
+                }
+                this.chatRenderKey++;
+            }
+        },
+
+        async callCrewAIStreamingService(message, aiMessageIndex) {
+            return new Promise((resolve, reject) => {
+                // 메시지 텍스트 추출
+                let userMessage = message;
+                if (typeof message === 'object' && message !== null) {
+                    if (message.text) {
+                        userMessage = message.text;
+                    } else if (message.content) {
+                        userMessage = message.content;
+                    }
+                }
+
+                const requestData = {
+                    user_message: userMessage,
+                    chat_history: this.getChatHistory(),
+                    organization_chart: this.organizationChart,
+                    strategy_map: this.strategy,
+                    process_definition_map: this.processDefinitionMap,
+                    existing_process: this.processDefinition,
+                    auto_generate: true
+                };
+
+                console.log('🔍 CrewAI 스트리밍 요청 데이터:', requestData);
+
+                // Fetch API를 사용한 스트리밍 (EventSource는 POST를 지원하지 않으므로)
+                fetch(`${this.crewAIBaseURL}/api/consulting/stream`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/plain'
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let accumulatedResponse = '';
+                    
+                    const readStream = () => {
+                        reader.read().then(({ done, value }) => {
+                            if (done) {
+                                console.log('✅ 스트리밍 완료');
+                                this.chatRenderKey++;
+                                resolve();
+                                return;
+                            }
+                            
+                            const chunk = decoder.decode(value, { stream: true });
+                            const lines = chunk.split('\n');
+                            
+                            for (const line of lines) {
+                                if (line.startsWith('data: ')) {
+                                    try {
+                                        const data = JSON.parse(line.slice(6));
+                                        this.handleSSEEvent(data, aiMessageIndex, accumulatedResponse);
+                                        
+                                        if (data.type === 'response_chunk') {
+                                            accumulatedResponse += data.content;
+                                        }
+                                        
+                                    } catch (e) {
+                                        console.warn('SSE 파싱 오류:', e, line);
+                                    }
+                                }
+                            }
+                            
+                            readStream();
+                        }).catch(error => {
+                            console.error('스트림 읽기 오류:', error);
+                            reject(error);
+                        });
+                    };
+                    
+                    readStream();
+                })
+                .catch(error => {
+                    console.error('스트리밍 요청 오류:', error);
+                    reject(error);
+                });
+            });
+        },
+
+        handleSSEEvent(data, aiMessageIndex, accumulatedResponse) {
+            console.log('📡 SSE 이벤트:', data);
+            
+            switch (data.type) {
+                case 'response_start':
+                    // 응답 시작
+                    this.messages[aiMessageIndex] = {
+                        role: "assistant", 
+                        content: "",
+                        timeStamp: Date.now(),
+                        isLoading: false,
+                        isStreaming: true
+                    };
+                    this.chatRenderKey++;
+                    break;
+                    
+                case 'loading_update':
+                    // 로딩 상태 업데이트 (생각하는 중..., 프로세스 생성 중...)
+                    this.messages[aiMessageIndex] = {
+                        role: "assistant",
+                        content: data.content,
+                        timeStamp: Date.now(),
+                        isLoading: true,
+                        isStreaming: true
+                    };
+                    this.chatRenderKey++;
+                    break;
+                    
+                case 'response_chunk':
+                    // 일반 응답 텍스트 점진적 추가
+                    this.messages[aiMessageIndex].content += data.content;
+                    this.messages[aiMessageIndex].isLoading = false;
+                    this.chatRenderKey++;
+                    break;
+                    
+                case 'process_start':
+                    // 🚀 프로세스 생성 시작 - 즉시 화면 전환!
+                    this.messages[aiMessageIndex].content += data.content;
+                    this.messages[aiMessageIndex].isLoading = false;
+                    
+                    // 즉시 컨설팅 모드에서 프로세스 생성 모드로 전환
+                    console.log('🎯 프로세스 생성 모드로 즉시 전환');
+                    this.isConsultingMode = false;
+                    this.waitForCustomer = true;
+                    this.$emit("openProcessPreview");
+                    
+                    // 누적 JSON 초기화
+                    this.accumulatedJSON = '';
+                    
+                    this.chatRenderKey++;
+                    break;
+                    
+                case 'json_start':
+                    // JSON 스트리밍 시작
+                    this.messages[aiMessageIndex].content += data.content;
+                    this.accumulatedJSON = ''; // JSON 누적 시작
+                    this.chatRenderKey++;
+                    break;
+                    
+                case 'json_chunk':
+                    // 🔥 실시간 JSON 파싱 및 점진적 BPMN 그리기
+                    this.messages[aiMessageIndex].content += data.content;
+                    this.accumulatedJSON += data.content;
+                    
+                    // 실시간 JSON 파싱 시도
+                    this.tryParseAndUpdateBPMN(this.accumulatedJSON);
+                    
+                    this.chatRenderKey++;
+                    break;
+                    
+                case 'json_end':
+                    // JSON 스트리밍 끝
+                    this.messages[aiMessageIndex].content += data.content;
+                    
+                    // 최종 JSON 파싱 시도
+                    this.tryParseAndUpdateBPMN(this.accumulatedJSON, true);
+                    
+                    this.chatRenderKey++;
+                    break;
+                    
+                case 'process_generated':
+                    // 프로세스 정의 생성 완료 - 최종 BPMN 생성
+                    console.log('✅ 최종 프로세스 정의 수신');
+                    this.messages[aiMessageIndex].isStreaming = false;
+                    
+                    // 최종 프로세스 정의로 BPMN 완성
+                    if (data.process_definition) {
+                        this.handleCrewAIProcessDefinition(data.process_definition);
+                    }
+                    break;
+                    
+                case 'consulting_response':
+                    // 컨설팅 응답만 있는 경우
+                    this.messages[aiMessageIndex] = {
+                        role: "assistant",
+                        content: data.response.content,
+                        timeStamp: Date.now(),
+                        isLoading: false,
+                        isStreaming: false
+                    };
+                    this.chatRenderKey++;
+                    break;
+                    
+                case 'complete':
+                    // 완료
+                    this.messages[aiMessageIndex].isStreaming = false;
+                    console.log('✅ 컨설팅 완료:', data.message);
+                    break;
+                    
+                case 'error':
+                    // 오류 처리
+                    this.messages[aiMessageIndex] = {
+                        role: "assistant",
+                        content: data.message,
+                        timeStamp: Date.now(),
+                        isLoading: false,
+                        isStreaming: false,
+                        isError: true
+                    };
+                    this.chatRenderKey++;
+                    break;
+            }
+        },
+
+        async callCrewAIFullService(message) {
+            console.log('🚀 원본 메시지:', message, typeof message);
+            
+            // 메시지가 객체인 경우 텍스트만 추출
+            let userMessage = message;
+            if (typeof message === 'object' && message !== null) {
+                if (message.text) {
+                    userMessage = message.text;
+                } else if (message.content) {
+                    userMessage = message.content;
+                } else {
+                    userMessage = JSON.stringify(message); // 최후의 방법
+                }
+            }
+            
+            console.log('📝 추출된 텍스트:', userMessage, typeof userMessage);
+
+            const requestData = {
+                user_message: userMessage,
+                chat_history: this.getChatHistory(),
+                organization_chart: this.organizationChart,
+                strategy_map: this.strategy,
+                process_definition_map: this.processDefinitionMap,
+                existing_process: this.processDefinition,
+                auto_generate: true
+            };
+
+            console.log('🔍 CrewAI 요청 데이터:', requestData);
+
+            const response = await fetch(`${this.crewAIBaseURL}/api/consulting/full-service`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ CrewAI API 오류:', response.status, errorText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+            }
+
+            return await response.json();
+        },
+
+        async handleCrewAIProcessDefinition(processDefinition) {
+            try {
+                console.log('🎯 프로세스 정의 처리:', processDefinition);
+                
+                // 기존 컨설팅 로직과 동일하게 처리
+                if (processDefinition.processDefinitionId) {
+                    // 프로세스 정의를 현재 컴포넌트에 설정
+                    this.processDefinition = processDefinition;
+                    if (!this.processDefinition) this.processDefinition = {};
+                    
+                    // BPMN XML 생성
+                    this.bpmn = this.createBpmnXml(processDefinition, this.isHorizontal);
+                    
+                    // 프로젝트 정보 설정
+                    this.processDefinition['processDefinitionId'] = processDefinition.processDefinitionId;
+                    this.processDefinition['processDefinitionName'] = processDefinition.processDefinitionName;
+                    this.projectName = processDefinition.processDefinitionName;
+                    this.oldProcDefId = processDefinition.processDefinitionId;
+                    
+                    // 정의 변경 카운트 증가 (UI 업데이트 트리거)
+                    this.definitionChangeCount++;
+                    this.isAIGenerated = true;
+                    this.isChanged = true;
+
+                    // 컨설팅 모드에서 프로세스 생성 모드로 전환 (기존 로직과 동일)
+                    this.isConsultingMode = false;
+                    this.waitForCustomer = true;
+                    
+                    // 프로세스 정의 체계도 업데이트 (기존 로직과 동일)
+                    await this.updateProcessDefinitionMap(processDefinition);
+                    
+                    // 프로세스 미리보기 열기
+                    this.$emit("openProcessPreview");
+
+                    // 성공 메시지들 추가 (기존 로직과 동일)
+                    this.messages.push({
+                        role: "system",
+                        content: "🎉 프로세스 정의 생성이 완료되었습니다!",
+                        timeStamp: Date.now()
+                    });
+
+                    this.messages.push({
+                        role: "system",
+                        content: "생성된 프로세스의 실제 실행화면을 시뮬레이션 기능을 통해 확인 및 수정이 가능합니다.",
+                        timeStamp: Date.now()
+                    });
+
+                    if (this.chatMode == 'consulting') {
+                        this.messages.push({
+                            role: "system",
+                            content: "생성된 프로세스 정의에 대하여 추가적인 요청사항이 있으시다면 말씀해주세요.",
+                            timeStamp: Date.now()
+                        });
+                    }
+
+                    // 새로운 팀 추가 메시지 처리 (기존 로직과 동일)
+                    if (processDefinition.roles) {
+                        processDefinition.roles.forEach(role => {
+                            if (role.origin == 'created') {
+                                this.addTeamMessage(role);
+                            }
+                        });
+                    }
+
+                    console.log('✅ 프로세스 정의 처리 완료 - 컨설팅 모드에서 프로세스 모드로 전환');
+                }
+
+            } catch (error) {
+                console.error('❌ 프로세스 정의 처리 실패:', error);
+                
+                this.messages.push({
+                    role: "system",
+                    content: "프로세스 정의 생성 중 오류가 발생했습니다.",
+                    timeStamp: Date.now(),
+                    isError: true
+                });
+            }
+        },
+
+        // CrewAI 서비스 상태 확인
+        async checkCrewAIHealth() {
+            try {
+                const response = await fetch(`${this.crewAIBaseURL}/health`);
+                return response.ok;
+            } catch (error) {
+                console.error('CrewAI 서비스 연결 실패:', error);
+                return false;
+            }
+        },
+
+        // CrewAI 사용 토글 (테스트용)
+        toggleCrewAI() {
+            this.useCrewAI = !this.useCrewAI;
+            console.log('CrewAI 사용 여부:', this.useCrewAI ? '활성화' : '비활성화');
+        },
+
+        // 프로세스 정의 체계도 업데이트 (기존 로직에서 추출)
+        async updateProcessDefinitionMap(processDefinition) {
+            try {
+                if (processDefinition.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
+                    if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == processDefinition.megaProcessId)) {
+                        this.processDefinitionMap.mega_proc_list.push({
+                            name: processDefinition.megaProcessId,
+                            id: processDefinition.megaProcessId,
+                            major_proc_list: [
+                                {
+                                    name: processDefinition.majorProcessId,
+                                    id: processDefinition.majorProcessId,
+                                    sub_proc_list: [
+                                        {
+                                            id: processDefinition.processDefinitionId,
+                                            name: processDefinition.processDefinitionName
+                                        }
+                                    ]
+                                }
+                            ]
+                        });
+                    }
+                    if (processDefinition.majorProcessId) {
+                        this.processDefinitionMap.mega_proc_list.forEach((megaProcess) => {
+                            if (megaProcess.name == processDefinition.megaProcessId) {
+                                if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == processDefinition.majorProcessId)) {
+                                    const idx = megaProcess.major_proc_list.findIndex(
+                                        (majorProcess) => majorProcess.name == processDefinition.majorProcessId
+                                    );
+                                    if (
+                                        !megaProcess.major_proc_list[idx].sub_proc_list.some(
+                                            (subProcess) => subProcess.id == processDefinition.processDefinitionId
+                                        )
+                                    ) {
+                                        megaProcess.major_proc_list[idx].sub_proc_list.push({
+                                            id: processDefinition.processDefinitionId,
+                                            name: processDefinition.processDefinitionName
+                                        });
+                                    }
+                                } else {
+                                    megaProcess.major_proc_list.push({
+                                        name: processDefinition.majorProcessId,
+                                        id: processDefinition.majorProcessId,
+                                        sub_proc_list: [
+                                            {
+                                                id: processDefinition.processDefinitionId,
+                                                name: processDefinition.processDefinitionName
+                                            }
+                                        ]
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('프로세스 정의 체계도 업데이트 실패:', error);
+            }
+        },
+
+        // 팀 추가 메시지 생성 (기존 로직에서 추출)
+        addTeamMessage(team) {
+            this.messages.push({
+                "role": "system",
+                "content": `${team.name} 팀이 새로 추가되었습니다. 해당 팀을 조직도에 추가하시겠습니까?`,
+                "timeStamp": Date.now(),
+                "type": "add_team",
+                "newTeamInfo": team
+            });
+        },
+
+        // 🔥 실시간 JSON 파싱 및 점진적 BPMN 그리기
+        tryParseAndUpdateBPMN(jsonString, isFinal = false) {
+            try {
+                console.log('🧪 JSON 파싱 시도:', jsonString.substring(0, 100) + '...');
+                
+                let processDefinition;
+                
+                // **기존 로직과 동일한 파싱 순서**
+                jsonString = this.extractJSON(jsonString);
+                try {
+                    processDefinition = JSON.parse(jsonString);
+                } catch (e) {
+                    processDefinition = partialParse(jsonString + '"');
+                }
+                
+                // 파싱된 JSON이 이전과 동일하면 스킵
+                if (JSON.stringify(processDefinition) === JSON.stringify(this.lastParsedJSON)) {
+                    return;
+                }
+
+                
+                this.bpmn = this.createBpmnXml(processDefinition, this.isHorizontal);
+                
+                this.lastParsedJSON = processDefinition;
+                
+                // 유효한 프로세스 정의인지 확인
+                if (processDefinition && (processDefinition.processDefinitionName || processDefinition.elements)) {
+                    console.log('🎯 점진적 BPMN 업데이트:', processDefinition.processDefinitionName);
+                    
+                    // 시퀀스 정보를 활용하여 activities 순서 재정렬
+                    const reorderedProcess = this.reorderActivitiesBySequence(processDefinition);
+                    
+                    // 프로세스 정의 설정
+                    this.processDefinition = reorderedProcess;
+                    
+                    // BPMN XML 생성
+                    if (reorderedProcess.elements && reorderedProcess.elements.length > 0) {
+                        this.bpmn = this.createBpmnXml(reorderedProcess, this.isHorizontal);
+                        
+                        // 프로젝트 정보 설정
+                        if (reorderedProcess.processDefinitionName) {
+                            this.projectName = reorderedProcess.processDefinitionName;
+                        }
+                        if (reorderedProcess.processDefinitionId) {
+                            this.oldProcDefId = reorderedProcess.processDefinitionId;
+                        }
+                        
+                        // UI 업데이트 트리거
+                        this.definitionChangeCount++;
+                        this.isAIGenerated = true;
+                        this.isChanged = true;
+                        
+                        console.log('🔄 점진적 BPMN 업데이트 완료');
+                    }
+                }
+                
+            } catch (error) {
+                console.warn('⚠️ 실시간 JSON 파싱 오류:', error);
+            }
         },
     }
 };
