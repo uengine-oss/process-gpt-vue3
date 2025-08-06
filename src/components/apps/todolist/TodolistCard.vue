@@ -47,12 +47,6 @@ export default {
         userInfo: null,
         todolist: [
             {
-                id: 'TODO',
-                title: 'todoList.todo',
-                cardbg: 'background',
-                tasks: []
-            },
-            {
                 id: 'IN_PROGRESS',
                 title: 'todoList.inProgress',
                 cardbg: 'lightsecondary',
@@ -62,6 +56,12 @@ export default {
                 id: 'PENDING',
                 title: 'todoList.pending',
                 cardbg: 'lightinfo',
+                tasks: []
+            },
+            {
+                id: 'TODO',
+                title: 'todoList.todo',
+                cardbg: 'background',
                 tasks: []
             },
             {

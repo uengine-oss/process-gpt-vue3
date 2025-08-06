@@ -45,21 +45,4 @@ export default {
     .todo-task-item-card-style:not(:first-of-type) {
         margin-top:8px;
     }
-    .todo-task-fold-btn {
-        cursor: pointer;
-        display: none;
-    }
-    @media (max-width: 959px) {
-        .todo-task-unfold-btn,
-        .todo-task-fold-btn {
-            display: block;
-        }
-    }
-    
-    @media (max-width: 768px) {
-        .kanban-column {
-            flex: 0 0 100% !important;
-            max-width: 100% !important;
-        }
-    }
 </style>

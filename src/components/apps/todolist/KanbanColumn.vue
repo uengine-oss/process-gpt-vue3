@@ -1,23 +1,19 @@
 <template>
     <v-card elevation="10" :class="'bg-' + column.cardbg">
-        <div v-if="!todoTaskColumnBtnStatus"  class="d-flex align-center justify-space-between pa-3 pb-2 pt-2">
+        <v-row class="ma-0 pa-0 pa-3 pb-2 pt-2 align-center">
             <h6 class="text-h6 font-weight-semibold">{{ $t(column.title) }}</h6>
-            <Icons 
+            <v-spacer></v-spacer>
+            <Icons v-if="!todoTaskColumnBtnStatus"
                 @click="todoTaskColumnFold(column.id)"
                 :icon="'fold'"
                 class="todo-task-fold-btn"
             />
-        </div>
-        <div v-else class="align-center justify-space-between pa-1">
-            <Icons
+            <Icons v-else
                 @click="todoTaskColumnUnfold(column.id)"
                 :icon="'unfold'"
                 class="todo-task-unfold-btn"
             />
-            <h6 class="text-h6 font-weight-semibold"
-                style="text-align: center;"
-            >{{ $t(column.title) }}</h6>
-        </div>
+        </v-row>
         
            
         <div v-if="!todoTaskColumnBtnStatus" ref="section"
@@ -155,16 +151,6 @@ export default {
 <style>
     .todo-task-item-card-style:not(:first-of-type) {
         margin-top:8px;
-    }
-    .todo-task-fold-btn {
-        cursor: pointer;
-        display: none;
-    }
-    @media (max-width: 959px) {
-        .todo-task-unfold-btn,
-        .todo-task-fold-btn {
-            display: block;
-        }
     }
 
 </style>
