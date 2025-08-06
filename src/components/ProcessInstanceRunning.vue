@@ -140,7 +140,8 @@ export default {
 
 <style scoped>
 .process-instance-running-bpmn-uengine-box {
-    min-width: 600px;
+    min-width: 30vw;
+    max-width: 30vw;
 }
 
 .process-instance-running-instance-text-box {

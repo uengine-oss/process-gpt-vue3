@@ -776,6 +776,11 @@ hr {
     flex: 1 1 auto;
 }
 
+.instance-card-Process-instance-running-box .chat-message-bubble {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
 
 
 /* 채팅창 입력 및 버튼 영역 */
@@ -785,7 +790,7 @@ hr {
 /* 채팅 레이아웃 관련 UI 끝  */
 
 .instance-running-bpmn-viewer {
-    height: calc(100vh - 500px) !important;
+    height: calc(100vh - 210px) !important;
 }
 
 .instance-card-Process-instance-running-box {
@@ -1016,7 +1021,7 @@ hr {
         flex: 0 0 100% !important;
         max-width: 100% !important;
     }
-    
+
     .todo-task-unfold-btn,
     .todo-task-fold-btn {
         display: block !important;

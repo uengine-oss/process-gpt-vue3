@@ -987,6 +987,19 @@ export default {
                 "content": "생성해야할 답변 형식: " + JSON.stringify(formValues),
                 "role": "user"
             })
+            
+            // 현재 날짜 정보 추가
+            const currentDate = new Date().toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+            });
+            this.generator.previousMessages.push({
+                "content": "현재 날짜: " + currentDate + " (이 날짜를 기준으로 예시를 생성해주세요)",
+                "role": "user"
+            })
+            
             const userList = await backend.getUserList();
             this.generator.previousMessages.push({
                 "content": "유저 목록: " + JSON.stringify(userList),

@@ -23,7 +23,7 @@
                 <div v-if="snackbarMessageDetail && show" style="text-align: left;">{{ snackbarMessageDetail }}</div>
             </v-expand-transition>
             <template v-slot:actions>
-                <v-btn color="pink" variant="text" @click="snackbar = false">x</v-btn>
+                <v-btn variant="text" @click="snackbar = false">x</v-btn>
             </template>
         </v-snackbar>
         <!-- v-if="!loadScreen" -->
