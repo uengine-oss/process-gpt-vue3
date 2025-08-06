@@ -10,6 +10,11 @@ function fakeBackend() {
 
             function handleRoute() {
                 switch (true) {
+                    case url.includes('/api/consulting/'):
+                        // CrewAI API 요청은 그대로 전달
+                        return realFetch(url, opts)
+                            .then((response) => resolve(response))
+                            .catch((error) => reject(error));
                     case url.endsWith('/users/authenticate') && opts.method === 'POST':
                         return authenticate();
                     case url.endsWith('/users') && opts.method === 'GET':
