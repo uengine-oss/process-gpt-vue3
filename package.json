@@ -4,7 +4,7 @@
     "version": "1.4.0",
     "scripts": {
         "dev": "vite --host",
-        "build": "vue-tsc --noEmit && vite build",
+        "build": "NODE_OPTIONS=\"--max-old-space-size=4096\" vue-tsc --noEmit && vite build",
         "preview": "vite preview --port 5050",
         "typecheck": "vue-tsc --noEmit",
         "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
