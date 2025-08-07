@@ -10,24 +10,35 @@
                 <div></div>
             </template>
             <template v-slot:custom-chat>
+                <!-- feedback -->
                 <div v-if="useFeedback" class="position-absolute bottom-0 end-0 ml-2">
                     <span class="text-body-2">프로세스 실행이 정상인가요?</span>
-                    <v-btn icon size="x-small" variant="text" color="success" @click="selectFeedback('up')">
+                    <v-btn icon size="x-small" variant="text" color="success" @click="selectFeedback('good')">
                         <v-icon>mdi-thumb-up</v-icon>
                     </v-btn>
-                    <v-btn icon size="x-small" variant="text" color="error" @click="selectFeedback('down')">
+                    <v-btn icon size="x-small" variant="text" color="error" @click="selectFeedback('bad')">
                         <v-icon>mdi-thumb-down</v-icon>
                     </v-btn>
                 </div>
+                <div v-else-if="!useFeedback && showAcceptFeedback" class="position-absolute bottom-0 end-0 ml-2">
+                    <span class="text-body-2">피드백을 반영하시겠습니까?</span>
+                    <v-btn icon size="x-small" variant="text" color="success" @click="showFeedback = true">
+                        <v-icon>mdi-check</v-icon>
+                    </v-btn>
+                    <v-btn icon size="x-small" variant="text" color="error" @click="showAcceptFeedback = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </div>
+                <ProcessFeedback 
+                    class="mt-6 mx-2"
+                    v-if="showFeedback"
+                    :lastMessage="lastMessage"
+                    :task="lastTask"
+                    :isAcceptMode="showAcceptFeedback"
+                    @closeFeedback="closeFeedback"
+                />
             </template>
         </Chat>
-        <!-- 피드백 팝업 -->
-        <ProcessFeedbackPopup 
-            v-if="showFeedbackPopup"
-            :processInstance="processInstance" 
-            :isOpen="showFeedbackPopup" 
-            @closePopup="closeFeedbackPopup"
-        />
     </div>
 </template>
 
@@ -36,7 +47,7 @@ import ChatModule from '@/components/ChatModule.vue';
 import ChatGenerator from './ai/ProcessInstanceGenerator.js';
 
 import Chat from "@/components/ui/Chat.vue";
-import ProcessFeedbackPopup from "@/components/ui/ProcessFeedbackPopup.vue";
+import ProcessFeedback from "@/components/ui/ProcessFeedback.vue";
 
 import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
@@ -45,7 +56,7 @@ export default {
     mixins: [ChatModule],
     components: {
         Chat,
-        ProcessFeedbackPopup,
+        ProcessFeedback,
     },
     props:{
         isComplete: Boolean,
@@ -72,7 +83,10 @@ export default {
 
         // feedback
         useFeedback: false,
-        showFeedbackPopup: false,
+        showFeedback: false,
+        lastMessage: null,
+        lastTask: null,
+        showAcceptFeedback: false,
     }),
     computed: {
         chatName() {
@@ -80,12 +94,6 @@ export default {
                 return this.processInstance.name;
             }
             return '';
-        },
-        lastMessage() {
-            if (this.messages.length > 0) {
-                return this.messages[this.messages.length - 1];
-            }
-            return null;
         },
     },
     async mounted() {
@@ -107,6 +115,7 @@ export default {
             if (workItem) {
                 const taskId = workItem.taskId;
                 await backend.getTaskLog(taskId, async (task) => {
+                    this.useFeedback = false;
                     if (this.streamingText == '') {
                         this.streamingText = task.log;
                         this.messages.push({
@@ -125,6 +134,7 @@ export default {
                         this.EventBus.emit('instances-updated');
                         await this.getMessages(this.chatRoomId);
                         this.streamingText = '';
+                        this.useFeedback = true;
                     }
                 });
             }
@@ -144,12 +154,24 @@ export default {
                     this.messages = [];
                     this.isTaskMode = false;
                     await this.init();
+                    await this.getLastTaskId(newVal.params.instId);
                 }
+            }
+        },
+        messages(newVal) {
+            if (newVal.length > 0) {
+                this.lastMessage = newVal[newVal.length - 1];
             }
         },
         lastMessage(newVal) {
             if (newVal && newVal.role == 'system' && !this.isTaskMode) {
                 this.useFeedback = true;
+                if (newVal.jsonContent && newVal.jsonContent.appliedFeedback) {
+                    this.useFeedback = false;
+                    this.showAcceptFeedback = true;
+                } else {
+                    this.showAcceptFeedback = false;
+                }
             } else {
                 this.useFeedback = false;
             }
@@ -186,6 +208,7 @@ export default {
                 if (this.processInstance) {
                     this.currentActivities = this.processInstance.currentActivityIds;
                 }
+                await this.getLastTaskId(id);
             }
             var bpmn = await backend.getRawDefinition(defId, { type: "bpmn"});
             if (bpmn) {
@@ -223,7 +246,7 @@ export default {
                 await me.loadProcess();
                 
                 await me.getMessages(me.chatRoomId)
-
+                await me.getLastTaskId(id);
             }
 
             if (me.useThreadId) {
@@ -317,15 +340,38 @@ export default {
         },
 
         async selectFeedback(type) {
-            if (type == 'up') {
-            } else if (type == 'down') {
-                this.showFeedbackPopup = true;
-                console.log('showFeedbackPopup', this.showFeedbackPopup);
+            if (this.lastMessage.jsonContent) {
+                this.lastMessage.jsonContent.executionResult = type;
+            } else {
+                this.lastMessage.jsonContent = {
+                    executionResult: type
+                }
             }
-            // this.useFeedback = false;
+            if (type == 'good') {
+                backend.setFeedback(this.lastTask, type);
+            } else if (type == 'bad') {
+                this.showFeedback = true;
+            }
+            this.useFeedback = false;
         },
-        closeFeedbackPopup() {
-            this.showFeedbackPopup = false;
+        closeFeedback() {
+            this.showFeedback = false;
+            this.showAcceptFeedback = false;
+        },
+        async getLastTaskId(instId) {
+            const worklist = await backend.getWorkListByInstId(instId);
+            if (!this.lastMessage) {
+                this.lastMessage = this.messages[this.messages.length - 1];
+            }
+            if (this.lastMessage && this.lastMessage.jsonContent && this.lastMessage.jsonContent.completedActivities && this.lastMessage.jsonContent.completedActivities.length > 0) {
+                const completedActivities = this.lastMessage.jsonContent.completedActivities;
+                const completedActivityIds = completedActivities.map(item => item.completedActivityId);
+                const workItems = worklist.filter(item => item.status == 'DONE' && completedActivityIds.includes(item.tracingTag));
+                if (workItems.length > 0) {
+                    const workItem = workItems.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
+                    this.lastTask = workItem;
+                }
+            }
         },
     }
 };

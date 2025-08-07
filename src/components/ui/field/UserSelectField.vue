@@ -65,8 +65,8 @@ export default {
         itemValue: {
             type: String,
             default() {
-                // return window.$mode === 'ProcessGPT' ? 'email' : 'id';
-                return window.$mode === 'ProcessGPT' ? 'email' : undefined;
+                return 'id';
+                // return window.$mode === 'ProcessGPT' ? 'email' : undefined;
             }
         },
         returnObject: {

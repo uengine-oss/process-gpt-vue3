@@ -161,6 +161,7 @@ create table if not exists public.bpm_proc_inst (
 create table if not exists public.todolist (
     id uuid not null,
     user_id text null,
+    username text null,
     proc_inst_id text null,
     proc_def_id text null,
     activity_id text null,
@@ -1327,3 +1328,64 @@ $$;
 
 grant usage on schema cron to service_role;
 grant execute on all functions in schema cron to service_role;
+
+
+
+-- enum 타입 추가
+-- 프로세스 인스턴스 상태 enum
+CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
+-- 할일 항목 상태 enum
+CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE');
+-- 에이전트 모드 enum
+CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
+
+-- bpm_proc_inst 테이블 마이그레이션 (status)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.bpm_proc_inst ADD COLUMN status_new process_status;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.bpm_proc_inst 
+SET status_new = CASE 
+    WHEN status = 'NEW' THEN 'NEW'::process_status
+    WHEN status = 'RUNNING' THEN 'RUNNING'::process_status
+    WHEN status = 'COMPLETED' THEN 'COMPLETED'::process_status
+    ELSE 'NEW'::process_status  -- 기본값 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.bpm_proc_inst DROP COLUMN status;
+ALTER TABLE public.bpm_proc_inst RENAME COLUMN status_new TO status;
+
+-- todolist 테이블 마이그레이션 (status)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.todolist ADD COLUMN status_new todo_status;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.todolist 
+SET status_new = CASE 
+    WHEN status = 'TODO' THEN 'TODO'::todo_status
+    WHEN status = 'IN_PROGRESS' THEN 'IN_PROGRESS'::todo_status
+    WHEN status = 'DONE' THEN 'DONE'::todo_status
+    WHEN status = 'SUBMITTED' THEN 'SUBMITTED'::todo_status
+    WHEN status = 'PENDING' THEN 'PENDING'::todo_status
+    ELSE 'TODO'::todo_status  -- 기본값 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.todolist DROP COLUMN status;
+ALTER TABLE public.todolist RENAME COLUMN status_new TO status;
+
+-- todolist 테이블 마이그레이션 (agent_mode)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.todolist ADD COLUMN agent_mode_new agent_mode;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.todolist 
+SET agent_mode_new = CASE 
+    WHEN agent_mode = 'NONE' THEN 'NONE'::agent_mode
+    WHEN agent_mode = 'A2A' THEN 'A2A'::agent_mode
+    WHEN agent_mode = 'DRAFT' THEN 'DRAFT'::agent_mode
+    WHEN agent_mode = 'COMPLETE' THEN 'COMPLETE'::agent_mode
+    ELSE 'NONE'::agent_mode  -- 기본값 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.todolist DROP COLUMN agent_mode;
+ALTER TABLE public.todolist RENAME COLUMN agent_mode_new TO agent_mode;
+
+
+

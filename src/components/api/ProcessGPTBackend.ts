@@ -559,6 +559,10 @@ class ProcessGPTBackend implements Backend {
     async getWorkList(options?: any) {
         try {
             const filter: any = { match: {} };
+            if (options && options.match) {
+                filter.match = options.match;
+            }
+
             if (options && options.status) {
                 filter.match.status = options.status;
             }
@@ -1357,7 +1361,7 @@ class ProcessGPTBackend implements Backend {
             if(!options) options = {}
             if(!status) return []
             if(status.includes('*')) status = ['NEW', 'RUNNING', 'COMPLETED']
-            let email = window.localStorage.getItem("email");
+            let uid = window.localStorage.getItem("uid");
             let filter = { 
                 inArray: {
                     column: 'status',
@@ -1365,7 +1369,7 @@ class ProcessGPTBackend implements Backend {
                 },
                 matchArray: {
                     column: 'participants',
-                    values: [email]
+                    values: [uid]
                 },
                 orderBy: 'updated_at',
                 sort: 'desc',
@@ -3619,7 +3623,7 @@ class ProcessGPTBackend implements Backend {
     }
 
 
-    async getFeedbackItems(obj: any) {
+    async getFeedback(obj: any) {
         try {
             const response = await axios.post('/execution/get-feedback', obj);
             return response.data;
@@ -3627,6 +3631,83 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async setFeedback(task: any, feedback: any) {
+        try {
+            const taskId = task.taskId;
+            const workItem = await storage.getObject('todolist', {
+                match: {
+                    id: taskId
+                }
+            });
+            workItem.temp_feedback = feedback;
+            await storage.putObject('todolist', workItem);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async submitFeedback(feedback: string, taskId: string) {
+        try {
+            const workItem = await storage.getObject('todolist', {
+                match: {
+                    id: taskId
+                }
+            });
+            workItem.status = 'SUBMITTED';
+            workItem.temp_feedback = feedback;
+            console.log(workItem);
+            await storage.putObject('todolist', workItem);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getFeedbackDiff(taskId: string) {
+        try {
+            const response = await axios.post('/execution/get-feedback-diff', {
+                taskId: taskId
+            });
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async setFeedbackDiff(diff: any, activityId: string, defId: string) {
+        try {
+            const process = await storage.getObject('proc_def', {
+                match: {
+                    id: defId,
+                    tenant_id: window.$tenantName
+                }
+            });
+            if (!process) {
+                throw new Error('process not found');
+            }
+            const definition = process.definition;
+            const activity = definition.activities.find((activity: any) => activity.id === activityId);
+            if (!activity) {
+                throw new Error('activity not found');
+            }
+            if (diff.inputData) {
+                activity.inputData = diff.inputData;
+            }
+            if (diff.checkpoints) {
+                activity.checkpoints = diff.checkpoints;
+            }
+            if (diff.description) {
+                activity.description = diff.description;
+            }
+            if (diff.instruction) {
+                activity.instruction = diff.instruction;
+            }
+            await storage.putObject('proc_def', process);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+    
 
 }
 

@@ -596,8 +596,8 @@ export default {
             if (this.isStarted || this.isSimulate == 'true') {
                 return true
             }
-            const email = localStorage.getItem('email')
-            return this.workItem.worklist.endpoint.includes(email)
+            const uid = localStorage.getItem('uid')
+            return this.workItem.worklist.endpoint.includes(uid)
         },
         mode() {
             return window.$mode;

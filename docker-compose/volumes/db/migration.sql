@@ -147,6 +147,7 @@ END $$;
 -- todolist table
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS id uuid;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS user_id text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS username text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS proc_inst_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS proc_def_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS activity_id text;
@@ -466,3 +467,184 @@ $$;
 
 grant usage on schema cron to service_role;
 grant execute on all functions in schema cron to service_role;
+
+
+
+
+-- ===============================================
+-- Enum 타입 마이그레이션
+-- ===============================================
+
+-- 1. Enum 타입 생성 (이미 존재하지 않는 경우에만)
+DO $$
+BEGIN
+    -- 프로세스 인스턴스 상태 enum
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'process_status') THEN
+        CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
+        RAISE NOTICE 'Created process_status enum type';
+    ELSE
+        RAISE NOTICE 'process_status enum type already exists';
+    END IF;
+
+    -- 할일 항목 상태 enum
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'todo_status') THEN
+        CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE');
+        RAISE NOTICE 'Created todo_status enum type';
+    ELSE
+        RAISE NOTICE 'todo_status enum type already exists';
+    END IF;
+
+    -- 에이전트 모드 enum
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'agent_mode') THEN
+        CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
+        RAISE NOTICE 'Created agent_mode enum type';
+    ELSE
+        RAISE NOTICE 'agent_mode enum type already exists';
+    END IF;
+END $$;
+
+-- 2. bpm_proc_inst 테이블 status 컬럼 마이그레이션
+DO $$
+BEGIN
+    -- status 컬럼이 text 타입인지 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'bpm_proc_inst' 
+        AND column_name = 'status' 
+        AND data_type = 'text'
+    ) THEN
+        -- 임시 컬럼 추가
+        ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS status_new process_status;
+        
+        -- 기존 데이터를 새 enum 타입으로 변환
+        UPDATE public.bpm_proc_inst 
+        SET status_new = CASE 
+            WHEN status = 'NEW' THEN 'NEW'::process_status
+            WHEN status = 'RUNNING' THEN 'RUNNING'::process_status
+            WHEN status = 'COMPLETED' THEN 'COMPLETED'::process_status
+            ELSE 'NEW'::process_status  -- 기본값 설정
+        END;
+        
+        -- 기존 컬럼 삭제 후 새 컬럼명 변경
+        ALTER TABLE public.bpm_proc_inst DROP COLUMN status;
+        ALTER TABLE public.bpm_proc_inst RENAME COLUMN status_new TO status;
+        
+        RAISE NOTICE 'Successfully migrated bpm_proc_inst.status to process_status enum';
+    ELSE
+        RAISE NOTICE 'bpm_proc_inst.status is already process_status enum or column does not exist';
+    END IF;
+END $$;
+
+-- 3. todolist 테이블 status 컬럼 마이그레이션
+DO $$
+BEGIN
+    -- status 컬럼이 text 타입인지 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'status' 
+        AND data_type = 'text'
+    ) THEN
+        -- 임시 컬럼 추가
+        ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS status_new todo_status;
+        
+        -- 기존 데이터를 새 enum 타입으로 변환
+        UPDATE public.todolist 
+        SET status_new = CASE 
+            WHEN status = 'TODO' THEN 'TODO'::todo_status
+            WHEN status = 'IN_PROGRESS' THEN 'IN_PROGRESS'::todo_status
+            WHEN status = 'DONE' THEN 'DONE'::todo_status
+            WHEN status = 'SUBMITTED' THEN 'SUBMITTED'::todo_status
+            WHEN status = 'PENDING' THEN 'PENDING'::todo_status
+            ELSE 'TODO'::todo_status  -- 기본값 설정
+        END;
+        
+        -- 기존 컬럼 삭제 후 새 컬럼명 변경
+        ALTER TABLE public.todolist DROP COLUMN status;
+        ALTER TABLE public.todolist RENAME COLUMN status_new TO status;
+        
+        RAISE NOTICE 'Successfully migrated todolist.status to todo_status enum';
+    ELSE
+        RAISE NOTICE 'todolist.status is already todo_status enum or column does not exist';
+    END IF;
+END $$;
+
+-- 4. todolist 테이블 agent_mode 컬럼 마이그레이션
+DO $$
+BEGIN
+    -- agent_mode 컬럼이 text 타입인지 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'agent_mode' 
+        AND data_type = 'text'
+    ) THEN
+        -- 임시 컬럼 추가
+        ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_mode_new agent_mode;
+        
+        -- 기존 데이터를 새 enum 타입으로 변환
+        UPDATE public.todolist 
+        SET agent_mode_new = CASE 
+            WHEN agent_mode = 'NONE' THEN 'NONE'::agent_mode
+            WHEN agent_mode = 'A2A' THEN 'A2A'::agent_mode
+            WHEN agent_mode = 'DRAFT' THEN 'DRAFT'::agent_mode
+            WHEN agent_mode = 'COMPLETE' THEN 'COMPLETE'::agent_mode
+            ELSE 'NONE'::agent_mode  -- 기본값 설정
+        END;
+        
+        -- 기존 컬럼 삭제 후 새 컬럼명 변경
+        ALTER TABLE public.todolist DROP COLUMN agent_mode;
+        ALTER TABLE public.todolist RENAME COLUMN agent_mode_new TO agent_mode;
+        
+        RAISE NOTICE 'Successfully migrated todolist.agent_mode to agent_mode enum';
+    ELSE
+        RAISE NOTICE 'todolist.agent_mode is already agent_mode enum or column does not exist';
+    END IF;
+END $$;
+
+-- 5. 마이그레이션 완료 확인
+DO $$
+BEGIN
+    RAISE NOTICE '=== Enum Migration Summary ===';
+    
+    -- bpm_proc_inst status 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'bpm_proc_inst' 
+        AND column_name = 'status' 
+        AND udt_name = 'process_status'
+    ) THEN
+        RAISE NOTICE 'bpm_proc_inst.status: process_status enum';
+    ELSE
+        RAISE NOTICE 'bpm_proc_inst.status: not migrated';
+    END IF;
+    
+    -- todolist status 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'status' 
+        AND udt_name = 'todo_status'
+    ) THEN
+        RAISE NOTICE 'todolist.status: todo_status enum';
+    ELSE
+        RAISE NOTICE 'todolist.status: not migrated';
+    END IF;
+    
+    -- todolist agent_mode 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'agent_mode' 
+        AND udt_name = 'agent_mode'
+    ) THEN
+        RAISE NOTICE 'todolist.agent_mode: agent_mode enum';
+    ELSE
+        RAISE NOTICE 'todolist.agent_mode: not migrated';
+    END IF;
+    
+    RAISE NOTICE '=== Migration Complete ===';
+END $$;
+
+
+
