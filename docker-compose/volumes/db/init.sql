@@ -1,3 +1,60 @@
+-- ===============================================
+-- INIT.SQL FILE WRITING GUIDE
+-- ===============================================
+-- 
+-- 이 파일은 데이터베이스 초기화를 위한 SQL 스크립트입니다.
+-- 새로운 데이터베이스 환경에서 처음 실행되는 파일입니다.
+-- 다른 개발자들이 안전하게 수정할 수 있도록 다음 가이드를 따라주세요.
+--
+-- 파일 역할:
+--    - init.sql: 새로운 테이블 생성 (CREATE TABLE)
+--    - migration.sql: 기존 테이블 구조 변경 (ALTER TABLE)
+--
+-- 1. 확장 기능 (Extensions):
+--    - 필요한 확장 기능을 최상단에 추가
+--    - CREATE EXTENSION IF NOT EXISTS 사용
+--    - vector, pgcrypto 등 필수 확장 기능 포함
+--
+-- 2. 함수 정의:
+--    - 테이블 생성 전에 필요한 함수들을 먼저 정의
+--    - 테넌트별 정보가 필요한 경우 public.tenant_id() 함수 사용
+--    - CREATE OR REPLACE FUNCTION 사용
+--
+-- 3. 테이블 생성 규칙:
+--    - CREATE TABLE IF NOT EXISTS 사용
+--    - 모든 테이블에 적절한 제약조건 설정
+--    - Primary Key, Foreign Key 명시적 정의
+--    - 테넌트별 데이터는 tenant_id 컬럼 추가
+--
+-- 4. 인덱스 생성:
+--    - 테이블 생성 후 관련 인덱스 추가
+--    - CREATE INDEX IF NOT EXISTS 사용
+--    - 유니크 인덱스는 테넌트별로 설정
+--
+-- 5. 뷰 생성:
+--    - 복잡한 조인이나 자주 사용되는 쿼리는 뷰로 생성
+--    - CREATE OR REPLACE VIEW 사용
+--
+-- 6. 함수 및 트리거:
+--    - 비즈니스 로직 함수 정의
+--    - 트리거 함수와 트리거 생성
+--    - 보안 관련 함수 포함
+--
+-- 7. Row Level Security (RLS):
+--    - 모든 테이블에 RLS 활성화
+--    - 적절한 정책(Policy) 정의
+--    - 인증된 사용자와 관리자 권한 구분
+--
+-- 8. 실시간 구독 설정:
+--    - supabase_realtime publication에 테이블 추가
+--    - 실시간 업데이트가 필요한 테이블만 포함
+--
+-- 9. ENUM 타입:
+--     - 필요에 따라 상태값 등은 ENUM 타입으로 정의
+--     - 기존 데이터 마이그레이션 로직 포함
+--
+-- ===============================================
+
 -- Enable required extensions
 create extension if not exists vector;
 create extension if not exists pgcrypto;
@@ -161,6 +218,7 @@ create table if not exists public.bpm_proc_inst (
 create table if not exists public.todolist (
     id uuid not null,
     user_id text null,
+    username text null,
     proc_inst_id text null,
     proc_def_id text null,
     activity_id text null,
@@ -1347,3 +1405,64 @@ $$;
 
 grant usage on schema cron to service_role;
 grant execute on all functions in schema cron to service_role;
+
+
+
+-- enum 타입 추가
+-- 프로세스 인스턴스 상태 enum
+CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
+-- 할일 항목 상태 enum
+CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE');
+-- 에이전트 모드 enum
+CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
+
+-- bpm_proc_inst 테이블 마이그레이션 (status)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.bpm_proc_inst ADD COLUMN status_new process_status;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.bpm_proc_inst 
+SET status_new = CASE 
+    WHEN status = 'NEW' THEN 'NEW'::process_status
+    WHEN status = 'RUNNING' THEN 'RUNNING'::process_status
+    WHEN status = 'COMPLETED' THEN 'COMPLETED'::process_status
+    ELSE 'NEW'::process_status  -- 기본값 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.bpm_proc_inst DROP COLUMN status;
+ALTER TABLE public.bpm_proc_inst RENAME COLUMN status_new TO status;
+
+-- todolist 테이블 마이그레이션 (status)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.todolist ADD COLUMN status_new todo_status;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.todolist 
+SET status_new = CASE 
+    WHEN status = 'TODO' THEN 'TODO'::todo_status
+    WHEN status = 'IN_PROGRESS' THEN 'IN_PROGRESS'::todo_status
+    WHEN status = 'DONE' THEN 'DONE'::todo_status
+    WHEN status = 'SUBMITTED' THEN 'SUBMITTED'::todo_status
+    WHEN status = 'PENDING' THEN 'PENDING'::todo_status
+    ELSE 'TODO'::todo_status  -- 기본값 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.todolist DROP COLUMN status;
+ALTER TABLE public.todolist RENAME COLUMN status_new TO status;
+
+-- todolist 테이블 마이그레이션 (agent_mode)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.todolist ADD COLUMN agent_mode_new agent_mode;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.todolist 
+SET agent_mode_new = CASE 
+    WHEN agent_mode = 'NONE' THEN 'NONE'::agent_mode
+    WHEN agent_mode = 'A2A' THEN 'A2A'::agent_mode
+    WHEN agent_mode = 'DRAFT' THEN 'DRAFT'::agent_mode
+    WHEN agent_mode = 'COMPLETE' THEN 'COMPLETE'::agent_mode
+    ELSE 'NONE'::agent_mode  -- 기본값 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.todolist DROP COLUMN agent_mode;
+ALTER TABLE public.todolist RENAME COLUMN agent_mode_new TO agent_mode;
+
+
+

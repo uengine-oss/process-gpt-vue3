@@ -270,7 +270,7 @@ export default {
         },
         isMyTask() {
             // localStorage의 email과 task의 endpoint가 일치하고, task의 status가 'DONE'이 아닐 때 true 반환
-            const myEmail = localStorage.getItem('email');
+            const myEmail = localStorage.getItem('uid');
             if (this.task.endpoint.includes(',')) {
                 const endpoints = this.task.endpoint.split(',');
                 return endpoints.includes(myEmail);

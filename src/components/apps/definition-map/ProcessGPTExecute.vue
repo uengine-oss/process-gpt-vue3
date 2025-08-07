@@ -40,7 +40,7 @@
                         <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
                             <user-select-field v-model="roleMapping.endpoint"
                                 :name="roleMapping.name"
-                                :item-value="'email'"
+                                :item-value="'id'"
                                 :hide-details="true"
                                 :use-agent="true"
                             ></user-select-field>
