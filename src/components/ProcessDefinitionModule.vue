@@ -754,7 +754,7 @@ export default {
                             try {
                                 let task = {};
                                 task.name = activity.name;
-                                task.id = activity.id;
+                                task.id = activity.id.toLowerCase();
                                 task.type = activity.type;
                                 task.description = `${activity.name} description`;
                                 task.instruction = `${activity.name} instruction`;
@@ -1151,6 +1151,11 @@ export default {
         },
         
         async analyzeDefinition(processDefinition) {
+            if (!processDefinition.activities) {
+                processDefinition = await this.convertXMLToJSON(this.bpmn);
+                processDefinition = this.checkDefinitionSync(processDefinition, this.processDefinition);
+            }
+
             return new Promise((resolve, reject) => {
                 if (processDefinition) {
                     backend.listDefinition('form_def', {

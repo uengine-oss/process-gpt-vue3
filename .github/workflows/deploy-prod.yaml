@@ -24,7 +24,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Type check and build
-        run: yarn build
+        run: NODE_OPTIONS="--max-old-space-size=4096" yarn build
 
       - name: Log in to GHCR
         run: |

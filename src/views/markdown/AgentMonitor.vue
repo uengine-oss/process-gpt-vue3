@@ -401,12 +401,19 @@ export default {
       ]
     },
 
-    shouldShowSubmitButton(payload) {
-      return payload.isCompleted && this.isTaskCompleted(payload) && (
-        (payload.crewType === 'report' && payload.jobId.includes('final_report_merge')) ||
-        payload.crewType === 'slide' ||
-        payload.crewType === 'text'
+    isSubmittableTask(task) {
+      return (
+        (task.crewType === 'report' && task.jobId.includes('final_report_merge')) ||
+        task.crewType === 'slide' ||
+        task.crewType === 'text' ||
+        (task.crewType === 'action' && task.jobId.includes('action'))
       )
+    },
+
+    shouldShowSubmitButton(payload) {
+      return payload.isCompleted && 
+             this.isSubmittableTask(payload) &&
+             this.todoStatus?.agent_mode === 'DRAFT'
     },
 
     isMarkdownType(crewType) {
@@ -594,13 +601,6 @@ export default {
       this.setSlideIndex(taskId, index);
     },
 
-    isTaskCompleted(task) {
-      return this.events.some(event => 
-        event.event_type === 'task_completed' && 
-        (event.job_id === task.jobId || event.id === task.id)
-      )
-    },
-
     // ========================================
     // ✅ 작업 제출 및 완료 처리
     // ========================================
@@ -611,7 +611,7 @@ export default {
       } catch {
         formValues = {};
       }
-      console.log('[AgentMonitor] submitTask', formValues);
+      console.log('[AgentMonitor] submitTask!!', formValues);
       this.EventBus.emit('form-values-updated', formValues);
     },
 
@@ -672,10 +672,12 @@ export default {
               // 이벤트 타입별 처리
               if (event_type === 'crew_completed') {
                 this.isLoading = false;
-              } else if (event_type === 'task_completed' && crew_type === 'action' && job_id?.includes('action_')) {
+              } else if (event_type === 'task_completed' && this.todoStatus?.agent_mode === 'COMPLETE') {
                 this.$nextTick(() => {
                   const task = this.tasks.find(t => t.jobId === job_id || t.id === id);
-                  if (task?.isCompleted) this.submitTask(task);
+                  if (task?.isCompleted && this.isSubmittableTask(task)) {
+                    this.submitTask(task);
+                  }
                 });
               }
             } else if (todoId !== taskId) {
