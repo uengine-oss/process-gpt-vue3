@@ -10,6 +10,14 @@
                 <div></div>
             </template>
             <template v-slot:custom-chat>
+                <!-- streaming text -->
+                <div v-if="streamingText" class="position-absolute bottom-0 end-0 ml-2">
+                    <div class="mx-2">
+                        <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100" style="max-width: 100% !important;">
+                            <pre class="text-body-1">{{ streamingText }}</pre>
+                        </v-sheet>
+                    </div>
+                </div>
                 <!-- feedback -->
                 <div v-if="useFeedback" class="position-absolute bottom-0 end-0 ml-2">
                     <span class="text-body-2">프로세스 실행이 정상인가요?</span>
@@ -79,6 +87,8 @@ export default {
         // mcp agent
         threadId: '',
 
+        subscription: null,
+        runningTaskId: null,
         streamingText: '',
 
         // feedback
@@ -113,31 +123,31 @@ export default {
             const workItem = worklist.find(item => item.task.status == 'SUBMITTED');
             this.streamingText = '';
             if (workItem) {
-                const taskId = workItem.taskId;
-                await backend.getTaskLog(taskId, async (task) => {
+                this.runningTaskId = workItem.taskId;;
+                this.subscription = await backend.getTaskLog(this.runningTaskId, async (task) => {
                     this.useFeedback = false;
-                    if (this.streamingText == '') {
+                    if (task.log) {
                         this.streamingText = task.log;
-                        this.messages.push({
-                            role: 'system',
-                            content: this.streamingText,
-                        });
-                    } else if (this.streamingText != '') {
-                        this.streamingText = task.log;
-                        const lastMessage = this.messages[this.messages.length - 1];
-                        if (lastMessage.content && lastMessage.content.length > 0) {
-                            lastMessage.content = this.streamingText;
-                        }
                     }
                     if (task.status == "DONE") {
+                        if (this.subscription) {
+                            // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);
+                            window.$supabase.removeChannel(this.subscription);
+                        }
                         this.$emit('updated');
                         this.EventBus.emit('instances-updated');
-                        await this.getMessages(this.chatRoomId);
+                        await this.loadData();
                         this.streamingText = '';
                         this.useFeedback = true;
                     }
                 });
             }
+        }
+    },
+    beforeUnmount() {
+        if (this.subscription) {
+            // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);
+            window.$supabase.removeChannel(this.subscription);
         }
     },
     watch: {
@@ -371,6 +381,23 @@ export default {
                     const workItem = workItems.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
                     this.lastTask = workItem;
                 }
+            }
+        },
+
+        async getMessages(chatRoomId) {
+            var me = this;
+            me.messages = []
+            let messages = await this.backend.getMessages(chatRoomId)
+            if (messages) {
+                let allMessages = messages.map(message => {
+                    let newMessage = message.messages;
+                    newMessage.thread_id = message.thread_id || null;
+                    return newMessage;
+                });
+                allMessages.sort((a, b) => {
+                    return new Date(a.timeStamp) - new Date(b.timeStamp);
+                });
+                me.messages = allMessages;
             }
         },
     }
