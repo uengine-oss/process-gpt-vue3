@@ -24,8 +24,15 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Type check and build
-        run: yarn build
+      - name: Type check
+        run: yarn typecheck
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Build application
+        run: yarn build:prod
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
 
       - name: Log in to GHCR
         run: |
