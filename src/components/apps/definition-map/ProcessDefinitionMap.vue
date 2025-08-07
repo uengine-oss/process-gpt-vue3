@@ -210,20 +210,27 @@
                 <v-card-text class="mt-2 alert-message">
                     {{ alertMessage }}
                 </v-card-text>
-                <v-card-actions>
+                    <v-row  class="ma-0 pa-4 pr-2 align-center">
                     <v-spacer></v-spacer>
+                    <v-btn @click="alertDialog = false"
+                        variant="elevated" 
+                        class="rounded-pill mr-2"
+                        density="compact"
+                        color="gray"
+                    >{{ (userName && userName === editUser) ? $t('processDefinitionMap.close') : $t('processDefinitionMap.cancel') }}
+                    </v-btn>
                     <div v-for="(btn, index) in actionButtons" :key="index">
                         <v-btn v-if="btn.show" 
-                            :color="btn.color" 
+                            @click="btn.action"
                             :class="btn.class + (index > 0 ? ' ml-2' : '')" 
-                            variant="flat" @click="btn.action" rounded>
-                            {{ btn.text }}
+                            :color="btn.color ? btn.color : 'gray'"
+                            variant="elevated" 
+                            class="rounded-pill"
+                            density="compact"
+                        >{{ btn.text }}
                         </v-btn>
                     </div>
-                    <v-btn color="error" rounded variant="flat" @click="alertDialog = false" class="ml-2">
-                        {{ (userName && userName === editUser) ? $t('processDefinitionMap.close') : $t('processDefinitionMap.cancel') }}
-                    </v-btn>
-                </v-card-actions>
+                </v-row>
             </v-card>
         </v-dialog>
 
@@ -313,30 +320,9 @@ export default {
         actionButtons() {
             return [
                 {
-                    show: this.alertType === 'checkout',
-                    text: this.$t('processDefinitionMap.confirm'),
-                    color: 'primary',
-                    class: 'cp-check-out',
-                    action: this.checkOut   // 잠금 해제
-                },
-                {
-                    show: this.alertType === 'checkin' && this.userName && this.userName === this.editUser,
-                    text: this.$t('processDefinitionMap.saveCheckIn'),
-                    color: 'success',
-                    class: 'cp-check-in',
-                    action: () => {
-                        this.checkIn();
-                        this.saveProcess();
-                        if (this.pendingRoute) {
-                            this.pendingRoute.next();
-                            this.pendingRoute = null;
-                        }
-                    }
-                },
-                {
+                    // 취소 후 잠금
                     show: this.alertType === 'checkin' && this.userName && this.userName === this.editUser,
                     text: this.$t('processDefinitionMap.cancelCheckIn'),
-                    color: 'primary',
                     class: 'cp-check-in',
                     action: async () => {
                         this.checkIn();
@@ -345,6 +331,28 @@ export default {
                             this.pendingRoute = null;
                         } else {
                             await this.getProcessMap();
+                        }
+                    }
+                },
+                {
+                    show: this.alertType === 'checkout',
+                    text: this.$t('processDefinitionMap.confirm'),
+                    color: 'primary',
+                    class: 'cp-check-out',
+                    action: this.checkOut   // 잠금 해제
+                },
+                {
+                    // 저장 후 잠금
+                    show: this.alertType === 'checkin' && this.userName && this.userName === this.editUser,
+                    text: this.$t('processDefinitionMap.saveCheckIn'),
+                    color: 'primary',
+                    class: 'cp-check-in',
+                    action: () => {
+                        this.checkIn();
+                        this.saveProcess();
+                        if (this.pendingRoute) {
+                            this.pendingRoute.next();
+                            this.pendingRoute = null;
                         }
                     }
                 },

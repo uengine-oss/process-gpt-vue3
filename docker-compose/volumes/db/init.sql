@@ -350,6 +350,26 @@ create table if not exists public.events (
   constraint events_pkey primary key (id)
 ) TABLESPACE pg_default;
 
+
+-- 1) 기존에 같은 이름의 ENUM 타입이 있으면 제거
+DROP TYPE IF EXISTS public.event_type_enum;
+
+-- 2) 새로운 ENUM 타입 생성
+CREATE TYPE public.event_type_enum AS ENUM (
+  'task_started',
+  'task_completed',
+  'tool_usage_started',
+  'tool_usage_finished',
+  'crew_completed',
+  'human_asked'
+);
+
+-- 3) events 테이블이 있으면 event_type 컬럼을 새 ENUM으로 변경
+ALTER TABLE IF EXISTS public.events
+  ALTER COLUMN event_type
+    TYPE public.event_type_enum
+    USING event_type::public.event_type_enum;
+
 -- Create indexes
 create index if not exists idx_processed_files_tenant_id on public.processed_files using btree (tenant_id) tablespace pg_default;
 create index if not exists idx_processed_files_file_id on public.processed_files using btree (file_id) tablespace pg_default;

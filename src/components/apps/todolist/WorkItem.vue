@@ -38,9 +38,6 @@
                                                     <v-img v-if="user.profile" :src="user.profile" width="32px" height="32px"
                                                         class="rounded-circle img-fluid"
                                                     />
-                                                    <v-avatar v-else size="32">
-                                                        <Icons :icon="'user-circle-bold'" :size="32" />
-                                                    </v-avatar>
                                                 </div>
                                                 <!-- <div class="ml-3">
                                                     <div class="d-flex align-center">
@@ -50,6 +47,9 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <v-avatar v-else size="32">
+                                        <Icons :icon="'user-circle-bold'" :size="32" />
+                                    </v-avatar>
                                 </div>
                             </template>
                         </v-tooltip>
@@ -987,6 +987,19 @@ export default {
                 "content": "생성해야할 답변 형식: " + JSON.stringify(formValues),
                 "role": "user"
             })
+            
+            // 현재 날짜 정보 추가
+            const currentDate = new Date().toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+            });
+            this.generator.previousMessages.push({
+                "content": "현재 날짜: " + currentDate + " (이 날짜를 기준으로 예시를 생성해주세요)",
+                "role": "user"
+            })
+            
             const userList = await backend.getUserList();
             this.generator.previousMessages.push({
                 "content": "유저 목록: " + JSON.stringify(userList),
@@ -1026,6 +1039,7 @@ export default {
                             }
                         }
                         if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
+                            console.log('[WorkItem] form-values-updated', jsonData['formValues']);
                             me.EventBus.emit('form-values-updated', jsonData['formValues']);
                             me.agentGenerationFinished(jsonData);
                         } else {
