@@ -9,7 +9,7 @@
             <div style="position: relative;">
                <!-- <div style="color: white;">{{ isAudioPlaying }}</div>  -->
                 <!-- WebGL 지원 여부에 따른 조건부 렌더링 webglSupported -> 3D // !webglSupported -> 2D -->
-                <ThreeWaveAnimation 
+                <!-- <ThreeWaveAnimation 
                     v-if="webglSupported"
                     :size="circleSize" 
                     :isActive="isLoading"
@@ -17,9 +17,8 @@
                     :audioBars="audioBars"
                     :volume="volume"
                     :threshold="threshold"
-                />
+                /> -->
                 <PaintWaveAnimation
-                    v-else
                     :size="circleSize" 
                     :isActive="isLoading"
                     :isAudioPlaying="isAudioPlaying"
@@ -31,7 +30,10 @@
             <AudioStream
                 @audio:start="startAudio"
                 @audio:stop="stopAudio"
+                @ai-audio:start="startAiAudio"
+                @ai-audio:stop="stopAiAudio"
                 @update:audioBars="updateAudioBars"
+                @user-speaking="onUserSpeaking"
                 :stopAudioStreamStatus="stopAudioStreamStatus"
                 :chatRoomId="chatRoomId"
                 :startAudioStream="isRecording"
@@ -50,7 +52,7 @@
                     </span>
                 </div>
             </div> -->
-            <div class="controls">
+            <div class="controls d-flex align-center">
                 <v-btn v-if="!isRecording && !isAudioPlaying && !isLoading" @click="toggleRecording()" icon density="comfortable">
                     <Icons :icon="'sharp-mic'"  />
                 </v-btn>
@@ -60,6 +62,12 @@
                 <v-btn v-else @click="stopAudioStream()" icon density="comfortable">
                     <Icons :icon="'stop'"  />
                 </v-btn>
+                <div style="color: white;">
+                    <div v-if="isPCResponding">음성답변 진행중</div>
+                    <div v-else-if="isUserSpeaking">음성 인식 진행중....</div>
+                    <div v-else-if="isRecording">음성 감지중</div>
+                    <div v-else></div>
+                </div>
             </div>
         </div>
     </v-dialog>
@@ -98,6 +106,7 @@ export default {
             volume: 0,
             threshold: 15,
             webglSupported: false, // WebGL 지원 여부
+            isUserSpeaking: false, // 사용자 음성 감지 상태
         };
     },
 
@@ -179,6 +188,17 @@ export default {
             this.isLoading = false;
             this.stopAudioStreamStatus = false;
             this.sendRecordingStatus = false;
+            this.isUserSpeaking = false; // 사용자 음성 감지 상태 초기화
+        },
+        startAiAudio() {
+            this.isPCResponding = true; // AI 답변 상태로 올바른 변수 사용
+            this.isLoading = false; // 로딩 상태 해제
+        },
+        stopAiAudio() {
+            this.isPCResponding = false; // AI 답변 종료
+        },
+        onUserSpeaking(isUserSpeaking) {
+            this.isUserSpeaking = isUserSpeaking;
         },
     },
     computed: {

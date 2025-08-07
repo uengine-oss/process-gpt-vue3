@@ -40,7 +40,7 @@
         <v-card flat>
             <v-card-text class="pa-4 pt-3">
                 <!-- 참고해야 할 이전 산출물이 있는 경우 -->
-                <ActivityInputData v-if="hasInputFields" :inputFields="inputFields" />
+                <ActivityInputData v-if="hasInputFields" :inputFields="inputFields" :workItem="workItem" />
 
                 <!-- 등록된 폼 정보가 없을 때 표시되는 메시지 -->
                 <div v-if="isInitialized && (!html || html === 'null') && Object.keys(formData).length === 0 && workItem.activity.checkpoints.length === 0" 

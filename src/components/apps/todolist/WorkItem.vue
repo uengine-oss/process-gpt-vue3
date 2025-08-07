@@ -197,7 +197,8 @@
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
-                                        <component :class="mode == 'ProcessGPT' && isMobile ? 'work-item-activity-box' : ''"
+                                        <component class="work-item-activity-box"
+                                            :class="mode == 'ProcessGPT' && isMobile ? 'work-item-activity-box-mobile' : ''"
                                             :is="'work-history-' + mode"
                                             :messages="messages"
                                             :isCompleted="isCompleted"
