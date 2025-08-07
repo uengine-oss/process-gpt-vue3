@@ -611,7 +611,7 @@ export default {
       } catch {
         formValues = {};
       }
-      console.log('[AgentMonitor] submitTask', formValues);
+      console.log('[AgentMonitor] submitTask!', formValues);
       this.EventBus.emit('form-values-updated', formValues);
     },
 
