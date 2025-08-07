@@ -245,6 +245,7 @@ create table if not exists public.todolist (
     feedback jsonb null,
     draft_status text null,
     updated_at timestamp with time zone default now(),
+    temp_feedback text null,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;

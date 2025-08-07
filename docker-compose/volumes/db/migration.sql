@@ -230,6 +230,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch text check (agen
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone default now();
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS temp_feedback text;
 
 -- chat_rooms table
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS id text;

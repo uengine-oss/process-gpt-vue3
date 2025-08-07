@@ -1151,6 +1151,11 @@ export default {
         },
         
         async analyzeDefinition(processDefinition) {
+            if (!processDefinition.activities) {
+                processDefinition = await this.convertXMLToJSON(this.bpmn);
+                processDefinition = this.checkDefinitionSync(processDefinition, this.processDefinition);
+            }
+
             return new Promise((resolve, reject) => {
                 if (processDefinition) {
                     backend.listDefinition('form_def', {

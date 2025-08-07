@@ -1395,7 +1395,7 @@ class ProcessGPTBackend implements Backend {
             if(!options) options = {}
             if(!options.status) return []
             if(options.status.includes('*')) options.status = ['NEW', 'RUNNING', 'DONE', 'PENDING', 'IN_PROGRESS']
-            let email = window.localStorage.getItem("email");
+            let uid = window.localStorage.getItem("uid");
             let filter = `status=in.(${options.status.join(',')})`
             
             return await storage._watch({
@@ -1406,9 +1406,9 @@ class ProcessGPTBackend implements Backend {
                 if(payload.eventType === 'DELETE') {
                     callback(payload);
                 } else {
-                    if(payload.new.participants.includes(email)) {
+                    if(payload.new.participants.includes(uid)) {
                         callback(payload);
-                    } else if(payload.old.participants.includes(email)) {
+                    } else if(payload.old.participants.includes(uid)) {
                         callback(payload);
                     }
                 }
