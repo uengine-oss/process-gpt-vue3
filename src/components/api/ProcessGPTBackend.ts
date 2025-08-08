@@ -44,10 +44,23 @@ class ProcessGPTBackend implements Backend {
         try {
             // 프로세스 정보, 폼 정보를 각각 불러와서 파일명을 포함해서 가공하기 위해서
             if (path == 'form_def') {
+                if (options && options.match) {
+                    options.match.tenant_id = window.$tenantName;
+                } else {
+                    options = {
+                        match: {
+                            tenant_id: window.$tenantName
+                        }
+                    }
+                }
                 let formDefs = await storage.list('form_def', options);
                 formDefs.map((item: any) => {
-                    item.path = `${item.id}`
-                    item.name = item.name || item.path 
+                    item.path = item.id
+                    item.name = item.name || item.path
+                    item.fieldsJson = item.fields_json || {}
+                    item.html = item.html || ''
+                    item.procDefId = item.proc_def_id || ''
+                    item.activityId = item.activity_id || ''
                 });
                 return formDefs
             } else {
@@ -546,6 +559,10 @@ class ProcessGPTBackend implements Backend {
     async getWorkList(options?: any) {
         try {
             const filter: any = { match: {} };
+            if (options && options.match) {
+                filter.match = options.match;
+            }
+
             if (options && options.status) {
                 filter.match.status = options.status;
             }
@@ -1344,7 +1361,7 @@ class ProcessGPTBackend implements Backend {
             if(!options) options = {}
             if(!status) return []
             if(status.includes('*')) status = ['NEW', 'RUNNING', 'COMPLETED']
-            let email = window.localStorage.getItem("email");
+            let uid = window.localStorage.getItem("uid");
             let filter = { 
                 inArray: {
                     column: 'status',
@@ -1352,7 +1369,7 @@ class ProcessGPTBackend implements Backend {
                 },
                 matchArray: {
                     column: 'participants',
-                    values: [email]
+                    values: [uid]
                 },
                 orderBy: 'updated_at',
                 sort: 'desc',
@@ -1378,7 +1395,7 @@ class ProcessGPTBackend implements Backend {
             if(!options) options = {}
             if(!options.status) return []
             if(options.status.includes('*')) options.status = ['NEW', 'RUNNING', 'DONE', 'PENDING', 'IN_PROGRESS']
-            let email = window.localStorage.getItem("email");
+            let uid = window.localStorage.getItem("uid");
             let filter = `status=in.(${options.status.join(',')})`
             
             return await storage._watch({
@@ -1389,9 +1406,9 @@ class ProcessGPTBackend implements Backend {
                 if(payload.eventType === 'DELETE') {
                     callback(payload);
                 } else {
-                    if(payload.new.participants.includes(email)) {
+                    if(payload.new.participants.includes(uid)) {
                         callback(payload);
-                    } else if(payload.old.participants.includes(email)) {
+                    } else if(payload.old.participants.includes(uid)) {
                         callback(payload);
                     }
                 }
@@ -3260,6 +3277,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getChatRoom(instId: string) {
+        try {
+            return await storage.getObject('chat_rooms', { match: { id: instId } });
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
     async getChatRoomList(path: string) {
         try {
             return await storage.list(path);
@@ -3532,8 +3557,158 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             throw new Error(error.message);
         }
-
     }
+
+    async getFieldValue(field: string, procDefId: string, instanceId: string) {
+        try {
+            if (!field || !procDefId || !instanceId) {
+                throw new Error('field, procDefId, instanceId is required');
+            }
+
+            let fieldValue = {};
+
+            const fieldInfo = field.split('.');
+            const formId = fieldInfo[0];
+            const fieldId = fieldInfo[1];
+            const activityId = formId.replace(`${procDefId}_`, '').replace('_form', '');
+
+            const workitem = await storage.getObject('todolist', {
+                match: {
+                    proc_inst_id: instanceId,
+                    activity_id: activityId
+                }
+            });
+
+            if (!workitem) {
+                throw new Error('workitem not found');
+            }
+
+            const output = workitem.output;
+            if (!output) {
+                throw new Error('output not found');
+            }
+
+            fieldValue[formId] = {
+                [fieldId]: output[formId][fieldId]
+            }
+            return fieldValue;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+    
+    groupFieldsByForm(fieldValues: any) {
+        const formGroups = {}
+        
+        for (const key in fieldValues) {
+            if (!fieldValues[key]) {
+                continue
+            }
+                
+            const form_id = key.split('.')[0]
+            if (!formGroups[form_id]) {
+                formGroups[form_id] = {}
+            }
+            
+            const field_id = key.split('.')[1]
+            
+            if (fieldValues[key] && form_id in fieldValues[key]) {
+                const actual_value = fieldValues[key][form_id][field_id]
+                if (actual_value) {
+                    formGroups[form_id][field_id] = actual_value
+                }
+            }
+        }
+        return formGroups;
+    }
+
+
+    async getFeedback(obj: any) {
+        try {
+            const response = await axios.post('/execution/get-feedback', obj);
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async setFeedback(task: any, feedback: any) {
+        try {
+            const taskId = task.taskId;
+            const workItem = await storage.getObject('todolist', {
+                match: {
+                    id: taskId
+                }
+            });
+            workItem.temp_feedback = feedback;
+            await storage.putObject('todolist', workItem);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async submitFeedback(feedback: string, taskId: string) {
+        try {
+            const workItem = await storage.getObject('todolist', {
+                match: {
+                    id: taskId
+                }
+            });
+            workItem.status = 'SUBMITTED';
+            workItem.temp_feedback = feedback;
+            console.log(workItem);
+            await storage.putObject('todolist', workItem);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getFeedbackDiff(taskId: string) {
+        try {
+            const response = await axios.post('/execution/get-feedback-diff', {
+                taskId: taskId
+            });
+            return response.data;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async setFeedbackDiff(diff: any, activityId: string, defId: string) {
+        try {
+            const process = await storage.getObject('proc_def', {
+                match: {
+                    id: defId,
+                    tenant_id: window.$tenantName
+                }
+            });
+            if (!process) {
+                throw new Error('process not found');
+            }
+            const definition = process.definition;
+            const activity = definition.activities.find((activity: any) => activity.id === activityId);
+            if (!activity) {
+                throw new Error('activity not found');
+            }
+            if (diff.inputData) {
+                activity.inputData = diff.inputData;
+            }
+            if (diff.checkpoints) {
+                activity.checkpoints = diff.checkpoints;
+            }
+            if (diff.description) {
+                activity.description = diff.description;
+            }
+            if (diff.instruction) {
+                activity.instruction = diff.instruction;
+            }
+            await storage.putObject('proc_def', process);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+    
+
 }
 
 export default ProcessGPTBackend;

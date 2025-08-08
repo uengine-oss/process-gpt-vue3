@@ -12,7 +12,8 @@
         "intermediate": "Intermediate save completed",
         "delete": "Deleted successfully.",
         "instanceDelete": "The instance has been deleted.",
-        "completed": "Completed"
+        "completed": "Completed",
+        "savedMarketplace": "Saved to marketplace."
     },
     "errorMsg": {
         "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational."
@@ -333,7 +334,7 @@
         "document": "Work Instruction",
         "camera": "Camera",
         "user": "User",
-        "chatRoom": "Chat Room",
+        "chatRoom": "Chat List",
         "viewDetails": "View Details",
         "executeProcess": "Execute Process"
     },
@@ -366,8 +367,8 @@
         "dataSource": "Data Source",
         "addDataSource": "Add Data Source",
         "editDataSource": "Edit Data Source",
-        "addConnectionInfo": "Add Connection Info",
-        "connectionInfo": "Connection Info",
+        "addConnectionInfo": "Add Data Source",
+        "connectionInfo": "Data Source",
         "key": "Key",
         "value": "Value",
         "description": "Description",
@@ -381,7 +382,8 @@
         "endpoint": "Endpoint",
         "headers": "Headers",
         "username": "Username",
-        "password": "Password"
+        "password": "Password",
+        "search": "Search User"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -925,6 +927,7 @@
         "workItem": "Work Item",
         "workHistory": "Work History",
         "ganttChart": "Gantt Chart",
+        "chat": "Chat",
         "kanbanBoard": "Kanban Board",
         "sendEvent": "Send {event} event",
         "output": "Output"

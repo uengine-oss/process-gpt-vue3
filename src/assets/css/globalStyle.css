@@ -6,15 +6,6 @@ hr {
     opacity: 1 !important;
 }
 
-/* BODY 또는 상위 컨테이너에 적용 */
-body {
-    margin-top: env(safe-area-inset-top);
-    margin-bottom: env(safe-area-inset-bottom);
-    box-sizing: border-box;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-  
-
 .dynamic-form .v-field--disabled {
     opacity: 1 !important;
     background-color: #eaeaea !important;
@@ -78,39 +69,15 @@ body {
     border-radius: 20px;
 }
 
-@keyframes border-dance {
-    0% {
-        background-position: 0 0, 0 100%, 0 0, 100% 0;
-    }
-    100% {
-        background-position: 30px 0, -30px 100%, 0 -30px, 100% 30px;
-    }
+/* AI thinking 효과 - 왼쪽에서 오른쪽으로 흐르는 색상 변화 */
+.thinking-wave-text {
+    display: inline-block;
 }
 
-@keyframes running-animation {
-    0% {
-        stroke-dashoffset: 80;
-        stroke: #68369A;
-    }
-    50% {
-        stroke-dashoffset: 40;
-        stroke: #68369A;
-    }
-    100% {
-        stroke-dashoffset: 0;
-        stroke: #68369A;
-    }
-}
-
-@keyframes line-running-animation {
-    0% {
-        stroke-dashoffset: 30;
-        stroke: #68369A;
-    }
-    100% {
-        stroke-dashoffset: -30;
-        stroke: #68369A;
-    }
+.thinking-char {
+    display: inline-block;
+    color: #333333;
+    animation: char-shimmer 2s ease-in-out infinite;
 }
 
 .completed.djs-connection .djs-visual > path {
@@ -377,20 +344,89 @@ body {
     transform: rotate(270deg);
 }
 
+.node-content {
+    padding: 0px 8px 8px 8px;
+    display: flex;
+    justify-content: center;
+    height: 100%;
+}
+
 .node-content-text-box {
-    margin-top: 15px; 
-    text-align: center; 
-    padding: 10px; 
+    padding: 4px; 
     border-radius: 10px;
     background-color: white;
     box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.2);
     border-top: 5px solid rgba(var(--v-theme-primary));
-    height: 80px;
+    height: 100%;
     width: 150px;
+}
+
+.node-content-title-box {
+    text-align: center;
+    padding: 4px;
+    height: calc(100% - 30px);
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
+    overflow: hidden;
+}
+
+.node-content-title-box > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.3;
+    margin: 1px 0;
+    max-width: 100%;
+}
+
+.node-text-hover {
+    cursor: help;
+    transition: opacity 0.2s ease;
+}
+
+.node-text-hover:hover {
+    opacity: 0.8;
+}
+
+.node-info-tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    max-width: 250px;
+    min-width: 150px;
+    animation: fadeIn 0.2s ease-in;
+    pointer-events: auto;
+}
+
+.node-info-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+.node-info-content div {
+    margin: 3px 0;
+    line-height: 1.4;
+}
+
+.node-info-content strong {
+    color: #FFF;
+    margin-right: 5px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .list-page-completed-box {
@@ -399,10 +435,9 @@ body {
 }
 
 .node-content-img {
-    width: 40px;
-    height: 40px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    position:absolute;
     top:0px;
     background-color: #E0E0E0;
 }
@@ -462,26 +497,31 @@ body {
 .work-itme-current-component .v-checkbox .v-input__details {
     display: none;
 }
-.work-itme-current-component .v-checkbox {
-    height: 40px;
+
+.form-layout-card-contents .v-checkbox {
+    min-height: 40px;
+    border-radius: 10px;
+    border: solid 1px rgba(0,0,0,0.2) !important;
+    margin-bottom: 4px;
 }
+
 .work-itme-current-component .v-checkbox label {
     opacity: 0.6 !important;
 }
 .work-itme-current-component .form-checkbox-label {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 500;
 }
 .work-itme-current-component .form-radio-field .v-radio-group {
     margin-top: 8px;
 }
 .work-itme-current-component .form-radio-field .form-radio-label {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 500;
 }
 
 .work-itme-current-component .form-label {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 500;
 }
 
@@ -531,31 +571,38 @@ body {
 }
 
 .node-content-btn-box {
-    position: absolute;
-    right: 0px;
-    top: 5px;
     display: flex;
     flex-direction: row;
     align-items: center;
 }
 
 .node-content-btn {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
     margin-right: 2px;
-    border-radius: 4px;
-    background-color: #FFFFFF;
-    box-shadow: 0 2px 4px 0 rgba(60, 60, 60, 0.10), 0 0.5px 1.5px 0 rgba(60, 60, 60, 0.10);
+    border-radius: 50%;
+    background-color: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    transition:  background-color 0.2s;
+    padding: 8px !important;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: box-shadow 0.2s, background-color 0.2s;
-    padding: 4px !important;
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
 }
+
 .node-content-btn:hover {
-    background-color: #F5F5F5;
-    box-shadow: 0 4px 8px 0 rgba(60, 60, 60, 0.15);
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.node-content-icon {
+    width: 10px;
+    height: 10px;
+    object-fit: contain;
+    filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(100%);
 }
 
 
@@ -628,7 +675,11 @@ body {
     font-size: 12px;
     width: 96px;
 }
-
+.todo-task-unfold-btn,
+.todo-task-fold-btn {
+    cursor: pointer;
+    display: none !important;
+}
 /* 선택된 배경색을 나타내는 클래스 - 영어로 'choice'로 변경 */
 .choice-background-color {
     background-color: rgb(var(--v-theme-primary)) !important;
@@ -645,8 +696,17 @@ body {
     position: relative;
 }
 
-.work-item-activity-box .chat-view-box {
+.work-item-activity-box-mobile .chat-view-box {
     height: calc(100vh - 310px) !important
+}
+
+.instance-card-tab-4 .chat-message-bubble,
+.work-item-activity-box .chat-message-bubble {
+  position: relative;
+  max-width: 92% !important;
+  min-width: 92% !important;
+  margin-bottom: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
 }
 
 .process-consulting-ai-first-screen .chat-view-box-col {
@@ -658,6 +718,14 @@ body {
     flex: 1 1 auto;
     overflow-y: auto;
     min-height: 0; /* 중요! 안 주면 flexbox에서 스크롤 안 생기는 경우 있음 */
+}
+
+.app-base-card-is-mobile-height {
+    max-height: calc(100vh - 110px);
+}
+
+.app-base-card-is-pc-height {
+    max-height: calc(100vh - 246px);
 }
 
 .mobile-left-menu {
@@ -683,25 +751,6 @@ body {
     flex-direction: column !important;
     height: 100% !important;
 }
-.work-item-form-btn-box {
-    position: absolute;
-    z-index: 9999;
-}
-
-.work-item-form-btn-box-pc {
-    position: absolute;
-    z-index: 9999;
-    top: 70px;
-    right: 36px;
-}
-
-.work-item-form-btn-box-mobile {
-    position: absolute;
-    z-index: 9999;
-    top: 86px;
-    right: 20px;
-    background: white;
-}
 
 .feedback-form .form-definition-simulation-chat-box {
     height: calc(100vh - 300px);
@@ -726,6 +775,14 @@ body {
     flex: 1 1 auto;
     overflow: hidden;
 }
+
+.chat-message-bubble {
+  position: relative;
+  max-width: 70%;
+  margin-bottom: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
 /* 헤더 영역 */
 .chat-info-header {
     flex: 0 0 auto;
@@ -734,6 +791,11 @@ body {
 /* 중간 텍스트 박스영역 */
 .chat-view-box {
     flex: 1 1 auto;
+}
+
+.instance-card-Process-instance-running-box .chat-message-bubble {
+    max-width: 100% !important;
+    width: 100% !important;
 }
 
 
@@ -745,7 +807,7 @@ body {
 /* 채팅 레이아웃 관련 UI 끝  */
 
 .instance-running-bpmn-viewer {
-    height: calc(100vh - 500px) !important;
+    height: calc(100vh - 210px) !important;
 }
 
 .instance-card-Process-instance-running-box {
@@ -759,7 +821,7 @@ body {
 }
 
 .instance-card-kanban-board .todo-list-card-box {
-    height: calc(100vh - 360px) !important;
+    height: calc(100vh - 360px);
 }
 
 .form-work-item-delegate-task-form-dialog-pc {
@@ -846,10 +908,6 @@ body {
     overflow: auto;
 }
 
-.work-item-current-component-box .form-layout-card-contents {
-    padding-top: 32px;
-}
-
 
 /* ... 로딩 애니메이션 */
 .loading-dots span {
@@ -877,6 +935,20 @@ body {
 .loading-dots span:nth-child(5) {
     animation-delay: 0.8s;
 }
+.instance-card-tab-4 .chat-view-box {
+    max-height: calc(100vh - 250px);
+}
+
+.instance-card-tab-5 .chat-view-box {
+}
+
+.instance-card-process-box {
+    height: 73vh;
+}
+
+.node-info-btn {
+    display: none !important;
+}
 
 @keyframes loading-dot {
     0% {
@@ -897,8 +969,49 @@ body {
     }
 }
 
-.instance-card-tab-4 .chat-view-box {
-    max-height: calc(100vh - 250px);
+
+@keyframes border-dance {
+    0% {
+        background-position: 0 0, 0 100%, 0 0, 100% 0;
+    }
+    100% {
+        background-position: 30px 0, -30px 100%, 0 -30px, 100% 30px;
+    }
+}
+
+@keyframes running-animation {
+    0% {
+        stroke-dashoffset: 80;
+        stroke: #68369A;
+    }
+    50% {
+        stroke-dashoffset: 40;
+        stroke: #68369A;
+    }
+    100% {
+        stroke-dashoffset: 0;
+        stroke: #68369A;
+    }
+}
+
+@keyframes line-running-animation {
+    0% {
+        stroke-dashoffset: 30;
+        stroke: #68369A;
+    }
+    100% {
+        stroke-dashoffset: -30;
+        stroke: #68369A;
+    }
+}
+
+@keyframes char-shimmer {
+    0%, 70%, 100% {
+        color: #333333;
+    }
+    15%, 35% {
+        color: #bababa;
+    }
 }
 @media only screen and (max-width: 1450px) {
     .vue-bpmn-diagram-container .djs-palette {
@@ -921,24 +1034,72 @@ body {
 }
 
 @media only screen and (max-width: 768px) {
+    .kanban-column {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    .todo-task-unfold-btn,
+    .todo-task-fold-btn {
+        display: block !important;
+    }
+
+    #apexTreeWrapper > svg {
+        height: 96% !important;
+        width: 100% !important;
+    }
+
+    .node-info-btn {
+        display: flex !important;
+    }
+
+    .process-consulting-ai-third-screen {
+        height: calc(100vh - 110px);
+    }
+
+    .instance-card-process-box {
+        height: calc(100vh - 110px);
+    }
+
+    .work-itme-current-component .v-checkbox {
+        border: none !important;
+    }
+
+    .form-layout-card-contents-mobile {
+        .row {
+            flex-direction: column !important;
+        }
+        
+        [class*="col-"] {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            max-width: 100% !important;
+            margin-bottom: 1rem;
+        }
+        
+        /* 여러 개의 컬럼이 있을 때만 border-bottom 적용 */
+        [class*="col-"]:not(:only-child):not(:last-child) {
+            border-bottom: solid 1px rgba(0, 0, 0, 0.2);
+        }
+    }
+
     .instance-running-bpmn-viewer {
         height: calc(100vh - 260px) !important;
     }
 
     .instance-card-Process-instance-running-box {
-        height: calc(100vh - 100px) !important;
+        height: calc(100vh - 70px) !important;
         overflow-y: auto;
     }
 
     .instance-card-tab-4 .chat-view-box {
-        max-height: calc(100vh - 160px);
+        max-height: calc(100vh - 110px);
     }
     .todo-list-card-box {
         padding-right: 40px !important;
     }
     .todo-list-card-box {
         max-height: calc(-216px + 100vh) !important;
-        min-height: calc(-556px + 100vh) !important;
         height: 100% !important;
         overflow: auto;
     }
@@ -956,21 +1117,12 @@ body {
         height: 100vh;
     }
 
-    .chat-info-view-wrapper-chats
-    .chat-info-message-input-box {
-        padding-bottom: 60px;
-    } 
-
     .leftSidebar {
         width: 300px !important;
     }
 
     .instance-card-kanban-board-box {
         height: 100%;
-    }
-
-    .instance-card-kanban-board .todo-list-card-box {
-        height: 100vh !important;
     }
 
     .isMobile-add-todo-dialog-box {
@@ -983,7 +1135,7 @@ body {
     }
     .mobile-menu-nav {
         top:0px !important;
-        height: calc(100% - 60px) !important;
+        height: calc(100% - 90px) !important;
         border-radius: 10px !important;
         width: 100vw !important;
     }

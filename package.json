@@ -4,7 +4,7 @@
     "version": "1.4.0",
     "scripts": {
         "dev": "vite --host",
-        "build": "vue-tsc --noEmit && vite build",
+        "build": "NODE_OPTIONS=\"--max-old-space-size=4096\" vue-tsc --noEmit && vite build",
         "preview": "vite preview --port 5050",
         "typecheck": "vue-tsc --noEmit",
         "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
@@ -49,8 +49,8 @@
         "@tiptap/pm": "^2.12.0",
         "@tiptap/starter-kit": "^2.12.0",
         "@tiptap/vue-3": "^2.12.0",
-        "tiptap-markdown": "^0.8.10",
         "@types/aos": "^3.0.4",
+        "@types/three": "^0.178.1",
         "@vue-js-cron/core": "^5.3.1",
         "@vueup/vue-quill": "^1.2.0",
         "@vueuse/core": "^8.9.4",
@@ -72,6 +72,7 @@
         "deep-diff": "^1.0.2",
         "dhtmlx-gantt": "^9.0.10",
         "diff-match-patch": "^1.0.5",
+        "docx": "^8.0.0",
         "dom-to-image": "^2.6.0",
         "dotenv": "^16.4.5",
         "eslint-import-resolver-alias": "^1.1.2",
@@ -80,6 +81,7 @@
         "file-saver": "^2.0.5",
         "firebase": "^8.0.0",
         "gsap": "^3.12.5",
+        "hammerjs": "^2.0.8",
         "highlight.js": "^11.9.0",
         "html-to-image": "^1.11.13",
         "html2canvas-pro": "^1.5.8",
@@ -108,6 +110,8 @@
         "supabase": "^2.23.4",
         "svg2pdf.js": "^2.0.0",
         "svgmap": "2.10.1",
+        "three": "^0.178.0",
+        "tiptap-markdown": "^0.8.10",
         "turndown": "^7.1.2",
         "unplugin-vue-define-options": "^0.6.2",
         "update": "^0.7.4",
@@ -142,9 +146,7 @@
         "webfontloader": "^1.6.28",
         "xml2js": "^0.6.2",
         "yamljs": "^0.3.0",
-        "yup": "^0.32.11",
-        "docx": "^8.0.0",
-        "hammerjs": "^2.0.8"
+        "yup": "^0.32.11"
     },
     "devDependencies": {
         "@4tw/cypress-drag-drop": "^2.2.5",
@@ -168,7 +170,6 @@
         "@tiptap/pm": "^2.12.0",
         "@tiptap/starter-kit": "^2.12.0",
         "@tiptap/vue-3": "^2.12.0",
-        "tiptap-markdown": "^0.8.10",
         "@types/chance": "^1.1.3",
         "@types/keycloak-js": "^3.4.1",
         "@types/node": "^16.18.70",
@@ -181,6 +182,7 @@
         "@vueup/vue-quill": "^1.2.0",
         "cypress": "^13.7.0",
         "cypress-drag-drop": "^1.1.1",
+        "docx": "^8.0.0",
         "esbuild": "^0.17.5",
         "eslint": "^8.5.0",
         "eslint-config-airbnb-base": "^15.0.0",
@@ -188,6 +190,7 @@
         "eslint-plugin-promise": "^6.0.1",
         "eslint-plugin-sonarjs": "^0.14.0",
         "eslint-plugin-vue": "^8.2.0",
+        "hammerjs": "^2.0.8",
         "html-to-image": "^1.11.13",
         "jspdf": "^2.5.1",
         "marked": "^9.1.6",
@@ -203,6 +206,7 @@
         "stylelint-config-standard-scss": "^5.0.0",
         "stylelint-use-logical-spec": "^4.1.0",
         "svg2pdf.js": "^2.0.0",
+        "tiptap-markdown": "^0.8.10",
         "turndown": "^7.1.2",
         "typescript": "^5.6.3",
         "unplugin-auto-import": "^0.17.3",
@@ -214,9 +218,7 @@
         "vue-cli-plugin-vuetify": "2.5.5",
         "vue-tsc": "^2.1.10",
         "vue3-treeview": "^0.4.2",
-        "vuetify": "3.4.10",
-        "docx": "^8.0.0",
-        "hammerjs": "^2.0.8"
+        "vuetify": "3.4.10"
     },
     "packageManager": "yarn@1.22.18",
     "resolutions": {

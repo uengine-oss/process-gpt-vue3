@@ -49,6 +49,7 @@
                                 {{ $t('DelegateTask.noAssignee') }}
                             </div>
                             <div v-else>
+                                <!-- 현 담당자 표시 부분 -->
                                 <div v-for="user in assigneeUserInfo" :key="user.email">
                                     <div class="d-flex align-center">
                                         <div>

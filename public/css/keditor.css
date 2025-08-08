@@ -53,7 +53,8 @@ body.highlighted-container-content .keditor-container-content:before {
 
 /* 레이아웃을 끌어다 놓는 위치  */
 .keditor-content-area {
-  height: calc(100vh - 300px);
+  padding: 30px 16px 100px 50px;
+  height: 100%;
   width: auto;
   margin:8px 0px 0px 0px;
 }
@@ -324,6 +325,7 @@ body.highlighted-container-content .keditor-container-content:before {
    ================================================================================== */
 .keditor-container {
   position: relative;
+  margin-bottom: 20px;
 }
 .keditor-container:before {
   position: absolute;
@@ -485,7 +487,6 @@ body.highlighted-container-content .keditor-container-content:before {
 /* 화면정의 오른쪽 편집창에서 끌어다 넣는 영역 */
 .mashup-hover {
   position: relative;
-  top: -64px;
 }
 
 .keditor-ui .v-text-field .v-input__details {

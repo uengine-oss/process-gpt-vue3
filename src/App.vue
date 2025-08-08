@@ -1,5 +1,6 @@
 <template>
     <div>
+        <!-- 모든 내용 -->
         <v-progress-linear
             v-if="loading"
             style="position: absolute; z-index: 999"
@@ -22,7 +23,7 @@
                 <div v-if="snackbarMessageDetail && show" style="text-align: left;">{{ snackbarMessageDetail }}</div>
             </v-expand-transition>
             <template v-slot:actions>
-                <v-btn color="pink" variant="text" @click="snackbar = false">x</v-btn>
+                <v-btn variant="text" @click="snackbar = false">x</v-btn>
             </template>
         </v-snackbar>
         <!-- v-if="!loadScreen" -->
@@ -149,6 +150,11 @@ export default {
                 this.requestNotificationPermission();
             }
         }
+    },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
     },
     methods: {
         closeSnackbarOnEvent() {

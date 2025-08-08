@@ -7,7 +7,9 @@
                 <div class="chat-info-view-area">
                     <slot name="custom-chat-top"></slot>
                     <slot name="custom-title" v-if="!definitionMapOnlyInput">
-                        <div class="pa-4">
+                        <div v-if="name && name !== '' || chatInfo"
+                            class="pa-4"
+                        >
                             <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                                 <div>
                                     <h5 class="text-h5 mb-n1">{{ name }}</h5>
@@ -255,6 +257,10 @@
                                                         v-model="message.jsonContent"
                                                         :readonly="true"
                                                     ></DynamicForm>
+                                                </div>
+
+                                                <div v-else-if="message.contentType && message.contentType == 'json' && type == 'instances'">
+                                                    <ProcessWorkResult :message="message" />
                                                 </div>
 
                                                 <div v-else class="w-100 pb-3">
@@ -732,24 +738,10 @@
                                 <v-icon v-if="!isOpenedChatMenu">mdi-plus</v-icon>
                                 <v-icon v-else>mdi-close</v-icon>
                             </v-btn>
+                            <slot name="custom-input-tools"></slot>
                         </div>
                         
                         <div>
-                            <v-tooltip :text="$t('chat.headset')">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn @click="openChatMenu(); recordingModeChange()"
-                                        v-bind="props"
-                                        class="mr-1 text-medium-emphasis"
-                                        density="comfortable"
-                                        icon
-                                        variant="outlined"
-                                        size="small"
-                                        style="border-color: #e0e0e0 !important;"
-                                    >
-                                        <Icons :icon="'round-headset'" :size="16"  />
-                                    </v-btn>
-                                </template>
-                            </v-tooltip>
                             <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                                 class="mr-1 text-medium-emphasis"
                                 density="comfortable"
@@ -771,6 +763,21 @@
                                 <Icons :icon="'stop'" :size="'16'" />
                             </v-btn>
                             <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
+                            <v-tooltip :text="$t('chat.headset')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn @click="openChatMenu(); recordingModeChange()"
+                                        v-bind="props"
+                                        class="mr-1 text-medium-emphasis"
+                                        density="comfortable"
+                                        icon
+                                        variant="outlined"
+                                        size="small"
+                                        style="border-color: #e0e0e0 !important;"
+                                    >
+                                        <Icons :icon="'voice'" :size="16"  />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
 
                             <v-btn v-if="!isLoading"
                                 class="cp-send text-medium-emphasis"
@@ -934,22 +941,6 @@
                     </div>
                     
                     <div>
-                        <v-tooltip :text="$t('chat.headset')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="openChatMenu(); recordingModeChange()"
-                                    class="mr-1 text-medium-emphasis"
-                                    density="comfortable"
-                                    icon
-                                    variant="outlined"
-                                    size="small"
-                                    v-bind="props"
-                                    style="border-color: #e0e0e0 !important;"
-                                    :disabled="isGenerationFinished"
-                                >
-                                    <Icons :icon="'round-headset'" :size="'16'"  />
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
                         <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                             class="mr-1 text-medium-emphasis"
                             density="comfortable"
@@ -972,6 +963,22 @@
                         >
                             <Icons :icon="'stop'" :size="'16'" />
                         </v-btn>
+                        <v-tooltip :text="$t('chat.headset')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn @click="openChatMenu(); recordingModeChange()"
+                                    class="mr-1 text-medium-emphasis"
+                                    density="comfortable"
+                                    icon
+                                    variant="outlined"
+                                    size="small"
+                                    v-bind="props"
+                                    style="border-color: #e0e0e0 !important;"
+                                    :disabled="isGenerationFinished"
+                                >
+                                    <Icons :icon="'voice'" :size="'16'"  />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
                         <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
 
                         <v-btn v-if="!isLoading && !isGenerationFinished"
@@ -1050,6 +1057,7 @@ import Record from './Record.vue';
 import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ChatRoomNameGenerator from "@/components/ai/ChatRoomNameGenerator.js";
+import ProcessWorkResult from './ProcessWorkResult.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -1060,7 +1068,8 @@ export default {
         RetrievalBox,
         AgentsChat,
         Record,
-        DynamicForm
+        DynamicForm,
+        ProcessWorkResult
     },
     mixins: [
         ProgressAnimated,
@@ -2245,13 +2254,6 @@ pre {
 .chat-message-bubble-select-team-member {
   position: relative;
   max-width: 100%;
-  margin-bottom: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-}
-
-.chat-message-bubble {
-  position: relative;
-  max-width: 70%;
   margin-bottom: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
 }

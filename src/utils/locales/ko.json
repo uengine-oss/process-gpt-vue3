@@ -12,7 +12,8 @@
         "intermediate": "중간 저장 완료",
         "delete": "삭제되었습니다.",
         "instanceDelete": "인스턴스가 삭제되었습니다.",
-        "completed": "실행 완료"
+        "completed": "실행 완료",
+        "savedMarketplace": "마켓플레이스에 등록되었습니다."
     },
     "errorMsg": {
         "isBackendConnected" : "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요."
@@ -334,7 +335,7 @@
         "document": "업무 지시",
         "camera": "카메라",
         "user": "유저",
-        "chatRoom": "대화방",
+        "chatRoom": "대화 목록",
         "viewDetails": "상세보기",
         "executeProcess": "프로세스 실행"
     },
@@ -367,8 +368,8 @@
         "dataSource": "데이터소스",
         "addDataSource": "데이터소스 추가",
         "editDataSource": "데이터소스 수정",
-        "addConnectionInfo": "접속 정보 추가",
-        "connectionInfo": "접속 정보",
+        "addConnectionInfo": "데이터 소스 추가",
+        "connectionInfo": "데이터 소스",
         "key": "키",
         "value": "값",
         "description": "설명",
@@ -382,7 +383,8 @@
         "endpoint": "엔드포인트",
         "headers": "헤더",
         "username": "유저명",
-        "password": "비밀번호"
+        "password": "비밀번호",
+        "search": "사용자 검색"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -926,6 +928,7 @@
         "workItem": "워크 아이템",
         "workHistory": "액티비티",
         "ganttChart": "간트 차트",
+        "chat": "채팅",
         "kanbanBoard": "칸반보드",
         "sendEvent": "{event} 이벤트 보내기",
         "output": "산출물"

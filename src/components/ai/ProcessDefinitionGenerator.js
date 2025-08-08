@@ -111,6 +111,9 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
       11. Each element (event, activity, gateway) must be immediately followed by the sequence that connects it to the next element.
       12. If a non-sequence element includes a source, you must define a corresponding sequence element that connects from the source.
       13. If there is an external customer or participant in the role, the endpoint of that role is fixed as 'external_customer'.
+      14. All activities must include at least one outputData entry. The outputData array must not be empty or omitted.
+
+
 
     결과는 다음 JSON 형식을 따라야 합니다:
     \`\`\`
@@ -284,7 +287,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
           # 액티비티
               {
                 "elementType": "Activity",
-                "id": "activity_id(영문)",
+                "id": "activity_id(영문, lowercase)",
                 "name": "액티비티명(한글)",
                 "type": "UserActivity" | "EmailActivity",
                 "source": "이전_컴포넌트_id",

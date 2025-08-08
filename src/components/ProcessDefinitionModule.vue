@@ -3,6 +3,7 @@ import xml2js from 'xml2js';
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import FormGenerator from './ai/FormDesignGenerator';
+import DefinitionAnalyzer from './ai/DefinitionAnalyzer';
 import FormDefinitionModule from './FormDefinitionModule.vue';
 import BPMNXmlGenerator from './BPMNXmlGenerator.vue';
 import partialParse from "partial-json-parser";
@@ -28,6 +29,8 @@ export default {
         userInputs: null,
         datasourceURL: null,
         datasourceSchema: null,
+        definitionAnalyzer: null,
+        analysisResult: null,
     }),
     computed: {
         lastPath() {
@@ -130,7 +133,7 @@ export default {
         },
         async generateForm(generateMsg, activity) {
             var me = this;
-            return new Promise((resolve, reject) => {
+            return new Promise(async (resolve, reject) => {
                 let retryCount = 0;
                 let formHtml = null;
                 const formGenerator = new FormGenerator(me, {
@@ -347,6 +350,13 @@ export default {
             // Version Dialog
             this.versionDialog = open;
             this.loading = false
+            try {
+                if (open) {
+                    this.analyzeDefinition(this.processDefinition);
+                }
+            } catch(e) {
+                console.log(e)
+            }
         },
         saveDefinition(info) {
             var me = this;
@@ -744,7 +754,7 @@ export default {
                             try {
                                 let task = {};
                                 task.name = activity.name;
-                                task.id = activity.id;
+                                task.id = activity.id.toLowerCase();
                                 task.type = activity.type;
                                 task.description = `${activity.name} description`;
                                 task.instruction = `${activity.name} instruction`;
@@ -1058,13 +1068,6 @@ export default {
                                             }
                                         }
                                         if (formHtml) {
-                                            let fieldData = me.extractFields(formHtml);
-                                            fieldData = fieldData.map((field) => ({
-                                                name: field.key,
-                                                description: field.text,
-                                                type: field.type
-                                            }));
-                                            me.processDefinition.data = me.processDefinition.data.concat(fieldData);
                                             const options = {
                                                 type: 'form',
                                                 proc_def_id: info.proc_def_id,
@@ -1086,22 +1089,6 @@ export default {
                             me.processDefinition.processDefinitionName = info.name;
                         } else if (!me.processDefinition.processDefinitionName && !info.name) {
                             me.processDefinition.processDefinitionName = prompt('please give a name for the process definition');
-                        }
-
-                        if (info.definition.data) {
-                            if (info.definition.data.length == 0) {
-                                info.definition.data = [{
-                                    "name": "customer_email",
-                                    "type": "text",
-                                    "description": "고객 이메일"
-                                }]
-                            } else {
-                                info.definition.data.push({
-                                    "name": "customer_email",
-                                    "type": "text",
-                                    "description": "고객 이메일"
-                                });
-                            }
                         }
 
                         me.projectName = me.processDefinition.processDefinitionName;
@@ -1153,13 +1140,103 @@ export default {
                             newActivity.instruction = oldActivity.instruction;
                             newActivity.checkpoints = oldActivity.checkpoints;
                             newActivity.properties = oldActivity.properties;
+                            newActivity.inputData = oldActivity.inputData;
+                            newActivity.outputData = oldActivity.outputData;
                         }
                         return newActivity;
                     });
                 }
                 return newVal;
             }
+        },
+        
+        async analyzeDefinition(processDefinition) {
+            if (!processDefinition.activities) {
+                processDefinition = await this.convertXMLToJSON(this.bpmn);
+                processDefinition = this.checkDefinitionSync(processDefinition, this.processDefinition);
+            }
+
+            return new Promise((resolve, reject) => {
+                if (processDefinition) {
+                    backend.listDefinition('form_def', {
+                        match: {
+                            proc_def_id: processDefinition.processDefinitionId
+                        }
+                    }).then(formList => {
+                        const formFields = formList.map((item) => {
+                            const obj = {};
+                            obj[item.id] = item.fieldsJson;
+                            return obj;
+                        });
+
+                        const definitionAnalyzerClient = {
+                            onGenerationFinished: (response) => {
+                                let jsonData = this.extractJSON(response);
+                                if (jsonData && jsonData.includes('{')){
+                                    try {
+                                        jsonData = JSON.parse(jsonData);
+                                    } catch(e) {
+                                        try {
+                                            jsonData = partialParse(jsonData)
+                                        } catch(e) {
+                                            console.log(e)
+                                        }
+                                    }
+                                } else {
+                                    jsonData = null
+                                }
+
+                                if (jsonData && jsonData.activities && jsonData.activities.length > 0) {
+                                    const activities = jsonData.activities;
+                                    activities.forEach(item => {
+                                        const activityId = item.activity_id;
+                                        const activity = processDefinition.activities.find(activity => activity.id === activityId);
+                                        if (activity) {
+                                            activity.inputData = item.input_fields;
+                                        }
+                                    });
+                                }
+
+                                if (jsonData && jsonData.gateways && jsonData.gateways.length > 0) {
+                                    const gateways = jsonData.gateways;
+                                    gateways.forEach(item => {
+                                        const gatewayId = item.gateway_id;
+                                        const gateway = processDefinition.gateways.find(gateway => gateway.id === gatewayId);
+                                        if (gateway) {
+                                            gateway.conditionData = item.condition_fields;
+                                        }
+                                    });
+                                }
+
+                                this.analysisResult = null;
+                                this.loading = false;
+                                resolve();
+                            },
+                            onModelCreated: (response) => {
+                                this.analysisResult = response;
+                            }
+                        }
+
+                        this.definitionAnalyzer = new DefinitionAnalyzer(definitionAnalyzerClient, {
+                            isStream: true,
+                            preferredLanguage: "Korean",
+                            processDefinition: processDefinition,
+                            formFields: formFields
+                        });
+
+                        this.analysisResult = "START";
+                        this.loading = true;
+                        this.definitionAnalyzer.generate();
+                    }).catch(error => {
+                        console.error('Form list retrieval failed:', error);
+                        this.analysisResult = null;
+                        reject(error);
+                    });
+                } else {
+                    resolve();
+                }
+            });
         }
-    }
+    },
 };
 </script>

@@ -1,3 +1,60 @@
+-- ===============================================
+-- INIT.SQL FILE WRITING GUIDE
+-- ===============================================
+-- 
+-- 이 파일은 데이터베이스 초기화를 위한 SQL 스크립트입니다.
+-- 새로운 데이터베이스 환경에서 처음 실행되는 파일입니다.
+-- 다른 개발자들이 안전하게 수정할 수 있도록 다음 가이드를 따라주세요.
+--
+-- 파일 역할:
+--    - init.sql: 새로운 테이블 생성 (CREATE TABLE)
+--    - migration.sql: 기존 테이블 구조 변경 (ALTER TABLE)
+--
+-- 1. 확장 기능 (Extensions):
+--    - 필요한 확장 기능을 최상단에 추가
+--    - CREATE EXTENSION IF NOT EXISTS 사용
+--    - vector, pgcrypto 등 필수 확장 기능 포함
+--
+-- 2. 함수 정의:
+--    - 테이블 생성 전에 필요한 함수들을 먼저 정의
+--    - 테넌트별 정보가 필요한 경우 public.tenant_id() 함수 사용
+--    - CREATE OR REPLACE FUNCTION 사용
+--
+-- 3. 테이블 생성 규칙:
+--    - CREATE TABLE IF NOT EXISTS 사용
+--    - 모든 테이블에 적절한 제약조건 설정
+--    - Primary Key, Foreign Key 명시적 정의
+--    - 테넌트별 데이터는 tenant_id 컬럼 추가
+--
+-- 4. 인덱스 생성:
+--    - 테이블 생성 후 관련 인덱스 추가
+--    - CREATE INDEX IF NOT EXISTS 사용
+--    - 유니크 인덱스는 테넌트별로 설정
+--
+-- 5. 뷰 생성:
+--    - 복잡한 조인이나 자주 사용되는 쿼리는 뷰로 생성
+--    - CREATE OR REPLACE VIEW 사용
+--
+-- 6. 함수 및 트리거:
+--    - 비즈니스 로직 함수 정의
+--    - 트리거 함수와 트리거 생성
+--    - 보안 관련 함수 포함
+--
+-- 7. Row Level Security (RLS):
+--    - 모든 테이블에 RLS 활성화
+--    - 적절한 정책(Policy) 정의
+--    - 인증된 사용자와 관리자 권한 구분
+--
+-- 8. 실시간 구독 설정:
+--    - supabase_realtime publication에 테이블 추가
+--    - 실시간 업데이트가 필요한 테이블만 포함
+--
+-- 9. ENUM 타입:
+--     - 필요에 따라 상태값 등은 ENUM 타입으로 정의
+--     - 기존 데이터 마이그레이션 로직 포함
+--
+-- ===============================================
+
 -- Enable required extensions
 create extension if not exists vector;
 create extension if not exists pgcrypto;
@@ -161,6 +218,7 @@ create table if not exists public.bpm_proc_inst (
 create table if not exists public.todolist (
     id uuid not null,
     user_id text null,
+    username text null,
     proc_inst_id text null,
     proc_def_id text null,
     activity_id text null,
@@ -187,6 +245,7 @@ create table if not exists public.todolist (
     feedback jsonb null,
     draft_status text null,
     updated_at timestamp with time zone default now(),
+    temp_feedback text null,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -349,6 +408,26 @@ create table if not exists public.events (
   constraint events_pkey primary key (id)
 ) TABLESPACE pg_default;
 
+
+-- 1) 기존에 같은 이름의 ENUM 타입이 있으면 제거
+DROP TYPE IF EXISTS public.event_type_enum;
+
+-- 2) 새로운 ENUM 타입 생성
+CREATE TYPE public.event_type_enum AS ENUM (
+  'task_started',
+  'task_completed',
+  'tool_usage_started',
+  'tool_usage_finished',
+  'crew_completed',
+  'human_asked'
+);
+
+-- 3) events 테이블이 있으면 event_type 컬럼을 새 ENUM으로 변경
+ALTER TABLE IF EXISTS public.events
+  ALTER COLUMN event_type
+    TYPE public.event_type_enum
+    USING event_type::public.event_type_enum;
+
 -- Create indexes
 create index if not exists idx_processed_files_tenant_id on public.processed_files using btree (tenant_id) tablespace pg_default;
 create index if not exists idx_processed_files_file_id on public.processed_files using btree (file_id) tablespace pg_default;
@@ -455,8 +534,19 @@ CREATE OR REPLACE FUNCTION handle_todolist_change()
 RETURNS TRIGGER AS $$
 DECLARE
     v_proc_inst_name text;
+    should_notify boolean := false;
 BEGIN
-    IF (TG_OP = 'INSERT' AND NEW.status != 'SUBMITTED') THEN
+    -- INSERT: 새로운 todolist가 추가되고 상태가 'IN_PROGRESS'인 경우
+    IF (TG_OP = 'INSERT' AND NEW.status = 'IN_PROGRESS') THEN
+        should_notify := true;
+    END IF;
+    
+    -- UPDATE: 기존 todolist가 업데이트되고 상태가 'IN_PROGRESS'로 변경된 경우
+    IF (TG_OP = 'UPDATE' AND NEW.status = 'IN_PROGRESS' AND (OLD.status IS NULL OR OLD.status != 'IN_PROGRESS')) THEN
+        should_notify := true;
+    END IF;
+    
+    IF should_notify THEN
         SELECT proc_inst_name, tenant_id INTO v_proc_inst_name 
         FROM bpm_proc_inst 
         WHERE proc_inst_id = NEW.proc_inst_id;
@@ -471,7 +561,7 @@ BEGIN
                 ELSE 'workitem'
             END,
             COALESCE(v_proc_inst_name, NEW.activity_name),
-            CASE WHEN NEW.status = 'DONE' THEN true ELSE false END,
+            false, -- in_progress 상태이므로 항상 미체크
             now(),
             NEW.tenant_id,
             '/todolist/' || NEW.id
@@ -720,7 +810,7 @@ CREATE TRIGGER on_first_tenant_inserted
     EXECUTE PROCEDURE public.update_tenant_id_for_first_tenant();
 
 CREATE TRIGGER todolist_change_trigger
-    AFTER INSERT ON todolist
+    AFTER INSERT OR UPDATE ON todolist
     FOR EACH ROW
     EXECUTE FUNCTION handle_todolist_change();
 
@@ -1243,3 +1333,137 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_data_source_key_version_per_tenant
 
   -- RLS 켜기
 ALTER TABLE data_source ENABLE ROW LEVEL SECURITY;
+
+
+create or replace function register_cron_intermidiated(
+  p_job_name text,
+  p_cron_expr text,
+  p_input jsonb
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_job_name text;
+begin
+  -- 기존 job이 있으면 unschedule
+  select jobname into v_job_name
+  from cron.job
+  where jobname = p_job_name;
+
+  if v_job_name is not null then
+    perform cron.unschedule(v_job_name);
+  end if;
+
+  -- 새로 schedule
+  perform cron.schedule(
+    p_job_name,
+    p_cron_expr,
+    format(
+      E'select public.update_todolist_status(''%s'', ''%s'');',
+      p_input->>'proc_inst_id',
+      p_input->>'activity_id'
+    )
+  );
+end;
+$$;
+
+create or replace function update_todolist_status(
+  p_proc_inst_id text,
+  p_activity_id text
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_job_name text := p_proc_inst_id || '__' || p_activity_id;
+begin
+  -- 상태를 SUBMITTED로 업데이트
+  update todolist
+  set status = 'SUBMITTED',
+      updated_at = now()
+  where proc_inst_id = p_proc_inst_id
+    and activity_id = p_activity_id;
+
+  -- 스케줄에서 job 제거
+  perform cron.unschedule(v_job_name);
+end;
+$$;
+
+
+create or replace function exec_sql(query text)
+returns json
+language plpgsql
+as $$
+declare
+  result json;
+begin
+  execute query into result;
+  return result;
+end;
+$$;
+
+
+grant usage on schema cron to service_role;
+grant execute on all functions in schema cron to service_role;
+
+
+
+-- enum 타입 추가
+-- 프로세스 인스턴스 상태 enum
+CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
+-- 할일 항목 상태 enum
+CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE');
+-- 에이전트 모드 enum
+CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
+
+-- bpm_proc_inst 테이블 마이그레이션 (status)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.bpm_proc_inst ADD COLUMN status_new process_status;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.bpm_proc_inst 
+SET status_new = CASE 
+    WHEN status = 'NEW' THEN 'NEW'::process_status
+    WHEN status = 'RUNNING' THEN 'RUNNING'::process_status
+    WHEN status = 'COMPLETED' THEN 'COMPLETED'::process_status
+    ELSE 'NEW'::process_status  -- 기본값 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.bpm_proc_inst DROP COLUMN status;
+ALTER TABLE public.bpm_proc_inst RENAME COLUMN status_new TO status;
+
+-- todolist 테이블 마이그레이션 (status)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.todolist ADD COLUMN status_new todo_status;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.todolist 
+SET status_new = CASE 
+    WHEN status = 'TODO' THEN 'TODO'::todo_status
+    WHEN status = 'IN_PROGRESS' THEN 'IN_PROGRESS'::todo_status
+    WHEN status = 'DONE' THEN 'DONE'::todo_status
+    WHEN status = 'SUBMITTED' THEN 'SUBMITTED'::todo_status
+    WHEN status = 'PENDING' THEN 'PENDING'::todo_status
+    ELSE 'TODO'::todo_status  -- 기본값 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.todolist DROP COLUMN status;
+ALTER TABLE public.todolist RENAME COLUMN status_new TO status;
+
+-- todolist 테이블 마이그레이션 (agent_mode)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.todolist ADD COLUMN agent_mode_new agent_mode;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.todolist 
+SET agent_mode_new = CASE 
+    WHEN agent_mode = 'NONE' THEN 'NONE'::agent_mode
+    WHEN agent_mode = 'A2A' THEN 'A2A'::agent_mode
+    WHEN agent_mode = 'DRAFT' THEN 'DRAFT'::agent_mode
+    WHEN agent_mode = 'COMPLETE' THEN 'COMPLETE'::agent_mode
+    ELSE 'NONE'::agent_mode  -- 기본값 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.todolist DROP COLUMN agent_mode;
+ALTER TABLE public.todolist RENAME COLUMN agent_mode_new TO agent_mode;
+
+
+

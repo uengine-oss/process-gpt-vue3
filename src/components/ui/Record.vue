@@ -1,23 +1,39 @@
 <template>
     <v-dialog v-model="recordingMode" fullscreen>
-        <div class="container" :style="containerStyle">
+        <div class="record-container">
             <v-btn class="record-close-btn" icon density="comfortable" @click="closeRecording"
                 :style="!$globalState.state.isRightZoomed ? '' : 'top:10px; z-index: 9999;'"
             >
                 <v-icon>mdi-close</v-icon>
             </v-btn>
-            <PaintWaveAnimation 
-                :size="circleSize" 
-                :isActive="isLoading"
-                :isAudioPlaying="isAudioPlaying"
-                :audioBars="audioBars"
-                :volume="volume"
-                :threshold="threshold"
-            />
+            <div style="position: relative;">
+               <!-- <div style="color: white;">{{ isAudioPlaying }}</div>  -->
+                <!-- WebGL 지원 여부에 따른 조건부 렌더링 webglSupported -> 3D // !webglSupported -> 2D -->
+                <!-- <ThreeWaveAnimation 
+                    v-if="webglSupported"
+                    :size="circleSize" 
+                    :isActive="isLoading"
+                    :isAudioPlaying="isAudioPlaying"
+                    :audioBars="audioBars"
+                    :volume="volume"
+                    :threshold="threshold"
+                /> -->
+                <PaintWaveAnimation
+                    :size="circleSize" 
+                    :isActive="isLoading"
+                    :isAudioPlaying="isAudioPlaying"
+                    :audioBars="audioBars"
+                    :volume="volume"
+                    :threshold="threshold"
+                />
+            </div>
             <AudioStream
                 @audio:start="startAudio"
                 @audio:stop="stopAudio"
+                @ai-audio:start="startAiAudio"
+                @ai-audio:stop="stopAiAudio"
                 @update:audioBars="updateAudioBars"
+                @user-speaking="onUserSpeaking"
                 :stopAudioStreamStatus="stopAudioStreamStatus"
                 :chatRoomId="chatRoomId"
                 :startAudioStream="isRecording"
@@ -36,7 +52,7 @@
                     </span>
                 </div>
             </div> -->
-            <div class="controls">
+            <div class="controls d-flex align-center">
                 <v-btn v-if="!isRecording && !isAudioPlaying && !isLoading" @click="toggleRecording()" icon density="comfortable">
                     <Icons :icon="'sharp-mic'"  />
                 </v-btn>
@@ -46,6 +62,12 @@
                 <v-btn v-else @click="stopAudioStream()" icon density="comfortable">
                     <Icons :icon="'stop'"  />
                 </v-btn>
+                <div style="color: white;">
+                    <div v-if="isPCResponding">음성답변 진행중</div>
+                    <div v-else-if="isUserSpeaking">음성 인식 진행중....</div>
+                    <div v-else-if="isRecording">음성 감지중</div>
+                    <div v-else></div>
+                </div>
             </div>
         </div>
     </v-dialog>
@@ -55,13 +77,16 @@
 import { Icon } from '@iconify/vue';
 import AudioStream from './AudioStream.vue';
 import { getPrimary } from '@/utils/UpdateColors';
+// 기존 오디오 스트림 애니메이션(PaintWaveAnimation)
 import PaintWaveAnimation from './PaintWaveAnimation.vue';
+import ThreeWaveAnimation from './ThreeWaveAnimation.vue';
 
 export default {
     components: {
         Icon,
         AudioStream,
         PaintWaveAnimation,
+        ThreeWaveAnimation,
     },
     props: {
         recordingMode: Boolean,
@@ -72,6 +97,7 @@ export default {
             isRecording: false,
             isLoading: false,
             isAudioPlaying: false,
+            isPCResponding: false, // PC 응답 상태 추가
             stopAudioStreamStatus: false,
             sendRecordingStatus: false,
             audioBars: [],
@@ -79,9 +105,49 @@ export default {
             canvasHeight: 100,
             volume: 0,
             threshold: 15,
+            webglSupported: false, // WebGL 지원 여부
+            isUserSpeaking: false, // 사용자 음성 감지 상태
         };
     },
+
+    mounted() {
+        this.checkWebGLSupport();
+    },
     methods: {
+        checkWebGLSupport() {
+            try {
+                const canvas = document.createElement('canvas');
+                let gl = canvas.getContext('webgl2');
+                let version = '';
+                
+                if (gl) {
+                    version = 'WebGL 2.0';
+                } else {
+                    gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                    if (gl) {
+                        version = 'WebGL 1.0';
+                    }
+                }
+                
+                if (gl) {
+                    // 추가 검증: 실제로 렌더링이 가능한지 확인
+                    const supported = gl.getParameter(gl.VERSION);
+                    
+                    // GPU 정보도 출력
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    if (debugInfo) {
+                        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                    }
+                    
+                    this.webglSupported = true;
+                } else {
+                    this.webglSupported = false;
+                }
+            } catch (e) {
+                this.webglSupported = false;
+            }
+        },
+        
         updateAudioBars(dataArray) {
             this.audioBars = dataArray;
             if (dataArray && dataArray.length > 0) {
@@ -122,16 +188,26 @@ export default {
             this.isLoading = false;
             this.stopAudioStreamStatus = false;
             this.sendRecordingStatus = false;
+            this.isUserSpeaking = false; // 사용자 음성 감지 상태 초기화
+        },
+        startAiAudio() {
+            this.isPCResponding = true; // AI 답변 상태로 올바른 변수 사용
+            this.isLoading = false; // 로딩 상태 해제
+        },
+        stopAiAudio() {
+            this.isPCResponding = false; // AI 답변 종료
+        },
+        onUserSpeaking(isUserSpeaking) {
+            this.isUserSpeaking = isUserSpeaking;
         },
     },
     computed: {
         circleSize() {
-            if (this.volume < this.threshold) return 250;
-            return 250 + ((this.volume - this.threshold) / (100 - this.threshold)) * 20;
+            if (this.volume < this.threshold) return 200;
+            return 200 + ((this.volume - this.threshold) / (100 - this.threshold)) * 20;
         },
         containerStyle() {
             return {
-                backgroundColor: getPrimary.value,
                 height: '100vh'
             };
         }
@@ -309,12 +385,16 @@ export default {
     right: 10px;
 }
 
-.container {
+.record-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     max-width: 100% !important;
+    background: black;
+    height: 100vh;
+    width: 100vw;
+    z-index: 999;
 }
 
 .circle {
@@ -356,19 +436,13 @@ export default {
     top: 50px !important;
     right: 30px;
   }
-  .container {
-    height: calc(100vh - 194px);
-  }
 }
 
-@media only screen and (max-width: 700px) {
+@media only screen and (max-width: 768px) {
   .record-close-btn {
     position: absolute;
     top: 10px !important;
     right:10px;
-  }
-  .container {
-    height: calc(100vh - 194px);
   }
 }
 

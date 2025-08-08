@@ -3,16 +3,26 @@ import { ref, computed, getCurrentInstance, watch, onMounted, onUnmounted, injec
 import { useDisplay } from 'vuetify';
 import { useRoute } from 'vue-router';
 
+const props = defineProps({
+    isInstanceChat: {
+        type: Boolean,
+        default: false
+    }
+});
+
 const { lgAndUp } = useDisplay();
 const sDrawer = ref(false);
 const route = useRoute();
 
 // 화면 너비가 1279px 이하인지 여부를 추적하는 반응형 참조
 const isWidthUnder1279 = ref(window.innerWidth <= 1279);
+// 모바일 여부 (768px 이하)를 추적하는 반응형 참조
+const isMobile = ref(window.innerWidth <= 768);
 
 // 화면 크기 변경 이벤트 핸들러
 function handleResize() {
-  isWidthUnder1279.value = window.innerWidth <= 1279;
+    isWidthUnder1279.value = window.innerWidth <= 1279;
+    isMobile.value = window.innerWidth <= 768;
 }
 
 onMounted(() => {
@@ -81,15 +91,38 @@ const menuName = computed(() => {
     }
     return proxy.$t('AppBaseCard.menu');
 });
+
+// 높이 클래스를 결정하는 계산된 속성
+const heightClass = computed(() => {
+    const path = route.path;
+    const isTargetPath = path === '/' || path.includes('instancelist');
+    
+    if (isTargetPath) {
+        return isMobile.value ? 'app-base-card-is-mobile-height' : 'app-base-card-is-pc-height';
+    }
+    return '';
+});
+
+// 메뉴 버튼 스타일을 결정하는 계산된 속성
+const menuButtonStyle = computed(() => {
+    const path = route.path;
+    const isTargetPath = path === '/' || path.includes('instancelist');
+    const shouldHideForMobile = isTargetPath && isMobile.value;
+    
+    if (globalState?.state.isRightZoomed || shouldHideForMobile) {
+        return 'display:none;';
+    }
+    return '';
+});
 </script>
 
 <template>
     <!---/Left chat list -->
-    <div class="d-flex mainbox is-work-height" :class="chatReSizeDisplay"
+    <div class="d-flex mainbox is-work-height" :class="[chatReSizeDisplay, heightClass]"
         :style="!$globalState.state.isRightZoomed ? '' : 'height:100vh;'"
         style="overflow: auto;"
     >
-        <div class="left-part" v-if="lgAndUp" :style="canvasReSize">
+        <div class="left-part" v-if="lgAndUp && !props.isInstanceChat" :style="canvasReSize">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>
             <!-- </perfect-scrollbar> -->
@@ -100,7 +133,7 @@ const menuName = computed(() => {
             <!---Toggle Button For mobile-->
             <v-btn block @click="sDrawer = !sDrawer" variant="text" class="d-lg-none d-md-flex d-sm-flex"
                 style="z-index: 1; background-color: white; flex: 0 0 auto;"
-                :style="!$globalState.state.isRightZoomed ? '' : 'display:none;'"    
+                :style="menuButtonStyle"    
             >
                 <Menu2Icon size="20" class="mr-2 cp-dialog-open cp-def-menu" /> {{ menuName }}
             </v-btn>

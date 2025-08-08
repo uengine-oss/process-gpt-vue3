@@ -4,35 +4,59 @@
         elevation="10" 
         :key="updatedKey"
     >
-        <div class="pa-2 pb-0 pl-4 align-center">
+        <div class="pa-2 pb-0 mb-1 pl-4 pr-4 align-center">
             <div class="d-flex align-center"
                 :style="isMobile ? 'display: block !important;' : ''"
             >
-                <h5 class="text-h5 font-weight-semibold">
-                    {{ activityName }}
-                </h5>
                 <v-row class="pa-0 pt-1 pb-1 ma-0 align-center">
-                    <v-chip v-if="workItemStatus" size="x-small" variant="outlined" 
+                    <h5 class="text-h5 font-weight-semibold mr-2">
+                        {{ activityName }}
+                    </h5>
+                    <v-chip v-if="workItemStatus"
+                        size="x-small" variant="outlined" 
                         style = "margin: 2px 0px 0px 5px !important; display: flex; align-items: center"
                         :style="isMobile ? 'margin: 0px !important;' : ''">
                         {{ workItemStatus }}
                     </v-chip>
-                    <v-tooltip :text="$t('processDefinition.zoom')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-if="!isMobile" 
-                                @click="$globalState.methods.toggleZoom()"
-                                class="ml-1"
-                                size="x-small"
-                                icon="$vuetify" variant="text"
-                                v-bind="props"
-                            >
-                                <Icons
-                                    :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"
-                                    :size="20"
-                                />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
+                    <v-spacer></v-spacer>
+                    <!-- 위임하기 UI -->
+                    <v-row class="ma-0 pa-0"  v-if="!isCompleted && !isOwnWorkItem && isSimulate != 'true'">
+                        <v-spacer></v-spacer>
+                        <v-tooltip text="위임하기">
+                            <template v-slot:activator="{ props }">
+                                <div
+                                    @click="openDelegateTask()"
+                                    class="d-flex align-center"
+                                    v-bind="props"
+                                    style="cursor: pointer;"
+                                >
+                                    <!-- 현재 담당자 정보 표시 -->
+                                    <div v-if="assigneeUserInfo && assigneeUserInfo.length > 0">
+                                        <div v-for="user in assigneeUserInfo" :key="user.email">
+                                            <div class="d-flex align-center">
+                                                <div>
+                                                    <v-img v-if="user.profile" :src="user.profile" width="32px" height="32px"
+                                                        class="rounded-circle img-fluid"
+                                                    />
+                                                </div>
+                                                <!-- <div class="ml-3">
+                                                    <div class="d-flex align-center">
+                                                        <span class="text-subtitle-2 font-weight-medium text-no-wrap">{{ user.username }} </span>
+                                                    </div>
+                                                </div> -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <v-avatar v-else size="32">
+                                        <Icons :icon="'user-circle-bold'" :size="32" />
+                                    </v-avatar>
+                                </div>
+                            </template>
+                        </v-tooltip>
+                    </v-row>
+                </v-row>
+                <v-divider v-if="isMobile" class="my-2"></v-divider>
+                <v-row v-if="isSimulate == 'true'" class="pa-0 pt-1 pb-1 ma-0 align-center">
                     <!-- <v-tooltip v-if="isSimulate == 'true'" text="이전 단계">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="backToPrevStep"
@@ -46,7 +70,7 @@
                             </v-btn>
                         </template>
                     </v-tooltip> -->
-                    <v-btn v-if="isSimulate == 'true'"
+                    <v-btn v-if="isSimulate == 'true'" 
                         :disabled="activityIndex == 0"
                         @click="backToPrevStep"
                         variant="elevated" 
@@ -173,7 +197,8 @@
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
-                                        <component :class="mode == 'ProcessGPT' && isMobile ? 'work-item-activity-box' : ''"
+                                        <component class="work-item-activity-box"
+                                            :class="mode == 'ProcessGPT' && isMobile ? 'work-item-activity-box-mobile' : ''"
                                             :is="'work-history-' + mode"
                                             :messages="messages"
                                             :isCompleted="isCompleted"
@@ -196,10 +221,8 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
-                        <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-2">
-                            <v-card elevation="10" class="pa-4">
-                                <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
-                            </v-card>
+                        <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-3" style="height: 100%;">
+                            <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
                             <v-card elevation="10" class="pa-4">
@@ -232,8 +255,8 @@
             >
                 <div v-if="currentComponent && !isNotExistDefaultForm" class="work-itme-current-component" style="height: 100%;">
                     <template v-if="formData && Object.keys(formData).length > 0">
-                        <div class="work-item-form-btn-box"
-                            :class="isMobile ? 'work-item-form-btn-box-mobile' : 'work-item-form-btn-box-pc'"
+                        <div v-if="!isCompleted && isOwnWorkItem"
+                            class="work-item-form-btn-box d-flex justify-end align-center pr-3"
                         >
                             <v-btn v-if="hasGeneratedContent"
                                 @click="resetGeneratedContent"
@@ -343,9 +366,8 @@
                             @addedNewForm="addedNewForm"
                             v-model="tempFormHtml"
                             class="feedback-form"
-                        />  
+                        />
                     </template>
-
                     <component 
                         ref="currentWorkItemComponent"
                         class="work-item-current-component-box"
@@ -386,6 +408,17 @@
                 </div>
             </v-col>
         </v-row>
+        
+        <!-- 위임하기 다이얼로그 -->
+        <v-dialog v-model="delegateTaskDialog"
+            :class="isMobile ? 'form-work-item-delegate-task-form-dialog-mobile' : 'form-work-item-delegate-task-form-dialog-pc'"
+        >
+            <DelegateTaskForm 
+                :task="workItem"
+                @delegate="delegateTask"
+                @close="closeDelegateTask"
+            />
+        </v-dialog>
     </v-card>
 </template>
 
@@ -405,6 +438,7 @@ import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
 import customBpmnModule from '@/components/customBpmn';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import AgentFeedback from './AgentFeedback.vue';
+import DelegateTaskForm from '@/components/apps/todolist/DelegateTaskForm.vue';
 import exampleGenerator from '@/components/ai/WorkItemAgentGenerator.js';
 import JSON5 from 'json5';
 import partialParse from 'partial-json-parser';
@@ -447,7 +481,8 @@ export default {
         FormDefinition,
         InstanceOutput,
         AgentMonitor,
-        AgentFeedback
+        AgentFeedback,
+        DelegateTaskForm
     },
     data: () => ({    
         workItem: null,
@@ -501,6 +536,9 @@ export default {
         micAudioChunks: [],
 
         isNotExistDefaultForm: false,
+        assigneeUserInfo: null,
+        isLoading: false,
+        delegateTaskDialog: false,
     }),
     created() {
         // this.init();
@@ -559,8 +597,8 @@ export default {
             if (this.isStarted || this.isSimulate == 'true') {
                 return true
             }
-            const email = localStorage.getItem('email')
-            return this.workItem.worklist.endpoint.includes(email)
+            const uid = localStorage.getItem('uid')
+            return this.workItem.worklist.endpoint.includes(uid)
         },
         mode() {
             return window.$mode;
@@ -641,6 +679,9 @@ export default {
                 // }
             }
         },
+        currentUserEmail() {
+            return localStorage.getItem('email');
+        },
     },
     watch: {
         windowWidth(newWidth) {
@@ -670,6 +711,14 @@ export default {
                     this.selectedTab = firstAvailableTab.value;
                 }
             }
+        },
+        workItem: {
+            handler(newVal) {
+                if (newVal && newVal.worklist && newVal.worklist.taskId) {
+                    this.loadAssigneeInfo();
+                }
+            },
+            deep: true
         }
     },
     methods: {
@@ -939,6 +988,19 @@ export default {
                 "content": "생성해야할 답변 형식: " + JSON.stringify(formValues),
                 "role": "user"
             })
+            
+            // 현재 날짜 정보 추가
+            const currentDate = new Date().toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+            });
+            this.generator.previousMessages.push({
+                "content": "현재 날짜: " + currentDate + " (이 날짜를 기준으로 예시를 생성해주세요)",
+                "role": "user"
+            })
+            
             const userList = await backend.getUserList();
             this.generator.previousMessages.push({
                 "content": "유저 목록: " + JSON.stringify(userList),
@@ -978,6 +1040,7 @@ export default {
                             }
                         }
                         if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
+                            console.log('[WorkItem] form-values-updated', jsonData['formValues']);
                             me.EventBus.emit('form-values-updated', jsonData['formValues']);
                             me.agentGenerationFinished(jsonData);
                         } else {
@@ -1154,7 +1217,70 @@ export default {
         },
         goToDefaultForm() {
             this.$router.push('/ui-definitions/defaultform');
-        }
+        },
+        async loadAssigneeInfo() {
+            var me = this;
+            if (!me.workItem || !me.workItem.worklist || !me.workItem.worklist.taskId) {
+                return;
+            }
+            
+            me.$try({
+                context: me,
+                action: async () => {
+                    try {
+                        const latestWorkItem = await backend.getWorkItem(me.workItem.worklist.taskId);
+                        if (latestWorkItem && latestWorkItem.worklist.endpoint) {
+                            me.assigneeUserInfo = await backend.getUserList({
+                                orderBy: 'email',
+                                startAt: latestWorkItem.worklist.endpoint,
+                                endAt: latestWorkItem.worklist.endpoint
+                            });
+                        } else {
+                            me.assigneeUserInfo = null;
+                        }
+                    } catch (error) {
+                        console.log('담당자 정보 로딩 실패:', error);
+                        me.assigneeUserInfo = null;
+                    }
+                }
+            });
+        },
+        openDelegateTask() {
+            this.delegateTaskDialog = true;
+        },
+        closeDelegateTask() {
+            this.delegateTaskDialog = false;
+        },
+        delegateTask(delegateUser, assigneeUserInfo) {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    let notificationMessage = `'${me.workItem.activity.name}'업무를 ${delegateUser.email}(${delegateUser.username})에게 위임하였습니다.`;
+                    if(assigneeUserInfo){
+                        const formattedAssigneeInfo = assigneeUserInfo.map(user => `${user.email}(${user.username})`).join(',');
+                        notificationMessage = `'${me.workItem.activity.name}'업무의 담당자를 [${formattedAssigneeInfo}]에서 ${delegateUser.email}(${delegateUser.username})으로 위임하였습니다.`;
+                    }
+                  
+                    await Promise.all([
+                        backend.updateInstanceChat(me.workItem.worklist.instId, {
+                            "name": localStorage.getItem('userName'),
+                            "role": "user",
+                            "email": localStorage.getItem('email'),
+                            "image": "",
+                            "content": notificationMessage,
+                            "timeStamp": new Date().toISOString()
+                        }),
+                        backend.putWorkItem(me.workItem.worklist.taskId, {'user_id': delegateUser.email})
+                    ]);
+                    
+                    me.workItem.worklist.endpoint = delegateUser.email;
+                    me.closeDelegateTask();
+                    me.loadAssigneeInfo();
+                },
+                successMsg: this.$t('DelegateTask.successMsg')
+            });
+        },
     }
 };
 </script>

@@ -1,3 +1,59 @@
+-- ===============================================
+-- MIGRATION FILE WRITING GUIDE
+-- ===============================================
+-- 
+-- 이 파일은 데이터베이스 스키마 마이그레이션을 위한 SQL 스크립트입니다.
+-- 다른 개발자들이 안전하게 수정할 수 있도록 다음 가이드를 따라주세요.
+--
+-- ※ 중요: 이 파일은 마이그레이션용이지 초기화(INIT)용이 아닙니다.
+--    - CREATE TABLE 문은 여기에 작성하지 마세요
+--    - 새로운 테이블 및 함수는 init.sql 파일에 작성하세요
+--    - 이 파일은 기존 테이블의 구조 변경만 처리합니다
+--
+-- 1. 컬럼 추가 시 주의사항:
+--    - 항상 "ADD COLUMN IF NOT EXISTS" 사용
+--    - 테넌트별 데이터인 경우 tenant_id 컬럼 추가
+--
+-- 2. 데이터 마이그레이션 시 주의사항:
+--    - DO $$ BEGIN ... END $$ 블록 사용
+--    - 기존 컬럼 존재 여부 확인 후 작업
+--    - 데이터 백업 로직 포함
+--    - RAISE NOTICE로 진행상황 로깅
+--
+-- 3. ENUM 타입 마이그레이션:
+--    - 기존 ENUM 존재 여부 확인
+--    - 임시 컬럼으로 데이터 변환
+--    - 기존 컬럼 삭제 후 새 컬럼명 변경
+--    - 기본값 설정 필수
+--
+-- 4. 인덱스 및 제약조건:
+--    - 유니크 인덱스는 테넌트별로 설정
+--    - CHECK 제약조건은 명확한 값 범위 지정
+--
+-- 5. 함수 및 트리거:
+--    - 기존 함수/트리거 삭제 후 재생성
+--    - DROP IF EXISTS 사용
+--
+-- 6. 실시간 구독 설정:
+--    - supabase_realtime publication에 테이블 추가
+--    - 기존 구독 여부 확인 후 추가
+--
+-- 7. 테이블 삭제:
+--    - DROP TABLE IF EXISTS 사용
+--    - 의존성 있는 데이터 고려
+--
+-- 8. 섹션 구분:
+--    - 테이블별로 명확한 주석 구분
+--    - 관련 기능끼리 그룹화
+--    - 마이그레이션 순서 고려
+--
+-- 9. 검증 및 로깅:
+--     - 마이그레이션 완료 후 상태 확인
+--     - RAISE NOTICE로 결과 로깅
+--     - 오류 발생 시 롤백 고려
+--
+-- ===============================================
+
 -- Migration SQL for schema synchronization
 create or replace function public.tenant_id()
 returns text
@@ -147,6 +203,7 @@ END $$;
 -- todolist table
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS id uuid;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS user_id text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS username text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS proc_inst_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS proc_def_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS activity_id text;
@@ -173,6 +230,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch text check (agen
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone default now();
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS temp_feedback text;
 
 -- chat_rooms table
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS id text;
@@ -331,64 +389,880 @@ ALTER TABLE public.events ADD COLUMN IF NOT EXISTS crew_type text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS data jsonb;
 
 
---schedule
-
-
-create or replace function public.register_cron_job(
-  p_job_name text,
-  p_cron_expr text,
-  p_input jsonb
-)
-returns void
-language plpgsql
-security definer
-as $$
-DECLARE
-  v_job_name text;
+-- 1) ENUM 타입이 없을 때만 생성
+DO $$
 BEGIN
-  SELECT jobname INTO v_job_name
-  FROM cron.job
-  WHERE jobname = p_job_name;
-
-  IF v_job_name IS NOT NULL THEN
-    PERFORM cron.unschedule(v_job_name);
+  IF NOT EXISTS (
+    SELECT 1
+      FROM pg_type t
+      JOIN pg_namespace n ON t.typnamespace = n.oid
+     WHERE n.nspname = 'public'
+       AND t.typname = 'event_type_enum'
+  ) THEN
+    CREATE TYPE public.event_type_enum AS ENUM (
+      'task_started',
+      'task_completed',
+      'tool_usage_started',
+      'tool_usage_finished',
+      'crew_completed',
+      'human_asked'
+    );
   END IF;
+END
+$$;  -- :contentReference[oaicite:0]{index=0}
 
-  -- ✅ 새로 schedule
-  PERFORM cron.schedule(
-    p_job_name,
-    p_cron_expr,
-    format(
-      E'select public.start_process_scheduled(''%s'', ''%s''::jsonb);',
-      replace(p_job_name, '''', ''''''),
-      replace(p_input::text, '''', '''''')
-    )
-  );
+-- 2) events 테이블이 있으면 event_type 컬럼을 새 ENUM으로 변경
+ALTER TABLE IF EXISTS public.events
+  ALTER COLUMN event_type
+    TYPE public.event_type_enum
+    USING event_type::public.event_type_enum;
+
+
+
+-- ==========================================
+-- 데이터소스 테이블
+-- ==========================================
+ALTER TABLE IF EXISTS public.data_source ADD COLUMN IF NOT EXISTS uuid uuid DEFAULT gen_random_uuid();
+ALTER TABLE IF EXISTS public.data_source ADD COLUMN IF NOT EXISTS key text;
+ALTER TABLE IF EXISTS public.data_source ADD COLUMN IF NOT EXISTS value jsonb;
+ALTER TABLE IF EXISTS public.data_source ADD COLUMN IF NOT EXISTS version integer DEFAULT 1;
+ALTER TABLE IF EXISTS public.data_source ADD COLUMN IF NOT EXISTS description text;
+ALTER TABLE IF EXISTS public.data_source ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
+ALTER TABLE IF EXISTS public.data_source ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now();
+ALTER TABLE IF EXISTS public.data_source ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT now();
+
+-- 유니크 인덱스 (테넌트별 key + version)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'data_source' AND table_schema = 'public') THEN
+        CREATE UNIQUE INDEX IF NOT EXISTS unique_data_source_key_version_per_tenant
+          ON data_source (key, version, tenant_id);
+    END IF;
+END $$;
+
+
+
+-- ===============================================
+-- Enum 타입 마이그레이션
+-- ===============================================
+
+-- 1. Enum 타입 생성 (이미 존재하지 않는 경우에만)
+DO $$
+BEGIN
+    -- 프로세스 인스턴스 상태 enum
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'process_status') THEN
+        CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
+        RAISE NOTICE 'Created process_status enum type';
+    ELSE
+        RAISE NOTICE 'process_status enum type already exists';
+    END IF;
+
+    -- 할일 항목 상태 enum
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'todo_status') THEN
+        CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE');
+        RAISE NOTICE 'Created todo_status enum type';
+    ELSE
+        RAISE NOTICE 'todo_status enum type already exists';
+    END IF;
+
+    -- 에이전트 모드 enum
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'agent_mode') THEN
+        CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
+        RAISE NOTICE 'Created agent_mode enum type';
+    ELSE
+        RAISE NOTICE 'agent_mode enum type already exists';
+    END IF;
+END $$;
+
+-- 2. bpm_proc_inst 테이블 status 컬럼 마이그레이션
+DO $$
+BEGIN
+    -- status 컬럼이 text 타입인지 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'bpm_proc_inst' 
+        AND column_name = 'status' 
+        AND data_type = 'text'
+    ) THEN
+        -- 임시 컬럼 추가
+        ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS status_new process_status;
+        
+        -- 기존 데이터를 새 enum 타입으로 변환
+        UPDATE public.bpm_proc_inst 
+        SET status_new = CASE 
+            WHEN status = 'NEW' THEN 'NEW'::process_status
+            WHEN status = 'RUNNING' THEN 'RUNNING'::process_status
+            WHEN status = 'COMPLETED' THEN 'COMPLETED'::process_status
+            ELSE 'NEW'::process_status  -- 기본값 설정
+        END;
+        
+        -- 기존 컬럼 삭제 후 새 컬럼명 변경
+        ALTER TABLE public.bpm_proc_inst DROP COLUMN status;
+        ALTER TABLE public.bpm_proc_inst RENAME COLUMN status_new TO status;
+        
+        RAISE NOTICE 'Successfully migrated bpm_proc_inst.status to process_status enum';
+    ELSE
+        RAISE NOTICE 'bpm_proc_inst.status is already process_status enum or column does not exist';
+    END IF;
+END $$;
+
+-- 3. todolist 테이블 status 컬럼 마이그레이션
+DO $$
+BEGIN
+    -- status 컬럼이 text 타입인지 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'status' 
+        AND data_type = 'text'
+    ) THEN
+        -- 임시 컬럼 추가
+        ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS status_new todo_status;
+        
+        -- 기존 데이터를 새 enum 타입으로 변환
+        UPDATE public.todolist 
+        SET status_new = CASE 
+            WHEN status = 'TODO' THEN 'TODO'::todo_status
+            WHEN status = 'IN_PROGRESS' THEN 'IN_PROGRESS'::todo_status
+            WHEN status = 'DONE' THEN 'DONE'::todo_status
+            WHEN status = 'SUBMITTED' THEN 'SUBMITTED'::todo_status
+            WHEN status = 'PENDING' THEN 'PENDING'::todo_status
+            ELSE 'TODO'::todo_status  -- 기본값 설정
+        END;
+        
+        -- 기존 컬럼 삭제 후 새 컬럼명 변경
+        ALTER TABLE public.todolist DROP COLUMN status;
+        ALTER TABLE public.todolist RENAME COLUMN status_new TO status;
+        
+        RAISE NOTICE 'Successfully migrated todolist.status to todo_status enum';
+    ELSE
+        RAISE NOTICE 'todolist.status is already todo_status enum or column does not exist';
+    END IF;
+END $$;
+
+-- 4. todolist 테이블 agent_mode 컬럼 마이그레이션
+DO $$
+BEGIN
+    -- agent_mode 컬럼이 text 타입인지 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'agent_mode' 
+        AND data_type = 'text'
+    ) THEN
+        -- 임시 컬럼 추가
+        ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_mode_new agent_mode;
+        
+        -- 기존 데이터를 새 enum 타입으로 변환
+        UPDATE public.todolist 
+        SET agent_mode_new = CASE 
+            WHEN agent_mode = 'NONE' THEN 'NONE'::agent_mode
+            WHEN agent_mode = 'A2A' THEN 'A2A'::agent_mode
+            WHEN agent_mode = 'DRAFT' THEN 'DRAFT'::agent_mode
+            WHEN agent_mode = 'COMPLETE' THEN 'COMPLETE'::agent_mode
+            ELSE 'NONE'::agent_mode  -- 기본값 설정
+        END;
+        
+        -- 기존 컬럼 삭제 후 새 컬럼명 변경
+        ALTER TABLE public.todolist DROP COLUMN agent_mode;
+        ALTER TABLE public.todolist RENAME COLUMN agent_mode_new TO agent_mode;
+        
+        RAISE NOTICE 'Successfully migrated todolist.agent_mode to agent_mode enum';
+    ELSE
+        RAISE NOTICE 'todolist.agent_mode is already agent_mode enum or column does not exist';
+    END IF;
+END $$;
+
+-- 5. 마이그레이션 완료 확인
+DO $$
+BEGIN
+    RAISE NOTICE '=== Enum Migration Summary ===';
+    
+    -- bpm_proc_inst status 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'bpm_proc_inst' 
+        AND column_name = 'status' 
+        AND udt_name = 'process_status'
+    ) THEN
+        RAISE NOTICE 'bpm_proc_inst.status: process_status enum';
+    ELSE
+        RAISE NOTICE 'bpm_proc_inst.status: not migrated';
+    END IF;
+    
+    -- todolist status 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'status' 
+        AND udt_name = 'todo_status'
+    ) THEN
+        RAISE NOTICE 'todolist.status: todo_status enum';
+    ELSE
+        RAISE NOTICE 'todolist.status: not migrated';
+    END IF;
+    
+    -- todolist agent_mode 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'agent_mode' 
+        AND udt_name = 'agent_mode'
+    ) THEN
+        RAISE NOTICE 'todolist.agent_mode: agent_mode enum';
+    ELSE
+        RAISE NOTICE 'todolist.agent_mode: not migrated';
+    END IF;
+    
+    RAISE NOTICE '=== Migration Complete ===';
+END $$;
+
+
+
+-- ===============================================
+-- todolist.user_id 이메일을 users.id로 마이그레이션
+-- ===============================================
+
+-- 1. 마이그레이션 전 데이터 상태 확인
+DO $$
+DECLARE
+    email_count integer;
+    uuid_count integer;
+    mixed_count integer;
+    total_count integer;
+BEGIN
+    -- 전체 todolist 개수
+    SELECT COUNT(*) INTO total_count FROM public.todolist WHERE user_id IS NOT NULL;
+    
+    -- 이메일 형식만 있는 개수 (UUID가 아닌 경우)
+    SELECT COUNT(*) INTO email_count 
+    FROM public.todolist 
+    WHERE user_id IS NOT NULL 
+    AND user_id NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+    
+    -- UUID 형식만 있는 개수
+    SELECT COUNT(*) INTO uuid_count 
+    FROM public.todolist 
+    WHERE user_id IS NOT NULL 
+    AND user_id SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+    
+    -- 쉼표로 구분된 혼합 데이터 개수
+    SELECT COUNT(*) INTO mixed_count 
+    FROM public.todolist 
+    WHERE user_id IS NOT NULL 
+    AND user_id LIKE '%,%';
+    
+    RAISE NOTICE '=== Migration Status Check ===';
+    RAISE NOTICE 'Total todolist with user_id: %', total_count;
+    RAISE NOTICE 'Email format count: %', email_count;
+    RAISE NOTICE 'UUID format count: %', uuid_count;
+    RAISE NOTICE 'Mixed format (comma separated) count: %', mixed_count;
+END $$;
+
+-- 2. 이메일을 UUID로 변환하는 함수 생성
+CREATE OR REPLACE FUNCTION migrate_email_to_uuid(input_text text)
+RETURNS text
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    email_part text;
+    uuid_part text;
+    result_part text;
+    final_result text[] := '{}';
+    input_array text[];
+    i integer;
+    user_uuid uuid;
+BEGIN
+    -- 입력이 null이면 null 반환
+    IF input_text IS NULL THEN
+        RETURN NULL;
+    END IF;
+    
+    -- 쉼표로 분리
+    input_array := string_to_array(input_text, ',');
+    
+    -- 각 부분을 처리
+    FOR i IN 1..array_length(input_array, 1) LOOP
+        result_part := trim(input_array[i]);
+        
+        -- 이미 UUID 형식인지 확인
+        IF result_part SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' THEN
+            -- 이미 UUID이므로 그대로 사용
+            final_result := array_append(final_result, result_part);
+        ELSE
+            -- 이메일인 경우 users 테이블에서 UUID 찾기
+            BEGIN
+                SELECT id::text INTO user_uuid
+                FROM public.users
+                WHERE email = result_part
+                LIMIT 1;
+                
+                IF user_uuid IS NOT NULL THEN
+                    final_result := array_append(final_result, user_uuid::text);
+                ELSE
+                    -- 매칭되는 사용자가 없으면 원본 값 유지 (로그용)
+                    RAISE NOTICE 'No user found for email: %', result_part;
+                    final_result := array_append(final_result, result_part);
+                END IF;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    -- 에러 발생 시 원본 값 유지
+                    RAISE NOTICE 'Error processing: %, keeping original value', result_part;
+                    final_result := array_append(final_result, result_part);
+            END;
+        END IF;
+    END LOOP;
+    
+    -- 결과를 쉼표로 연결하여 반환
+    RETURN array_to_string(final_result, ',');
 END;
 $$;
 
+-- 3. 실제 마이그레이션 실행 (수정된 버전)
+DO $$
+DECLARE
+    migration_count integer := 0;
+    error_count integer := 0;
+    todolist_id uuid;
+    todolist_user_id text;
+BEGIN
+    RAISE NOTICE 'Starting todolist.user_id migration...';
+    
+    -- 이메일 형식이 있는 todolist만 처리
+    FOR todolist_id, todolist_user_id IN 
+        SELECT id, user_id 
+        FROM public.todolist 
+        WHERE user_id IS NOT NULL 
+        AND user_id NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    LOOP
+        BEGIN
+            -- 마이그레이션 함수를 사용하여 업데이트
+            UPDATE public.todolist 
+            SET user_id = migrate_email_to_uuid(todolist_user_id),
+                updated_at = now()
+            WHERE id = todolist_id;
+            
+            migration_count := migration_count + 1;
+            
+            -- 진행 상황 로그 (100개마다)
+            IF migration_count % 100 = 0 THEN
+                RAISE NOTICE 'Processed % records', migration_count;
+            END IF;
+            
+        EXCEPTION
+            WHEN OTHERS THEN
+                error_count := error_count + 1;
+                RAISE NOTICE 'Error migrating todolist ID %: %', todolist_id, SQLERRM;
+        END;
+    END LOOP;
+    
+    RAISE NOTICE '=== Migration Complete ===';
+    RAISE NOTICE 'Successfully migrated: % records', migration_count;
+    RAISE NOTICE 'Errors encountered: % records', error_count;
+END $$;
+
+-- 4. 마이그레이션 후 결과 확인
+DO $$
+DECLARE
+    email_count_after integer;
+    uuid_count_after integer;
+    mixed_count_after integer;
+    total_count_after integer;
+    unmapped_count integer;
+    unmapped_email text;
+BEGIN
+    -- 마이그레이션 후 상태 확인
+    SELECT COUNT(*) INTO total_count_after FROM public.todolist WHERE user_id IS NOT NULL;
+    
+    SELECT COUNT(*) INTO email_count_after 
+    FROM public.todolist 
+    WHERE user_id IS NOT NULL 
+    AND user_id NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+    
+    SELECT COUNT(*) INTO uuid_count_after 
+    FROM public.todolist 
+    WHERE user_id IS NOT NULL 
+    AND user_id SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+    
+    SELECT COUNT(*) INTO mixed_count_after 
+    FROM public.todolist 
+    WHERE user_id IS NOT NULL 
+    AND user_id LIKE '%,%';
+    
+    -- 매핑되지 않은 이메일 개수 (users 테이블에 없는 이메일)
+    SELECT COUNT(*) INTO unmapped_count 
+    FROM public.todolist 
+    WHERE user_id IS NOT NULL 
+    AND user_id NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    AND user_id NOT LIKE '%,%';
+    
+    RAISE NOTICE '=== Post-Migration Status ===';
+    RAISE NOTICE 'Total todolist with user_id: %', total_count_after;
+    RAISE NOTICE 'Email format count (should be 0): %', email_count_after;
+    RAISE NOTICE 'UUID format count: %', uuid_count_after;
+    RAISE NOTICE 'Mixed format (comma separated) count: %', mixed_count_after;
+    RAISE NOTICE 'Unmapped emails (not in users table): %', unmapped_count;
+    
+    -- 매핑되지 않은 이메일이 있다면 로그 출력
+    IF unmapped_count > 0 THEN
+        RAISE NOTICE '=== Unmapped Emails ===';
+        FOR unmapped_email IN 
+            SELECT DISTINCT user_id 
+            FROM public.todolist 
+            WHERE user_id IS NOT NULL 
+            AND user_id NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+            AND user_id NOT LIKE '%,%'
+        LOOP
+            RAISE NOTICE 'Unmapped email: %', unmapped_email;
+        END LOOP;
+    END IF;
+END $$;
+
+-- 5. 마이그레이션 함수 정리
+DROP FUNCTION IF EXISTS migrate_email_to_uuid(text);
 
 
--- ==========================================
--- 📌 데이터소스 테이블
--- ==========================================
-CREATE TABLE IF NOT EXISTS public.data_source (
-    uuid uuid NOT NULL DEFAULT gen_random_uuid(),
-    key text NOT NULL,
-    value jsonb NULL,
-    version integer NOT NULL DEFAULT 1,
-    description text NULL,
-    tenant_id text NULL DEFAULT public.tenant_id(),
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    updated_at timestamp with time zone NOT NULL DEFAULT now(),
-    CONSTRAINT data_source_pkey PRIMARY KEY (uuid),
-    CONSTRAINT data_source_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON UPDATE CASCADE ON DELETE CASCADE
-) TABLESPACE pg_default;
 
--- ✅ 유니크 인덱스 (테넌트별 key + version)
-CREATE UNIQUE INDEX IF NOT EXISTS unique_data_source_key_version_per_tenant
-  ON data_source (key, version, tenant_id);
+-- ===============================================
+-- todolist.user_id를 기준으로 users.username을 todolist.username에 마이그레이션
+-- ===============================================
+
+-- 1. 마이그레이션 전 상태 확인
+DO $$
+DECLARE
+    total_count integer;
+    with_username_count integer;
+    without_username_count integer;
+    user_id_count integer;
+BEGIN
+    -- 전체 todolist 개수
+    SELECT COUNT(*) INTO total_count FROM public.todolist;
+    
+    -- username이 있는 todolist 개수
+    SELECT COUNT(*) INTO with_username_count 
+    FROM public.todolist 
+    WHERE username IS NOT NULL AND username != '';
+    
+    -- username이 없는 todolist 개수
+    SELECT COUNT(*) INTO without_username_count 
+    FROM public.todolist 
+    WHERE username IS NULL OR username = '';
+    
+    -- user_id가 있는 todolist 개수
+    SELECT COUNT(*) INTO user_id_count 
+    FROM public.todolist 
+    WHERE user_id IS NOT NULL AND user_id != '';
+    
+    RAISE NOTICE '=== Username Migration Status Check ===';
+    RAISE NOTICE 'Total todolist: %', total_count;
+    RAISE NOTICE 'Todolist with username: %', with_username_count;
+    RAISE NOTICE 'Todolist without username: %', without_username_count;
+    RAISE NOTICE 'Todolist with user_id: %', user_id_count;
+END $$;
+
+-- 2. user_id를 기준으로 username을 가져오는 함수 생성
+CREATE OR REPLACE FUNCTION get_usernames_from_user_ids(user_ids text)
+RETURNS text
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    user_id_part text;
+    username_part text;
+    result_part text;
+    final_result text[] := '{}';
+    user_ids_array text[];
+    i integer;
+    user_username text;
+BEGIN
+    -- 입력이 null이면 null 반환
+    IF user_ids IS NULL OR user_ids = '' THEN
+        RETURN NULL;
+    END IF;
+    
+    -- 쉼표로 분리
+    user_ids_array := string_to_array(user_ids, ',');
+    
+    -- 각 부분을 처리
+    FOR i IN 1..array_length(user_ids_array, 1) LOOP
+        user_id_part := trim(user_ids_array[i]);
+        
+        -- UUID 형식인지 확인
+        IF user_id_part SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' THEN
+            -- UUID인 경우 users 테이블에서 username 찾기
+            BEGIN
+                SELECT username INTO user_username
+                FROM public.users
+                WHERE id::text = user_id_part
+                LIMIT 1;
+                
+                IF user_username IS NOT NULL AND user_username != '' THEN
+                    final_result := array_append(final_result, user_username);
+                ELSE
+                    -- username이 없으면 user_id 그대로 사용
+                    RAISE NOTICE 'No username found for user_id: %', user_id_part;
+                    final_result := array_append(final_result, user_id_part);
+                END IF;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    -- 에러 발생 시 user_id 그대로 사용
+                    RAISE NOTICE 'Error processing user_id: %, keeping original value', user_id_part;
+                    final_result := array_append(final_result, user_id_part);
+            END;
+        ELSE
+            -- UUID가 아닌 경우 (이메일 등) 그대로 사용
+            final_result := array_append(final_result, user_id_part);
+        END IF;
+    END LOOP;
+    
+    -- 결과를 쉼표로 연결하여 반환
+    RETURN array_to_string(final_result, ',');
+END;
+$$;
+
+-- 3. 실제 마이그레이션 실행
+DO $$
+DECLARE
+    migration_count integer := 0;
+    error_count integer := 0;
+    todolist_id uuid;
+    todolist_user_id text;
+    todolist_username text;
+BEGIN
+    RAISE NOTICE 'Starting todolist.username migration from user_id...';
+    
+    -- user_id가 있는 todolist만 처리
+    FOR todolist_id, todolist_user_id, todolist_username IN 
+        SELECT id, user_id, username 
+        FROM public.todolist 
+        WHERE user_id IS NOT NULL 
+        AND user_id != ''
+    LOOP
+        BEGIN
+            -- username이 비어있거나 null인 경우에만 업데이트
+            IF todolist_username IS NULL OR todolist_username = '' THEN
+                -- 마이그레이션 함수를 사용하여 username 업데이트
+                UPDATE public.todolist 
+                SET username = get_usernames_from_user_ids(todolist_user_id),
+                    updated_at = now()
+                WHERE id = todolist_id;
+                
+                migration_count := migration_count + 1;
+                
+                -- 진행 상황 로그 (100개마다)
+                IF migration_count % 100 = 0 THEN
+                    RAISE NOTICE 'Processed % records', migration_count;
+                END IF;
+            END IF;
+            
+        EXCEPTION
+            WHEN OTHERS THEN
+                error_count := error_count + 1;
+                RAISE NOTICE 'Error migrating todolist ID %: %', todolist_id, SQLERRM;
+        END;
+    END LOOP;
+    
+    RAISE NOTICE '=== Username Migration Complete ===';
+    RAISE NOTICE 'Successfully migrated: % records', migration_count;
+    RAISE NOTICE 'Errors encountered: % records', error_count;
+END $$;
+
+-- 4. 마이그레이션 후 결과 확인
+DO $$
+DECLARE
+    total_count_after integer;
+    with_username_count_after integer;
+    without_username_count_after integer;
+    user_id_count_after integer;
+    unmapped_count integer;
+    unmapped_user_id text;
+BEGIN
+    -- 마이그레이션 후 상태 확인
+    SELECT COUNT(*) INTO total_count_after FROM public.todolist;
+    
+    SELECT COUNT(*) INTO with_username_count_after 
+    FROM public.todolist 
+    WHERE username IS NOT NULL AND username != '';
+    
+    SELECT COUNT(*) INTO without_username_count_after 
+    FROM public.todolist 
+    WHERE username IS NULL OR username = '';
+    
+    SELECT COUNT(*) INTO user_id_count_after 
+    FROM public.todolist 
+    WHERE user_id IS NOT NULL AND user_id != '';
+    
+    -- 매핑되지 않은 user_id 개수 (users 테이블에 없는 UUID)
+    SELECT COUNT(*) INTO unmapped_count 
+    FROM public.todolist 
+    WHERE user_id IS NOT NULL 
+    AND user_id SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    AND username = user_id; -- username이 user_id와 같은 경우 (매핑 실패)
+    
+    RAISE NOTICE '=== Post-Username Migration Status ===';
+    RAISE NOTICE 'Total todolist: %', total_count_after;
+    RAISE NOTICE 'Todolist with username: %', with_username_count_after;
+    RAISE NOTICE 'Todolist without username: %', without_username_count_after;
+    RAISE NOTICE 'Todolist with user_id: %', user_id_count_after;
+    RAISE NOTICE 'Unmapped user_ids (not in users table): %', unmapped_count;
+    
+    -- 매핑되지 않은 user_id가 있다면 로그 출력
+    IF unmapped_count > 0 THEN
+        RAISE NOTICE '=== Unmapped User IDs ===';
+        FOR unmapped_user_id IN 
+            SELECT DISTINCT user_id 
+            FROM public.todolist 
+            WHERE user_id IS NOT NULL 
+            AND user_id SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+            AND username = user_id
+        LOOP
+            RAISE NOTICE 'Unmapped user_id: %', unmapped_user_id;
+        END LOOP;
+    END IF;
+END $$;
+
+-- 5. 마이그레이션 함수 정리
+DROP FUNCTION IF EXISTS get_usernames_from_user_ids(text);
 
 
-  -- RLS 켜기
-ALTER TABLE data_source ENABLE ROW LEVEL SECURITY;
+-- ===============================================
+-- bpm_proc_inst.participants 이메일을 users.id로 마이그레이션
+-- ===============================================
+
+-- 1. 마이그레이션 전 데이터 상태 확인
+DO $$
+DECLARE
+    total_count integer;
+    with_participants_count integer;
+    email_count integer;
+    uuid_count integer;
+    mixed_count integer;
+BEGIN
+    -- 전체 bpm_proc_inst 개수
+    SELECT COUNT(*) INTO total_count FROM public.bpm_proc_inst;
+    
+    -- participants가 있는 개수
+    SELECT COUNT(*) INTO with_participants_count 
+    FROM public.bpm_proc_inst 
+    WHERE participants IS NOT NULL AND array_length(participants, 1) > 0;
+    
+    -- 이메일 형식만 있는 개수 (UUID가 아닌 경우)
+    SELECT COUNT(*) INTO email_count 
+    FROM public.bpm_proc_inst 
+    WHERE participants IS NOT NULL 
+    AND EXISTS (
+        SELECT 1 FROM unnest(participants) AS p 
+        WHERE p NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    );
+    
+    -- UUID 형식만 있는 개수
+    SELECT COUNT(*) INTO uuid_count 
+    FROM public.bpm_proc_inst 
+    WHERE participants IS NOT NULL 
+    AND NOT EXISTS (
+        SELECT 1 FROM unnest(participants) AS p 
+        WHERE p NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    );
+    
+    -- 혼합 데이터 개수 (이메일과 UUID가 섞여있는 경우)
+    SELECT COUNT(*) INTO mixed_count 
+    FROM public.bpm_proc_inst 
+    WHERE participants IS NOT NULL 
+    AND EXISTS (
+        SELECT 1 FROM unnest(participants) AS p 
+        WHERE p NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    )
+    AND EXISTS (
+        SELECT 1 FROM unnest(participants) AS p 
+        WHERE p SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    );
+    
+    RAISE NOTICE '=== BPM Proc Inst Participants Migration Status Check ===';
+    RAISE NOTICE 'Total bpm_proc_inst: %', total_count;
+    RAISE NOTICE 'With participants: %', with_participants_count;
+    RAISE NOTICE 'Email format count: %', email_count;
+    RAISE NOTICE 'UUID format count: %', uuid_count;
+    RAISE NOTICE 'Mixed format count: %', mixed_count;
+END $$;
+
+-- 2. 이메일 배열을 UUID 배열로 변환하는 함수 생성
+CREATE OR REPLACE FUNCTION migrate_participants_emails_to_uuids(participants_array text[])
+RETURNS text[]
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    result_array text[] := '{}';
+    participant text;
+    user_uuid uuid;
+    i integer;
+BEGIN
+    -- 입력이 null이면 null 반환
+    IF participants_array IS NULL OR array_length(participants_array, 1) IS NULL THEN
+        RETURN NULL;
+    END IF;
+    
+    -- 각 참가자를 처리
+    FOREACH participant IN ARRAY participants_array
+    LOOP
+        -- 이미 UUID 형식인지 확인
+        IF participant SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' THEN
+            -- 이미 UUID이므로 그대로 사용
+            result_array := array_append(result_array, participant);
+        ELSE
+            -- 이메일인 경우 users 테이블에서 UUID 찾기
+            BEGIN
+                SELECT id::text INTO user_uuid
+                FROM public.users
+                WHERE email = participant
+                LIMIT 1;
+                
+                IF user_uuid IS NOT NULL THEN
+                    result_array := array_append(result_array, user_uuid::text);
+                ELSE
+                    -- 매칭되는 사용자가 없으면 원본 값 유지 (로그용)
+                    RAISE NOTICE 'No user found for email: %', participant;
+                    result_array := array_append(result_array, participant);
+                END IF;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    -- 에러 발생 시 원본 값 유지
+                    RAISE NOTICE 'Error processing participant: %, keeping original value', participant;
+                    result_array := array_append(result_array, participant);
+            END;
+        END IF;
+    END LOOP;
+    
+    RETURN result_array;
+END;
+$$;
+
+-- 3. 실제 마이그레이션 실행
+DO $$
+DECLARE
+    migration_count integer := 0;
+    error_count integer := 0;
+    proc_inst_record record;
+BEGIN
+    RAISE NOTICE 'Starting bpm_proc_inst.participants migration...';
+    
+    -- participants가 있고 이메일이 포함된 bpm_proc_inst만 처리
+    FOR proc_inst_record IN 
+        SELECT proc_inst_id, participants 
+        FROM public.bpm_proc_inst 
+        WHERE participants IS NOT NULL 
+        AND array_length(participants, 1) > 0
+        AND EXISTS (
+            SELECT 1 FROM unnest(participants) AS p 
+            WHERE p NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+        )
+    LOOP
+        BEGIN
+            -- 마이그레이션 함수를 사용하여 업데이트
+            UPDATE public.bpm_proc_inst 
+            SET participants = migrate_participants_emails_to_uuids(proc_inst_record.participants),
+                updated_at = now()
+            WHERE proc_inst_id = proc_inst_record.proc_inst_id;
+            
+            migration_count := migration_count + 1;
+            
+            -- 진행 상황 로그 (50개마다)
+            IF migration_count % 50 = 0 THEN
+                RAISE NOTICE 'Processed % records', migration_count;
+            END IF;
+            
+        EXCEPTION
+            WHEN OTHERS THEN
+                error_count := error_count + 1;
+                RAISE NOTICE 'Error migrating proc_inst_id %: %', proc_inst_record.proc_inst_id, SQLERRM;
+        END;
+    END LOOP;
+    
+    RAISE NOTICE '=== Participants Migration Complete ===';
+    RAISE NOTICE 'Successfully migrated: % records', migration_count;
+    RAISE NOTICE 'Errors encountered: % records', error_count;
+END $$;
+
+-- 4. 마이그레이션 후 결과 확인
+DO $$
+DECLARE
+    total_count_after integer;
+    with_participants_count_after integer;
+    email_count_after integer;
+    uuid_count_after integer;
+    mixed_count_after integer;
+    unmapped_count integer;
+    unmapped_email text;
+BEGIN
+    -- 마이그레이션 후 상태 확인
+    SELECT COUNT(*) INTO total_count_after FROM public.bpm_proc_inst;
+    
+    SELECT COUNT(*) INTO with_participants_count_after 
+    FROM public.bpm_proc_inst 
+    WHERE participants IS NOT NULL AND array_length(participants, 1) > 0;
+    
+    SELECT COUNT(*) INTO email_count_after 
+    FROM public.bpm_proc_inst 
+    WHERE participants IS NOT NULL 
+    AND EXISTS (
+        SELECT 1 FROM unnest(participants) AS p 
+        WHERE p NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    );
+    
+    SELECT COUNT(*) INTO uuid_count_after 
+    FROM public.bpm_proc_inst 
+    WHERE participants IS NOT NULL 
+    AND NOT EXISTS (
+        SELECT 1 FROM unnest(participants) AS p 
+        WHERE p NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    );
+    
+    SELECT COUNT(*) INTO mixed_count_after 
+    FROM public.bpm_proc_inst 
+    WHERE participants IS NOT NULL 
+    AND EXISTS (
+        SELECT 1 FROM unnest(participants) AS p 
+        WHERE p NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    )
+    AND EXISTS (
+        SELECT 1 FROM unnest(participants) AS p 
+        WHERE p SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    );
+    
+    -- 매핑되지 않은 이메일 개수 (users 테이블에 없는 이메일)
+    SELECT COUNT(*) INTO unmapped_count 
+    FROM public.bpm_proc_inst 
+    WHERE participants IS NOT NULL 
+    AND EXISTS (
+        SELECT 1 FROM unnest(participants) AS p 
+        WHERE p NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+        AND p NOT LIKE '%,%'
+    );
+    
+    RAISE NOTICE '=== Post-Participants Migration Status ===';
+    RAISE NOTICE 'Total bpm_proc_inst: %', total_count_after;
+    RAISE NOTICE 'With participants: %', with_participants_count_after;
+    RAISE NOTICE 'Email format count (should be 0): %', email_count_after;
+    RAISE NOTICE 'UUID format count: %', uuid_count_after;
+    RAISE NOTICE 'Mixed format count: %', mixed_count_after;
+    RAISE NOTICE 'Unmapped emails (not in users table): %', unmapped_count;
+    
+    -- 매핑되지 않은 이메일이 있다면 로그 출력
+    IF unmapped_count > 0 THEN
+        RAISE NOTICE '=== Unmapped Emails in Participants ===';
+        FOR unmapped_email IN 
+            SELECT DISTINCT p
+            FROM public.bpm_proc_inst,
+                 unnest(participants) AS p
+            WHERE participants IS NOT NULL 
+            AND p NOT SIMILAR TO '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+            AND p NOT LIKE '%,%'
+        LOOP
+            RAISE NOTICE 'Unmapped email: %', unmapped_email;
+        END LOOP;
+    END IF;
+END $$;
+
+-- 5. 마이그레이션 함수 정리
+DROP FUNCTION IF EXISTS migrate_participants_emails_to_uuids(text[]);
+
+
+

@@ -41,9 +41,7 @@
                                             </div>
                                             
                                             <!-- 세부 내용 -->
-                                            <pre v-else class="text-body-1">
-                                                {{ detailContent }}
-                                            </pre>
+                                            <pre v-else class="text-body-1">{{ detailContent }}</pre>
                                             
                                         </v-sheet>
                                     </div>
@@ -119,12 +117,15 @@ export default {
                 return;
             }
             
+            // ```json 마크다운 표시 제거 (줄바꿈 포함)
+            let cleanLog = log.replace(/```json[\s\n]*/g, '').replace(/```[\s\n]*/g, '').trim();
+            
             try {
-                const parsedLog = JSON.parse(log);
+                const parsedLog = JSON.parse(cleanLog);
                 this.detailContent = JSON.stringify(parsedLog, null, 2);
             } catch (error) {
-                // JSON 파싱 실패 시 원본 텍스트 사용
-                this.detailContent = log;
+                // JSON 파싱 실패 시 정리된 텍스트 사용
+                this.detailContent = cleanLog;
             }
         },
     },
@@ -139,19 +140,13 @@ export default {
 
 <style scoped>
 .process-instance-running-bpmn-uengine-box {
-    min-width: 600px;
+    min-width: 30vw;
+    max-width: 30vw;
 }
 
 .process-instance-running-instance-text-box {
     height: calc(100vh - 210px);
     overflow-y: auto;
-}
-
-.chat-message-bubble {
-  position: relative;
-  max-width: 70%;
-  margin-bottom: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
 }
 
 .other-message {

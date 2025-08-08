@@ -9,7 +9,14 @@
                     <!-- 한글: 인스턴스 이름이 길 경우 줄바꿈이 가능하도록 스타일 추가 -->
                     <div class="text-h5 font-weight-semibold align-center"
                         style="word-break: break-all; white-space: normal; margin-right: 5px;"
-                    >{{ instanceName }}</div>
+                    >
+                        <span v-if="isNew" class="thinking-wave-text">
+                            <span v-for="(char, index) in instanceName" :key="index" 
+                                  :style="{ animationDelay: `${index * 0.1}s` }"
+                                  class="thinking-char">{{ char === ' ' ? '\u00A0' : char }}</span>
+                        </span>
+                        <span v-else>{{ instanceName }}</span>
+                    </div>
 
                     <v-chip v-if="instance.status" size="x-small" variant="outlined" class="align-center">
                         {{ instance.is_deleted ? 'DELETED' : instance.status }}
@@ -99,7 +106,7 @@
                         </div>
                     </v-window-item>
                     <v-window-item value="progress" class="instance-card-tab-2">
-                        <div style="height: 73vh;">
+                        <div class="instance-card-process-box">
                             <InstanceProgress 
                                 :key="`progress-${updatedKey}-${instance?.instId}`"
                                 :instance="instance"
@@ -147,6 +154,9 @@
                             @updated="handleInstanceUpdated"
                             ref="workhistory"
                         />
+                    </v-window-item>
+                    <v-window-item value="chat" class="instance-card-tab-5">
+                        <Chats :isInstanceChat="true" :instanceInfo="instance" />
                     </v-window-item>
                 </v-window>
             </div>
@@ -199,6 +209,7 @@ import GanttChart from '@/components/apps/todolist/GanttChart.vue';
 import KanbanBoard from '@/components/apps/todolist/KanbanBoard.vue';
 import KanbanColumnConfig from './KanbanColumnConfig.vue';
 import TodoDialog from './TodoDialog.vue';
+import Chats from '@/views/apps/chat/Chats.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -211,7 +222,8 @@ export default {
         ProcessInstanceRunning,
         GanttChart,
         KanbanBoard,
-        TodoDialog
+        TodoDialog,
+        Chats
     },
     data: () => ({
         isLoading: true,
@@ -224,6 +236,7 @@ export default {
             { value: 'progress', label: 'InstanceCard.progress', mobile: true},
             { value: 'todo', label: 'InstanceCard.kanbanBoard', mobile: true},
             { value: 'gantt', label: 'InstanceCard.ganttChart', mobile: false},
+            { value: 'chat', label: 'InstanceCard.chat', mobile: true},
         ],
 
         updatedKey: 0,
@@ -340,9 +353,8 @@ export default {
         }
     },
     methods: {
-        handleInstanceUpdated() {
-            this.updatedKey++;
-            this.init();
+        async handleInstanceUpdated() {
+            await this.init();
         },
         async init() {
             var me = this;
@@ -357,15 +369,15 @@ export default {
                         me.eventList = await backend.getEventList(me.instance.instId);
                     }
                     
-                    // 인스턴스 변경 시 하위 컴포넌트 강제 리렌더링
-                    me.updatedKey++;
+                    // // 인스턴스 변경 시 하위 컴포넌트 강제 리렌더링
+                    // me.updatedKey++;
                     
-                    // 인스턴스 로드 후 하위 컴포넌트 초기화
-                    await me.$nextTick();
-                    const activeComponents = me.$refs[me.tab];
-                    if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
-                        await activeComponents[0].init();
-                    }
+                    // // 인스턴스 로드 후 하위 컴포넌트 초기화
+                    // await me.$nextTick();
+                    // const activeComponents = me.$refs[me.tab];
+                    // if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
+                    //     await activeComponents[0].init();
+                    // }
 
                     let result = [];
                     const tasks = await backend.getWorkList({instId: me.id});

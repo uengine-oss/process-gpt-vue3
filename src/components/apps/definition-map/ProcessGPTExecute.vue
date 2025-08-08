@@ -12,25 +12,6 @@
                 </div>
                 <v-spacer v-if="!isMobile"></v-spacer>
                 <div v-if="isMobile" class="d-flex align-center mt-2 ml-auto">
-                    <!-- 모바일일 때 상단에 제출 완료 버튼 - FormWorkItem을 통해 폼 데이터 수집 -->
-                    <v-row class="ma-0 pa-0 align-center">
-                        <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
-                            class="bouncing-arrow-horizontal" 
-                            color="primary" 
-                            size="large"
-                        >
-                            mdi-arrow-right-bold
-                        </v-icon>
-                        <v-btn v-if="!isCompleted"
-                            @click="executeFromHeader"
-                            color="primary" 
-                            density="compact"
-                            variant="flat"
-                            rounded
-                            class="mr-2"
-                        >제출 완료
-                        </v-btn>
-                    </v-row>
                     <v-btn @click="closeDialog"
                         rounded 
                         density="compact"
@@ -59,7 +40,7 @@
                         <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
                             <user-select-field v-model="roleMapping.endpoint"
                                 :name="roleMapping.name"
-                                :item-value="'email'"
+                                :item-value="'id'"
                                 :hide-details="true"
                                 :use-agent="true"
                             ></user-select-field>
@@ -248,11 +229,12 @@ export default {
 
                     return {
                         name: role.name,
-                        endpoint: role.default || role.endpoint,
+                        endpoint: role.default != role.endpoint ? role.endpoint : '',
                         resolutionRule: role.resolutionRule,
                         default: role.default || "",
                     };
                 });
+
 
                 if (!hasDefaultRole) {
                     const roleBindings = await backend.bindRole(me.processDefinition.roles, me.processDefinition.id);
