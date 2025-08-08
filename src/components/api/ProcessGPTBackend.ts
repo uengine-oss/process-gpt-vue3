@@ -3575,22 +3575,21 @@ class ProcessGPTBackend implements Backend {
             const fieldId = fieldInfo[1];
             const activityId = formId.replace(`${procDefId}_`, '').replace('_form', '');
 
-            const workitem = await storage.getObject('todolist', {
-                match: {
-                    proc_inst_id: instanceId,
-                    activity_id: activityId
-                }
-            });
+            const { data, error } = await window.$supabase
+                .from('todolist')
+                .select('*')
+                .eq('proc_inst_id', instanceId)
+                .ilike('activity_id', activityId)
+                .single();
 
-            if (!workitem) {
+            if (error) {
                 throw new Error('workitem not found');
             }
-
+            const workitem = data;
             const output = workitem.output;
             if (!output) {
                 throw new Error('output not found');
             }
-
             fieldValue[formId] = {
                 [fieldId]: output[formId][fieldId]
             }
@@ -3659,7 +3658,6 @@ class ProcessGPTBackend implements Backend {
             });
             workItem.status = 'SUBMITTED';
             workItem.temp_feedback = feedback;
-            console.log(workItem);
             await storage.putObject('todolist', workItem);
         } catch (error) {
             throw new Error(error.message);
