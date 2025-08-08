@@ -1479,6 +1479,8 @@ class ProcessGPTBackend implements Backend {
                     result[item.activity_id] = 'Pending';
                 } else if(item.status == 'TODO') {
                     result[item.activity_id] = 'New';
+                } else if(item.status == 'CANCELLED') {
+                    result[item.activity_id] = 'Cancelled';
                 }
             });
             return result;
