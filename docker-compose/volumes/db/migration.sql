@@ -440,7 +440,7 @@ BEGIN
     END IF;
 END $$;
 
-
+ALTER TYPE todo_status ADD VALUE 'CANCELLED';
 
 -- ===============================================
 -- Enum 타입 마이그레이션
@@ -527,6 +527,7 @@ BEGIN
             WHEN status = 'DONE' THEN 'DONE'::todo_status
             WHEN status = 'SUBMITTED' THEN 'SUBMITTED'::todo_status
             WHEN status = 'PENDING' THEN 'PENDING'::todo_status
+            WHEN status = 'CANCELLED' THEN 'CANCELLED'::todo_status
             ELSE 'TODO'::todo_status  -- 기본값 설정
         END;
         
