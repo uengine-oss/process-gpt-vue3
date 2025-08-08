@@ -33,7 +33,7 @@
                     <v-btn icon size="x-small" variant="text" color="success" @click="showFeedback = true">
                         <v-icon>mdi-check</v-icon>
                     </v-btn>
-                    <v-btn icon size="x-small" variant="text" color="error" @click="showAcceptFeedback = false">
+                    <v-btn icon size="x-small" variant="text" color="error" @click="cancelAppliedFeedback">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </div>
@@ -43,6 +43,7 @@
                     :lastMessage="lastMessage"
                     :task="lastTask"
                     :isAcceptMode="showAcceptFeedback"
+                    @submitFeedback="submitFeedback"
                     @closeFeedback="closeFeedback"
                 />
             </template>
@@ -124,23 +125,7 @@ export default {
             this.streamingText = '';
             if (workItem) {
                 this.runningTaskId = workItem.taskId;;
-                this.subscription = await backend.getTaskLog(this.runningTaskId, async (task) => {
-                    this.useFeedback = false;
-                    if (task.log) {
-                        this.streamingText = task.log;
-                    }
-                    if (task.status == "DONE") {
-                        if (this.subscription) {
-                            // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);
-                            window.$supabase.removeChannel(this.subscription);
-                        }
-                        this.$emit('updated');
-                        this.EventBus.emit('instances-updated');
-                        await this.loadData();
-                        this.streamingText = '';
-                        this.useFeedback = true;
-                    }
-                });
+                await this.getTaskLog(true);
             }
         }
     },
@@ -164,7 +149,7 @@ export default {
                     this.messages = [];
                     this.isTaskMode = false;
                     await this.init();
-                    await this.getLastTaskId(newVal.params.instId);
+                    await this.getLastTask(newVal.params.instId);
                 }
             }
         },
@@ -218,7 +203,7 @@ export default {
                 if (this.processInstance) {
                     this.currentActivities = this.processInstance.currentActivityIds;
                 }
-                await this.getLastTaskId(id);
+                await this.getLastTask(id);
             }
             var bpmn = await backend.getRawDefinition(defId, { type: "bpmn"});
             if (bpmn) {
@@ -256,7 +241,7 @@ export default {
                 await me.loadProcess();
                 
                 await me.getMessages(me.chatRoomId)
-                await me.getLastTaskId(id);
+                await me.getLastTask(id);
             }
 
             if (me.useThreadId) {
@@ -366,9 +351,9 @@ export default {
         },
         closeFeedback() {
             this.showFeedback = false;
-            this.showAcceptFeedback = false;
+            // this.showAcceptFeedback = false;
         },
-        async getLastTaskId(instId) {
+        async getLastTask(instId) {
             const worklist = await backend.getWorkListByInstId(instId);
             if (!this.lastMessage) {
                 this.lastMessage = this.messages[this.messages.length - 1];
@@ -380,6 +365,9 @@ export default {
                 if (workItems.length > 0) {
                     const workItem = workItems.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
                     this.lastTask = workItem;
+                    if (this.lastTask.task.temp_feedback && this.lastTask.task.temp_feedback.length > 0) {
+                        this.useFeedback = false;
+                    }
                 }
             }
         },
@@ -392,6 +380,7 @@ export default {
                 let allMessages = messages.map(message => {
                     let newMessage = message.messages;
                     newMessage.thread_id = message.thread_id || null;
+                    newMessage.uuid = message.uuid;
                     return newMessage;
                 });
                 allMessages.sort((a, b) => {
@@ -400,6 +389,37 @@ export default {
                 me.messages = allMessages;
             }
         },
+        async submitFeedback(taskId) {
+            this.closeFeedback();
+            this.runningTaskId = taskId;
+            await this.getTaskLog(false);
+            await this.loadData();
+        },
+        async getTaskLog(useFeedback) {
+            this.subscription = await backend.getTaskLog(this.runningTaskId, async (task) => {
+                this.useFeedback = false;
+                if (task.log) {
+                    this.streamingText = task.log;
+                }
+                if (task.status == "DONE") {
+                    this.streamingText = '';
+                    if (this.subscription) {
+                        // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);
+                        window.$supabase.removeChannel(this.subscription);
+                    }
+                    await this.loadData();
+                    this.$emit('updated');
+                    this.EventBus.emit('instances-updated');
+                    this.useFeedback = useFeedback;
+                }
+            });
+        },
+        async cancelAppliedFeedback() {
+            if (this.lastMessage && this.lastMessage.jsonContent) {
+                this.lastMessage.jsonContent.appliedFeedback = false;
+                await backend.updateInstanceChat(this.chatRoomId, this.lastMessage, this.lastMessage.thread_id, this.lastMessage.uuid);
+            }
+        }
     }
 };
 </script>

@@ -754,7 +754,7 @@ export default {
                             try {
                                 let task = {};
                                 task.name = activity.name;
-                                task.id = activity.id.toLowerCase();
+                                task.id = activity.id;
                                 task.type = activity.type;
                                 task.description = `${activity.name} description`;
                                 task.instruction = `${activity.name} instruction`;

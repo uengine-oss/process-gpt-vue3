@@ -1284,11 +1284,12 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async updateInstanceChat(instanceId: string, newMessage: any, threadId: string = null) {
+    async updateInstanceChat(instanceId: string, newMessage: any, threadId: string = null, msgId?: string) {
         try {
+            const uuid = msgId || this.uuid();
             const putObj = {
                 id: instanceId,
-                uuid: this.uuid(),
+                uuid: uuid,
                 messages: newMessage,
                 thread_id: threadId || null
             }
