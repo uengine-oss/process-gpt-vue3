@@ -459,7 +459,7 @@ BEGIN
 
     -- 할일 항목 상태 enum
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'todo_status') THEN
-        CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE');
+        CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
         RAISE NOTICE 'Created todo_status enum type';
     ELSE
         RAISE NOTICE 'todo_status enum type already exists';
