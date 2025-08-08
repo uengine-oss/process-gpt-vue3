@@ -1443,6 +1443,7 @@ SET status_new = CASE
     WHEN status = 'DONE' THEN 'DONE'::todo_status
     WHEN status = 'SUBMITTED' THEN 'SUBMITTED'::todo_status
     WHEN status = 'PENDING' THEN 'PENDING'::todo_status
+    WHEN status = 'CANCELLED' THEN 'CANCELLED'::todo_status
     ELSE 'TODO'::todo_status  -- 기본값 설정
 END;
 -- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
