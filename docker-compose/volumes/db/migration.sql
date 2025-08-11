@@ -226,7 +226,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS log text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS project_id uuid;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_mode text;
-ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch text check (agent_orch in ('crewai', 'openai', 'crewai-action'));
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone default now();
@@ -387,34 +387,38 @@ ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS crew_type text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS data jsonb;
 
+ 
+  -- 1) event_type_enum 생성은 상단 Enum 타입 마이그레이션 블록에서 수행됨
 
--- 1) ENUM 타입이 없을 때만 생성
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-      FROM pg_type t
-      JOIN pg_namespace n ON t.typnamespace = n.oid
-     WHERE n.nspname = 'public'
-       AND t.typname = 'event_type_enum'
-  ) THEN
-    CREATE TYPE public.event_type_enum AS ENUM (
-      'task_started',
-      'task_completed',
-      'tool_usage_started',
-      'tool_usage_finished',
-      'crew_completed',
-      'human_asked'
-    );
-  END IF;
-END
-$$;  -- :contentReference[oaicite:0]{index=0}
-
--- 2) events 테이블이 있으면 event_type 컬럼을 새 ENUM으로 변경
-ALTER TABLE IF EXISTS public.events
-  ALTER COLUMN event_type
-    TYPE public.event_type_enum
-    USING event_type::public.event_type_enum;
+  -- 2) events.event_type 컬럼 마이그레이션 (임시 컬럼 → 이관 → 드롭 → 리네임)
+  DO $$
+  BEGIN
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'events'
+        AND column_name = 'event_type' AND data_type = 'text'
+    ) THEN
+      ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type_new event_type_enum;
+      
+      UPDATE public.events
+      SET event_type_new = CASE
+        WHEN event_type = 'task_started' THEN 'task_started'::event_type_enum
+        WHEN event_type = 'task_completed' THEN 'task_completed'::event_type_enum
+        WHEN event_type = 'tool_usage_started' THEN 'tool_usage_started'::event_type_enum
+        WHEN event_type = 'tool_usage_finished' THEN 'tool_usage_finished'::event_type_enum
+        WHEN event_type = 'crew_completed' THEN 'crew_completed'::event_type_enum
+        WHEN event_type = 'human_asked' THEN 'human_asked'::event_type_enum
+        ELSE 'human_asked'::event_type_enum
+      END;
+      
+      ALTER TABLE public.events DROP COLUMN event_type;
+      ALTER TABLE public.events RENAME COLUMN event_type_new TO event_type;
+      
+      RAISE NOTICE 'Successfully migrated events.event_type to event_type_enum';
+    ELSE
+      RAISE NOTICE 'events.event_type is already event_type_enum or column does not exist';
+    END IF;
+  END $$;
 
 
 
@@ -470,6 +474,33 @@ BEGIN
         RAISE NOTICE 'Created agent_mode enum type';
     ELSE
         RAISE NOTICE 'agent_mode enum type already exists';
+    END IF;
+
+    -- 오케스트레이션 방식 enum
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'agent_orch') THEN
+        CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research');
+        RAISE NOTICE 'Created agent_orch enum type';
+    ELSE
+        RAISE NOTICE 'agent_orch enum type already exists';
+    END IF;
+
+    -- 이벤트 타입 enum
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event_type_enum') THEN
+        CREATE TYPE event_type_enum AS ENUM (
+            'task_started','task_completed','tool_usage_started',
+            'tool_usage_finished','crew_completed','human_asked'
+        );
+        RAISE NOTICE 'Created event_type_enum enum type';
+    ELSE
+        RAISE NOTICE 'event_type_enum enum type already exists';
+    END IF;
+
+    -- 드래프트 상태 enum
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'draft_status') THEN
+        CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED');
+        RAISE NOTICE 'Created draft_status enum type';
+    ELSE
+        RAISE NOTICE 'draft_status enum type already exists';
     END IF;
 END $$;
 
@@ -572,7 +603,73 @@ BEGIN
     END IF;
 END $$;
 
--- 5. 마이그레이션 완료 확인
+-- 4. todolist 테이블 agent_orch 컬럼 마이그레이션
+DO $$
+BEGIN
+    -- agent_orch 컬럼이 text 타입인지 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'agent_orch' 
+        AND data_type = 'text'
+    ) THEN
+        -- 임시 컬럼 추가
+        ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch_new agent_orch;
+        
+        -- 기존 데이터를 새 enum 타입으로 변환
+        UPDATE public.todolist 
+        SET agent_orch_new = CASE 
+            WHEN agent_orch = 'crewai-deep-research' THEN 'crewai-deep-research'::agent_orch
+            WHEN agent_orch = 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
+            WHEN agent_orch = 'crewai-action' THEN 'crewai-action'::agent_orch
+            ELSE 'crewai-deep-research'::agent_orch  -- 기본값 설정
+        END;
+        
+        -- 기존 컬럼 삭제 후 새 컬럼명 변경
+        ALTER TABLE public.todolist DROP COLUMN agent_orch;
+        ALTER TABLE public.todolist RENAME COLUMN agent_orch_new TO agent_orch;
+        
+        RAISE NOTICE 'Successfully migrated todolist.agent_orch to agent_orch enum';
+    ELSE
+        RAISE NOTICE 'todolist.agent_orch is already agent_orch enum or column does not exist';
+    END IF;
+END $$;
+
+-- 5. todolist 테이블 draft_status 컬럼 마이그레이션
+DO $$
+BEGIN
+    -- draft_status 컬럼이 text 타입인지 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'draft_status' 
+        AND data_type = 'text'
+    ) THEN
+        -- 임시 컬럼 추가
+        ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status_new draft_status;
+        
+        -- 기존 데이터를 새 enum 타입으로 변환 (정확 스펠링 기준, 최소 매핑)
+        UPDATE public.todolist 
+        SET draft_status_new = CASE 
+            WHEN draft_status = 'STARTED' THEN 'STARTED'::draft_status
+            WHEN draft_status = 'CANCELLED' THEN 'CANCELLED'::draft_status
+            WHEN draft_status = 'COMPLETED' THEN 'COMPLETED'::draft_status
+            WHEN draft_status = 'FB_REQUESTED' THEN 'FB_REQUESTED'::draft_status
+            WHEN draft_status = 'HUMAN_ASKED' THEN 'HUMAN_ASKED'::draft_status
+            ELSE 'STARTED'::draft_status  -- 기본값 설정
+        END;
+        
+        -- 기존 컬럼 삭제 후 새 컬럼명 변경
+        ALTER TABLE public.todolist DROP COLUMN draft_status;
+        ALTER TABLE public.todolist RENAME COLUMN draft_status_new TO draft_status;
+        
+        RAISE NOTICE 'Successfully migrated todolist.draft_status to draft_status enum';
+    ELSE
+        RAISE NOTICE 'todolist.draft_status is already draft_status enum or column does not exist';
+    END IF;
+END $$;
+
+-- 6. 마이그레이션 완료 확인
 DO $$
 BEGIN
     RAISE NOTICE '=== Enum Migration Summary ===';
@@ -611,6 +708,42 @@ BEGIN
         RAISE NOTICE 'todolist.agent_mode: agent_mode enum';
     ELSE
         RAISE NOTICE 'todolist.agent_mode: not migrated';
+    END IF;
+    
+    -- todolist draft_status 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'draft_status' 
+        AND udt_name = 'draft_status'
+    ) THEN
+        RAISE NOTICE 'todolist.draft_status: draft_status enum';
+    ELSE
+        RAISE NOTICE 'todolist.draft_status: not migrated';
+    END IF;
+    
+    -- events event_type 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'events' 
+        AND column_name = 'event_type' 
+        AND udt_name = 'event_type_enum'
+    ) THEN
+        RAISE NOTICE 'events.event_type: event_type_enum';
+    ELSE
+        RAISE NOTICE 'events.event_type: not migrated';
+    END IF;
+
+    -- todolist agent_orch 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'todolist' 
+        AND column_name = 'agent_orch' 
+        AND udt_name = 'agent_orch'
+    ) THEN
+        RAISE NOTICE 'todolist.agent_orch: agent_orch enum';
+    ELSE
+        RAISE NOTICE 'todolist.agent_orch: not migrated';
     END IF;
     
     RAISE NOTICE '=== Migration Complete ===';

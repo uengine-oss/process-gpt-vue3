@@ -188,6 +188,35 @@
         </template>
       </Chat>
     </div>
+
+    <!-- human_asked 모달 -->
+    <div v-if="activeHumanQuery" class="modal-overlay" role="dialog" aria-modal="true">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">승인 요청</div>
+          <div class="role-pill">{{ activeHumanQuery.role || '시스템' }}</div>
+        </div>
+        <div class="modal-body">
+          <p class="question">{{ activeHumanQuery.text }}</p>
+          <div v-if="activeHumanQuery.type === 'text'" class="field">
+            <input v-model.trim="humanQueryAnswer" class="modal-input" type="text" placeholder="답변을 입력하세요" />
+          </div>
+          <div v-else-if="activeHumanQuery.type === 'select'" class="field">
+            <select v-model="humanQueryAnswer" class="modal-select">
+              <option disabled value="">선택하세요</option>
+              <option v-for="opt in activeHumanQuery.options" :key="opt" :value="opt">{{ opt }}</option>
+            </select>
+          </div>
+          <div v-else-if="activeHumanQuery.type === 'confirm'" class="confirm-hint">
+            계속 진행하시려면 확인을 눌러주세요.
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="modal-cancel" @click="onCancelHumanQuery">취소</button>
+          <button class="modal-confirm" :disabled="activeHumanQuery.type !== 'confirm' && !humanQueryAnswer" @click="onConfirmHumanQuery">확인</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -229,6 +258,9 @@ export default {
       openBrowserAgent: false,
       downloadedBrowserAgent: false,
       doneWorkItemList: [],
+      // human_asked 모달 (단일 표시)
+      activeHumanQuery: null,
+      humanQueryAnswer: '',
       // 공통 옵션 배열
       orchestrationOptions: [
         { value: 'crewai-deep-research', label: 'CrewAI 심층 연구', startLabel: 'CrewAI Deep Research', icon: '🔬' },
@@ -631,7 +663,7 @@ export default {
           .from('events')
           .select('*')
           .eq('todo_id', taskId)
-          .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'])
+          .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked'])
           .order('timestamp', { ascending: true });
 
         if (error) throw error;
@@ -639,6 +671,9 @@ export default {
         if (data) {
           this.events = data;
           this.isCancelled = data.some(e => e.event_type === 'crew_completed');
+          // human_asked 선반영 (페이지 진입 시 대기열 구성)
+          const pending = data.filter(e => e.event_type === 'human_asked' && this.isHumanQueryAsked(e));
+          if (pending.length > 0) this.showHumanQuery(pending[0]);
         }
       } catch (error) {
         this.handleError(error, '이벤트 데이터를 불러오는 중 오류가 발생했습니다');
@@ -649,7 +684,7 @@ export default {
     // ========================================
     setupRealtimeSubscription() {
       try {
-        const validEventTypes = ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'];
+        const validEventTypes = ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked'];
         
         this.channel = window.$supabase
           .channel('events')
@@ -672,6 +707,8 @@ export default {
               // 이벤트 타입별 처리
               if (event_type === 'crew_completed') {
                 this.isLoading = false;
+              } else if (event_type === 'human_asked') {
+                this.showHumanQuery(row);
               } else if (event_type === 'task_completed' && this.todoStatus?.agent_mode === 'COMPLETE') {
                 this.$nextTick(() => {
                   const task = this.tasks.find(t => t.jobId === job_id || t.id === id);
@@ -692,6 +729,39 @@ export default {
       } catch (error) {
         this.handleError(error, '실시간 구독 중 오류가 발생했습니다');
       }
+    },
+    // human_asked 단일 모달 제어
+    showHumanQuery(row) {
+      if (this.activeHumanQuery) return;
+      if (!this.isHumanQueryAsked(row)) return;
+      this.activeHumanQuery = {
+        id: row.id,
+        jobId: row.job_id,
+        role: row.data?.role || '',
+        text: row.data?.text || '',
+        type: row.data?.type || 'text',
+        options: Array.isArray(row.data?.options) ? row.data.options : []
+      };
+      this.humanQueryAnswer = '';
+    },
+    async onConfirmHumanQuery() {
+      if (!this.activeHumanQuery) return;
+      // 승인 후 후속처리는 사용자가 별도 구현 예정
+      // 여긴 비워둡니다.
+      this.activeHumanQuery = null;
+      this.humanQueryAnswer = '';
+    },
+    async onCancelHumanQuery() {
+      if (!this.activeHumanQuery) return;
+      // 취소 후 후속처리는 사용자가 별도 구현 예정
+      // 여긴 비워둡니다.
+      this.activeHumanQuery = null;
+      this.humanQueryAnswer = '';
+    },
+    // status가 ASKED일 때만 모달 표시
+    isHumanQueryAsked(row) {
+      if (!row) return false;
+      return String(row.status || '').toUpperCase() === 'ASKED';
     },
     cleanup() {
       if (this.channel) {
@@ -1868,4 +1938,76 @@ export default {
   .option-label { font-size: 12px; }
   .option-icon { font-size: 14px; }
 }
+
+/* human_asked 모달 스타일 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.modal {
+  background: #fff;
+  width: min(560px, 92vw);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+.modal-title { font-size: 15px; font-weight: 600; color: #111827; }
+.role-pill {
+  font-size: 12px;
+  color: #1f2937;
+  background: #e5e7eb;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+.modal-body { padding: 16px; }
+.question { margin: 0 0 12px 0; font-size: 14px; color: #111827; }
+.field { margin-top: 8px; }
+.modal-input, .modal-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #111827;
+}
+.confirm-hint { font-size: 13px; color: #6b7280; }
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+.modal-cancel, .modal-confirm {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.modal-cancel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+}
+.modal-confirm {
+  background: #2563eb;
+  border: 1px solid #1d4ed8;
+  color: #fff;
+}
+.modal-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>
