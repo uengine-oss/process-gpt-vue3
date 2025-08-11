@@ -67,7 +67,7 @@
                         @toggleProcessGPTActive="toggleProcessGPTActive"
                         @startWorkOrder="startWorkOrder"
                     >
-                        <template #custom-chat-top>
+                        <template v-slot:custom-chat-top>
                             <div class="custom-top-area">
                                 <div class="position-fixed">
                                     <div v-if="isAgentChat && selectedUserInfo && 
