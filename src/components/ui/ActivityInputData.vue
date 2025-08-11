@@ -22,7 +22,7 @@
                                     class="pa-4 pb-0 pl-0"
                                 >
                                     <div class="d-flex align-center">
-                                        <div class="text-caption text-medium-emphasis mr-3">
+                                        <div class="text-caption text-medium-emphasis mr-3 flex-shrink-0">
                                             {{ getFieldText(key, field.formId) }}
                                         </div>
                                         <div class="text-body-2">
