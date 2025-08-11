@@ -424,10 +424,10 @@ export default {
         },
         startChat(type){
             let chatRoomInfo
-            const selectedUserEmail = this.selectedUserInfo.email;
+            const selectedUserEmail = this.selectedUserInfo.email || this.selectedUserInfo.id;
             const selectedUserName = this.selectedUserInfo.username || this.selectedUserInfo.name;
-            const currentUserEmail = this.userInfo.email;
-            const currentUserName = this.userInfo.username;
+            const currentUserEmail = this.userInfo.email || this.userInfo.id;
+            const currentUserName = this.userInfo.username || this.userInfo.name;
 
             if(type == 'work'){
                 chatRoomInfo = {}
@@ -437,7 +437,7 @@ export default {
                 this.createChatRoom(chatRoomInfo)
             } else {
                 const chatRoomExists = this.chatRoomList.some(chatRoom => {
-                    if(chatRoom.participants.length == 2){
+                    if(chatRoom.participants.length == 2) {
                         const participantEmails = chatRoom.participants.map(participant => participant.email);
                         const participantNames = chatRoom.participants.map(participant => participant.username);
                         chatRoomInfo = chatRoom
