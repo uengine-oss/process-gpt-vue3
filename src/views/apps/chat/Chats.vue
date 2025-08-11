@@ -261,6 +261,15 @@ export default {
         AssistantChats,
         Attachments
     },
+    emits: [
+        'selectedUser',
+        'startChat', 
+        'chat-selected',
+        'create-chat-room',
+        'delete-chat-room',
+        'genFinished',
+        'clickedWorkOrder'
+    ],
     props: {
         isInstanceChat: {
             type: Boolean,
