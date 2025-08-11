@@ -777,7 +777,7 @@
         "selectAtLeastOneParticipant": "참여자를 하나 이상 선택해주세요."
     },
     "userListing": {
-        "search": "유저 검색",
+        "search": "검색",
         "chat": "채팅"
     },
     "ProcessDefinitionChat": {

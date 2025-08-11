@@ -230,6 +230,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone default now();
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS temp_feedback text;
 
 -- chat_rooms table
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS id text;
@@ -443,7 +444,7 @@ BEGIN
     END IF;
 END $$;
 
-
+ALTER TYPE todo_status ADD VALUE 'CANCELLED';
 
 -- ===============================================
 -- Enum 타입 마이그레이션
@@ -462,7 +463,7 @@ BEGIN
 
     -- 할일 항목 상태 enum
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'todo_status') THEN
-        CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE');
+        CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
         RAISE NOTICE 'Created todo_status enum type';
     ELSE
         RAISE NOTICE 'todo_status enum type already exists';
@@ -557,6 +558,7 @@ BEGIN
             WHEN status = 'DONE' THEN 'DONE'::todo_status
             WHEN status = 'SUBMITTED' THEN 'SUBMITTED'::todo_status
             WHEN status = 'PENDING' THEN 'PENDING'::todo_status
+            WHEN status = 'CANCELLED' THEN 'CANCELLED'::todo_status
             ELSE 'TODO'::todo_status  -- 기본값 설정
         END;
         

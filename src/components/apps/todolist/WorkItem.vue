@@ -197,7 +197,8 @@
                             <v-card elevation="10" class="pa-4">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
-                                        <component :class="mode == 'ProcessGPT' && isMobile ? 'work-item-activity-box' : ''"
+                                        <component class="work-item-activity-box"
+                                            :class="mode == 'ProcessGPT' && isMobile ? 'work-item-activity-box-mobile' : ''"
                                             :is="'work-history-' + mode"
                                             :messages="messages"
                                             :isCompleted="isCompleted"
@@ -252,7 +253,7 @@
                 :class="isMobile ? 'order-first' : ''"
                 :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 190px); overflow: auto')"
             >
-                <div v-if="currentComponent && !isNotExistDefaultForm" class="work-itme-current-component" style="height: 100%;">
+                <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
                     <template v-if="formData && Object.keys(formData).length > 0">
                         <div v-if="!isCompleted && isOwnWorkItem"
                             class="work-item-form-btn-box d-flex justify-end align-center pr-3"
@@ -386,25 +387,6 @@
                         :processDefinition="processDefinition"
                     ></component>
                 </div>
-                <div v-else-if="isNotExistDefaultForm">
-                    <div class="d-flex justify-center align-center" style="height: 100%;">
-                        <div class="text-center">
-                            <v-icon size="100" color="grey-lighten-1">mdi-form-textbox</v-icon>
-                            <h3 class="mt-4 text-grey-darken-1">해당 단계의 입력 폼이 없습니다.</h3>
-                            <p class="mt-2 text-grey-darken-2">기본 폼을 생성하여 입력 폼이 없는 단계들에 사용하실 수 있습니다.</p>
-                            <v-btn 
-                                color="primary" 
-                                class="mt-4"
-                                @click="goToDefaultForm"
-                                variant="flat"
-                                size="large"
-                            >
-                                <v-icon class="mr-2">mdi-plus</v-icon>
-                                기본 폼 생성하러 가기
-                            </v-btn>
-                        </div>
-                    </div>
-                </div>
             </v-col>
         </v-row>
         
@@ -534,7 +516,6 @@ export default {
         micRecorder: null,
         micAudioChunks: [],
 
-        isNotExistDefaultForm: false,
         assigneeUserInfo: null,
         isLoading: false,
         delegateTaskDialog: false,
@@ -545,13 +526,9 @@ export default {
             this.updatedDefKey++;
         });
         this.EventBus.on('html-updated', (newHtml) => {
-            if(newHtml === '<NotExistDefaultForm/>') {
-                this.isNotExistDefaultForm = true;
-            } else {
-                this.html = newHtml
-                if(this.isSimulate == 'true' && !this.generator) {
-                    this.beforeGenerateExample();
-                }
+            this.html = newHtml
+            if(this.isSimulate == 'true' && !this.generator) {
+                this.beforeGenerateExample();
             }
         });
         this.EventBus.on('formData-updated', (newformData) => {
@@ -646,7 +623,7 @@ export default {
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
-                        { value: 'agent-feedback', label: '에이전트 피드백' },
+                        { value: 'agent-feedback', label: '에이전트 학습' },
                     ]
                 } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
                     return [
@@ -654,13 +631,13 @@ export default {
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
-                        { value: 'agent-feedback', label: '에이전트 피드백' },
+                        { value: 'agent-feedback', label: '에이전트 학습' },
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                     ]
                 } else {
                     return [
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') }, //어시스턴트
-                        { value: 'agent-feedback', label: '에이전트 피드백' },
+                        { value: 'agent-feedback', label: '에이전트 학습' },
                     ]
                 }
                 
@@ -668,7 +645,7 @@ export default {
                 return[
                     { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                     { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
-                    { value: 'agent-feedback', label: '에이전트 피드백' },
+                    { value: 'agent-feedback', label: '에이전트 학습' },
                 ]
 
                 // if(this.inFormNameTabs.length > 0) {

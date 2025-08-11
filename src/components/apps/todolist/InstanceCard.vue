@@ -323,8 +323,8 @@ export default {
         },
         isParticipant() {
             if (this.instance) {
-                const email = localStorage.getItem('email');
-                if (this.instance.participants && this.instance.participants.length > 0 && this.instance.participants.includes(email)) {
+                const uid = localStorage.getItem('uid');
+                if (this.instance.participants && this.instance.participants.length > 0 && this.instance.participants.includes(uid)) {
                     return true;
                 }
             }
@@ -353,9 +353,8 @@ export default {
         }
     },
     methods: {
-        handleInstanceUpdated() {
-            this.updatedKey++;
-            this.init();
+        async handleInstanceUpdated() {
+            await this.init();
         },
         async init() {
             var me = this;
@@ -370,15 +369,15 @@ export default {
                         me.eventList = await backend.getEventList(me.instance.instId);
                     }
                     
-                    // 인스턴스 변경 시 하위 컴포넌트 강제 리렌더링
-                    me.updatedKey++;
+                    // // 인스턴스 변경 시 하위 컴포넌트 강제 리렌더링
+                    // me.updatedKey++;
                     
-                    // 인스턴스 로드 후 하위 컴포넌트 초기화
-                    await me.$nextTick();
-                    const activeComponents = me.$refs[me.tab];
-                    if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
-                        await activeComponents[0].init();
-                    }
+                    // // 인스턴스 로드 후 하위 컴포넌트 초기화
+                    // await me.$nextTick();
+                    // const activeComponents = me.$refs[me.tab];
+                    // if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
+                    //     await activeComponents[0].init();
+                    // }
 
                     let result = [];
                     const tasks = await backend.getWorkList({instId: me.id});

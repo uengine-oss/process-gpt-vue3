@@ -10,6 +10,14 @@
                 <div></div>
             </template>
             <template v-slot:custom-chat>
+                <!-- streaming text -->
+                <div v-if="streamingText" class="position-absolute bottom-0 end-0 ml-2">
+                    <div class="mx-2">
+                        <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100" style="max-width: 100% !important;">
+                            <pre class="text-body-1">{{ streamingText }}</pre>
+                        </v-sheet>
+                    </div>
+                </div>
                 <!-- feedback -->
                 <div v-if="useFeedback" class="position-absolute bottom-0 end-0 ml-2">
                     <span class="text-body-2">프로세스 실행이 정상인가요?</span>
@@ -25,7 +33,7 @@
                     <v-btn icon size="x-small" variant="text" color="success" @click="showFeedback = true">
                         <v-icon>mdi-check</v-icon>
                     </v-btn>
-                    <v-btn icon size="x-small" variant="text" color="error" @click="showAcceptFeedback = false">
+                    <v-btn icon size="x-small" variant="text" color="error" @click="cancelAppliedFeedback">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </div>
@@ -35,6 +43,7 @@
                     :lastMessage="lastMessage"
                     :task="lastTask"
                     :isAcceptMode="showAcceptFeedback"
+                    @submitFeedback="submitFeedback"
                     @closeFeedback="closeFeedback"
                 />
             </template>
@@ -79,6 +88,8 @@ export default {
         // mcp agent
         threadId: '',
 
+        subscription: null,
+        runningTaskId: null,
         streamingText: '',
 
         // feedback
@@ -113,31 +124,15 @@ export default {
             const workItem = worklist.find(item => item.task.status == 'SUBMITTED');
             this.streamingText = '';
             if (workItem) {
-                const taskId = workItem.taskId;
-                await backend.getTaskLog(taskId, async (task) => {
-                    this.useFeedback = false;
-                    if (this.streamingText == '') {
-                        this.streamingText = task.log;
-                        this.messages.push({
-                            role: 'system',
-                            content: this.streamingText,
-                        });
-                    } else if (this.streamingText != '') {
-                        this.streamingText = task.log;
-                        const lastMessage = this.messages[this.messages.length - 1];
-                        if (lastMessage.content && lastMessage.content.length > 0) {
-                            lastMessage.content = this.streamingText;
-                        }
-                    }
-                    if (task.status == "DONE") {
-                        this.$emit('updated');
-                        this.EventBus.emit('instances-updated');
-                        await this.getMessages(this.chatRoomId);
-                        this.streamingText = '';
-                        this.useFeedback = true;
-                    }
-                });
+                this.runningTaskId = workItem.taskId;;
+                await this.getTaskLog(true);
             }
+        }
+    },
+    beforeUnmount() {
+        if (this.subscription) {
+            // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);
+            window.$supabase.removeChannel(this.subscription);
         }
     },
     watch: {
@@ -154,7 +149,7 @@ export default {
                     this.messages = [];
                     this.isTaskMode = false;
                     await this.init();
-                    await this.getLastTaskId(newVal.params.instId);
+                    await this.getLastTask(newVal.params.instId);
                 }
             }
         },
@@ -208,7 +203,7 @@ export default {
                 if (this.processInstance) {
                     this.currentActivities = this.processInstance.currentActivityIds;
                 }
-                await this.getLastTaskId(id);
+                await this.getLastTask(id);
             }
             var bpmn = await backend.getRawDefinition(defId, { type: "bpmn"});
             if (bpmn) {
@@ -246,7 +241,7 @@ export default {
                 await me.loadProcess();
                 
                 await me.getMessages(me.chatRoomId)
-                await me.getLastTaskId(id);
+                await me.getLastTask(id);
             }
 
             if (me.useThreadId) {
@@ -356,9 +351,9 @@ export default {
         },
         closeFeedback() {
             this.showFeedback = false;
-            this.showAcceptFeedback = false;
+            // this.showAcceptFeedback = false;
         },
-        async getLastTaskId(instId) {
+        async getLastTask(instId) {
             const worklist = await backend.getWorkListByInstId(instId);
             if (!this.lastMessage) {
                 this.lastMessage = this.messages[this.messages.length - 1];
@@ -370,9 +365,61 @@ export default {
                 if (workItems.length > 0) {
                     const workItem = workItems.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
                     this.lastTask = workItem;
+                    if (this.lastTask.task.temp_feedback && this.lastTask.task.temp_feedback.length > 0) {
+                        this.useFeedback = false;
+                    }
                 }
             }
         },
+
+        async getMessages(chatRoomId) {
+            var me = this;
+            me.messages = []
+            let messages = await this.backend.getMessages(chatRoomId)
+            if (messages) {
+                let allMessages = messages.map(message => {
+                    let newMessage = message.messages;
+                    newMessage.thread_id = message.thread_id || null;
+                    newMessage.uuid = message.uuid;
+                    return newMessage;
+                });
+                allMessages.sort((a, b) => {
+                    return new Date(a.timeStamp) - new Date(b.timeStamp);
+                });
+                me.messages = allMessages;
+            }
+        },
+        async submitFeedback(taskId) {
+            this.closeFeedback();
+            this.runningTaskId = taskId;
+            await this.getTaskLog(false);
+            await this.loadData();
+        },
+        async getTaskLog(useFeedback) {
+            this.subscription = await backend.getTaskLog(this.runningTaskId, async (task) => {
+                this.useFeedback = false;
+                if (task.log) {
+                    this.streamingText = task.log;
+                }
+                if (task.status == "DONE") {
+                    this.streamingText = '';
+                    if (this.subscription) {
+                        // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);
+                        window.$supabase.removeChannel(this.subscription);
+                    }
+                    await this.loadData();
+                    this.$emit('updated');
+                    this.EventBus.emit('instances-updated');
+                    this.useFeedback = useFeedback;
+                }
+            });
+        },
+        async cancelAppliedFeedback() {
+            if (this.lastMessage && this.lastMessage.jsonContent) {
+                this.lastMessage.jsonContent.appliedFeedback = false;
+                await backend.updateInstanceChat(this.chatRoomId, this.lastMessage, this.lastMessage.thread_id, this.lastMessage.uuid);
+            }
+        }
     }
 };
 </script>

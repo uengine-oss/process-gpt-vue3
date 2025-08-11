@@ -48,7 +48,7 @@ spring:
                         allowCredentials: true
 ---
 spring:
-    profiles: dev
+    profiles: docker
     cloud:
         gateway:
             # 기본 타임아웃 설정
@@ -64,7 +64,7 @@ spring:
             routes:
                 # 1. MCP SSE 라우트: 무제한 타임아웃
                 - id: mcp-sse
-                  uri: http://mcp-proxy-service.default.svc.cluster.local:80
+                  uri: http://mcp-proxy-service:80
                   predicates:
                       - Path=/mcp/*/sse/**
                   #   metadata:
@@ -78,7 +78,7 @@ spring:
                 # 2. MCP 서버 생성/상태 확인 라우트 (중간 우선순위)
                 # ===================================================================
                 - id: mcp-control
-                  uri: http://mcp-proxy-service.default.svc.cluster.local:80
+                  uri: http://mcp-proxy-service:80
                   predicates:
                       # 정규식에서 비캡처 그룹 (?:...) 사용
                       - Path=/mcp/*/{action:(?:create|status)}
@@ -90,7 +90,7 @@ spring:
 
                 # 3. MCP 일반 API 라우트: 기본 타임아웃(60초) 사용
                 - id: mcp-api
-                  uri: http://mcp-proxy-service.default.svc.cluster.local:80
+                  uri: http://mcp-proxy-service:80
                   predicates:
                       - Path=/mcp/**
                   filters:

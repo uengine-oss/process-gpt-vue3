@@ -40,7 +40,7 @@
         <v-card flat>
             <v-card-text class="pa-4 pt-3">
                 <!-- 참고해야 할 이전 산출물이 있는 경우 -->
-                <ActivityInputData v-if="hasInputFields" :inputFields="inputFields" />
+                <ActivityInputData v-if="hasInputFields" :inputFields="inputFields" :workItem="workItem" />
 
                 <!-- 등록된 폼 정보가 없을 때 표시되는 메시지 -->
                 <div v-if="isInitialized && (!html || html === 'null') && Object.keys(formData).length === 0 && workItem.activity.checkpoints.length === 0" 
@@ -250,9 +250,11 @@ export default {
                         me.formDefId = 'defaultform'
                         me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
                         if(!me.html) {
-                            me.html = '<NotExistDefaultForm/>'
-                            me.useTextAudio = true;
-                            me.formDefId = 'user_input_text' // default form 이 없는 경우 자유롭게 입력 가능하도록 설정
+                            const html = '<section>  <row-layout name="free_input_section" alias="자유입력" is_multidata_mode="false" v-model="formValues" v-slot="slotProps"><div class="row"><div class="col-sm-12">      <textarea-field name="free_input" alias="자유입력" rows="5" disabled="false" readonly="false" v-model="slotProps.modelValue[\'free_input\']"></textarea-field>    </div></div></row-layout></section>'
+                            await backend.putRawDefinition(html, me.formDefId, { type: 'form' });
+                            me.html = html
+                            // me.useTextAudio = true;
+                            // me.formDefId = 'user_input_text' // default form 이 없는 경우 자유롭게 입력 가능하도록 설정
                         }
                     }
                     if(!me.isDryRun) {

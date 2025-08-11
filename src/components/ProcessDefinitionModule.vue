@@ -676,6 +676,22 @@ export default {
                         shortDescription = processJson.shortDescription ? processJson.shortDescription : null;         
                     }
 
+                    
+                    Object.keys(process).forEach((key) => {
+                        if(key.includes('Event')){
+                            let eventTmp = process[key];
+                            if(eventTmp.attachedToRef){
+                                let attachedActivity = activities.find(activity => activity.id == eventTmp.attachedToRef);
+                                if(attachedActivity){
+                                    if(!attachedActivity.attachedEvents){
+                                        attachedActivity.attachedEvents = [];
+                                    }
+                                    attachedActivity.attachedEvents.push(eventTmp.id);
+                                }
+                            }
+                        }
+                    });
+
                     return {
                         events,
                         activities,
@@ -759,6 +775,7 @@ export default {
                                 task.description = `${activity.name} description`;
                                 task.instruction = `${activity.name} instruction`;
                                 task.process = activity.process;
+                                task.attachedEvents = activity.attachedEvents;
                                 task.role = lanes.find((lane) => {
                                     const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
                                         ? lane['bpmn:flowNodeRef']
@@ -1151,6 +1168,11 @@ export default {
         },
         
         async analyzeDefinition(processDefinition) {
+            if (!processDefinition.activities) {
+                processDefinition = await this.convertXMLToJSON(this.bpmn);
+                processDefinition = this.checkDefinitionSync(processDefinition, this.processDefinition);
+            }
+
             return new Promise((resolve, reject) => {
                 if (processDefinition) {
                     backend.listDefinition('form_def', {

@@ -182,7 +182,7 @@ export default {
         async setRoleMapping() {
             let self = this;
             const instance = await backend.getInstance(this.instanceId);
-            const userList = await backend.getUserList();
+            const workList = await backend.getWorkListByInstId(this.instanceId);
             if (!instance) return;
             const roleMapping = instance.roleBindings;
 
@@ -196,8 +196,8 @@ export default {
                 })[0];
 
                 if (roleElement) {
-                    const user = userList.find(user => user.email === role.endpoint);
-                    const roleName = roleElement.businessObject.name + "\n" + (user ? user.username : role.endpoint);
+                    const workItem = workList.find(item => item.endpoint === String(role.endpoint));
+                    const roleName = roleElement.businessObject.name + "\n" + (workItem && workItem.username ? workItem.username : String(role.endpoint));
 
                     modeling.updateProperties(roleElement, {
                         name: roleName
