@@ -307,19 +307,11 @@ export default {
         attachments: [],
 
         isAgentLearning: false,
+        showAgentLearning: false,
     }),
     computed: {
         filteredChatRoomList() {
             return this.chatRoomList.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
-        },
-        showAgentLearning() {
-            let result = false;
-            if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
-                result = true;
-            }
-            console.log(this.selectedUserInfo)
-            console.log('showAgentLearning', result)
-            return result;
         }
     },
     watch: {
@@ -329,6 +321,11 @@ export default {
                     if (newVal.participants.length > 0) {
                         this.isAgentChat = newVal.participants.some(participant => participant.is_agent);
                         this.selectedUserInfo = newVal.participants.find(participant => participant.is_agent);
+                        if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
+                            this.showAgentLearning = true;
+                        } else {
+                            this.showAgentLearning = false;
+                        }
                     }
                     if(this.generator) {
                         this.chatRoomId = newVal.id;
@@ -686,6 +683,13 @@ export default {
             } else {
                 this.ProcessGPTActive = false
                 this.isSystemChat = false
+            }
+            this.isAgentChat = chatRoomInfo.participants.some(participant => participant.is_agent);
+            this.selectedUserInfo = chatRoomInfo.participants.find(participant => participant.is_agent);
+            if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
+                this.showAgentLearning = true;
+            } else {
+                this.showAgentLearning = false;
             }
             this.getMessages(this.currentChatRoom.id);
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
