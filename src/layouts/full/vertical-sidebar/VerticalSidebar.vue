@@ -99,15 +99,11 @@
                         <PlusIcon size="15"/>
                     </v-btn>
                 </v-row>
-                <v-col v-if="isShowProject" class="pa-0" style="flex: 1 1 auto; overflow-y: auto; max-height: 350px;">
+                <v-col v-if="isShowProject" class="pa-0">
                     <ProjectList/>
                 </v-col>
                 
-                <v-col v-if="!pal" class="pa-0"
-                    style="flex: 1 1 auto;
-                    overflow-y: auto;
-                    max-height: 350px;"
-                >
+                <v-col v-if="!pal" class="pa-0">
                     <div class="d-flex align-center justify-between">
                         <div v-for="(item, index) in instanceItem" :key="item.title">
                             <div v-if="!item.icon" style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
@@ -156,13 +152,14 @@
                             </template>
                         </v-row>
                     </template> -->
+
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
                 </v-col>
               
                
-                <v-col class="pa-0" style="flex: 0 0 auto;">
+                <v-col class="pa-0">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
                         <!-- Item Sub Header -->
@@ -193,11 +190,7 @@
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
                 </v-col>
-                <v-col class="pa-0" 
-                    style="flex: 1 1 auto;
-                    overflow-y: auto;
-                    max-height: 350px;"
-                >
+                <v-col class="pa-0">
                     <template v-if="definitionList">
                         <!-- 정의 목록 리스트 -->
                         <NavCollapse v-for="(definition, i) in definitionList" :key="i"

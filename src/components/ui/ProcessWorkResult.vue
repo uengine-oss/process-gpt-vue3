@@ -10,6 +10,31 @@
                         </div>
                         <v-list dense class="pa-0">
                             <v-list-item v-for="(activity, index) in resultJson.completedActivities" :key="'completed-' + index" class="px-0">
+                                <v-row v-if="getUserInfoForCompleted(activity)"
+                                    class="ma-0 pa-0 align-center mb-2"
+                                >
+                                    <div class="mr-2" style="width: 24px;">
+                                        <v-img 
+                                            :src="getUserInfoForCompleted(activity).profile || '/images/defaultUser.png'"
+                                            alt="profile"
+                                            width="24"
+                                            height="24"
+                                            style="border-radius: 50%;"
+                                        />
+                                    </div>
+                                    <span class="body-text-2 text-medium-emphasis">{{ getUserInfoForCompleted(activity).username }}</span>
+                                </v-row>
+                                <v-row v-else-if="isLoadingUsers" class="ma-0 pa-0 align-center mb-2">
+                                    <div class="mr-2" style="width: 24px;">
+                                        <v-progress-circular 
+                                            indeterminate 
+                                            color="primary" 
+                                            size="16"
+                                            width="2"
+                                        ></v-progress-circular>
+                                    </div>
+                                    <span class="body-text-2 text-medium-emphasis">완료자 정보 로딩 중...</span>
+                                </v-row>
                                 <v-list-item-content>
                                     <v-list-item-title class="font-weight-bold">활동: {{ activity.completedActivityName }}</v-list-item-title>
                                     <v-list-item-subtitle>{{ activity.description }}</v-list-item-subtitle>
@@ -34,6 +59,31 @@
                         <v-list dense class="pa-0">
                             <v-list-item v-for="(activity, index) in resultJson.nextActivities" :key="'next-' + index" class="px-0">
                                 <v-list-item-content>
+                                    <v-row v-if="getUserInfoForNext(activity)"
+                                        class="ma-0 pa-0 align-center mb-2"
+                                    >
+                                        <div class="mr-2" style="width: 24px;">
+                                            <v-img 
+                                                :src="getUserInfoForNext(activity).profile || '/images/defaultUser.png'"
+                                                alt="profile"
+                                                width="24"
+                                                height="24"
+                                                style="border-radius: 50%;"
+                                            />
+                                        </div>
+                                        <div class="body-text-2 text-medium-emphasis">{{ getUserInfoForNext(activity).username }}</div>
+                                    </v-row>
+                                    <v-row v-else-if="isLoadingUsers" class="ma-0 pa-0 align-center mb-2">
+                                        <div class="mr-2" style="width: 24px;">
+                                            <v-progress-circular 
+                                                indeterminate 
+                                                color="primary" 
+                                                size="16"
+                                                width="2"
+                                            ></v-progress-circular>
+                                        </div>
+                                        <div class="body-text-2 text-medium-emphasis">담당자 정보 로딩 중...</div>
+                                    </v-row>
                                     <v-list-item-title class="font-weight-bold">활동: {{ activity.nextActivityName }}</v-list-item-title>
                                     <v-list-item-subtitle>{{ activity.description }}</v-list-item-subtitle>
                                 </v-list-item-content>
@@ -79,14 +129,17 @@ const backend = BackendFactory.createBackend();
 
 export default {
     props: {
-        message: Object,
+        message: Object
     },
     data: () => ({
         resultJson: {
             completedActivities: [],
             nextActivities: [],
             referenceInfo: []
-        }
+        },
+        userList: [],
+        isLoadingUsers: false,
+        loadedUserInfo: {} // 로드된 사용자 정보 캐시
     }),
     mounted() {
         this.init();
@@ -100,6 +153,67 @@ export default {
                     this.resultJson = this.message.jsonContent;
                 }
             }
+        },
+        async loadUserList() {
+            if (this.isLoadingUsers || this.userList.length > 0) {
+                return; // 이미 로딩 중이거나 로드됨
+            }
+            
+            try {
+                this.isLoadingUsers = true;
+                console.log('사용자 목록 로드 시작');
+                this.userList = await backend.getUserList({});
+                console.log('사용자 목록 로드 완료:', this.userList);
+                this.$forceUpdate(); // UI 갱신
+            } catch (error) {
+                console.error('사용자 목록 로드 실패:', error);
+            } finally {
+                this.isLoadingUsers = false;
+            }
+        },
+        getUserInfoById(userId) {
+            if (!userId || !this.userList || this.userList.length === 0) {
+                // 사용자 목록이 없으면 로드 시작
+                if (!this.isLoadingUsers) {
+                    this.loadUserList();
+                }
+                return null;
+            }
+            
+            // 캐시에서 먼저 확인
+            if (this.loadedUserInfo[userId]) {
+                return this.loadedUserInfo[userId];
+            }
+            
+            // 사용자 목록에서 찾기 (UUID, email 등 다양한 필드로 매칭)
+            const foundUser = this.userList.find(user => 
+                user.id === userId || 
+                user.userId === userId || 
+                user.email === userId ||
+                user.uuid === userId
+            );
+            
+            if (foundUser) {
+                // 캐시에 저장
+                this.loadedUserInfo[userId] = foundUser;
+                console.log('사용자 찾음:', foundUser, 'for ID:', userId);
+                return foundUser;
+            }
+            
+            console.log('사용자를 찾을 수 없음:', userId, '전체 사용자 목록:', this.userList);
+            return null;
+        },
+        getUserInfoForCompleted(activity) {
+            if (!activity || !activity.completedUserEmail) {
+                return null;
+            }
+            return this.getUserInfoById(activity.completedUserEmail);
+        },
+        getUserInfoForNext(activity) {
+            if (!activity || !activity.nextUserEmail) {
+                return null;
+            }
+            return this.getUserInfoById(activity.nextUserEmail);
         }
     }
 }
