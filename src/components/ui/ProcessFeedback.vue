@@ -20,7 +20,7 @@
                     <tbody>
                         <tr v-for="(item, key) in diffItems" :key="key">
                             <td>
-                                <v-checkbox v-model="item.changed" color="primary" density="compact" />
+                                <v-checkbox v-model="item.accepted" color="primary" density="compact" />
                             </td>
                             <td>{{ item.title }}</td>
                             <td>
@@ -34,7 +34,6 @@
                                             <v-list-item-title class="text-body-2">
                                                 <template v-if="typeof listItem === 'object' && listItem.name">
                                                     <div class="font-weight-medium">{{ listItem.name }}</div>
-                                                    <div class="text-caption text-grey">{{ listItem.value }}</div>
                                                 </template>
                                                 <template v-else>
                                                     {{index+1}}. {{ listItem }}
@@ -58,7 +57,6 @@
                                             <v-list-item-title class="text-body-2">
                                                 <template v-if="typeof listItem === 'object' && listItem.name">
                                                     <div class="font-weight-medium">{{ listItem.name }}</div>
-                                                    <div class="text-caption text-grey">{{ listItem.value }}</div>
                                                 </template>
                                                 <template v-else>
                                                     {{index+1}}. {{ listItem }}
@@ -82,7 +80,7 @@
             </v-card-text>
 
             <v-card-text v-else-if="!isLoading && !isAcceptMode" class="pa-3">
-                <div class="text-h6 mb-2">피드백을 선택해주세요:</div>
+                <div class="text-h6 mb-2 text-left">피드백을 선택해주세요:</div>
                 <v-list class="feedback-list">
                     <v-list-item
                         v-for="(item, index) in feedbackItems"
@@ -132,25 +130,25 @@ export default {
                 title: '입력 데이터',
                 before: [],
                 after: [],
-                changed: true
+                accepted: true
             },
             checkpoints: {
                 title: '체크포인트',
                 before: [],
                 after: [],
-                changed: true
+                accepted: true
             },
             description: {
                 title: '설명',
                 before: '',
                 after: '',
-                changed: true
+                accepted: true
             },
             instruction: {
                 title: '지시사항',
                 before: '',
                 after: '',
-                changed: true
+                accepted: true
             }
         },
         feedbackDiff: {
@@ -188,7 +186,7 @@ export default {
                     this.feedbackValue = this.feedbackText;
                 }
                 await backend.submitFeedback(this.feedbackValue, this.task.taskId);
-                this.closeFeedback();
+                this.$emit('submitFeedback', this.task.taskId);
             }
         },
         closeFeedback() {
@@ -198,9 +196,11 @@ export default {
             const diff = await backend.getFeedbackDiff(this.task.taskId);
             if (diff && diff.modifications) {
                 for (const key in diff.modifications) {
-                    if (diff.modifications[key]) {
+                    if (diff.modifications[key] && diff.modifications[key].changed) {
                         this.diffItems[key].before = diff.modifications[key].before;
                         this.diffItems[key].after = diff.modifications[key].after;
+                    } else {
+                        delete this.diffItems[key];
                     }
                 }
             }
@@ -211,7 +211,7 @@ export default {
                 return;
             }
             Object.keys(this.diffItems).forEach(key => {
-                if (this.diffItems[key].changed) {
+                if (this.diffItems[key].accepted) {
                     this.feedbackDiff[key] = this.diffItems[key].after;
                 }
             });

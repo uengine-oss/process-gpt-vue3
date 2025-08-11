@@ -323,8 +323,8 @@ export default {
         },
         isParticipant() {
             if (this.instance) {
-                const email = localStorage.getItem('email');
-                if (this.instance.participants && this.instance.participants.length > 0 && this.instance.participants.includes(email)) {
+                const uid = localStorage.getItem('uid');
+                if (this.instance.participants && this.instance.participants.length > 0 && this.instance.participants.includes(uid)) {
                     return true;
                 }
             }

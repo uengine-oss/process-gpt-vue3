@@ -676,6 +676,22 @@ export default {
                         shortDescription = processJson.shortDescription ? processJson.shortDescription : null;         
                     }
 
+                    
+                    Object.keys(process).forEach((key) => {
+                        if(key.includes('Event')){
+                            let eventTmp = process[key];
+                            if(eventTmp.attachedToRef){
+                                let attachedActivity = activities.find(activity => activity.id == eventTmp.attachedToRef);
+                                if(attachedActivity){
+                                    if(!attachedActivity.attachedEvents){
+                                        attachedActivity.attachedEvents = [];
+                                    }
+                                    attachedActivity.attachedEvents.push(eventTmp.id);
+                                }
+                            }
+                        }
+                    });
+
                     return {
                         events,
                         activities,
@@ -754,11 +770,12 @@ export default {
                             try {
                                 let task = {};
                                 task.name = activity.name;
-                                task.id = activity.id.toLowerCase();
+                                task.id = activity.id;
                                 task.type = activity.type;
                                 task.description = `${activity.name} description`;
                                 task.instruction = `${activity.name} instruction`;
                                 task.process = activity.process;
+                                task.attachedEvents = activity.attachedEvents;
                                 task.role = lanes.find((lane) => {
                                     const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
                                         ? lane['bpmn:flowNodeRef']

@@ -7,7 +7,7 @@
 node_modules/
 dist/
 package-lock.json
-
+gateway/
 acebase/package-lock.json
 acebase/mydb.acebase
 *.db
