@@ -70,11 +70,7 @@
                         <template v-slot:custom-chat-top>
                             <div class="custom-top-area">
                                 <div class="position-fixed">
-                                    <div v-if="isAgentChat && selectedUserInfo && 
-                                        selectedUserInfo.is_agent && 
-                                        selectedUserInfo.persona && 
-                                        selectedUserInfo.persona !== ''"
-                                    >
+                                    <div v-if="showAgentLearning">
                                         <v-switch v-model="isAgentLearning" color="primary" label="학습 모드" density="compact" class="ml-4" />
                                     </div>
                                     <div v-if="attachments.length > 0">
@@ -315,6 +311,15 @@ export default {
     computed: {
         filteredChatRoomList() {
             return this.chatRoomList.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
+        },
+        showAgentLearning() {
+            let result = false;
+            if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
+                result = true;
+            }
+            console.log(this.selectedUserInfo)
+            console.log('showAgentLearning', result)
+            return result;
         }
     },
     watch: {
