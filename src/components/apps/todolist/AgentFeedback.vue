@@ -49,14 +49,14 @@
     <!-- 피드백 완료했지만 내용이 없는 경우 -->
     <div v-else-if="feedbackState === 'completed'" class="empty-feedback">
       <div class="empty-icon">📝</div>
-      <h3>피드백 내용이 없습니다</h3>
+      <h3>학습 내용이 없습니다</h3>
     </div>
 
     <!-- 대기 상태 -->
     <div v-else class="empty-state">
       <div class="empty-icon">📋</div>
-      <h3>피드백 대기중입니다</h3>
-      <p>에이전트 피드백이 시작되면 여기에 표시됩니다.</p>
+      <h3>학습 대기중입니다</h3>
+      <p>에이전트 피드학습이 시작되면 여기에 표시됩니다.</p>
     </div>
   </div>
 </template>

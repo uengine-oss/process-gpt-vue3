@@ -647,7 +647,7 @@ export default {
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
-                        { value: 'agent-feedback', label: '에이전트 피드백' },
+                        { value: 'agent-feedback', label: '에이전트 학습' },
                     ]
                 } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
                     return [
@@ -655,13 +655,13 @@ export default {
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
-                        { value: 'agent-feedback', label: '에이전트 피드백' },
+                        { value: 'agent-feedback', label: '에이전트 학습' },
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                     ]
                 } else {
                     return [
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') }, //어시스턴트
-                        { value: 'agent-feedback', label: '에이전트 피드백' },
+                        { value: 'agent-feedback', label: '에이전트 학습' },
                     ]
                 }
                 
@@ -669,7 +669,7 @@ export default {
                 return[
                     { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                     { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
-                    { value: 'agent-feedback', label: '에이전트 피드백' },
+                    { value: 'agent-feedback', label: '에이전트 학습' },
                 ]
 
                 // if(this.inFormNameTabs.length > 0) {

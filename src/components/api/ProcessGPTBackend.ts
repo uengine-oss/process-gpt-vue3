@@ -3135,6 +3135,7 @@ class ProcessGPTBackend implements Backend {
             tracingTag: item.activity_id || '',
             description: item.description || '',
             endpoint: item.user_id,
+            username: item.username,
             assignees: item.assignees || [],
             adhoc: item.adhoc || false,
             referenceIds: item.reference_ids || [],
