@@ -212,6 +212,19 @@ const deleteChatRoom = () => {
 <template>
     <v-sheet>
         <div class="px-6 pt-3">
+            <v-row class="align-center flex-fill border border-borderColor header-search rounded-pill px-5 ma-0 pa-0"
+                style="min-width:100%;"
+            >
+                <Icons :icon="'magnifer-linear'" :size="22" />
+                <v-text-field v-model="searchValue" variant="plain" density="compact"
+                    class="position-relative pt-0 ml-3 custom-placeholer-color" :placeholder="$t('chatListing.search')"
+                    single-line hide-details
+                ></v-text-field>
+            </v-row>
+        </div>
+    </v-sheet>
+    <!-- <v-sheet>
+        <div class="px-6 pt-3">
             <div class="d-flex">
                 <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
                     <Icons :icon="'magnifer-linear'" :size="22" />
@@ -220,15 +233,15 @@ const deleteChatRoom = () => {
                         single-line hide-details
                     ></v-text-field>
                 </div>
-                <!-- <v-btn @click="openDialog"
+                <v-btn @click="openDialog"
                     density="comfortable" 
                     icon
                     class="ml-auto"
                 >
                     <v-icon>mdi-chat-plus</v-icon>
-                </v-btn> -->
+                </v-btn>
             </div>
-            <!-- <v-menu>
+            <v-menu>
                 <template v-slot:activator="{ props }">
                     <v-btn color="white" variant="flat" class="mt-4 text-medium-emphasis" v-bind="props"
                         >Recent Chats <ChevronDownIcon size="18" class="ml-2" />
@@ -239,9 +252,9 @@ const deleteChatRoom = () => {
         <v-list-item-title>{{ item.title }}</v-list-item-title>
     </v-list-item>
 </v-list>
-</v-menu> -->
+</v-menu> 
         </div>
-    </v-sheet>
+    </v-sheet> -->
     <v-dialog v-model="dialog" persistent max-width="600px">
         <v-card class="ma-0 pa-4">
             <v-row class="ma-0 pa-0">

@@ -253,7 +253,7 @@
                 :class="isMobile ? 'order-first' : ''"
                 :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 190px); overflow: auto')"
             >
-                <div v-if="currentComponent && !isNotExistDefaultForm" class="work-itme-current-component" style="height: 100%;">
+                <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
                     <!-- FormDefinition 분리된 영역 -->
                     <FormDefinition v-if="isSimulate == 'true' && showFeedbackForm"
                         ref="formDefinition"
@@ -409,25 +409,6 @@
                         ></component>
                     </template>
                 </div>
-                <div v-else-if="isNotExistDefaultForm">
-                    <div class="d-flex justify-center align-center" style="height: 100%;">
-                        <div class="text-center">
-                            <v-icon size="100" color="grey-lighten-1">mdi-form-textbox</v-icon>
-                            <h3 class="mt-4 text-grey-darken-1">해당 단계의 입력 폼이 없습니다.</h3>
-                            <p class="mt-2 text-grey-darken-2">기본 폼을 생성하여 입력 폼이 없는 단계들에 사용하실 수 있습니다.</p>
-                            <v-btn 
-                                color="primary" 
-                                class="mt-4"
-                                @click="goToDefaultForm"
-                                variant="flat"
-                                size="large"
-                            >
-                                <v-icon class="mr-2">mdi-plus</v-icon>
-                                기본 폼 생성하러 가기
-                            </v-btn>
-                        </div>
-                    </div>
-                </div>
             </v-col>
         </v-row>
         
@@ -557,7 +538,6 @@ export default {
         micRecorder: null,
         micAudioChunks: [],
 
-        isNotExistDefaultForm: false,
         assigneeUserInfo: null,
         isLoading: false,
         delegateTaskDialog: false,
@@ -568,13 +548,9 @@ export default {
             this.updatedDefKey++;
         });
         this.EventBus.on('html-updated', (newHtml) => {
-            if(newHtml === '<NotExistDefaultForm/>') {
-                this.isNotExistDefaultForm = true;
-            } else {
-                this.html = newHtml
-                if(this.isSimulate == 'true' && !this.generator) {
-                    this.beforeGenerateExample();
-                }
+            this.html = newHtml
+            if(this.isSimulate == 'true' && !this.generator) {
+                this.beforeGenerateExample();
             }
         });
         this.EventBus.on('formData-updated', (newformData) => {

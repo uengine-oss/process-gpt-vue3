@@ -4,26 +4,26 @@
             <template v-if="!isInstanceChat" v-slot:leftpart="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab" grow color="primary">
-                        <!-- <v-tab>
+                        <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-account</v-icon>
                             {{ $t('chat.user') }}
-                        </v-tab> -->
+                        </v-tab>
                         <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-message</v-icon>
                             {{ $t('chat.chatRoom') }}
                         </v-tab>
                     </v-tabs>
                     <v-tabs-items v-model="activeTab">
-                        <!-- <v-tab-item v-if="activeTab == 0">
-                            <ChatProfile style="margin-bottom: -15px;" />
-                            <v-divider class="my-2"></v-divider>
+                        <v-tab-item v-if="activeTab == 0">
+                            <!-- <ChatProfile style="margin-bottom: -15px;" /> -->
+                            <!-- <v-divider class="my-2"></v-divider> -->
                             <UserListing 
                                 :userList="userList" 
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
-                        </v-tab-item> -->
-                        <v-tab-item v-if="activeTab == 0">
+                        </v-tab-item>
+                        <v-tab-item v-if="activeTab == 1">
                             <ChatListing 
                                 :chatRoomList="filteredChatRoomList" 
                                 :userList="userList" 
@@ -98,26 +98,26 @@
             <template v-if="!isInstanceChat" v-slot:mobileLeftContent="{ closeDrawer }">
                 <div class="no-scrollbar">
                     <v-tabs v-model="activeTab">
-                        <!-- <v-tab>
+                        <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-account</v-icon>
                             {{ $t('chat.user') }}
-                        </v-tab> -->
+                        </v-tab>
                         <v-tab>
                             <v-icon class="mt-1 mr-2">mdi-message</v-icon>
                             {{ $t('chat.chatRoom') }}
                         </v-tab>
                     </v-tabs>
                     <v-tabs-items v-model="activeTab">
-                        <!-- <v-tab-item v-if="activeTab == 0">
-                            <ChatProfile style="margin-bottom: -15px;" />
-                            <v-divider class="my-2"></v-divider>
+                        <v-tab-item v-if="activeTab == 0">
+                            <!-- <ChatProfile style="margin-bottom: -15px;" /> -->
+                            <!-- <v-divider class="my-2"></v-divider> -->
                             <UserListing 
                                 :userList="userList" 
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
-                        </v-tab-item> -->
-                        <v-tab-item v-if="activeTab == 0">
+                        </v-tab-item>
+                        <v-tab-item v-if="activeTab == 1">
                             <ChatListing 
                                 :chatRoomList="filteredChatRoomList" 
                                 :userList="userList" 
@@ -239,7 +239,7 @@ import ChatModule from "@/components/ChatModule.vue";
 import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
 import AgentChatGenerator from "@/components/ai/AgentChatGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
-// import UserListing from '@/components/apps/chats/UserListing.vue';
+import UserListing from '@/components/apps/chats/UserListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
@@ -255,7 +255,7 @@ export default {
         Chat,
         AppBaseCard,
         ChatListing,
-        // UserListing,
+        UserListing,
         ChatProfile,
         VDataTable,
         AssistantChats,
@@ -287,7 +287,7 @@ export default {
         userList: [],
         chatRenderKey: 0,
         generatedWorkList: [],
-        activeTab: 0,
+        activeTab: 1,
         
         // assistantChat
         checked: true,
