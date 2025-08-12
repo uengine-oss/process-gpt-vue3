@@ -82,7 +82,6 @@
                         density="compact"
                     >취소</v-btn>
                     <v-btn @click="setFeedbackDiff"
-                        :disabled="!feedbackValue"
                         color="primary"
                         variant="elevated" 
                         class="rounded-pill"

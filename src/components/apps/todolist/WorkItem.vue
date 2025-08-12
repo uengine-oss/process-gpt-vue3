@@ -597,16 +597,16 @@ export default {
             if (this.isStarted || this.isSimulate == 'true') {
                 return true;
             }
-            const currentUserEmail = localStorage.getItem('email');
+            const currentUserId = localStorage.getItem('uid');
             const endpoint = this.workItem && this.workItem.worklist ? this.workItem.worklist.endpoint : null;
-            if (!currentUserEmail || !endpoint) {
+            if (!currentUserId || !endpoint) {
                 return false;
             }
             if (Array.isArray(endpoint)) {
-                return endpoint.includes(currentUserEmail);
+                return endpoint.includes(currentUserId);
             }
             // endpoint가 단일 이메일이거나 콤마로 구분된 문자열일 수 있음
-            return String(endpoint).split(',').map(e => e.trim()).includes(currentUserEmail);
+            return String(endpoint).split(',').map(e => e.trim()).includes(currentUserId);
         },
         mode() {
             return window.$mode;
