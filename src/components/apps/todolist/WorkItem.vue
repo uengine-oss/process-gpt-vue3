@@ -56,8 +56,8 @@
                     </v-row>
                 </v-row>
                 <v-divider v-if="isMobile" class="my-2"></v-divider>
-                <v-row v-if="isSimulate == 'true'" class="pa-0 pt-1 pb-1 ma-0 align-center">
-                    <!-- <v-tooltip v-if="isSimulate == 'true'" text="이전 단계">
+                <!-- <v-row v-if="isSimulate == 'true'" class="pa-0 pt-1 pb-1 ma-0 align-center">
+                    <v-tooltip v-if="isSimulate == 'true'" text="이전 단계">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="backToPrevStep"
                                 class="ml-1"
@@ -69,7 +69,7 @@
                                 
                             </v-btn>
                         </template>
-                    </v-tooltip> -->
+                    </v-tooltip>
                     <v-btn v-if="isSimulate == 'true'" 
                         :disabled="activityIndex == 0"
                         @click="backToPrevStep"
@@ -78,7 +78,7 @@
                         density="compact"
                         style="background-color: #808080; color: white;"
                     >이전 단계</v-btn>
-                </v-row>
+                </v-row> -->
             </div>
         </div>
 
@@ -275,9 +275,11 @@
                             :dryRunWorkItem="dryRunWorkItem"
                             :currentActivities="currentActivities"
                             :isOwnWorkItem="isOwnWorkItem"
+                            :activityIndex="activityIndex"
                             @updateCurrentActivities="updateCurrentActivities"
                             @close="close"
                             @executeProcess="executeProcess"
+                            @backToPrevStep="backToPrevStep"
                             :is-simulate="isSimulate"
                             :is-finished-agent-generation="isFinishedAgentGeneration"
                             :processDefinition="processDefinition"

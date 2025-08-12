@@ -218,12 +218,14 @@ export default {
         isValid() {
             if (this.tab == 'user') {
                 if (this.isNewUser) {
-                    return this.emailRules.every(rule => rule(this.newUser.email) === true) && this.nameRules.every(rule => rule(this.newUser.name) === true);
+                    return this.newUser && 
+                           this.emailRules.every(rule => rule(this.newUser.email) === true) && 
+                           this.nameRules.every(rule => rule(this.newUser.name) === true);
                 } else {
                     return true;
                 }
             } else {
-                return this.nameRules.every(rule => rule(this.newAgent.name) === true);
+                return this.newAgent && this.nameRules.every(rule => rule(this.newAgent.name) === true);
             }
         }
     },
@@ -301,8 +303,10 @@ export default {
         save() {
             if (this.tab == 'user') {
                 this.selectedList.map(member => {
-                    member.data.id = member.id
-                    member.data.pid = this.teamInfo.id
+                    if (member && member.data) {
+                        member.data.id = member.id
+                        member.data.pid = this.teamInfo.id
+                    }
                 })
                 if (this.isNewUser) {
                     this.$emit('addUser', this.selectedList, this.newUser)
