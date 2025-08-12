@@ -241,7 +241,7 @@ create table if not exists public.todolist (
     project_id uuid null,
     draft jsonb null,
     agent_mode text null,
-    agent_orch text null check (agent_orch in ('crewai', 'openai')),
+    agent_orch text null,
     feedback jsonb null,
     draft_status text null,
     updated_at timestamp with time zone default now(),
@@ -402,31 +402,12 @@ create table if not exists public.events (
   todo_id text null,
   proc_inst_id text null,
   event_type text not null,
+  status text null,
   crew_type text null,
   data jsonb not null,
   timestamp timestamp with time zone null default now(),
   constraint events_pkey primary key (id)
 ) TABLESPACE pg_default;
-
-
--- 1) 기존에 같은 이름의 ENUM 타입이 있으면 제거
-DROP TYPE IF EXISTS public.event_type_enum;
-
--- 2) 새로운 ENUM 타입 생성
-CREATE TYPE public.event_type_enum AS ENUM (
-  'task_started',
-  'task_completed',
-  'tool_usage_started',
-  'tool_usage_finished',
-  'crew_completed',
-  'human_asked'
-);
-
--- 3) events 테이블이 있으면 event_type 컬럼을 새 ENUM으로 변경
-ALTER TABLE IF EXISTS public.events
-  ALTER COLUMN event_type
-    TYPE public.event_type_enum
-    USING event_type::public.event_type_enum;
 
 -- Create indexes
 create index if not exists idx_processed_files_tenant_id on public.processed_files using btree (tenant_id) tablespace pg_default;
@@ -1416,6 +1397,56 @@ CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
 CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
 -- 에이전트 모드 enum
 CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
+-- 오케스트레이션 방식 enum
+CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research');
+-- 드래프트 상태 enum
+CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED');
+-- 이벤트 타입 enum
+CREATE TYPE event_type_enum AS ENUM (
+  'task_started',
+  'task_completed',
+  'tool_usage_started',
+  'tool_usage_finished',
+  'crew_completed',
+  'human_asked',
+  'human_response'
+);
+-- 이벤트 상태 enum
+CREATE TYPE event_status AS ENUM ('ASKED', 'APPROVED', 'REJECTED');
+
+-- events 테이블 마이그레이션 (event_type)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.events ADD COLUMN event_type_new event_type_enum;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.events
+SET event_type_new = CASE
+  WHEN event_type = 'task_started' THEN 'task_started'::event_type_enum
+  WHEN event_type = 'task_completed' THEN 'task_completed'::event_type_enum
+  WHEN event_type = 'tool_usage_started' THEN 'tool_usage_started'::event_type_enum
+  WHEN event_type = 'tool_usage_finished' THEN 'tool_usage_finished'::event_type_enum
+  WHEN event_type = 'crew_completed' THEN 'crew_completed'::event_type_enum
+  WHEN event_type = 'human_asked' THEN 'human_asked'::event_type_enum
+  WHEN event_type = 'human_response' THEN 'human_response'::event_type_enum
+  ELSE NULL  -- 기본값을 NULL로 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.events DROP COLUMN event_type;
+ALTER TABLE public.events RENAME COLUMN event_type_new TO event_type;
+
+-- events 테이블 마이그레이션 (status)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.events ADD COLUMN status_new event_status;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.events
+SET status_new = CASE
+  WHEN status = 'ASKED' THEN 'ASKED'::event_status
+  WHEN status = 'APPROVED' THEN 'APPROVED'::event_status
+  WHEN status = 'REJECTED' THEN 'REJECTED'::event_status
+  ELSE NULL  -- 기본값을 NULL로 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.events DROP COLUMN status;
+ALTER TABLE public.events RENAME COLUMN status_new TO status;
 
 -- bpm_proc_inst 테이블 마이그레이션 (status)
 -- 1. 임시 컬럼 추가
@@ -1465,6 +1496,40 @@ END;
 -- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
 ALTER TABLE public.todolist DROP COLUMN agent_mode;
 ALTER TABLE public.todolist RENAME COLUMN agent_mode_new TO agent_mode;
+
+
+-- todolist 테이블 마이그레이션 (agent_orch)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.todolist ADD COLUMN agent_orch_new agent_orch;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.todolist 
+SET agent_orch_new = CASE 
+    WHEN agent_orch = 'crewai-deep-research' THEN 'crewai-deep-research'::agent_orch
+    WHEN agent_orch = 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
+    WHEN agent_orch = 'crewai-action' THEN 'crewai-action'::agent_orch
+    ELSE NULL  -- 기본값을 NULL로 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.todolist DROP COLUMN agent_orch;
+ALTER TABLE public.todolist RENAME COLUMN agent_orch_new TO agent_orch;
+
+
+-- todolist 테이블 마이그레이션 (draft_status)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.todolist ADD COLUMN draft_status_new draft_status;
+-- 2. 기존 데이터를 새 enum 타입으로 변환 (정확 스펠링 기준)
+UPDATE public.todolist 
+SET draft_status_new = CASE 
+    WHEN draft_status = 'STARTED' THEN 'STARTED'::draft_status
+    WHEN draft_status = 'CANCELLED' THEN 'CANCELLED'::draft_status
+    WHEN draft_status = 'COMPLETED' THEN 'COMPLETED'::draft_status
+    WHEN draft_status = 'FB_REQUESTED' THEN 'FB_REQUESTED'::draft_status
+    WHEN draft_status = 'HUMAN_ASKED' THEN 'HUMAN_ASKED'::draft_status
+    ELSE NULL  -- 기본값을 NULL로 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.todolist DROP COLUMN draft_status;
+ALTER TABLE public.todolist RENAME COLUMN draft_status_new TO draft_status;
 
 
 

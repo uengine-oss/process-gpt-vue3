@@ -67,14 +67,10 @@
                         @toggleProcessGPTActive="toggleProcessGPTActive"
                         @startWorkOrder="startWorkOrder"
                     >
-                        <template #custom-chat-top>
+                        <template v-slot:custom-chat-top>
                             <div class="custom-top-area">
                                 <div class="position-fixed">
-                                    <div v-if="isAgentChat && selectedUserInfo && 
-                                        selectedUserInfo.is_agent && 
-                                        selectedUserInfo.persona && 
-                                        selectedUserInfo.persona !== ''"
-                                    >
+                                    <div v-if="showAgentLearning">
                                         <v-switch v-model="isAgentLearning" color="primary" label="학습 모드" density="compact" class="ml-4" />
                                     </div>
                                     <div v-if="attachments.length > 0">
@@ -261,6 +257,15 @@ export default {
         AssistantChats,
         Attachments
     },
+    emits: [
+        'selectedUser',
+        'startChat', 
+        'chat-selected',
+        'create-chat-room',
+        'delete-chat-room',
+        'genFinished',
+        'clickedWorkOrder'
+    ],
     props: {
         isInstanceChat: {
             type: Boolean,
@@ -302,6 +307,7 @@ export default {
         attachments: [],
 
         isAgentLearning: false,
+        showAgentLearning: true,
     }),
     computed: {
         filteredChatRoomList() {
@@ -315,6 +321,11 @@ export default {
                     if (newVal.participants.length > 0) {
                         this.isAgentChat = newVal.participants.some(participant => participant.is_agent);
                         this.selectedUserInfo = newVal.participants.find(participant => participant.is_agent);
+                        if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
+                            this.showAgentLearning = true;
+                        } else {
+                            this.showAgentLearning = false;
+                        }
                     }
                     if(this.generator) {
                         this.chatRoomId = newVal.id;
@@ -424,10 +435,10 @@ export default {
         },
         startChat(type){
             let chatRoomInfo
-            const selectedUserEmail = this.selectedUserInfo.email;
+            const selectedUserEmail = this.selectedUserInfo.email || this.selectedUserInfo.id;
             const selectedUserName = this.selectedUserInfo.username || this.selectedUserInfo.name;
-            const currentUserEmail = this.userInfo.email;
-            const currentUserName = this.userInfo.username;
+            const currentUserEmail = this.userInfo.email || this.userInfo.id;
+            const currentUserName = this.userInfo.username || this.userInfo.name;
 
             if(type == 'work'){
                 chatRoomInfo = {}
@@ -437,7 +448,7 @@ export default {
                 this.createChatRoom(chatRoomInfo)
             } else {
                 const chatRoomExists = this.chatRoomList.some(chatRoom => {
-                    if(chatRoom.participants.length == 2){
+                    if(chatRoom.participants.length == 2) {
                         const participantEmails = chatRoom.participants.map(participant => participant.email);
                         const participantNames = chatRoom.participants.map(participant => participant.username);
                         chatRoomInfo = chatRoom
@@ -672,6 +683,13 @@ export default {
             } else {
                 this.ProcessGPTActive = false
                 this.isSystemChat = false
+            }
+            this.isAgentChat = chatRoomInfo.participants.some(participant => participant.is_agent);
+            this.selectedUserInfo = chatRoomInfo.participants.find(participant => participant.is_agent);
+            if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
+                this.showAgentLearning = true;
+            } else {
+                this.showAgentLearning = false;
             }
             this.getMessages(this.currentChatRoom.id);
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
