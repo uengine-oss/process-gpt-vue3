@@ -39,8 +39,50 @@
               </div>
             </div>
 
+            <!-- Human Asked 응답 영역 -->
+            <div v-if="item.payload.isHumanAsked" class="human-query-input">
+              <div class="query-header">
+                <h4 class="query-title">응답 요청</h4>
+                <div class="role-pill">{{ item.payload.role }}</div>
+              </div>
+              <div class="query-content">
+                <p class="query-question">{{ item.payload.humanQueryData.text || '요청 내용이 전송되었습니다.' }}</p>
+                <div v-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'text'" class="input-field">
+                  <input 
+                    v-model.trim="humanQueryAnswers[item.payload.id]" 
+                    class="query-input" 
+                    type="text" 
+                    placeholder="답변을 입력하세요" 
+                  />
+                </div>
+                <div v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'select'" class="input-field">
+                  <select v-model="humanQueryAnswers[item.payload.id]" class="query-select">
+                    <option disabled value="">선택하세요</option>
+                    <option v-for="opt in item.payload.humanQueryData.options" :key="opt" :value="opt">{{ opt }}</option>
+                  </select>
+                </div>
+                <div v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'confirm'" class="confirm-hint">
+                  계속 진행하시려면 확인을 눌러주세요.
+                </div>
+              </div>
+              <div v-if="!item.payload.isCompleted" class="query-actions">
+                <button 
+                  class="query-confirm" 
+                  :disabled="item.payload.humanQueryData.type !== 'confirm' && !humanQueryAnswers[item.payload.id]" 
+                  @click="onConfirmHumanQuery(item.payload)"
+                >
+                  확인
+                </button>
+                <button class="query-cancel" @click="onCancelHumanQuery(item.payload)">취소</button>
+              </div>
+              <div v-else class="query-completed">
+                <span class="completed-pill" :class="getHumanResultClass(item.payload)">{{ getHumanResultText(item.payload) }}</span>
+                <span v-if="getHumanResultDetail(item.payload)" class="completed-detail">{{ getHumanResultDetail(item.payload) }}</span>
+              </div>
+            </div>
+
             <!-- 작업 결과 -->
-            <div v-if="item.payload.isCompleted && item.payload.output" class="task-result">
+            <div v-else-if="item.payload.isCompleted && item.payload.output" class="task-result">
               <div class="result-header">
                 <h4 class="result-title">작업 결과</h4>
               </div>
@@ -189,34 +231,7 @@
       </Chat>
     </div>
 
-    <!-- human_asked 모달 -->
-    <div v-if="activeHumanQuery" class="modal-overlay" role="dialog" aria-modal="true">
-      <div class="modal">
-        <div class="modal-header">
-          <div class="modal-title">승인 요청</div>
-          <div class="role-pill">{{ activeHumanQuery.role || '시스템' }}</div>
-        </div>
-        <div class="modal-body">
-          <p class="question">{{ activeHumanQuery.text }}</p>
-          <div v-if="activeHumanQuery.type === 'text'" class="field">
-            <input v-model.trim="humanQueryAnswer" class="modal-input" type="text" placeholder="답변을 입력하세요" />
-          </div>
-          <div v-else-if="activeHumanQuery.type === 'select'" class="field">
-            <select v-model="humanQueryAnswer" class="modal-select">
-              <option disabled value="">선택하세요</option>
-              <option v-for="opt in activeHumanQuery.options" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
-          </div>
-          <div v-else-if="activeHumanQuery.type === 'confirm'" class="confirm-hint">
-            계속 진행하시려면 확인을 눌러주세요.
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button class="modal-cancel" @click="onCancelHumanQuery">취소</button>
-          <button class="modal-confirm" :disabled="activeHumanQuery.type !== 'confirm' && !humanQueryAnswer" @click="onConfirmHumanQuery">확인</button>
-        </div>
-      </div>
-    </div>
+
   </div>
 </template>
 
@@ -258,9 +273,8 @@ export default {
       openBrowserAgent: false,
       downloadedBrowserAgent: false,
       doneWorkItemList: [],
-      // human_asked 모달 (단일 표시)
-      activeHumanQuery: null,
-      humanQueryAnswer: '',
+      // human_asked 응답 관리
+      humanQueryAnswers: {},
       // 공통 옵션 배열
       orchestrationOptions: [
         { value: 'crewai-deep-research', label: 'CrewAI 심층 연구', startLabel: 'CrewAI Deep Research', icon: '🔬' },
@@ -274,12 +288,20 @@ export default {
     tasks() {
       const taskMap = new Map()
       const crewCompletedJobIds = new Set()
+      const humanAskedTasks = []
+      const humanRespondedJobIds = new Set()
+      const humanResponseByJobId = {}
+      
       // 단일 루프로 이벤트 처리
       this.events.forEach(e => {
         const { event_type, crew_type, data, job_id, id, timestamp } = e
         const jobId = job_id || data?.job_id || id
+        
         if (event_type === 'crew_completed') {
           crewCompletedJobIds.add(jobId)
+        } else if (event_type === 'human_response') {
+          humanRespondedJobIds.add(jobId)
+          humanResponseByJobId[jobId] = e
         } else if (event_type === 'task_started') {
           taskMap.set(jobId, {
             id,
@@ -292,22 +314,60 @@ export default {
             isCompleted: false,
             output: null,
             isCrewCompleted: false,
-            agentProfile: data?.agent_profile
+            agentProfile: data?.agent_profile,
+            isHumanAsked: false
           })
         } else if (event_type === 'task_completed' && taskMap.has(jobId)) {
           const task = taskMap.get(jobId)
           task.isCompleted = true
           task.output = data?.final_result || null
+        } else if (event_type === 'human_asked') {
+          // human_asked 이벤트를 별도 작업으로 추가 (블루톤 카드용 텍스트 구성)
+          const baseDescription = '사용자의 승인 및 추가 정보가 필요합니다. 아래 작업 계획대로 진행해도 괜찮다면 확인을 눌러주세요. 필요한 경우 입력 또는 선택 항목을 작성해 주세요.'
+
+          const response = humanResponseByJobId[jobId] || null
+          humanAskedTasks.push({
+            id,
+            jobId,
+            goal: baseDescription,
+            name: '사용자 승인 및 추가 정보 요청',
+            role: data?.role || 'System',
+            crewType: 'human_asked',
+            startTime: timestamp,
+            isCompleted: Boolean(response),
+            output: null,
+            isCrewCompleted: false,
+            agentProfile: null,
+            isHumanAsked: true,
+            humanQueryData: {
+              type: data?.type || 'text',
+              options: Array.isArray(data?.options) ? data.options : [],
+              text: data?.text || ''
+            },
+            humanResponse: response,
+            eventRow: e
+          })
         }
       })
-      // crew_completed 마킹 - job_id 기반으로 처리
+      
+      // crew_completed 마킹 - job_id 기준으로 처리
       crewCompletedJobIds.forEach(jobId => {
         if (taskMap.has(jobId)) {
           taskMap.get(jobId).isCrewCompleted = true
         }
       })
-      // 시작시간 기준 오름차순 반환
-      return Array.from(taskMap.values()).sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+
+      // human_response 존재 시 해당 human_asked 카드를 완료 처리
+      humanAskedTasks.forEach(task => {
+        if (humanRespondedJobIds.has(task.jobId)) {
+          task.isCompleted = true
+          task.humanResponse = task.humanResponse || humanResponseByJobId[task.jobId] || null
+        }
+      })
+      
+      // 일반 작업과 human_asked 작업을 합치고 시간 순으로 정렬
+      const allTasks = [...Array.from(taskMap.values()), ...humanAskedTasks]
+      return allTasks.sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
     },
     showDownloadButton() {
       return this.selectedOrchestrationMethod === 'browser-use' && !this.downloadedBrowserAgent
@@ -427,9 +487,12 @@ export default {
     },
 
     getTaskMeta(payload) {
+      const typeLabel = payload.isHumanAsked
+        ? 'human asked'
+        : payload.crewType
       return [
         { label: '시작시간', value: this.formatTime(payload.startTime) },
-        { label: '유형', value: payload.crewType }
+        { label: '요청 유형', value: typeLabel }
       ]
     },
 
@@ -476,6 +539,27 @@ export default {
       const status = tool.status === 'done' ? '사용 완료' : '사용 중입니다'
       const detail = tool.query || tool.info
       return `${tool.tool_name} 도구 ${status}${detail ? ': ' + detail : ''}`
+    },
+
+    // 완료된 HUMAN ASKED 카드 표시 텍스트/스타일
+    getHumanResultText(payload) {
+      const status = String(payload?.humanResponse?.status || '').toUpperCase()
+      if (status === 'APPROVED' || status === 'APPROVE') return '승인됨'
+      if (status === 'REJECTED') return '거절됨'
+      return '처리됨'
+    },
+    getHumanResultClass(payload) {
+      const status = String(payload?.humanResponse?.status || '').toUpperCase()
+      if (status === 'APPROVED' || status === 'APPROVE') return 'pill-approved'
+      if (status === 'REJECTED') return 'pill-rejected'
+      return 'pill-neutral'
+    },
+    getHumanResultDetail(payload) {
+      const answer = payload?.humanResponse?.data?.answer
+      const type = payload?.humanQueryData?.type
+      if (!answer) return ''
+      if (type === 'text' || type === 'select') return String(answer)
+      return ''
     },
 
     getLoadingMessage() {
@@ -663,7 +747,7 @@ export default {
           .from('events')
           .select('*')
           .eq('todo_id', taskId)
-          .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked'])
+          .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked', 'human_response'])
           .order('timestamp', { ascending: true });
 
         if (error) throw error;
@@ -671,9 +755,6 @@ export default {
         if (data) {
           this.events = data;
           this.isCancelled = data.some(e => e.event_type === 'crew_completed');
-          // human_asked 선반영 (페이지 진입 시 대기열 구성)
-          const pending = data.filter(e => e.event_type === 'human_asked' && this.isHumanQueryAsked(e));
-          if (pending.length > 0) this.showHumanQuery(pending[0]);
         }
       } catch (error) {
         this.handleError(error, '이벤트 데이터를 불러오는 중 오류가 발생했습니다');
@@ -707,8 +788,6 @@ export default {
               // 이벤트 타입별 처리
               if (event_type === 'crew_completed') {
                 this.isLoading = false;
-              } else if (event_type === 'human_asked') {
-                this.showHumanQuery(row);
               } else if (event_type === 'task_completed' && this.todoStatus?.agent_mode === 'COMPLETE') {
                 this.$nextTick(() => {
                   const task = this.tasks.find(t => t.jobId === job_id || t.id === id);
@@ -730,33 +809,63 @@ export default {
         this.handleError(error, '실시간 구독 중 오류가 발생했습니다');
       }
     },
-    // human_asked 단일 모달 제어
-    showHumanQuery(row) {
-      if (this.activeHumanQuery) return;
-      if (!this.isHumanQueryAsked(row)) return;
-      this.activeHumanQuery = {
-        id: row.id,
-        jobId: row.job_id,
-        role: row.data?.role || '',
-        text: row.data?.text || '',
-        type: row.data?.type || 'text',
-        options: Array.isArray(row.data?.options) ? row.data.options : []
-      };
-      this.humanQueryAnswer = '';
+    // human_asked 응답 처리 (status 비사용: 응답 레코드만 저장)
+    async onConfirmHumanQuery(task) {
+      if (!task || !task.isHumanAsked) return;
+      
+      try {
+        const answer = this.humanQueryAnswers[task.id] || 'confirmed';
+        const base = { ...(task.eventRow || {}) };
+        const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) 
+          ? crypto.randomUUID() 
+          : `${base.job_id || task.jobId || 'human'}-${Date.now()}`
+        const eventPayload = {
+          ...base,
+          id: newId,
+          event_type: 'human_response',
+          data: { answer },
+          status: 'APPROVED'
+        };
+        // 낙관적 UI 업데이트: 즉시 완료 표시 + 로그
+        console.log('[HUMAN CONFIRM] sending response', eventPayload)
+        this.events = [...this.events, { ...eventPayload, timestamp: new Date().toISOString() }]
+        // REST upsert에는 PK(id)가 필요하므로 id를 명시적으로 생성
+        await backend.putEvent(eventPayload);
+        
+        // 응답 후 입력값 초기화 (Vue3에서는 $delete 없음)
+        delete this.humanQueryAnswers[task.id]
+      } catch (error) {
+        this.handleError(error, '응답 저장 중 오류가 발생했습니다');
+      }
     },
-    async onConfirmHumanQuery() {
-      if (!this.activeHumanQuery) return;
-      // 승인 후 후속처리는 사용자가 별도 구현 예정
-      // 여긴 비워둡니다.
-      this.activeHumanQuery = null;
-      this.humanQueryAnswer = '';
-    },
-    async onCancelHumanQuery() {
-      if (!this.activeHumanQuery) return;
-      // 취소 후 후속처리는 사용자가 별도 구현 예정
-      // 여긴 비워둡니다.
-      this.activeHumanQuery = null;
-      this.humanQueryAnswer = '';
+    
+    async onCancelHumanQuery(task) {
+      if (!task || !task.isHumanAsked) return;
+      
+      try {
+        const answer = this.humanQueryAnswers[task.id] || 'rejected';
+        const base = { ...(task.eventRow || {}) };
+        const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) 
+          ? crypto.randomUUID() 
+          : `${base.job_id || task.jobId || 'human'}-${Date.now()}`
+        const eventPayload = {
+          ...base,
+          id: newId,
+          event_type: 'human_response',
+          data: { answer },
+          status: 'REJECTED'
+        };
+        // 낙관적 UI 업데이트: 즉시 완료 표시 + 로그
+        console.log('[HUMAN REJECT] sending response', eventPayload)
+        this.events = [...this.events, { ...eventPayload, timestamp: new Date().toISOString() }]
+        // REST upsert에는 PK(id)가 필요하므로 id를 명시적으로 생성
+        await backend.putEvent(eventPayload);
+        
+        // 응답 후 입력값 초기화 (Vue3에서는 $delete 없음)
+        delete this.humanQueryAnswers[task.id]
+      } catch (error) {
+        this.handleError(error, '응답 저장 중 오류가 발생했습니다');
+      }
     },
     // status가 ASKED일 때만 모달 표시
     isHumanQueryAsked(row) {
@@ -948,8 +1057,12 @@ export default {
     },
 
     getDisplayName(task) {
-      const name = task.name?.trim();
-      return (!name || name.toLowerCase() === 'unknown') ? task.role : task.name;
+      // human_asked는 항상 고정 타이틀 사용
+      if (task.isHumanAsked) {
+        return '사용자 승인 및 추가 정보 요청'
+      }
+      const name = task.name?.trim()
+      return (!name || name.toLowerCase() === 'unknown') ? task.role : task.name
     },
 
     getStatusText(task) {
@@ -1939,75 +2052,149 @@ export default {
   .option-icon { font-size: 14px; }
 }
 
-/* human_asked 모달 스타일 */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
+/* human_asked 카드 스타일 (블루톤, 가독성 향상) */
+.human-query-input {
+  background: #f8fbff; /* lighter than blue-50 */
+  border: 1px solid #bfdbfe; /* blue-200 */
+  border-radius: 10px;
+  padding: 16px 16px 14px;
+  margin-top: 12px;
 }
-.modal {
-  background: #fff;
-  width: min(560px, 92vw);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-}
-.modal-header {
+
+.query-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 10px;
 }
-.modal-title { font-size: 15px; font-weight: 600; color: #111827; }
+
+.query-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e3a8a; /* blue-800 */
+  margin: 0;
+}
+
 .role-pill {
   font-size: 12px;
-  color: #1f2937;
-  background: #e5e7eb;
-  padding: 4px 8px;
+  color: #1e40af; /* blue-700 */
+  background: #dbeafe; /* blue-100 */
+  padding: 4px 10px;
   border-radius: 999px;
 }
-.modal-body { padding: 16px; }
-.question { margin: 0 0 12px 0; font-size: 14px; color: #111827; }
-.field { margin-top: 8px; }
-.modal-input, .modal-select {
+
+.query-content {
+  margin-bottom: 14px;
+}
+
+.query-question {
+  margin: 0 0 10px 0;
+  line-height: 1.5;
+  font-size: 14px;
+  color: #1e3a8a; /* blue-800 */
+  font-weight: 500;
+}
+
+.input-field { margin-top: 8px; }
+
+.query-input, .query-select {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #bfdbfe; /* blue-200 */
   border-radius: 8px;
   font-size: 14px;
-  color: #111827;
+  color: #1f2937; /* gray-800 */
+  background: #ffffff;
 }
-.confirm-hint { font-size: 13px; color: #6b7280; }
-.modal-actions {
+
+.query-input:focus, .query-select:focus {
+  outline: none;
+  border-color: #60a5fa; /* blue-400 */
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
+}
+
+.confirm-hint {
+  font-size: 13px;
+  color: #1d4ed8; /* blue-700 */
+  font-style: italic;
+}
+
+/* 요청 내용 블록 */
+.request-block {
+  background: #ffffff;
+  border: 1px dashed #93c5fd; /* blue-300 */
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 10px 0 2px;
+}
+.request-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2563eb; /* blue-600 */
+  margin-bottom: 6px;
+}
+.request-body {
+  font-size: 13px;
+  color: #1f2937; /* gray-800 */
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.query-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  padding: 12px 16px;
-  background: #f9fafb;
-  border-top: 1px solid #e5e7eb;
 }
-.modal-cancel, .modal-confirm {
-  padding: 8px 14px;
+
+.query-completed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.completed-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.pill-approved { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+.pill-rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.pill-neutral { background: #e5e7eb; color: #374151; border: 1px solid #d1d5db; }
+
+.completed-detail {
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.query-cancel, .query-confirm {
+  padding: 8px 16px;
   border-radius: 8px;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
-.modal-cancel {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  color: #374151;
+
+.query-cancel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb; /* gray-300 */
+  color: #374151; /* gray-700 */
 }
-.modal-confirm {
-  background: #2563eb;
-  border: 1px solid #1d4ed8;
-  color: #fff;
+
+.query-cancel:hover { background: #f9fafb; }
+
+.query-confirm {
+  background: #60a5fa; /* blue-400 */
+  border: 1px solid #3b82f6; /* blue-500 */
+  color: #ffffff;
 }
-.modal-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.query-confirm:hover:not(:disabled) { background: #3b82f6; }
+
+.query-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 </style>

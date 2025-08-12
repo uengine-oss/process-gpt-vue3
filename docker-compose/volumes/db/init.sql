@@ -402,6 +402,7 @@ create table if not exists public.events (
   todo_id text null,
   proc_inst_id text null,
   event_type text not null,
+  status text null,
   crew_type text null,
   data jsonb not null,
   timestamp timestamp with time zone null default now(),
@@ -1407,10 +1408,13 @@ CREATE TYPE event_type_enum AS ENUM (
   'tool_usage_started',
   'tool_usage_finished',
   'crew_completed',
-  'human_asked'
+  'human_asked',
+  'human_response'
 );
+-- 이벤트 상태 enum
+CREATE TYPE event_status AS ENUM ('ASKED', 'APPROVED', 'REJECTED');
 
--- eventss 테이블 마이그레이션 (event_type)
+-- events 테이블 마이그레이션 (event_type)
 -- 1. 임시 컬럼 추가
 ALTER TABLE public.events ADD COLUMN event_type_new event_type_enum;
 -- 2. 기존 데이터를 새 enum 타입으로 변환
@@ -1422,11 +1426,27 @@ SET event_type_new = CASE
   WHEN event_type = 'tool_usage_finished' THEN 'tool_usage_finished'::event_type_enum
   WHEN event_type = 'crew_completed' THEN 'crew_completed'::event_type_enum
   WHEN event_type = 'human_asked' THEN 'human_asked'::event_type_enum
-  ELSE 'human_asked'::event_type_enum
+  WHEN event_type = 'human_response' THEN 'human_response'::event_type_enum
+  ELSE NULL  -- 기본값을 NULL로 설정
 END;
 -- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
 ALTER TABLE public.events DROP COLUMN event_type;
 ALTER TABLE public.events RENAME COLUMN event_type_new TO event_type;
+
+-- events 테이블 마이그레이션 (status)
+-- 1. 임시 컬럼 추가
+ALTER TABLE public.events ADD COLUMN status_new event_status;
+-- 2. 기존 데이터를 새 enum 타입으로 변환
+UPDATE public.events
+SET status_new = CASE
+  WHEN status = 'ASKED' THEN 'ASKED'::event_status
+  WHEN status = 'APPROVED' THEN 'APPROVED'::event_status
+  WHEN status = 'REJECTED' THEN 'REJECTED'::event_status
+  ELSE NULL  -- 기본값을 NULL로 설정
+END;
+-- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
+ALTER TABLE public.events DROP COLUMN status;
+ALTER TABLE public.events RENAME COLUMN status_new TO status;
 
 -- bpm_proc_inst 테이블 마이그레이션 (status)
 -- 1. 임시 컬럼 추가
@@ -1487,7 +1507,7 @@ SET agent_orch_new = CASE
     WHEN agent_orch = 'crewai-deep-research' THEN 'crewai-deep-research'::agent_orch
     WHEN agent_orch = 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
     WHEN agent_orch = 'crewai-action' THEN 'crewai-action'::agent_orch
-    ELSE 'crewai-deep-research'::agent_orch  -- 기본값 설정
+    ELSE NULL  -- 기본값을 NULL로 설정
 END;
 -- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
 ALTER TABLE public.todolist DROP COLUMN agent_orch;
@@ -1505,7 +1525,7 @@ SET draft_status_new = CASE
     WHEN draft_status = 'COMPLETED' THEN 'COMPLETED'::draft_status
     WHEN draft_status = 'FB_REQUESTED' THEN 'FB_REQUESTED'::draft_status
     WHEN draft_status = 'HUMAN_ASKED' THEN 'HUMAN_ASKED'::draft_status
-    ELSE 'STARTED'::draft_status  -- 기본값 설정
+    ELSE NULL  -- 기본값을 NULL로 설정
 END;
 -- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
 ALTER TABLE public.todolist DROP COLUMN draft_status;

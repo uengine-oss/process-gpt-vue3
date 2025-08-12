@@ -387,40 +387,7 @@ ALTER TABLE public.events ADD COLUMN IF NOT EXISTS proc_inst_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS crew_type text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS data jsonb;
-
- 
-  -- 1) event_type_enum 생성은 상단 Enum 타입 마이그레이션 블록에서 수행됨
-
-  -- 2) events.event_type 컬럼 마이그레이션 (임시 컬럼 → 이관 → 드롭 → 리네임)
-  DO $$
-  BEGIN
-    IF EXISTS (
-      SELECT 1 FROM information_schema.columns
-      WHERE table_schema = 'public' AND table_name = 'events'
-        AND column_name = 'event_type' AND data_type = 'text'
-    ) THEN
-      ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type_new event_type_enum;
-      
-      UPDATE public.events
-      SET event_type_new = CASE
-        WHEN event_type = 'task_started' THEN 'task_started'::event_type_enum
-        WHEN event_type = 'task_completed' THEN 'task_completed'::event_type_enum
-        WHEN event_type = 'tool_usage_started' THEN 'tool_usage_started'::event_type_enum
-        WHEN event_type = 'tool_usage_finished' THEN 'tool_usage_finished'::event_type_enum
-        WHEN event_type = 'crew_completed' THEN 'crew_completed'::event_type_enum
-        WHEN event_type = 'human_asked' THEN 'human_asked'::event_type_enum
-        ELSE 'human_asked'::event_type_enum
-      END;
-      
-      ALTER TABLE public.events DROP COLUMN event_type;
-      ALTER TABLE public.events RENAME COLUMN event_type_new TO event_type;
-      
-      RAISE NOTICE 'Successfully migrated events.event_type to event_type_enum';
-    ELSE
-      RAISE NOTICE 'events.event_type is already event_type_enum or column does not exist';
-    END IF;
-  END $$;
-
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS status text;
 
 
 -- ==========================================
@@ -443,8 +410,6 @@ BEGIN
           ON data_source (key, version, tenant_id);
     END IF;
 END $$;
-
-ALTER TYPE todo_status ADD VALUE 'CANCELLED';
 
 -- ===============================================
 -- Enum 타입 마이그레이션
@@ -489,7 +454,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event_type_enum') THEN
         CREATE TYPE event_type_enum AS ENUM (
             'task_started','task_completed','tool_usage_started',
-            'tool_usage_finished','crew_completed','human_asked'
+            'tool_usage_finished','crew_completed','human_asked', 'human_response'
         );
         RAISE NOTICE 'Created event_type_enum enum type';
     ELSE
@@ -502,6 +467,14 @@ BEGIN
         RAISE NOTICE 'Created draft_status enum type';
     ELSE
         RAISE NOTICE 'draft_status enum type already exists';
+    END IF;
+
+    -- 이벤트 상태 enum
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event_status') THEN
+        CREATE TYPE event_status AS ENUM ('ASKED', 'APPROVED', 'REJECTED');
+        RAISE NOTICE 'Created event_status enum type';
+    ELSE
+        RAISE NOTICE 'event_status enum type already exists';
     END IF;
 END $$;
 
@@ -624,7 +597,7 @@ BEGIN
             WHEN agent_orch = 'crewai-deep-research' THEN 'crewai-deep-research'::agent_orch
             WHEN agent_orch = 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
             WHEN agent_orch = 'crewai-action' THEN 'crewai-action'::agent_orch
-            ELSE 'crewai-deep-research'::agent_orch  -- 기본값 설정
+            ELSE NULL  -- 기본값을 NULL로 설정
         END;
         
         -- 기존 컬럼 삭제 후 새 컬럼명 변경
@@ -658,7 +631,7 @@ BEGIN
             WHEN draft_status = 'COMPLETED' THEN 'COMPLETED'::draft_status
             WHEN draft_status = 'FB_REQUESTED' THEN 'FB_REQUESTED'::draft_status
             WHEN draft_status = 'HUMAN_ASKED' THEN 'HUMAN_ASKED'::draft_status
-            ELSE 'STARTED'::draft_status  -- 기본값 설정
+            ELSE NULL  -- 기본값을 NULL로 설정
         END;
         
         -- 기존 컬럼 삭제 후 새 컬럼명 변경
@@ -669,6 +642,65 @@ BEGIN
     ELSE
         RAISE NOTICE 'todolist.draft_status is already draft_status enum or column does not exist';
     END IF;
+END $$;
+
+
+-- 2) events.event_type 컬럼 마이그레이션 (임시 컬럼 → 이관 → 드롭 → 리네임)
+DO $$
+BEGIN
+IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'events'
+    AND column_name = 'event_type' AND data_type = 'text'
+) THEN
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type_new event_type_enum;
+    
+    UPDATE public.events
+    SET event_type_new = CASE
+    WHEN event_type = 'task_started' THEN 'task_started'::event_type_enum
+    WHEN event_type = 'task_completed' THEN 'task_completed'::event_type_enum
+    WHEN event_type = 'tool_usage_started' THEN 'tool_usage_started'::event_type_enum
+    WHEN event_type = 'tool_usage_finished' THEN 'tool_usage_finished'::event_type_enum
+    WHEN event_type = 'crew_completed' THEN 'crew_completed'::event_type_enum
+    WHEN event_type = 'human_asked' THEN 'human_asked'::event_type_enum
+    WHEN event_type = 'human_response' THEN 'human_response'::event_type_enum
+    ELSE NULL  -- 기본값을 NULL로 설정
+    END;
+    
+    ALTER TABLE public.events DROP COLUMN event_type;
+    ALTER TABLE public.events RENAME COLUMN event_type_new TO event_type;
+    
+    RAISE NOTICE 'Successfully migrated events.event_type to event_type_enum';
+ELSE
+    RAISE NOTICE 'events.event_type is already event_type_enum or column does not exist';
+END IF;
+END $$;
+
+-- 3) events.status 컬럼 마이그레이션 (임시 컬럼 → 이관 → 드롭 → 리네임)
+DO $$
+BEGIN
+IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'events'
+    AND column_name = 'status' AND data_type = 'text'
+) THEN
+    ALTER TABLE public.events ADD COLUMN IF NOT EXISTS status_new event_status;
+    
+    UPDATE public.events
+    SET status_new = CASE
+    WHEN status = 'ASKED' THEN 'ASKED'::event_status
+    WHEN status = 'APPROVED' THEN 'APPROVED'::event_status
+    WHEN status = 'REJECTED' THEN 'REJECTED'::event_status
+    ELSE NULL  -- 기본값을 NULL로 설정
+    END;
+    
+    ALTER TABLE public.events DROP COLUMN status;
+    ALTER TABLE public.events RENAME COLUMN status_new TO status;
+    
+    RAISE NOTICE 'Successfully migrated events.status to event_status enum';
+ELSE
+    RAISE NOTICE 'events.status is already event_status enum or column does not exist';
+END IF;
 END $$;
 
 -- 6. 마이그레이션 완료 확인
@@ -722,6 +754,18 @@ BEGIN
         RAISE NOTICE 'todolist.draft_status: draft_status enum';
     ELSE
         RAISE NOTICE 'todolist.draft_status: not migrated';
+    END IF;
+    
+    -- events status 확인
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'events' 
+        AND column_name = 'status' 
+        AND udt_name = 'event_status'
+    ) THEN
+        RAISE NOTICE 'events.status: event_status enum';
+    ELSE
+        RAISE NOTICE 'events.status: not migrated';
     END IF;
     
     -- events event_type 확인
