@@ -95,19 +95,10 @@
 
           <!-- Method + Endpoint -->
           <v-row>
-            <v-col cols="4">
-              <v-select
-                v-model="newDataSource.method"
-                :items="['GET', 'POST', 'PUT', 'DELETE', 'PATCH']"
-                label="Method"
-                outlined
-                dense
-              />
-            </v-col>
-            <v-col cols="8">
+            <v-col cols="12">
               <v-text-field 
                 v-model="newDataSource.endpoint" 
-                label="Endpoint" 
+                label="URL" 
                 outlined
                 dense
               />
@@ -154,92 +145,6 @@
               {{ $t('accountTab.addHeader') }}
             </v-btn>
           </div>
-
-          <!-- Parameters -->
-          <div class="mt-4">
-            <h4 class="text-subtitle-1 mb-2">
-              <v-icon left small>mdi-tune</v-icon>
-              {{ $t('accountTab.parameters') }}:
-            </h4>
-            <v-row v-for="(param, idx) in newDataSource.parameters" :key="'param-'+idx" align="center">
-              <v-col cols="5">
-                <v-text-field 
-                  v-model="param.key" 
-                  label="Parameter Name"
-                  outlined
-                  dense
-                />
-              </v-col>
-              <v-col cols="5">
-                <v-text-field 
-                  v-model="param.value" 
-                  label="Parameter Value"
-                  outlined
-                  dense
-                />
-              </v-col>
-              <v-col cols="2">
-                <v-btn icon small @click="removeParameter(idx)">
-                  <v-icon color="error">mdi-delete</v-icon>
-                </v-btn>
-              </v-col>
-            </v-row>
-            <v-btn 
-              outlined 
-              color="primary" 
-              small 
-              class="mt-2" 
-              @click="addParameter"
-            >
-              <v-icon left small>mdi-plus</v-icon>
-              {{ $t('accountTab.addParameter') }}
-            </v-btn>
-          </div>
-
-          <!-- Authentication -->
-          <div class="mt-4">
-            <h4 class="text-subtitle-1 mb-2">
-              <v-icon left small>mdi-lock</v-icon>
-              {{ $t('accountTab.authentication') }}:
-            </h4>
-            <div v-if="newDataSource.auth.enabled">
-              <v-row align="center">
-                <v-col cols="5">
-                  <v-text-field 
-                    v-model="newDataSource.auth.username" 
-                    label="Username" 
-                    outlined
-                    dense
-                  />
-                </v-col>
-                <v-col cols="5">
-                  <v-text-field 
-                    v-model="newDataSource.auth.password" 
-                    label="Password" 
-                    type="password"
-                    outlined
-                    dense
-                  />
-                </v-col>
-                <v-col cols="2">
-                  <v-btn icon small @click="removeAuth">
-                    <v-icon color="error">mdi-close</v-icon>
-                  </v-btn>
-                </v-col>
-              </v-row>
-            </div>
-            <div v-else>
-              <v-btn 
-                outlined 
-                color="primary" 
-                small 
-                @click="addAuth"
-              >
-                <v-icon left small>mdi-plus</v-icon>
-                {{ $t('accountTab.addAuthentication') }}
-              </v-btn>
-            </div>
-          </div>
         </v-card-text>
         <v-card-actions class="pa-4">
           <v-spacer></v-spacer>
@@ -283,12 +188,12 @@
           <v-divider class="mb-3"></v-divider>
 
           <div class="mb-2">
-            <strong class="text-subtitle-2">{{ $t('accountTab.endpoint') }}:</strong>
+            <strong class="text-subtitle-2">{{ $t('accountTab.url') }}:</strong>
             <code class="ml-2 pa-1 grey lighten-4 rounded">{{ ds.endpoint }}</code>
           </div>
 
           <div class="mb-2" v-if="ds.headers && ds.headers.length > 0">
-            <strong class="text-subtitle-2">{{ $t('accountTab.headers') }}:</strong>
+            <strong class="text-subtitle-2">{{ $t('accountTab.key') }}:</strong>
             <div class="ml-4 mt-1">
               <v-chip 
                 v-for="(h, i) in ds.headers" 
@@ -298,22 +203,6 @@
                 outlined
               >
                 {{ h.key }}: {{ '*'.repeat(h.value.length) }}
-              </v-chip>
-            </div>
-          </div>
-
-          <div class="mb-2" v-if="ds.parameters && ds.parameters.length > 0">
-            <strong class="text-subtitle-2">{{ $t('accountTab.parameters') }}:</strong>
-            <div class="ml-4 mt-1">
-              <v-chip 
-                v-for="(p, i) in ds.parameters" 
-                :key="'p-'+i"
-                x-small
-                class="mr-1 mb-1"
-                color="blue-grey"
-                text-color="white"
-              >
-                {{ p.key }}: {{ p.value }}
               </v-chip>
             </div>
           </div>

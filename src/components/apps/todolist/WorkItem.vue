@@ -56,8 +56,8 @@
                     </v-row>
                 </v-row>
                 <v-divider v-if="isMobile" class="my-2"></v-divider>
-                <v-row v-if="isSimulate == 'true'" class="pa-0 pt-1 pb-1 ma-0 align-center">
-                    <!-- <v-tooltip v-if="isSimulate == 'true'" text="이전 단계">
+                <!-- <v-row v-if="isSimulate == 'true'" class="pa-0 pt-1 pb-1 ma-0 align-center">
+                    <v-tooltip v-if="isSimulate == 'true'" text="이전 단계">
                         <template v-slot:activator="{ props }">
                             <v-btn @click="backToPrevStep"
                                 class="ml-1"
@@ -69,7 +69,7 @@
                                 
                             </v-btn>
                         </template>
-                    </v-tooltip> -->
+                    </v-tooltip>
                     <v-btn v-if="isSimulate == 'true'" 
                         :disabled="activityIndex == 0"
                         @click="backToPrevStep"
@@ -78,7 +78,7 @@
                         density="compact"
                         style="background-color: #808080; color: white;"
                     >이전 단계</v-btn>
-                </v-row>
+                </v-row> -->
             </div>
         </div>
 
@@ -254,138 +254,162 @@
                 :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 190px); overflow: auto')"
             >
                 <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
-                    <template v-if="formData && Object.keys(formData).length > 0">
-                        <div v-if="!isCompleted && isOwnWorkItem"
-                            class="work-item-form-btn-box d-flex justify-end align-center pr-3"
+                    <!-- FormDefinition 분리된 영역 -->
+                    <FormDefinition v-if="isSimulate == 'true' && showFeedbackForm"
+                        ref="formDefinition"
+                        type="simulation"
+                        :formId="formId"
+                        :simulation_data="simulation_data"
+                        @addedNewForm="addedNewForm"
+                        v-model="tempFormHtml"
+                        class="feedback-form"
+                    />
+                    <template v-if="currentComponent === 'FormWorkItem'">
+                        <FormWorkItem
+                            ref="currentWorkItemComponent"
+                            class="work-item-current-component-box"
+                            :definitionId="definitionId"
+                            :work-item="workItem"
+                            :workItemStatus="workItemStatus"
+                            :isDryRun="isDryRun"
+                            :dryRunWorkItem="dryRunWorkItem"
+                            :currentActivities="currentActivities"
+                            :isOwnWorkItem="isOwnWorkItem"
+                            :activityIndex="activityIndex"
+                            @updateCurrentActivities="updateCurrentActivities"
+                            @close="close"
+                            @executeProcess="executeProcess"
+                            @backToPrevStep="backToPrevStep"
+                            :is-simulate="isSimulate"
+                            :is-finished-agent-generation="isFinishedAgentGeneration"
+                            :processDefinition="processDefinition"
                         >
-                            <v-btn v-if="hasGeneratedContent"
-                                @click="resetGeneratedContent"
-                                :disabled="isGeneratingExample"
-                                :class="isMobile ? 'mr-1 text-medium-emphasis' : 'mr-1'"
-                                :icon="isMobile"
-                                :variant="isMobile ? 'outlined' : 'flat'"
-                                :size="isMobile ? 'small' : 'default'"
-                                :rounded="!isMobile"
-                                density="comfortable"
-                                :style="isMobile ? 'border-color: #e0e0e0 !important;' : 'background-color: #808080; color: white;'"
-                            >
-                                <v-icon>mdi-delete-outline</v-icon>
-                                <span v-if="!isMobile" class="ms-1">내용 초기화</span>
-                            </v-btn>
-                            <v-btn class="mr-1"
-                                v-if="!isMobile"
-                                density="comfortable"
-                                rounded
-                                style="background-color: #808080; color: white;"
-                                @click="beforeGenerateExample"
-                                :loading="isGeneratingExample"
-                                :disabled="isGeneratingExample"
-                            >
-                                <template v-if="!isGeneratingExample">
-                                    <v-row v-if="generator" class="ma-0 pa-0">
-                                        <v-icon>mdi-refresh</v-icon>
-                                        <span class="ms-2">예시 재생성</span>
-                                    </v-row>
-                                    <v-row v-else class="ma-0 pa-0" >
-                                        <Icons :icon="'sparkles'" :size="20"/>
-                                        <div class="ms-1">빠른 예시 생성</div>
-                                    </v-row>
-                                </template>
-                            </v-btn>
-                            <!-- 피드백 버튼만 유지 -->
-                            <v-btn v-if="isSimulate == 'true' && !isMobile"
-                                class="feedback-btn rounded-pill mr-1" 
-                                variant="elevated" 
-                                density="comfortable"
-                                @click="toggleFeedback"
-                                :disabled="isGeneratingExample"
-                                style="background-color: #808080; color: white;"
-                            >
-                                <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
-                                <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
-                            </v-btn>
-                            <v-btn v-if="isSimulate == 'true' && isMobile"
-                                @click="toggleFeedback"
-                                :disabled="isGeneratingExample"
-                                class="mr-1 text-medium-emphasis"
-                                density="comfortable"
-                                icon
-                                variant="outlined"
-                                size="small"
-                                style="border-color: #e0e0e0 !important;"
-                            >
-                                <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
-                            </v-btn>
-                            <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
-                                class="mr-1 text-medium-emphasis"
-                                density="comfortable"
-                                icon
-                                variant="outlined"
-                                size="small"
-                                style="border-color: #e0e0e0 !important;"
-                                :disabled="isGenerationFinished"
-                            >
-                                <Icons :icon="'sharp-mic'" :size="'16'" />
-                            </v-btn>
-                            <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
-                                class="mr-1 text-medium-emphasis"
-                                density="comfortable"
-                                icon
-                                variant="outlined"
-                                size="small"
-                                style="border-color: #e0e0e0 !important;"
-                                :disabled="isGenerationFinished"
-                            >
-                                <Icons :icon="'stop'" :size="'16'" />
-                            </v-btn>
-                            
-                            <v-btn v-if="isMobile"
-                                @click="beforeGenerateExample"
-                                :loading="isGeneratingExample"
-                                :disabled="isGeneratingExample"
-                                class="mr-1 text-medium-emphasis"
-                                density="comfortable"
-                                icon
-                                variant="outlined"
-                                size="small"
-                                style="border-color: #e0e0e0 !important;"
-                            >
-                                <template v-if="!isGeneratingExample">
-                                    <v-icon v-if="generator">mdi-refresh</v-icon>
-                                    <Icons v-else :icon="'sparkles'" :size="'16'" />
-                                </template>
-                            </v-btn>
-                            <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
-                        </div>
-                        <!-- FormDefinition 분리된 영역 -->
-                        <FormDefinition v-if="isSimulate == 'true' && showFeedbackForm"
-                            ref="formDefinition"
-                            type="simulation"
-                            :formId="formId"
-                            :simulation_data="simulation_data"
-                            @addedNewForm="addedNewForm"
-                            v-model="tempFormHtml"
-                            class="feedback-form"
-                        />
+                            <template #form-work-item-action-btn>
+                                <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
+                                    class="work-item-form-btn-box d-flex justify-end align-center pr-3"
+                                >
+                                    <v-btn v-if="hasGeneratedContent"
+                                        @click="resetGeneratedContent"
+                                        :disabled="isGeneratingExample"
+                                        :class="isMobile ? 'mr-1 text-medium-emphasis' : 'mr-1'"
+                                        :icon="isMobile"
+                                        :variant="isMobile ? 'outlined' : 'flat'"
+                                        :size="isMobile ? 'small' : 'default'"
+                                        :rounded="!isMobile"
+                                        density="comfortable"
+                                        :style="isMobile ? 'border-color: #e0e0e0 !important;' : 'background-color: #808080; color: white;'"
+                                    >
+                                        <v-icon>mdi-delete-outline</v-icon>
+                                        <span v-if="!isMobile" class="ms-1">내용 초기화</span>
+                                    </v-btn>
+                                    <v-btn class="mr-1"
+                                        v-if="!isMobile"
+                                        density="comfortable"
+                                        rounded
+                                        style="background-color: #808080; color: white;"
+                                        @click="beforeGenerateExample"
+                                        :loading="isGeneratingExample"
+                                        :disabled="isGeneratingExample"
+                                    >
+                                        <template v-if="!isGeneratingExample">
+                                            <v-row v-if="generator" class="ma-0 pa-0">
+                                                <v-icon>mdi-refresh</v-icon>
+                                                <span class="ms-2">예시 재생성</span>
+                                            </v-row>
+                                            <v-row v-else class="ma-0 pa-0" >
+                                                <Icons :icon="'sparkles'" :size="20"/>
+                                                <div class="ms-1">빠른 예시 생성</div>
+                                            </v-row>
+                                        </template>
+                                    </v-btn>
+                                    <!-- 피드백 버튼만 유지 -->
+                                    <v-btn v-if="isSimulate == 'true' && !isMobile"
+                                        class="feedback-btn rounded-pill mr-1" 
+                                        variant="elevated" 
+                                        density="comfortable"
+                                        @click="toggleFeedback"
+                                        :disabled="isGeneratingExample"
+                                        style="background-color: #808080; color: white;"
+                                    >
+                                        <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
+                                        <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
+                                    </v-btn>
+                                    <v-btn v-if="isSimulate == 'true' && isMobile"
+                                        @click="toggleFeedback"
+                                        :disabled="isGeneratingExample"
+                                        class="mr-1 text-medium-emphasis"
+                                        density="comfortable"
+                                        icon
+                                        variant="outlined"
+                                        size="small"
+                                        style="border-color: #e0e0e0 !important;"
+                                    >
+                                        <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
+                                    </v-btn>
+                                    <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                                        class="mr-1 text-medium-emphasis"
+                                        density="comfortable"
+                                        icon
+                                        variant="outlined"
+                                        size="small"
+                                        style="border-color: #e0e0e0 !important;"
+                                        :disabled="isGenerationFinished"
+                                    >
+                                        <Icons :icon="'sharp-mic'" :size="'16'" />
+                                    </v-btn>
+                                    <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                                        class="mr-1 text-medium-emphasis"
+                                        density="comfortable"
+                                        icon
+                                        variant="outlined"
+                                        size="small"
+                                        style="border-color: #e0e0e0 !important;"
+                                        :disabled="isGenerationFinished"
+                                    >
+                                        <Icons :icon="'stop'" :size="'16'" />
+                                    </v-btn>
+                                    
+                                    <v-btn v-if="isMobile"
+                                        @click="beforeGenerateExample"
+                                        :loading="isGeneratingExample"
+                                        :disabled="isGeneratingExample"
+                                        class="mr-1 text-medium-emphasis"
+                                        density="comfortable"
+                                        icon
+                                        variant="outlined"
+                                        size="small"
+                                        style="border-color: #e0e0e0 !important;"
+                                    >
+                                        <template v-if="!isGeneratingExample">
+                                            <v-icon v-if="generator">mdi-refresh</v-icon>
+                                            <Icons v-else :icon="'sparkles'" :size="'16'" />
+                                        </template>
+                                    </v-btn>
+                                    <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
+                                </div>
+                            </template>
+                        </FormWorkItem>
                     </template>
-                    <component 
-                        ref="currentWorkItemComponent"
-                        class="work-item-current-component-box"
-                        :is="currentComponent" 
-                        :definitionId="definitionId"
-                        :work-item="workItem" 
-                        :workItemStatus="workItemStatus" 
-                        :isDryRun="isDryRun" 
-                        :dryRunWorkItem="dryRunWorkItem"
-                        :currentActivities="currentActivities"
-                        :isOwnWorkItem="isOwnWorkItem"
-                        @updateCurrentActivities="updateCurrentActivities"
-                        @close="close"
-                        @executeProcess="executeProcess"
-                        :is-simulate="isSimulate"
-                        :is-finished-agent-generation="isFinishedAgentGeneration"
-                        :processDefinition="processDefinition"
-                    ></component>
+                    <template v-else>
+                        <component
+                            ref="currentWorkItemComponent"
+                            class="work-item-current-component-box"
+                            :is="currentComponent"
+                            :definitionId="definitionId"
+                            :work-item="workItem"
+                            :workItemStatus="workItemStatus"
+                            :isDryRun="isDryRun"
+                            :dryRunWorkItem="dryRunWorkItem"
+                            :currentActivities="currentActivities"
+                            :isOwnWorkItem="isOwnWorkItem"
+                            @updateCurrentActivities="updateCurrentActivities"
+                            @close="close"
+                            @executeProcess="executeProcess"
+                            :is-simulate="isSimulate"
+                            :is-finished-agent-generation="isFinishedAgentGeneration"
+                            :processDefinition="processDefinition"
+                        ></component>
+                    </template>
                 </div>
             </v-col>
         </v-row>
@@ -571,10 +595,18 @@ export default {
         },
         isOwnWorkItem() {
             if (this.isStarted || this.isSimulate == 'true') {
-                return true
+                return true;
             }
-            const uid = localStorage.getItem('uid')
-            return this.workItem.worklist.endpoint.includes(uid)
+            const currentUserId = localStorage.getItem('uid');
+            const endpoint = this.workItem && this.workItem.worklist ? this.workItem.worklist.endpoint : null;
+            if (!currentUserId || !endpoint) {
+                return false;
+            }
+            if (Array.isArray(endpoint)) {
+                return endpoint.includes(currentUserId);
+            }
+            // endpoint가 단일 이메일이거나 콤마로 구분된 문자열일 수 있음
+            return String(endpoint).split(',').map(e => e.trim()).includes(currentUserId);
         },
         mode() {
             return window.$mode;
@@ -1251,6 +1283,7 @@ export default {
                     ]);
                     
                     me.workItem.worklist.endpoint = delegateUser.email;
+                    me.updatedKey++;
                     me.closeDelegateTask();
                     me.loadAssigneeInfo();
                 },

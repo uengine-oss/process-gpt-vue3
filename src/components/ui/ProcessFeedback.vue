@@ -73,10 +73,21 @@
                     </tbody>
                 </v-table>
 
-                <div class="d-flex justify-end mt-3">
-                    <v-btn size="small" variant="text" @click="closeFeedback">취소</v-btn>
-                    <v-btn size="small" color="primary" @click="setFeedbackDiff" class="ml-2">반영</v-btn>
-                </div>
+                <v-row class="ma-0 pa-0">
+                    <v-spacer></v-spacer>
+                    <v-btn @click="closeFeedback"
+                        color="gray"
+                        variant="elevated" 
+                        class="rounded-pill mr-2"
+                        density="compact"
+                    >취소</v-btn>
+                    <v-btn @click="setFeedbackDiff"
+                        color="primary"
+                        variant="elevated" 
+                        class="rounded-pill"
+                        density="compact"
+                    >반영</v-btn>
+                </v-row>
             </v-card-text>
 
             <v-card-text v-else-if="!isLoading && !isAcceptMode" class="pa-3">
@@ -101,10 +112,23 @@
                 </v-list>
                 <v-textarea v-if="feedbackValue == 'etc'" v-model="feedbackText" label="기타" rows="3" />
 
-                <div class="d-flex justify-end mt-3">
-                    <v-btn size="small" variant="text" @click="closeFeedback">취소</v-btn>
-                    <v-btn size="small" color="primary" @click="submitFeedback" class="ml-2" :disabled="!feedbackValue">제출</v-btn>
-                </div>
+                <v-row class="ma-0 pa-0">
+                    <v-spacer></v-spacer>
+                    <v-btn @click="closeFeedback"
+                        :disabled="!feedbackValue"
+                        color="gray"
+                        variant="elevated" 
+                        class="rounded-pill mr-2"
+                        density="compact"
+                    >취소</v-btn>
+                    <v-btn @click="submitFeedback"
+                        :disabled="!feedbackValue"
+                        color="primary"
+                        variant="elevated" 
+                        class="rounded-pill"
+                        density="compact"
+                    >제출</v-btn>
+                </v-row>
             </v-card-text>
     </v-card>
 </template>

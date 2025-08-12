@@ -3260,6 +3260,17 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async putEvent(newEvent: any) {
+        try {
+            return await storage.putObject('events', newEvent);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+  // 상태 업데이트는 더 이상 사용하지 않음 (status 비사용 정책)
+
     async getData(path: string, options: any) {
         try {
             return await storage.getObject(path, options);

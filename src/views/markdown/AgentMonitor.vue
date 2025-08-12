@@ -39,8 +39,50 @@
               </div>
             </div>
 
+            <!-- Human Asked 응답 영역 -->
+            <div v-if="item.payload.isHumanAsked" class="human-query-input">
+              <div class="query-header">
+                <h4 class="query-title">응답 요청</h4>
+                <div class="role-pill">{{ item.payload.role }}</div>
+              </div>
+              <div class="query-content">
+                <p class="query-question">{{ item.payload.humanQueryData.text || '요청 내용이 전송되었습니다.' }}</p>
+                <div v-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'text'" class="input-field">
+                  <input 
+                    v-model.trim="humanQueryAnswers[item.payload.id]" 
+                    class="query-input" 
+                    type="text" 
+                    placeholder="답변을 입력하세요" 
+                  />
+                </div>
+                <div v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'select'" class="input-field">
+                  <select v-model="humanQueryAnswers[item.payload.id]" class="query-select">
+                    <option disabled value="">선택하세요</option>
+                    <option v-for="opt in item.payload.humanQueryData.options" :key="opt" :value="opt">{{ opt }}</option>
+                  </select>
+                </div>
+                <div v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'confirm'" class="confirm-hint">
+                  계속 진행하시려면 확인을 눌러주세요.
+                </div>
+              </div>
+              <div v-if="!item.payload.isCompleted" class="query-actions">
+                <button 
+                  class="query-confirm" 
+                  :disabled="item.payload.humanQueryData.type !== 'confirm' && !humanQueryAnswers[item.payload.id]" 
+                  @click="onConfirmHumanQuery(item.payload)"
+                >
+                  확인
+                </button>
+                <button class="query-cancel" @click="onCancelHumanQuery(item.payload)">취소</button>
+              </div>
+              <div v-else class="query-completed">
+                <span class="completed-pill" :class="getHumanResultClass(item.payload)">{{ getHumanResultText(item.payload) }}</span>
+                <span v-if="getHumanResultDetail(item.payload)" class="completed-detail">{{ getHumanResultDetail(item.payload) }}</span>
+              </div>
+            </div>
+
             <!-- 작업 결과 -->
-            <div v-if="item.payload.isCompleted && item.payload.output" class="task-result">
+            <div v-else-if="item.payload.isCompleted && item.payload.output" class="task-result">
               <div class="result-header">
                 <h4 class="result-title">작업 결과</h4>
               </div>
@@ -128,23 +170,70 @@
 
       <!-- 빈 상태 -->
       <div v-else class="empty-state">
-        <div class="empty-icon">📋</div>
         <h3>{{ isQueued ? '작업이 대기열에 등록되었습니다' : '진행중인 작업이 없습니다' }}</h3>
         <p>작업이 시작되면 여기에 표시됩니다.</p>
         <div v-if="!isQueued" class="start-controls">
-          <div class="method-selector">
-            <label for="research-method" class="method-label">연구 방식:</label>
-            <select id="research-method" v-model="selectedOrchestrationMethod" class="method-dropdown">
-              <option v-for="option in orchestrationOptions" :key="option.value" :value="option.value">
-                {{ option.startLabel }}
-              </option>
-            </select>
-          </div>
-          <button v-if="showDownloadButton" @click="downloadBrowserAgent" class="start-button">다운로드</button>
-          <div v-if="showDownloadButton" style="margin-top: 8px; color: #888; font-size: 0.95em;">
-            Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)
-          </div>
-          <button v-else @click="startTask" class="start-button">시작하기</button>
+          <v-container>
+            <v-row justify="center">
+              <v-col cols="12" class="text-center mb-4">
+                <h3>연구 방식을 선택하세요</h3>
+              </v-col>
+            </v-row>
+            
+            <v-row>
+              <v-col v-for="option in orchestrationOptions" :key="option.value" 
+                cols="12" sm="12" md="6" class="d-flex"
+              >
+                <v-card 
+                  :class="['method-card-vuetify', { 'selected': selectedOrchestrationMethod === option.value }]"
+                  :color="selectedOrchestrationMethod === option.value ? 'primary' : 'white'"
+                  :variant="selectedOrchestrationMethod === option.value ? 'elevated' : 'outlined'"
+                  @click="selectOrchestrationMethod(option.value)"
+                  hover
+                  class="flex-fill"
+                >
+                    <v-card-text class="text-center pa-4">
+                      <div class="card-icon-vuetify mb-3">
+                        <Icons :icon="option.icon" :color="selectedOrchestrationMethod === option.value ? 'white' : 'black'" :size="50" />
+                      </div>
+                      <v-card-title class="card-title-vuetify pa-0 mb-2">{{ option.label }}</v-card-title>
+                      <v-card-subtitle class="card-description-vuetify pa-0">{{ getMethodDescription(option.value) }}</v-card-subtitle>
+                    <v-icon v-if="selectedOrchestrationMethod === option.value" 
+                           class="selected-indicator-vuetify" 
+                           color="white">mdi-check-circle</v-icon>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+            
+            <v-row v-if="showDownloadButton" justify="center" class="mt-2">
+              <v-col cols="auto">
+                <v-alert type="info" variant="tonal" class="text-caption">
+                  Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)
+                </v-alert>
+              </v-col>
+            </v-row>
+            
+            <v-row justify="center" class="ma-0 pa-4 pr-2">
+              <v-spacer></v-spacer>
+              <v-btn v-if="showDownloadButton" 
+                  @click="downloadBrowserAgent" 
+                  :disabled="!selectedOrchestrationMethod"
+                  color="primary"
+                  variant="elevated" 
+                  class="rounded-pill"
+                  density="compact"
+              >다운로드</v-btn>
+              <v-btn v-else 
+                  @click="startTask" 
+                  :disabled="!selectedOrchestrationMethod"
+                  color="primary"
+                  variant="elevated" 
+                  class="rounded-pill"
+                  density="compact"
+              >시작하기</v-btn>
+            </v-row>
+          </v-container>
         </div>
       </div>
 
@@ -188,6 +277,8 @@
         </template>
       </Chat>
     </div>
+
+
   </div>
 </template>
 
@@ -224,17 +315,19 @@ export default {
       chatMessages: [],
       isCancelled: false,
       isLoading: false,
-      selectedOrchestrationMethod: 'crewai-deep-research', // 통합된 오케스트레이션 방식
+      selectedOrchestrationMethod: null, // 통합된 오케스트레이션 방식
       isDropdownOpen: false, // 드롭다운 열림 상태
       openBrowserAgent: false,
       downloadedBrowserAgent: false,
       doneWorkItemList: [],
+      // human_asked 응답 관리
+      humanQueryAnswers: {},
       // 공통 옵션 배열
       orchestrationOptions: [
-        { value: 'crewai-deep-research', label: 'CrewAI 심층 연구', startLabel: 'CrewAI Deep Research', icon: '🔬' },
-        { value: 'crewai-action', label: 'CrewAI 액션', startLabel: 'CrewAI Action', icon: '⚡' },
-        { value: 'openai-deep-research', label: 'OpenAI 심층 연구', startLabel: 'OpenAI Deep Research', icon: '🧠' },
-        { value: 'browser-use', label: 'Browser Use', startLabel: 'Browser Use', icon: '🌐' }
+        { value: 'crewai-deep-research', label: 'CrewAI 심층 연구', startLabel: 'CrewAI Deep Research', icon: 'playoff' },
+        { value: 'crewai-action', label: 'CrewAI 액션', startLabel: 'CrewAI Action', icon: 'flowchart' },
+        { value: 'openai-deep-research', label: 'OpenAI 심층 연구', startLabel: 'OpenAI Deep Research', icon: 'playoff' },
+        { value: 'browser-use', label: 'Browser Use', startLabel: 'Browser Use', icon: 'browser' }
       ]
     }
   },
@@ -242,12 +335,20 @@ export default {
     tasks() {
       const taskMap = new Map()
       const crewCompletedJobIds = new Set()
+      const humanAskedTasks = []
+      const humanRespondedJobIds = new Set()
+      const humanResponseByJobId = {}
+      
       // 단일 루프로 이벤트 처리
       this.events.forEach(e => {
         const { event_type, crew_type, data, job_id, id, timestamp } = e
         const jobId = job_id || data?.job_id || id
+        
         if (event_type === 'crew_completed') {
           crewCompletedJobIds.add(jobId)
+        } else if (event_type === 'human_response') {
+          humanRespondedJobIds.add(jobId)
+          humanResponseByJobId[jobId] = e
         } else if (event_type === 'task_started') {
           taskMap.set(jobId, {
             id,
@@ -260,22 +361,60 @@ export default {
             isCompleted: false,
             output: null,
             isCrewCompleted: false,
-            agentProfile: data?.agent_profile
+            agentProfile: data?.agent_profile,
+            isHumanAsked: false
           })
         } else if (event_type === 'task_completed' && taskMap.has(jobId)) {
           const task = taskMap.get(jobId)
           task.isCompleted = true
           task.output = data?.final_result || null
+        } else if (event_type === 'human_asked') {
+          // human_asked 이벤트를 별도 작업으로 추가 (블루톤 카드용 텍스트 구성)
+          const baseDescription = '사용자의 승인 및 추가 정보가 필요합니다. 아래 작업 계획대로 진행해도 괜찮다면 확인을 눌러주세요. 필요한 경우 입력 또는 선택 항목을 작성해 주세요.'
+
+          const response = humanResponseByJobId[jobId] || null
+          humanAskedTasks.push({
+            id,
+            jobId,
+            goal: baseDescription,
+            name: '사용자 승인 및 추가 정보 요청',
+            role: data?.role || 'System',
+            crewType: 'human_asked',
+            startTime: timestamp,
+            isCompleted: Boolean(response),
+            output: null,
+            isCrewCompleted: false,
+            agentProfile: null,
+            isHumanAsked: true,
+            humanQueryData: {
+              type: data?.type || 'text',
+              options: Array.isArray(data?.options) ? data.options : [],
+              text: data?.text || ''
+            },
+            humanResponse: response,
+            eventRow: e
+          })
         }
       })
-      // crew_completed 마킹 - job_id 기반으로 처리
+      
+      // crew_completed 마킹 - job_id 기준으로 처리
       crewCompletedJobIds.forEach(jobId => {
         if (taskMap.has(jobId)) {
           taskMap.get(jobId).isCrewCompleted = true
         }
       })
-      // 시작시간 기준 오름차순 반환
-      return Array.from(taskMap.values()).sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+
+      // human_response 존재 시 해당 human_asked 카드를 완료 처리
+      humanAskedTasks.forEach(task => {
+        if (humanRespondedJobIds.has(task.jobId)) {
+          task.isCompleted = true
+          task.humanResponse = task.humanResponse || humanResponseByJobId[task.jobId] || null
+        }
+      })
+      
+      // 일반 작업과 human_asked 작업을 합치고 시간 순으로 정렬
+      const allTasks = [...Array.from(taskMap.values()), ...humanAskedTasks]
+      return allTasks.sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
     },
     showDownloadButton() {
       return this.selectedOrchestrationMethod === 'browser-use' && !this.downloadedBrowserAgent
@@ -395,9 +534,12 @@ export default {
     },
 
     getTaskMeta(payload) {
+      const typeLabel = payload.isHumanAsked
+        ? 'human asked'
+        : payload.crewType
       return [
         { label: '시작시간', value: this.formatTime(payload.startTime) },
-        { label: '유형', value: payload.crewType }
+        { label: '요청 유형', value: typeLabel }
       ]
     },
 
@@ -444,6 +586,27 @@ export default {
       const status = tool.status === 'done' ? '사용 완료' : '사용 중입니다'
       const detail = tool.query || tool.info
       return `${tool.tool_name} 도구 ${status}${detail ? ': ' + detail : ''}`
+    },
+
+    // 완료된 HUMAN ASKED 카드 표시 텍스트/스타일
+    getHumanResultText(payload) {
+      const status = String(payload?.humanResponse?.status || '').toUpperCase()
+      if (status === 'APPROVED' || status === 'APPROVE') return '승인됨'
+      if (status === 'REJECTED') return '거절됨'
+      return '처리됨'
+    },
+    getHumanResultClass(payload) {
+      const status = String(payload?.humanResponse?.status || '').toUpperCase()
+      if (status === 'APPROVED' || status === 'APPROVE') return 'pill-approved'
+      if (status === 'REJECTED') return 'pill-rejected'
+      return 'pill-neutral'
+    },
+    getHumanResultDetail(payload) {
+      const answer = payload?.humanResponse?.data?.answer
+      const type = payload?.humanQueryData?.type
+      if (!answer) return ''
+      if (type === 'text' || type === 'select') return String(answer)
+      return ''
     },
 
     getLoadingMessage() {
@@ -631,7 +794,7 @@ export default {
           .from('events')
           .select('*')
           .eq('todo_id', taskId)
-          .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'])
+          .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked', 'human_response'])
           .order('timestamp', { ascending: true });
 
         if (error) throw error;
@@ -649,7 +812,7 @@ export default {
     // ========================================
     setupRealtimeSubscription() {
       try {
-        const validEventTypes = ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished'];
+        const validEventTypes = ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked'];
         
         this.channel = window.$supabase
           .channel('events')
@@ -659,7 +822,7 @@ export default {
             table: 'events'
           }, ({ new: row }) => {
             const taskId = this.getTaskIdFromWorkItem();
-            const { todo_id: todoId, event_type, crew_type, job_id, id } = row;
+            const { todo_id: todoId, event_type, job_id, id } = row;
             
             // 이벤트 유효성 검사
             const isValidEvent = !this.events.some(e => e.id === id) &&
@@ -692,6 +855,69 @@ export default {
       } catch (error) {
         this.handleError(error, '실시간 구독 중 오류가 발생했습니다');
       }
+    },
+    // human_asked 응답 처리 (status 비사용: 응답 레코드만 저장)
+    async onConfirmHumanQuery(task) {
+      if (!task || !task.isHumanAsked) return;
+      
+      try {
+        const answer = this.humanQueryAnswers[task.id] || 'confirmed';
+        const base = { ...(task.eventRow || {}) };
+        const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) 
+          ? crypto.randomUUID() 
+          : `${base.job_id || task.jobId || 'human'}-${Date.now()}`
+        const eventPayload = {
+          ...base,
+          id: newId,
+          event_type: 'human_response',
+          data: { answer },
+          status: 'APPROVED'
+        };
+        // 낙관적 UI 업데이트: 즉시 완료 표시 + 로그
+        console.log('[HUMAN CONFIRM] sending response', eventPayload)
+        this.events = [...this.events, { ...eventPayload, timestamp: new Date().toISOString() }]
+        // REST upsert에는 PK(id)가 필요하므로 id를 명시적으로 생성
+        await backend.putEvent(eventPayload);
+        
+        // 응답 후 입력값 초기화 (Vue3에서는 $delete 없음)
+        delete this.humanQueryAnswers[task.id]
+      } catch (error) {
+        this.handleError(error, '응답 저장 중 오류가 발생했습니다');
+      }
+    },
+    
+    async onCancelHumanQuery(task) {
+      if (!task || !task.isHumanAsked) return;
+      
+      try {
+        const answer = this.humanQueryAnswers[task.id] || 'rejected';
+        const base = { ...(task.eventRow || {}) };
+        const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) 
+          ? crypto.randomUUID() 
+          : `${base.job_id || task.jobId || 'human'}-${Date.now()}`
+        const eventPayload = {
+          ...base,
+          id: newId,
+          event_type: 'human_response',
+          data: { answer },
+          status: 'REJECTED'
+        };
+        // 낙관적 UI 업데이트: 즉시 완료 표시 + 로그
+        console.log('[HUMAN REJECT] sending response', eventPayload)
+        this.events = [...this.events, { ...eventPayload, timestamp: new Date().toISOString() }]
+        // REST upsert에는 PK(id)가 필요하므로 id를 명시적으로 생성
+        await backend.putEvent(eventPayload);
+        
+        // 응답 후 입력값 초기화 (Vue3에서는 $delete 없음)
+        delete this.humanQueryAnswers[task.id]
+      } catch (error) {
+        this.handleError(error, '응답 저장 중 오류가 발생했습니다');
+      }
+    },
+    // status가 ASKED일 때만 모달 표시
+    isHumanQueryAsked(row) {
+      if (!row) return false;
+      return String(row.status || '').toUpperCase() === 'ASKED';
     },
     cleanup() {
       if (this.channel) {
@@ -878,8 +1104,12 @@ export default {
     },
 
     getDisplayName(task) {
-      const name = task.name?.trim();
-      return (!name || name.toLowerCase() === 'unknown') ? task.role : task.name;
+      // human_asked는 항상 고정 타이틀 사용
+      if (task.isHumanAsked) {
+        return '사용자 승인 및 추가 정보 요청'
+      }
+      const name = task.name?.trim()
+      return (!name || name.toLowerCase() === 'unknown') ? task.role : task.name
     },
 
     getStatusText(task) {
@@ -890,6 +1120,23 @@ export default {
     getMarkdownContent(task) {
       const content = task.crewType === 'action' ? task.output : (Object.values(task.output)[0] || '');
       return this.formatMarkdownOutput(content);
+    },
+
+    // ========================================
+    // 🎯 오케스트레이션 방식 관련 메서드들
+    // ========================================
+    selectOrchestrationMethod(value) {
+      this.selectedOrchestrationMethod = value;
+    },
+
+    getMethodDescription(method) {
+      const descriptions = {
+        'crewai-deep-research': '다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 | 5~15분 소요',
+        'crewai-action': '최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A | 1~5분 소요',
+        'openai-deep-research': 'GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 | 3~10분 소요',
+        'browser-use': '실제 브라우저를 조작하여 실시간 웹 정보 수집 및 작업 수행. ex) 검색, 폼 작성, 스크래핑 | 2~8분 소요'
+      };
+      return descriptions[method] || '';
     },
   },
   async created() {
@@ -1676,64 +1923,116 @@ export default {
   background: #005bb5;
 }
 
-/* 시작 컨트롤 스타일 */
+/* Vuetify 카드 스타일 */
 .start-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  margin-top: 16px;
+  margin-top: 24px;
+  width: 100%;
 }
 
-.method-selector {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #f8f9fa;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
+.method-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d2129;
+  margin-bottom: 0;
 }
 
-.method-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #495057;
-  white-space: nowrap;
-}
-
-.method-dropdown {
-  background: white;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  padding: 6px 8px;
-  font-size: 13px;
-  color: #495057;
+.method-card-vuetify {
   cursor: pointer;
-  min-width: 200px;
-  transition: border-color 0.2s ease;
+  transition: all 0.3s ease;
+  min-height: 240px;
+  position: relative;
 }
 
-.method-dropdown:focus {
-  outline: none;
-  border-color: #60A5FA;
-  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+.method-card-vuetify:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
 }
 
-.method-dropdown:hover {
-  border-color: #adb5bd;
+.method-card-vuetify.selected {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(25, 118, 210, 0.3) !important;
+}
+
+.card-icon-vuetify {
+  font-size: 48px;
+  line-height: 1;
+  filter: grayscale(30%);
+  transition: filter 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 60px;
+}
+
+.method-card-vuetify.selected .card-icon-vuetify {
+  filter: none;
+}
+
+.card-title-vuetify {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  color: #1d2129 !important;
+}
+
+.method-card-vuetify.selected .card-title-vuetify {
+  color: white !important;
+}
+
+.card-description-vuetify {
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  opacity: 0.85;
+  word-break: keep-all;
+  white-space: pre-line;
+  text-align: left;
+  color: #606770 !important;
+}
+
+.method-card-vuetify.selected .card-description-vuetify {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.selected-indicator-vuetify {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-  .method-selector {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
+  .method-title {
+    font-size: 18px;
   }
   
-  .method-dropdown {
-    min-width: auto;
+  .method-card-vuetify {
+    min-height: 220px;
+  }
+  
+  .card-icon-vuetify {
+    font-size: 40px;
+  }
+  
+  .card-title-vuetify {
+    font-size: 15px !important;
+  }
+  
+  .card-description-vuetify {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
   }
 }
 
@@ -1867,5 +2166,151 @@ export default {
   .dropdown-item { padding: 6px 12px; }
   .option-label { font-size: 12px; }
   .option-icon { font-size: 14px; }
+}
+
+/* human_asked 카드 스타일 (블루톤, 가독성 향상) */
+.human-query-input {
+  background: #f8fbff; /* lighter than blue-50 */
+  border: 1px solid #bfdbfe; /* blue-200 */
+  border-radius: 10px;
+  padding: 16px 16px 14px;
+  margin-top: 12px;
+}
+
+.query-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.query-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e3a8a; /* blue-800 */
+  margin: 0;
+}
+
+.role-pill {
+  font-size: 12px;
+  color: #1e40af; /* blue-700 */
+  background: #dbeafe; /* blue-100 */
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.query-content {
+  margin-bottom: 14px;
+}
+
+.query-question {
+  margin: 0 0 10px 0;
+  line-height: 1.5;
+  font-size: 14px;
+  color: #1e3a8a; /* blue-800 */
+  font-weight: 500;
+}
+
+.input-field { margin-top: 8px; }
+
+.query-input, .query-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe; /* blue-200 */
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937; /* gray-800 */
+  background: #ffffff;
+}
+
+.query-input:focus, .query-select:focus {
+  outline: none;
+  border-color: #60a5fa; /* blue-400 */
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
+}
+
+.confirm-hint {
+  font-size: 13px;
+  color: #1d4ed8; /* blue-700 */
+  font-style: italic;
+}
+
+/* 요청 내용 블록 */
+.request-block {
+  background: #ffffff;
+  border: 1px dashed #93c5fd; /* blue-300 */
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 10px 0 2px;
+}
+.request-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2563eb; /* blue-600 */
+  margin-bottom: 6px;
+}
+.request-body {
+  font-size: 13px;
+  color: #1f2937; /* gray-800 */
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.query-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.query-completed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.completed-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.pill-approved { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+.pill-rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.pill-neutral { background: #e5e7eb; color: #374151; border: 1px solid #d1d5db; }
+
+.completed-detail {
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.query-cancel, .query-confirm {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.query-cancel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb; /* gray-300 */
+  color: #374151; /* gray-700 */
+}
+
+.query-cancel:hover { background: #f9fafb; }
+
+.query-confirm {
+  background: #60a5fa; /* blue-400 */
+  border: 1px solid #3b82f6; /* blue-500 */
+  color: #ffffff;
+}
+
+.query-confirm:hover:not(:disabled) { background: #3b82f6; }
+
+.query-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>
