@@ -42,6 +42,11 @@
                 <!-- 참고해야 할 이전 산출물이 있는 경우 -->
                 <ActivityInputData v-if="hasInputFields" :inputFields="inputFields" :workItem="workItem" />
 
+                <v-row class="ma-0 pa-0 mb-4">
+                    <v-spacer></v-spacer>
+                    <!-- 추가: PC 전용 액션 슬롯 -->
+                    <slot name="form-work-item-action-btn"></slot>
+                </v-row>
                 <!-- 등록된 폼 정보가 없을 때 표시되는 메시지 -->
                 <div v-if="isInitialized && (!html || html === 'null') && Object.keys(formData).length === 0 && workItem.activity.checkpoints.length === 0" 
                      class="text-center py-8">
@@ -54,7 +59,6 @@
                         현재 작업에 대한 폼 데이터를 찾을 수 없습니다.
                     </p>
                 </div>
-                
                 <!-- 기존 폼 컨텐츠 -->
                 <div v-else>
                     <!-- 슬랏으로 버튼 추가 영역  -->

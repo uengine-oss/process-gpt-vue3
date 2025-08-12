@@ -209,7 +209,7 @@ export default {
         },
         async beforeSave() {
             var me = this;
-            if (me.formId == '' || me.formId == null) {
+            if (me.formId == '' || me.formId == null || me.formId.includes('undefined')) {
                 let formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
                 formId = formId.toLowerCase();
                 formId = formId.replace(/[/.]/g, "_");
