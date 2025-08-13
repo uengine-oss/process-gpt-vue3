@@ -1,18 +1,17 @@
 <template>
-    <v-row class="justify-center">
+    <v-row class="justify-center ma-0 pa-0">
         <!--Account Settings tabs-->
-        <v-col cols="12" md="12">
+        <v-col cols="12" md="12" class="pa-0">
             <v-card elevation="10" 
                 class="is-work-height"
-                style="overflow: auto;"
             >
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
                     <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default">
                         <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
-                        <div v-if="admin">
-                            <v-tab v-if="superAdmin" value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
-                            <v-tab v-if="superAdmin" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
+                        <div v-if="superAdmin">
+                            <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
+                            <v-tab value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
                             <v-tab value="MCP-Servers"> MCP - Servers </v-tab>
                             <v-tab value="MCP-Environments"> MCP - Environments </v-tab>
                             <v-tab value="ConnectionInfo">
@@ -38,9 +37,8 @@
                             <UserCircleIcon class="mr-2" size="16" />{{ $t('accountTab.accountSetting') }}
                         </v-btn>
 
-                        <template v-if="admin">
+                        <template v-if="superAdmin">
                             <v-btn
-                                v-if="superAdmin"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -51,7 +49,6 @@
                             </v-btn>
 
                             <v-btn
-                                v-if="superAdmin"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -93,28 +90,56 @@
                 </div>
 
                 <v-divider></v-divider>
-                <v-card-text class="pa-sm-6 pa-3 pb-sm-6 pb-6">
+                <v-card-text class="pa-0">
                     <v-window v-model="tab">
                         <v-window-item value="Account">
-                            <AccountTab />
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
+                                <AccountTab />
+                            </div>
                         </v-window-item>
-                        <div v-if="admin">
-                            <v-window-item v-if="superAdmin" value="ManageAccess">
+                        <v-window-item value="ManageAccess">
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
                                 <ManageAccessTab />
-                            </v-window-item>
-                            <v-window-item v-if="superAdmin" value="Drive">
+                            </div>
+                        </v-window-item>
+                        <v-window-item value="Drive">
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
                                 <DriveTab />
-                            </v-window-item>
-                            <v-window-item value="ConnectionInfo">
+                            </div>
+                        </v-window-item>
+                        <v-window-item value="ConnectionInfo">
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
                                 <ConnectionInfoTab />
-                            </v-window-item>
-                            <v-window-item value="MCP-Servers">
+                            </div>
+                        </v-window-item>
+                        <v-window-item value="MCP-Servers">
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
                                 <MCPServerTab />
-                            </v-window-item>
-                            <v-window-item value="MCP-Environments">
+                            </div>
+                        </v-window-item>
+                        <v-window-item value="MCP-Environments">
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
                                 <MCPEnvSecretTab />
-                            </v-window-item>
-                        </div>
+                            </div>
+                        </v-window-item>
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>
                         </v-window-item>
@@ -161,6 +186,7 @@ export default {
     data() {
         return {
             tab: '',
+            superAdmin: localStorage.getItem('role') === 'superAdmin',
             tabItems: [
                 { value: 'Account', label: 'Account' },
                 { value: 'ManageAccess', label: 'Manage Access' },
@@ -177,9 +203,6 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
-        },
-        superAdmin() {
-            return localStorage.getItem('role') === 'superAdmin';
         }
     }
 };
