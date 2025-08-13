@@ -5,6 +5,12 @@
             <TextConditionField :value="copyUengineProperties.condition"
                 @update:value="updateCondition"
             />
+            <ConditionExampleField 
+                :value="copyUengineProperties.examples" 
+                :processDefinitionId="processDefinitionId"
+                :condition="copyUengineProperties.condition"
+                @update:value="updateExamples"
+            />
         </div>
         <div v-else>
             <ConditionField :value="copyUengineProperties.condition"
@@ -30,12 +36,14 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import ConditionField from './ConditionField.vue';
 import TextConditionField from './TextConditionField.vue';
+import ConditionExampleField from './ConditionExampleField.vue';
 
 export default {
     name: 'sequence-flow-panel',
     components: {
         ConditionField,
         TextConditionField,
+        ConditionExampleField,
     },
     props: {
         uengineProperties: Object,
@@ -120,6 +128,10 @@ export default {
             }else {
                 delete this.copyUengineProperties.priority;
             }
+        },
+        updateExamples(examples) {
+            this.copyUengineProperties.examples = examples;
+            this.$emit('update:uengineProperties', this.copyUengineProperties)
         },
         beforeSave() {
             var expression = this.copyUengineProperties.condition;
