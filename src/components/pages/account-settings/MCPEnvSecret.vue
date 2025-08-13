@@ -30,66 +30,6 @@
                             <v-icon size="small" @click="deleteItem(item, 'environment')"> mdi-delete </v-icon>
                         </template>
                     </v-data-table>
-                    <v-data-table
-                        :headers="headers"
-                        :items="envItems"
-                        class="elevation-1"
-                        :loading="loading"
-                        loading-text="Loading Environments..."
-                    >
-                        <template #item.actions="{ item }">
-                            <v-icon size="small" class="me-2" @click="editItem(item, 'environment')"> mdi-pencil </v-icon>
-                            <v-icon size="small" @click="deleteItem(item, 'environment')"> mdi-delete </v-icon>
-                        </template>
-                    </v-data-table>
-                    <v-data-table
-                        :headers="headers"
-                        :items="envItems"
-                        class="elevation-1"
-                        :loading="loading"
-                        loading-text="Loading Environments..."
-                    >
-                        <template #item.actions="{ item }">
-                            <v-icon size="small" class="me-2" @click="editItem(item, 'environment')"> mdi-pencil </v-icon>
-                            <v-icon size="small" @click="deleteItem(item, 'environment')"> mdi-delete </v-icon>
-                        </template>
-                    </v-data-table>
-                    <v-data-table
-                        :headers="headers"
-                        :items="envItems"
-                        class="elevation-1"
-                        :loading="loading"
-                        loading-text="Loading Environments..."
-                    >
-                        <template #item.actions="{ item }">
-                            <v-icon size="small" class="me-2" @click="editItem(item, 'environment')"> mdi-pencil </v-icon>
-                            <v-icon size="small" @click="deleteItem(item, 'environment')"> mdi-delete </v-icon>
-                        </template>
-                    </v-data-table>
-                    <v-data-table
-                        :headers="headers"
-                        :items="envItems"
-                        class="elevation-1"
-                        :loading="loading"
-                        loading-text="Loading Environments..."
-                    >
-                        <template #item.actions="{ item }">
-                            <v-icon size="small" class="me-2" @click="editItem(item, 'environment')"> mdi-pencil </v-icon>
-                            <v-icon size="small" @click="deleteItem(item, 'environment')"> mdi-delete </v-icon>
-                        </template>
-                    </v-data-table>
-                    <v-data-table
-                        :headers="headers"
-                        :items="envItems"
-                        class="elevation-1"
-                        :loading="loading"
-                        loading-text="Loading Environments..."
-                    >
-                        <template #item.actions="{ item }">
-                            <v-icon size="small" class="me-2" @click="editItem(item, 'environment')"> mdi-pencil </v-icon>
-                            <v-icon size="small" @click="deleteItem(item, 'environment')"> mdi-delete </v-icon>
-                        </template>
-                    </v-data-table>
                 </v-card-item>
             </v-card>
 
