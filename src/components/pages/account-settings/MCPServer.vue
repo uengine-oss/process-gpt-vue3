@@ -67,7 +67,7 @@
                     </div>
 
                     <div class="d-flex justify-space-between pb-2">
-                        <v-btn color="error" variant="flat" rounded class="mr-auto" @click="deleteServer">{{ $t('accountTab.delete') }}</v-btn>
+                        <v-btn color="grey" variant="flat" rounded class="mr-auto" @click="deleteServer">{{ $t('accountTab.delete') }}</v-btn>
                         <div class="d-flex align-center">
                             <v-btn color="grey" variant="flat" rounded class="mr-2" @click="closeEdit">{{ $t('accountTab.cancel') }}</v-btn>
                             <v-btn color="primary" variant="flat" rounded @click="saveServerChanges" :loading="saving">{{ $t('accountTab.save') }}</v-btn>
