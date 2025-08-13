@@ -1,15 +1,83 @@
 <template>
-    <v-row class="justify-center">
+    <v-row class="ma-0 pa-0">
         <v-col cols="12">
-            <v-card flat class="mb-6">
-                <v-card-item>
-                    <div class="d-flex justify-space-between align-center mb-4">
+            <v-card flat class="mb-8 pa-1">
+                <v-card-item class="pa-0">
+                    <v-row class="ma-0 pa-0 mb-4">
                         <h5 class="text-h5">MCP Environments</h5>
-                        <v-btn color="primary" @click="openDialog('environment')">
-                            <v-icon class="me-2">mdi-plus</v-icon>
-                            Add Environment
+                        <v-spacer></v-spacer>
+                        <v-btn 
+                            color="primary" 
+                            variant="flat"
+                            rounded
+                            @click="openDialog('environment')"
+                        >
+                            <v-row class="pa-0 ma-0 align-center">
+                                <v-icon class="mr-2" style="padding-top: 3px;">mdi-plus</v-icon>
+                                <div>{{ $t('accountTab.addEnvironment') }}</div>
+                            </v-row>
                         </v-btn>
-                    </div>
+                    </v-row>
+                    <v-data-table
+                        :headers="headers"
+                        :items="envItems"
+                        class="elevation-1"
+                        :loading="loading"
+                        loading-text="Loading Environments..."
+                    >
+                        <template #item.actions="{ item }">
+                            <v-icon size="small" class="me-2" @click="editItem(item, 'environment')"> mdi-pencil </v-icon>
+                            <v-icon size="small" @click="deleteItem(item, 'environment')"> mdi-delete </v-icon>
+                        </template>
+                    </v-data-table>
+                    <v-data-table
+                        :headers="headers"
+                        :items="envItems"
+                        class="elevation-1"
+                        :loading="loading"
+                        loading-text="Loading Environments..."
+                    >
+                        <template #item.actions="{ item }">
+                            <v-icon size="small" class="me-2" @click="editItem(item, 'environment')"> mdi-pencil </v-icon>
+                            <v-icon size="small" @click="deleteItem(item, 'environment')"> mdi-delete </v-icon>
+                        </template>
+                    </v-data-table>
+                    <v-data-table
+                        :headers="headers"
+                        :items="envItems"
+                        class="elevation-1"
+                        :loading="loading"
+                        loading-text="Loading Environments..."
+                    >
+                        <template #item.actions="{ item }">
+                            <v-icon size="small" class="me-2" @click="editItem(item, 'environment')"> mdi-pencil </v-icon>
+                            <v-icon size="small" @click="deleteItem(item, 'environment')"> mdi-delete </v-icon>
+                        </template>
+                    </v-data-table>
+                    <v-data-table
+                        :headers="headers"
+                        :items="envItems"
+                        class="elevation-1"
+                        :loading="loading"
+                        loading-text="Loading Environments..."
+                    >
+                        <template #item.actions="{ item }">
+                            <v-icon size="small" class="me-2" @click="editItem(item, 'environment')"> mdi-pencil </v-icon>
+                            <v-icon size="small" @click="deleteItem(item, 'environment')"> mdi-delete </v-icon>
+                        </template>
+                    </v-data-table>
+                    <v-data-table
+                        :headers="headers"
+                        :items="envItems"
+                        class="elevation-1"
+                        :loading="loading"
+                        loading-text="Loading Environments..."
+                    >
+                        <template #item.actions="{ item }">
+                            <v-icon size="small" class="me-2" @click="editItem(item, 'environment')"> mdi-pencil </v-icon>
+                            <v-icon size="small" @click="deleteItem(item, 'environment')"> mdi-delete </v-icon>
+                        </template>
+                    </v-data-table>
                     <v-data-table
                         :headers="headers"
                         :items="envItems"
@@ -27,15 +95,23 @@
 
             <v-divider class="my-6"></v-divider>
 
-            <v-card flat>
-                <v-card-item>
-                    <div class="d-flex justify-space-between align-center mb-4">
+            <v-card flat class="pa-1">
+                <v-card-item class="pa-0">
+                    <v-row class="ma-0 pa-0 mb-4">
                         <h5 class="text-h5">MCP Secrets</h5>
-                        <v-btn color="primary" @click="openDialog('secret')">
-                            <v-icon class="me-2">mdi-plus</v-icon>
-                            Add Secret
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            color="primary" 
+                            variant="flat"
+                            rounded
+                            @click="openDialog('secret')"
+                        >
+                            <v-row class="pa-0 ma-0 align-center">
+                                <v-icon class="mr-2" style="padding-top: 3px;">mdi-plus</v-icon>
+                                <div>{{ $t('accountTab.addSecret') }}</div>
+                            </v-row>
                         </v-btn>
-                    </div>
+                    </v-row>
                     <v-data-table
                         :headers="headers"
                         :items="secretItems"
@@ -54,12 +130,12 @@
     </v-row>
 
     <!-- Unified Dialog -->
-    <v-dialog v-model="dialog" max-width="800px" max-height="800px" persistent>
+    <v-dialog v-model="dialog" max-width="800px" persistent>
         <v-card>
-            <v-card-title>
+            <v-card-title class="headline">
                 <span class="text-h5">{{ editing ? 'Edit' : 'Add' }} {{ currentType === 'environment' ? 'Environment' : 'Secret' }}</span>
             </v-card-title>
-            <v-card-text>
+            <v-card-text max-height="500" style="overflow-y: auto;">
                 <v-container>
                     <v-row>
                         <v-col cols="12" v-if="!editing">
@@ -84,20 +160,26 @@
                             <v-checkbox
                                 v-if="currentType === 'secret'"
                                 v-model="showPassword"
-                                label="Show secret data"
+                                :label="$t('accountTab.showSecretData')"
                                 density="compact"
                             ></v-checkbox>
                         </v-col>
                     </v-row>
                 </v-container>
-                <small>*indicates required field</small>
+                <small>{{ $t('accountTab.indicatesRequiredField') }}</small>
             </v-card-text>
-            <v-card-actions>
-                <v-spacer></v-spacer>
+            <!-- <v-card-actions>
+                <v-spacer></v-spacer> 
                 <v-btn color="blue-darken-1" variant="text" @click="closeDialog"> Cancel </v-btn>
                 <v-btn color="blue-darken-1" variant="text" @click="saveItem" :loading="saving"> Save </v-btn>
-            </v-card-actions>
+            </v-card-actions>-->
+
+            <div class="d-flex justify-end mt-2 pb-4">
+                <v-btn @click="closeDialog" color="grey" variant="flat" rounded class="mr-2">{{ $t('accountTab.cancel') }}</v-btn>
+                <v-btn @click="saveItem" :loading="saving" color="primary" variant="flat" rounded class="mr-4">{{ $t('accountTab.save') }}</v-btn>
+            </div>
         </v-card>
+        
     </v-dialog>
 </template>
 

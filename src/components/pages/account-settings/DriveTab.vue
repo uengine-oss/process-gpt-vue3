@@ -1,8 +1,8 @@
 <template>
-    <v-row class="justify-center ma-n2">
+    <v-row class="ma-0 pa-0">
         <v-col cols="12" md="9">
-            <v-card elevation="10">
-                <v-card-item>
+            <v-card flat class="pa-1">
+                <v-card-item class="pa-0">
                     <h4 class="text-h4">{{ $t('accountTab.drive') }}</h4>
                     <div class="mt-6">
                         <v-label class="mb-2 font-weight-medium">{{ $t('accountTab.clientId') }}</v-label>
@@ -27,10 +27,10 @@
 
     <div class="d-flex justify-end mt-5 pb-3">
         <div v-if="isEditMode">
-            <v-btn size="large" color="primary" rounded="pill" class="mr-4" @click="saveDriveInfo">{{ $t('accountTab.save') }}</v-btn>
-            <v-btn size="large" color="error" rounded="pill" class="mr-4" @click="isEditMode = false">{{ $t('accountTab.cancel') }}</v-btn>
+            <v-btn size="large" color="grey" variant="flat" rounded="pill" class="mr-2" @click="isEditMode = false">{{ $t('accountTab.cancel') }}</v-btn>
+            <v-btn size="large" color="primary" variant="flat" rounded="pill" class="mr-4" @click="saveDriveInfo">{{ $t('accountTab.save') }}</v-btn>
         </div>
-        <v-btn v-else size="large" color="primary" rounded="pill" class="mr-4" @click="isEditMode = true">{{ $t('accountTab.edit') }}</v-btn>
+        <v-btn v-else size="large" color="primary" variant="flat" rounded="pill" class="mr-4" @click="isEditMode = true">{{ $t('accountTab.edit') }}</v-btn>
 
     </div>
 </template>
