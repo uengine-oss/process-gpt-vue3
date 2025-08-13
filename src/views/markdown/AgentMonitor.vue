@@ -82,7 +82,7 @@
             </div>
 
             <!-- 작업 결과 -->
-            <div v-else-if="item.payload.isCompleted && item.payload.output" class="task-result">
+      <div v-else-if="item.payload.isCompleted && item.payload.content" class="task-result">
               <div class="result-header">
                 <h4 class="result-title">작업 결과</h4>
               </div>
@@ -96,22 +96,22 @@
                     </div>
                     <div class="slide-navigation">
                       <button @click="previousSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === 0" class="nav-btn">←</button>
-                      <span class="slide-counter">{{ getSlideIndex(item.payload.id) + 1 }} / {{ getSlides(item.payload.output).length }}</span>
-                      <button @click="nextSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === getSlides(item.payload.output).length - 1" class="nav-btn">→</button>
+                      <span class="slide-counter">{{ getSlideIndex(item.payload.id) + 1 }} / {{ getSlides(item.payload.content).length }}</span>
+                      <button @click="nextSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === getSlides(item.payload.content).length - 1" class="nav-btn">→</button>
                     </div>
                   </div>
                   <div class="slide-content">
-                    <div v-html="getCurrentSlide(item.payload)" class="slide-inner"></div>
+                      <div v-html="getCurrentSlide(item.payload)" class="slide-inner"></div>
                   </div>
                   <div class="slide-indicators">
-                    <span v-for="(slide, index) in getSlides(item.payload.output)" :key="index"
+                      <span v-for="(slide, index) in getSlides(item.payload.content)" :key="index"
                           :class="['indicator', { active: index === getSlideIndex(item.payload.id) }]"
                           @click="goToSlide(item.payload.id, index)"></span>
                   </div>
                 </div>
                 
                 <!-- 마크다운 결과 -->
-                <div v-else-if="isMarkdownType(item.payload.crewType)" 
+                 <div v-else-if="isMarkdownType(item.payload.crewType)" 
                      :class="['markdown-container', { 
                        expanded: isTaskExpanded(item.payload.id),
                        'has-expand-controls': shouldShowExpandControls(item.payload)
@@ -120,12 +120,12 @@
                      v-html="getMarkdownContent(item.payload)"></div>
                 
                 <!-- JSON 결과 -->
-                <div v-else :class="['json-container', { 
+                 <div v-else :class="['json-container', { 
                        expanded: isTaskExpanded(item.payload.id),
                        'has-expand-controls': shouldShowExpandControls(item.payload)
                      }]"
                      @dblclick="toggleTaskExpansion(item.payload.id)">
-                  <pre>{{ formatJsonOutput(item.payload.output) }}</pre>
+                  <pre>{{ formatJsonOutput(item.payload.content) }}</pre>
                 </div>
               </div>
               <div v-if="shouldShowExpandControls(item.payload)" class="expand-controls">
@@ -312,7 +312,8 @@ export default {
             crewType: crew_type || 'default',
             startTime: timestamp,
             isCompleted: false,
-            output: null,
+            outputRaw: null,
+            content: null,
             isCrewCompleted: false,
             agentProfile: data?.agent_profile,
             isHumanAsked: false
@@ -320,7 +321,8 @@ export default {
         } else if (event_type === 'task_completed' && taskMap.has(jobId)) {
           const task = taskMap.get(jobId)
           task.isCompleted = true
-          task.output = data?.final_result || null
+          task.outputRaw = data || null
+          task.content = this.resolvePrimaryValue(data || null, task.crewType)
         } else if (event_type === 'human_asked') {
           // human_asked 이벤트를 별도 작업으로 추가 (블루톤 카드용 텍스트 구성)
           const baseDescription = '사용자의 승인 및 추가 정보가 필요합니다. 아래 작업 계획대로 진행해도 괜찮다면 확인을 눌러주세요. 필요한 경우 입력 또는 선택 항목을 작성해 주세요.'
@@ -335,9 +337,10 @@ export default {
             crewType: 'human_asked',
             startTime: timestamp,
             isCompleted: Boolean(response),
-            output: null,
+            outputRaw: null,
+            content: null,
             isCrewCompleted: false,
-            agentProfile: null,
+            agentProfile: data?.agent_profile || null,
             isHumanAsked: true,
             humanQueryData: {
               type: data?.type || 'text',
@@ -501,7 +504,7 @@ export default {
         (task.crewType === 'report' && task.jobId.includes('final_report_merge')) ||
         task.crewType === 'slide' ||
         task.crewType === 'text' ||
-        (task.crewType === 'action' && task.jobId.includes('action'))
+        (task.crewType === 'result' && task.jobId.includes('action'))
       )
     },
 
@@ -515,19 +518,15 @@ export default {
       return crewType === 'report' || crewType === 'action'
     },
 
-          shouldShowExpandControls(payload) {
+    shouldShowExpandControls(payload) {
         if (payload.crewType === 'slide') return false
-        if (payload.crewType === 'report') {
-          const rawContent = Object.values(payload.output)[0] || '';
-          return this.isContentLong(rawContent);
+        if (payload.crewType === 'report' || payload.crewType === 'action') {
+          return this.isContentLong(payload.content);
         }
-        if (payload.crewType === 'action') {
-          return this.isContentLong(payload.output);
-        }
-        // JSON의 경우 원본 데이터를 문자열화해서 판단
-        const rawJson = typeof payload.output === 'string' 
-          ? payload.output 
-          : JSON.stringify(payload.output, null, 2);
+        // JSON의 경우 표시용 컨텐츠를 문자열화해서 판단
+        const rawJson = typeof payload.content === 'string' 
+          ? payload.content 
+          : JSON.stringify(payload.content, null, 2);
         return this.isContentLong(rawJson);
       },
 
@@ -672,12 +671,26 @@ export default {
       return this.formatOutput(output, 'markdown');
     },
 
+    // 객체면 첫번째 키의 값을 반환, 배열/문자열 등은 그대로 반환
+    resolvePrimaryValue(output, crewType) {
+      const type = crewType ? String(crewType).toLowerCase() : '';
+      // planning, result 타입은 추출하지 않고 원본 그대로 사용
+      if (type === 'planning' || type === 'result') {
+        return output;
+      }
+      if (output && typeof output === 'object' && !Array.isArray(output)) {
+        const keys = Object.keys(output);
+        if (keys.length > 0) return output[keys[0]];
+      }
+      return output;
+    },
+
     // ========================================
     // 🎬 슬라이드 관리 메서드들
     // ========================================
     getSlides(output) {
       if (!output) return [];
-      const source = (typeof output === 'object' && !Array.isArray(output)) ? Object.values(output)[0] : output;
+      const source = output;
       const sanitized = this.sanitizeOutput(source);
       return String(sanitized)
         .split(/^\s*---\s*$/gm)
@@ -692,14 +705,14 @@ export default {
     setSlideIndex(taskId, index) {
       const task = this.tasks.find(t => t.id === taskId);
       if (!task) return;
-      const slides = this.getSlides(task.output);
+      const slides = this.getSlides(task.content);
       if (index >= 0 && index < slides.length) {
         this.slideIndexes = { ...this.slideIndexes, [taskId]: index };
       }
     },
 
     getCurrentSlide(task) {
-      const slides = this.getSlides(task.output);
+      const slides = this.getSlides(task.content);
       return slides[this.getSlideIndex(task.id)] || '';
     },
 
@@ -721,14 +734,26 @@ export default {
     // ✅ 작업 제출 및 완료 처리
     // ========================================
     submitTask(task) {
-      let formValues = {};
-      try {
-        formValues = typeof task.output === 'string' ? JSON.parse(task.output) : task.output || {};
-      } catch {
-        formValues = {};
+      const original = task.outputRaw;
+      const normalized = this.normalizeFormValues(original);
+      console.log('[AgentMonitor] submitTask!!', normalized);
+      this.EventBus.emit('form-values-updated', normalized);
+    },
+
+    normalizeFormValues(payload) {
+      let obj = payload;
+      if (typeof obj === 'string') {
+        try { obj = JSON.parse(obj); } catch (e) { return payload; }
       }
-      console.log('[AgentMonitor] submitTask!!', formValues);
-      this.EventBus.emit('form-values-updated', formValues);
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return payload;
+
+      const result = {};
+      Object.keys(obj).forEach((key) => {
+        const value = obj[key];
+        // 숫자만 문자열로 변환. 불리언/배열/객체는 그대로 유지
+        result[key] = (typeof value === 'number') ? String(value) : value;
+      });
+      return result;
     },
 
     // ========================================
@@ -792,6 +817,7 @@ export default {
                 this.$nextTick(() => {
                   const task = this.tasks.find(t => t.jobId === job_id || t.id === id);
                   if (task?.isCompleted && this.isSubmittableTask(task)) {
+                    console.log('[AgentMonitor] submitTask 감지', task)
                     this.submitTask(task);
                   }
                 });
@@ -904,8 +930,8 @@ export default {
           const workItemList = await backend.getWorkListByInstId(this.workItem.worklist.instId);
           if (workItemList) {
             this.doneWorkItemList = workItemList
-              .filter(item => item.status === 'DONE' && item.task?.output)
-              .map(item => ({ name: item.name, output: item.task.output }));
+              .filter(item => item.status === 'DONE' && item.task?.content)
+              .map(item => ({ name: item.name, output: item.task.content }));
           }
           this.openBrowserAgent = true;
         } catch (error) {
@@ -1005,12 +1031,14 @@ export default {
         await backend.putWorkItem(taskId, {
           feedback: updatedFeedback,
           draft_status: 'FB_REQUESTED',
+          status: 'IN_PROGRESS',
           agent_orch: agentOrch
         });
 
         // 상태 업데이트
         Object.assign(this.todoStatus, {
           draft_status: 'FB_REQUESTED',
+          status: 'IN_PROGRESS',
           agent_orch: agentOrch,
           feedback: updatedFeedback
         });
@@ -1071,8 +1099,7 @@ export default {
     },
 
     getMarkdownContent(task) {
-      const content = task.crewType === 'action' ? task.output : (Object.values(task.output)[0] || '');
-      return this.formatMarkdownOutput(content);
+      return this.formatMarkdownOutput(task.content);
     },
   },
   async created() {
