@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 /*import tabler icons*/
-import { UserCircleIcon, UsersIcon, BrandGoogleDriveIcon } from 'vue-tabler-icons';
+import { UserCircleIcon, UsersIcon, BrandGoogleDriveIcon, ReceiptIcon } from 'vue-tabler-icons';
 //components
 import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
 import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
+import Billing from '@/components/ui/usage-billing/Billing.vue';
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
 // import SecurityTab from '@/components/pages/account-settings/SecurityTab.vue';
@@ -31,6 +32,7 @@ const superAdmin = ref(localStorage.getItem('role') === 'superAdmin');
                     <v-tab value="Drive">
                         <BrandGoogleDriveIcon class="mr-2" size="20"/>{{ $t('accountTab.drive') }}
                     </v-tab>
+
                     <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                     <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
                     <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->

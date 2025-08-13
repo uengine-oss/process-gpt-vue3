@@ -128,13 +128,46 @@ const MainRoutes = {
         {
             name: 'privacy',
             path: '/privacy',
-            component: () => import('@/views/pages/privacy/Privacy.vue')
+            component: () => import('@/views/pages/term-policy/Privacy.vue')
+        },
+        {
+            name: 'Terms',
+            path: '/terms',
+            component: () => import('@/views/pages/term-policy/Terms.vue')
         },
         {
             name: 'BSCard',
             path: '/bscard',
             component: () => import('@/components/ui/BSCard.vue')
         },
+        {
+            name: 'Usage',
+            path: '/usage',
+            component: () => import('@/components/ui/usage-billing/Usage.vue')
+        },
+       
+
+        // {
+        //     name: 'Plans',
+        //     path: '/plans',
+        //     component: () => import('@/components/ui/payment/Plans.vue')
+        // },
+        {
+            name: 'Pricing',
+            path: '/pricing',
+            component: () => import('@/components/ui/payment/Credit.vue')
+        },
+        {
+            name: 'Payment Success',
+            path: '/request-success',
+            component: () => import('@/components/ui/payment/RequestSuccess.vue')
+        },
+        {
+            name: 'Payment Fail',
+            path: '/request-fail',
+            component: () => import('@/components/ui/payment/RequestFailure.vue')
+        },
+
 
         // {
         //     name: 'Email',

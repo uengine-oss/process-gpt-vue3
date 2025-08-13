@@ -21,11 +21,8 @@
 
 <script>
 import NavItem from '@/layouts/full/vertical-sidebar/NavItem/index.vue';
-
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
-
-
 
 export default {
     components: {
@@ -55,35 +52,8 @@ export default {
         // }, 10000);
 
         this.watchRef = await backend.watchInstanceList((callback => {
-            const instId = callback.id
-            const inst = callback.value
-            const index = this.instanceList.findIndex(item => item.instId == instId);
-            if (inst) {
-                const route = window.$mode == 'ProcessGPT'? btoa(encodeURIComponent(instId)) : instId
-                // 삽입 또는 수정
-                const newProject = {
-                    instId: instId,
-                    title: inst.status == 'NEW' ? inst.name + this.$t('runningInstance.running') : inst.name,
-                    to: `/instancelist/${route}`,
-                    BgColor: 'primary',
-                    updatedAt: inst.updatedAt,
-                    isNew: inst.status === 'NEW'
-                };
-
-                if (index !== -1) {
-                    // 수정
-                    this.instanceList.splice(index, 1, newProject);
-                } else {
-                    // 삽입
-                    this.instanceList.push(newProject);
-                }
-                
-                this.instanceList.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-            } else if (index !== -1) {
-                // 삭제
-                this.instanceList.splice(index, 1);
-            }
-        }));
+            this.loadInstances();           
+        }),{status: ['NEW', 'RUNNING']});
     },
     computed: {
         JMS() {

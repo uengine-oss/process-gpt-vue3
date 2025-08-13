@@ -37,7 +37,8 @@
         "todoList" : "나의 업무",
         "calendar" : "달력",
         "layoutSetting" : "레이아웃 설정",
-        "admin" : "관리자 페이지"
+        "admin" : "관리자 페이지",
+        "pricing" : "가격 정보"
     },
     "DashboardTodoList": {
         "todo": "나의 업무",
@@ -346,7 +347,8 @@
         "clientSecret": "클라이언트 Secret",
         "folderId": "폴더 ID",
         "edit": "수정",
-        "cancel": "취소"
+        "cancel": "취소",
+        "billing": "청구"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",

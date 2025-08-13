@@ -4,6 +4,7 @@ import VerticalSidebarVue from './vertical-sidebar/VerticalSidebar.vue';
 import VerticalHeaderVue from './vertical-header/VerticalHeader.vue';
 import HorizontalSidebar from './horizontal-sidebar/HorizontalSidebar.vue';
 import Customizer from './customizer/Customizer.vue';
+import Footer from './Footer.vue';
 import { useCustomizerStore } from '../../stores/customizer';
 import { pl, zhHans } from 'vuetify/locale'
 import { ref, computed, getCurrentInstance, onMounted, onBeforeUnmount } from 'vue';
@@ -53,9 +54,10 @@ const isModelingTab = computed(() => {
             </v-navigation-drawer>
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
             <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'"><VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" /></div>
-            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" /></div>
+            <div :class="customizer.boxed ? 'maxWidth' : 'full-header'">
+                <HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" />
+            </div>
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
-
             <v-main>
                 <div class="rtl-lyt mb-3 hr-layout">
                 <v-container fluid :class="globalIsMobile ? 'page-wrapper bg-background' : 'page-wrapper bg-background px-sm-5 px-4  pt-12 rounded-xl'">
@@ -87,23 +89,28 @@ const isModelingTab = computed(() => {
                 <Customizer />
             </v-navigation-drawer>
             <VerticalSidebarVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
-            <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'"><VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" /></div>
+            <div v-if="!globalIsMobile" :class="customizer.boxed ? 'maxWidth' : 'full-header'">
+                <VerticalHeaderVue v-if="!customizer.setHorizontalLayout && !isModelingTab" />
+            </div>
             <div :class="customizer.boxed ? 'maxWidth' : 'full-header'"><HorizontalHeader v-if="customizer.setHorizontalLayout && !isModelingTab" /></div>
             <HorizontalSidebar v-if="customizer.setHorizontalLayout && !isModelingTab" />
 
             <v-main :style="globalIsMobile ? 'padding-top: 0px;' : ''">
                 <div class="hr-layout">
-                <v-container fluid :class="globalIsMobile ? 'page-wrapper bg-background pa-0' : 'page-wrapper bg-background px-sm-4 pt-9 px-4 rounded-xl'">
-                    <!-- 정의관련 maxWidth -->
-                    <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize]">
-                        <RouterView />
-                        <!-- <v-btn class="customizer-btn" size="small" icon text variant="flat" color="primary"
-                            @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                            <SettingsIcon />
-                        </v-btn> -->
-                    </div>
-                </v-container>
-            </div>
+                    <v-container fluid :class="globalIsMobile ? 'page-wrapper bg-background pa-0' : 'page-wrapper bg-background px-sm-4 pt-9 px-4 rounded-xl'">
+                        <!-- 정의관련 maxWidth -->
+                        <div :class="[customizer.boxed ? 'maxWidth' : '', canvasReSize]">
+                            <RouterView />
+                            <!-- <v-btn class="customizer-btn" size="small" icon text variant="flat" color="primary"
+                                @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
+                                <SettingsIcon />
+                            </v-btn> -->
+                        </div>
+                    </v-container>
+                </div>
+                <footer class="footer">
+                    <Footer />
+                </footer>
             </v-main>
         </v-app>
     </v-locale-provider>
