@@ -9,9 +9,9 @@
                 <div v-if="!isMobile">
                     <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default">
                         <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
-                        <div v-if="superAdmin">
-                            <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
-                            <v-tab value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
+                        <div v-if="admin">
+                            <v-tab v-if="superAdmin" value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
+                            <v-tab v-if="superAdmin" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
                             <v-tab value="MCP-Servers"> MCP - Servers </v-tab>
                             <v-tab value="MCP-Environments"> MCP - Environments </v-tab>
                             <v-tab value="ConnectionInfo">
@@ -37,8 +37,9 @@
                             <UserCircleIcon class="mr-2" size="16" />{{ $t('accountTab.accountSetting') }}
                         </v-btn>
 
-                        <template v-if="superAdmin">
+                        <template v-if="admin">
                             <v-btn
+                                v-if="superAdmin"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -49,6 +50,7 @@
                             </v-btn>
 
                             <v-btn
+                                v-if="superAdmin"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -194,11 +196,11 @@ export default {
                 { value: 'MCP', label: 'MCP Servers' },
                 { value: 'ConnectionInfo', label: 'Connection Info' }
             ],
-            admin: false
+            admin: localStorage.getItem('isAdmin') === 'true'
         };
     },
     mounted() {
-        this.admin = localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('role') === 'superAdmin';
+        // this.admin = localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('role') === 'superAdmin';
     },
     computed: {
         isMobile() {
