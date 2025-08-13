@@ -167,21 +167,20 @@ export default {
                 { value: 'Drive', label: 'Drive' },
                 { value: 'MCP', label: 'MCP Servers' },
                 { value: 'ConnectionInfo', label: 'Connection Info' }
-            ]
+            ],
+            admin: false
         };
     },
-    mounted() {},
+    mounted() {
+        this.admin = localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('role') === 'superAdmin';
+    },
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
         },
         superAdmin() {
             return localStorage.getItem('role') === 'superAdmin';
-        },
-        admin() {
-            return localStorage.getItem('isAdmin') === 'true';
-        },
-
+        }
     }
 };
 </script>
