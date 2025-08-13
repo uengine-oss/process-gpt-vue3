@@ -161,9 +161,7 @@ export default {
         },
         lastMessage(newVal) {
             if (newVal && newVal.role == 'system' && !this.isTaskMode) {
-                this.useFeedback = true;
                 if (newVal.jsonContent && newVal.jsonContent.appliedFeedback) {
-                    this.useFeedback = false;
                     this.showAcceptFeedback = true;
                 } else {
                     this.showAcceptFeedback = false;
@@ -352,7 +350,7 @@ export default {
         },
         closeFeedback() {
             this.showFeedback = false;
-            // this.showAcceptFeedback = false;
+            this.showAcceptFeedback = false;
         },
         async getLastTask(instId) {
             const worklist = await backend.getWorkListByInstId(instId);
@@ -368,6 +366,8 @@ export default {
                     this.lastTask = workItem;
                     if (this.lastTask.task.temp_feedback && this.lastTask.task.temp_feedback.length > 0) {
                         this.useFeedback = false;
+                    } else {
+                        this.useFeedback = true;
                     }
                 }
             }
@@ -408,10 +408,10 @@ export default {
                         // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);
                         window.$supabase.removeChannel(this.subscription);
                     }
-                    await this.loadData();
                     this.$emit('updated');
                     this.EventBus.emit('instances-updated');
                     this.useFeedback = useFeedback;
+                    await this.loadData();
                 }
             });
         },
@@ -420,6 +420,7 @@ export default {
                 this.lastMessage.jsonContent.appliedFeedback = false;
                 await backend.updateInstanceChat(this.chatRoomId, this.lastMessage, this.lastMessage.thread_id, this.lastMessage.uuid);
             }
+            this.showAcceptFeedback = false;
         }
     }
 };

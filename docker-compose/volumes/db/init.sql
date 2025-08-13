@@ -86,6 +86,8 @@ INSERT INTO public.tenants (id, owner) VALUES ('process-gpt', null);
 create table if not exists public.user_devices (
     user_email text not null,
     device_token text null,
+    access_page text null,
+    last_access_at timestamp with time zone null default now(),
     constraint user_devices_pkey primary key (user_email)
 ) tablespace pg_default;
 
@@ -516,6 +518,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_proc_inst_name text;
     should_notify boolean := false;
+    user_is_on_todolist_page boolean;
 BEGIN
     -- INSERT: 새로운 todolist가 추가되고 상태가 'IN_PROGRESS'인 경우
     IF (TG_OP = 'INSERT' AND NEW.status = 'IN_PROGRESS') THEN
@@ -528,35 +531,46 @@ BEGIN
     END IF;
     
     IF should_notify THEN
-        SELECT proc_inst_name, tenant_id INTO v_proc_inst_name 
-        FROM bpm_proc_inst 
-        WHERE proc_inst_id = NEW.proc_inst_id;
+        -- 사용자가 현재 todolist 페이지에 있는지 확인
+        SELECT EXISTS(
+            SELECT 1 FROM user_devices 
+            WHERE user_id = NEW.user_id 
+            AND access_page = 'todolist'
+            AND last_activity > now() - interval '5 minutes'
+        ) INTO user_is_on_todolist_page;
         
-        INSERT INTO notifications (id, user_id, title, type, description, is_checked, time_stamp, tenant_id, url)
-        VALUES (
-            gen_random_uuid(),
-            NEW.user_id,
-            NEW.activity_name,
-            CASE 
-                WHEN NEW.proc_inst_id IS NOT NULL AND NEW.proc_inst_id <> '' THEN 'workitem_bpm'
-                ELSE 'workitem'
-            END,
-            COALESCE(v_proc_inst_name, NEW.activity_name),
-            false, -- in_progress 상태이므로 항상 미체크
-            now(),
-            NEW.tenant_id,
-            '/todolist/' || NEW.id
-        )
-        ON CONFLICT (id) DO UPDATE
-        SET
-            user_id = EXCLUDED.user_id,
-            title = EXCLUDED.title,
-            type = EXCLUDED.type,
-            description = EXCLUDED.description,
-            is_checked = EXCLUDED.is_checked,
-            time_stamp = EXCLUDED.time_stamp,
-            tenant_id = EXCLUDED.tenant_id,
-            url = EXCLUDED.url;
+        -- 사용자가 todolist 페이지에 없을 때만 알림 생성
+        IF NOT user_is_on_todolist_page THEN
+            SELECT proc_inst_name, tenant_id INTO v_proc_inst_name 
+            FROM bpm_proc_inst 
+            WHERE proc_inst_id = NEW.proc_inst_id;
+            
+            INSERT INTO notifications (id, user_id, title, type, description, is_checked, time_stamp, tenant_id, url)
+            VALUES (
+                gen_random_uuid(),
+                NEW.user_id,
+                NEW.activity_name,
+                CASE 
+                    WHEN NEW.proc_inst_id IS NOT NULL AND NEW.proc_inst_id <> '' THEN 'workitem_bpm'
+                    ELSE 'workitem'
+                END,
+                COALESCE(v_proc_inst_name, NEW.activity_name),
+                false, -- in_progress 상태이므로 항상 미체크
+                now(),
+                NEW.tenant_id,
+                '/todolist/' || NEW.id
+            )
+            ON CONFLICT (id) DO UPDATE
+            SET
+                user_id = EXCLUDED.user_id,
+                title = EXCLUDED.title,
+                type = EXCLUDED.type,
+                description = EXCLUDED.description,
+                is_checked = EXCLUDED.is_checked,
+                time_stamp = EXCLUDED.time_stamp,
+                tenant_id = EXCLUDED.tenant_id,
+                url = EXCLUDED.url;
+        END IF;
     END IF;
     RETURN NULL;
 END;
@@ -591,6 +605,7 @@ DECLARE
     participant_email text;
     participant_record record;
     chat_room_name text;
+    user_is_in_chat_room boolean;
 BEGIN
     SELECT name INTO chat_room_name FROM public.chat_rooms WHERE id = NEW.id;
 
@@ -604,26 +619,37 @@ BEGIN
         IF chat_room_participant->>'username' != 'System' AND chat_room_participant->>'email' != NEW.messages->>'email' THEN
             participant_email := chat_room_participant->>'email';
             
-            INSERT INTO notifications (id, user_id, title, type, description, is_checked, time_stamp, url, from_user_id)
-            VALUES (
-                gen_random_uuid(),
-                participant_email,
-                NEW.messages->>'content',
-                'chat',
-                chat_room_name,
-                false,
-                now(),
-                '/chats?id=' || NEW.id,
-                NEW.messages->>'name'
-            )
-            ON CONFLICT (id) DO UPDATE
-            SET
-                user_id = EXCLUDED.user_id,
-                title = EXCLUDED.title,
-                time_stamp = EXCLUDED.time_stamp,
-                is_checked = EXCLUDED.is_checked,
-                url = EXCLUDED.url,
-                from_user_id = EXCLUDED.from_user_id;
+            -- 사용자가 현재 해당 채팅방에 있는지 확인
+            SELECT EXISTS(
+                SELECT 1 FROM user_devices 
+                WHERE user_email = participant_email 
+                AND access_page = 'chat:' || NEW.id
+                AND last_access_at > now() - interval '5 minutes'
+            ) INTO user_is_in_chat_room;
+            
+            -- 사용자가 채팅방에 없을 때만 알림 생성
+            IF NOT user_is_in_chat_room THEN
+                INSERT INTO notifications (id, user_id, title, type, description, is_checked, time_stamp, url, from_user_id)
+                VALUES (
+                    gen_random_uuid(),
+                    participant_email,
+                    NEW.messages->>'content',
+                    'chat',
+                    chat_room_name,
+                    false,
+                    now(),
+                    '/chats?id=' || NEW.id,
+                    NEW.messages->>'name'
+                )
+                ON CONFLICT (id) DO UPDATE
+                SET
+                    user_id = EXCLUDED.user_id,
+                    title = EXCLUDED.title,
+                    time_stamp = EXCLUDED.time_stamp,
+                    is_checked = EXCLUDED.is_checked,
+                    url = EXCLUDED.url,
+                    from_user_id = EXCLUDED.from_user_id;
+            END IF;
         END IF;
     END LOOP;
 
