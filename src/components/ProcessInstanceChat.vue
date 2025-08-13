@@ -28,7 +28,7 @@
                         <v-icon>mdi-thumb-down</v-icon>
                     </v-btn>
                 </div>
-                <div v-else-if="!useFeedback && showAcceptFeedback" class="bottom-0 end-0 ml-2">
+                <div v-else-if="!useFeedback && showAcceptFeedback && !showFeedback" class="bottom-0 end-0 ml-2">
                     <span class="text-body-2">피드백을 반영하시겠습니까?</span>
                     <v-btn icon size="x-small" variant="text" color="success" @click="showFeedback = true">
                         <v-icon>mdi-check</v-icon>

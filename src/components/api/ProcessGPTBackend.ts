@@ -3720,6 +3720,30 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async saveAccessPage(user_email: string, access_page: string) {
+        try {
+            const response = await storage.getObject('user_devices', {
+                match: {
+                    user_email: user_email
+                }
+            });
+            if(response) {
+                response.access_page = access_page;
+                response.last_access_at = new Date().toISOString();
+                await storage.putObject('user_devices', response);
+            } else {
+                await storage.putObject('user_devices', {
+                    user_email: user_email,
+                    access_page: access_page,
+                    device_token: null,
+                    last_access_at: new Date().toISOString()
+                });
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
     
 
 }

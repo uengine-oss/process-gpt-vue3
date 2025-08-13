@@ -6,21 +6,27 @@
                 class="mx-auto"
             ></v-skeleton-loader>
 
-            <v-card-text v-else-if="!isLoading && isAcceptMode" class="pa-3">
-                <div class="text-h6 mb-3">피드백 반영</div>
-                <v-table class="diff-table">
+            <v-card-text v-else-if="!isLoading && isAcceptMode" class="pa-4">
+                <div class="text-h6 mb-2">피드백 반영</div>
+                
+                <!-- 데스크톱 테이블 뷰 -->
+                <v-table v-if="!isMobile" class="diff-table">
                     <thead>
                         <tr>
-                            <th class="text-left">반영 여부</th>
-                            <th class="text-left">속성</th>
-                            <th class="text-left">피드백 반영 전</th>
-                            <th class="text-left">피드백 반영 후</th>
+                            <th class="text-left" scope="col">반영 여부</th>
+                            <th class="text-left" scope="col">속성</th>
+                            <th class="text-left" scope="col">피드백 반영 전</th>
+                            <th class="text-left" scope="col">피드백 반영 후</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="(item, key) in diffItems" :key="key">
-                            <td>
-                                <v-checkbox v-model="item.accepted" color="primary" density="compact" />
+                            <td class="text-center">
+                                <v-checkbox v-model="item.accepted"
+                                    hide-details
+                                    color="primary"
+                                    density="compact"
+                                />
                             </td>
                             <td>{{ item.title }}</td>
                             <td>
@@ -48,6 +54,20 @@
                             </td>
                             <td>
                                 <div v-if="Array.isArray(item.after)">
+                                    <template v-if="diffItems[key] && diffItems[key].changed">
+                                        <!-- Diff UI 적용된 배열 표시 -->
+                                        <div class="diff-list pa-2 align-center">
+                                            <div v-for="(diffItem, index) in calculateArrayDiff(item.before, item.after).after"
+                                                :key="`${key}-after-diff-${index}`"
+                                                :class="['diff-list-item', diffItem.type]"
+                                            >
+                                                <span class="diff-icon"></span>
+                                                <span class="text-body-2">{{index+1}}. {{ diffItem.text }}</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template v-else>
+                                        <!-- 기본 배열 표시 -->
                                     <v-list density="compact" class="diff-list">
                                         <v-list-item
                                             v-for="(listItem, index) in item.after"
@@ -64,16 +84,133 @@
                                             </v-list-item-title>
                                         </v-list-item>
                                     </v-list>
+                                    </template>
                                 </div>
                                 <div v-else>
+                                    <template v-if="diffItems[key] && diffItems[key].changed">
+                                        <!-- Diff UI 적용된 문자열 표시 -->
+                                        <div class="text-body-2 pa-2 diff-text">
+                                            <span
+                                                v-for="(diffWord, index) in calculateStringDiff(item.before, item.after).after"
+                                                :key="`${key}-word-${index}`"
+                                                :class="['diff-word', diffWord.type]"
+                                            >{{ diffWord.text }}</span>
+                                        </div>
+                                    </template>
+                                    <template v-else>
+                                        <!-- 기본 문자열 표시 -->
                                     <div class="text-body-2 pa-2">{{ item.after }}</div>
+                                    </template>
                                 </div>
                             </td>
                         </tr>
                     </tbody>
                 </v-table>
 
-                <v-row class="ma-0 pa-0">
+                <!-- 모바일 카드 뷰 -->
+                <div v-else class="mobile-diff-view">
+                    <v-card
+                        v-for="(item, key) in diffItems"
+                        :key="`mobile-${key}`"
+                        :class="['mb-2', { 'card-selected': item.accepted }]"
+                        elevation="1"
+                        variant="outlined"
+                    >
+                        <div class="pa-2">
+                             <v-checkbox v-model="item.accepted"
+                                 :label="item.title"
+                                 color="primary"
+                                 density="compact"
+                                 hide-details
+                             />
+                         </div>
+                        
+                        <v-card-text class="pt-0">
+                            <!-- 반영 전 -->
+                            <div class="mb-3">
+                                <div class="text-body-2 font-weight-medium mb-1 text-grey-darken-1">피드백 반영 전</div>
+                                <div class="mobile-content-box">
+                                    <div v-if="Array.isArray(item.before)">
+                                        <div v-if="item.before.length === 0" class="text-grey text-body-2">내용 없음</div>
+                                        <div v-else>
+                                            <div
+                                                v-for="(listItem, index) in item.before"
+                                                :key="`${key}-mobile-before-${index}`"
+                                                class="text-body-2 mb-1"
+                                            >
+                                                <template v-if="typeof listItem === 'object' && listItem.name">
+                                                    {{index+1}}. {{ listItem.name }}
+                                                </template>
+                                                <template v-else>
+                                                    {{index+1}}. {{ listItem }}
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-else>
+                                        <div class="text-body-2">{{ item.before || '내용 없음' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 반영 후 -->
+                            <div>
+                                <div class="text-body-2 font-weight-medium mb-1 text-grey-darken-1">피드백 반영 후</div>
+                                <div class="mobile-content-box">
+                                    <div v-if="Array.isArray(item.after)">
+                                        <template v-if="diffItems[key] && diffItems[key].changed">
+                                            <!-- Diff UI 적용된 배열 표시 -->
+                                            <div v-for="(diffItem, index) in calculateArrayDiff(item.before, item.after).after"
+                                                :key="`${key}-mobile-after-diff-${index}`"
+                                                :class="['mobile-diff-item', diffItem.type]"
+                                                class="pa-2 align-center"
+                                            >
+                                                <span class="diff-icon-mobile"></span>
+                                                <span class="text-body-2">{{index+1}}. {{ diffItem.text }}</span>
+                                            </div>
+                                        </template>
+                                        <template v-else>
+                                            <!-- 기본 배열 표시 -->
+                                            <div v-if="item.after.length === 0" class="text-grey text-body-2">내용 없음</div>
+                                            <div v-else>
+                                                <div
+                                                    v-for="(listItem, index) in item.after"
+                                                    :key="`${key}-mobile-after-${index}`"
+                                                    class="text-body-2 mb-1"
+                                                >
+                                                    <template v-if="typeof listItem === 'object' && listItem.name">
+                                                        {{index+1}}. {{ listItem.name }}
+                                                    </template>
+                                                    <template v-else>
+                                                        {{index+1}}. {{ listItem }}
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <div v-else>
+                                        <template v-if="diffItems[key] && diffItems[key].changed">
+                                            <!-- Diff UI 적용된 문자열 표시 -->
+                                            <div class="diff-text">
+                                                <span
+                                                    v-for="(diffWord, index) in calculateStringDiff(item.before, item.after).after"
+                                                    :key="`${key}-mobile-word-${index}`"
+                                                    :class="['diff-word', diffWord.type]"
+                                                >{{ diffWord.text }}</span>
+                                            </div>
+                                        </template>
+                                        <template v-else>
+                                            <!-- 기본 문자열 표시 -->
+                                            <div class="text-body-2">{{ item.after || '내용 없음' }}</div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </div>
+
+                <v-row class="ma-0 pa-0 mt-2">
                     <v-spacer></v-spacer>
                     <v-btn @click="closeFeedback"
                         color="gray"
@@ -154,25 +291,29 @@ export default {
                 title: '입력 데이터',
                 before: [],
                 after: [],
-                accepted: true
+                accepted: true,
+                changed: false
             },
             checkpoints: {
                 title: '체크포인트',
                 before: [],
                 after: [],
-                accepted: true
+                accepted: true,
+                changed: false
             },
             description: {
                 title: '설명',
                 before: '',
                 after: '',
-                accepted: true
+                accepted: true,
+                changed: false
             },
             instruction: {
                 title: '지시사항',
                 before: '',
                 after: '',
-                accepted: true
+                accepted: true,
+                changed: false
             }
         },
         feedbackDiff: {
@@ -191,7 +332,108 @@ export default {
             await this.getFeedbackDiff();
         }
     },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
+    },
     methods: {
+        // Diff UI 관련 메서드들
+        calculateStringDiff(before, after) {
+            if (!before || !after) return { before: before || '', after: after || '' };
+            
+            const beforeWords = before.split(' ');
+            const afterWords = after.split(' ');
+            const beforeResult = [];
+            const afterResult = [];
+            
+            let i = 0, j = 0;
+            
+            while (i < beforeWords.length || j < afterWords.length) {
+                if (i >= beforeWords.length) {
+                    // 추가된 단어들
+                    afterResult.push({ type: 'added', text: afterWords[j] });
+                    j++;
+                } else if (j >= afterWords.length) {
+                    // 삭제된 단어들
+                    beforeResult.push({ type: 'removed', text: beforeWords[i] });
+                    i++;
+                } else if (beforeWords[i] === afterWords[j]) {
+                    // 동일한 단어들
+                    beforeResult.push({ type: 'unchanged', text: beforeWords[i] });
+                    afterResult.push({ type: 'unchanged', text: afterWords[j] });
+                    i++;
+                    j++;
+                } else {
+                    // 변경된 부분 찾기
+                    let found = false;
+                    for (let k = j + 1; k < afterWords.length; k++) {
+                        if (beforeWords[i] === afterWords[k]) {
+                            // 중간에 추가된 단어들
+                            for (let l = j; l < k; l++) {
+                                afterResult.push({ type: 'added', text: afterWords[l] });
+                            }
+                            beforeResult.push({ type: 'unchanged', text: beforeWords[i] });
+                            afterResult.push({ type: 'unchanged', text: afterWords[k] });
+                            j = k + 1;
+                            i++;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        beforeResult.push({ type: 'removed', text: beforeWords[i] });
+                        afterResult.push({ type: 'added', text: afterWords[j] });
+                        i++;
+                        j++;
+                    }
+                }
+            }
+            
+            return { before: beforeResult, after: afterResult };
+        },
+        
+        calculateArrayDiff(before, after) {
+            if (!Array.isArray(before)) before = [];
+            if (!Array.isArray(after)) after = [];
+            
+            const beforeItems = before.map(item => ({ 
+                text: typeof item === 'object' && item.name ? item.name : item, 
+                type: 'unchanged' 
+            }));
+            const afterItems = [];
+            
+            // 기존 항목들 처리
+            before.forEach((beforeItem, index) => {
+                const beforeText = typeof beforeItem === 'object' && beforeItem.name ? beforeItem.name : beforeItem;
+                const found = after.find(afterItem => {
+                    const afterText = typeof afterItem === 'object' && afterItem.name ? afterItem.name : afterItem;
+                    return beforeText === afterText;
+                });
+                
+                if (!found) {
+                    beforeItems[index].type = 'removed';
+                }
+            });
+            
+            // 새 항목들 처리
+            after.forEach((afterItem) => {
+                const afterText = typeof afterItem === 'object' && afterItem.name ? afterItem.name : afterItem;
+                const found = before.find(beforeItem => {
+                    const beforeText = typeof beforeItem === 'object' && beforeItem.name ? beforeItem.name : beforeItem;
+                    return beforeText === afterText;
+                });
+                
+                if (found) {
+                    afterItems.push({ text: afterText, type: 'unchanged' });
+                } else {
+                    afterItems.push({ text: afterText, type: 'added' });
+                }
+            });
+            
+            return { before: beforeItems, after: afterItems };
+        },
+        
         async getFeedback() {
             const obj = {
                 processDefinitionId: this.task.defId,
@@ -218,11 +460,13 @@ export default {
         },
         async getFeedbackDiff() {
             const diff = await backend.getFeedbackDiff(this.task.taskId);
+            console.log('피드백 diff 데이터:', diff);
             if (diff && diff.modifications) {
                 for (const key in diff.modifications) {
                     if (diff.modifications[key] && diff.modifications[key].changed) {
                         this.diffItems[key].before = diff.modifications[key].before;
                         this.diffItems[key].after = diff.modifications[key].after;
+                        this.diffItems[key].changed = diff.modifications[key].changed;
                     } else {
                         delete this.diffItems[key];
                     }
@@ -312,12 +556,6 @@ export default {
     width: calc(50% - 70px);
 }
 
-.diff-list {
-    max-height: 200px;
-    overflow-y: auto;
-    background-color: #fafafa;
-}
-
 .text-body-2 {
     word-wrap: break-word !important;
     word-break: break-word !important;
@@ -332,5 +570,168 @@ export default {
     white-space: normal !important;
     line-height: 1.4 !important;
     overflow-wrap: break-word !important;
+}
+
+/* Diff UI 스타일 */
+.diff-text {
+    display: inline;
+    line-height: 1.6;
+}
+
+.diff-word {
+    display: inline;
+    padding: 2px 0;
+    margin: 0 1px;
+    border-radius: 3px;
+}
+
+.diff-word.added {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    padding: 1px 3px;
+}
+
+.diff-word.removed {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    text-decoration: line-through;
+    padding: 1px 3px;
+}
+
+.diff-word.unchanged {
+    color: inherit;
+}
+
+.diff-list-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    margin: 2px 0;
+    border-radius: 4px;
+}
+
+.diff-list-item.added {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+}
+
+.diff-list-item.removed {
+    background-color: #f8d7da;
+    border-left: 4px solid #dc3545;
+    text-decoration: line-through;
+}
+
+.diff-list-item.unchanged {
+    background-color: transparent;
+}
+
+.diff-list-item .diff-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    line-height: 100%;
+}
+
+.diff-list-item.added .diff-icon::before {
+    content: '+';
+    color: #28a745;
+    font-weight: bold;
+}
+
+.diff-list-item.removed .diff-icon::before {
+    content: '-';
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.diff-list-item.unchanged .diff-icon::before {
+    content: '';
+}
+
+/* 모바일 뷰 스타일 */
+.mobile-diff-view {
+    width: 100%;
+}
+
+.diff-card {
+    border-radius: 8px !important;
+    overflow: hidden;
+}
+
+.card-selected {
+    border-color: rgb(var(--v-theme-primary)) !important;
+    border-width: 2px !important;
+}
+
+.mobile-content-box {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 12px;
+    border: 1px solid #e9ecef;
+    min-height: 40px;
+}
+
+.mobile-diff-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+    margin: 2px 0;
+    border-radius: 4px;
+}
+
+.mobile-diff-item.added {
+    background-color: #d4edda;
+    padding: 4px 8px;
+    border-left: 3px solid #28a745;
+}
+
+.mobile-diff-item.removed {
+    background-color: #f8d7da;
+    padding: 4px 8px;
+    border-left: 3px solid #dc3545;
+    text-decoration: line-through;
+}
+
+.mobile-diff-item.unchanged {
+    background-color: transparent;
+}
+
+.diff-icon-mobile {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    line-height: 100%;
+}
+
+.mobile-diff-item.added .diff-icon-mobile::before {
+    content: '+';
+    color: #28a745;
+}
+
+.mobile-diff-item.removed .diff-icon-mobile::before {
+    content: '-';
+    color: #dc3545;
+}
+
+.mobile-diff-item.unchanged .diff-icon-mobile::before {
+    content: '';
+}
+
+/* 모바일에서 체크박스 스타일 조정 */
+@media (max-width: 600px) {
+    .diff-card .v-card-title {
+        padding: 12px 16px 8px 16px !important;
+    }
+    
+    .diff-card .v-card-text {
+        padding: 0 16px 16px 16px !important;
+    }
+    
+    .mobile-content-box {
+        font-size: 14px;
+        line-height: 1.4;
+    }
 }
 </style>

@@ -42,7 +42,7 @@
                             <v-list-item v-for="(activity, index) in resultJson.completedActivities" :key="'completed-' + index" class="px-0">
                                 <v-list-item-content>
                                     <v-list-item-title class="font-weight-bold">활동: {{ activity.completedActivityName }}</v-list-item-title>
-                                    <v-list-item-subtitle>{{ activity.description }}</v-list-item-subtitle>
+                                    <div style="color: #808080;">{{ activity.description }}</div>
                                 </v-list-item-content>
                             </v-list-item>
                             <v-list-item v-if="resultJson.completedActivities.length === 0" class="px-0">
@@ -95,7 +95,7 @@
                             <v-list-item v-for="(activity, index) in resultJson.nextActivities" :key="'next-' + index" class="px-0">
                                 <v-list-item-content>
                                     <v-list-item-title class="font-weight-bold">활동: {{ activity.nextActivityName }}</v-list-item-title>
-                                    <v-list-item-subtitle>{{ activity.description }}</v-list-item-subtitle>
+                                    <div style="color: #808080;">{{ activity.description }}</div>
                                 </v-list-item-content>
                             </v-list-item>
                             <v-list-item v-if="resultJson.nextActivities.length === 0" class="px-0">

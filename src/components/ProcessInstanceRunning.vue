@@ -18,7 +18,7 @@
                     <v-divider v-if="!isMobile" vertical class="mx-2"></v-divider>
                     <div :class="!isMobile ? 'flex-grow-1 process-instance-running-instance-text-box' : 'd-flex w-100'">
                         <v-col class="ma-0 pa-0">
-                            <div class="px-1 py-1">
+                            <div class="py-1">
                                 <v-row class="ma-0 pa-0">
                                     <v-row class="ma-0 pa-0 d-flex align-center mb-2">
                                         <v-avatar size="40" style="margin-right:10px;">

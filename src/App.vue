@@ -69,6 +69,15 @@ export default {
         backend: null,
         clickCount: 0
     }),
+    watch: {
+        $route(to, from) {
+            if(window.$mode == 'ProcessGPT' && localStorage.getItem('email')) {
+                if(to.path === '/todolist') {
+                    this.backend.saveAccessPage(localStorage.getItem('email'), 'todolist');
+                }
+            }
+        }
+    },
     async created() {
         window.$app_ = this;
         window.addEventListener('load', () => {
