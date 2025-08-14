@@ -129,16 +129,21 @@ export default {
         async loadControlItems() {
             if(this.localIsDynamicLoad === "urlBinding") {
                 if(!this.localDynamicLoadURL || this.localDynamicLoadURL.length === 0) return
-                // if(!this.localDynamicLoadKeyJsonPath || this.localDynamicLoadKeyJsonPath.length === 0) return
-                // if(!this.localDynamicLoadValueJsonPath || this.localDynamicLoadValueJsonPath.length === 0) return
+                if(!this.localDynamicLoadKeyJsonPath || this.localDynamicLoadKeyJsonPath.length === 0) return
+                if(!this.localDynamicLoadValueJsonPath || this.localDynamicLoadValueJsonPath.length === 0) return
 
                 try {
                     let config = {}
                     if (this.localDynamicLoadURL.includes(':54321')) {
-                        config.headers = {
-                            'Authorization': 'Bearer ' + window.$supabase.supabaseKey
-                        };
+                        if(config.headers === undefined) {
+                            config.headers = {
+                                'Authorization': 'Bearer ' + window.$supabase.supabaseKey
+                            };
+                        } else {
+                            config.headers['Authorization'] = 'Bearer ' + window.$supabase.supabaseKey
+                        }
                     }
+
 
                     const response = await axios.get(this.localDynamicLoadURL, config)
 
