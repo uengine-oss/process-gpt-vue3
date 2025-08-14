@@ -1,7 +1,7 @@
 <template>
     <div style="height:100%;">
         <!-- organization chart -->
-        <div id="tree" ref="tree" class="h-100"></div>
+        <div id="tree" ref="tree" style="width: 100% !important; height: 98% !important;"></div>
         
         <!-- Agent Badges Diagram -->
         <AgentBadgesDiagram 
@@ -81,8 +81,6 @@ export default {
         if (this.node && this.node.id && this.node.data) {
             const options = {
                 contentKey: 'data',
-                width: 800,
-                height: 500,
                 nodeWidth: 155,
                 nodeHeight: 100,
                 childrenSpacing: 50,

@@ -171,9 +171,7 @@ export default {
             
             try {
                 this.isLoadingUsers = true;
-                console.log('사용자 목록 로드 시작');
                 this.userList = await backend.getUserList({});
-                console.log('사용자 목록 로드 완료:', this.userList);
                 this.$forceUpdate(); // UI 갱신
             } catch (error) {
                 console.error('사용자 목록 로드 실패:', error);
@@ -206,11 +204,9 @@ export default {
             if (foundUser) {
                 // 캐시에 저장
                 this.loadedUserInfo[userId] = foundUser;
-                console.log('사용자 찾음:', foundUser, 'for ID:', userId);
                 return foundUser;
             }
             
-            console.log('사용자를 찾을 수 없음:', userId, '전체 사용자 목록:', this.userList);
             return null;
         },
         getUserInfoForCompleted(activity) {

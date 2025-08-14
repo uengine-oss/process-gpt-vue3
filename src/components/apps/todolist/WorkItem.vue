@@ -34,11 +34,12 @@
                                     <div v-if="assigneeUserInfo && assigneeUserInfo.length > 0">
                                         <div v-for="user in assigneeUserInfo" :key="user.email">
                                             <div class="d-flex align-center">
-                                                <div>
-                                                    <v-img v-if="user.profile" :src="user.profile" width="32px" height="32px"
-                                                        class="rounded-circle img-fluid"
-                                                    />
-                                                </div>
+                                                <v-img v-if="user.profile" :src="user.profile" width="32px" height="32px"
+                                                    class="rounded-circle img-fluid"
+                                                />
+                                                <v-avatar v-else size="32">
+                                                    <Icons :icon="'user-circle-bold'" :size="32" />
+                                                </v-avatar>
                                                 <!-- <div class="ml-3">
                                                     <div class="d-flex align-center">
                                                         <span class="text-subtitle-2 font-weight-medium text-no-wrap">{{ user.username }} </span>
@@ -599,14 +600,18 @@ export default {
             }
             const currentUserId = localStorage.getItem('uid');
             const endpoint = this.workItem && this.workItem.worklist ? this.workItem.worklist.endpoint : null;
+            
             if (!currentUserId || !endpoint) {
                 return false;
             }
+            
             if (Array.isArray(endpoint)) {
                 return endpoint.includes(currentUserId);
             }
-            // endpoint가 단일 이메일이거나 콤마로 구분된 문자열일 수 있음
-            return String(endpoint).split(',').map(e => e.trim()).includes(currentUserId);
+            
+            // endpoint가 단일 값일 때 uid와 일치하면 내 업무
+            const endpointList = String(endpoint).split(',').map(e => e.trim());
+            return endpointList.includes(currentUserId);
         },
         mode() {
             return window.$mode;
@@ -1239,7 +1244,7 @@ export default {
                         const latestWorkItem = await backend.getWorkItem(me.workItem.worklist.taskId);
                         if (latestWorkItem && latestWorkItem.worklist.endpoint) {
                             me.assigneeUserInfo = await backend.getUserList({
-                                orderBy: 'email',
+                                orderBy: 'id',
                                 startAt: latestWorkItem.worklist.endpoint,
                                 endAt: latestWorkItem.worklist.endpoint
                             });
@@ -1261,14 +1266,18 @@ export default {
         },
         delegateTask(delegateUser, assigneeUserInfo) {
             var me = this;
+            
             me.$try({
                 context: me,
                 action: async () => {
-                    let notificationMessage = `'${me.workItem.activity.name}'업무를 ${delegateUser.email}(${delegateUser.username})에게 위임하였습니다.`;
+                    let notificationMessage = `'${me.workItem.activity.name}'업무를 ${delegateUser.username}에게 위임하였습니다.`;
                     if(assigneeUserInfo){
-                        const formattedAssigneeInfo = assigneeUserInfo.map(user => `${user.email}(${user.username})`).join(',');
-                        notificationMessage = `'${me.workItem.activity.name}'업무의 담당자를 [${formattedAssigneeInfo}]에서 ${delegateUser.email}(${delegateUser.username})으로 위임하였습니다.`;
+                        const formattedAssigneeInfo = assigneeUserInfo.map(user => user.username).join(',');
+                        notificationMessage = `'${me.workItem.activity.name}'업무의 담당자를 [${formattedAssigneeInfo}]에서 ${delegateUser.username}으로 위임하였습니다.`;
                     }
+                    
+                    // uid 값을 백엔드로 전송
+                    const userIdForBackend = delegateUser.uid;
                   
                     await Promise.all([
                         backend.updateInstanceChat(me.workItem.worklist.instId, {
@@ -1279,10 +1288,10 @@ export default {
                             "content": notificationMessage,
                             "timeStamp": new Date().toISOString()
                         }),
-                        backend.putWorkItem(me.workItem.worklist.taskId, {'user_id': delegateUser.email})
+                        backend.putWorkItem(me.workItem.worklist.taskId, {'user_id': userIdForBackend})
                     ]);
                     
-                    me.workItem.worklist.endpoint = delegateUser.email;
+                    me.workItem.worklist.endpoint = userIdForBackend;
                     me.updatedKey++;
                     me.closeDelegateTask();
                     me.loadAssigneeInfo();
