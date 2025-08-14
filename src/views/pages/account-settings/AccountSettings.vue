@@ -17,6 +17,9 @@
                             <v-tab value="ConnectionInfo">
                                 <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.connectionInfo') }}
                             </v-tab>
+                            <v-tab v-if="superAdmin" @click="goToTenantManage">
+                                <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.tenantManage') }}
+                            </v-tab>
                         </div>
                         <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                         <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
@@ -86,6 +89,15 @@
                                 :class="{ 'selected-tab': tab === 'ConnectionInfo' }"
                             >
                                 <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.connectionInfo') }}
+                            </v-btn>
+
+                            <v-btn
+                                variant="text"
+                                color="default"
+                                size="small"
+                                @click="goToTenantManage"
+                            >
+                                <UserCircleIcon class="mr-2" size="16" />{{ $t('accountTab.tenantManage') }}
                             </v-btn>
                         </template>
                     </div>
@@ -165,6 +177,7 @@ import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
 import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
+
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
 // import SecurityTab from '@/components/pages/account-settings/SecurityTab.vue';
@@ -202,6 +215,29 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
+        }
+    },
+    methods: {
+        goToTenantManage() {
+            // ===== 로컬 테스트용 코드 시작 =====
+            // 로컬호스트에서 테넌트 관리 페이지 테스트를 위한 코드
+            // 필요시 주석을 해제하여 사용
+            // const isLocalhost = location.host.includes('localhost') || 
+            //                    location.host.includes('192.168') || 
+            //                    location.host.includes('127.0.0.1');
+            // 
+            // if (isLocalhost) {
+            //     location.href = `http://${location.host}/tenant/manage?clear=true`;
+            //     return;
+            // }
+            // ===== 로컬 테스트용 코드 끝 =====
+            
+            // www로 이동하면서 로컬스토리지 클리어 파라미터 추가 (기존 changeTenant 로직)
+            if(!location.port || location.port == '') {
+                location.href = `https://www.process-gpt.io/tenant/manage?clear=true`;
+            } else {
+                location.href = `http://www.process-gpt.io:${location.port}/tenant/manage?clear=true`;
+            }
         }
     }
 };

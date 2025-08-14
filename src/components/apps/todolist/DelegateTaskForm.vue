@@ -39,7 +39,7 @@
                         <p>{{ $t('DelegateTask.description') }}: {{ description }}</p>
                         <p>{{ $t('DelegateTask.endDate') }}: {{ dueDate }}</p>
                         <p>{{ $t('DelegateTask.startDate') }}: {{ startDate }}</p>
-                        <p>{{ $t('DelegateTask.assignee') }}</p>    
+                        <p>{{ $t('DelegateTask.assignee') }}</p>
                         <div v-if="isLoading">
                             <v-skeleton type="list-item-two-line" height="48"></v-skeleton>
                         </div>
@@ -50,7 +50,7 @@
                             </div>
                             <div v-else>
                                 <!-- 현 담당자 표시 부분 -->
-                                <div v-for="user in assigneeUserInfo" :key="user.email">
+                                <div v-for="user in assigneeUserInfo" :key="user.id || user.email">
                                     <div class="d-flex align-center">
                                         <div>
                                             <v-img v-if="user.profile" :src="user.profile" width="45px" 
@@ -60,15 +60,15 @@
                                             </v-avatar>
                                         </div>
                                         <div class="ml-5">
+                                            <p>{{ $t('DelegateTask.assignee') }}</p>
                                             <div class="d-flex align-center">
                                                 <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ user.username }}</h4>
-                                                <v-chip v-if="user.email === currentUserEmail" 
+                                                <v-chip v-if="user.id === currentUserUid" 
                                                     color="primary"
                                                     size="small" variant="outlined"
                                                     density="comfortable"
                                                 >나</v-chip>
                                             </div>
-                                            <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ user.email }}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -155,7 +155,7 @@
                                             <div class="text-caption text-medium-emphasis">{{ item.email }}</div>
                                         </td>
                                         <td class="text-center">
-                                            <v-btn v-if="item.email === currentUserEmail"
+                                            <v-btn v-if="item.id === currentUserUid"
                                                 @click.stop="selectMyself(item)"
                                                 variant="elevated" 
                                                 class="rounded-pill default-greay-btn"
@@ -277,15 +277,15 @@ export default {
             
             // 현재 담당자를 제외한 사용자 목록
             if (this.currentEndpoint) {
-                filteredList = this.userList.filter(user => user.email !== this.currentEndpoint);
+                filteredList = this.userList.filter(user => user.id !== this.currentEndpoint);
             } else {
                 filteredList = [...this.userList];
             }
             
             // 현재 로그인한 사용자를 최상단으로 이동
-            const currentUserEmail = this.currentUserEmail;
-            if (currentUserEmail) {
-                const currentUserIndex = filteredList.findIndex(user => user.email === currentUserEmail);
+            const currentUserUid = localStorage.getItem('uid');
+            if (currentUserUid) {
+                const currentUserIndex = filteredList.findIndex(user => user.id === currentUserUid);
                 if (currentUserIndex > 0) {
                     // 현재 사용자를 찾아서 맨 앞으로 이동
                     const currentUser = filteredList.splice(currentUserIndex, 1)[0];
@@ -297,6 +297,9 @@ export default {
         },
         currentUserEmail() {
             return localStorage.getItem('email');
+        },
+        currentUserUid() {
+            return localStorage.getItem('uid');
         },
     },
     created() {
@@ -323,11 +326,17 @@ export default {
                         const latestWorkItem = await backend.getWorkItem(me.task.worklist.taskId);
                         if(latestWorkItem && latestWorkItem.worklist.endpoint){
                             me.currentEndpoint = latestWorkItem.worklist.endpoint; // 현재 실제 담당자 저장
-                            me.assigneeUserInfo = await backend.getUserList({
-                                orderBy: 'email',
-                                startAt: latestWorkItem.worklist.endpoint,
-                                endAt: latestWorkItem.worklist.endpoint
-                            })
+                            // endpoint가 uid이므로 id로 검색 (데이터베이스에서는 id 컬럼 사용)
+                            try {
+                                me.assigneeUserInfo = await backend.getUserList({
+                                    orderBy: 'id',
+                                    startAt: latestWorkItem.worklist.endpoint,
+                                    endAt: latestWorkItem.worklist.endpoint
+                                });
+                            } catch (error) {
+                                console.error('담당자 정보 로딩 실패:', error);
+                                me.assigneeUserInfo = null;
+                            }
                         } else {
                             me.currentEndpoint = null;
                             me.assigneeUserInfo = null;
@@ -388,13 +397,19 @@ export default {
              });
          },
          handleUserRowClick(event) {
-             const user = this.filteredUserList.find(u => u.email === event.email);
+             const user = this.filteredUserList.find(u => u.id === event.id);
              if (user) {
-                 this.delegateUser = user;
+                 this.delegateUser = {
+                     ...user,
+                     uid: user.id // id를 uid로 사용
+                 };
              }
          },
         selectUserFromTable(item) {
-            this.delegateUser = item;
+            this.delegateUser = {
+                ...item,
+                uid: item.id // id를 uid로 사용
+            };
         },
         async loadInitialUsers() {
             this.isUserLoading = true;
@@ -424,7 +439,7 @@ export default {
         selectMyself(item) {
             // 나에게로 위임 기능 - 바로 위임 실행
             this.delegateUser = {
-                email: item.email,
+                uid: item.id, // id를 uid로 사용
                 username: item.username,
                 profile: item.profile
             };

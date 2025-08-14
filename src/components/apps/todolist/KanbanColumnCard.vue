@@ -18,7 +18,7 @@
                                 style="margin-top: 1px !important;"
                             >
                                 <v-chip v-if="category"
-                                    :color="task.status === 'DONE' ? category.color: 'black'"
+                                    :color="task.status === 'DONE' ? category.color : (isMyTask && !isTodolistPath && task.status !== 'DONE' ? 'white' : 'black')"
                                     size="small" variant="outlined"
                                     density="comfortable"
                                 >{{ category.name }}</v-chip>
@@ -128,7 +128,7 @@
                     </div>
                     <!-- 텍스트를 세로 기준 중앙정렬하기 위해 flex와 align-center 적용 -->
                     <div class="body-text-2 text-dark mr-2">
-                        <!-- isMyTask가 아니면 '내 업무'로 표시, 맞으면 기존 이름/이메일 표시 -->
+
                         <span v-if="isMultiUser">{{ userInfoForTask.map(user => user.username).join(', ') }}</span>
                         <span v-else-if="isMyTask">{{ $t('TodoTaskItemCard.myTask') }}</span>
                         <span v-else-if="userInfoForTask">{{ userInfoForTask.username }}</span>
@@ -269,13 +269,19 @@ export default {
             return this.task.endpoint.includes(',');
         },
         isMyTask() {
-            // localStorage의 email과 task의 endpoint가 일치하고, task의 status가 'DONE'이 아닐 때 true 반환
-            const myEmail = localStorage.getItem('uid');
+            // localStorage의 uid와 task의 endpoint가 일치하는지 확인 (uid 또는 이메일 비교)
+            const myUid = localStorage.getItem('uid');
+            if (!myUid || !this.task || !this.task.endpoint) return false;
+            
+            // 현재 사용자의 이메일 정보 가져오기 (userList에서)
+            const myUserInfo = this.userList.find(user => user.id === myUid);
+            const myEmail = myUserInfo ? myUserInfo.email : null;
+            
             if (this.task.endpoint.includes(',')) {
                 const endpoints = this.task.endpoint.split(',');
-                return endpoints.includes(myEmail);
+                return endpoints.includes(myUid) || (myEmail && endpoints.includes(myEmail));
             } else {
-                return myEmail && this.task && this.task.endpoint === myEmail;
+                return this.task.endpoint === myUid || (myEmail && this.task.endpoint === myEmail);
             }
         },
         isTodolistPath() {

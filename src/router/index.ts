@@ -55,6 +55,19 @@ router.beforeEach(async (to: any, from: any, next: any) => {
                     next();
                 }
             } else {
+                // ===== 로컬 테스트용 코드 시작 =====
+                // 로컬호스트에서 테넌트 관리 페이지 테스트를 위한 코드
+                // 필요시 주석을 해제하여 사용
+                // const isLocalhost = window.location.host.includes('localhost') || 
+                //                    window.location.host.includes('192.168') || 
+                //                    window.location.host.includes('127.0.0.1');
+                // 
+                // if (to.fullPath.includes('/tenant') && !isLocalhost) {
+                //     return next('/');
+                // }
+                // ===== 로컬 테스트용 코드 끝 =====
+                
+                // 기존 코드 (운영환경용)
                 if (to.fullPath.includes('/tenant')) {
                     return next('/');
                 }
