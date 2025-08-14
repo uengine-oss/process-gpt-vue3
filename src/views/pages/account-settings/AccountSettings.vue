@@ -219,7 +219,7 @@ export default {
         isMobile() {
             return window.innerWidth <= 768;
         }
-    }
+    },
     methods: {
         goToTenantManage() {
             // ===== 로컬 테스트용 코드 시작 =====
