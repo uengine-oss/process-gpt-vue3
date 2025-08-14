@@ -13,10 +13,11 @@
           <h3>{{ $t('HowSection.subtitle1') }}</h3>
 
           <div class="tab-flex">
-
+            
             <div class="tab-image">
-              <img src="@/assets/images/mainPages/how-01-1.png" alt="" />
-              <div class="tab-text">
+              <img src="@/assets/images/mainPages/how-01-2.png" alt="" />
+            </div>
+            <div class="tab-text">
                 <ul class="mt-4">
                   <li>
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
@@ -24,14 +25,6 @@
                       </svg>
                       {{ $t('HowSection.description1') }}
                   </li>
-                </ul>
-              </div>
-            </div>
-            
-            <div class="tab-image">
-              <img src="@/assets/images/mainPages/how-01-2.png" alt="" />
-              <div class="tab-text">
-                <ul class="mt-4">
                   <li>
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
                           <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -40,8 +33,6 @@
                   </li>
                 </ul>
               </div>
-            </div>
-
           </div>
         </div>
 
@@ -73,12 +64,6 @@
                     </svg>
                     {{ $t('HowSection.list3') }}
                 </li>
-                <li>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                        <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    {{ $t('HowSection.list4') }}
-                </li>
               </ul>
             </div>
           </div>
@@ -92,40 +77,26 @@
             <div class="tab-image mt-n20">
               <img src="@/assets/images/mainPages/how-03.png" alt="" />
             </div>
-            <div class="tab-text">
-              <p class="flex flex-start mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                    <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                {{ $t('HowSection.listTitle1') }}
-              </p>
-              <ul class="mb-6">
-                <li class="pl-8">⦁ {{ $t('HowSection.listDesc1') }}</li>
-                <li class="pl-8">⦁ {{ $t('HowSection.listDesc2') }}</li>
-                <li class="pl-8">⦁ {{ $t('HowSection.listDesc3') }}</li>
-              </ul>
-
-              <p class="flex flex-start mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                    <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                {{ $t('HowSection.listTitle2') }}
-              </p>
-              <ul class="mb-6">
-                <li class="pl-8">⦁ {{ $t('HowSection.listDesc4') }}</li>
-                <li class="pl-8">⦁ {{ $t('HowSection.listDesc5') }}</li>
-              </ul>
-
-              <p class="flex flex-start mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                    <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                {{ $t('HowSection.listTitle3') }}
-              </p>
+            <div class="tab-text mt-n20">
               <ul>
-                <li class="pl-8">⦁ {{ $t('HowSection.listDesc6') }}</li>
-                <li class="pl-8">⦁ {{ $t('HowSection.listDesc7') }}</li>
-                <li class="pl-8">⦁ {{ $t('HowSection.listDesc8') }}</li>
+                <li>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                        <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ $t('HowSection.listTitle1') }}
+                </li>
+                <li>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                        <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ $t('HowSection.listTitle2') }}
+                </li>
+                <li>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                        <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ $t('HowSection.listTitle3') }}
+                </li>
               </ul>
             </div>
           </div>
@@ -135,12 +106,18 @@
         <div class="bg-white pa-12 rounded-lg shadow-md mb-16" style="border: 1px solid #efefef;">
           <h3>{{ $t('HowSection.subtitle4') }}</h3>
 
-          <div class="flex justify-center">
-            <div class="modal-image">
+          <div class="tab-flex">
+            <div class="tab-image">
               <img src="@/assets/images/mainPages/how-04.png" alt="" />
             </div>
-            <!-- <div class="tab-text">
+            <div class="tab-text">
               <ul>
+                <li>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                        <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ $t('HowSection.list4') }}
+                </li>
                 <li>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
                         <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -154,7 +131,7 @@
                     {{ $t('HowSection.list6') }}
                 </li>
               </ul>
-            </div> -->
+            </div>
           </div>
         </div>
 
@@ -172,13 +149,19 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
                         <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    {{ $t('HowSection.list5') }}
+                    {{ $t('HowSection.list7') }}
                 </li>
                 <li>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
                         <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    {{ $t('HowSection.list6') }}
+                    {{ $t('HowSection.list8') }}
+                </li>
+                <li>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                        <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ $t('HowSection.list9') }}
                 </li>
               </ul>
             </div>
@@ -224,7 +207,7 @@ export default {
 
 
 h3 {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 600;
   color: var(--text-color-dark);
   padding-bottom: 40px;
@@ -244,22 +227,17 @@ h3 {
   min-width: 300px;
 }
 
-.tab-text p {
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--text-color);
-  margin-bottom: 20px;
-}
-
-.tab-text ul {
-  /* padding-left: 20px; */
-}
-
 .tab-text ul li {
   display: flex;
   align-items: flex-start;
   margin-bottom: 10px;
   color: var(--text-color);
+  font-weight: 600;
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+.tab-text ul li svg {
+  margin-top: 4px;
 }
 
 .tab-image {

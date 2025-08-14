@@ -127,10 +127,7 @@
                             </div>
                         </v-window-item>
                         <v-window-item value="MCP-Servers">
-                            <div 
-                                style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
-                            >
+                            <div>
                                 <MCPServerTab />
                             </div>
                         </v-window-item>

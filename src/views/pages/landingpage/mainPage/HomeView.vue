@@ -3,15 +3,9 @@
         <v-row>
             <v-col cols="12">
                 <HeroSection />
-                <IntroSection />
-                <!-- <DemoSection /> -->
-                <WhySection />
-                <!-- <ConsultingSection /> -->
-                <!-- <FeaturesSection /> -->
                 <HowSection />
-                <SpecialSection />
-                <!-- <CasesSection /> -->
-                <!-- <TechSection /> -->
+                <AI3StepsSection />
+                <MovieGallerySection />
                 <ExtensibilitySection />
                 <CTASection />
                 <DownloadSection />
@@ -36,15 +30,9 @@
 
 <script>
 import HeroSection from './sections/HeroSection.vue'
-import IntroSection from './sections/IntroSection.vue'
-// import DemoSection from './sections/DemoSection.vue'
-import WhySection from './sections/WhySection.vue'
-// import ConsultingSection from './sections/ConsultingSection.vue'
-// import FeaturesSection from './sections/FeaturesSection.vue'
 import HowSection from './sections/HowSection.vue'
-import SpecialSection from './sections/SpecialSection.vue'
-// import CasesSection from './sections/CasesSection.vue'
-// import TechSection from './sections/TechSection.vue'
+import AI3StepsSection from './sections/AI3StepsSection.vue'
+import MovieGallerySection from './sections/MovieGallerySection.vue'
 import ExtensibilitySection from './sections/ExtensibilitySection.vue'
 import CTASection from './sections/CTASection.vue'
 import DownloadSection from './sections/DownloadSection.vue'
@@ -53,15 +41,9 @@ export default {
     name: 'HomeView',
     components: {
         HeroSection,
-        IntroSection,
-        // DemoSection,
-        WhySection,
-        // ConsultingSection,
-        // FeaturesSection,
         HowSection,
-        SpecialSection,
-        // CasesSection,
-        // TechSection,
+        AI3StepsSection,
+        MovieGallerySection,
         ExtensibilitySection,
         CTASection,
         DownloadSection

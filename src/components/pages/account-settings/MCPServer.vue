@@ -1,7 +1,9 @@
 <template>
     <v-row class="justify-center ma-0 pa-0">
         <!-- 좌측: 리스트 -->
-        <v-col cols="12" lg="6">
+        <v-col cols="12" lg="6" style="overflow: auto;"
+            :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+        >
             <v-card flat class="pa-1">
                 <v-card-item class="pa-0">
                     <h5 class="text-h5 mb-4">MCP Servers</h5>

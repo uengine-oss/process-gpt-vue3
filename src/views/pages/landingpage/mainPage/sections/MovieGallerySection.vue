@@ -2,7 +2,7 @@
   <section class="movie-gallery" id="movie-gallery">
     <div class="container mx-auto pb-12">
       <div class="section-header">
-        <h2 style="color: #fff;">{{ $t('SpecialSection.movieGalleryTitle') }}</h2>
+        <h2 style="color: #fff;">{{ $t('MovieGallerySection.movieGalleryTitle') }}</h2>
       </div>
       <div class="bg-white rounded-md shadow-md mb-8" style="max-width: 630px; margin: 0 auto; padding: 8px 8px 20px 8px;">
         <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
@@ -11,7 +11,7 @@
             frameborder="0" crolling="no" allowfullscreen="">
           </iframe>
         </div>
-        <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('SpecialSection.processGptMainTitle') }}</h3>
+        <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('MovieGallerySection.processGptMainTitle') }}</h3>
       </div>
 
       <div class="movie-gallery-box-3 mb-8">
@@ -22,7 +22,7 @@
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
           </div>
-          <h3 class="movie-gallery-h3 txt-vertical-center text-center font-bold mt-4">{{ $t('SpecialSection.autoKnowledgeManagementTitle') }}</h3>
+          <h3 class="movie-gallery-h3 txt-vertical-center text-center font-bold mt-4">{{ $t('MovieGallerySection.autoKnowledgeManagementTitle') }}</h3>
         </div>
         <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
@@ -31,7 +31,7 @@
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
           </div>
-          <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('SpecialSection.autoTeamProcessTitle') }}</h3>
+          <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('MovieGallerySection.autoTeamProcessTitle') }}</h3>
         </div>
         <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
@@ -40,7 +40,7 @@
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
           </div>
-          <h3 class="movie-gallery-h3 txt-vertical-center text-center font-bold mt-4">{{ $t('SpecialSection.agentDraftTitle') }}</h3>
+          <h3 class="movie-gallery-h3 txt-vertical-center text-center font-bold mt-4">{{ $t('MovieGallerySection.agentDraftTitle') }}</h3>
         </div>
       </div>
 
@@ -52,7 +52,7 @@
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
           </div>
-          <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('SpecialSection.a2aAgentRegistrationTitle') }}</h3>
+          <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('MovieGallerySection.a2aAgentRegistrationTitle') }}</h3>
         </div>
         <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
@@ -61,7 +61,7 @@
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
           </div>
-          <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('SpecialSection.a2aCallServiceTitle') }}</h3>
+          <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('MovieGallerySection.a2aCallServiceTitle') }}</h3>
         </div>
       </div>
     </div>
@@ -70,30 +70,30 @@
   <!-- <section class="special bg-blue-50" id="special"> 
     <div class="container mx-auto pb-12">
       <div class="section-header">
-        <h2>{{ $t('SpecialSection.coreDistinctionTitle') }}</h2>
+        <h2>{{ $t('MovieGallerySection.coreDistinctionTitle') }}</h2>
       </div>
-      <p class="text-lg text-gray-700 text-center max-w-4xl mx-auto mb-12">{{ $t('SpecialSection.coreDistinctionDescription') }}</p>
+      <p class="text-lg text-gray-700 text-center max-w-4xl mx-auto mb-12">{{ $t('MovieGallerySection.coreDistinctionDescription') }}</p>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
         <div class="bg-white p-8 rounded-lg shadow-md">
           <div class="w-12 h-12 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4"
               style="background-color: #1976D2;"
           >1</div>
-          <h3 class="text-xl font-bold mb-4">{{ $t('SpecialSection.feature1Title') }}</h3>
-          <p class="text-gray-700">{{ $t('SpecialSection.feature1Description') }}</p>
+          <h3 class="text-xl font-bold mb-4">{{ $t('MovieGallerySection.feature1Title') }}</h3>
+          <p class="text-gray-700">{{ $t('MovieGallerySection.feature1Description') }}</p>
         </div>
         <div class="bg-white p-8 rounded-lg shadow-md">
           <div class="w-12 h-12 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4"
               style="background-color: #1976D2;"
           >2</div>
-          <h3 class="text-xl font-bold mb-4">{{ $t('SpecialSection.feature2Title') }}</h3>
-          <p class="text-gray-700">{{ $t('SpecialSection.feature2Description') }}</p>
+          <h3 class="text-xl font-bold mb-4">{{ $t('MovieGallerySection.feature2Title') }}</h3>
+          <p class="text-gray-700">{{ $t('MovieGallerySection.feature2Description') }}</p>
         </div>
         <div class="bg-white p-8 rounded-lg shadow-md">
           <div class="w-12 h-12 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4"
               style="background-color: #1976D2;"
           >3</div>
-          <h3 class="text-xl font-bold mb-4">{{ $t('SpecialSection.feature3Title') }}</h3>
-          <p class="text-gray-700">{{ $t('SpecialSection.feature3Description') }}</p>
+          <h3 class="text-xl font-bold mb-4">{{ $t('MovieGallerySection.feature3Title') }}</h3>
+          <p class="text-gray-700">{{ $t('MovieGallerySection.feature3Description') }}</p>
         </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -101,15 +101,15 @@
           <div class="w-12 h-12 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4"
               style="background-color: #1976D2;"
           >4</div>
-          <h3 class="text-xl font-bold mb-4">{{ $t('SpecialSection.feature4Title') }}</h3>
-          <p class="text-gray-700">{{ $t('SpecialSection.feature4Description') }}</p>
+          <h3 class="text-xl font-bold mb-4">{{ $t('MovieGallerySection.feature4Title') }}</h3>
+          <p class="text-gray-700">{{ $t('MovieGallerySection.feature4Description') }}</p>
         </div>
         <div class="bg-white p-8 rounded-lg shadow-md">
           <div class="w-12 h-12 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4"
               style="background-color: #1976D2;"
           >5</div>
-          <h3 class="text-xl font-bold mb-4">{{ $t('SpecialSection.feature5Title') }}</h3>
-          <p class="text-gray-700">{{ $t('SpecialSection.feature5Description') }}</p>
+          <h3 class="text-xl font-bold mb-4">{{ $t('MovieGallerySection.feature5Title') }}</h3>
+          <p class="text-gray-700">{{ $t('MovieGallerySection.feature5Description') }}</p>
         </div>
       </div>
     </div>
@@ -120,7 +120,7 @@
 import TabComponent from '../ui/TabComponent.vue'
 
 export default {
-  name: 'SpecialSection',
+  name: 'MovieGallerySection',
   components: {
     TabComponent
   },
@@ -128,32 +128,32 @@ export default {
     return {
       specialTabs: [
         {
-          title: this.$t('SpecialSection.tabTitle1'),
-          description: this.$t('SpecialSection.tabDescription1'),
+          title: this.$t('MovieGallerySection.tabTitle1'),
+          description: this.$t('MovieGallerySection.tabDescription1'),
           listItems: [
-            this.$t('SpecialSection.tabItem1_1'),
-            this.$t('SpecialSection.tabItem1_2'),
-            this.$t('SpecialSection.tabItem1_3')
+            this.$t('MovieGallerySection.tabItem1_1'),
+            this.$t('MovieGallerySection.tabItem1_2'),
+            this.$t('MovieGallerySection.tabItem1_3')
           ],
           image: 'bpmn-diagram.png'
         },
         {
-          title: this.$t('SpecialSection.tabTitle2'),
-          description: this.$t('SpecialSection.tabDescription2'),
+          title: this.$t('MovieGallerySection.tabTitle2'),
+          description: this.$t('MovieGallerySection.tabDescription2'),
           listItems: [
-            this.$t('SpecialSection.tabItem2_1'),
-            this.$t('SpecialSection.tabItem2_2'),
-            this.$t('SpecialSection.tabItem2_3')
+            this.$t('MovieGallerySection.tabItem2_1'),
+            this.$t('MovieGallerySection.tabItem2_2'),
+            this.$t('MovieGallerySection.tabItem2_3')
           ],
           image: 'bpmn-diagram.png'
         },
         {
-          title: this.$t('SpecialSection.tabTitle3'),
-          description: this.$t('SpecialSection.tabDescription3'),
+          title: this.$t('MovieGallerySection.tabTitle3'),
+          description: this.$t('MovieGallerySection.tabDescription3'),
           listItems: [
-            this.$t('SpecialSection.tabItem3_1'),
-            this.$t('SpecialSection.tabItem3_2'),
-            this.$t('SpecialSection.tabItem3_3')
+            this.$t('MovieGallerySection.tabItem3_1'),
+            this.$t('MovieGallerySection.tabItem3_2'),
+            this.$t('MovieGallerySection.tabItem3_3')
           ],
           image: 'bpmn-diagram.png'
         }
