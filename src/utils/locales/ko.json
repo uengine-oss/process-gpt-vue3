@@ -92,7 +92,6 @@
         "processDefinitionModificationStarted": "프로세스 정의 수정이 시작되었습니다.",
         "userRequestedAction": "{name}님이 요청하신 {action}",
         "processExecutionFailed": "요청하신 {title} 프로세스 실행에 실패하였습니다. 다시 시도해주세요.",
-        "year": "{month}월 {day}일 {dayName}",
         "today": "오늘",
         "yesterday": "어제",
         "thisYear": "{month}월 {day}일 {dayName}",
