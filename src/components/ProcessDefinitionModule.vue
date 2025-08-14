@@ -1144,25 +1144,39 @@ export default {
         },
 
         checkDefinitionSync(newVal, oldVal) {
-            if (newVal && oldVal) {
-                if (newVal.activities && oldVal.activities && newVal.activities.length == oldVal.activities.length) {
-                    newVal.activities = newVal.activities.map(newActivity => {
-                        const oldActivity = oldVal.activities.find(oldActivity => oldActivity.id === newActivity.id);
-                        if (oldActivity) {
-                            newActivity.type = oldActivity.type;
-                            newActivity.duration = oldActivity.duration;
-                            newActivity.agentMode = oldActivity.agentMode;
-                            newActivity.orchestration = oldActivity.orchestration;
-                            newActivity.description = oldActivity.description;
-                            newActivity.instruction = oldActivity.instruction;
-                            newActivity.checkpoints = oldActivity.checkpoints;
-                            newActivity.properties = oldActivity.properties;
-                            newActivity.inputData = oldActivity.inputData;
-                            newActivity.outputData = oldActivity.outputData;
-                        }
-                        return newActivity;
-                    });
+            try {
+                if (newVal && oldVal) {
+                    if (newVal.activities && oldVal.activities) {
+                        newVal.activities = newVal.activities.map(newActivity => {
+                            const oldActivity = oldVal.activities.find(oldActivity => oldActivity.id === newActivity.id);
+                            if (oldActivity) {
+                                newActivity.type = oldActivity.type;
+                                newActivity.duration = oldActivity.duration;
+                                newActivity.agentMode = oldActivity.agentMode;
+                                newActivity.orchestration = oldActivity.orchestration;
+                                newActivity.description = oldActivity.description;
+                                newActivity.instruction = oldActivity.instruction;
+                                newActivity.checkpoints = oldActivity.checkpoints;
+                                newActivity.properties = oldActivity.properties;
+                                newActivity.inputData = oldActivity.inputData;
+                                newActivity.outputData = oldActivity.outputData;
+                            }
+                            return newActivity;
+                        });
+                    }
+                    if (newVal.gateways && oldVal.gateways) {
+                        newVal.gateways = newVal.gateways.map(newGateway => {
+                            const oldGateway = oldVal.gateways.find(oldGateway => oldGateway.id === newGateway.id);
+                            if (oldGateway) {
+                                newGateway.conditionData = oldGateway.conditionData || [];
+                            }
+                            return newGateway;
+                        });
+                    }
+                    return newVal;
                 }
+            } catch (error) {
+                console.error('Error checking definition sync:', error);
                 return newVal;
             }
         },

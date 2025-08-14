@@ -1,10 +1,10 @@
 <template>
     <div elevation="10">
-        <v-row class="ma-sm-n2 ma-n1">
+        <v-row class="ma-0 pa-0">
             <v-col cols="12" sm="6">
-                <v-card elevation="10">
+                <v-card flat class="pa-1">
                     <v-card-item class="pa-0">
-                        <h5 class="text-h5 ma-4">{{ $t('accountTab.profileImageChange') }}</h5>
+                        <h5 class="text-h5">{{ $t('accountTab.profileImageChange') }}</h5>
                         <div class="text-center mt-6 mb-6">
                             <v-avatar size="120">
                                 <img :src="selectedProfileImage || picture || ''" height="120" alt="image" />
@@ -38,13 +38,16 @@
                     </v-card-item>
                 </v-card>
             </v-col>
+
+            <v-divider v-if="!isMobile" vertical></v-divider>
+
             <v-col cols="12" sm="6">
-                <v-card elevation="10">
+                <v-card flat class="pa-1">
                     <v-card-item class="pa-0">
-                        <h5 class="text-h5 pa-4">{{ $t('accountTab.personalDetails') }}</h5>
-                        <div class="text-subtitle-1 text-grey100 pl-4">{{ $t('accountTab.personalDetailsExplanation') }}
+                        <h5 class="text-h5 pb-2">{{ $t('accountTab.personalDetails') }}</h5>
+                        <div class="text-subtitle-1 text-grey100">{{ $t('accountTab.personalDetailsExplanation') }}
                         </div>
-                        <div class="mt-5 pa-4 pb-6">
+                        <div class="mt-5 pb-4">
                             <v-row>
                                 <v-col cols="12" md="6">
                                     <v-label class="mb-2 font-weight-medium">{{ $t('accountTab.name') }}</v-label>
@@ -73,6 +76,9 @@
             </v-col>
         </v-row>
         <div class="d-flex justify-end mt-5 pb-3">
+            <v-btn @click="changeTenant" size="large" color="secondary" rounded="pill" class="mr-2" variant="flat">
+                {{ $t('accountTab.changeTenant') }}
+            </v-btn>
             <v-btn @click="updateUser" size="large" color="primary" rounded="pill" class="mr-4" variant="flat">
                 {{ $t('accountTab.save') }}
             </v-btn>
@@ -113,7 +119,19 @@ export default {
             await backend.updateUserInfo({ type: 'update', user: userInfo });
             window.location.reload();
         },
-
+        changeTenant() {
+            // www로 이동하면서 로컬스토리지 클리어 파라미터 추가
+            if(!location.port || location.port == '') {
+                location.href = `https://www.process-gpt.io/tenant/manage?clear=true`;
+            } else {
+                location.href = `http://www.process-gpt.io:${location.port}/tenant/manage?clear=true`;
+            }
+        }
+    },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        }
     }
 };
 </script>

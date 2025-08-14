@@ -1,10 +1,9 @@
 <template>
-    <v-row class="justify-center">
+    <v-row class="justify-center ma-0 pa-0">
         <!--Account Settings tabs-->
-        <v-col cols="12" md="12">
+        <v-col cols="12" md="12" class="pa-0">
             <v-card elevation="10" 
                 class="is-work-height"
-                style="overflow: auto;"
             >
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
@@ -105,28 +104,56 @@
                 </div>
 
                 <v-divider></v-divider>
-                <v-card-text class="pa-sm-6 pa-3 pb-sm-6 pb-6">
+                <v-card-text class="pa-0">
                     <v-window v-model="tab">
                         <v-window-item value="Account">
-                            <AccountTab />
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
+                                <AccountTab />
+                            </div>
                         </v-window-item>
-                        <div v-if="admin">
-                            <v-window-item v-if="superAdmin" value="ManageAccess">
+                        <v-window-item value="ManageAccess">
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
                                 <ManageAccessTab />
-                            </v-window-item>
-                            <v-window-item v-if="superAdmin" value="Drive">
+                            </div>
+                        </v-window-item>
+                        <v-window-item value="Drive">
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
                                 <DriveTab />
-                            </v-window-item>
-                            <v-window-item value="ConnectionInfo">
+                            </div>
+                        </v-window-item>
+                        <v-window-item value="ConnectionInfo">
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
                                 <ConnectionInfoTab />
-                            </v-window-item>
-                            <v-window-item value="MCP-Servers">
+                            </div>
+                        </v-window-item>
+                        <v-window-item value="MCP-Servers">
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
                                 <MCPServerTab />
-                            </v-window-item>
-                            <v-window-item value="MCP-Environments">
+                            </div>
+                        </v-window-item>
+                        <v-window-item value="MCP-Environments">
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
                                 <MCPEnvSecretTab />
-                            </v-window-item>
-                        </div>
+                            </div>
+                        </v-window-item>
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>
                         </v-window-item>
@@ -174,28 +201,25 @@ export default {
     data() {
         return {
             tab: '',
+            superAdmin: localStorage.getItem('role') === 'superAdmin',
             tabItems: [
                 { value: 'Account', label: 'Account' },
                 { value: 'ManageAccess', label: 'Manage Access' },
                 { value: 'Drive', label: 'Drive' },
                 { value: 'MCP', label: 'MCP Servers' },
                 { value: 'ConnectionInfo', label: 'Connection Info' }
-            ]
+            ],
+            admin: localStorage.getItem('isAdmin') === 'true'
         };
     },
-    mounted() {},
+    mounted() {
+        // this.admin = localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('role') === 'superAdmin';
+    },
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
-        },
-        superAdmin() {
-            return localStorage.getItem('role') === 'superAdmin';
-        },
-        admin() {
-            return localStorage.getItem('isAdmin') === 'true';
-        },
-
-    },
+        }
+    }
     methods: {
         goToTenantManage() {
             // ===== 로컬 테스트용 코드 시작 =====

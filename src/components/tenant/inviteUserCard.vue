@@ -1,22 +1,17 @@
 <template>
     <!-- 유저 초대 섹션 -->
-    <v-row justify="center">
-        <v-col cols="12" md="10" lg="8">
-            <v-card class="invite-card" elevation="10">
-                <v-card-title>
-                    <h2 class="text-h4 text-grey-darken-2 mb-2">👥 사용자 초대</h2>
-                    <p class="text-subtitle-1 text-grey-darken-1">회사에 함께할 동료들을 초대해보세요</p>
-                    <p class="text-caption text-grey-darken-1">*초대된 사용자들에게 이메일이 발송됩니다</p>
-                </v-card-title>
+    <v-row justify="center" max-width="800px" class="ma-0 pa-0">
+        <v-col cols="12" md="10" lg="12" class="pa-0 ma-0">
+            <v-card flat>
                 <v-card-text class="pa-4">
                     <div v-for="(user, index) in inviteUserlist" :key="index" class="user-invite-item">
                         <v-card class="mb-4" elevation="10">
-                            <v-card-text class="pa-4">
+                            <v-card-text class="pa-3">
                                 <v-row align="center" no-gutters>
-                                    <v-col cols="12" sm="8" class="pr-sm-3">
+                                    <v-col cols="12" sm="8" class="pr-sm-3" :class="isMobile ? 'mb-2' : ''">
                                         <v-text-field
                                             v-model="user.email"
-                                            label="이메일 주소"
+                                            :label="$t('accountTab.emailAddress')"
                                             type="email"
                                             :error="!isValidEmail(user.email) && user.email !== ''"
                                             :error-messages="getEmailErrorMessage(user.email)"
@@ -33,7 +28,7 @@
                                             :items="roleOptions"
                                             item-title="text"
                                             item-value="value"
-                                            label="역할"
+                                            :label="$t('accountTab.role')"
                                             outlined
                                             dense
                                             prepend-inner-icon="mdi-account-circle-outline"
@@ -43,12 +38,15 @@
                                     <v-col cols="2" sm="1" class="text-center pl-sm-2">
                                         <v-btn
                                             :disabled="inviteUserlist.length === 1"
+                                            v-bind="props"
                                             icon
-                                            color="error"
+                                            variant="text"
+                                            type="file"
                                             @click="removeUser(index)"
-                                            class="delete-btn"
+                                            class="text-medium-emphasis"
+                                            density="comfortable"
                                         >
-                                            <v-icon>mdi-delete-outline</v-icon>
+                                            <TrashIcon size="24" style="color:#666;"/>
                                         </v-btn>
                                     </v-col>
                                 </v-row>
@@ -63,18 +61,17 @@
                             </v-card-text>
                         </v-card>
                     </div>
-
                 
                     <v-card @click="addUser"
                         class="mb-4"
                         elevation="10"
                     >
                         <v-row justify="center"
-                            class="my-6 align-center"
+                            class="my-4 align-center"
                             style="font-size: 20px;"    
                         >
                             <v-icon class="mr-2">mdi-plus</v-icon>
-                            <div>사용자 추가</div>
+                            <div>{{ $t('accountTab.addUser') }}</div>
                         </v-row>
                     </v-card>
 
@@ -92,19 +89,18 @@
                             density="compact"
                         >
                             <v-icon left>mdi-skip-next</v-icon>
-                            건너뛰고 시작하기
+                            {{ $t('accountTab.skipAndStart') }}
                         </v-btn>
 
                         <v-btn @click="inviteUsers"
                             :loading="isInviteLoading"
                             :disabled="hasInvalidEmails()"
                             color="primary"
-                            variant="elevated" 
+                            variant="flat" 
                             class="rounded-pill"
-                            density="compact"
                         >
                             <v-icon style="margin-right: 5px;" left>mdi-send</v-icon>
-                            초대 보내기
+                            {{ $t('accountTab.sendInvitation') }}
                         </v-btn>
                     </v-row>
                 </v-card-text>
@@ -222,6 +218,11 @@ export default {
         },
         skipInvitation() {
             window.location.href = `https://${this.tenantInfo.id}.process-gpt.io/definition-map`
+        }
+    },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
         }
     }
 };
