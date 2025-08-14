@@ -2,16 +2,15 @@
     <div>
         <v-row class="ma-0 pa-0">
             <v-col cols="12" md="6" class="pa-4 pt-0 pl-0">
-                <v-card class="mb-0 h-100" elevation="2">
+                <v-card class="mb-0 h-100 process-work-result-card" elevation="2">
                     <v-card-text class="pa-4">
-                        <v-row class="ma-0 pa-0 align-center mb-2">
-                            <v-icon class="mr-2">mdi-check-circle</v-icon>
-                            <h4 class="text-h6 mb-0">완료된 작업</h4>
-                            <v-spacer></v-spacer>
-
-                            <template v-for="(activity, index) in resultJson.completedActivities" :key="'completed-' + index">
-                                <v-row class="ma-0 pa-0 align-center">
-                                    <v-spacer></v-spacer>
+                        <div class="process-work-result-header">
+                            <div class="process-work-result-title-section">
+                                <v-icon class="mr-2">mdi-check-circle</v-icon>
+                                <h4 class="text-h6 mb-0">완료된 작업</h4>
+                            </div>
+                            <div class="process-work-result-user-section">
+                                <template v-for="(activity, index) in resultJson.completedActivities" :key="'completed-' + index">
                                     <template v-if="getUserInfoForCompleted(activity)">
                                         <div class="mr-2" style="width: 24px;">
                                             <v-img 
@@ -35,9 +34,9 @@
                                         </div>
                                         <span class="body-text-2 text-medium-emphasis">완료자 정보 로딩 중...</span>
                                     </template>
-                                </v-row>
-                            </template>
-                        </v-row>
+                                </template>
+                            </div>
+                        </div>
                         <v-list dense class="pa-0">
                             <v-list-item v-for="(activity, index) in resultJson.completedActivities" :key="'completed-' + index" class="px-0">
                                 <v-list-item-content>
@@ -55,16 +54,15 @@
                 </v-card>
             </v-col>
             <v-col cols="12" md="6" class="pa-4 pt-0 pl-0">
-                <v-card class="h-100" elevation="2">
+                <v-card class="h-100 process-work-result-card" elevation="2">
                     <v-card-text class="pa-4">
-                        <v-row class="ma-0 pa-0 align-center mb-2">
-                            <v-icon class="mr-2">mdi-refresh</v-icon>
-                            <h4 class="text-h6 mb-0">다음 작업</h4>
-                            <v-spacer></v-spacer>
-
-                            <template v-for="(activity, index) in resultJson.nextActivities" :key="'next-' + index">
-                                <v-row class="ma-0 pa-0 align-center">
-                                    <v-spacer></v-spacer>
+                        <div class="process-work-result-header">
+                            <div class="process-work-result-title-section">
+                                <v-icon class="mr-2">mdi-refresh</v-icon>
+                                <h4 class="text-h6 mb-0">다음 작업</h4>
+                            </div>
+                            <div class="process-work-result-user-section">
+                                <template v-for="(activity, index) in resultJson.nextActivities" :key="'next-' + index">
                                     <template v-if="getUserInfoForNext(activity)">
                                         <div class="mr-2" style="width: 24px;">
                                             <v-img 
@@ -88,9 +86,9 @@
                                         </div>
                                         <span class="body-text-2 text-medium-emphasis">담당자 정보 로딩 중...</span>
                                     </template>
-                                </v-row>
-                            </template>
-                        </v-row>
+                                </template>
+                            </div>
+                        </div>
                         <v-list dense class="pa-0">
                             <v-list-item v-for="(activity, index) in resultJson.nextActivities" :key="'next-' + index" class="px-0">
                                 <v-list-item-content>
@@ -224,3 +222,40 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+/* 프로세스 작업 결과 카드 - 컨테이너 쿼리용 컨테이너 */
+.process-work-result-card {
+    container-type: inline-size;
+    container-name: process-work-result-card;
+}
+
+/* 프로세스 작업 결과 헤더 - 제목과 사용자 정보를 담는 컨테이너 */
+.process-work-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+/* 프로세스 작업 결과 제목 섹션 - 아이콘과 제목 */
+.process-work-result-title-section {
+    display: flex;
+    align-items: center;
+}
+
+/* 프로세스 작업 결과 사용자 섹션 - 프로필과 사용자명 */
+.process-work-result-user-section {
+    display: flex;
+    align-items: center;
+}
+
+/* 카드 너비가 300px 이하일 때 세로 배치 */
+@container process-work-result-card (max-width: 250px) {
+    .process-work-result-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+</style>
