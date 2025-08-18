@@ -326,6 +326,7 @@ export default {
         // 실시간 JSON 파싱용
         accumulatedJSON: '',
         lastParsedJSON: null,
+        isRetry: false,
     }),
     async created() {
         $try(async () => {
@@ -387,6 +388,10 @@ export default {
                     this.chatRoomId = this.fullPath;
                 }
             }
+
+            this.EventBus.on('orientation-changed', (data) => {
+                this.isHorizontal = data.isHorizontal;
+            });
 
             const data = await this.getData(`configuration`, { match: { key: 'organization' } });
             if (data && data.value) {
@@ -1141,6 +1146,9 @@ export default {
                             if(unknown.validity && unknown.validity == "Suitable"){
                                 this.messages[this.messages.length - 2].disableMsg = false
                             }
+                            if(unknown.answerType && unknown.answerType == 'consulting'){
+                                this.messages[this.messages.length - 1].disableMsg = false
+                            }
                         }
                     } else {
                         if (unknown.processDefinitionId) {
@@ -1355,7 +1363,32 @@ export default {
                         try {
                             jsonProcess = JSON.parse(jsonProcess);
                         } catch(e){
-                            jsonProcess = partialParse(jsonProcess)
+                            try {
+                                jsonProcess = partialParse(jsonProcess)
+                            } catch(e){
+                                // 재시도
+                                if(!this.isRetry) {
+                                    this.isRetry = true
+                                    const newMessage = {
+                                        "images": [],
+                                        "text": "프로세스 생성 시도중 오류 발생하여 다시 시도합니다. 올바른 json 형식으로 다시 생성해주세요.",
+                                        "mentionedUsers": []
+                                    }
+                                    this.beforeSendMessage(newMessage)
+                                    this.messages.push({
+                                        "role": "system",
+                                        "content": "프로세스 생성 시도중 오류 발생하여 다시 시도합니다.",
+                                        "timeStamp": Date.now()
+                                    })
+                                } else {
+                                    this.isRetry = false
+                                    this.messages.push({
+                                        "role": "system",
+                                        "content": "프로세스 생성 시도중 오류 발생하였습니다. 잠시 후 다시 시도해주세요.",
+                                        "timeStamp": Date.now()
+                                    })
+                                }
+                            }
                         }
                     }
                 }
@@ -1373,7 +1406,11 @@ export default {
                         this.messages[this.messages.length - 1].content = content
 
                         if(unknown.validity && unknown.validity == "Suitable"){
-                            this.messages.pop();
+                            this.generator = new ConsultingGenerator(this, {
+                                isStream: true,
+                                preferredLanguage: "Korean"
+                            });
+                        } else if(unknown.validity && unknown.validity == "Unsuitable"){
                             this.generator = new ConsultingGenerator(this, {
                                 isStream: true,
                                 preferredLanguage: "Korean"
@@ -1387,19 +1424,9 @@ export default {
                                 this.isConsultingMode = false
                                 this.waitForCustomer = true
                                 this.$emit("openProcessPreview")
-                            } else {
-                                if(unknown.validity && unknown.validity == "Unsuitable"){
-                                    this.generator = new ConsultingGenerator(this, {
-                                        isStream: true,
-                                        preferredLanguage: "Korean"
-                                    });
-                                } else {
-                                    this.generator = new ConsultingMentoGenerator(this, {
-                                        isStream: true,
-                                        preferredLanguage: "Korean"
-                                    });
-                                }
-                            }
+                            } 
+                        }
+                        if(!unknown.answerType || unknown.answerType != 'consulting'){
                             this.beforeStartGenerate()
                         }
                     }

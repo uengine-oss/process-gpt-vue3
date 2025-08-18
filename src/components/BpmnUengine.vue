@@ -303,7 +303,7 @@ export default {
                 }
             });
 
-            self.resetZoom();
+            // self.resetZoom();
         },
         setDiagramEvent() {
             var self = this;
@@ -835,11 +835,17 @@ export default {
 
             const { width, height } = container.getBoundingClientRect();
 
+            let isHorizontal = false;
             if(width - 100 > height) {
                 this.initDefaultOrientation('horizontal');
+                isHorizontal = true;
             } else {
                 this.initDefaultOrientation('vertical');
+                isHorizontal = false;
             }
+            this.EventBus.emit('orientation-changed', {
+                isHorizontal: isHorizontal
+            });
 
         },
         onPan(ev) {
