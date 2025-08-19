@@ -19,7 +19,7 @@
                     </div>
                 </div>
                 <!-- feedback -->
-                <div v-if="useFeedback" class="position-absolute bottom-0 end-0 ml-2">
+                <div v-if="useFeedback" class="bottom-0 end-0 ml-2 mr-2">
                     <span class="text-body-2">프로세스 실행이 정상인가요?</span>
                     <v-btn icon size="x-small" variant="text" color="success" @click="selectFeedback('good')">
                         <v-icon>mdi-thumb-up</v-icon>
@@ -28,8 +28,8 @@
                         <v-icon>mdi-thumb-down</v-icon>
                     </v-btn>
                 </div>
-                <div v-else-if="!useFeedback && showAcceptFeedback" class="position-absolute bottom-0 end-0 ml-2">
-                    <span class="text-body-2">피드백을 반영하시겠습니까?</span>
+                <div v-else-if="!useFeedback && showAcceptFeedback && !showFeedback" class="bottom-0 end-0 ml-2">
+                    <span class="text-body-2">피드백 변경사항 확인</span>
                     <v-btn icon size="x-small" variant="text" color="success" @click="showFeedback = true">
                         <v-icon>mdi-check</v-icon>
                     </v-btn>
@@ -37,15 +37,16 @@
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </div>
-                <ProcessFeedback 
-                    class="mt-6 mx-2"
-                    v-if="showFeedback"
-                    :lastMessage="lastMessage"
-                    :task="lastTask"
-                    :isAcceptMode="showAcceptFeedback"
-                    @submitFeedback="submitFeedback"
-                    @closeFeedback="closeFeedback"
-                />
+                <div class="pr-4">
+                    <ProcessFeedback 
+                        v-if="showFeedback"
+                        :lastMessage="lastMessage"
+                        :task="lastTask"
+                        :isAcceptMode="showAcceptFeedback"
+                        @submitFeedback="submitFeedback"
+                        @closeFeedback="closeFeedback"
+                    />
+                </div>
             </template>
         </Chat>
     </div>
@@ -155,14 +156,15 @@ export default {
         },
         messages(newVal) {
             if (newVal.length > 0) {
-                this.lastMessage = newVal[newVal.length - 1];
+                const systemMessages = newVal.filter(item => item.role == 'system');
+                if (systemMessages.length > 0) {
+                    this.lastMessage = systemMessages[systemMessages.length - 1];
+                }
             }
         },
         lastMessage(newVal) {
             if (newVal && newVal.role == 'system' && !this.isTaskMode) {
-                this.useFeedback = true;
                 if (newVal.jsonContent && newVal.jsonContent.appliedFeedback) {
-                    this.useFeedback = false;
                     this.showAcceptFeedback = true;
                 } else {
                     this.showAcceptFeedback = false;
@@ -351,7 +353,7 @@ export default {
         },
         closeFeedback() {
             this.showFeedback = false;
-            // this.showAcceptFeedback = false;
+            this.showAcceptFeedback = false;
         },
         async getLastTask(instId) {
             const worklist = await backend.getWorkListByInstId(instId);
@@ -367,6 +369,8 @@ export default {
                     this.lastTask = workItem;
                     if (this.lastTask.task.temp_feedback && this.lastTask.task.temp_feedback.length > 0) {
                         this.useFeedback = false;
+                    } else {
+                        this.useFeedback = true;
                     }
                 }
             }
@@ -407,10 +411,10 @@ export default {
                         // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);
                         window.$supabase.removeChannel(this.subscription);
                     }
-                    await this.loadData();
                     this.$emit('updated');
                     this.EventBus.emit('instances-updated');
                     this.useFeedback = useFeedback;
+                    await this.loadData();
                 }
             });
         },
@@ -419,6 +423,7 @@ export default {
                 this.lastMessage.jsonContent.appliedFeedback = false;
                 await backend.updateInstanceChat(this.chatRoomId, this.lastMessage, this.lastMessage.thread_id, this.lastMessage.uuid);
             }
+            this.showAcceptFeedback = false;
         }
     }
 };

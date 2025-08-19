@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div class="pa-4">
     <!-- DataSource 사용 여부 토글 - 개선된 UI -->
-    <v-card class="mb-6 pa-4" elevation="2">
+    <v-card flat class="mb-6 pa-1">
       <v-row align="center" no-gutters>
         <v-col cols="auto" class="mr-3">
           <v-icon size="24" color="primary">mdi-database-settings</v-icon>
@@ -62,11 +62,11 @@
     <!-- 데이터소스 추가 버튼 -->
     <div class="d-flex justify-end mb-4">
       <v-btn 
-        color="primary" 
-        elevation="2" 
+      color="primary"
+        variant="flat"
+        rounded
         @click="openAddDialog"
         :disabled="!isUseDataSource"
-        class="text-none"
       >
         <v-icon left>mdi-plus</v-icon>
         {{ $t('accountTab.addConnectionInfo') }}

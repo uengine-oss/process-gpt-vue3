@@ -7,11 +7,10 @@
       </div>
       <nav class="nav">
         <ul>
-          <li><a class="nav-link" @click.prevent="navigateToSection('intro')">{{ $t('Header.intro') }}</a></li>
-          <li><a class="nav-link" @click.prevent="navigateToSection('why')">{{ $t('Header.why') }}</a></li>
+          <li><a class="nav-link" href="https://bpm-intro.uengine.io/process-gpt/" target="_blank">{{ $t('Header.tutorial') }}</a></li>
           <li><a class="nav-link" @click.prevent="navigateToSection('works')">{{ $t('Header.works') }}</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('ai3Steps')">{{ $t('Header.ai3Steps') }}</a></li>
           <li><a class="nav-link" @click.prevent="navigateToSection('movie-gallery')">{{ $t('Header.movieGallery') }}</a></li>
-          <!-- <li><a class="nav-link" @click.prevent="navigateToSection('tech')">{{ $t('Header.tech') }}</a></li> -->
           <li><a class="nav-link" @click.prevent="navigateToSection('download')">{{ $t('Header.download') }}</a></li>
           <!-- <li><router-link class="nav-link" to="/marketplace" @click="scrollToTop">Marketplace</router-link></li> -->
         </ul>
@@ -23,12 +22,12 @@
       </div>
       <div class="mobile-menu" v-if="mobileMenuOpen">
         <ul>
-          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('intro')">{{ $t('Header.intro') }}</a></li>
-          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('consulting')">{{ $t('Header.consulting') }}</a></li>
-          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('features')">{{ $t('Header.features') }}</a></li>
+          <li><a href="https://bpm-intro.uengine.io/process-gpt/" target="_blank">{{ $t('Header.tutorial') }}</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('works')">{{ $t('Header.works') }}</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('ai3Steps')">{{ $t('Header.ai3Steps') }}</a></li>
           <li><a @click.prevent="closeMobileMenuAndNavigateToSection('movie-gallery')">{{ $t('Header.movieGallery') }}</a></li>
           <li><a class="nav-link" @click.prevent="closeMobileMenuAndNavigateToSection('download')">{{ $t('Header.download') }}</a></li>
-          <li><a @click.prevent="closeMobileMenuAndNavigate('/marketplace')">{{ $t('Header.marketplace') }}</a></li>
+          <!-- <li><a @click.prevent="closeMobileMenuAndNavigate('/marketplace')">{{ $t('Header.marketplace') }}</a></li> -->
         </ul>
       </div>
     </div>

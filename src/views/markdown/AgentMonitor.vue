@@ -170,23 +170,70 @@
 
       <!-- 빈 상태 -->
       <div v-else class="empty-state">
-        <div class="empty-icon">📋</div>
         <h3>{{ isQueued ? '작업이 대기열에 등록되었습니다' : '진행중인 작업이 없습니다' }}</h3>
         <p>작업이 시작되면 여기에 표시됩니다.</p>
         <div v-if="!isQueued" class="start-controls">
-          <div class="method-selector">
-            <label for="research-method" class="method-label">연구 방식:</label>
-            <select id="research-method" v-model="selectedOrchestrationMethod" class="method-dropdown">
-              <option v-for="option in orchestrationOptions" :key="option.value" :value="option.value">
-                {{ option.startLabel }}
-              </option>
-            </select>
-          </div>
-          <button v-if="showDownloadButton" @click="downloadBrowserAgent" class="start-button">다운로드</button>
-          <div v-if="showDownloadButton" style="margin-top: 8px; color: #888; font-size: 0.95em;">
-            Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)
-          </div>
-          <button v-else @click="startTask" class="start-button">시작하기</button>
+          <v-container>
+            <v-row justify="center">
+              <v-col cols="12" class="text-center mb-4">
+                <h3>연구 방식을 선택하세요</h3>
+              </v-col>
+            </v-row>
+            
+            <v-row>
+              <v-col v-for="option in orchestrationOptions" :key="option.value" 
+                cols="12" sm="12" md="6" class="d-flex"
+              >
+                <v-card 
+                  :class="['method-card-vuetify', { 'selected': selectedOrchestrationMethod === option.value }]"
+                  :color="selectedOrchestrationMethod === option.value ? 'primary' : 'white'"
+                  :variant="selectedOrchestrationMethod === option.value ? 'elevated' : 'outlined'"
+                  @click="selectOrchestrationMethod(option.value)"
+                  hover
+                  class="flex-fill"
+                >
+                    <v-card-text class="text-center pa-4">
+                      <div class="card-icon-vuetify mb-3">
+                        <Icons :icon="option.icon" :color="selectedOrchestrationMethod === option.value ? 'white' : 'black'" :size="50" />
+                      </div>
+                      <v-card-title class="card-title-vuetify pa-0 mb-2">{{ option.label }}</v-card-title>
+                      <v-card-subtitle class="card-description-vuetify pa-0">{{ getMethodDescription(option.value) }}</v-card-subtitle>
+                    <v-icon v-if="selectedOrchestrationMethod === option.value" 
+                           class="selected-indicator-vuetify" 
+                           color="white">mdi-check-circle</v-icon>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+            
+            <v-row v-if="showDownloadButton" justify="center" class="mt-2">
+              <v-col cols="auto">
+                <v-alert type="info" variant="tonal" class="text-caption">
+                  Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)
+                </v-alert>
+              </v-col>
+            </v-row>
+            
+            <v-row justify="center" class="ma-0 pa-4 pr-2">
+              <v-spacer></v-spacer>
+              <v-btn v-if="showDownloadButton" 
+                  @click="downloadBrowserAgent" 
+                  :disabled="!selectedOrchestrationMethod"
+                  color="primary"
+                  variant="elevated" 
+                  class="rounded-pill"
+                  density="compact"
+              >다운로드</v-btn>
+              <v-btn v-else 
+                  @click="startTask" 
+                  :disabled="!selectedOrchestrationMethod"
+                  color="primary"
+                  variant="elevated" 
+                  class="rounded-pill"
+                  density="compact"
+              >시작하기</v-btn>
+            </v-row>
+          </v-container>
         </div>
       </div>
 
@@ -268,7 +315,7 @@ export default {
       chatMessages: [],
       isCancelled: false,
       isLoading: false,
-      selectedOrchestrationMethod: 'crewai-deep-research', // 통합된 오케스트레이션 방식
+      selectedOrchestrationMethod: null, // 통합된 오케스트레이션 방식
       isDropdownOpen: false, // 드롭다운 열림 상태
       openBrowserAgent: false,
       downloadedBrowserAgent: false,
@@ -277,10 +324,10 @@ export default {
       humanQueryAnswers: {},
       // 공통 옵션 배열
       orchestrationOptions: [
-        { value: 'crewai-deep-research', label: 'CrewAI 심층 연구', startLabel: 'CrewAI Deep Research', icon: '🔬' },
-        { value: 'crewai-action', label: 'CrewAI 액션', startLabel: 'CrewAI Action', icon: '⚡' },
-        { value: 'openai-deep-research', label: 'OpenAI 심층 연구', startLabel: 'OpenAI Deep Research', icon: '🧠' },
-        { value: 'browser-use', label: 'Browser Use', startLabel: 'Browser Use', icon: '🌐' }
+        { value: 'crewai-deep-research', label: 'CrewAI 심층 연구', startLabel: 'CrewAI Deep Research', icon: 'playoff' },
+        { value: 'crewai-action', label: 'CrewAI 액션', startLabel: 'CrewAI Action', icon: 'flowchart' },
+        { value: 'openai-deep-research', label: 'OpenAI 심층 연구', startLabel: 'OpenAI Deep Research', icon: 'playoff' },
+        { value: 'browser-use', label: 'Browser Use', startLabel: 'Browser Use', icon: 'browser' }
       ]
     }
   },
@@ -800,7 +847,7 @@ export default {
             table: 'events'
           }, ({ new: row }) => {
             const taskId = this.getTaskIdFromWorkItem();
-            const { todo_id: todoId, event_type, crew_type, job_id, id } = row;
+            const { todo_id: todoId, event_type, job_id, id } = row;
             
             // 이벤트 유효성 검사
             const isValidEvent = !this.events.some(e => e.id === id) &&
@@ -1100,6 +1147,23 @@ export default {
 
     getMarkdownContent(task) {
       return this.formatMarkdownOutput(task.content);
+    },
+
+    // ========================================
+    // 🎯 오케스트레이션 방식 관련 메서드들
+    // ========================================
+    selectOrchestrationMethod(value) {
+      this.selectedOrchestrationMethod = value;
+    },
+
+    getMethodDescription(method) {
+      const descriptions = {
+        'crewai-deep-research': '다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 | 5~15분 소요',
+        'crewai-action': '최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A | 1~5분 소요',
+        'openai-deep-research': 'GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 | 3~10분 소요',
+        'browser-use': '실제 브라우저를 조작하여 실시간 웹 정보 수집 및 작업 수행. ex) 검색, 폼 작성, 스크래핑 | 2~8분 소요'
+      };
+      return descriptions[method] || '';
     },
   },
   async created() {
@@ -1886,64 +1950,116 @@ export default {
   background: #005bb5;
 }
 
-/* 시작 컨트롤 스타일 */
+/* Vuetify 카드 스타일 */
 .start-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  margin-top: 16px;
+  margin-top: 24px;
+  width: 100%;
 }
 
-.method-selector {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #f8f9fa;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
+.method-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d2129;
+  margin-bottom: 0;
 }
 
-.method-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #495057;
-  white-space: nowrap;
-}
-
-.method-dropdown {
-  background: white;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  padding: 6px 8px;
-  font-size: 13px;
-  color: #495057;
+.method-card-vuetify {
   cursor: pointer;
-  min-width: 200px;
-  transition: border-color 0.2s ease;
+  transition: all 0.3s ease;
+  min-height: 240px;
+  position: relative;
 }
 
-.method-dropdown:focus {
-  outline: none;
-  border-color: #60A5FA;
-  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+.method-card-vuetify:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
 }
 
-.method-dropdown:hover {
-  border-color: #adb5bd;
+.method-card-vuetify.selected {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(25, 118, 210, 0.3) !important;
+}
+
+.card-icon-vuetify {
+  font-size: 48px;
+  line-height: 1;
+  filter: grayscale(30%);
+  transition: filter 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 60px;
+}
+
+.method-card-vuetify.selected .card-icon-vuetify {
+  filter: none;
+}
+
+.card-title-vuetify {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  color: #1d2129 !important;
+}
+
+.method-card-vuetify.selected .card-title-vuetify {
+  color: white !important;
+}
+
+.card-description-vuetify {
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  opacity: 0.85;
+  word-break: keep-all;
+  white-space: pre-line;
+  text-align: left;
+  color: #606770 !important;
+}
+
+.method-card-vuetify.selected .card-description-vuetify {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.selected-indicator-vuetify {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-  .method-selector {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
+  .method-title {
+    font-size: 18px;
   }
   
-  .method-dropdown {
-    min-width: auto;
+  .method-card-vuetify {
+    min-height: 220px;
+  }
+  
+  .card-icon-vuetify {
+    font-size: 40px;
+  }
+  
+  .card-title-vuetify {
+    font-size: 15px !important;
+  }
+  
+  .card-description-vuetify {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
   }
 }
 

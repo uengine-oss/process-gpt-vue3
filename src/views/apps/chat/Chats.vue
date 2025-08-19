@@ -695,6 +695,7 @@ export default {
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
             
             this.EventBus.emit('chat-room-selected', this.currentChatRoom.id);
+            this.backend.saveAccessPage(this.userInfo.email, 'chat:' + this.currentChatRoom.id);
         },
         async putMessage(msg, chatRoomId = null){
             // this.addTextToVectorStore(msg)
@@ -707,7 +708,7 @@ export default {
             let message = {
                 "messages": msg,
                 "id": chatRoomId || this.currentChatRoom.id,
-                "uuid": uuid,
+                "uuid": uuid
             }
             
             this.putObject(`chats/${uuid}`, message);
@@ -749,6 +750,7 @@ export default {
                     newMessage.callType = 'chats'
                 }
                 this.sendMessage(newMessage);
+                this.backend.saveAccessPage(this.userInfo.email, 'chat:' + this.currentChatRoom.id);
             }
         },
         async executeProcess(input) {

@@ -2,42 +2,46 @@
     <div>
         <v-row class="ma-0 pa-0">
             <v-col cols="12" md="6" class="pa-4 pt-0 pl-0">
-                <v-card class="mb-0 h-100" elevation="2">
+                <v-card class="mb-0 h-100 process-work-result-card" elevation="2">
                     <v-card-text class="pa-4">
-                        <div class="d-flex align-center mb-2">
-                            <v-icon class="mr-2">mdi-check-circle</v-icon>
-                            <h4 class="text-h6 mb-0">완료된 작업</h4>
+                        <div class="process-work-result-header">
+                            <div class="process-work-result-title-section">
+                                <v-icon class="mr-2">mdi-check-circle</v-icon>
+                                <h4 class="text-h6 mb-0">완료된 작업</h4>
+                            </div>
+                            <div class="process-work-result-user-section">
+                                <template v-for="(activity, index) in resultJson.completedActivities" :key="'completed-' + index">
+                                    <template v-if="getUserInfoForCompleted(activity)">
+                                        <div class="mr-2" style="width: 24px;">
+                                            <v-img 
+                                                :src="getUserInfoForCompleted(activity).profile || '/images/defaultUser.png'"
+                                                alt="profile"
+                                                width="24"
+                                                height="24"
+                                                style="border-radius: 50%;"
+                                            />
+                                        </div>
+                                        <span class="body-text-2 text-medium-emphasis">{{ getUserInfoForCompleted(activity).username }}</span>
+                                    </template>
+                                    <template v-else-if="isLoadingUsers">
+                                        <div class="mr-2" style="width: 24px;">
+                                            <v-progress-circular 
+                                                indeterminate 
+                                                color="primary" 
+                                                size="16"
+                                                width="2"
+                                            ></v-progress-circular>
+                                        </div>
+                                        <span class="body-text-2 text-medium-emphasis">완료자 정보 로딩 중...</span>
+                                    </template>
+                                </template>
+                            </div>
                         </div>
                         <v-list dense class="pa-0">
                             <v-list-item v-for="(activity, index) in resultJson.completedActivities" :key="'completed-' + index" class="px-0">
-                                <v-row v-if="getUserInfoForCompleted(activity)"
-                                    class="ma-0 pa-0 align-center mb-2"
-                                >
-                                    <div class="mr-2" style="width: 24px;">
-                                        <v-img 
-                                            :src="getUserInfoForCompleted(activity).profile || '/images/defaultUser.png'"
-                                            alt="profile"
-                                            width="24"
-                                            height="24"
-                                            style="border-radius: 50%;"
-                                        />
-                                    </div>
-                                    <span class="body-text-2 text-medium-emphasis">{{ getUserInfoForCompleted(activity).username }}</span>
-                                </v-row>
-                                <v-row v-else-if="isLoadingUsers" class="ma-0 pa-0 align-center mb-2">
-                                    <div class="mr-2" style="width: 24px;">
-                                        <v-progress-circular 
-                                            indeterminate 
-                                            color="primary" 
-                                            size="16"
-                                            width="2"
-                                        ></v-progress-circular>
-                                    </div>
-                                    <span class="body-text-2 text-medium-emphasis">완료자 정보 로딩 중...</span>
-                                </v-row>
                                 <v-list-item-content>
                                     <v-list-item-title class="font-weight-bold">활동: {{ activity.completedActivityName }}</v-list-item-title>
-                                    <v-list-item-subtitle>{{ activity.description }}</v-list-item-subtitle>
+                                    <div style="color: #808080;">{{ activity.description }}</div>
                                 </v-list-item-content>
                             </v-list-item>
                             <v-list-item v-if="resultJson.completedActivities.length === 0" class="px-0">
@@ -50,18 +54,16 @@
                 </v-card>
             </v-col>
             <v-col cols="12" md="6" class="pa-4 pt-0 pl-0">
-                <v-card class="h-100" elevation="2">
+                <v-card class="h-100 process-work-result-card" elevation="2">
                     <v-card-text class="pa-4">
-                        <div class="d-flex align-center">
-                            <v-icon class="mr-2">mdi-refresh</v-icon>
-                            <h4 class="text-h6 mb-0">다음 작업</h4>
-                        </div>
-                        <v-list dense class="pa-0">
-                            <v-list-item v-for="(activity, index) in resultJson.nextActivities" :key="'next-' + index" class="px-0">
-                                <v-list-item-content>
-                                    <v-row v-if="getUserInfoForNext(activity)"
-                                        class="ma-0 pa-0 align-center mb-2"
-                                    >
+                        <div class="process-work-result-header">
+                            <div class="process-work-result-title-section">
+                                <v-icon class="mr-2">mdi-refresh</v-icon>
+                                <h4 class="text-h6 mb-0">다음 작업</h4>
+                            </div>
+                            <div class="process-work-result-user-section">
+                                <template v-for="(activity, index) in resultJson.nextActivities" :key="'next-' + index">
+                                    <template v-if="getUserInfoForNext(activity)">
                                         <div class="mr-2" style="width: 24px;">
                                             <v-img 
                                                 :src="getUserInfoForNext(activity).profile || '/images/defaultUser.png'"
@@ -71,9 +73,9 @@
                                                 style="border-radius: 50%;"
                                             />
                                         </div>
-                                        <div class="body-text-2 text-medium-emphasis">{{ getUserInfoForNext(activity).username }}</div>
-                                    </v-row>
-                                    <v-row v-else-if="isLoadingUsers" class="ma-0 pa-0 align-center mb-2">
+                                        <span class="body-text-2 text-medium-emphasis">{{ getUserInfoForNext(activity).username }}</span>
+                                    </template>
+                                    <template v-else-if="isLoadingUsers">
                                         <div class="mr-2" style="width: 24px;">
                                             <v-progress-circular 
                                                 indeterminate 
@@ -82,10 +84,16 @@
                                                 width="2"
                                             ></v-progress-circular>
                                         </div>
-                                        <div class="body-text-2 text-medium-emphasis">담당자 정보 로딩 중...</div>
-                                    </v-row>
+                                        <span class="body-text-2 text-medium-emphasis">담당자 정보 로딩 중...</span>
+                                    </template>
+                                </template>
+                            </div>
+                        </div>
+                        <v-list dense class="pa-0">
+                            <v-list-item v-for="(activity, index) in resultJson.nextActivities" :key="'next-' + index" class="px-0">
+                                <v-list-item-content>
                                     <v-list-item-title class="font-weight-bold">활동: {{ activity.nextActivityName }}</v-list-item-title>
-                                    <v-list-item-subtitle>{{ activity.description }}</v-list-item-subtitle>
+                                    <div style="color: #808080;">{{ activity.description }}</div>
                                 </v-list-item-content>
                             </v-list-item>
                             <v-list-item v-if="resultJson.nextActivities.length === 0" class="px-0">
@@ -161,9 +169,7 @@ export default {
             
             try {
                 this.isLoadingUsers = true;
-                console.log('사용자 목록 로드 시작');
                 this.userList = await backend.getUserList({});
-                console.log('사용자 목록 로드 완료:', this.userList);
                 this.$forceUpdate(); // UI 갱신
             } catch (error) {
                 console.error('사용자 목록 로드 실패:', error);
@@ -196,11 +202,9 @@ export default {
             if (foundUser) {
                 // 캐시에 저장
                 this.loadedUserInfo[userId] = foundUser;
-                console.log('사용자 찾음:', foundUser, 'for ID:', userId);
                 return foundUser;
             }
             
-            console.log('사용자를 찾을 수 없음:', userId, '전체 사용자 목록:', this.userList);
             return null;
         },
         getUserInfoForCompleted(activity) {
@@ -218,3 +222,40 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+/* 프로세스 작업 결과 카드 - 컨테이너 쿼리용 컨테이너 */
+.process-work-result-card {
+    container-type: inline-size;
+    container-name: process-work-result-card;
+}
+
+/* 프로세스 작업 결과 헤더 - 제목과 사용자 정보를 담는 컨테이너 */
+.process-work-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+/* 프로세스 작업 결과 제목 섹션 - 아이콘과 제목 */
+.process-work-result-title-section {
+    display: flex;
+    align-items: center;
+}
+
+/* 프로세스 작업 결과 사용자 섹션 - 프로필과 사용자명 */
+.process-work-result-user-section {
+    display: flex;
+    align-items: center;
+}
+
+/* 카드 너비가 300px 이하일 때 세로 배치 */
+@container process-work-result-card (max-width: 250px) {
+    .process-work-result-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+</style>
