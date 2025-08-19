@@ -64,7 +64,7 @@
         "title": "Task List",
         "todo": "Upcoming Tasks",
         "inProgress": "In Progress",
-        "pending": "Pending",
+        "pending": "Pending/Returned",
         "done": "Done",
         "addTask": "Add Task"
     },

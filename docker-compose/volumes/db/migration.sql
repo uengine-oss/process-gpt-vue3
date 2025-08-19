@@ -176,6 +176,8 @@ ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS due_date timestamp wit
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS parent_proc_inst_id text;
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS root_proc_inst_id text;
 
 -- Properly migrate current_user_ids to participants
 DO $$
@@ -205,6 +207,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS id uuid;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS user_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS username text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS proc_inst_id text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS root_proc_inst_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS proc_def_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS activity_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS activity_name text;
@@ -463,7 +466,7 @@ BEGIN
 
     -- 드래프트 상태 enum
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'draft_status') THEN
-        CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED');
+        CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
         RAISE NOTICE 'Created draft_status enum type';
     ELSE
         RAISE NOTICE 'draft_status enum type already exists';
@@ -631,6 +634,7 @@ BEGIN
             WHEN draft_status = 'COMPLETED' THEN 'COMPLETED'::draft_status
             WHEN draft_status = 'FB_REQUESTED' THEN 'FB_REQUESTED'::draft_status
             WHEN draft_status = 'HUMAN_ASKED' THEN 'HUMAN_ASKED'::draft_status
+            WHEN draft_status = 'FAILED' THEN 'FAILED'::draft_status
             ELSE NULL  -- 기본값을 NULL로 설정
         END;
         
@@ -1444,3 +1448,19 @@ DROP FUNCTION IF EXISTS migrate_participants_emails_to_uuids(text[]);
 
 
 
+-- ===============================================
+-- draft_status enum에 FAILED 값 추가
+-- ===============================================
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_enum 
+        WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'draft_status')
+        AND enumlabel = 'FAILED'
+    ) THEN
+        ALTER TYPE draft_status ADD VALUE 'FAILED';
+        RAISE NOTICE 'Added FAILED value to draft_status enum type';
+    ELSE
+        RAISE NOTICE 'FAILED value already exists in draft_status enum type';
+    END IF;
+END $$;

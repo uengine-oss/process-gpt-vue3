@@ -1369,17 +1369,17 @@ export default {
                                 // 재시도
                                 if(!this.isRetry) {
                                     this.isRetry = true
+                                    this.messages.push({
+                                        "role": "system",
+                                        "content": "프로세스 생성 시도중 오류 발생하여 다시 시도합니다.",
+                                        "timeStamp": Date.now()
+                                    })
                                     const newMessage = {
                                         "images": [],
                                         "text": "프로세스 생성 시도중 오류 발생하여 다시 시도합니다. 올바른 json 형식으로 다시 생성해주세요.",
                                         "mentionedUsers": []
                                     }
                                     this.beforeSendMessage(newMessage)
-                                    this.messages.push({
-                                        "role": "system",
-                                        "content": "프로세스 생성 시도중 오류 발생하여 다시 시도합니다.",
-                                        "timeStamp": Date.now()
-                                    })
                                 } else {
                                     this.isRetry = false
                                     this.messages.push({

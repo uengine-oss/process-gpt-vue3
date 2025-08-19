@@ -355,18 +355,6 @@ export default {
     async mounted() {
         await this.init();
 
-        if (this.isAgentChat) {
-            this.generator = new AgentChatGenerator(this, {
-                isStream: false,
-                preferredLanguage: "Korean",
-            });
-        } else {
-            this.generator = new ChatGenerator(this, {
-                isStream: true,
-                preferredLanguage: "Korean"
-            });
-        }
-
         this.userInfo = await this.backend.getUserInfo();
 
         await this.getUserList();   
@@ -412,6 +400,18 @@ export default {
         
         if (this.currentChatRoom && this.currentChatRoom.id) {
             this.chatRoomId = this.currentChatRoom.id;
+        }
+
+        if (this.isAgentChat) {
+            this.generator = new AgentChatGenerator(this, {
+                isStream: false,
+                preferredLanguage: "Korean",
+            });
+        } else {
+            this.generator = new ChatGenerator(this, {
+                isStream: true,
+                preferredLanguage: "Korean"
+            });
         }
     },
     beforeUnmount() {
