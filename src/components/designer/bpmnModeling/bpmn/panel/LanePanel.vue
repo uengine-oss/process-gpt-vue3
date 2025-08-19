@@ -32,7 +32,7 @@
                         <user-select-field
                             v-model="copyUengineProperties.roleResolutionContext.endpoint"
                             :name="$t('LanePanel.userID')"
-                            :item-value="'email'"
+                            :item-value="'id'"
                             :hide-details="true"
                             :use-agent="true"
                             class="mt-4"
