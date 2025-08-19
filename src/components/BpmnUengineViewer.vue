@@ -181,29 +181,38 @@ export default {
     methods: {
         async setRoleMapping() {
             let self = this;
-            const instance = await backend.getInstance(this.instanceId);
             const workList = await backend.getWorkListByInstId(this.instanceId);
-            if (!instance) return;
-            const roleMapping = instance.roleBindings;
+            if (!workList) return;
 
             const modeling = self.bpmnViewer.get('modeling');
+            const elementRegistry = self.bpmnViewer.get('elementRegistry');
 
-            roleMapping.forEach(role => {
-                const elementRegistry = self.bpmnViewer.get('elementRegistry');
-
-                const roleElement = elementRegistry.filter(el => {
-                    return el.businessObject && el.businessObject.name === role.name;
-                })[0];
-
-                if (roleElement) {
-                    const workItem = workList.find(item => item.endpoint === String(role.endpoint));
-                    const roleName = roleElement.businessObject.name + "\n" + (workItem && workItem.username ? workItem.username : String(role.endpoint));
-
-                    modeling.updateProperties(roleElement, {
-                        name: roleName
+            // workList의 각 작업에 대해 BPMN 요소를 찾아서 담당자 정보 표시
+            workList.forEach(workItem => {
+                // tracingTag를 통해 해당하는 BPMN 요소 찾기
+                const bpmnElement = elementRegistry.get(workItem.tracingTag);
+                
+                if (bpmnElement && bpmnElement.businessObject) {
+                    // 현재 요소가 레인(Lane)인지 확인
+                    const lanes = elementRegistry.filter(el => el.type === 'bpmn:Lane');
+                    const associatedLane = lanes.find(lane => {
+                        // 레인에 속한 활동들 중에 현재 활동이 있는지 확인
+                        return lane.businessObject.flowNodeRef && 
+                               lane.businessObject.flowNodeRef.some(ref => ref.id === workItem.tracingTag);
                     });
-                } else {
-                    console.warn(`❗ Role element not found for name: ${role.name}`);
+                    
+                    if (associatedLane) {
+                        // 레인 이름에 담당자 정보 추가
+                        const originalName = associatedLane.businessObject.name || '역할';
+                        const displayName = workItem.username || workItem.endpoint;
+                        const roleNameWithUser = originalName + "\n" + displayName;
+                        
+                        modeling.updateProperties(associatedLane, {
+                            name: roleNameWithUser
+                        });
+                        
+
+                    }
                 }
             });
         },

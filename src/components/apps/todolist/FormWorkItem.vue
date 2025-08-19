@@ -503,7 +503,10 @@ export default {
                             "content": notificationMessage,
                             "timeStamp": new Date().toISOString()
                         }),
-                        backend.putWorkItem(me.workItem.worklist.taskId, {'user_id': delegateUser.email})
+                        backend.putWorkItem(me.workItem.worklist.taskId, {
+                            'user_id': delegateUser.uid,
+                            'username': delegateUser.username
+                        })
                     ]);
                     
                     // 위임 성공 후 workItem 정보 업데이트
