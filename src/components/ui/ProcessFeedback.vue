@@ -219,6 +219,7 @@
                         density="compact"
                     >취소</v-btn>
                     <v-btn @click="setFeedbackDiff"
+                        :disabled="!hasSelectedItems"
                         color="primary"
                         variant="elevated" 
                         class="rounded-pill"
@@ -335,6 +336,9 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        hasSelectedItems() {
+            return Object.values(this.diffItems).some(item => item.accepted);
         },
     },
     methods: {

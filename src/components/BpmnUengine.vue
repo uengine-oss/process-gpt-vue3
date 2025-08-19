@@ -100,7 +100,8 @@ export default {
             resizeObserver: null,
             resizeTimeout: null,
             panStart: { x: 0, y: 0 },
-            pinchStartZoom: 1
+            pinchStartZoom: 1,
+            isHorizontal: false,
         };
     },
     computed: {
@@ -176,9 +177,18 @@ export default {
 
                             const newWidth = viewbox.width / scale;
                             const newHeight = viewbox.height / scale;
+                            let x
+                            let y
+                            if(this.isHorizontal) {
+                                x = nodeCenter.x - newWidth / 2 - 30;
+                                y = nodeCenter.y - newHeight / 2 - 280;
+                            } else {
+                                x = nodeCenter.x - newWidth / 2;
+                                y = nodeCenter.y - newHeight / 2;
+                            }
                             const newViewbox = {
-                                x: nodeCenter.x - newWidth / 2,
-                                y: nodeCenter.y - newHeight / 2,
+                                x: x,
+                                y: y,
                                 width: newWidth,
                                 height: newHeight
                             };
@@ -285,6 +295,8 @@ export default {
                     isHorizontal = false;
                 }
             }
+
+            this.isHorizontal = isHorizontal;
             
             participant.forEach(element => {
                 const horizontal = element.di.isHorizontal;
@@ -303,7 +315,7 @@ export default {
                 }
             });
 
-            self.resetZoom();
+            // self.resetZoom();
         },
         setDiagramEvent() {
             var self = this;
@@ -770,14 +782,14 @@ export default {
                 let zoomLevel = event.scale;
 
                 if (zoomLevel < 0.2) {
-                zoomLevel = 0.2;
+                    zoomLevel = 0.2;
                 } else if (zoomLevel > 2) {
-                zoomLevel = 2;
+                    zoomLevel = 2;
                 }
 
                 canvas.zoom(zoomLevel, {
-                x: canvas._cachedViewbox.inner.width / 2,
-                y: canvas._cachedViewbox.inner.height / 2
+                    x: canvas._cachedViewbox.inner.width / 2,
+                    y: canvas._cachedViewbox.inner.height / 2
                 });
             });
 
@@ -835,11 +847,17 @@ export default {
 
             const { width, height } = container.getBoundingClientRect();
 
+            let isHorizontal = false;
             if(width - 100 > height) {
                 this.initDefaultOrientation('horizontal');
+                isHorizontal = true;
             } else {
                 this.initDefaultOrientation('vertical');
+                isHorizontal = false;
             }
+            this.EventBus.emit('orientation-changed', {
+                isHorizontal: isHorizontal
+            });
 
         },
         onPan(ev) {

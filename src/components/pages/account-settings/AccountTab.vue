@@ -75,7 +75,7 @@
                 </v-card>
             </v-col>
         </v-row>
-        <div class="d-flex justify-end mt-5 pb-6">
+        <div class="d-flex justify-end mt-5 pb-3">
             <v-btn @click="changeTenant" size="large" color="secondary" rounded="pill" class="mr-2" variant="flat">
                 {{ $t('accountTab.changeTenant') }}
             </v-btn>

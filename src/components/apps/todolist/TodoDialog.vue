@@ -157,8 +157,8 @@ export default {
                 this.newTask.taskId = this.uuid();
             }
             if (!this.newTask.endpoint) {
-                const email = localStorage.getItem('email');
-                this.newTask.endpoint = email;
+                const uid = localStorage.getItem('uid');
+                this.newTask.endpoint = uid;
             }
             if (this.todolist && this.todolist.length > 0) {
                 const statusIndex = this.todolist.findIndex(t => t.id === this.newTask.status);

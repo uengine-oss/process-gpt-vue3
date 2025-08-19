@@ -2,10 +2,10 @@
   <section class="hero">
     <div class="container">
       <div class="hero-content">
-        <h1>{{ $t('HeroSection.title') }}</h1>
-        <p class="pa-0 ma-0 pt-4">{{ $t('HeroSection.description1') }}</p>
-        <p class="pa-0 ma-0">{{ $t('HeroSection.description2') }}</p>
-        <p class="pa-0 ma-0 pb-4">{{ $t('HeroSection.description3') }}</p>
+        <h1>{{ $t('HeroSection.title1') }}</h1>
+        <h1>{{ $t('HeroSection.title2') }}</h1>
+        <p class="pa-0 ma-0 pt-4 pb-4">{{ $t('HeroSection.description1') }}</p>
+        
         <div class="hero-buttons">
           <!-- 텍스트를 중앙 정렬하기 위해 flex와 justify-center 클래스 추가 -->
           <!-- '시작하기' 버튼과 동일한 구조로 마켓플레이스 버튼 정렬 (to, color, class, height 순서로 통일) -->
@@ -122,20 +122,19 @@ export default {
   font-size: 2.5rem;
   font-weight: 700;
   color: var(--text-color-dark);
-  margin-bottom: 20px;
-  line-height: 1.2;
+  line-height: 1.4;
 }
 
 .hero p {
   font-size: 1.1rem;
   color: var(--text-color);
-  margin-bottom: 30px;
   line-height: 1.6;
 }
 
 .hero-buttons {
   display: flex;
   gap: 15px;
+  margin-top: 20px;
 }
 
 .btn {
