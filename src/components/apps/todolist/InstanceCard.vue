@@ -129,7 +129,8 @@
                                 <KanbanBoard 
                                     :key="`kanban-${updatedKey}-${instance?.instId}`"
                                     class="instance-card-kanban-board"
-                                    :columns="columns" :users="userList"
+                                    :columns="columns"
+                                    :users="userList"
                                     :isNotAll="false"
                                     :showAddButton="false"
                                     @loadMore="handleLoadMore"

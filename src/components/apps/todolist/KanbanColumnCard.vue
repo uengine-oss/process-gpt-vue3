@@ -75,6 +75,10 @@
                             <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
                             <span class="text-caption ml-1" style="color: #F44336;">기한 지남</span>
                         </div>
+                        <div v-if="isPending && errorMessage" class="d-flex align-center ml-auto">
+                            <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
+                            <span class="text-caption ml-1" style="color: #F44336;">{{ errorMessage }}</span>
+                        </div>
                     </div>
                 </div>
                 <div v-if="userInfoForTask">
@@ -92,6 +96,15 @@
                             <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
                             <span class="text-caption ml-1" style="color: #F44336;">기한 지남</span>
                         </div>
+                        <v-tooltip v-if="isPending && errorMessage" location="right">
+                            <template v-slot:activator="{ props }">
+                                <div class="d-flex align-center ml-auto" v-bind="props">
+                                    <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
+                                    <span class="text-caption ml-1" style="color: #F44336;">실행 오류</span>
+                                </div>
+                            </template>
+                            <div class="text-caption text-wrap" style="max-width: 200px;">{{ errorMessage }}</div>
+                        </v-tooltip>
                     </div>
                 </div>
                 <div class="pa-0">
@@ -281,6 +294,19 @@ export default {
         isTodolistPath() {
             // 현재 경로가 todolist를 포함하는지 확인
             return this.$route.path.includes('/todolist');
+        },
+        isPending() {
+            return this.task.status === 'PENDING';
+        },
+        errorMessage() {
+            if (this.task.status === 'PENDING' && this.task.task && this.task.task.log && this.task.task.log.length > 0) {
+                if (this.task.task.log.includes('PROCEED_CONDITION_NOT_MET') ||
+                    this.task.Task.log.includes('SYSTEM_ERROR') || this.task.task.log.includes('DATA_FIELD_NOT_EXIST')
+                ) {
+                    return this.task.task.log;
+                }
+            }
+            return null;
         }
     },
     async mounted() {

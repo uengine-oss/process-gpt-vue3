@@ -156,7 +156,10 @@ export default {
         },
         messages(newVal) {
             if (newVal.length > 0) {
-                this.lastMessage = newVal[newVal.length - 1];
+                const systemMessages = newVal.filter(item => item.role == 'system');
+                if (systemMessages.length > 0) {
+                    this.lastMessage = systemMessages[systemMessages.length - 1];
+                }
             }
         },
         lastMessage(newVal) {
