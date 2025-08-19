@@ -176,6 +176,8 @@ ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS due_date timestamp wit
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS parent_proc_inst_id text;
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS root_proc_inst_id text;
 
 -- Properly migrate current_user_ids to participants
 DO $$
@@ -205,6 +207,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS id uuid;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS user_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS username text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS proc_inst_id text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS root_proc_inst_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS proc_def_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS activity_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS activity_name text;
