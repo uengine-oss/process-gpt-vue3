@@ -1278,6 +1278,47 @@ export default {
                     
                     // uid 값을 백엔드로 전송
                     const userIdForBackend = delegateUser.uid;
+                    const previousUserId = me.workItem.worklist.endpoint;
+                    
+                    // role_bindings 업데이트
+                    const instance = await backend.getInstance(me.workItem.worklist.instId);
+                    if (instance && instance.roleBindings) {
+                        const roleBindings = instance.roleBindings;
+                        let updated = false;
+
+                        console.log(`담당자 변경: ${previousUserId} -> ${userIdForBackend}`);
+                        console.log('현재 workItem 구조:', me.workItem);
+                        console.log('role_bindings 구조:', roleBindings);
+
+                        // 이전 담당자가 포함된 역할을 찾아서 새 담당자로 교체
+                        roleBindings.forEach((role) => {
+                            if (role.default && role.default.includes(previousUserId)) {
+                                role.default = role.default.filter(id => id !== previousUserId);
+                                if (!role.default.includes(userIdForBackend)) {
+                                    role.default.push(userIdForBackend);
+                                }
+                                updated = true;
+                                console.log(`역할 '${role.name}'의 default 업데이트됨`);
+                            }
+
+                            if (role.endpoint && role.endpoint.includes(previousUserId)) {
+                                role.endpoint = role.endpoint.filter(id => id !== previousUserId);
+                                if (!role.endpoint.includes(userIdForBackend)) {
+                                    role.endpoint.push(userIdForBackend);
+                                }
+                                updated = true;
+                                console.log(`역할 '${role.name}'의 endpoint 업데이트됨`);
+                            }
+                        });
+
+                        if (updated) {
+                            await backend.putObject('bpm_proc_inst', {
+                                proc_inst_id: me.workItem.worklist.instId,
+                                role_bindings: roleBindings
+                            });
+                            console.log('역할 바인딩 업데이트 완료');
+                        }
+                    }
                   
                     await Promise.all([
                         backend.updateInstanceChat(me.workItem.worklist.instId, {
@@ -1288,7 +1329,10 @@ export default {
                             "content": notificationMessage,
                             "timeStamp": new Date().toISOString()
                         }),
-                        backend.putWorkItem(me.workItem.worklist.taskId, {'user_id': userIdForBackend})
+                        backend.putWorkItem(me.workItem.worklist.taskId, {
+                            'user_id': userIdForBackend,
+                            'username': delegateUser.username
+                        })
                     ]);
                     
                     me.workItem.worklist.endpoint = userIdForBackend;
