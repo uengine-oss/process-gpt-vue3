@@ -238,7 +238,7 @@
       </div>
 
       <!-- 로딩 상태 -->
-      <div v-if="isLoading && timeline.length > 0" class="feedback-loading">
+      <div v-if="isLoading" class="feedback-loading">
         <div class="loading-spinner"></div>
         <span>{{ getLoadingMessage() }}</span>
         <button @click="stopTask" class="stop-button" aria-label="중단">⏹</button>
@@ -320,6 +320,9 @@ export default {
       openBrowserAgent: false,
       downloadedBrowserAgent: false,
       doneWorkItemList: [],
+      // 이벤트 기반 즉시 표시 및 1회 동기화 플래그
+      hasReceivedEvent: false,
+      hasSyncedTodoStatusOnce: false,
       // human_asked 응답 관리
       humanQueryAnswers: {},
       // 공통 옵션 배열
@@ -457,7 +460,7 @@ export default {
     isQueued() {
       // 유효한 orchestration 값 목록 생성
       const validOrchs = this.orchestrationOptions.map(o => o.value)
-      // 상태가 진행중이고, 모드가 DRAFT 또는 COMPLETE 이며, agent_orch가 유효 목록에 포함되어야 작업 대기중 표시
+      // 시작 직후(첫 이벤트 이전)에도 대기 문구가 뜨도록 hasReceivedEvent 조건 제거
       return this.todoStatus &&
         this.todoStatus.status === 'IN_PROGRESS' &&
         (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') &&
@@ -562,12 +565,12 @@ export default {
     },
 
     isMarkdownType(crewType) {
-      return crewType === 'report' || crewType === 'action'
+      return crewType === 'report' || crewType === 'action' || crewType === 'planning'
     },
 
     shouldShowExpandControls(payload) {
         if (payload.crewType === 'slide') return false
-        if (payload.crewType === 'report' || payload.crewType === 'action') {
+        if (payload.crewType === 'report' || payload.crewType === 'action' || payload.crewType === 'planning') {
           return this.isContentLong(payload.content);
         }
         // JSON의 경우 표시용 컨텐츠를 문자열화해서 판단
@@ -609,16 +612,18 @@ export default {
     },
 
     getLoadingMessage() {
-      if (this.todoStatus.draft_status === 'STARTED' && this.todoStatus.agent_orch === 'crewai-action') {
+      const draftStatus = this.todoStatus?.draft_status;
+      const agentOrch = this.todoStatus?.agent_orch;
+      if (draftStatus === 'STARTED' && agentOrch === 'crewai-action') {
         return '액션 실행 작업을 진행중입니다...'
       }
-      if (this.todoStatus.draft_status === 'STARTED') {
+      if (draftStatus === 'STARTED') {
         return '초안 생성 작업을 진행중입니다...'
       }
-      if (this.todoStatus.draft_status === 'FB_REQUESTED' && this.todoStatus.agent_orch === 'crewai-action') {
+      if (draftStatus === 'FB_REQUESTED' && agentOrch === 'crewai-action') {
         return '피드백을 반영하여 액션을 다시 실행하고 있습니다...'
       }
-      if (this.todoStatus.draft_status === 'FB_REQUESTED') {
+      if (draftStatus === 'FB_REQUESTED') {
         return '피드백을 반영하여 초안을 다시 생성하고 있습니다...'
       }
       return ''
@@ -721,8 +726,26 @@ export default {
     // 객체면 첫번째 키의 값을 반환, 배열/문자열 등은 그대로 반환
     resolvePrimaryValue(output, crewType) {
       const type = crewType ? String(crewType).toLowerCase() : '';
-      // planning, result 타입은 추출하지 않고 원본 그대로 사용
-      if (type === 'planning' || type === 'result') {
+      // planning 타입: 객체(JSON 포함)이고 explanation_text 키가 있으면 그 값만 표시
+      if (type === 'planning') {
+        let obj = output;
+        if (typeof obj === 'string') {
+          const cleaned = this.cleanString(this.removeFences(obj));
+          const parsed = this.parseJson(cleaned, null);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            obj = parsed;
+          }
+        }
+        if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+          if (Object.prototype.hasOwnProperty.call(obj, 'explanation_text')) {
+            return obj.explanation_text;
+          }
+        }
+        // 키가 없으면 원래 로직대로 원본 유지
+        return output;
+      }
+      // result 타입은 원본 그대로 사용
+      if (type === 'result') {
         return output;
       }
       if (output && typeof output === 'object' && !Array.isArray(output)) {
@@ -856,6 +879,21 @@ export default {
 
             if (isValidEvent) {
               this.events = [...this.events, row];
+              
+              // 첫 유효 이벤트 수신 시: 상태 동기화 후 로딩 표시 여부 결정
+              if (!this.hasReceivedEvent) {
+                this.hasReceivedEvent = true;
+                if (!this.hasSyncedTodoStatusOnce) {
+                  this.hasSyncedTodoStatusOnce = true;
+                  setTimeout(async () => {
+                    await this.fetchTodoStatus();
+                    if (!this.isCancelled) {
+                      const draft = this.todoStatus?.draft_status;
+                      this.isLoading = ['STARTED', 'FB_REQUESTED'].includes(draft);
+                    }
+                  }, 300);
+                }
+              }
               
               // 이벤트 타입별 처리
               if (event_type === 'crew_completed') {
@@ -991,7 +1029,7 @@ export default {
       if (!taskId) return;
 
       try {
-        this.isLoading = true;
+        // isLoading은 첫 이벤트 수신 후 상태 동기화 결과로 결정
         
         // agent_mode 처리
         const currentAgentMode = this.todoStatus?.agent_mode;
@@ -999,10 +1037,9 @@ export default {
         const agentOrch = this.selectedOrchestrationMethod;
         
         this.todoStatus = { 
-          ...this.todoStatus, 
+          ...(this.todoStatus || {}), 
           agent_mode: agentMode, 
           status: 'IN_PROGRESS', 
-          draft_status: 'STARTED', 
           agent_orch: agentOrch 
         };
 
@@ -1732,6 +1769,7 @@ export default {
   background: white;
   border-radius: 12px;
   border: 1px solid #e1e8ed;
+  margin-top: 12px;
 }
 
 .empty-state .empty-icon {
@@ -2093,7 +2131,7 @@ export default {
   background: #f8fafb;
   border: 1px solid #e4e6ea;
   border-radius: 8px;
-  margin-bottom: 12px;
+  margin: 12px 0 12px; /* 상단 간격 추가로 위 요소와 붙는 현상 완화 */
   font-size: 14px;
   color: #606770;
 }
