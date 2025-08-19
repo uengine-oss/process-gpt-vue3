@@ -528,373 +528,501 @@ export default {
         async convertXMLToJSON(xmlString) {
             try {
                 if (!xmlString) return {};
-                xmlString = xmlString.replace(/\$type/g, '_type'); //sanitizing for $type
+                xmlString = xmlString.replace(/\$type/g, '_type');
+
+                const INHERIT_LANE_TO_CHILDREN = true; // (기존 동작 유지)
 
                 const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                 const result = await parser.parseStringPromise(xmlString);
+
+                // ---------- utils ----------
+                const ensureArray = (x) => (Array.isArray(x) ? x : x ? [x] : []);
+                const safeJson = (s, f = null) => { try { return s ? JSON.parse(s) : f; } catch { return f; } };
+
+                // ① JSON 파싱 캐시(문자열 → 객체 변환 1회만)
+                const jsonCache = new WeakMap();
+                const getPropsJson = (node) => {
+                if (!node) return null;
+                const str = node['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'];
+                if (!str) return null;
+                if (!jsonCache.has(node)) {
+                    jsonCache.set(node, safeJson(str, null));
+                }
+                return jsonCache.get(node);
+                };
+
+                // ---------- route / meta ----------
                 let processDefinitionId = 'Unknown';
                 let definitionName = null;
                 let version = null;
                 let shortDescription = null;
 
-                if(this.fullPath) {
-                    processDefinitionId = this.fullPath;
+                if (this.fullPath) {
+                processDefinitionId = this.fullPath;
                 } else {
-                    processDefinitionId = this.$route.params.id;
+                processDefinitionId = this.$route?.params?.id || 'Unknown';
+                }
+                if (processDefinitionId === 'chat') {
+                processDefinitionId = this.processDefinition.processDefinitionId;
                 }
 
-                if (processDefinitionId == 'chat') {
-                    processDefinitionId = this.processDefinition.processDefinitionId;
-                }
+                // ---------- root extracts ----------
+                let processes = result['bpmn:definitions']?.['bpmn:process'] || {};
+                processes = Array.isArray(processes) ? processes : [processes];
 
-                function ensureArray(item) {
-                    return Array.isArray(item) ? item : item ? [item] : [];
-                }
-                let processes =
-                    result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:process']
-                        ? result['bpmn:definitions']['bpmn:process']
-                        : {};
-                if (!(processes instanceof Array)) {
-                    processes = [processes];
-                }
                 let resultJsonData = null;
 
                 let event = [];
                 let lanes = [];
                 let activities = [];
+                let subProcesses = [];
                 let sequenceFlows = [];
                 let gateways = [];
                 let instanceNamePattern = null;
+                let data = [];
 
                 const participants =
-                    result['bpmn:definitions'] && result['bpmn:definitions']['bpmn:collaboration'] && result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
-                        ? result['bpmn:definitions']['bpmn:collaboration']['bpmn:participant']
-                        : {};
-                let data = [];
-                
+                result['bpmn:definitions']?.['bpmn:collaboration']?.['bpmn:participant'] || {};
 
-                function processSubProcess(subProcessTmp, processId) {
-                    if (subProcessTmp instanceof Array) {
-                        return subProcessTmp.map((obj) => ({ ...obj, type: 'subProcess', process: processId }));
-                    } else {
-                        return [{ ...subProcessTmp, type: 'subProcess', process: processId }];
-                    }
+                function extractVariables(process) {
+                const props = process['bpmn:extensionElements']?.['uengine:properties'];
+                if (!props) return [];
+                const vars = props['uengine:variable'];
+                if (!vars) return [];
+                const arr = ensureArray(vars);
+                if (window.$mode == 'ProcessGPT') {
+                    return arr.map(v => ({
+                    name: v.name,
+                    description: v.description || `${v.name} description`,
+                    type: v.type
+                    }));
+                }
+                return arr.map(v => ({
+                    name: v.name,
+                    description: v.description || `${v.name} description`,
+                    type: v.type,
+                    defaultValue: v['uengine:json'] ? (safeJson(v['uengine:json'])?.defaultValue ?? null) : null
+                }));
                 }
 
-                function processBpmnProcess(process) {
-                    let events = [];
-                    let activities = [];
-                    let gateways = [];
-                    let lanes = [];
-                    let sequenceFlows = [];
-                    let data = [];
-                    let instanceNamePattern = null;
-                    let definitionName = null;
-                    let version = null;
-                    let shortDescription = null;
+                // ---------- Lane 역색인 ----------
+                const buildLaneIndex = (lanesArr = []) => {
+                const map = new Map();
+                for (const lane of lanesArr) {
+                    const refs = ensureArray(lane['bpmn:flowNodeRef']);
+                    for (const id of refs) {
+                    if (!map.has(id)) map.set(id, lane.name || 'Unknown');
+                    }
+                }
+                return map;
+                };
 
-                    Object.keys(process).forEach((key) => {
-                        if (key.includes('Event')) {
-                            let eventTmp = process[key];
-                            if (eventTmp instanceof Array) {
-                                eventTmp = eventTmp.map((obj) => ({ ...obj, type: key.replace('bpmn:', ''), process: process.id }));
-                            } else {
-                                eventTmp = { ...eventTmp, type: key.replace('bpmn:', ''), process: process.id };
-                            }
-                            events = events.concat(eventTmp);
-                        } else if (key.includes('Task')) {
-                            let activityTmp = process[key];
-                            if (activityTmp instanceof Array) {
-                                activityTmp = activityTmp.map((obj) => ({ ...obj, type: key.replace('bpmn:', ''), process: process.id }));
-                            } else {
-                                activityTmp = { ...activityTmp, type: key.replace('bpmn:', ''), process: process.id };
-                            }
-                            activities = activities.concat(activityTmp);
-                        } else if (key.includes('Gateway')) {
-                            let gatewayTmp = process[key];
-                            if (gatewayTmp instanceof Array) {
-                                gatewayTmp = gatewayTmp.map((obj) => ({ ...obj, type: key.replace('bpmn:', ''), process: process.id }));
-                            } else {
-                                gatewayTmp = { ...gatewayTmp, type: key.replace('bpmn:', ''), process: process.id };
-                            }
-                            gateways = gateways.concat(gatewayTmp);
-                        } else if (key.includes('subProcess')) {
-                            let subProcessTmp = process[key];
-                            const subProcesses = processSubProcess(subProcessTmp, process.id);
-                            subProcesses.forEach(subProcess => {
-                                const subProcessResult = processBpmnProcess(subProcess);
-                                events = events.concat(subProcessResult.events);
-                                activities = activities.concat(subProcessResult.activities);
-                                gateways = gateways.concat(subProcessResult.gateways);
-                                lanes = lanes.concat(subProcessResult.lanes);
-                                sequenceFlows = sequenceFlows.concat(subProcessResult.sequenceFlows);
-                                data = data.concat(subProcessResult.data);
-                            });
-                        }
-                    });
+                const resolveRole = (nodeId, childLanes, parentLanes) => {
+                const childIdx = buildLaneIndex(childLanes);
+                if (childIdx.has(nodeId)) return childIdx.get(nodeId);
+                if (INHERIT_LANE_TO_CHILDREN) {
+                    const parentIdx = buildLaneIndex(parentLanes);
+                    if (parentIdx.has(nodeId)) return parentIdx.get(nodeId);
+                }
+                return 'Unknown';
+                };
 
-                    let lanesTmp = ensureArray(process['bpmn:laneSet'] ? process['bpmn:laneSet']['bpmn:lane'] : []);
-                    lanesTmp = lanesTmp.map((obj) => ({ ...obj, process: process.id }));
+                // ---------- 재귀 파서 ----------
+                function processSubProcess(subProcessTmp, processId) {
+                if (Array.isArray(subProcessTmp)) {
+                    return subProcessTmp.map((obj) => ({ ...obj, type: 'subProcess', process: processId }));
+                } else {
+                    return [{ ...subProcessTmp, type: 'subProcess', process: processId }];
+                }
+                }
+
+                function processBpmnProcess(proc) {
+                let events = [];
+                let activities = [];
+                let gateways = [];
+                let subProcesses = [];
+                let lanes = [];
+                let sequenceFlows = [];
+                let data = [];
+                let instanceNamePattern = null;
+                let definitionName = null;
+                let version = null;
+                let shortDescription = null;
+
+                // lanes / flows 먼저
+                {
+                    let lanesTmp = ensureArray(proc['bpmn:laneSet'] ? proc['bpmn:laneSet']['bpmn:lane'] : []);
+                    lanesTmp = lanesTmp.map((obj) => ({ ...obj, process: proc.id }));
                     lanes = lanes.concat(lanesTmp);
 
-                    let sequenceFlowsTmp = ensureArray(process['bpmn:sequenceFlow'] || []);
+                    let sequenceFlowsTmp = ensureArray(proc['bpmn:sequenceFlow'] || []);
                     sequenceFlows = sequenceFlows.concat(sequenceFlowsTmp);
-                    
-                    function extractVariables(process) {
-                        const properties = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'];
-                        if (!properties) return [];
 
-                        const variables = properties['uengine:variable'];
-                        if (!variables) return [];
-
-                        const variableArray = Array.isArray(variables) ? variables : [variables];
-                        
-                        if(window.$mode == 'ProcessGPT'){
-                            return variableArray.map((varData) => ({
-                                name: varData.name,
-                                description: varData.description ? varData.description : varData.name + ' description',
-                                type: varData.type
-                            }));
-                        } else {
-                            return variableArray.map((varData) => ({
-                                name: varData.name,
-                                description: varData.description ? varData.description : varData.name + ' description',
-                                type: varData.type,
-                                defaultValue: varData['uengine:json'] ? JSON.parse(varData['uengine:json']).defaultValue : null
-                            }));
-                        }
-                    }
-
-                    let dataTmp = extractVariables(process);
+                    // variables
+                    let dataTmp = extractVariables(proc);
                     data = data.concat(dataTmp);
 
-                    let processJson = process['bpmn:extensionElements'] && process['bpmn:extensionElements']['uengine:properties'] && process['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? JSON.parse(process['bpmn:extensionElements']['uengine:properties']['uengine:json']) : null;
-                    if(processJson){
-                        instanceNamePattern = processJson.instanceNamePattern ? processJson.instanceNamePattern : null;
-                        definitionName = processJson.definitionName ? processJson.definitionName : null;
-                        version = processJson.version ? processJson.version : null;
-                        shortDescription = processJson.shortDescription ? processJson.shortDescription : null;         
+                    // process-level json meta
+                    const processJson = getPropsJson(proc);
+                    if (processJson) {
+                    instanceNamePattern = processJson.instanceNamePattern ?? null;
+                    definitionName = processJson.definitionName ?? null;
+                    version = processJson.version ?? null;
+                    shortDescription = processJson.shortDescription ?? null;
                     }
+                }
 
-                    
-                    Object.keys(process).forEach((key) => {
-                        if(key.includes('Event')){
-                            let eventTmp = process[key];
-                            if(eventTmp.attachedToRef){
-                                let attachedActivity = activities.find(activity => activity.id == eventTmp.attachedToRef);
-                                if(attachedActivity){
-                                    if(!attachedActivity.attachedEvents){
-                                        attachedActivity.attachedEvents = [];
-                                    }
-                                    attachedActivity.attachedEvents.push(eventTmp.id);
-                                }
-                            }
-                        }
+                // 단일 루프: 키 순서 그대로 유지
+                Object.keys(proc).forEach((key) => {
+                    const val = proc[key];
+                    if (!val) return;
+
+                    if (key.includes('Event')) {
+                    let list = Array.isArray(val)
+                        ? val.map((o) => ({ ...o, type: key.replace('bpmn:', ''), process: proc.id }))
+                        : [{ ...val, type: key.replace('bpmn:', ''), process: proc.id }];
+                    events = events.concat(list);
+                    } else if (key.includes('Task')) {
+                    let list = Array.isArray(val)
+                        ? val.map((o) => ({ ...o, type: key.replace('bpmn:', ''), process: proc.id }))
+                        : [{ ...val, type: key.replace('bpmn:', ''), process: proc.id }];
+                    activities = activities.concat(list);
+                    } else if (key.includes('Gateway')) {
+                    let list = Array.isArray(val)
+                        ? val.map((o) => ({ ...o, type: key.replace('bpmn:', ''), process: proc.id }))
+                        : [{ ...val, type: key.replace('bpmn:', ''), process: proc.id }];
+                    gateways = gateways.concat(list);
+                    } else if (key.includes('subProcess')) {
+                    const subs = processSubProcess(val, proc.id);
+
+                    subs.forEach((sp) => {
+                        const subRes = processBpmnProcess(sp);
+
+                        // childrenRaw 보관(원형 유지)
+                        sp.childrenRaw = {
+                        events: subRes.events.slice(),
+                        activities: subRes.activities.slice(),
+                        gateways: subRes.gateways.slice(),
+                        subProcesses: subRes.subProcesses.slice(),
+                        sequences: subRes.sequenceFlows.slice(),
+                        lanes: subRes.lanes.slice(),
+                        data: subRes.data.slice()
+                        };
+
+                        // flatten 유지(나중에 재배치할 거라 그대로 합침)
+                        events = events.concat(subRes.events);
+                        activities = activities.concat(subRes.activities);
+                        gateways = gateways.concat(subRes.gateways);
+                        lanes = lanes.concat(subRes.lanes);
+                        sequenceFlows = sequenceFlows.concat(subRes.sequenceFlows);
+                        data = data.concat(subRes.data);
                     });
 
-                    return {
-                        events,
-                        activities,
-                        gateways,
-                        lanes,
-                        sequenceFlows,
-                        data,
-                        instanceNamePattern,
-                        definitionName,
-                        version,
-                        shortDescription
-                    };
-                }
+                    subProcesses = subProcesses.concat(subs);
+                    }
+                });
 
-                for (let process of processes) {
-                    const result = processBpmnProcess(process);
-                    event = event.concat(result.events);
-                    lanes = lanes.concat(result.lanes);
-                    activities = activities.concat(result.activities);
-                    sequenceFlows = sequenceFlows.concat(result.sequenceFlows);
-                    gateways = gateways.concat(result.gateways);
-                    data = data.concat(result.data);
-                }
+                // attachedToRef → attachedEvents
+                Object.keys(proc).forEach((key) => {
+                    if (!key.includes('Event')) return;
+                    let evList = Array.isArray(proc[key]) ? proc[key] : [proc[key]];
+                    evList.forEach((ev) => {
+                    if (ev && ev.attachedToRef) {
+                        const attachedActivity = activities.find((a) => a.id == ev.attachedToRef);
+                        const attachedSubProcess = subProcesses.find((s) => s.id == ev.attachedToRef);
+                        if (attachedActivity) {
+                        attachedActivity.attachedEvents = attachedActivity.attachedEvents || [];
+                        attachedActivity.attachedEvents.push(ev.id);
+                        }
+                        if (attachedSubProcess) {
+                        attachedSubProcess.attachedEvents = attachedSubProcess.attachedEvents || [];
+                        attachedSubProcess.attachedEvents.push(ev.id);
+                        }
+                    }
+                    });
+                });
 
-                const jsonData = {
-                    processDefinitionName: definitionName,
-                    processDefinitionId: processDefinitionId,
-                    version: version,
-                    shortDescription: shortDescription,
-                    description: 'process.description',
-                    data: data,
-                    roles: lanes.map((lane) => {
-                        let endpoint = '';
-                        let defaultEndpoint = '';
-                        if (!lane.endpoint) {
-                            if (lane['bpmn:extensionElements'] && lane['bpmn:extensionElements']['uengine:properties'] && lane['bpmn:extensionElements']['uengine:properties']['uengine:json']) {
-                                let laneJson = JSON.parse(lane['bpmn:extensionElements']['uengine:properties']['uengine:json']);
-                                if (laneJson.roleResolutionContext) {
-                                    if (laneJson.roleResolutionContext.endpoint) {
-                                        endpoint = laneJson.roleResolutionContext.endpoint;
-                                    }
-                                    if (laneJson.roleResolutionContext._type == 'org.uengine.kernel.DirectRoleResolutionContext') {
-                                        defaultEndpoint = endpoint;
-                                    }
-                                }
-                            }
-                        } else {
-                            endpoint = lane.endpoint;
-                            defaultEndpoint = endpoint;
-                        }
-                        return {
-                            name: lane.name,
-                            endpoint: endpoint,
-                            resolutionRule: lane.resolutionRule,
-                            default: defaultEndpoint
-                        }
-                    }),
-                    events: [
-                        ...event.map((event) => {
-                            let isProperties = event['bpmn:extensionElements'] && event['bpmn:extensionElements']['uengine:properties'];
-                            let definitionType = Object.keys(event).filter((key) => key.includes('Definition'));
-                            return {
-                                name: event.name,
-                                id: event.id,
-                                type: event.type,
-                                description: 'start event',
-                                role: lanes[0] ? lanes[0].name : 'Unknown',
-                                process: event.process,
-                                definitionType: definitionType ? definitionType[0] : null,
-                                properties: isProperties ? event['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
-                            };
-                        })
-                    ],
-                    activities: [
-                        ...activities.map((activity) => {
-                            try {
-                                let task = {};
-                                task.name = activity.name;
-                                task.id = activity.id;
-                                task.type = activity.type;
-                                task.description = `${activity.name} description`;
-                                task.instruction = `${activity.name} instruction`;
-                                task.process = activity.process;
-                                task.attachedEvents = activity.attachedEvents;
-                                task.role = lanes.find((lane) => {
-                                    const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
-                                        ? lane['bpmn:flowNodeRef']
-                                        : [lane['bpmn:flowNodeRef']];
-                                    return flowNodeRefs.includes(activity.id);
-                                })
-                                    ? lanes.find((lane) => {
-                                          const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
-                                              ? lane['bpmn:flowNodeRef']
-                                              : [lane['bpmn:flowNodeRef']];
-                                          return flowNodeRefs.includes(activity.id);
-                                      }).name
-                                    : 'Unknown';
-
-                                let isProperties =
-                                    activity['bpmn:extensionElements'] && activity['bpmn:extensionElements']['uengine:properties'];
-
-                                if (isProperties) {
-                                    let parseProperties = JSON.parse(
-                                        activity['bpmn:extensionElements']['uengine:properties']['uengine:json']
-                                    );
-                                    task.inputData =
-                                        parseProperties && parseProperties.parameters
-                                            ? parseProperties.parameters
-                                                  .filter((param) => param.direction === 'IN')
-                                                  .map((param) => param.variable.name)
-                                            : [];
-                                    task.outputData =
-                                        parseProperties && parseProperties.parameters
-                                            ? parseProperties.parameters
-                                                  .filter((param) => param.direction === 'OUT')
-                                                  .map((param) => param.variable.name)
-                                            : [];
-                                    task.properties = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'];
-                                    task.duration = activity['bpmn:extensionElements']['uengine:properties']['uengine:json'].duration ? activity['bpmn:extensionElements']['uengine:properties']['uengine:json'].duration : 5;
-                                    task.description = parseProperties.description ? parseProperties.description : task.description;
-                                } else {
-                                    task.inputData = [];
-                                    task.outputData = [];
-                                }
-                                const form = JSON.parse(activity['bpmn:extensionElements']['uengine:properties']['uengine:json']);
-                                if (window.$mode == 'ProcessGPT') {
-                                    let formId = `${processDefinitionId}_${task.id}_form`;
-                                    formId = formId.toLowerCase();
-                                    formId = formId.replace(/[/.]/g, "_");
-                                    task.tool = `formHandler:${formId}`;
-                                } else {
-                                    if (form && form.variableForHtmlFormContext && form.variableForHtmlFormContext.name) {
-                                        task.tool = `formHandler:${form.variableForHtmlFormContext.name}`;
-                                    } else {
-                                        task.tool = '';
-                                    }
-                                }
-                                return task;
-                            } catch (e) {
-                                console.log(e);
-                            }
-                        })
-                    ],
-                    gateways: [
-                        ...gateways.map((gateway) => ({
-                            id: gateway.id || 'Gateway',
-                            name: gateway.name || 'Gateway',
-                            type: gateway.type,
-                            description: gateway.name + ' description',
-                            process: gateway.process,
-                            role: lanes.find((lane) => {
-                                const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
-                                    ? lane['bpmn:flowNodeRef']
-                                    : [lane['bpmn:flowNodeRef']];
-                                return flowNodeRefs.includes(gateway.id);
-                            })
-                                ? lanes.find((lane) => {
-                                      const flowNodeRefs = Array.isArray(lane['bpmn:flowNodeRef'])
-                                          ? lane['bpmn:flowNodeRef']
-                                          : [lane['bpmn:flowNodeRef']];
-                                      return flowNodeRefs.includes(gateway.id);
-                                  }).name
-                                : 'Unknown',
-                            condition:
-                                gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties']
-                                    ? JSON.parse(gateway['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || ''
-                                    : '',
-                            properties: gateway['bpmn:extensionElements'] && gateway['bpmn:extensionElements']['uengine:properties'] && gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] ? gateway['bpmn:extensionElements']['uengine:properties']['uengine:json'] : '{}'
-                        }))
-                    ],
-                    sequences: sequenceFlows.map((flow) => {
-                        let condition = null;
-                        if (window.$mode == 'ProcessGPT') {
-                            condition = flow.condition || '';
-                        } else {
-                            condition = flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
-                                ? JSON.parse(flow['bpmn:extensionElements']['uengine:properties']['uengine:json']).condition || flow.condition
-                                : '';
-                        }
-                        return {
-                            id: flow.id,
-                            source: flow.sourceRef,
-                            target: flow.targetRef,
-                            condition: condition,
-                            properties:
-                                flow['bpmn:extensionElements'] && flow['bpmn:extensionElements']['uengine:properties']
-                                    ? flow['bpmn:extensionElements']['uengine:properties']['uengine:json'] || '{}'
-                                    : '{}'
-                        }
-                    }),
-                    participants: participants,
-                    instanceNamePattern: instanceNamePattern
+                return {
+                    events,
+                    activities,
+                    gateways,
+                    subProcesses,
+                    lanes,
+                    sequenceFlows,
+                    data,
+                    instanceNamePattern,
+                    definitionName,
+                    version,
+                    shortDescription
                 };
-                
-                // 시퀀스 정보를 활용하여 activities 순서 재정렬
-                resultJsonData = this.reorderActivitiesBySequence(jsonData);
-                
-                return resultJsonData;
+                }
+
+                // ---------- 빌더 ----------
+                const buildEvent = (ev, lanesForRole, parentLanes) => {
+                const definitionType = Object.keys(ev).filter((k) => k.includes('Definition'));
+                return {
+                    name: ev.name,
+                    id: ev.id,
+                    type: ev.type,
+                    description: 'start event',
+                    role: resolveRole(ev.id, lanesForRole, parentLanes),
+                    process: ev.process,
+                    definitionType: definitionType ? definitionType[0] : null,
+                    properties:
+                    ev['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
+                };
+                };
+
+                const buildActivity = (activity, lanesForRole, parentLanes) => {
+                const task = {};
+                task.name = activity.name;
+                task.id = activity.id;
+                task.type = activity.type;
+                task.description = `${activity.name} description`;
+                task.instruction = `${activity.name} instruction`;
+                task.process = activity.process;
+                task.attachedEvents = activity.attachedEvents || null;
+
+                task.role = resolveRole(activity.id, lanesForRole, parentLanes);
+
+                const propsJson = getPropsJson(activity) || {};
+                if (propsJson) {
+                    task.inputData = (propsJson?.parameters || []).filter(p => p.direction === 'IN').map(p => p.variable.name);
+                    task.outputData = (propsJson?.parameters || []).filter(p => p.direction === 'OUT').map(p => p.variable.name);
+                    task.properties =
+                    activity['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}';
+                    task.duration = (propsJson && propsJson.duration) ? propsJson.duration : 5;
+                    task.description = propsJson.description || task.description;
+                } else {
+                    task.inputData = [];
+                    task.outputData = [];
+                }
+
+                if (window.$mode == 'ProcessGPT') {
+                    let formId = `${processDefinitionId}_${task.id}_form`.toLowerCase().replace(/[/.]/g, "_");
+                    task.tool = `formHandler:${formId}`;
+                } else {
+                    if (propsJson && propsJson.variableForHtmlFormContext && propsJson.variableForHtmlFormContext.name) {
+                    task.tool = `formHandler:${propsJson.variableForHtmlFormContext.name}`;
+                    } else {
+                    task.tool = '';
+                    }
+                }
+                return task;
+                };
+
+                const buildGateway = (gateway, lanesForRole, parentLanes) => ({
+                id: gateway.id || 'Gateway',
+                name: gateway.name || 'Gateway',
+                type: gateway.type,
+                description: (gateway.name || 'Gateway') + ' description',
+                process: gateway.process,
+                role: resolveRole(gateway.id, lanesForRole, parentLanes),
+                condition:
+                    window.$mode == 'ProcessGPT'
+                    ? gateway.condition || ''
+                    : ((getPropsJson(gateway) || {})?.condition || ''),
+                properties:
+                    gateway['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
+                });
+
+                const buildSequence = (flow) => {
+                let condition = '';
+                if (window.$mode == 'ProcessGPT') {
+                    condition = flow.condition || '';
+                } else {
+                    const fjStr = flow['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'];
+                    condition = (fjStr ? safeJson(fjStr, {})?.condition : '') || flow.condition || '';
+                }
+                return {
+                    id: flow.id,
+                    source: flow.sourceRef || flow.source,
+                    target: flow.targetRef || flow.target,
+                    condition,
+                    properties:
+                    flow['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
+                };
+                };
+
+                const buildRolesFromLanes = (lanesArr) => {
+                return (lanesArr || []).map((lane) => {
+                    let endpoint = '';
+                    let defaultEndpoint = '';
+                    if (!lane.endpoint) {
+                    const laneJson = getPropsJson(lane);
+                    if (laneJson?.roleResolutionContext) {
+                        if (laneJson.roleResolutionContext.endpoint) {
+                        endpoint = laneJson.roleResolutionContext.endpoint;
+                        }
+                        if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
+                        defaultEndpoint = endpoint;
+                        }
+                    }
+                    } else {
+                    endpoint = lane.endpoint;
+                    defaultEndpoint = endpoint;
+                    }
+                    return {
+                    name: lane.name,
+                    endpoint,
+                    resolutionRule: lane.resolutionRule,
+                    default: defaultEndpoint
+                    };
+                });
+                };
+
+                const buildSubprocessChildren = (raw, parentLanesForInheritance, parentProcName, parentProcId) => {
+                if (!raw) return null;
+                const childLanes = raw.lanes || [];
+                const parentLanes = parentLanesForInheritance || [];
+
+                return {
+                    // Pydantic 필수 필드 보완(부모 정의 상속)
+                    processDefinitionName: parentProcName,
+                    processDefinitionId: parentProcId,
+
+                    data: (raw.data || []).slice(),
+                    roles: buildRolesFromLanes(childLanes),
+                    events: (raw.events || []).map(ev => buildEvent(ev, childLanes, parentLanes)),
+                    activities: (raw.activities || []).map(a => buildActivity(a, childLanes, parentLanes)),
+                    gateways: (raw.gateways || []).map(g => buildGateway(g, childLanes, parentLanes)),
+                    sequences: (raw.sequences || raw.sequenceFlows || []).map(buildSequence),
+
+                    subProcesses: (raw.subProcesses || []).map((childSp) => {
+                    const propsJson = getPropsJson(childSp) || {};
+                    return {
+                        id: childSp.id,
+                        name: childSp.name,
+                        role: resolveRole(childSp.id, childLanes, parentLanes),
+                        type: childSp.type,
+                        process: childSp.process,
+                        duration: propsJson?.duration ? propsJson.duration : 5,
+                        properties:
+                        childSp['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}',
+                        attachedEvents: childSp.attachedEvents || null,
+                        // 재귀
+                        children: buildSubprocessChildren(
+                        childSp.childrenRaw,
+                        INHERIT_LANE_TO_CHILDREN ? (childLanes.length ? childLanes : parentLanes) : [],
+                        parentProcName,
+                        parentProcId
+                        )
+                    };
+                    })
+                };
+                };
+
+                // ---------- parse each process ----------
+                for (let process of processes) {
+                const res = processBpmnProcess(process);
+                event = event.concat(res.events);
+                lanes = lanes.concat(res.lanes);
+                activities = activities.concat(res.activities);
+                subProcesses = subProcesses.concat(res.subProcesses);
+                sequenceFlows = sequenceFlows.concat(res.sequenceFlows);
+                gateways = gateways.concat(res.gateways);
+                data = data.concat(res.data);
+
+                if (!instanceNamePattern && res.instanceNamePattern) instanceNamePattern = res.instanceNamePattern;
+                if (!definitionName && res.definitionName) definitionName = res.definitionName;
+                if (!version && res.version) version = res.version;
+                if (!shortDescription && res.shortDescription) shortDescription = res.shortDescription;
+                }
+
+                // ---------- final JSON ----------
+                const jsonData = {
+                processDefinitionName: definitionName,
+                processDefinitionId: processDefinitionId,
+                version: version,
+                shortDescription: shortDescription,
+                description: 'process.description',
+                data: data,
+                roles: lanes.map((lane) => {
+                    let endpoint = '';
+                    let defaultEndpoint = '';
+                    if (!lane.endpoint) {
+                    const laneJson = getPropsJson(lane);
+                    if (laneJson?.roleResolutionContext) {
+                        if (laneJson.roleResolutionContext.endpoint) {
+                        endpoint = laneJson.roleResolutionContext.endpoint;
+                        }
+                        if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
+                        defaultEndpoint = endpoint;
+                        }
+                    }
+                    } else {
+                    endpoint = lane.endpoint;
+                    defaultEndpoint = endpoint;
+                    }
+                    return {
+                    name: lane.name,
+                    endpoint: endpoint,
+                    resolutionRule: lane.resolutionRule,
+                    default: defaultEndpoint
+                    };
+                }),
+                events: [
+                    ...event.map((ev) => buildEvent(ev, lanes, []))
+                ],
+                activities: [
+                    ...activities.map((activity) => buildActivity(activity, lanes, []))
+                ],
+                subProcesses: [
+                    ...subProcesses.map((sp) => {
+                    const propsJson = getPropsJson(sp) || {};
+                    return {
+                        id: sp.id,
+                        name: sp.name,
+                        type: sp.type,
+                        role: resolveRole(sp.id, lanes, []),
+                        process: sp.process,
+                        duration: propsJson?.duration ? propsJson.duration : 5,
+                        properties:
+                        sp['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}',
+                        attachedEvents: sp.attachedEvents || null,
+                        children: buildSubprocessChildren(sp.childrenRaw, lanes, definitionName, processDefinitionId)
+                    };
+                    })
+                ],
+                gateways: [
+                    ...gateways.map((gateway) => buildGateway(gateway, lanes, []))
+                ],
+                sequences: sequenceFlows.map((flow) => buildSequence(flow)),
+                participants: participants,
+                instanceNamePattern: instanceNamePattern
+                };
+
+                // ---------- 안정적 재배치: 서브프로세스 기원 항목은 항상 끝으로 ----------
+                // (reorderActivitiesBySequence 이후에 한 번 더 강제)
+                const moveSubprocToEnd = (arr, subprocIdSet) => {
+                const head = [];
+                const tail = [];
+                for (const item of arr || []) {
+                    if (subprocIdSet.has(item.process)) tail.push(item);
+                    else head.push(item);
+                }
+                return head.concat(tail); // 안정적(stable) 파티션
+                };
+
+                // 먼저 기존 정렬 로직 적용
+                let reordered = this.reorderActivitiesBySequence(jsonData);
+
+                // 모든 서브프로세스 ID 수집(중첩 포함) — subProcesses는 전체 플랫 수집이라 충분
+                const subprocIds = new Set((reordered.subProcesses || []).map(sp => sp.id));
+
+                // 최종 강제: 이벤트/액티비티/게이트웨이에서 서브 기원은 맨 끝
+                reordered.events = moveSubprocToEnd(reordered.events, subprocIds);
+                reordered.activities = moveSubprocToEnd(reordered.activities, subprocIds);
+                reordered.gateways = moveSubprocToEnd(reordered.gateways, subprocIds);
+                // sequences는 요구사항에 없으므로 유지 (원하면 동일 규칙 적용 가능)
+
+                return reordered;
+
             } catch (error) {
                 console.error('Error parsing XML:', error);
                 throw error;
             }
-        },
+            },
         
         // 시퀀스 정보를 활용하여 activities 순서를 재정렬하는 함수
         reorderActivitiesBySequence(jsonData) {

@@ -219,19 +219,23 @@ export default {
                 }
                 me.renderKey++;
 
+                function isUUID(uuid) {
+                    const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+                    return regex.test(uuid);
+                }
                 let activities = me.processDefinition.activities.filter((activity) => activity.agentMode && activity.agentMode != 'none');
                 const roles = me.processDefinition.roles;
                 let hasDefaultRole = false;
                 me.roleMappings = roles.map((role) => {
-                    if(role.default && role.default.length > 0) {
+                    if(role.default && role.default.length > 0 && isUUID(role.default)) {
                         hasDefaultRole = true;
                     }
 
                     return {
                         name: role.name,
-                        endpoint: role.default != role.endpoint ? role.endpoint : '',
+                        endpoint: hasDefaultRole ? role.default : role.endpoint,
                         resolutionRule: role.resolutionRule,
-                        default: role.default || "",
+                        default: hasDefaultRole ? role.default : '',
                     };
                 });
 
