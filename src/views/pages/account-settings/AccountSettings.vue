@@ -15,7 +15,7 @@
                             <v-tab value="MCP-Servers"> MCP - Servers </v-tab>
                             <v-tab value="MCP-Environments"> MCP - Environments </v-tab>
                             <v-tab value="ConnectionInfo">
-                                <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.connectionInfo') }}
+                                <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                             </v-tab>
                             <v-tab v-if="superAdmin" @click="goToTenantManage">
                                 <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.tenantManage') }}
@@ -88,7 +88,7 @@
                                 @click="tab = 'ConnectionInfo'"
                                 :class="{ 'selected-tab': tab === 'ConnectionInfo' }"
                             >
-                                <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.connectionInfo') }}
+                                <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.dataSource') }}
                             </v-btn>
 
                             <v-btn

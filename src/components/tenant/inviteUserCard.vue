@@ -38,13 +38,10 @@
                                     <v-col cols="2" sm="1" class="text-center pl-sm-2">
                                         <v-btn
                                             :disabled="inviteUserlist.length === 1"
-                                            v-bind="props"
                                             icon
                                             variant="text"
-                                            type="file"
-                                            @click="removeUser(index)"
                                             class="text-medium-emphasis"
-                                            density="comfortable"
+                                            @click="removeUser(index)"
                                         >
                                             <TrashIcon size="24" style="color:#666;"/>
                                         </v-btn>
