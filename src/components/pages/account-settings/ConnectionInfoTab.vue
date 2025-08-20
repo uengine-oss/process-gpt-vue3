@@ -8,7 +8,8 @@
         </v-col>
         <v-col>
           <div class="d-flex align-center">
-            <h3 class="text-h6 font-weight-medium mr-2">DataSource 연동</h3>
+            <h4 class="text-h4 mr-2">{{ $t('accountTab.dataSourceConnection') }}</h4>
+            <!-- <h3 class="text-h6 font-weight-medium mr-2">DataSource 연동</h3> -->
             <v-chip 
               small 
               color="orange" 
@@ -16,7 +17,7 @@
               class="mr-2"
             >
               <v-icon small left>mdi-flask</v-icon>
-              실험 기능
+              {{ $t('accountTab.experimentalFeature') }}
             </v-chip>
             <v-chip 
               :color="isUseDataSource ? 'success' : 'grey'" 
@@ -27,7 +28,7 @@
             </v-chip>
           </div>
           <p class="text-body-2 text--secondary ma-0 mt-1">
-            {{ isUseDataSource ? '폼 스캔 시 외부 DataSource를 자동으로 연동합니다' : '폼 스캔 시 DataSource 연동을 사용하지 않습니다' }}
+            {{ isUseDataSource ? $t('accountTab.experimentalFeatureExplanationOn') : $t('accountTab.experimentalFeatureExplanationOff') }}
           </p>
         </v-col>
         <v-col cols="auto">
@@ -47,15 +48,13 @@
         outlined
         type="info"
         color="orange"
-        class="ma-0"
       >
-        <div class="d-flex align-center">
-          <v-icon color="orange" class="mr-2">mdi-information-outline</v-icon>
+        <v-row class="ma-0 pa-0">
+          <!-- <v-icon color="orange" class="mr-2">mdi-information-outline</v-icon> -->
           <span class="text-body-2">
-            <strong>실험 기능:</strong> 이 기능은 현재 테스트 중이며, 예상과 다르게 동작할 수 있습니다. 
-            피드백은 개발팀에 전달해 주세요.
+            <strong>{{ $t('accountTab.experimentalFeature') }}:</strong> {{ $t('accountTab.experimentalFeatureWarning') }}
           </span>
-        </div>
+        </v-row>
       </v-alert>
     </v-card>
 
@@ -74,17 +73,20 @@
     </div>
 
     <!-- 데이터소스 다이얼로그 -->
-    <v-dialog v-model="dialog" max-width="700">
+    <v-dialog v-model="dialog" max-width="800" persistent>
       <v-card>
-        <v-card-title class="headline">
-          <v-icon left color="primary">mdi-database-plus</v-icon>
-          <span>{{ $t('accountTab.addConnectionInfo') }}</span>
-          <v-spacer></v-spacer>
-          <v-chip small color="orange" text-color="white">
+        <v-row class="ma-0 pa-0" align="center">
+          <v-card-title class="headline">
+            <!-- <v-icon left color="primary">mdi-database-plus</v-icon> -->
+            <h2 class="text-h4 text-grey-darken-2">{{ $t('accountTab.addConnectionInfo') }}</h2>
+            <v-spacer></v-spacer>
+          </v-card-title>
+          <v-chip small color="orange" text-color="white" class="ma-2">
             <v-icon small left>mdi-flask</v-icon>
-            실험 기능
+            {{ $t('accountTab.experimentalFeature') }}
           </v-chip>
-        </v-card-title>
+        </v-row>
+
         <v-card-text max-height="500" style="overflow-y: auto;">
           <v-text-field 
             v-model="newDataSource.name" 
@@ -111,7 +113,12 @@
               <v-icon left small>mdi-format-header-1</v-icon>
               Headers:
             </h4>
-            <v-row v-for="(header, idx) in newDataSource.headers" :key="'header-'+idx" align="center">
+            <v-row 
+              v-for="(header, idx) in newDataSource.headers" 
+              :key="'header-'+idx" 
+              align="center"
+              no-gutters
+            >
               <v-col cols="5">
                 <v-text-field 
                   v-model="header.key" 
@@ -120,7 +127,7 @@
                   dense
                 />
               </v-col>
-              <v-col cols="5">
+              <v-col cols="5" class="ml-sm-2">
                 <v-text-field 
                   v-model="header.value" 
                   label="Header Value"
@@ -128,16 +135,22 @@
                   dense
                 />
               </v-col>
-              <v-col cols="2">
-                <v-btn icon small @click="removeHeader(idx)">
-                  <v-icon color="error">mdi-delete</v-icon>
+              <v-col cols="2" sm="1" class="text-center pl-sm-2 mt-n5">
+                <v-btn
+                  :disabled="newDataSource.headers.length === 1"
+                  icon
+                  variant="text"
+                  class="text-medium-emphasis"
+                  @click="removeHeader(idx)"
+                >
+                  <TrashIcon size="24" style="color:#666;"/>
                 </v-btn>
               </v-col>
             </v-row>
             <v-btn 
-              outlined 
-              color="primary" 
-              small 
+            color="secondary" 
+              variant="flat"
+              rounded
               class="mt-2" 
               @click="addHeader"
             >
@@ -146,24 +159,10 @@
             </v-btn>
           </div>
         </v-card-text>
-        <v-card-actions class="pa-4">
-          <v-spacer></v-spacer>
-          <v-btn 
-            color="primary" 
-            @click="saveDataSource"
-            class="text-none"
-          >
-            <v-icon left>mdi-content-save</v-icon>
-            {{ $t('accountTab.save') }}
-          </v-btn>
-          <v-btn 
-            outlined 
-            @click="dialog = false"
-            class="text-none"
-          >
-            {{ $t('accountTab.cancel') }}
-          </v-btn>
-        </v-card-actions>
+        <div class="d-flex justify-end mt-2 pb-4">
+            <v-btn @click="dialog = false" color="grey" variant="flat" rounded class="mr-2">{{ $t('accountTab.cancel') }}</v-btn>
+            <v-btn @click="saveDataSource" :loading="saving" color="primary" variant="flat" rounded class="mr-4">{{ $t('accountTab.save') }}</v-btn>
+        </div>
       </v-card>
     </v-dialog>
 
@@ -296,8 +295,8 @@ export default {
       // 토글 피드백
       this.$nextTick(() => {
         const message = this.isUseDataSource 
-          ? 'DataSource 사용이 활성화되었습니다.' 
-          : 'DataSource 사용이 비활성화되었습니다.';
+          ? this.$t('accountTab.dataSourceConnectionOn') 
+          : this.$t('accountTab.dataSourceConnectionOff');
         
         // Vuetify snackbar가 있다면 사용
         if (this.$root.$children[0].$refs?.snackbar) {
@@ -428,6 +427,14 @@ export default {
 </script>
 
 <style scoped>
+.text-body-2 {
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    line-height: 1.4 !important;
+    overflow-wrap: break-word !important;
+}
+
 .datasource-disabled {
   opacity: 0.6;
   pointer-events: none;

@@ -438,17 +438,17 @@ export default {
                         if (!me.processDefinition) {
                             me.processDefinition = newProcessDefinition
                         } else {
-                            if (me.processDefinition.roles) {
-                                newProcessDefinition.roles = newProcessDefinition.roles.map(newRole => {
-                                    const oldRole = me.processDefinition.roles.find(oldRole => oldRole.name === newRole.name);
-                                    if (oldRole && oldRole.endpoint && oldRole.endpoint != '' && oldRole.default && oldRole.default != '') {
-                                        newRole.resolutionRule = oldRole.resolutionRule;
-                                        newRole.endpoint = oldRole.endpoint;
-                                        newRole.default = oldRole.default;
-                                    }
-                                    return newRole;
-                                });
-                            }
+                            // if (me.processDefinition.roles) {
+                            //     newProcessDefinition.roles = newProcessDefinition.roles.map(newRole => {
+                            //         const oldRole = me.processDefinition.roles.find(oldRole => oldRole.name === newRole.name);
+                            //         if (oldRole && oldRole.endpoint && oldRole.endpoint != '' && oldRole.default && oldRole.default != '') {
+                            //             newRole.resolutionRule = oldRole.resolutionRule;
+                            //             newRole.endpoint = oldRole.endpoint;
+                            //             newRole.default = oldRole.default;
+                            //         }
+                            //         return newRole;
+                            //     });
+                            // }
 
                             newProcessDefinition = me.checkDefinitionSync(newProcessDefinition, me.processDefinition);
                             me.processDefinition = newProcessDefinition;
@@ -941,24 +941,42 @@ export default {
                     let endpoint = '';
                     let defaultEndpoint = '';
                     if (!lane.endpoint) {
-                    const laneJson = getPropsJson(lane);
-                    if (laneJson?.roleResolutionContext) {
-                        if (laneJson.roleResolutionContext.endpoint) {
-                        endpoint = laneJson.roleResolutionContext.endpoint;
+                        const laneJson = getPropsJson(lane);
+                        if (laneJson?.roleResolutionContext) {
+                            if (laneJson.roleResolutionContext.endpoint) {
+                            endpoint = laneJson.roleResolutionContext.endpoint;
+                            }
+                            if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
+                            defaultEndpoint = endpoint;
+                            }
                         }
-                        if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
+                    } else {
+                        endpoint = lane.endpoint;
                         defaultEndpoint = endpoint;
+                    }
+                    function isUUID(uuid) {
+                        const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                        return regex.test(uuid);
+                    }
+                    if (endpoint && endpoint.length > 0) {
+                        if (Array.isArray(endpoint)) {
+                            endpoint = endpoint.filter((item) => isUUID(item));
+                        } else {
+                            endpoint = isUUID(endpoint) ? endpoint : '';
                         }
                     }
-                    } else {
-                    endpoint = lane.endpoint;
-                    defaultEndpoint = endpoint;
+                    if (defaultEndpoint && defaultEndpoint.length > 0) {
+                        if (Array.isArray(defaultEndpoint)) {
+                            defaultEndpoint = defaultEndpoint.filter((item) => isUUID(item));
+                        } else {
+                            defaultEndpoint = isUUID(defaultEndpoint) ? defaultEndpoint : '';
+                        }
                     }
                     return {
-                    name: lane.name,
-                    endpoint: endpoint,
-                    resolutionRule: lane.resolutionRule,
-                    default: defaultEndpoint
+                        name: lane.name,
+                        endpoint: endpoint,
+                        resolutionRule: lane.resolutionRule,
+                        default: defaultEndpoint
                     };
                 }),
                 events: [

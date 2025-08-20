@@ -1429,7 +1429,7 @@ CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
 -- 오케스트레이션 방식 enum
 CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research');
 -- 드래프트 상태 enum
-CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED');
+CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
 -- 이벤트 타입 enum
 CREATE TYPE event_type_enum AS ENUM (
   'task_started',
@@ -1554,6 +1554,7 @@ SET draft_status_new = CASE
     WHEN draft_status = 'COMPLETED' THEN 'COMPLETED'::draft_status
     WHEN draft_status = 'FB_REQUESTED' THEN 'FB_REQUESTED'::draft_status
     WHEN draft_status = 'HUMAN_ASKED' THEN 'HUMAN_ASKED'::draft_status
+    WHEN draft_status = 'FAILED' THEN 'FAILED'::draft_status
     ELSE NULL  -- 기본값을 NULL로 설정
 END;
 -- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
