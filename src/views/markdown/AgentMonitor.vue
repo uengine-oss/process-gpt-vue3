@@ -206,9 +206,9 @@
               </v-col>
             </v-row>
             
-            <v-row v-if="showDownloadButton" justify="center" class="mt-2">
+            <v-row v-if="showDownloadButton" justify="center" class="ma-0 pa-0">
               <v-col cols="auto">
-                <v-alert type="info" variant="tonal" class="text-caption">
+                <v-alert type="info" variant="tonal" color="gray" class="text-caption">
                   Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)
                 </v-alert>
               </v-col>

@@ -1,0 +1,220 @@
+<template>
+    <div class="tutorial-sidebar">
+        <div class="sidebar-content">
+            <div
+                v-for="(section, index) in tutorialSections"
+                :key="section.title"
+                class="section-group"
+                :class="{ 'border-bottom': index < tutorialSections.length - 1 }"
+            >
+                <h3 class="section-title">{{ section.title }}</h3>
+                
+                <ul class="page-list">
+                    <li
+                        v-for="page in section.items"
+                        :key="page.path"
+                        :class="getClassesForItem(page)"
+                        @click="selectPage(page)"
+                    >
+                        <span
+                            class="active-indicator"
+                            :class="{ 'active': currentPage?.path === page.path }"
+                        ></span>
+                        <span class="page-title">{{ page.title }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+import markdownLoader from './utils/markdownLoader.js'
+
+export default {
+    name: 'TutorialSidebar',
+    props: {
+        currentPage: {
+            type: Object,
+            default: null
+        },
+        sectionsData: {
+            type: Object,
+            default: () => ({})
+        }
+    },
+    computed: {
+        tutorialSections() {
+            const sections = [];
+            Object.keys(this.sectionsData).forEach(sectionTitle => {
+                const items = this.sectionsData[sectionTitle].map(item => ({
+                    path: item.fileName.replace('.md', ''),
+                    title: item.title,
+                    markdownFile: item.fileName,
+                    order: item.order
+                }));
+                
+                sections.push({
+                    title: sectionTitle,
+                    items: items.sort((a, b) => a.order - b.order)
+                });
+            });
+            
+            // 이미 정렬된 순서로 온다 (라우트 구조에서 정의된 순서)
+            return sections;
+        }
+    },
+    methods: {
+        selectPage(page) {
+            this.$emit('page-selected', page);
+        },
+
+        getClassesForItem(page) {
+            return {
+                'page-item': true,
+                'active': this.currentPage?.path === page.path,
+                'inactive': this.currentPage?.path !== page.path
+            };
+        }
+    }
+}
+</script>
+
+<style scoped>
+.tutorial-sidebar {
+    position: fixed;
+    top: 70;
+    left: 0;
+    width: 300px;
+    height: calc(100vh - 70px);
+    background: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 0;
+    max-height: calc(100vh - 80px);
+}
+
+.section-group {
+    padding: 0 20px 16px 20px;
+    margin-bottom: 16px;
+}
+
+.section-group.border-bottom {
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 12px 0;
+    padding: 0;
+    text-align: left;
+}
+
+.page-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    padding-left: 8px;
+}
+
+.page-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    position: relative;
+    margin-bottom: 2px;
+}
+
+.page-item.inactive:hover {
+    background-color: #f9fafb;
+    transform: translateX(4px);
+    color: #3b82f6;
+}
+
+.page-item.active {
+    background-color: #eff6ff;
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+.active-indicator {
+    position: absolute;
+    left: -12px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.active-indicator.active {
+    background: #3b82f6;
+    transform: scale(1);
+}
+
+.page-title {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+
+/* 스크롤바 스타일 */
+.sidebar-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+@media (max-width: 768px) {
+    .tutorial-sidebar {
+        width: 280px;
+    }
+    
+    .sidebar-header {
+        padding: 16px;
+    }
+    
+    .section-group {
+        padding: 0 16px 12px 16px;
+    }
+}
+</style>

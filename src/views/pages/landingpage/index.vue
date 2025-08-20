@@ -16,6 +16,16 @@ import Footer from './mainPage/Footer.vue';
 import 'aos/dist/aos.css';
 import AOS from 'aos';
 
+const showTutorialState = ref(false);
+
+const showTutorial = () => {
+    showTutorialState.value = true;
+};
+
+const closeTutorial = () => {
+    showTutorialState.value = false;
+};
+
 onMounted(() => {
     AOS.init();
 });
@@ -41,8 +51,8 @@ onMounted(() => {
 
     <!-- 에이전트 메인페이지 -->
     <div style="background: white;">
-        <Header />
-        <HomeView />
+        <Header @show-tutorial="showTutorial" @close-tutorial="closeTutorial" />
+        <HomeView :show-tutorial="showTutorialState" @close-tutorial="closeTutorial" />
         <Footer />
     </div>
 

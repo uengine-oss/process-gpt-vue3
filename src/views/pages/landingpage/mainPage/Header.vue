@@ -8,6 +8,7 @@
       <nav class="nav">
         <ul>
           <li><a class="nav-link" href="https://bpm-intro.uengine.io/process-gpt/" target="_blank">{{ $t('Header.tutorial') }}</a></li>
+          <!-- <li><a class="nav-link" @click.prevent="navigateToTutorial">{{ $t('Header.tutorial') }}</a></li> -->
           <li><a class="nav-link" @click.prevent="navigateToSection('works')">{{ $t('Header.works') }}</a></li>
           <li><a class="nav-link" @click.prevent="navigateToSection('ai3Steps')">{{ $t('Header.ai3Steps') }}</a></li>
           <li><a class="nav-link" @click.prevent="navigateToSection('movie-gallery')">{{ $t('Header.movieGallery') }}</a></li>
@@ -23,6 +24,7 @@
       <div class="mobile-menu" v-if="mobileMenuOpen">
         <ul>
           <li><a href="https://bpm-intro.uengine.io/process-gpt/" target="_blank">{{ $t('Header.tutorial') }}</a></li>
+          <!-- <li><a @click.prevent="closeMobileMenuAndNavigateToSection('tutorial')">{{ $t('Header.tutorial') }}</a></li> -->
           <li><a @click.prevent="closeMobileMenuAndNavigateToSection('works')">{{ $t('Header.works') }}</a></li>
           <li><a @click.prevent="closeMobileMenuAndNavigateToSection('ai3Steps')">{{ $t('Header.ai3Steps') }}</a></li>
           <li><a @click.prevent="closeMobileMenuAndNavigateToSection('movie-gallery')">{{ $t('Header.movieGallery') }}</a></li>
@@ -51,6 +53,8 @@ export default {
   },
   methods: {
     goHome() {
+      // 튜토리얼 닫기 이벤트 발생
+      this.$emit('close-tutorial');
       this.$router.push('/');
       this.$nextTick(() => {
         window.scrollTo({
@@ -89,6 +93,8 @@ export default {
       this.scrolled = window.scrollY > 50;
     },
     navigateToSection(sectionId) {
+      // 튜토리얼 닫기 이벤트 발생
+      this.$emit('close-tutorial');
       this.scrollToSection(sectionId);
     },
     scrollToSection(sectionId) {
@@ -115,6 +121,9 @@ export default {
           }
         }
       });
+    },
+    navigateToTutorial() {
+      this.$emit('show-tutorial');
     }
   }
 }

@@ -9,6 +9,15 @@
                 :style="isMobile ? 'display: block !important;' : ''"
             >
                 <v-row class="pa-0 pt-1 pb-1 ma-0 align-center">
+                    <v-btn 
+                        @click="goBackToPreviousPage"
+                        variant="text"
+                        density="comfortable"
+                        class="mr-2"
+                        icon
+                    >
+                        <v-icon>mdi-arrow-left</v-icon>
+                    </v-btn>
                     <h5 class="text-h5 font-weight-semibold mr-2">
                         {{ activityName }}
                     </h5>
@@ -1342,6 +1351,9 @@ export default {
                 },
                 successMsg: this.$t('DelegateTask.successMsg')
             });
+        },
+        goBackToPreviousPage() {
+            this.$router.go(-1);
         },
     }
 };

@@ -607,6 +607,14 @@ hr {
 
 
 /* skeleton 관련 style */
+.tutorial-main-skeleton .v-skeleton-loader__heading {
+    display: none;
+}
+
+.tutorial-main-skeleton .v-skeleton-loader__image {
+    height: calc(100vh - 70px);
+}
+
 
 .main-page-skeleton .v-skeleton-loader__heading,
 .execute-skeleton-top .v-skeleton-loader__heading,
