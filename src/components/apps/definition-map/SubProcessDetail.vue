@@ -195,6 +195,7 @@
             :loading="loading"
             :open="versionDialog"
             :processName="processDefinition ? processDefinition.name : ''"
+            :analysisResult="analysisResult"
             @close="toggleVersionDialog"
             @save="beforeSaveDefinition"
         />
@@ -208,6 +209,7 @@ import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
 import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
+import ChatModule from '@/components/ChatModule.vue'
 import BaseProcess from './BaseProcess.vue'
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -223,7 +225,7 @@ export default {
         'process-gpt-execute': ProcessGPTExecute,
         ProcessDefinitionVersionDialog
     },
-    mixins: [BaseProcess, ProcessDefinitionModule],
+    mixins: [BaseProcess, ProcessDefinitionModule, ChatModule],
     props: {
         value: Object,
         enableEdit: Boolean,
@@ -435,6 +437,14 @@ export default {
         saveProcessDefinition() {
             // 버전 다이얼로그 열기
             this.versionDialog = true;
+            this.loading = false
+            try {
+                if (open) {
+                    this.analyzeDefinition(this.processDefinitionData);
+                }
+            } catch(e) {
+                console.log(e)
+            }
         },
         toggleVersionDialog(open) {
             this.versionDialog = open;
