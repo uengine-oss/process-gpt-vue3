@@ -82,7 +82,7 @@
             </div>
 
             <!-- 작업 결과 -->
-      <div v-else-if="item.payload.isCompleted && item.payload.content" class="task-result">
+            <div v-else-if="item.payload.isCompleted && item.payload.content" class="task-result">
               <div class="result-header">
                 <h4 class="result-title">작업 결과</h4>
               </div>
@@ -111,21 +111,23 @@
                 </div>
                 
                 <!-- 마크다운 결과 -->
-                 <div v-else-if="isMarkdownType(item.payload.crewType)" 
-                     :class="['markdown-container', { 
-                       expanded: isTaskExpanded(item.payload.id),
-                       'has-expand-controls': shouldShowExpandControls(item.payload)
-                     }]"
-                     @dblclick="toggleTaskExpansion(item.payload.id)"
-                     v-html="getMarkdownContent(item.payload)"></div>
+                <div v-else-if="isMarkdownType(item.payload.crewType)" 
+                    :class="['markdown-container', { 
+                      expanded: isTaskExpanded(item.payload.id),
+                      'has-expand-controls': shouldShowExpandControls(item.payload)
+                    }]"
+                    @dblclick="toggleTaskExpansion(item.payload.id)"
+                    v-html="getMarkdownContent(item.payload)"
+                ></div>
                 
                 <!-- JSON 결과 -->
                  <div v-else :class="['json-container', { 
                        expanded: isTaskExpanded(item.payload.id),
                        'has-expand-controls': shouldShowExpandControls(item.payload)
                      }]"
-                     @dblclick="toggleTaskExpansion(item.payload.id)">
-                  <pre>{{ formatJsonOutput(item.payload.content) }}</pre>
+                     @dblclick="toggleTaskExpansion(item.payload.id)"
+                >
+                  <div>{{ formatJsonOutput(item.payload.content) }}</div>
                 </div>
               </div>
               <div v-if="shouldShowExpandControls(item.payload)" class="expand-controls">
@@ -264,10 +266,13 @@
             </div>
             <div v-if="isDropdownOpen" class="dropdown-menu">
               <div v-for="option in orchestrationOptions" :key="option.value"
-                   class="dropdown-item" :class="{ active: selectedOrchestrationMethod === option.value }"
-                   @click.stop="selectOption(option.value)">
+                class="dropdown-item" :class="{ active: selectedOrchestrationMethod === option.value }"
+                @click.stop="selectOption(option.value)"
+              >
                 <div class="option-left">
-                  <span class="option-icon">{{ option.icon }}</span>
+                  <Icons :icon="option.icon"
+                    class="option-icon"
+                  />
                   <span class="option-label">{{ option.label }}</span>
                 </div>
                 <span v-if="selectedOrchestrationMethod === option.value" class="check-icon">✓</span>
@@ -715,8 +720,46 @@ export default {
       return String(output);
     },
 
+    // JSON을 key : value 형태의 텍스트로 변환 (중첩 객체도 펼쳐서 표시)
+    convertJsonToKeyValue(data, indent = '') {
+      if (!data) return '';
+      
+      let obj = data;
+      if (typeof data === 'string') {
+        try {
+          obj = JSON.parse(data);
+        } catch (e) {
+          return data;
+        }
+      }
+      
+      if (typeof obj !== 'object' || Array.isArray(obj)) {
+        return JSON.stringify(obj, null, 2);
+      }
+      
+      const lines = [];
+      Object.keys(obj).forEach(key => {
+        const value = obj[key];
+        
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          // 중첩 객체인 경우
+          lines.push(`${indent}${key} :`);
+          Object.keys(value).forEach(subKey => {
+            const subValue = value[subKey];
+            lines.push(`${indent}- ${subKey} : ${String(subValue)}`);
+          });
+        } else {
+          // 일반 값인 경우
+          lines.push(`${indent}${key} : ${String(value)}`);
+        }
+      });
+      
+      return lines.join('\n');
+    },
+
     formatJsonOutput(output) {
-      return this.formatOutput(output, 'json');
+      const keyValueText = this.convertJsonToKeyValue(output);
+      return keyValueText || this.formatOutput(output, 'json');
     },
 
     formatMarkdownOutput(output) {
@@ -1183,6 +1226,35 @@ export default {
     },
 
     getMarkdownContent(task) {
+      console.log('마크다운 컨텐츠 처리:', task.content, typeof task.content);
+      
+      // JSON 형태의 데이터인지 확인하고 key : value 형태로 변환
+      if (task.content && typeof task.content === 'object') {
+        const keyValueText = this.convertJsonToKeyValue(task.content);
+        console.log('객체에서 변환된 텍스트:', keyValueText);
+        if (keyValueText) {
+          return keyValueText.replace(/\n/g, '<br>');
+        }
+      }
+      
+      // 문자열 형태의 JSON 데이터 처리
+      if (typeof task.content === 'string') {
+        try {
+          const parsed = JSON.parse(task.content);
+          if (typeof parsed === 'object' && parsed !== null) {
+            const keyValueText = this.convertJsonToKeyValue(parsed);
+            console.log('문자열에서 파싱 후 변환된 텍스트:', keyValueText);
+            if (keyValueText) {
+              return keyValueText.replace(/\n/g, '<br>');
+            }
+          }
+        } catch {
+          // JSON이 아니면 기존 마크다운 처리
+          console.log('JSON 파싱 실패, 마크다운으로 처리');
+        }
+      }
+      
+      console.log('기본 마크다운 처리로 진행');
       return this.formatMarkdownOutput(task.content);
     },
 

@@ -1012,6 +1012,39 @@ hr {
     }
 }
 
+/* 점선이 한 방향으로 흘러가는 애니메이션 */
+.dot-border-animation {
+    position: relative !important;
+    border-radius: 20px !important;
+}
+
+.dot-border-animation::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 20px;
+    background: 
+        repeating-linear-gradient(90deg, #68369A 0px, #68369A 10px, transparent 10px, transparent 20px) 0 0/100% 3px no-repeat,
+        repeating-linear-gradient(180deg, #68369A 0px, #68369A 10px, transparent 10px, transparent 20px) 100% 0/3px 100% no-repeat,
+        repeating-linear-gradient(270deg, #68369A 0px, #68369A 10px, transparent 10px, transparent 20px) 0 100%/100% 3px no-repeat,
+        repeating-linear-gradient(0deg, #68369A 0px, #68369A 10px, transparent 10px, transparent 20px) 0 0/3px 100% no-repeat;
+    animation: border-flow 0.5s linear infinite;
+    z-index: -1;
+    pointer-events: none;
+}
+
+@keyframes border-flow {
+    0% {
+        background-position: 0 0, 100% 0, 0 100%, 0 0;
+    }
+    100% {
+        background-position: 20px 0, 100% 20px, -20px 100%, 0 -20px;
+    }
+}
+
 @keyframes char-shimmer {
     0%, 70%, 100% {
         color: #333333;

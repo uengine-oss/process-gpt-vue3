@@ -3,7 +3,8 @@
         <v-card elevation="10" class="cursor-pointer pa-2 pt-1" @click="executeTask"
             :class="[
                 { 'choice-background-color': isMyTask && !isTodolistPath && task.status !== 'DONE'},
-                { 'todo-status-opacity': task.status === 'TODO' }
+                { 'todo-status-opacity': task.status === 'TODO' },
+                { 'dot-border-animation': isStartedStatus },
             ]"
         >
             <div class="ma-0 pa-0 mt-1" style="line-height:100%;">
@@ -112,10 +113,29 @@
                         {{ task.description }}
                     </div>
                 </div>
+                <div v-if="currentDraftStatus"
+                    class="my-2"
+                >
+                    <div v-if="currentDraftStatus === 'STARTED'">
+                        <div v-if="!detailContent">에이전트 상태 : 진행중 
+                            <span class="loading-dots">
+                                <span>.</span>
+                                <span>.</span>
+                                <span>.</span>
+                                <span>.</span>
+                                <span>.</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div v-else>
+                        에이전트 상태 : {{ currentDraftStatus }}
+                    </div>
+                </div>
                 <v-row v-if="!isTodolistPath" class="pa-0 ma-0 mt-1 d-flex align-center">
                     <div class="mr-1" style="width: 24px;" :class="{'mr-4': isMultiUser}">
                         <div v-if="isMultiUser" class="d-flex"> 
                             <v-img v-for="user in userInfoForTask"
+                                :key="user.id || user.email"
                                 :src="user.profile ? user.profile : '/images/defaultUser.png'"
                                 alt="profile"
                                 width="24"
@@ -182,8 +202,18 @@ export default {
         managed: false,
         dialog: false,
         dialogType: '',
-        instanceList: []
+        instanceList: [],
+        eventSubscription: null,
+        currentDraftStatus: null
     }),
+    watch: {
+        'task.task.draft_status': {
+            immediate: true,
+            handler(newValue, oldValue) {
+                this.currentDraftStatus = newValue;
+            }
+        }
+    },
     computed: {
         mode() {
             return window.$mode;
@@ -222,7 +252,7 @@ export default {
             return dueDate < today;
         },
         formattedDate() {
-            var dateString = "";
+            let dateString = "";
             if (this.task.startDate) {
                 dateString += format(new Date(this.task.startDate), "yyyy.MM.dd") + " ~";
             } 
@@ -313,10 +343,15 @@ export default {
                 }
             }
             return null;
+        },
+        isStartedStatus() {
+            return this.currentDraftStatus === 'STARTED';
         }
     },
     async mounted() {
         this.managed = this.task.adhoc;
+        // 초기 draft_status 설정
+        this.currentDraftStatus = this.task.task?.draft_status;
         
         try {
             // 인스턴스 목록 가져오기
@@ -335,6 +370,15 @@ export default {
         } catch (error) {
             console.error('인스턴스 목록을 가져오는 중 오류 발생:', error);
         }
+
+        // 백엔드 이벤트 신호 직접 구독
+        this.subscribeToBackendEvents();
+    },
+    beforeUnmount() {
+        // 이벤트 구독 해제
+        if (this.eventSubscription) {
+            this.eventSubscription.unsubscribe();
+        }
     },
     methods: {
         generateUUID() {
@@ -346,12 +390,6 @@ export default {
         },
         executeTask() {
             this.$router.push(`/todolist/${this.task.taskId}`)
-            // if (!this.managed) {
-            //     this.$router.push(`/todolist/${this.task.taskId}`)
-            // } else {
-            //     this.dialogType = 'view';
-            //     this.dialog = true;
-            // }
         },
         closeDialog() {
             this.dialog = false;
@@ -363,6 +401,42 @@ export default {
             this.dialogType = 'edit';
             this.dialog = true;
         },
+        subscribeToBackendEvents() {
+            try {
+                // window.$supabase로 Supabase 클라이언트 접근
+                if (!window.$supabase) {
+                    console.error('Supabase 클라이언트를 찾을 수 없음');
+                    return;
+                }
+                
+                const channel = window.$supabase
+                    .channel(`task-${this.task.taskId}`)
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public', 
+                        table: 'events',
+                        filter: `todo_id=eq.${this.task.taskId}`
+                    }, (payload) => {
+                        this.handleBackendEvent(payload.new);
+                    })
+                    .subscribe();
+                
+                this.eventSubscription = channel;
+            } catch (error) {
+                console.error('이벤트 구독 실패:', error);
+            }
+        },
+        handleBackendEvent(eventData) {
+            if (eventData.event_type === 'task_started') {
+                this.updateDraftStatus('STARTED');
+            } else if (eventData.event_type === 'task_completed') {
+                this.updateDraftStatus('COMPLETED');
+            }
+        },
+        updateDraftStatus(newStatus) {
+            this.currentDraftStatus = newStatus;
+        },
+
     },
 }
 </script>
