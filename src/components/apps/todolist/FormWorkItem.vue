@@ -223,6 +223,14 @@ export default {
         },
     },
     async mounted() {
+        var me = this;
+        this.EventBus.on('form-values-updated', (formValues) => {
+                        if(formValues){
+                            Object.keys(formValues).forEach(function (key){
+                                me.formData[key] = formValues[key]
+                            })
+                        }
+                    });
         await this.init();
     },
     methods: {
@@ -275,13 +283,13 @@ export default {
                     }
                     
 
-                    me.EventBus.on('form-values-updated', (formValues) => {
-                        if(formValues){
-                            Object.keys(formValues).forEach(function (key){
-                                me.formData[key] = formValues[key]
-                            })
-                        }
-                    });
+                    // me.EventBus.on('form-values-updated', (formValues) => {
+                    //     if(formValues){
+                    //         Object.keys(formValues).forEach(function (key){
+                    //             me.formData[key] = formValues[key]
+                    //         })
+                    //     }
+                    // });
                     
                     me.isInitialized = true;
                 }
