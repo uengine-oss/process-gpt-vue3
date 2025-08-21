@@ -40,7 +40,7 @@
             </div>
             <v-spacer></v-spacer>
             <v-btn @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
-                <Icons :icon="'close'" class="cursor-pointer" :size="16"/>
+                <Icons :icon="'save'" class="cursor-pointer" :size="20"/>
             </v-btn>
         </v-row>
         <v-card-text class="delete-input-details pa-0 pr-4 pl-4" style="overflow: auto; width: 50vw; min-width: 370px; height:calc(100% - 80px);">

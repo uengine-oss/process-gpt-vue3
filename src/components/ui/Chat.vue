@@ -726,7 +726,7 @@
                     </v-textarea>
                     
                     <div class="d-flex justify-space-between align-center w-100 pa-2">
-                        <div class="d-flex">
+                        <v-row class="ma-0 pa-0 align-center">
                             <v-btn @click="openChatMenu()"
                                 class="mr-1 text-medium-emphasis"
                                 density="comfortable"
@@ -739,7 +739,7 @@
                                 <v-icon v-else>mdi-close</v-icon>
                             </v-btn>
                             <slot name="custom-input-tools"></slot>
-                        </div>
+                        </v-row >
                         
                         <div>
                             <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"

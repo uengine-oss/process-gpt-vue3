@@ -310,7 +310,7 @@
                             progress: 0,
                             parent: task.parent || 0,
                             assignees: task.assignees || [],
-                            status: 'TODO',
+                            status: 'NEW',
                             adhoc: true
                         });
                         //새 작업 추가
@@ -775,7 +775,7 @@
     background-color: #FFA000;
 }
 
-.status-TODO .gantt_task_content {
+.status-NEW .gantt_task_content {
     color: #FFFFFF;
 }
 
@@ -822,11 +822,11 @@
     background-color: #2196F3 !important;
 }
 
-/* TODO 상태 */
-.status-TODO .gantt_task_progress {
+/* NEW 상태 */
+.status-NEW .gantt_task_progress {
     background-color: #616161 !important;
 }
-.status-TODO.gantt_task_line {
+.status-NEW.gantt_task_line {
     background-color: #9E9E9E !important;
 }
 
@@ -839,10 +839,10 @@
 }
 
 /* 기본 상태 */
-.gantt_task_line:not(.status-DONE):not(.status-IN_PROGRESS):not(.status-TODO):not(.status-PENDING) {
+.gantt_task_line:not(.status-DONE):not(.status-IN_PROGRESS):not(.status-NEW):not(.status-PENDING) {
     background-color: #9E9E9E !important;
 }
-.gantt_task_line:not(.status-DONE):not(.status-IN_PROGRESS):not(.status-TODO):not(.status-PENDING) .gantt_task_progress {
+.gantt_task_line:not(.status-DONE):not(.status-IN_PROGRESS):not(.status-NEW):not(.status-PENDING) .gantt_task_progress {
     background-color: #616161 !important;
 }
 

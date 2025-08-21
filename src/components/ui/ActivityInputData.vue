@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-card variant="outlined" class="mb-4">
+        <v-card variant="outlined" class="mb-4 bg-lightprimary">
             <v-card-title class="text-h6 cursor-pointer d-flex align-center justify-space-between" @click="toggleExpanded">
                 <div class="d-flex align-center">
                     <v-icon class="mr-2">mdi-information-outline</v-icon>
