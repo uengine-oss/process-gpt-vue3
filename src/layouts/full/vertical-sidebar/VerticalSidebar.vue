@@ -319,7 +319,7 @@ export default {
             return this.instanceLists.length > 0;
         },
         isShowProject(){
-            return true;
+            return false;
         },
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') == 'true';
