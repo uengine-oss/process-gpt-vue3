@@ -1009,6 +1009,10 @@ export default {
                 if (me.$route.query && me.$route.query.modeling) {
                     document.title = me.projectName;
                 }
+                if (me.$route.query && me.$route.query.edit) {
+                    me.lock = true;
+                    me.toggleLock();
+                }
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
             } catch (e) {
                 console.log(e);
