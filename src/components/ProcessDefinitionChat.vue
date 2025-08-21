@@ -1175,28 +1175,52 @@ export default {
         },
 
         parseJsonProcess(response) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const jsonProcess = JSON.parse(response);
-                    resolve(jsonProcess);
-                } catch(error) {
-                    console.log(error);
-                    const maxRetries = 3;
-                    let retryCount = 0;
-
-                    const retry = async () => {
-                        if (retryCount < maxRetries) {
-                            console.log('retrying parse json process');
-                            retryCount++;
-                            resolve(partialParse(response));
-                        } else {
-                            reject(error);
-                        }
-                    };
-
-                    retry();
+            if(response != ""){
+                if(!this.isRetry) {
+                    this.isRetry = true
+                    this.messages.push({
+                        "role": "system",
+                        "content": "프로세스 생성 시도중 오류 발생하여 다시 시도합니다.",
+                        "timeStamp": Date.now()
+                    })
+                    const newMessage = {
+                        "images": [],
+                        "text": "프로세스 생성 시도중 오류 발생하여 다시 시도합니다. 올바른 json 형식으로 다시 생성해주세요.",
+                        "mentionedUsers": []
+                    }
+                    this.beforeSendMessage(newMessage)
+                } else {
+                    this.isRetry = false
+                    this.messages.push({
+                        "role": "system",
+                        "content": "프로세스 생성 시도중 오류 발생하였습니다. 잠시 후 다시 시도해주세요.",
+                        "timeStamp": Date.now()
+                    })
                 }
-            })
+            } else {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const jsonProcess = JSON.parse(response);
+                        resolve(jsonProcess);
+                    } catch(error) {
+                        console.log(error);
+                        const maxRetries = 3;
+                        let retryCount = 0;
+    
+                        const retry = async () => {
+                            if (retryCount < maxRetries) {
+                                console.log('retrying parse json process');
+                                retryCount++;
+                                resolve(partialParse(response));
+                            } else {
+                                reject(error);
+                            }
+                        };
+    
+                        retry();
+                    }
+                })
+            }
         },
         async convertOldFormatToElements(oldObj) {
             oldObj.elements = []
