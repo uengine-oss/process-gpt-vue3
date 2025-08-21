@@ -1,4 +1,6 @@
 import BackendFactory from '@/components/api/BackendFactory';
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+const storage = StorageBaseFactory.getStorage();
 
 export default class AIGenerator {
     constructor(client, options) {
@@ -252,10 +254,20 @@ export default class AIGenerator {
         // xhr.open('POST', url);
         // xhr.setRequestHeader('Content-Type', 'application/json');
         
-        if(!localStorage.getItem('openai_api_key')){
-            localStorage.setItem('openai_api_key', 'sk-');
+        const response = await storage.getObject('configuration', {
+            match: {
+                key: 'openai_api_key'
+            }
+        });
+        const openaiToken = response?.value?.api_key || null;
+        if(!openaiToken){
+            const errorMessage = "OpenAI API 키가 설정되지 않았습니다. 관리자에게 문의하세요.";
+            console.error(errorMessage);
+            if (me.client.onError)
+                me.client.onError({ message: errorMessage });
+            me.state = 'error';
+            return;
         }
-        const openaiToken = localStorage.getItem('openai_api_key');
         const url = "https://api.openai.com/v1/chat/completions";
         const xhr = new XMLHttpRequest();
         xhr.open("POST", url);
