@@ -197,7 +197,7 @@ export class MarkdownLoader {
                     ]
                 },
                 {
-                    title: '기본사용법',
+                    title: '가이드',
                     items: [
                         {
                             path: '/process-gpt/admin-guide/',
@@ -217,7 +217,7 @@ export class MarkdownLoader {
                     ]
                 },
                 {
-                    title: '고급 기능',
+                    title: 'AI를 활용한 프로세스 관리',
                     items: [
                         {
                             path: '/process-gpt/agent-knowledge/',
@@ -243,12 +243,7 @@ export class MarkdownLoader {
                             path: '/process-gpt/browser-use/',
                             title: '브라우저 사용',
                             markdownFile: 'browser-use.md'
-                        }
-                    ]
-                },
-                {
-                    title: '문제해결',
-                    items: [
+                        },
                         {
                             path: '/process-gpt/process-marketplace/',
                             title: '프로세스 마켓플레이스',

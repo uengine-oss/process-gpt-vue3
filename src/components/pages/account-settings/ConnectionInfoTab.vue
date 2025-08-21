@@ -59,7 +59,8 @@
     </v-card>
 
     <!-- 데이터소스 추가 버튼 -->
-    <div class="d-flex justify-end mb-4">
+    <v-row class="ma-0 pa-0 mb-4">
+      <v-spacer></v-spacer>
       <v-btn 
       color="primary"
         variant="flat"
@@ -67,10 +68,10 @@
         @click="openAddDialog"
         :disabled="!isUseDataSource"
       >
-        <v-icon left>mdi-plus</v-icon>
+        <v-icon class="mr-2" style="padding-top: 3px;">mdi-plus</v-icon>
         {{ $t('accountTab.addConnectionInfo') }}
       </v-btn>
-    </div>
+    </v-row>
 
     <!-- 데이터소스 다이얼로그 -->
     <v-dialog v-model="dialog" max-width="800" persistent>
@@ -154,15 +155,16 @@
               class="mt-2" 
               @click="addHeader"
             >
-              <v-icon left small>mdi-plus</v-icon>
+              <v-icon class="mr-2" style="padding-top: 3px;">mdi-plus</v-icon>
               {{ $t('accountTab.addHeader') }}
             </v-btn>
           </div>
         </v-card-text>
-        <div class="d-flex justify-end mt-2 pb-4">
+        <v-row class="ma-0 pa-0 mt-2 pb-4">
+            <v-spacer></v-spacer>
             <v-btn @click="dialog = false" color="grey" variant="flat" rounded class="mr-2">{{ $t('accountTab.cancel') }}</v-btn>
             <v-btn @click="saveDataSource" :loading="saving" color="primary" variant="flat" rounded class="mr-4">{{ $t('accountTab.save') }}</v-btn>
-        </div>
+        </v-row>
       </v-card>
     </v-dialog>
 

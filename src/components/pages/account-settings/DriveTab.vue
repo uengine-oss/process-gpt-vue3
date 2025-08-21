@@ -25,14 +25,14 @@
         </v-col>
     </v-row>
 
-    <div class="d-flex justify-end mt-5 pb-3">
+    <v-row class="ma-0 pa-0 mt-5 pb-3">
+        <v-spacer></v-spacer>
         <div v-if="isEditMode">
             <v-btn size="large" color="grey" variant="flat" rounded="pill" class="mr-2" @click="isEditMode = false">{{ $t('accountTab.cancel') }}</v-btn>
             <v-btn size="large" color="primary" variant="flat" rounded="pill" class="mr-4" @click="saveDriveInfo">{{ $t('accountTab.save') }}</v-btn>
         </div>
         <v-btn v-else size="large" color="primary" variant="flat" rounded="pill" class="mr-4" @click="isEditMode = true">{{ $t('accountTab.edit') }}</v-btn>
-
-    </div>
+    </v-row>
 </template>
 
 <script>
