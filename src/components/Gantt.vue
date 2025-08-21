@@ -300,7 +300,7 @@
                 // 새로운 작업인 경우
                 if (is_new) {
                     try {
-                        // 부모 컴포넌트에 이벤트 발생
+                        // 부모 컴포넌트에 이벤트 발생 task.parent == 0 ? "INSTANCE": "WORKITEM"
                         emit('task-added', {
                             name: task.name,
                             startDate: dateToTimestamp(task.start_date),
@@ -310,7 +310,7 @@
                             progress: 0,
                             parent: task.parent || 0,
                             assignees: task.assignees || [],
-                            status: 'NEW',
+                            status: task.parent == 0 ? 'NEW' : 'TODO',
                             adhoc: true
                         });
                         //새 작업 추가
@@ -546,6 +546,11 @@
         })
   
         function validateTaskConstraint(source, target){
+            if(source.parent == 0 && target.parent == 0) {
+                // INSTANCE <> INSTANCE 인 경우 통과
+                return true;
+            }
+
             // BPM <> BPM X
             if(!source.adhoc && !target.adhoc) {
                 emit('message', {

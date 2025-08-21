@@ -161,7 +161,15 @@ export default {
         loadKanbanBoard(){
             var me = this
             me.columns.forEach(column => {
-                column.tasks = me.tasks.filter(task => task.status === column.id);
+                column.tasks = me.tasks.filter(task => {
+                    if ((task.status === 'PENDING' || task.status === 'CANCELLED') && column.id === 'PENDING') {
+                        return true;
+                    } else if ((task.status === 'IN_PROGRESS' || task.status === 'SUBMITTED') && column.id === 'IN_PROGRESS') {
+                        return true;
+                    } else {
+                        return task.status === column.id;
+                    }
+                });
             });
         },
         openPDM(){

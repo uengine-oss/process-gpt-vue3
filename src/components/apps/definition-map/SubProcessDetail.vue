@@ -60,7 +60,7 @@
                             </v-btn>
                             <v-btn
                                 v-if="isAdmin && !isMobile"
-                                @click="toggleEditMode()"
+                                @click="goEdit"
                                 class="mr-2"
                                 rounded
                                 density="comfortable"
@@ -186,19 +186,6 @@
                 <dry-run-process :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>
-        
-        <ProcessDefinitionVersionDialog
-            :process="{ 
-                processDefinitionId: processDefinition ? processDefinition.id : '',
-                processDefinitionName: processDefinition ? processDefinition.name : ''
-            }"
-            :loading="loading"
-            :open="versionDialog"
-            :processName="processDefinition ? processDefinition.name : ''"
-            :analysisResult="analysisResult"
-            @close="toggleVersionDialog"
-            @save="beforeSaveDefinition"
-        />
     </v-card>
 </template>
 
@@ -207,9 +194,7 @@ import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessExecuteDialog from '@/components/apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
-import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
 import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
-import ChatModule from '@/components/ChatModule.vue'
 import BaseProcess from './BaseProcess.vue'
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -222,10 +207,9 @@ export default {
         ProcessDefinition,
         ProcessExecuteDialog,
         'dry-run-process': DryRunProcess,
-        'process-gpt-execute': ProcessGPTExecute,
-        ProcessDefinitionVersionDialog
+        'process-gpt-execute': ProcessGPTExecute
     },
-    mixins: [BaseProcess, ProcessDefinitionModule, ChatModule],
+    mixins: [BaseProcess, ProcessDefinitionModule],
     props: {
         value: Object,
         enableEdit: Boolean,
@@ -425,65 +409,9 @@ export default {
                 successMsg: me.$t('successMsg.processExecutionCompleted')
             })
         },
-        toggleEditMode() {
-            if (this.isViewMode) {
-                // 보기 모드 > 수정 모드로 전환
-                this.isViewMode = false;
-            } else {
-                // 수정 모드 > 저장 후 보기 모드로 전환
-                this.saveProcessDefinition();
-            }
-        },
-        saveProcessDefinition() {
-            // 버전 다이얼로그 열기
-            this.versionDialog = true;
-            this.loading = false
-            try {
-                if (open) {
-                    this.analyzeDefinition(this.processDefinitionData);
-                }
-            } catch(e) {
-                console.log(e)
-            }
-        },
-        toggleVersionDialog(open) {
-            this.versionDialog = open;
-        },
-        async beforeSaveDefinition(info) {
-            var me = this;
-            me.$try({
-                context: me,
-                action: async () => {
-                    const store = useBpmnStore();
-                    const modeler = store.getModeler;
-                    const xmlObj = await modeler.saveXML({ format: true, preamble: true });
-                    
-                    // processDefinition이 없으면 생성
-                    if (!me.processDefinition) {
-                        me.processDefinition = {
-                            processDefinitionId: info.proc_def_id,
-                            processDefinitionName: info.name
-                        };
-                    }
-                    
-                    // 저장할 정보 구성
-                    info.definition = me.processDefinitionData || me.processDefinition;
-                    
-                    // ProcessDefinitionModule의 saveModel 사용
-                    await me.saveModel(info, xmlObj.xml);
-                    
-                    // 저장 후 상태 변경
-                    me.bpmn = xmlObj.xml;
-                    me.isViewMode = true;
-                    me.defCnt++;
-                    me.versionDialog = false;
-                    
-                    // 이벤트 발행
-                    me.EventBus.emit('definitions-updated');
-                },
-                successMsg: this.$t('subProcessDetail.processDefinitionSaved')
-            });
-        },
+        goEdit() {
+            this.$router.push(`/definitions/${this.processDefinition.id}?edit=true`);
+        }
     },
 }
 </script>
