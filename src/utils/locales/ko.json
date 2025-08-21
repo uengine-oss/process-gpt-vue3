@@ -1004,7 +1004,8 @@
     },
     "TodoTaskItemCard": {
         "assignee": "담당자",
-        "myTask": "내 업무"
+        "myTask": "내 업무",
+        "noAssignee": "지정된 담당자가 없습니다"
     },
     "ExternalForms": {
         "submit": "제출",

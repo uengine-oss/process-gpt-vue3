@@ -30,7 +30,7 @@ export default {
         
 
         this.watchRef = await backend.watchProjectList((callback => {
-            console.log('callback', callback);
+            // console.log('callback', callback);
             this.loadProjectList();
             // const projectId = callback.id
             // const project = callback.value

@@ -190,6 +190,7 @@ export default class AIGenerator {
 
     async checkBackendConnection() {
         try {
+            return true;
             let response = await fetch(`${this.backendUrl}/sanity-check`);
             if(response.status == 401){
                 // access_token이 만료되어서 접속이 안되는 경우가 있기 때문에 이런 경우, 강재로 세션을 갱신 후, 재시도
@@ -246,10 +247,20 @@ export default class AIGenerator {
         let responseCnt = 0;
 
         me.gptResponseId = null;
-        const url = `${this.backendUrl}/messages`;
+        // const url = `${this.backendUrl}/messages`;
+        // const xhr = new XMLHttpRequest();
+        // xhr.open('POST', url);
+        // xhr.setRequestHeader('Content-Type', 'application/json');
+        
+        if(!localStorage.getItem('openai_api_key')){
+            localStorage.setItem('openai_api_key', 'sk-');
+        }
+        const openaiToken = localStorage.getItem('openai_api_key');
+        const url = "https://api.openai.com/v1/chat/completions";
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', url);
-        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.open("POST", url);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("Authorization", "Bearer " + openaiToken);
         
         if(this.client.chatRoomId){
             xhr.originalChatRoomId = this.client.chatRoomId;
@@ -396,15 +407,20 @@ export default class AIGenerator {
 
         this._addDetailHighToImageUrl(messages);
         const data = {
-            vendor: this.forced_vendor || this.vendor,
+            // vendor: this.forced_vendor || this.vendor,  // OpenAI API에서는 불필요
             model: this.forced_model || this.model,
             messages: messages,
             stream: this.options.isStream || true,
-            modelConfig: this.forced_model_config || this.modelConfig
+            // modelConfig: this.forced_model_config || this.modelConfig  // OpenAI API에서는 불필요
+            temperature: this.forced_model_config?.temperature || this.modelConfig.temperature,
+            top_p: this.forced_model_config?.top_p || 0.9,
+            frequency_penalty: this.forced_model_config?.frequency_penalty || this.modelConfig.frequency_penalty,
+            presence_penalty: this.forced_model_config?.presence_penalty || this.modelConfig.presence_penalty
         };
 
         if (this.model.includes('vision')) {
-            data.modelConfig.max_tokens = 4096;
+            // data.modelConfig.max_tokens = 4096;
+            data.max_tokens = 4096;
         }
 
         if (me.stopSignaled) {

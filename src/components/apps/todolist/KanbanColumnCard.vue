@@ -132,7 +132,7 @@
                     </div>
                 </div>
                 <v-row v-if="!isTodolistPath" class="pa-0 ma-0 mt-1 d-flex align-center">
-                    <div class="mr-1" style="width: 24px;" :class="{'mr-4': isMultiUser}">
+                    <div v-if="isMultiUser || isMyTask || userInfoForTask" class="mr-1" style="width: 24px;" :class="{'mr-4': isMultiUser}">
                         <div v-if="isMultiUser" class="d-flex"> 
                             <v-img v-for="user in userInfoForTask"
                                 :key="user.id || user.email"
@@ -161,10 +161,10 @@
                     </div>
                     <!-- 텍스트를 세로 기준 중앙정렬하기 위해 flex와 align-center 적용 -->
                     <div class="body-text-2 text-dark mr-2">
-
                         <span v-if="isMultiUser">{{ userInfoForTask.map(user => user.username).join(', ') }}</span>
                         <span v-else-if="isMyTask">{{ $t('TodoTaskItemCard.myTask') }}</span>
                         <span v-else-if="userInfoForTask">{{ userInfoForTask.username }}</span>
+                        <span v-else>{{ $t('TodoTaskItemCard.noAssignee') }}</span>
                         <!-- 프로필 이미지를 v-img로 표시, 없으면 기본 이미지 사용 -->
                     </div>
                 </v-row>
