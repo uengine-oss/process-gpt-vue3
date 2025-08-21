@@ -8,8 +8,10 @@
                 <Icons :icon="'play'" :size="20" @click="openPDM()" style="align-self: center;"/>
             </v-tabs>
             
-            <v-window v-model="tab">
-                <v-window-item value="managment">
+            <v-window v-model="tab"
+                :touch="false"
+            >
+                <v-window-item value="managment" class="h-100">
                     <div class="gantt-area" v-if="!isLoading">
                         <GanttChart 
                             :tasks="tasks" 
@@ -23,7 +25,7 @@
                     </div>
                 </v-window-item>
                 <v-window-item value="kanbanBoard">
-                    <div style="height: 73vh;">
+                    <div class="project-card-kanban-board">
                         <KanbanBoard 
                             :columns="columns"
                             :users="userList"
@@ -31,34 +33,36 @@
                     </div>
                 </v-window-item>
                 <v-window-item value="instanceList">
-                    <!-- 프로젝트 정보 -->
-                    <div style="padding: 24px; text-align: left; color: #888;">
-                        <div v-if="project">
-                            <div style="font-size:18px; font-weight:bold; margin-bottom: 12px;">프로젝트 정보</div>
-                            <div style="font-size: 16px; margin-bottom: 4px;">프로젝트ID: {{ project.projectId }}</div>
-                            <div style="font-size: 16px; margin-bottom: 4px;">프로젝트명: {{ project.name }}</div>
-                            <div style="font-size: 16px; margin-bottom: 4px;">예상 기간: {{ project.startDate }} ~ {{ project.endDate }}</div>
-                            <div style="font-size: 16px; margin-bottom: 4px;">상태: {{ project.status }}</div>
-                            <div style="font-size: 16px;">프로젝트 생성일: {{ project.createdDate }}</div>
+                    <div class="project-card-kanban-instanceList">
+                        <!-- 프로젝트 정보 -->
+                        <div style="padding: 24px; text-align: left; color: #888;">
+                            <div v-if="project">
+                                <div style="font-size:18px; font-weight:bold; margin-bottom: 12px;">프로젝트 정보</div>
+                                <div style="font-size: 16px; margin-bottom: 4px;">프로젝트ID: {{ project.projectId }}</div>
+                                <div style="font-size: 16px; margin-bottom: 4px;">프로젝트명: {{ project.name }}</div>
+                                <div style="font-size: 16px; margin-bottom: 4px;">예상 기간: {{ project.startDate }} ~ {{ project.endDate }}</div>
+                                <div style="font-size: 16px; margin-bottom: 4px;">상태: {{ project.status }}</div>
+                                <div style="font-size: 16px;">프로젝트 생성일: {{ project.createdDate }}</div>
+                            </div>
+                            <div v-else>
+                                프로젝트 정보가 없습니다.
+                            </div>
                         </div>
-                        <div v-else>
-                            프로젝트 정보가 없습니다.
-                        </div>
+                        <!-- 인스턴스 리스트 -->
+                        <v-list>
+                            <template v-for="(item, idx) in instanceList" :key="item.name">
+                                <v-list-item @click="onItemClick(item)">
+                                <v-list-item-content>
+                                    <v-list-item-title class="font-weight-bold">{{ item.name }}</v-list-item-title>
+                                    <v-list-item-subtitle>
+                                    {{ item.instId }} | {{ item.status }} | {{ item.startDate }} ~ {{ item.endDate }}
+                                    </v-list-item-subtitle>
+                                </v-list-item-content>
+                                </v-list-item>
+                                <v-divider v-if="idx < instanceList.length - 1" />
+                            </template>
+                        </v-list>
                     </div>
-                    <!-- 인스턴스 리스트 -->
-                    <v-list>
-                        <template v-for="(item, idx) in instanceList" :key="item.name">
-                            <v-list-item @click="onItemClick(item)">
-                            <v-list-item-content>
-                                <v-list-item-title class="font-weight-bold">{{ item.name }}</v-list-item-title>
-                                <v-list-item-subtitle>
-                                {{ item.instId }} | {{ item.status }} | {{ item.startDate }} ~ {{ item.endDate }}
-                                </v-list-item-subtitle>
-                            </v-list-item-content>
-                            </v-list-item>
-                            <v-divider v-if="idx < instanceList.length - 1" />
-                        </template>
-                    </v-list>
                 </v-window-item>
             </v-window>
         </v-card>
@@ -234,20 +238,6 @@ export default {
 </script>
 
 <style>
-.center-container {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start; /* 상단 정렬로 변경 */
-    min-height: 100vh;       /* 화면 전체 높이 */
-    background: #f2f6fa;
-}
-.vertical-layout {
-  display: flex;
-  flex-direction: column;
-  width: 600px;
-  height: 80vh;
-  min-width: 400px;
-}
 .top-section {
   flex: 3;
   margin-bottom: 16px;
@@ -258,10 +248,5 @@ export default {
 .list-card {
   width: 100%;
   height: 100%;
-}
-.gantt-area {
-  flex: 1;
-  min-height: 400px;      /* Gantt 차트 영역 최소 높이 */
-  height: 500px;          /* 필요시 고정 높이 */
 }
 </style>

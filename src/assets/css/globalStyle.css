@@ -805,6 +805,24 @@ hr {
     width: 100% !important;
 }
 
+.gantt-area {
+    height: calc(100vh - 180px);
+}
+
+.project-card-kanban-board .todo-list-card-box {
+    height: calc(100vh - 230px);
+}
+
+.project-window-box {
+    height: calc(100vh - 180px);
+    overflow: auto;
+}
+
+.project-card-kanban-instanceList {
+    height: calc(100vh - 180px);
+    overflow: auto;
+}
+
 
 
 /* 채팅창 입력 및 버튼 영역 */
@@ -1074,6 +1092,20 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+
+
+    .gantt-area {
+        height: calc(100vh - 50px);
+    }
+
+    .project-card-kanban-instanceList {
+        height: calc(100vh - 50px);
+    }
+
+    .project-window-box {
+        height:  calc(100vh - 50px);
+       
+    }
     .kanban-column {
         flex: 0 0 100% !important;
         max-width: 100% !important;
@@ -1136,12 +1168,10 @@ hr {
         max-height: calc(100vh - 110px);
     }
     .todo-list-card-box {
-        padding-right: 40px !important;
-    }
-    .todo-list-card-box {
-        max-height: calc(-216px + 100vh) !important;
+        max-height: calc(100vh - 100px) !important;
         height: 100% !important;
         overflow: auto;
+        padding-right: 40px !important;
     }
     .todo-task-column-box-pc {
         padding-right: 20px !important;

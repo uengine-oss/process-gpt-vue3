@@ -69,7 +69,6 @@
                                 <div class="issue-title">연결된 업무 항목</div>
                             </div>
 
-
                             <!-- 세부 사항 -->
                             <div class="issue-desc mt-2" v-if="false">
                                 <div class="issue-title">세부 사항</div>
@@ -216,17 +215,19 @@ export default {
 }
 
 .gantt-detail-overlay {
-  position: absolute; /* 또는 fixed */
-  top: 0;
-  right: 0;
-  width: 400px; /* 패널 너비 */
-  height: 100%;
-  background: #fff;
-  box-shadow: -2px 0 8px rgba(0,0,0,0.08);
-  z-index: 100;
-  border-left: 1px solid #eee;
-  overflow-y: auto;
-  transition: transform 0.2s;
+    position: absolute; /* 또는 fixed */
+    top: 4px;
+    right: 2px;
+    width: 40vw;
+    max-width: 400px; /* 패널 너비 */
+    border-radius: 10px;
+    height: calc(100vh - 190px);
+    background: #fff;
+    box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12);
+    z-index: 100;
+    border-left: 1px solid #eee;
+    overflow-y: auto;
+    transition: transform 0.2s;
 }
 .issue-header {
   display: flex;
