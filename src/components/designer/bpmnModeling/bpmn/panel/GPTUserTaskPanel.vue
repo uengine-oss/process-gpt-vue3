@@ -176,7 +176,12 @@ export default {
             }
             me.formId = me.copyUengineProperties.variableForHtmlFormContext? me.copyUengineProperties.variableForHtmlFormContext.name : '';
             if (!me.formId || me.formId == '') {
-                let formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
+                let formId = '';
+                if (!me.processDefinition || !me.processDefinition.processDefinitionId) {
+                    formId = me.element.id + '_form';
+                } else {
+                    formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
+                }
                 formId = formId.toLowerCase();
                 formId = formId.replace(/[/.]/g, "_");
                 me.formId = formId;
@@ -189,8 +194,6 @@ export default {
                 }
             }
             if (me.lastPath) {
-                console.log('########### lastPath: ', me.lastPath);
-                console.log('########### formId: ', me.formId);
                 if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
                     me.tempFormHtml = localStorage.getItem(me.formId);
                 } else {
@@ -213,7 +216,12 @@ export default {
         async beforeSave() {
             var me = this;
             if (me.formId == '' || me.formId == null || me.formId.includes('undefined')) {
-                let formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
+                let formId = '';
+                if (!me.processDefinition || !me.processDefinition.processDefinitionId) {
+                    formId = me.element.id + '_form';
+                } else {
+                    formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
+                }
                 formId = formId.toLowerCase();
                 formId = formId.replace(/[/.]/g, "_");
                 me.formId = formId;
@@ -233,16 +241,14 @@ export default {
             }
 
             if (me.tempFormHtml && me.tempFormHtml != '') {
-                if (options && options.proc_def_id && options.activity_id) {
-                    if (me.lastPath) {
-                        if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
-                            localStorage.setItem(me.formId, me.tempFormHtml);
-                        } else {
-                            await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
-                        }
-                    } else {
+                if (me.lastPath) {
+                    if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
                         localStorage.setItem(me.formId, me.tempFormHtml);
+                    } else {
+                        await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
                     }
+                } else {
+                    localStorage.setItem(me.formId, me.tempFormHtml);
                 }
             }
             

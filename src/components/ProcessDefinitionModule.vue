@@ -15,7 +15,10 @@ export default {
     mixins: [FormDefinitionModule, BPMNXmlGenerator],
     data: () => ({
         processVariables: [],
-        processDefinition: null,
+        processDefinition: {
+            processDefinitionId: `new_process_${Date.now()}`,
+            processDefinitionName: '',
+        },
         bpmn: null,
         definitionChangeCount: 0,
         projectName: null,
@@ -852,7 +855,12 @@ export default {
                 }
 
                 if (window.$mode == 'ProcessGPT') {
-                    let formId = `${processDefinitionId}_${task.id}_form`.toLowerCase().replace(/[/.]/g, "_");
+                    let formId = '';
+                    if (!processDefinitionId) {
+                        formId = `${task.id}_form`.toLowerCase().replace(/[/.]/g, "_");
+                    } else {
+                        formId = `${processDefinitionId}_${task.id}_form`.toLowerCase().replace(/[/.]/g, "_");
+                    }
                     task.tool = `formHandler:${formId}`;
                 } else {
                     if (propsJson && propsJson.variableForHtmlFormContext && propsJson.variableForHtmlFormContext.name) {
@@ -1282,10 +1290,7 @@ export default {
                                 me.processDefinition.activities.forEach(async (activity) => {
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
                                         let formHtml = null;    
-                                        let formId = `${info.proc_def_id}_${activity.id}_form`;
-                                        formId = formId.toLowerCase();
-                                        formId = formId.replace(/[/.]/g, "_");
-                                        activity.tool = `formHandler:${formId}`;
+                                        let formId = activity.tool.replace('formHandler:', '');
                                         const currentFormHtml = localStorage.getItem(formId);
                                         if (currentFormHtml) {
                                             formHtml = currentFormHtml;
@@ -1297,11 +1302,14 @@ export default {
                                                 const oldFormHtml = localStorage.getItem(oldFormId);
                                                 if (oldFormHtml) {
                                                     formHtml = oldFormHtml;
-                                                    activity.tool =  `formHandler:${formId}`;
                                                 } 
                                             }
                                         }
+                                        const oldFormId = formId;
                                         if (formHtml) {
+                                            formId = `${info.proc_def_id}_${activity.id}_form`;
+                                            formId = formId.toLowerCase();
+                                            activity.tool = `formHandler:${formId}`;
                                             const options = {
                                                 type: 'form',
                                                 proc_def_id: info.proc_def_id,
@@ -1309,7 +1317,7 @@ export default {
                                             }
                                             await backend.putRawDefinition(formHtml, formId, options);
                                         }
-                                        localStorage.removeItem(formId);
+                                        localStorage.removeItem(oldFormId);
                                     }
                                 });
                             }
