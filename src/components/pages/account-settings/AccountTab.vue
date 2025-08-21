@@ -10,7 +10,7 @@
                                 <img :src="selectedProfileImage || picture || ''" height="120" alt="image" />
                             </v-avatar>
                         </div>
-                        <div class="d-flex justify-center mb-7">
+                        <v-row class="justify-center ma-0 pa-0 mb-7">
                             <v-dialog width="650" v-model="imageChangeDialog">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" color="secondary" class="mx-2" rounded="pill" variant="flat" text="이미지 선택">{{
@@ -31,7 +31,7 @@
                                 </v-card>
                             </v-dialog>
                             <!-- <v-btn color="error" class="mx-2" variant="outlined" rounded="pill">Reset</v-btn> -->
-                        </div>
+                        </v-row>
                         <!-- <div class="text-subtitle-1 text-grey100 text-center my-sm-8 my-6">
                             {{ $t('accountTab.imageSelect') }}
                         </div> -->
@@ -75,7 +75,8 @@
                 </v-card>
             </v-col>
         </v-row>
-        <div class="d-flex justify-end mt-5 pb-3">
+        <v-row class="ma-0 pa-0 mt-5 pb-3">
+            <v-spacer></v-spacer>
             <v-btn @click="changeTenant" size="large" color="secondary" rounded="pill" class="mr-2" variant="flat">
                 {{ $t('accountTab.changeTenant') }}
             </v-btn>
@@ -83,7 +84,7 @@
                 {{ $t('accountTab.save') }}
             </v-btn>
             <!-- <v-btn size="large" class="bg-lighterror text-error"  rounded="pill">닫기</v-btn> -->
-        </div>
+        </v-row>
     </div>
 </template>
 

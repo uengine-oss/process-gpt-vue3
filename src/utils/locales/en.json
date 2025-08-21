@@ -1004,7 +1004,8 @@
     },
     "TodoTaskItemCard": {
         "assignee": "Assignee",
-        "myTask": "My task"
+        "myTask": "My task",
+        "noAssignee": "No assignee specified"
     },
     "ExternalForms": {
         "submit": "Submit",

@@ -568,20 +568,6 @@ export default {
 </script>
 
 <style>
-    .center-container {
-        display: flex;
-        justify-content: center;
-        align-items: flex-start; /* 상단 정렬로 변경 */
-        min-height: 100vh;       /* 화면 전체 높이 */
-        background: #f2f6fa;
-    }
-    .vertical-layout {
-        display: flex;
-        flex-direction: column;
-        width: 600px;
-        height: 80vh;
-        min-width: 400px;
-    }
     .top-section {
         flex: 3;
         margin-bottom: 16px;
@@ -592,11 +578,6 @@ export default {
     .list-card {
         width: 100%;
         height: 100%;
-    }
-    .gantt-area {
-        flex: 1;
-        min-height: 400px;      /* Gantt 차트 영역 최소 높이 */
-        height: 500px;          /* 필요시 고정 높이 */
     }
 
     /* Vuetify 3 반응형 탭 스타일 */

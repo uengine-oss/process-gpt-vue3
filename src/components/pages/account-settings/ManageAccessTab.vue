@@ -3,7 +3,7 @@
         <div>
             <v-row class="ma-0 pa-0">
                 <!-- 검색 -->
-                <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5" style="background-color: #fff;">
+                <v-row class="ma-0 pa-0 align-center border header-search rounded-pill px-5" style="background-color: #fff;">
                     <Icons :icon="'magnifer-linear'" :size="22" />
                     <v-text-field 
                     v-model="search" 
@@ -15,17 +15,15 @@
                     hide-details
                     dense
                     ></v-text-field>
-                </div>
+                </v-row>
                 <!-- <v-text-field v-model="search" label="Search User" hide-details prepend-inner-icon="mdi-magnify"></v-text-field> -->
-
                 <v-spacer></v-spacer>
-
                 <v-btn @click="openInviteUserCard = true"
                     color="primary"
                     variant="flat"
                     rounded
                 >
-                    <v-icon left>mdi-account-plus</v-icon>
+                    <v-icon style="padding-top: 3px;">mdi-account-plus</v-icon>
                     <span class="ml-2">{{ $t('accountTab.addUser') }}</span>
                 </v-btn>
             </v-row>
@@ -68,12 +66,13 @@
         persistent
     >
         <v-card>
-            <div v-if="isMobile" class="d-flex justify-space-between ma-0">
+            <v-row v-if="isMobile" class="ma-0 pa-0">
                 <v-card-title class="headline">
                     <h2 class="text-h4 text-grey-darken-2 mb-2">{{ $t('accountTab.inviteUser') }}</h2>
                     <p class="text-subtitle-1 text-grey-darken-1">{{ $t('accountTab.inviteUserMessage') }}</p>
                     <p class="text-caption text-grey-darken-1">{{ $t('accountTab.inviteUserMessage2') }}</p>
                 </v-card-title>
+                <v-spacer></v-spacer>
                 <v-btn @click="openInviteUserCard = false"
                     variant="flat"
                     rounded 
@@ -82,13 +81,14 @@
                     color: white;"
                     class="ma-2 mr-4"
                 >{{ $t('accountTab.close') }}</v-btn>
-            </div>
-            <div v-else class="d-flex justify-end">
+            </v-row>
+            <v-row v-else class="ma-0 pa-0">
                 <v-card-title class="headline">
                     <h2 class="text-h4 text-grey-darken-2 mb-2">{{ $t('accountTab.inviteUser') }}</h2>
                     <p class="text-subtitle-1 text-grey-darken-1">{{ $t('accountTab.inviteUserMessage') }}</p>
                     <p class="text-caption text-grey-darken-1">{{ $t('accountTab.inviteUserMessage2') }}</p>
                 </v-card-title>
+                <v-spacer></v-spacer>
                 <v-btn @click="openInviteUserCard = false"
                     class="ml-auto ma-2" 
                     variant="text" 
@@ -97,7 +97,7 @@
                 >
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
-            </div>
+            </v-row>
             <v-card-text class="pa-0" max-height="500" style="overflow-y: auto;">
                 <InviteUserCard @close="closeInviteUserCard" type="manageAccess" :userList="users" />
             </v-card-text>
@@ -189,5 +189,9 @@ export default {
 .add-user-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.header-search {
+    max-width: 280px;
 }
 </style>

@@ -1409,7 +1409,7 @@ class ProcessGPTBackend implements Backend {
                 } else {
                     if(payload.new.participants.includes(uid)) {
                         callback(payload);
-                    } else if(payload.old.participants.includes(uid)) {
+                    } else if(payload.old.participants && payload.old.participants.includes(uid)) {
                         callback(payload);
                     }
                 }
