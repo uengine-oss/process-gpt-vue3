@@ -2904,10 +2904,14 @@ class ProcessGPTBackend implements Backend {
                 // 기본 정렬
                 options = {
                     orderBy: 'updated_at',
-                    sort: 'desc'
+                    sort: 'desc',
+                    match: {
+                        tenant_id: window.$tenantName
+                    }
                 }
             }
 
+            
             const lists = await storage.list('project', options);
             if (lists && lists.length > 0) {
                 return lists.map((item: any) => {
@@ -2937,6 +2941,9 @@ class ProcessGPTBackend implements Backend {
                 sort: 'desc',
                 range: null,
                 like: null,
+                match: {
+                    tenant_id: window.$tenantName
+                }
             }
         
             if(options) {

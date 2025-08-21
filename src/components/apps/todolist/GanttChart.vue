@@ -52,25 +52,26 @@
                                 <div class="issue-title">{{ editItem.name }}</div>
                                 <v-chip color="primary" class="ml-2">{{ editItem.status }}</v-chip>
                             </div>
+                            <!-- {{ editItem }} -->
                             <div class="issue-desc mt-2">
                                 <div class="issue-title">설명</div>
                                 {{ editItem.description }}
                             </div>
 
                             <!-- 하위 업무 항목 -->
-                            <div class="issue-desc mt-2">
+                            <div class="issue-desc mt-2" v-if="false">
                                 <div class="issue-title">하위 업무 항목</div>
                                 <v-progress-linear value="0" height="8" class="mb-2"></v-progress-linear>
                             </div>
 
                             <!-- 연결된 업무 항목 -->
-                            <div class="issue-desc mt-2">
+                            <div class="issue-desc mt-2" v-if="false">
                                 <div class="issue-title">연결된 업무 항목</div>
                             </div>
 
 
                             <!-- 세부 사항 -->
-                            <div class="issue-desc mt-2">
+                            <div class="issue-desc mt-2" v-if="false">
                                 <div class="issue-title">세부 사항</div>
                                 <div class="issue-desc">
                                     <v-col>
@@ -162,8 +163,11 @@ export default {
             this.editItem = null
         },
         moveDetail(){
-            this.$router.push(`/todolist/${this.editItem.taskId}`)
-            // this.$emit('')
+            if(this.editItem.parent == 0){
+                this.$router.push(`/instancelist/${this.editItem.instId}`);
+            } else {
+                this.$router.push(`/todolist/${this.editItem.taskId}`)
+            }
         },
         deleteDetail(){
             const ganttRef = this.$refs.ganttRef;
