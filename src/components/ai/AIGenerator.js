@@ -258,7 +258,7 @@ export default class AIGenerator {
             match: {
                 key: 'openai'
             }
-        });
+        }); 
         const openaiToken = response?.value || null;
         if(!openaiToken){
             const errorMessage = "OpenAI API 키가 설정되지 않았습니다. 관리자에게 문의하세요.";
