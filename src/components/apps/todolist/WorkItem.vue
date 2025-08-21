@@ -1299,24 +1299,42 @@ export default {
                         console.log('현재 workItem 구조:', me.workItem);
                         console.log('role_bindings 구조:', roleBindings);
 
-                        // 이전 담당자가 포함된 역할을 찾아서 새 담당자로 교체
+                        // 이전 담당자가 있으면 교체, 없으면 새 담당자만 추가
                         roleBindings.forEach((role) => {
-                            if (role.default && role.default.includes(previousUserId)) {
-                                role.default = role.default.filter(id => id !== previousUserId);
+                            if (role.default) {
+                                // default가 배열이 아니면 배열로 변환
+                                if (!Array.isArray(role.default)) {
+                                    role.default = [role.default];
+                                }
+                                
+                                // 이전 담당자가 있으면 제거
+                                if (previousUserId && role.default.includes(previousUserId)) {
+                                    role.default = role.default.filter(id => id !== previousUserId);
+                                }
+                                // 새 담당자가 없으면 추가
                                 if (!role.default.includes(userIdForBackend)) {
                                     role.default.push(userIdForBackend);
+                                    updated = true;
+                                    console.log(`역할 '${role.name}'의 default에 담당자 추가됨`);
                                 }
-                                updated = true;
-                                console.log(`역할 '${role.name}'의 default 업데이트됨`);
                             }
 
-                            if (role.endpoint && role.endpoint.includes(previousUserId)) {
-                                role.endpoint = role.endpoint.filter(id => id !== previousUserId);
+                            if (role.endpoint) {
+                                // endpoint가 배열이 아니면 배열로 변환
+                                if (!Array.isArray(role.endpoint)) {
+                                    role.endpoint = [role.endpoint];
+                                }
+                                
+                                // 이전 담당자가 있으면 제거
+                                if (previousUserId && role.endpoint.includes(previousUserId)) {
+                                    role.endpoint = role.endpoint.filter(id => id !== previousUserId);
+                                }
+                                // 새 담당자가 없으면 추가
                                 if (!role.endpoint.includes(userIdForBackend)) {
                                     role.endpoint.push(userIdForBackend);
+                                    updated = true;
+                                    console.log(`역할 '${role.name}'의 endpoint에 담당자 추가됨`);
                                 }
-                                updated = true;
-                                console.log(`역할 '${role.name}'의 endpoint 업데이트됨`);
                             }
                         });
 
