@@ -166,7 +166,7 @@ export default {
 }
 
 .markdown-content {
-    line-height: 1.6;
+    line-height: 1.5;
     color: #374151;
 }
 
@@ -180,20 +180,23 @@ export default {
 .markdown-content :deep(h2) {
     font-size: 1.5rem;
     color: #1f2937;
-    margin: 24px 0 12px 0;
+    /* margin: 24px 0 12px 0; */
     font-weight: 600;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 24px 0 4px 0;
 }
 
 .markdown-content :deep(h3) {
     font-size: 1.25rem;
     color: #1f2937;
-    margin: 20px 0 8px 0;
+    /* margin: 20px 0 12px 0; */
     font-weight: 600;
+    padding: 20px 0 4px 0;
 }
 
 .markdown-content :deep(p) {
-    margin: 16px 0;
-    line-height: 1.6;
+    margin: 12px 0;
+    line-height: 1.5;
 }
 
 .markdown-content :deep(ul) {
@@ -203,6 +206,15 @@ export default {
 
 .markdown-content :deep(li) {
     margin: 8px 0;
+}
+
+.markdown-content :deep(a) {
+    display: inline-block;
+    padding-bottom: 24px;
+}
+
+.markdown-content :deep(img) {
+    margin-bottom: 32px !important;
 }
 
 .markdown-content :deep(code) {
