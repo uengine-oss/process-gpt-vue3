@@ -254,19 +254,12 @@ export default class AIGenerator {
         // xhr.open('POST', url);
         // xhr.setRequestHeader('Content-Type', 'application/json');
         
-        let tenant_id
-        if(window.$tenantName == 'localhost'){
-            tenant_id = 'localhost'
-        } else {
-            tenant_id = 'uengine'
-        }
-        const response = await storage.getObject('configuration', {
+        const response = await storage.getObject('api_key', {
             match: {
-                key: 'openai_api_key',
-                tenant_id: tenant_id
+                key: 'openai'
             }
         });
-        const openaiToken = response?.value?.api_key || null;
+        const openaiToken = response?.value || null;
         if(!openaiToken){
             const errorMessage = "OpenAI API 키가 설정되지 않았습니다. 관리자에게 문의하세요.";
             console.error(errorMessage);
