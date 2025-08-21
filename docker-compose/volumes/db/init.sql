@@ -521,7 +521,6 @@ RETURNS TRIGGER AS $$
 DECLARE
     v_proc_inst_name text;
     should_notify boolean := false;
-    user_is_on_todolist_page boolean;
 BEGIN
     -- INSERT: 새로운 todolist가 추가되고 상태가 'IN_PROGRESS'인 경우
     IF (TG_OP = 'INSERT' AND NEW.status = 'IN_PROGRESS') THEN
@@ -534,46 +533,35 @@ BEGIN
     END IF;
     
     IF should_notify THEN
-        -- 사용자가 현재 todolist 페이지에 있는지 확인
-        SELECT EXISTS(
-            SELECT 1 FROM user_devices 
-            WHERE user_id = NEW.user_id 
-            AND access_page = 'todolist'
-            AND last_activity > now() - interval '5 minutes'
-        ) INTO user_is_on_todolist_page;
+        SELECT proc_inst_name, tenant_id INTO v_proc_inst_name 
+        FROM bpm_proc_inst 
+        WHERE proc_inst_id = NEW.proc_inst_id;
         
-        -- 사용자가 todolist 페이지에 없을 때만 알림 생성
-        IF NOT user_is_on_todolist_page THEN
-            SELECT proc_inst_name, tenant_id INTO v_proc_inst_name 
-            FROM bpm_proc_inst 
-            WHERE proc_inst_id = NEW.proc_inst_id;
-            
-            INSERT INTO notifications (id, user_id, title, type, description, is_checked, time_stamp, tenant_id, url)
-            VALUES (
-                gen_random_uuid(),
-                NEW.user_id,
-                NEW.activity_name,
-                CASE 
-                    WHEN NEW.proc_inst_id IS NOT NULL AND NEW.proc_inst_id <> '' THEN 'workitem_bpm'
-                    ELSE 'workitem'
-                END,
-                COALESCE(v_proc_inst_name, NEW.activity_name),
-                false, -- in_progress 상태이므로 항상 미체크
-                now(),
-                NEW.tenant_id,
-                '/todolist/' || NEW.id
-            )
-            ON CONFLICT (id) DO UPDATE
-            SET
-                user_id = EXCLUDED.user_id,
-                title = EXCLUDED.title,
-                type = EXCLUDED.type,
-                description = EXCLUDED.description,
-                is_checked = EXCLUDED.is_checked,
-                time_stamp = EXCLUDED.time_stamp,
-                tenant_id = EXCLUDED.tenant_id,
-                url = EXCLUDED.url;
-        END IF;
+        INSERT INTO notifications (id, user_id, title, type, description, is_checked, time_stamp, tenant_id, url)
+        VALUES (
+            gen_random_uuid(),
+            NEW.user_id,
+            NEW.activity_name,
+            CASE 
+                WHEN NEW.proc_inst_id IS NOT NULL AND NEW.proc_inst_id <> '' THEN 'workitem_bpm'
+                ELSE 'workitem'
+            END,
+            COALESCE(v_proc_inst_name, NEW.activity_name),
+            false, -- in_progress 상태이므로 항상 미체크
+            now(),
+            NEW.tenant_id,
+            '/todolist/' || NEW.id
+        )
+        ON CONFLICT (id) DO UPDATE
+        SET
+            user_id = EXCLUDED.user_id,
+            title = EXCLUDED.title,
+            type = EXCLUDED.type,
+            description = EXCLUDED.description,
+            is_checked = EXCLUDED.is_checked,
+            time_stamp = EXCLUDED.time_stamp,
+            tenant_id = EXCLUDED.tenant_id,
+            url = EXCLUDED.url;
     END IF;
     RETURN NULL;
 END;
