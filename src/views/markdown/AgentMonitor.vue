@@ -848,7 +848,10 @@ export default {
     // ========================================
     submitTask(task) {
       const original = task.outputRaw;
-      const normalized = this.normalizeFormValues(original);
+      const payloadForSubmit = (task.crewType === 'text')
+        ? (task.content ?? this.resolvePrimaryValue(original, 'text'))
+        : original;
+      const normalized = this.normalizeFormValues(payloadForSubmit);
       console.log('[AgentMonitor] submitTask!!', normalized);
       this.EventBus.emit('form-values-updated', normalized);
     },
@@ -1555,6 +1558,10 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+.json-container > div {
+  white-space: pre-line;
 }
 
 .json-container.expanded {
