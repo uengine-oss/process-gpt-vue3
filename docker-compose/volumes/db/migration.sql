@@ -671,6 +671,7 @@ IF EXISTS (
     ELSE NULL  -- 기본값을 NULL로 설정
     END;
     
+    ALTER TYPE event_type_enum ADD VALUE IF NOT EXISTS 'human_response';
     ALTER TABLE public.events DROP COLUMN event_type;
     ALTER TABLE public.events RENAME COLUMN event_type_new TO event_type;
     
