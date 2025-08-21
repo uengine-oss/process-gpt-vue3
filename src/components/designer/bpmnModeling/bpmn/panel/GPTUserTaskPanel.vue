@@ -143,6 +143,9 @@ export default {
             if (this.$route.path == '/definition-map') {
                 return 'definition-map';
             }
+            if (this.$route.path.includes('/definition-map/sub/') && this.$route.params.id) {
+                return this.$route.params.id;
+            }
             if (this.$route.params && this.$route.params.pathMatch && this.$route.params.pathMatch.length > 0) {
                 return this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
             }
