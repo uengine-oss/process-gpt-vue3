@@ -4,7 +4,7 @@
         elevation="10" 
         :key="updatedKey"
     >
-        <div class="pa-2 pb-0 mb-1 pl-4 pr-4 align-center">
+        <div class="pa-2 pb-0 pl-4 pr-4 align-center">
             <div class="d-flex align-center"
                 :style="isMobile ? 'display: block !important;' : ''"
             >

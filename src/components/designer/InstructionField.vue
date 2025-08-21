@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-text-field v-model="instruction" label="설명"></v-text-field>
+        <v-textarea v-model="instruction" label="설명"></v-textarea>
     </div>
 </template>
 
