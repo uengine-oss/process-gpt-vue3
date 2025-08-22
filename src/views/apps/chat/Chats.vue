@@ -54,6 +54,7 @@
                         :isSystemChat="isSystemChat"
                         :chatRoomId="chatRoomId"
                         :newMessageInfo="newMessageInfo"
+                        :participantUsers="participantUsers"
                         @requestDraftAgent="requestDraftAgent"
                         @requestFile="requestFile"
                         @beforeReply="beforeReply"
@@ -274,6 +275,10 @@ export default {
         instanceInfo: {
             type: Object,
             default: null
+        },
+        participantUsers: {
+            type: Array,
+            default: () => []
         }
     },
     data: () => ({

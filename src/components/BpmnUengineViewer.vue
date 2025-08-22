@@ -9,6 +9,37 @@
                 <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
+        <!-- 담당자 정보 표시 UI -->
+        <div v-if="laneAssignments.length > 0"
+            class=" pa-4 bpmn-uengine-viewer-ssignments-box"
+        >
+            <h6 class="text-subtitle-1 font-weight-bold mb-2" style="color: #333;">담당자 현황</h6>
+            <v-row class="ma-0 pa-0">
+                <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="mr-4">
+                    <div class="d-flex align-center">
+                        <v-avatar size="24" class="mr-2">
+                            <v-img 
+                                :src="assignment.profileImage" 
+                                :alt="assignment.assignee"
+                                cover
+                            >
+                                <template v-slot:error>
+                                    <v-img src="/images/defaultUser.png" cover>
+                                        <template v-slot:error>
+                                            <v-icon size="small" style="color: #666;">mdi-account</v-icon>
+                                        </template>
+                                    </v-img>
+                                </template>
+                            </v-img>
+                        </v-avatar>
+                        <div class="flex-grow-1">
+                            <div class="text-body-2 font-weight-medium" style="color: #444;">{{ assignment.laneName }}</div>
+                            <div class="text-caption" style="color: #666;">{{ assignment.assignee }}</div>
+                        </div>
+                    </div>
+                </div>
+            </v-row>
+        </div>
         <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 0px; left: 20px; pointer-events: auto; z-index: 10;">
             <v-row class="ma-0 pa-0">
                 <div v-for="(previewer, index) in previewersXMLLists" :key="index">
@@ -101,7 +132,8 @@ export default {
             resizeObserver: null,
             resizeTimeout: null,
             panStart: { x: 0, y: 0 },
-            pinchStartZoom: 1
+            pinchStartZoom: 1,
+            laneAssignments: []
         };
     },
     computed: {
@@ -184,17 +216,22 @@ export default {
             const workList = await backend.getWorkListByInstId(this.instanceId);
             if (!workList) return;
 
-            const modeling = self.bpmnViewer.get('modeling');
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
+            const assignmentMap = new Map();
 
-            // workList의 각 작업에 대해 BPMN 요소를 찾아서 담당자 정보 표시
+            // 모든 사용자 정보를 한 번에 가져오기
+            const allUsers = await backend.getUserList({});
+
+            // 모든 레인 찾기
+            const lanes = elementRegistry.filter(el => el.type === 'bpmn:Lane');
+
+            // workList의 각 작업에 대해 BPMN 요소를 찾아서 담당자 정보 수집
             workList.forEach(workItem => {
                 // tracingTag를 통해 해당하는 BPMN 요소 찾기
                 const bpmnElement = elementRegistry.get(workItem.tracingTag);
                 
                 if (bpmnElement && bpmnElement.businessObject) {
                     // 현재 요소가 레인(Lane)인지 확인
-                    const lanes = elementRegistry.filter(el => el.type === 'bpmn:Lane');
                     const associatedLane = lanes.find(lane => {
                         // 레인에 속한 활동들 중에 현재 활동이 있는지 확인
                         return lane.businessObject.flowNodeRef && 
@@ -202,18 +239,41 @@ export default {
                     });
                     
                     if (associatedLane) {
-                        // 레인 이름에 담당자 정보 추가
-                        const originalName = associatedLane.businessObject.name || '역할';
-                        const displayName = workItem.username || workItem.endpoint;
-                        const roleNameWithUser = originalName + "\n" + displayName;
+                        const laneId = associatedLane.id;
+                        const laneName = associatedLane.businessObject.name || '역할';
+                        const displayName = workItem.username || workItem.endpoint || '미지정';
                         
-                        modeling.updateProperties(associatedLane, {
-                            name: roleNameWithUser
-                        });
+                        // 사용자 정보에서 프로필 이미지 찾기
+                        const userInfo = allUsers.find(user => 
+                            user.username === workItem.username || 
+                            user.id === workItem.endpoint
+                        );
                         
-
+                        // 프로필 이미지 경로 처리
+                        let profileImage = '/images/defaultUser.png';
+                        if (userInfo?.profile) {
+                            profileImage = userInfo.profile;
+                        }
+                        
+                        // 중복 방지를 위해 Map 사용
+                        if (!assignmentMap.has(laneId)) {
+                            assignmentMap.set(laneId, {
+                                laneId: laneId,
+                                laneName: laneName,
+                                assignee: displayName,
+                                profileImage: profileImage
+                            });
+                        }
                     }
                 }
+            });
+
+            // Map을 배열로 변환하여 laneAssignments에 저장하고 레인 ID 순서로 정렬
+            self.laneAssignments = Array.from(assignmentMap.values()).sort((a, b) => {
+                // Lane_0, Lane_1, Lane_2 순서로 정렬
+                const aNum = parseInt(a.laneId.replace('Lane_', ''));
+                const bNum = parseInt(b.laneId.replace('Lane_', ''));
+                return aNum - bNum;
             });
         },
         async getVariables(instanceId) {
