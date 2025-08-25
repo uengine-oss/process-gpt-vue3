@@ -108,6 +108,8 @@
                                                 </div>
 
                                                 <div v-else class="d-flex justify-end">
+                                                    <slot name="custom-message-actions" :message="message"></slot>
+
                                                     <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-2 mb-1">
                                                         <div 
                                                             @mouseover="hoverIndex = index"
