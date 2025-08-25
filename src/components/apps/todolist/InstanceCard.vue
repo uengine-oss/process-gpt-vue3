@@ -11,11 +11,21 @@
                         style="word-break: break-all; white-space: normal; margin-right: 5px;"
                     >
                         <span v-if="isNew" class="thinking-wave-text">
+                            <v-tooltip activator="parent" location="bottom">
+                                ID: {{ instance.instId }}
+                            </v-tooltip>
                             <span v-for="(char, index) in instanceName" :key="index" 
-                                  :style="{ animationDelay: `${index * 0.1}s` }"
-                                  class="thinking-char">{{ char === ' ' ? '\u00A0' : char }}</span>
+                                :style="{ animationDelay: `${index * 0.1}s` }"
+                                class="thinking-char"
+                            >{{ char === ' ' ? '\u00A0' : char }}
+                            </span>
                         </span>
-                        <span v-else>{{ instanceName }}</span>
+                        <span v-else>
+                            <v-tooltip activator="parent" location="bottom">
+                                ID: {{ instance.instId }}
+                            </v-tooltip>
+                            {{ instanceName }}
+                        </span>
                     </div>
 
                     <v-chip v-if="instance.status" size="x-small" variant="outlined" class="align-center">
@@ -47,7 +57,7 @@
                     </div>
                 </v-row>
                 <div v-if="instance.instId && !isMobile" class="font-weight-medium pl-4 pr-4" style="color:gray; font-size:14px;">
-                    ID: {{ instance.instId }}
+                    시작자: {{ getStarterName() }} | 시작일시: {{ getFormattedStartDate() }}
                 </div>
             </div>
         </div>
@@ -157,7 +167,7 @@
                         />
                     </v-window-item>
                     <v-window-item value="chat" class="instance-card-tab-5">
-                        <Chats :isInstanceChat="true" :instanceInfo="instance" />
+                        <Chats :isInstanceChat="true" :instanceInfo="instance" :participantUsers="participantUsers" />
                     </v-window-item>
                 </v-window>
             </div>
@@ -230,6 +240,7 @@ export default {
         isLoading: true,
         instance: null,
         eventList: [],
+        firstWorkItem: null,
         // tab
         tab: "workhistory",
         tabItems: [
@@ -242,6 +253,7 @@ export default {
 
         updatedKey: 0,
         deleteDialog: false,
+        participantUsers: [],
     }),
     watch: {
         $route: {
@@ -368,6 +380,26 @@ export default {
                     
                     if (me.instance) {
                         me.eventList = await backend.getEventList(me.instance.instId);
+                        
+                        // 시작자와 시작일시 정보를 위해 첫 번째 workItem 가져오기
+                        const workItems = await backend.getWorkList({instId: me.id});
+                        if (workItems && workItems.length > 0) {
+                            // 시작 날짜가 가장 빠른 workItem 찾기 (첫 번째 작업)
+                            me.firstWorkItem = workItems.reduce((earliest, current) => {
+                                if (!earliest.startDate) return current;
+                                if (!current.startDate) return earliest;
+                                return new Date(current.startDate) < new Date(earliest.startDate) ? current : earliest;
+                            });
+                        }
+                        
+                        // 참여자 정보 가져오기
+                        if (me.instance.participants && me.instance.participants.length > 0) {
+                            const allUsers = await backend.getUserList({});
+                            me.participantUsers = me.instance.participants.map(participantId => {
+                                const user = allUsers.find(u => u.id === participantId);
+                                return user || { id: participantId, username: '알 수 없음', email: '', profile: null };
+                            });
+                        }
                     }
                     
                     // // 인스턴스 변경 시 하위 컴포넌트 강제 리렌더링
@@ -562,6 +594,26 @@ export default {
             } else {
                 return `${minutes}분 후 삭제 예정`;
             }
+        },
+        getStarterName() {
+            if (this.firstWorkItem && this.firstWorkItem.username) {
+                return this.firstWorkItem.username;
+            } else if (this.firstWorkItem && this.firstWorkItem.endpoint) {
+                return this.firstWorkItem.endpoint;
+            }
+            return '알 수 없음';
+        },
+        getFormattedStartDate() {
+            if (this.firstWorkItem && this.firstWorkItem.startDate) {
+                const date = new Date(this.firstWorkItem.startDate);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                return `${year}.${month}.${day} ${hours}:${minutes}`;
+            }
+            return '알 수 없음';
         }
     }
 };

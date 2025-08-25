@@ -46,6 +46,38 @@
                                         {{ filteredAlert.detail }}
                                     </small>
                                 </v-alert>
+
+                                <!-- 참여자 현황 UI -->
+                                <div v-if="participantUsers.length > 0"
+                                    class="pa-4 chat-participants-box"
+                                >
+                                    <h6 class="text-subtitle-1 font-weight-bold mb-2" style="color: #333;">참여자 현황</h6>
+                                    <v-row class="ma-0 pa-0">
+                                        <div v-for="participant in participantUsers" :key="participant.id" class="mr-4">
+                                            <div class="d-flex align-center">
+                                                <v-avatar size="24" class="mr-2">
+                                                    <v-img 
+                                                        :src="participant.profile || '/images/defaultUser.png'" 
+                                                        :alt="participant.username"
+                                                        cover
+                                                    >
+                                                        <template v-slot:error>
+                                                            <v-img src="/images/defaultUser.png" cover>
+                                                                <template v-slot:error>
+                                                                    <v-icon size="small" style="color: #666;">mdi-account</v-icon>
+                                                                </template>
+                                                            </v-img>
+                                                        </template>
+                                                    </v-img>
+                                                </v-avatar>
+                                                <div class="flex-grow-1">
+                                                    <div class="text-body-2 font-weight-medium" style="color: #444;">{{ participant.username || '이름 없음' }}</div>
+                                                    <div class="text-caption" style="color: #666;">{{ participant.email || 'ID: ' + participant.id }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </v-row>
+                                </div>
                                 
                                 <div v-for="(message, index) in filteredMessages" :key="index" class="py-1">
                                     <!-- 날짜 구분선 표시 -->
@@ -1108,6 +1140,10 @@ export default {
         allUserList: {
             type: Array,
             default: []
+        },
+        participantUsers: {
+            type: Array,
+            default: () => []
         }
     },
     data() {
@@ -2407,5 +2443,12 @@ pre {
   top: 4px;
   right: 4px;
   z-index: 10;
+}
+
+.chat-participants-box {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin: 8px;
+    border: 1px solid #e9ecef;
 }
 </style>

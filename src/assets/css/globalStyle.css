@@ -5,6 +5,43 @@ h1, h2, h3, h4, h5, h6 {
 hr {
     opacity: 1 !important;
 }
+.bpmn-uengine-viewer-ssignments-box {
+    position: absolute;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin: 16px;
+    border: 1px solid #e9ecef;
+}
+
+.gantt_cal_ltitle {
+    cursor: default !important;
+    background: white !important;
+    border-bottom: none !important;
+    padding-bottom: 0px !important;
+}
+
+
+.gantt_cal_cover {
+    z-index: 9999 !important;
+}
+
+.gantt-detail-overlay {
+    position: absolute; /* 또는 fixed */
+    top: 4px;
+    right: 2px;
+    width: 40vw; /* 패널 너비 */
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12);
+    z-index: 100;
+    border-left: 1px solid #eee;
+    transition: transform 0.2s;
+}
+
+.gantt-detail-overlay-contents {
+    height: calc(100vh - 300px);
+    overflow: auto;;
+}
 
 .dynamic-form .v-field--disabled {
     opacity: 1 !important;
@@ -1092,7 +1129,14 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+    .gantt-detail-overlay-contents {
+        height: calc(100vh - 170px);
+        overflow: auto;;
+    }
 
+    .gantt-detail-overlay {
+        max-width: 300px;
+    }
 
     .gantt-area {
         height: calc(100vh - 50px);

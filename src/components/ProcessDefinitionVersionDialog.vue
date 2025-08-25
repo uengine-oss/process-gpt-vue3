@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-dialog v-model="isOpen" max-width="400" @click:outside="close()">
+        <v-dialog v-model="isOpen" max-width="400" persistent>
             <v-card>
                 <v-row class="ma-0 pa-2 pt-0 pb-0">
                     <v-card-title>{{
