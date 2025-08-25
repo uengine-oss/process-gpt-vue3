@@ -25,24 +25,19 @@ export default {
     content: { type: String, required: true },
     isEditMode: { type: Boolean, default: false }
   },
+  emits: ['error'],
   data() {
     return {
       deck: null
     }
   },
   mounted() {
-    if (this.$refs.markdownContent) {
-      console.log('[Reveal Debug] setting textarea content')
-      let content = this.content;
-      content = content.replaceAll('::fragment::', '<!-- .element: class=\"fragment\" -->');
-      this.$refs.markdownContent.textContent = content;
-
-      // DOM 반영 → 렌더링 → Reveal 초기화까지 안전하게 대기
+    try {
       if (this.$refs.markdownContent) {
-        console.log('[Reveal Debug] setting textarea content')
+        console.log('[Reveal Debug] textarea 콘텐츠 설정 중')
         let content = this.content;
-        console.log('[Reveal Debug] setting textarea content', content)
-        content = content.replaceAll('::fragment::', '<!-- .element: class=\"fragment\" -->');
+        // replaceAll 대신 replace와 정규표현식 사용 (호환성 향상)
+        content = content.replace(/::fragment::/g, '<!-- .element: class="fragment" -->');
         this.$refs.markdownContent.textContent = content;
 
         this.$nextTick(() => {
@@ -51,76 +46,94 @@ export default {
           })
         })
       }
+    } catch (error) {
+      console.error('[Reveal Error] mounted 에러 발생:', error)
+      this.$emit('error', error)
     }
   },
   watch: {
     content: {
       handler: async function (newContent) {
-        if (this.$refs.markdownContent) {
-          console.log('[Reveal Debug] updating textarea content')
-          let content = newContent;
-          content = content.replaceAll('::fragment::', '<!-- .element: class=\"fragment\" -->');
-          this.$refs.markdownContent.textContent = content;
+        try {
+          if (this.$refs.markdownContent) {
+            console.log('[Reveal Debug] textarea 콘텐츠 업데이트 중')
+            let content = newContent;
+            // replaceAll 대신 replace와 정규표현식 사용 (호환성 향상)
+            content = content.replace(/::fragment::/g, '<!-- .element: class="fragment" -->');
+            this.$refs.markdownContent.textContent = content;
 
-          await this.$nextTick()
-          requestAnimationFrame(() => {
-            if (this.deck) {
-              this.init();
-              console.log('[Reveal Debug] slide count after sync:', this.deck.getSlides().length)
-            }
-          })
+            await this.$nextTick()
+            requestAnimationFrame(() => {
+              if (this.deck) {
+                this.init();
+                console.log('[Reveal Debug] 동기화 후 슬라이드 수:', this.deck.getSlides().length)
+              }
+            })
+          }
+        } catch (error) {
+          console.error('[Reveal Error] content watch 에러 발생:', error)
+          this.$emit('error', error)
         }
       }
     }
   },
   methods: {
     async init() {
-      this.$nextTick(() => {
-        requestAnimationFrame(() => {
-          this.initReveal()
+      try {
+        this.$nextTick(() => {
+          requestAnimationFrame(() => {
+            this.initReveal()
+          })
         })
-      })
+      } catch (error) {
+        console.error('[Reveal Error] init 에러 발생:', error)
+        this.$emit('error', error)
+      }
     },
     async initReveal() {
-      const isPrintPdf = /print-pdf/gi.test(window.location.search)
-      const showNotes = this.getQueryParam('showNotes')
-      const pdfSeparateFragments = this.getQueryParam('pdfSeparateFragments') !== 'false'
-      if (this.deck) {
-        this.deck.destroy()
-        this.deck = null
+      try {
+        const isPrintPdf = /print-pdf/gi.test(window.location.search)
+        const showNotes = this.getQueryParam('showNotes')
+        const pdfSeparateFragments = this.getQueryParam('pdfSeparateFragments') !== 'false'
+        if (this.deck) {
+          this.deck.destroy()
+          this.deck = null
+        }
+
+        this.deck = new Reveal({
+          plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.KaTeX],
+          embedded: true,
+          margin: 0.1,
+          minScale: 0.05,
+          maxScale: 2.0,
+          controls: !this.isEditMode,
+          progress: !this.isEditMode,
+          center: true,
+          touch: !this.isEditMode,
+          fragmentInURL: false,
+          transition: 'slide',
+          viewDistance: this.isEditMode ? 0 : 3,
+          autoSlide: 0,
+          width: this.isEditMode ? 600 : 960,
+          height: this.isEditMode ? 400 : 700,
+          highlight: {
+            highlightOnLoad: true,
+            lineNumbers: true 
+          },
+          markdown: {
+            smartypants: true
+          },
+          pdfSeparateFragments: pdfSeparateFragments,
+          pdfMaxPagesPerSlide: 1,
+          showNotes: showNotes || false
+        })
+
+        await this.deck.initialize()
+        console.log('[Reveal Debug] 슬라이드 수:', this.deck.getSlides().length)
+      } catch (error) {
+        console.error('[Reveal Error] initReveal 에러 발생:', error)
+        this.$emit('error', error)
       }
-
-      this.deck = new Reveal({
-        plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.KaTeX],
-        embedded: true,
-        margin: 0.1,
-        minScale: 0.05,
-        maxScale: 2.0,
-        controls: !this.isEditMode,
-        progress: !this.isEditMode,
-        center: true,
-        touch: !this.isEditMode,
-        fragmentInURL: false,
-        transition: 'slide',
-        viewDistance: this.isEditMode ? 0 : 3,
-        autoSlide: 0,
-        width: this.isEditMode ? 600 : 960,
-        height: this.isEditMode ? 400 : 700,
-        highlight: {
-          highlightOnLoad: true,
-          lineNumbers: true 
-        },
-        markdown: {
-          smartypants: true
-        },
-        pdfSeparateFragments: pdfSeparateFragments,
-        pdfMaxPagesPerSlide: 1,
-        showNotes: showNotes || false
-      })
-
-      await this.deck.initialize()
-      // 슬라이드 수 확인 로그
-      console.log('[Reveal Debug] slide count:', this.deck.getSlides().length)
     },
     getQueryParam(name) {
       const urlParams = new URLSearchParams(window.location.search)

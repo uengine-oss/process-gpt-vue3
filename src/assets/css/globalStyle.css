@@ -5,6 +5,18 @@ h1, h2, h3, h4, h5, h6 {
 hr {
     opacity: 1 !important;
 }
+
+
+
+.form-layout-card-contents-desktop {
+    /* 여러 개의 컬럼이 있을 때 세로 구분선 적용 */
+    [class*="col-"]:not(:only-child):not(:last-child) {
+        border-right: solid 1px rgba(0, 0, 0, 0.2);
+        padding-right: 1rem;
+        margin-right: 1rem;
+    }
+}
+
 .bpmn-uengine-viewer-ssignments-box {
     position: absolute;
     background-color: #f8f9fa;
@@ -346,6 +358,10 @@ hr {
     position: absolute;
     right: 20px;
     top: 20px;
+}
+
+.form-code-field {
+    margin-bottom: 8px;
 }
 
 .form-apply-btn {
@@ -1199,6 +1215,15 @@ hr {
         }
     }
 
+    .form-layout-card-contents-desktop {
+        /* 여러 개의 컬럼이 있을 때 세로 구분선 적용 */
+        [class*="col-"]:not(:only-child):not(:last-child) {
+            border-right: none;
+            padding-right: none;
+            margin-right: none;
+        }
+    }
+
     .instance-running-bpmn-viewer {
         height: calc(100vh - 260px) !important;
     }
@@ -1274,10 +1299,6 @@ hr {
         right: 4px;
         bottom: 4px;
         height: calc(100vh - 200px);
-    }
-    .dynamic-form {   
-        max-height: calc(100vh - 200px);
-        overflow-y: auto;
     }
 }
 

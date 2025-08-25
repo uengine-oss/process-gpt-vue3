@@ -139,60 +139,70 @@
                                                     </v-row>
                                                 </div>
 
-                                                <div v-else class="d-flex justify-end">
-                                                    <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-2 mb-1">
-                                                        <div 
-                                                            @mouseover="hoverIndex = index"
-                                                            @mouseleave="hoverIndex = -1"
-                                                        >
-                                                            <pre class="text-body-1"
-                                                                v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                                            <pre class="text-body-1"
-                                                                v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                                            <v-divider v-if="message.replyContent"></v-divider>
-   
-                                                            <div v-if="message.contentType && message.contentType == 'html'" class="w-100">
-                                                                <DynamicForm 
-                                                                    ref="dynamicForm" 
-                                                                    :formHTML="message.htmlContent" 
-                                                                    v-model="message.jsonContent"
-                                                                    :readonly="true"
-                                                                ></DynamicForm>
-                                                            </div>
-
-                                                            <pre v-if="message.content && message.contentType != 'html'" class="text-body-1" v-html="linkify(message.content)"></pre>
-
-                                                            <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp my-timestamp">
-                                                                {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
-                                                            </div>
-
-                                                            <pre v-if="message.jsonContent && message.contentType != 'html'"
-                                                                class="text-body-1">{{ message.jsonContent }}</pre>
-                                                            <v-row class="ma-0 pa-0">
-                                                                <v-spacer></v-spacer>
-                                                                <v-btn v-if="hoverIndex === index && !disableChat"
-                                                                    @click="editMessage(index)" icon variant="text" size="x-small"
-                                                                    class="float-left edit-btn action-btn"
-                                                                    style="background-color:white;"
-                                                                >
-                                                                    <icons :icon="'pencil'" :size="20"  />
-                                                                </v-btn>
-    
-                                                                <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
-                                                                    :key="isRender"
-                                                                >
-                                                                    <div @click="showGeneratedWorkList = !showGeneratedWorkList"
-                                                                        class="find-message"
-                                                                        :class="generatedWorkList.length > 0 ? 'find-message-on' : 'find-message-off'"
-                                                                    >
-                                                                        <img src="@/assets/images/chat/chat-icon.png"
-                                                                            style="height:30px;"
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            </v-row>
+                                                <div v-else>
+                                                    <div class="d-flex justify-end align-center mb-1">
+                                                        <v-avatar size="32" class="mr-2">
+                                                            <v-img :src="currentUserPicture" :alt="currentUserName" />
+                                                        </v-avatar>
+                                                        <div class="user-name">
+                                                            {{ currentUserName }}
                                                         </div>
-                                                    </v-sheet>
+                                                    </div>
+                                                    <div class="d-flex justify-end">
+                                                        <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-2 mb-1">
+                                                            <div 
+                                                                @mouseover="hoverIndex = index"
+                                                                @mouseleave="hoverIndex = -1"
+                                                            >
+                                                                <pre class="text-body-1"
+                                                                    v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                                                <pre class="text-body-1"
+                                                                    v-if="message.replyContent">{{ message.replyContent }}</pre>
+                                                                <v-divider v-if="message.replyContent"></v-divider>
+    
+                                                                <div v-if="message.contentType && message.contentType == 'html'" class="w-100">
+                                                                    <DynamicForm 
+                                                                        ref="dynamicForm" 
+                                                                        :formHTML="message.htmlContent" 
+                                                                        v-model="message.jsonContent"
+                                                                        :readonly="true"
+                                                                    ></DynamicForm>
+                                                                </div>
+
+                                                                <pre v-if="message.content && message.contentType != 'html'" class="text-body-1" v-html="linkify(message.content)"></pre>
+
+                                                                <div v-if="shouldDisplayMessageTimestamp(message, index)" class="message-timestamp my-timestamp">
+                                                                    {{ message.timeStamp ? formatTime(message.timeStamp) : '' }}
+                                                                </div>
+
+                                                                <pre v-if="message.jsonContent && message.contentType != 'html'"
+                                                                    class="text-body-1">{{ message.jsonContent }}</pre>
+                                                                <v-row class="ma-0 pa-0">
+                                                                    <v-spacer></v-spacer>
+                                                                    <v-btn v-if="hoverIndex === index && !disableChat"
+                                                                        @click="editMessage(index)" icon variant="text" size="x-small"
+                                                                        class="float-left edit-btn action-btn"
+                                                                        style="background-color:white;"
+                                                                    >
+                                                                        <icons :icon="'pencil'" :size="20"  />
+                                                                    </v-btn>
+        
+                                                                    <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
+                                                                        :key="isRender"
+                                                                    >
+                                                                        <div @click="showGeneratedWorkList = !showGeneratedWorkList"
+                                                                            class="find-message"
+                                                                            :class="generatedWorkList.length > 0 ? 'find-message-on' : 'find-message-off'"
+                                                                        >
+                                                                            <img src="@/assets/images/chat/chat-icon.png"
+                                                                                style="height:30px;"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </v-row>
+                                                            </div>
+                                                        </v-sheet>
+                                                    </div>
                                                 </div>
 
                                                 <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) && generatedWorkList.length > 0" class="mt-3">
@@ -1206,6 +1216,10 @@ export default {
             showTeamMemberSelector: null, // 팀원 선택 UI를 표시할 메시지 인덱스
             selectedTeamMembersByMessage: {}, // 메시지별 선택된 팀원들
             teamMemberSearch: '', // 팀원 검색 텍스트
+            
+            // 사용자 정보
+            currentUserName: localStorage.getItem('userName') || '사용자',
+            currentUserPicture: localStorage.getItem('picture') || '/images/defaultUser.png'
         };
     },
     created() {

@@ -293,10 +293,13 @@
                             :is-simulate="isSimulate"
                             :is-finished-agent-generation="isFinishedAgentGeneration"
                             :processDefinition="processDefinition"
-                        >
+                        >   
+                            <template #form-work-item-action-label>
+                                <div class="text-h5 font-weight-semibold">결과 입력</div>
+                            </template>
                             <template #form-work-item-action-btn>
                                 <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
-                                    class="work-item-form-btn-box d-flex justify-end align-center pr-3"
+                                    class="work-item-form-btn-box align-center pr-3"
                                 >
                                     <v-btn v-if="hasGeneratedContent"
                                         @click="resetGeneratedContent"

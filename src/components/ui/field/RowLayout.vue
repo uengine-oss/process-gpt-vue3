@@ -20,7 +20,7 @@
             <v-card-title v-if="alias && alias.length" class="d-flex justify-space-between">
                 <div class="text-h5 font-weight-semibold" style="white-space: normal; word-break: break-all;">{{(alias && alias.length > 0) ? alias : name}}</div>
             </v-card-title>
-            <div class="delete-input-details form-layout-card-contents-mobile">
+            <div class="delete-input-details form-layout-card-contents-mobile form-layout-card-contents-desktop">
                 <slot :modelValue="localModelValue"></slot>
             </div>
         </v-card>

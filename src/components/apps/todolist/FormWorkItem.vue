@@ -37,72 +37,75 @@
             </div>
         </v-row>
 
-        <v-card flat>
-            <v-card-text class="pa-4 pt-3">
-                <!-- 참고해야 할 이전 산출물이 있는 경우 -->
-                <ActivityInputData v-if="hasInputFields" :inputFields="inputFields" :workItem="workItem" />
+        <div class="pa-2">
+            <v-card elevation="10">
+                <v-card-text class="pa-4 pt-3">
+                    <!-- 참고해야 할 이전 산출물이 있는 경우 -->
+                    <ActivityInputData v-if="hasInputFields" :inputFields="inputFields" :workItem="workItem" />
 
-                <v-row class="ma-0 pa-0 mb-4">
-                    <v-spacer></v-spacer>
-                    <!-- 추가: PC 전용 액션 슬롯 -->
-                    <slot name="form-work-item-action-btn"></slot>
-                </v-row>
-                <!-- 등록된 폼 정보가 없을 때 표시되는 메시지 -->
-                <div v-if="isInitialized && (!html || html === 'null') && Object.keys(formData).length === 0 && workItem.activity.checkpoints.length === 0" 
-                     class="text-center py-8">
-                    
-                    <v-icon size="64" color="grey-lighten-1" class="mb-4">
-                        mdi-file-document-outline
-                    </v-icon>
-                    <h3 class="text-h6 text-grey-darken-1 mb-2">등록된 폼 정보가 없습니다</h3>
-                    <p class="text-body-2 text-grey">
-                        현재 작업에 대한 폼 데이터를 찾을 수 없습니다.
-                    </p>
-                </div>
-                <!-- 기존 폼 컨텐츠 -->
-                <div v-else>
-                    <!-- 슬랏으로 버튼 추가 영역  -->
-                    <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem"></DynamicForm>
-                    <!-- <div v-if="!isCompleted" class="mb-4">
-                        <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
-                        <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
-                    </div> -->
-                    <Checkpoints v-if="workItem.activity.checkpoints.length > 0" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
-                    <!-- 모바일 상태에서 나오는 버튼 -->
-                    <v-row v-if="!isCompleted && isOwnWorkItem && isMobile && (html || workItem.activity.checkpoints.length > 0)" class="ma-0 pa-0">
+                    <v-row class="ma-0 pa-0 mb-4">
+                        <slot name="form-work-item-action-label"></slot>
                         <v-spacer></v-spacer>
-                        <v-btn v-if="isSimulate == 'true'" 
-                            :disabled="activityIndex == 0"
-                            @click="backToPrevStep"
-                            variant="elevated" 
-                            class="rounded-pill mr-2"
-                            density="compact"
-                            style="background-color: #808080; color: white;"
-                        >이전 단계</v-btn>
-                        <v-btn v-if="!isDryRun && isSimulate != 'true'"
-                            @click="saveTask"
-                            class="mr-2  default-greay-btn"
-                            density="compact"
-                            rounded variant="flat"
-                        >중간 저장</v-btn>
-                        <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
-                            class="bouncing-arrow-horizontal"
-                            color="primary"
-                            size="large"
-                        >
-                            mdi-arrow-right-bold
-                        </v-icon>
-                        <v-btn @click="executeProcess"
-                            color="primary"
-                            density="compact"
-                            rounded variant="flat"
-                            :disabled="isLoading"
-                            :loading="isLoading"
-                        >제출 완료 </v-btn>
+                        <!-- 추가: PC 전용 액션 슬롯 -->
+                        <slot name="form-work-item-action-btn"></slot>
                     </v-row>
-                </div>
-            </v-card-text>
-        </v-card>
+                    <!-- 등록된 폼 정보가 없을 때 표시되는 메시지 -->
+                    <div v-if="isInitialized && (!html || html === 'null') && Object.keys(formData).length === 0 && workItem.activity.checkpoints.length === 0" 
+                        class="text-center py-8">
+                        
+                        <v-icon size="64" color="grey-lighten-1" class="mb-4">
+                            mdi-file-document-outline
+                        </v-icon>
+                        <h3 class="text-h6 text-grey-darken-1 mb-2">등록된 폼 정보가 없습니다</h3>
+                        <p class="text-body-2 text-grey">
+                            현재 작업에 대한 폼 데이터를 찾을 수 없습니다.
+                        </p>
+                    </div>
+                    <!-- 기존 폼 컨텐츠 -->
+                    <div v-else>
+                        <!-- 슬랏으로 버튼 추가 영역  -->
+                        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem"></DynamicForm>
+                        <!-- <div v-if="!isCompleted" class="mb-4">
+                            <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
+                            <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
+                        </div> -->
+                        <Checkpoints v-if="workItem.activity.checkpoints.length > 0" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
+                        <!-- 모바일 상태에서 나오는 버튼 -->
+                        <v-row v-if="!isCompleted && isOwnWorkItem && isMobile && (html || workItem.activity.checkpoints.length > 0)" class="ma-0 pa-0">
+                            <v-spacer></v-spacer>
+                            <v-btn v-if="isSimulate == 'true'" 
+                                :disabled="activityIndex == 0"
+                                @click="backToPrevStep"
+                                variant="elevated" 
+                                class="rounded-pill mr-2"
+                                density="compact"
+                                style="background-color: #808080; color: white;"
+                            >이전 단계</v-btn>
+                            <v-btn v-if="!isDryRun && isSimulate != 'true'"
+                                @click="saveTask"
+                                class="mr-2  default-greay-btn"
+                                density="compact"
+                                rounded variant="flat"
+                            >중간 저장</v-btn>
+                            <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
+                                class="bouncing-arrow-horizontal"
+                                color="primary"
+                                size="large"
+                            >
+                                mdi-arrow-right-bold
+                            </v-icon>
+                            <v-btn @click="executeProcess"
+                                color="primary"
+                                density="compact"
+                                rounded variant="flat"
+                                :disabled="isLoading"
+                                :loading="isLoading"
+                            >제출 완료 </v-btn>
+                        </v-row>
+                    </div>
+                </v-card-text>
+            </v-card>
+        </div>
         <!-- workItem.vue로 위임하기 이동 -->
         <!-- <v-dialog v-model="delegateTaskDialog"
             :class="isMobile ? 'form-work-item-delegate-task-form-dialog-mobile' : 'form-work-item-delegate-task-form-dialog-pc'"

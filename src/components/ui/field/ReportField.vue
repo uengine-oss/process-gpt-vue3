@@ -1,7 +1,7 @@
 <template>
     <div>
         <!-- <slide-component :key="localModelValue" style="width: 100%; height: 250px;" :content="localModelValue" :isEditMode="false" class="presentation-slide" /> -->
-        <v-card class="rounded-lg mb-2" :style="`background-color: ${hexToRgba(themeColor, 0.05)} !important;`" elevation="0" hover @click="editMarkdown">
+        <v-card class="rounded-lg mb-2" variant="outlined" hover @click="editMarkdown">
             <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
             <v-row class="ma-0 pa-4" style="overflow: hidden; max-height: 120px;">
                 <div>
@@ -29,7 +29,7 @@
                 </div>
             </v-row>
             <!-- 미리보기 확장 영역 -->
-            <v-row v-if="previewMenu" class="ma-0 pa-0" @click.stop>
+            <v-row v-if="previewMenu" class="ma-0 pa-4" @click.stop>
                 <v-sheet elevation="3" rounded style="width: 100%; min-width: 400px; min-height: 300px; padding: 16px; background: white;">
                     <MarkdownEditor
                         :style="'width: 100%; height: 100%;'"
