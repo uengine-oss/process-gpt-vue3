@@ -39,6 +39,7 @@
                     <div class="mt-4">
                         <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
                             <user-select-field v-model="roleMapping.endpoint"
+                                :disabled="roleMapping.disabled"
                                 :name="roleMapping.name"
                                 :item-value="'id'"
                                 :hide-details="true"
@@ -227,7 +228,13 @@ export default {
                 const roles = me.processDefinition.roles;
                 let hasDefaultRole = false;
                 me.roleMappings = roles.map((role) => {
-                    if(role.default && role.default.length > 0) {
+                    let disabled = "false";
+                    console.log(role.name, startActivity.role)
+                    if (role.name == startActivity.role) {
+                        const uid = localStorage.getItem('uid');
+                        role.endpoint = uid;
+                        disabled = "true";
+                    } else if(role.default && role.default.length > 0) {
                         hasDefaultRole = true;
                         if (Array.isArray(role.default)) {
                             role.default = role.default.filter((item) => isUUID(item));
@@ -238,6 +245,7 @@ export default {
                         endpoint: hasDefaultRole ? role.default : role.endpoint,
                         resolutionRule: role.resolutionRule,
                         default: hasDefaultRole ? role.default : '',
+                        disabled: disabled
                     };
                 });
 
