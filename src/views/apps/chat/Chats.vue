@@ -312,7 +312,7 @@ export default {
         attachments: [],
 
         isAgentLearning: false,
-        showAgentLearning: true,
+        showAgentLearning: false,
     }),
     computed: {
         filteredChatRoomList() {
