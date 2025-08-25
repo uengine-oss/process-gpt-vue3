@@ -139,28 +139,36 @@
                                                     </v-row>
                                                 </div>
 
-                                                <div v-else class="d-flex justify-end">
-                                                    <slot name="custom-message-actions" :message="message"></slot>
-
-                                                    <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-2 mb-1">
-                                                        <div 
-                                                            @mouseover="hoverIndex = index"
-                                                            @mouseleave="hoverIndex = -1"
-                                                        >
-                                                            <pre class="text-body-1"
-                                                                v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                                            <pre class="text-body-1"
-                                                                v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                                            <v-divider v-if="message.replyContent"></v-divider>
-   
-                                                            <div v-if="message.contentType && message.contentType == 'html'" class="w-100">
-                                                                <DynamicForm 
-                                                                    ref="dynamicForm" 
-                                                                    :formHTML="message.htmlContent" 
-                                                                    v-model="message.jsonContent"
-                                                                    :readonly="true"
-                                                                ></DynamicForm>
-                                                            </div>
+                                                <div v-else>
+                                                    <div class="d-flex justify-end align-center mb-1">
+                                                        <v-avatar size="32" class="mr-2">
+                                                            <v-img :src="currentUserPicture" :alt="currentUserName" />
+                                                        </v-avatar>
+                                                        <div class="user-name">
+                                                            {{ currentUserName }}
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex justify-end">
+                                                        <slot name="custom-message-actions" :message="message"></slot>
+                                                        <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-2 mb-1">
+                                                            <div 
+                                                                @mouseover="hoverIndex = index"
+                                                                @mouseleave="hoverIndex = -1"
+                                                            >
+                                                                <pre class="text-body-1"
+                                                                    v-if="message.replyUserName">{{ message.replyUserName }}</pre>
+                                                                <pre class="text-body-1"
+                                                                    v-if="message.replyContent">{{ message.replyContent }}</pre>
+                                                                <v-divider v-if="message.replyContent"></v-divider>
+    
+                                                                <div v-if="message.contentType && message.contentType == 'html'" class="w-100">
+                                                                    <DynamicForm 
+                                                                        ref="dynamicForm" 
+                                                                        :formHTML="message.htmlContent" 
+                                                                        v-model="message.jsonContent"
+                                                                        :readonly="true"
+                                                                    ></DynamicForm>
+                                                                </div>
 
                                                                 <pre v-if="message.content && message.contentType != 'html'" class="text-body-1" v-html="linkify(message.content)"></pre>
 
