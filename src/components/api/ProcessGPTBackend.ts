@@ -1390,7 +1390,6 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-
     async watchInstanceList(callback: (payload: any) => void, options?: any){
         try {
             if(!options) options = {}
@@ -2958,6 +2957,41 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getUsage(options?: any){
+        try {
+            if(!options) options = {}
+            if(!options.match) options.match = {}
+            if(!options.match['tenant_id']) options.match['tenant_id'] = window.$tenantName
+
+            const lists = await storage.list('usage', options);
+            if (lists && lists.length > 0) {
+                return lists.map((item: any) => {
+                    return this.convertKeysToCamelCase(item)
+                });
+            }
+            return [];
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getUsageWithService(options?: any){
+        try {
+            if(!options) options = {}
+            if(!options.startAt) options.startAt = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10).replace(/-/g, '-')
+            if(!options.endAt) options.endAt = `${new Date().toISOString().slice(0, 10).replace(/-/g, '-')} 23:59:59`
+
+            return await storage.callProcedure('get_usage_with_service', {
+                p_tenant_id: window.$tenantName,
+                p_start_time: options.startAt,
+                p_end_time: options.endAt
+            })
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
     async watchOff(ref: any){
         try {
             return await storage._watch_off(ref);
@@ -3186,6 +3220,161 @@ class ProcessGPTBackend implements Backend {
             //@ts-ignore
             throw new Error(error.message);
         }
+    }
+    
+    async getCredits(options?: any){
+        try {
+            if(!options) options = {}
+            if(!options.match) options.match = {}
+            if(!options.match['tenant_id']) options.match['tenant_id'] = window.$tenantName
+
+            const lists = await storage.list('credit', options);
+            if (lists && lists.length > 0) {
+                return lists.map((item: any) => {
+                    return this.convertKeysToCamelCase(item)
+                });
+            }
+            return [];
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getService(options?: any){
+        try {
+            if(!options) options = {}
+            if(!options.match) options.match = {}
+            if(!options.match['tenant_id']) options.match['tenant_id'] = window.$tenantName
+
+            const lists = await storage.list('credit', options);
+            if (lists && lists.length > 0) {
+                return lists.map((item: any) => {
+                    return this.convertKeysToCamelCase(item)
+                });
+            }
+            return [];
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getCurrentServiceCatalog(){
+        try {
+            return await storage.callProcedure('get_current_service_catalog', {
+                p_tenant_id: window.$tenantName
+            })
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getCreditBalance(){
+        try {
+            return await storage.callProcedure('get_credit_balance', {
+                p_tenant_id: window.$tenantName
+            })
+        } catch (error){
+            throw new Error(error.message);
+        }
+    }
+
+    async getValidCreditPurchase(options?: any){
+        try {
+            if(!options.startAt) options.startAt = new Date().toISOString().slice(0, 10).replace(/-/g, '-')
+
+            return await storage.callProcedure('get_valid_credit_purchases', {
+                p_tenant_id: window.$tenantName,
+                p_date: options.startAt
+            })
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+
+    async watchCreditUsage(callback: (payload: any) => void) {
+        try {
+            
+            return await storage._watch({
+                channel: 'credit_usage',
+                table: 'credit_usage',
+                filter: `tenant_id=eq.(${window.$tenantName}))`
+            },(payload) => {
+                callback(payload);
+            });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getPlans(options?: any){
+        try {
+            if(!options) options = {}
+
+            const lists = await storage.list('plan', options);
+            if (lists && lists.length > 0) {
+                return lists.map((item: any) => {
+                    return this.convertKeysToCamelCase(item)
+                });
+            }
+            return [];
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getCurrentPlan(){
+        var me = this
+        try {
+            // if(!options) options = {}
+            // window.$tenantName;
+
+            return {
+                id: '1',
+                tenant_id: window.$tenantName,
+                plan_id: '7fb2d603-59ab-4365-948b-68c62d6622a5',
+                user_id: 'sooheon45@uengine.org',
+                start_at: "",
+                end_at: "",
+                created_at: null,
+                plan: {
+                    type: 'free',
+                    status: 'active'
+                }
+            };
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+
+    async putRequestPayment(item: any) {
+        try {
+            return await storage.putObject('payment', item);     
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    convertKeysToCamelCase(obj: any): any {
+        if (typeof obj !== 'object' || obj === null) {
+            return obj;
+        }
+
+        if (Array.isArray(obj)) {
+            return obj.map(item => this.convertKeysToCamelCase(item));
+        }
+
+        return Object.keys(obj).reduce((acc: any, key: string) => {
+            const camelCaseKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+            acc[camelCaseKey] = this.convertKeysToCamelCase(obj[key]);
+            return acc;
+        }, {});
     }
     
     async setMCPByTenant(mcp: any) {

@@ -324,4 +324,126 @@ export default {
     font-size: 16px !important;
     font-weight: 500 !important;
 }
+
+/* Footer Styles */
+.footer {
+    background-color: #f8f9fa;
+    padding: 40px 0 20px 0;
+    margin-top: auto;
+    border-top: 1px solid #e9ecef;
+}
+
+.footer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.footer-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.copyright {
+    color: #495057;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.company-info {
+    color: #6c757d;
+    font-size: 12px;
+    line-height: 1.6;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.company-info div {
+    margin-bottom: 4px;
+}
+
+.terms-header {
+    color: #495057;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.terms-links {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.terms-link {
+    color: #6c757d;
+    font-size: 12px;
+    text-decoration: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: color 0.2s ease;
+}
+
+.terms-link:hover {
+    color: #495057;
+    text-decoration: underline;
+}
+
+.social-icons {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-start;
+}
+
+.social-icon {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    background-color: #e9ecef !important;
+    border: none !important;
+    padding: 0 !important;
+    min-width: unset !important;
+}
+
+.social-icon-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.social-text {
+    color: #495057;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.social-icon .v-icon {
+    color: #495057 !important;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .footer-content {
+        gap: 20px;
+    }
+    
+    .terms-links {
+        gap: 20px;
+    }
+    
+    .social-icons {
+        gap: 10px;
+    }
+    
+    .social-icon {
+        width: 35px !important;
+        height: 35px !important;
+    }
+}
 </style>
