@@ -48,7 +48,7 @@ export default {
             const sections = [];
             Object.keys(this.sectionsData).forEach(sectionTitle => {
                 const items = this.sectionsData[sectionTitle].map(item => ({
-                    path: item.fileName.replace('.md', ''),
+                    path: item.path, // 라우트 구조에서 정의된 path 사용
                     title: item.title,
                     markdownFile: item.fileName,
                     order: item.order
@@ -75,7 +75,46 @@ export default {
                 'active': this.currentPage?.path === page.path,
                 'inactive': this.currentPage?.path !== page.path
             };
+        },
+
+        // 외부에서 페이지 선택할 수 있는 메서드
+        selectPageByPath(targetPath) {
+            // 모든 섹션에서 해당 경로의 페이지 찾기
+            for (const section of this.tutorialSections) {
+                const foundPage = section.items.find(item => {
+                    // 1. 정확한 경로 매칭
+                    if (item.path === targetPath) {
+                        return true;
+                    }
+                    
+                    // 2. 파일명 기반 매칭 (admin-guide.md -> admin-guide)
+                    const fileBasedPath = item.markdownFile.replace('.md', '');
+                    if (fileBasedPath === targetPath) {
+                        return true;
+                    }
+                    
+                    // 3. 경로 끝부분 매칭 (/process-gpt/admin-guide/ -> admin-guide)
+                    const pathEndMatch = item.path.replace('/process-gpt/', '').replace(/\/+$/, '');
+                    if (pathEndMatch === targetPath) {
+                        return true;
+                    }
+                    
+                    return false;
+                });
+                
+                if (foundPage) {
+                    this.selectPage(foundPage);
+                    return true;
+                }
+            }
+            return false;
         }
+    },
+
+    emits: ['page-selected', 'tutorial-link-clicked'],
+    
+    mounted() {
+        // 컴포넌트 마운트 완료
     }
 }
 </script>

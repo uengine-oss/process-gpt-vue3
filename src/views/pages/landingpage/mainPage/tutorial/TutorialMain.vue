@@ -2,6 +2,7 @@
     <div class="tutorial-main">
         <div class="tutorial-layout">
             <TutorialSidebar 
+                ref="sidebar"
                 :current-page="currentPage"
                 :sections-data="sectionsData"
                 @page-selected="selectPage"
@@ -11,6 +12,7 @@
                 :current-page="currentPage"
                 :all-pages="allPages"
                 @page-selected="selectPage"
+                @tutorial-link-clicked="handleTutorialLinkClick"
             />
         </div>
     </div>
@@ -49,7 +51,7 @@ export default {
                 Object.values(groupedMetadata).forEach(sectionItems => {
                     sectionItems.forEach(item => {
                                                        this.allPages.push({
-                                   path: item.fileName.replace('.md', ''),
+                                   path: item.path, // 라우트 구조의 path 사용
                                    title: item.title,
                                    markdownFile: item.fileName,
                                    section: item.section,
@@ -71,6 +73,14 @@ export default {
         },
         closeTutorial() {
             this.$emit('close-tutorial');
+        },
+        
+        // 튜토리얼 링크 클릭 처리
+        handleTutorialLinkClick(targetPath) {
+            // 사이드바의 selectPageByPath 메서드 호출
+            if (this.$refs.sidebar) {
+                this.$refs.sidebar.selectPageByPath(targetPath);
+            }
         }
     }
 }

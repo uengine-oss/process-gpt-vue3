@@ -55,7 +55,7 @@ export class MarkdownLoader {
                 imageSrc = `/src/views/pages/landingpage/mainPage/uengine-image/${src.replace('uengine-image/', '')}`;
             }
             
-            return `<img src="${imageSrc}" alt="${alt}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin: 16px 0;" />`;
+            return `<img src="${imageSrc}" alt="${alt}" style="max-width: 800px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin: 8px 0px 48px 0px;" />`;
         });
         
         // 테이블 처리 먼저 수행
@@ -73,22 +73,61 @@ export class MarkdownLoader {
             .replace(/```[\s\S]*?```/g, (match) => {
                 const code = match.replace(/```/g, '').trim();
                 return `<pre><code>${code}</code></pre>`;
-            })
-            .replace(/^\d+\.\s(.+)$/gm, '<li>$1</li>')
-            .replace(/^-\s(.+)$/gm, '<li>$1</li>')
-            .replace(/(<li>.*<\/li>)/s, (match) => {
-                if (match.includes('1.')) {
-                    return `<ol>${match}</ol>`;
+            });
+        
+        // 리스트 처리 - 간단한 방식
+        // 순서가 있는 리스트 (1. 2. 3.) - 숫자 유지
+        result = result.replace(/^(\d+)\.\s(.+)$/gm, '<li class="ordered-item" value="$1">$2</li>');
+        
+        // 일반 리스트 (- 항목) - 들여쓰기 없음
+        result = result.replace(/^-\s(.+)$/gm, '<li class="unordered-item">$1</li>');
+        
+        // 모든 들여쓰기 레벨의 리스트 처리
+        result = result.replace(/^(\s{8,})-\s(.+)$/gm, '<li class="sub-sub-unordered-item">$2</li>');
+        result = result.replace(/^(\s{4,7})-\s(.+)$/gm, '<li class="sub-unordered-item">$2</li>');
+        result = result.replace(/^(\s{1,3})-\s(.+)$/gm, '<li class="sub-unordered-item">$2</li>');
+        
+        // 순서가 있는 리스트를 <ol>로 감싸기
+        result = result.replace(/(<li class="ordered-item"[^>]*>.*?<\/li>(\n|$))+/g, (match) => {
+            const cleanMatch = match.replace(/ class="ordered-item"/g, '');
+            return `<ol style="list-style-type: decimal; padding-left: 20px; margin: 16px 0;">${cleanMatch}</ol>`;
+        });
+        
+        // 더 깊은 하위 리스트를 <ul>로 감싸기 (8+ 공백)
+        result = result.replace(/(<li class="sub-sub-unordered-item">.*?<\/li>(\n|$))+/g, (match) => {
+            const cleanMatch = match.replace(/ class="sub-sub-unordered-item"/g, '');
+            return `<ul style="list-style-type: disc; padding-left: 60px; margin: 4px 0;">${cleanMatch}</ul>`;
+        });
+        
+        // 하위 리스트를 <ul>로 감싸기 (들여쓰기 적용)
+        result = result.replace(/(<li class="sub-unordered-item">.*?<\/li>(\n|$))+/g, (match) => {
+            const cleanMatch = match.replace(/ class="sub-unordered-item"/g, '');
+            return `<ul style="list-style-type: disc; padding-left: 40px; margin: 8px 0;">${cleanMatch}</ul>`;
+        });
+        
+        // 일반 리스트를 <ul>로 감싸기
+        result = result.replace(/(<li class="unordered-item">.*?<\/li>(\n|$))+/g, (match) => {
+            const cleanMatch = match.replace(/ class="unordered-item"/g, '');
+            return `<ul style="list-style-type: disc; padding-left: 20px; margin: 16px 0;">${cleanMatch}</ul>`;
+        });
+        
+        result = result
+            .replace(/\[(.+?)\]\((.+?)\)/g, (match, text, href) => {
+                // 내부 튜토리얼 링크인 경우 클릭 이벤트로 처리
+                if (!href.startsWith('http') && !href.startsWith('mailto:')) {
+                    return `<a class="tutorial-link" data-target="${href}" style="color: #3b82f6; text-decoration: underline; cursor: pointer;">${text}</a>`;
                 }
-                return `<ul>${match}</ul>`;
+                // 외부 링크는 기본 처리
+                return `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
             })
-            .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>')
             .replace(/\n\n/g, '</p><p>')
             .replace(/^(?!<[h\d|ul|ol|pre|img|a])(.+)$/gm, '<p>$1</p>')
             .replace(/<p><\/p>/g, '');
             
         return result;
     }
+
+
 
     // 테이블 파싱
     parseTable(content) {
@@ -141,7 +180,6 @@ export class MarkdownLoader {
             const markdownData = await this.getStaticMarkdownContent(fileName);
             
             if (!markdownData) {
-                console.error('마크다운 파일을 찾을 수 없습니다:', fileName);
                 return null;
             }
             
@@ -157,7 +195,6 @@ export class MarkdownLoader {
             this.cache.set(fileName, result);
             return result;
         } catch (error) {
-            console.error('마크다운 파일 로드 실패:', fileName, error);
             return null;
         }
     }
@@ -169,14 +206,12 @@ export class MarkdownLoader {
             const response = await fetch(`/src/views/pages/landingpage/mainPage/tutorial/tutoria-contents/${fileName}`);
             
             if (!response.ok) {
-                console.error(`파일을 찾을 수 없습니다: ${fileName} (${response.status})`);
                 return null;
             }
             
             const content = await response.text();
             return content;
         } catch (error) {
-            console.error('fetch 실패:', fileName, error);
             return null;
         }
     }
@@ -273,7 +308,7 @@ export class MarkdownLoader {
                     fileName: item.markdownFile,
                     title: item.title,  // 라우트 구조의 title만 사용
                     section: section.title,
-                    path: item.path.replace('/process-gpt/', '').replace('/', '') || 'index',
+                    path: item.path, // 전체 path 사용
                     order: i + 1,
                     markdownFile: item.markdownFile
                 });

@@ -12,33 +12,7 @@
                 </div>
             </div>
             
-            <div class="markdown-content" v-html="renderedContent"></div>
-            
-            <div class="content-navigation">
-                <button 
-                    v-if="previousPage" 
-                    @click="navigatePage(previousPage)"
-                    class="nav-btn prev-btn"
-                >
-                    <span class="nav-arrow">←</span>
-                    <div class="nav-text">
-                        <span class="nav-label">이전</span>
-                        <span class="nav-title">{{ previousPage.title }}</span>
-                    </div>
-                </button>
-                
-                <button 
-                    v-if="nextPage" 
-                    @click="navigatePage(nextPage)"
-                    class="nav-btn next-btn"
-                >
-                    <div class="nav-text">
-                        <span class="nav-label">다음</span>
-                        <span class="nav-title">{{ nextPage.title }}</span>
-                    </div>
-                    <span class="nav-arrow">→</span>
-                </button>
-            </div>
+            <div class="markdown-content" v-html="renderedContent" @click="handleContentClick"></div>
         </div>
     </div>
 </template>
@@ -103,7 +77,7 @@ export default {
                     this.currentMarkdownData = markdownData;
                     this.renderedContent = markdownData.renderedContent;
                 } else {
-                    this.renderedContent = '<p>컨텐츠를 찾을 수 없습니다.</p>';
+                    this.renderedContent = '<p>마크다운 컨텐츠 로드중입니다.</p>';
                     console.error('마크다운 파일을 찾을 수 없습니다:', page.markdownFile);
                 }
             } catch (error) {
@@ -120,6 +94,35 @@ export default {
         },
         navigatePage(page) {
             this.$emit('page-selected', page);
+        },
+
+        // 마크다운 콘텐츠 내 링크 클릭 처리
+        handleContentClick(event) {
+            let target = event.target;
+            
+            // 부모 요소들을 검사하여 tutorial-link 클래스를 가진 요소 찾기
+            let linkElement = null;
+            let currentElement = target;
+            
+            // 최대 5단계까지 부모 요소 검사
+            for (let i = 0; i < 5; i++) {
+                if (currentElement && currentElement.classList && currentElement.classList.contains('tutorial-link')) {
+                    linkElement = currentElement;
+                    break;
+                }
+                currentElement = currentElement.parentElement;
+                if (!currentElement) break;
+            }
+            
+            if (linkElement) {
+                event.preventDefault();
+                const targetPath = linkElement.getAttribute('data-target');
+                
+                if (targetPath) {
+                    // 부모 컴포넌트로 링크 클릭 이벤트 전달
+                    this.$emit('tutorial-link-clicked', targetPath);
+                }
+            }
         }
     }
 }
@@ -202,15 +205,35 @@ export default {
 .markdown-content :deep(ul) {
     margin: 16px 0;
     padding-left: 20px;
+    list-style-type: disc;
+}
+
+.markdown-content :deep(ol) {
+    margin: 16px 0;
+    padding-left: 20px;
+    list-style-type: decimal;
 }
 
 .markdown-content :deep(li) {
     margin: 8px 0;
+    line-height: 1.5;
 }
 
 .markdown-content :deep(a) {
     display: inline-block;
     padding-bottom: 24px;
+}
+
+.markdown-content :deep(.tutorial-link) {
+    color: #3b82f6;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.markdown-content :deep(.tutorial-link:hover) {
+    color: #1d4ed8;
+    text-decoration: none;
 }
 
 .markdown-content :deep(img) {
