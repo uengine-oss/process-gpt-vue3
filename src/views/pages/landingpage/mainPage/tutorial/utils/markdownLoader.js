@@ -39,8 +39,13 @@ export class MarkdownLoader {
     parseMarkdown(content) {
         let result = content;
         
+        // 코드블록을 가장 먼저 처리 (다른 마크다운 요소들이 간섭하지 않도록)
+        result = result.replace(/```([\s\S]*?)```/g, (match, code) => {
+            const cleanCode = code.trim();
+            return `<pre style="background-color: #2d3748; color: #ffffff; border: 1px solid #4a5568; border-radius: 4px; padding: 16px; margin: 16px 0; font-family: 'Courier New', monospace; white-space: pre-wrap; overflow-x: auto;"><code style="background: none; padding: 0; font-size: 14px; line-height: 1.4; color: #ffffff;">${cleanCode}</code></pre>`;
+        });
         
-        // 이미지 처리를 먼저 수행
+        // 이미지 처리
         result = result.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
             
             // 이미지 경로 처리 - uengine-image 폴더 기준으로 변경
@@ -58,7 +63,7 @@ export class MarkdownLoader {
             return `<img src="${imageSrc}" alt="${alt}" class="tutorial-markdown-img" />`;
         });
         
-        // 테이블 처리 먼저 수행
+        // 테이블 처리
         result = this.parseTable(result);
         
         // 나머지 마크다운 처리
@@ -69,11 +74,7 @@ export class MarkdownLoader {
             .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.+?)\*/g, '<em>$1</em>')
-            .replace(/`(.+?)`/g, '<code>$1</code>')
-            .replace(/```[\s\S]*?```/g, (match) => {
-                const code = match.replace(/```/g, '').trim();
-                return `<pre><code>${code}</code></pre>`;
-            });
+            .replace(/`(.+?)`/g, '<code>$1</code>');
         
         // 리스트 처리 - 간단한 방식
         // 순서가 있는 리스트 (1. 2. 3.) - 숫자 유지

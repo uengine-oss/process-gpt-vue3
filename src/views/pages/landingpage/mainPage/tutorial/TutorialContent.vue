@@ -255,18 +255,28 @@ export default {
 }
 
 .markdown-content :deep(pre) {
-    background: #1f2937;
-    color: #f9fafb;
-    padding: 16px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 16px 0;
+    background: #2d3748 !important;
+    color: #ffffff !important;
+    padding: 16px !important;
+    border-radius: 4px !important;
+    border: 1px solid #4a5568 !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    margin: 16px 0 !important;
+    font-family: 'Courier New', monospace !important;
+    white-space: pre !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    display: block !important;
+    box-sizing: border-box !important;
 }
 
 .markdown-content :deep(pre code) {
-    background: none;
-    padding: 0;
-    color: inherit;
+    background: none !important;
+    padding: 0 !important;
+    color: #ffffff !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
 }
 
 .content-navigation {
