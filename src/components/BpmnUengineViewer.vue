@@ -1,6 +1,11 @@
 <template>
     <!-- <div> -->
-    <div style="height: 100%; position: relative;" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }" v-hammer:pan="onPan" v-hammer:pinch="onPinch">
+    <div style="height: 100%; position: relative;" 
+        ref="container" class="vue-bpmn-diagram-container" 
+        :class="{ 'view-mode': isViewMode, 'vue-bpmn-diagram-container-view-mode': isViewMode }" 
+        v-hammer:pan="onPan" 
+        v-hammer:pinch="onPinch"
+    >
         <div :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
@@ -11,9 +16,8 @@
         </div>
         <!-- 담당자 정보 표시 UI -->
         <div v-if="laneAssignments.length > 0"
-            class=" pa-4 bpmn-uengine-viewer-ssignments-box"
+            class=" pa-0 pl-4 pt-2 bpmn-uengine-viewer-ssignments-box"
         >
-            <h6 class="text-subtitle-1 font-weight-bold mb-2" style="color: #333;">담당자 현황</h6>
             <v-row class="ma-0 pa-0">
                 <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="mr-4">
                     <div class="d-flex align-center">
