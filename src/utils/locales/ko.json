@@ -41,7 +41,8 @@
         "layoutSetting" : "레이아웃 설정",
         "admin" : "관리자 페이지",
         "setting" : "설정",
-        "search": "검색"
+        "search": "검색",
+        "pricing" : "가격 정보"
     },
     "DashboardTodoList": {
         "todo": "나의 업무",
@@ -407,7 +408,8 @@
         "addEnvironment": "Environment 추가",
         "addSecret": "Secret 추가",
         "showSecretData": "Secret Data 보기",
-        "indicatesRequiredField": "*필수 항목입니다."
+        "indicatesRequiredField": "*필수 항목입니다.",
+        "billing": "청구"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",

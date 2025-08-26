@@ -21,11 +21,8 @@
 
 <script>
 import NavItem from '@/layouts/full/vertical-sidebar/NavItem/index.vue';
-
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
-
-
 
 export default {
     components: {
