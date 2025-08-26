@@ -3,7 +3,7 @@
       <div class="payment-success">
         <div>
             <v-icon color="red" size="48" class="red--text">mdi-close-circle</v-icon>
-            <h2>결제 실패 </h2>
+            <h2>결제 실패 하였습니다.</h2>
         </div>
       </div>
     </v-card>
