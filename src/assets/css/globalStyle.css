@@ -656,16 +656,6 @@ hr {
     object-fit: contain;
     filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(100%);
 }
-
-.tutorial-markdown-img {
-    max-width: 50vw;
-    height: auto;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    margin: 8px 0px 48px 0px;
-}
-
-
 /* skeleton 관련 style */
 .tutorial-main-skeleton .v-skeleton-loader__heading {
     display: none;
@@ -1152,9 +1142,6 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
-    .tutorial-markdown-img {
-        max-width: 90vw;
-    }
 
     .gantt-detail-overlay-contents {
         height: calc(100vh - 170px);
