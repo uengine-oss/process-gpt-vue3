@@ -1,6 +1,29 @@
 <template>
-    <div class="tutorial-sidebar">
-        <div class="sidebar-content">
+    <div>
+        <!-- 모바일 햄버거 버튼 -->
+
+        <div class="tutorial-mobile-menu-button" @click="toggleMobileSidebar" v-show="isMobileView">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </div>
+
+        <!-- 모바일 오버레이 -->
+        <div 
+            class="mobile-overlay"
+            v-if="isMobileSidebarOpen && isMobileView"
+            @click="closeMobileSidebar"
+        ></div>
+
+        <!-- 사이드바 -->
+        <div 
+            class="tutorial-sidebar"
+            :class="{ 
+                'mobile-open': isMobileSidebarOpen && isMobileView,
+                'mobile-closed': !isMobileSidebarOpen && isMobileView
+            }"
+        >
+            <div class="sidebar-content">
             <div
                 v-for="(section, index) in tutorialSections"
                 :key="section.title"
@@ -24,6 +47,7 @@
                     </li>
                 </ul>
             </div>
+            </div>
         </div>
     </div>
 </template>
@@ -43,7 +67,16 @@ export default {
             default: () => ({})
         }
     },
+    data() {
+        return {
+            isMobileSidebarOpen: false,
+            windowWidth: window.innerWidth
+        }
+    },
     computed: {
+        isMobileView() {
+            return this.windowWidth <= 768;
+        },
         tutorialSections() {
             const sections = [];
             Object.keys(this.sectionsData).forEach(sectionTitle => {
@@ -67,6 +100,10 @@ export default {
     methods: {
         selectPage(page) {
             this.$emit('page-selected', page);
+            // 모바일에서 페이지 선택 시 사이드바 닫기
+            if (this.isMobileView) {
+                this.closeMobileSidebar();
+            }
         },
 
         getClassesForItem(page) {
@@ -108,13 +145,38 @@ export default {
                 }
             }
             return false;
+        },
+
+        // 모바일 사이드바 토글
+        toggleMobileSidebar() {
+            this.isMobileSidebarOpen = !this.isMobileSidebarOpen;
+        },
+
+        // 모바일 사이드바 닫기
+        closeMobileSidebar() {
+            this.isMobileSidebarOpen = false;
+        },
+
+        // 윈도우 리사이즈 핸들러
+        handleResize() {
+            this.windowWidth = window.innerWidth;
+            // 데스크톱으로 변경시 모바일 사이드바 닫기
+            if (!this.isMobileView) {
+                this.closeMobileSidebar();
+            }
         }
     },
 
     emits: ['page-selected', 'tutorial-link-clicked'],
     
     mounted() {
-        // 컴포넌트 마운트 완료
+        // 윈도우 리사이즈 이벤트 리스너 등록
+        window.addEventListener('resize', this.handleResize);
+    },
+
+    beforeDestroy() {
+        // 윈도우 리사이즈 이벤트 리스너 제거
+        window.removeEventListener('resize', this.handleResize);
     }
 }
 </script>
@@ -243,17 +305,65 @@ export default {
     background: #94a3b8;
 }
 
+/* 모바일 햄버거 버튼 */
+.tutorial-mobile-menu-button {
+    position: fixed;
+    top: 23px;
+    right: 20px;
+    z-index: 1000;
+    font-size: 1.5rem;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+/* 모바일 오버레이 */
+.mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
 @media (max-width: 768px) {
     .tutorial-sidebar {
+        position: fixed;
+        top: 0;
+        left: -300px;
         width: 280px;
+        height: 100vh;
+        z-index: 1001;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
     }
     
-    .sidebar-header {
-        padding: 16px;
+    .tutorial-sidebar.mobile-open {
+        left: 0;
+    }
+    
+    .tutorial-sidebar.mobile-closed {
+        left: -300px;
+    }
+
+
+
+    .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 0;
+        max-height: 100vh;
     }
     
     .section-group {
         padding: 0 16px 12px 16px;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-overlay {
+        display: none !important;
     }
 }
 </style>

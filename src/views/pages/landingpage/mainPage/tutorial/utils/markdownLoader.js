@@ -55,7 +55,7 @@ export class MarkdownLoader {
                 imageSrc = `/src/views/pages/landingpage/mainPage/uengine-image/${src.replace('uengine-image/', '')}`;
             }
             
-            return `<img src="${imageSrc}" alt="${alt}" style="max-width: 800px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin: 8px 0px 48px 0px;" />`;
+            return `<img src="${imageSrc}" alt="${alt}" class="tutorial-markdown-img" />`;
         });
         
         // 테이블 처리 먼저 수행
@@ -87,28 +87,28 @@ export class MarkdownLoader {
         result = result.replace(/^(\s{4,7})-\s(.+)$/gm, '<li class="sub-unordered-item">$2</li>');
         result = result.replace(/^(\s{1,3})-\s(.+)$/gm, '<li class="sub-unordered-item">$2</li>');
         
-        // 순서가 있는 리스트를 <ol>로 감싸기
-        result = result.replace(/(<li class="ordered-item"[^>]*>.*?<\/li>(\n|$))+/g, (match) => {
+        // 순서가 있는 리스트를 <ol>로 감싸기 - OS별 줄바꿈 호환
+        result = result.replace(/(<li class="ordered-item"[^>]*>.*?<\/li>[\s\r\n]*)+/gs, (match) => {
             const cleanMatch = match.replace(/ class="ordered-item"/g, '');
-            return `<ol style="list-style-type: decimal; padding-left: 20px; margin: 16px 0;">${cleanMatch}</ol>`;
+            return `<ol style="list-style-type: decimal !important; list-style-position: outside !important; padding-left: 30px !important; margin: 16px 0 !important; display: block !important;">${cleanMatch}</ol>`;
         });
         
-        // 더 깊은 하위 리스트를 <ul>로 감싸기 (8+ 공백)
-        result = result.replace(/(<li class="sub-sub-unordered-item">.*?<\/li>(\n|$))+/g, (match) => {
+        // 더 깊은 하위 리스트를 <ul>로 감싸기 (8+ 공백) - OS별 줄바꿈 호환
+        result = result.replace(/(<li class="sub-sub-unordered-item">.*?<\/li>[\s\r\n]*)+/gs, (match) => {
             const cleanMatch = match.replace(/ class="sub-sub-unordered-item"/g, '');
-            return `<ul style="list-style-type: disc; padding-left: 60px; margin: 4px 0;">${cleanMatch}</ul>`;
+            return `<ul style="list-style-type: disc !important; list-style-position: outside !important; padding-left: 60px !important; margin: 4px 0 !important; display: block !important;">${cleanMatch}</ul>`;
         });
         
-        // 하위 리스트를 <ul>로 감싸기 (들여쓰기 적용)
-        result = result.replace(/(<li class="sub-unordered-item">.*?<\/li>(\n|$))+/g, (match) => {
+        // 하위 리스트를 <ul>로 감싸기 (들여쓰기 적용) - OS별 줄바꿈 호환
+        result = result.replace(/(<li class="sub-unordered-item">.*?<\/li>[\s\r\n]*)+/gs, (match) => {
             const cleanMatch = match.replace(/ class="sub-unordered-item"/g, '');
-            return `<ul style="list-style-type: disc; padding-left: 40px; margin: 8px 0;">${cleanMatch}</ul>`;
+            return `<ul style="list-style-type: disc !important; list-style-position: outside !important; padding-left: 50px !important; margin: 8px 0 !important; display: block !important;">${cleanMatch}</ul>`;
         });
         
-        // 일반 리스트를 <ul>로 감싸기
-        result = result.replace(/(<li class="unordered-item">.*?<\/li>(\n|$))+/g, (match) => {
+        // 일반 리스트를 <ul>로 감싸기 - OS별 줄바꿈 호환
+        result = result.replace(/(<li class="unordered-item">.*?<\/li>[\s\r\n]*)+/gs, (match) => {
             const cleanMatch = match.replace(/ class="unordered-item"/g, '');
-            return `<ul style="list-style-type: disc; padding-left: 20px; margin: 16px 0;">${cleanMatch}</ul>`;
+            return `<ul style="list-style-type: disc !important; list-style-position: outside !important; padding-left: 30px !important; margin: 16px 0 !important; display: block !important;">${cleanMatch}</ul>`;
         });
         
         result = result

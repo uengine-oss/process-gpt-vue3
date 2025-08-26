@@ -16,7 +16,7 @@
           <!-- <li><router-link class="nav-link" to="/marketplace" @click="scrollToTop">Marketplace</router-link></li> -->
         </ul>
       </nav>
-      <div class="mobile-menu-btn" @click="toggleMobileMenu">
+      <div class="mobile-menu-btn" @click="toggleMobileMenu" v-show="!isTutorialMode">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
@@ -24,7 +24,7 @@
       <div class="mobile-menu" v-if="mobileMenuOpen">
         <ul>
           <!-- <li><a href="https://bpm-intro.uengine.io/process-gpt/" target="_blank">{{ $t('Header.tutorial') }}</a></li> -->
-          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('tutorial')">{{ $t('Header.tutorial') }}</a></li>
+          <li><a @click.prevent="navigateToTutorial">{{ $t('Header.tutorial') }}</a></li>
           <li><a @click.prevent="closeMobileMenuAndNavigateToSection('works')">{{ $t('Header.works') }}</a></li>
           <li><a @click.prevent="closeMobileMenuAndNavigateToSection('ai3Steps')">{{ $t('Header.ai3Steps') }}</a></li>
           <li><a @click.prevent="closeMobileMenuAndNavigateToSection('movie-gallery')">{{ $t('Header.movieGallery') }}</a></li>
@@ -39,6 +39,12 @@
 <script>
 export default {
   name: 'Header',
+  props: {
+    isTutorialMode: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       mobileMenuOpen: false,
@@ -124,6 +130,7 @@ export default {
     },
     navigateToTutorial() {
       this.$emit('show-tutorial');
+      this.mobileMenuOpen = false;
     }
   }
 }

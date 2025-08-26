@@ -236,8 +236,15 @@ export default {
     text-decoration: none;
 }
 
-.markdown-content :deep(img) {
-    margin-bottom: 32px !important;
+.markdown-content :deep(img),
+.markdown-content :deep(.tutorial-markdown-img) {
+    max-width: 800px;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin: 8px 0px 48px 0px;
+    display: block;
 }
 
 .markdown-content :deep(code) {
@@ -331,6 +338,7 @@ export default {
 @media (max-width: 768px) {
     .tutorial-content {
         margin-left: 0;
+        padding-top: 80px; /* 모바일 햄버거 버튼 공간 확보 */
     }
     
     .content-area {
