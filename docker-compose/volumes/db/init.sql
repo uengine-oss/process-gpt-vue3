@@ -353,6 +353,106 @@ create table if not exists public.events (
 
 
 ------------------ 결제시스템 ---------------------------
+-- payment(결제 이력)
+CREATE TABLE public.payment (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- 고유ID
+    payment_key TEXT,                              -- 결제 KEY(PG 관리)
+    order_id TEXT UNIQUE,                          -- 주문 ID(난수)
+    order_name TEXT,                               -- 사용자 표시용 상품명
+    status TEXT DEFAULT 'READY' CHECK (
+      status IN (
+        'READY',               -- 생성 직후
+        'IN_PROGRESS',         -- 인증 완료 (승인 전)
+        'AUTH_FAILED',         -- 인증 실패
+        'DONE',                -- 결제 승인 완료
+        'CANCELED',            -- 전체 취소
+        'PARTIAL_CANCELED',    -- 부분 취소
+        'ABORTED',             -- 승인 실패
+        'EXPIRED',             -- 유효시간 만료
+        'WAITING_FOR_DEPOSIT'  -- 가상계좌 대기
+      )
+    ),
+    receipt_url TEXT,                           	-- PG 영수증 링크               
+    amount DECIMAL(10,2) NOT NULL,              	-- 결제 금액
+    approved_at TIMESTAMPTZ,                      	-- 결제 완료 시간
+    method TEXT,                                	-- 카드, 가상계좌 등
+    user_id TEXT,                               	-- 결제자
+    created_at TIMESTAMPTZ DEFAULT now(),        	 	-- 생성 날짜
+    ref_type TEXT,                              	-- 상품 타입(subscription, credit)                             
+    ref_id TEXT,                                	-- 상품 ID(subscription.id, credit.id)
+    tenant_id TEXT REFERENCES public.tenants(id)  	-- 테넌트
+);
+
+
+-- service(개별 서비스 식별)
+CREATE TABLE public.service (
+    id          TEXT NOT NULL, 								 -- 서비스 ID
+    name        TEXT,                                        -- 서비스 이름
+    created_at  TIMESTAMPTZ DEFAULT NOW(),      			 -- 생성일
+    tenant_id   TEXT       REFERENCES public.tenants(id),    -- 테넌트
+
+    CONSTRAINT service_pkey PRIMARY KEY (id, tenant_id)
+);
+
+-- service_rate(각 서비스별 과금 단위·크레딧 정의)
+CREATE TABLE IF NOT EXISTS public.service_rate (
+    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(), 	-- 고유 ID
+    service_id      text NOT NULL,								-- 서비스 ID 
+    tenant_id       text NOT NULL,								-- 테넌트
+    model           text NOT NULL,								-- 모델명
+    available_from  TIMESTAMPTZ NOT NULL DEFAULT now(), 			-- 적용 시점
+    created_at      TIMESTAMPTZ DEFAULT now(), 					-- 생성일
+    dimension       jsonb NOT NULL DEFAULT '{}'::jsonb, 			-- 가격 및 unit 정보
+
+    CONSTRAINT unique_service_dimension
+    UNIQUE (service_id, tenant_id, model, available_from),
+
+    CONSTRAINT service_rate_tenant_id_fkey
+    FOREIGN KEY (tenant_id) REFERENCES public.tenants (id),
+
+    -- 핵심: service(id, tenant_id) 복합키 참조 + 서비스 삭제 시 함께 삭제
+    CONSTRAINT service_rate_service_tenant_fk
+    FOREIGN KEY (service_id, tenant_id)
+    REFERENCES public.service (id, tenant_id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_service_rate_service_tenant ON public.service_rate (service_id, tenant_id);
+
+
+-- usage(사용량)
+CREATE TABLE public.usage (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,        	 -- 사용량 ID
+    tenant_id TEXT NOT NULL REFERENCES public.tenants(id),   -- 테넌트
+
+    quantity DECIMAL(12,4) NOT NULL,                      	 -- 사용 양(토큰 및 호출수..)  
+    amount DECIMAL(12,7),                                 	 -- 트리거: 크레딧 합계
+    metadata JSONB,                                       	 -- 계산용 데이터
+    service_rate_id UUID REFERENCES public.service_rate(id), -- 트리거: 해당 시점의 가격
+    group_id UUID, 									      	 -- 연결된 사용량 ID
+
+    model TEXT,                                           	 -- 사용 모델
+    service_id TEXT,	                                  	 -- 서비스 ID (LLM, RAG 등)
+    user_id TEXT,                                         	 -- 사용자
+    agent_id TEXT,                                        	 -- agent ID
+    process_def_id  TEXT,                                 	 -- 프로세스 정의 ID
+    process_inst_id TEXT,                                 	 -- 프로세스 인스턴스 ID
+	
+	usage_start_at TIMESTAMPTZ NOT NULL,     			  	 -- 사용 시작
+    usage_end_at TIMESTAMPTZ DEFAULT NOW(),    			  	 -- 사용 종료(자동 생성)
+
+    CONSTRAINT usage_service_fk
+	    FOREIGN KEY (service_id, tenant_id)
+	    REFERENCES public.service (id, tenant_id)
+	    ON UPDATE CASCADE
+	    ON DELETE RESTRICT
+);
+CREATE INDEX idx_usage_service_id      ON public.usage(service_id);
+CREATE INDEX idx_usage_process_def_id  ON public.usage(process_def_id);
+CREATE INDEX idx_usage_process_inst_id ON public.usage(process_inst_id);
+CREATE INDEX idx_usage_tenant_master_date ON public.usage (tenant_id, service_id, usage_start_at);
+
+
 -- credit(크레딧 정의)
 CREATE TABLE public.credit (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),      -- 크레딧 ID
@@ -396,103 +496,6 @@ CREATE TABLE public.credit_usage (
     created_at TIMESTAMPTZ DEFAULT NOW(),                				-- 생성 날짜
 
     CONSTRAINT used_credit_ch CHECK (used_credit >= 0)
-);
-
--- service(개별 서비스 식별)
-CREATE TABLE public.service (
-    id          TEXT NOT NULL, 								 -- 서비스 ID
-    name        TEXT,                                        -- 서비스 이름
-    created_at  TIMESTAMPTZ DEFAULT NOW(),      			 -- 생성일
-    tenant_id   TEXT       REFERENCES public.tenants(id),    -- 테넌트
-
-    CONSTRAINT service_pkey PRIMARY KEY (id, tenant_id)
-);
-
--- service_rate(각 서비스별 과금 단위·크레딧 정의)
-CREATE TABLE IF NOT EXISTS public.service_rate (
-    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(), 	-- 고유 ID
-    service_id      text NOT NULL,								-- 서비스 ID 
-    tenant_id       text NOT NULL,								-- 테넌트
-    model           text NOT NULL,								-- 모델명
-    available_from  TIMESTAMPTZ NOT NULL DEFAULT now(), 			-- 적용 시점
-    created_at      TIMESTAMPTZ DEFAULT now(), 					-- 생성일
-    dimension       jsonb NOT NULL DEFAULT '{}'::jsonb, 			-- 가격 및 unit 정보
-
-    CONSTRAINT unique_service_dimension
-    UNIQUE (service_id, tenant_id, model, available_from),
-
-    CONSTRAINT service_rate_tenant_id_fkey
-    FOREIGN KEY (tenant_id) REFERENCES public.tenants (id),
-
-    -- 핵심: service(id, tenant_id) 복합키 참조 + 서비스 삭제 시 함께 삭제
-    CONSTRAINT service_rate_service_tenant_fk
-    FOREIGN KEY (service_id, tenant_id)
-    REFERENCES public.service (id, tenant_id)
-    ON UPDATE CASCADE
-    ON DELETE CASCADE
-);
-CREATE INDEX IF NOT EXISTS idx_service_rate_service_tenant ON public.service_rate (service_id, tenant_id);
-
--- usage(사용량)
-CREATE TABLE public.usage (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,        	 -- 사용량 ID
-    tenant_id TEXT NOT NULL REFERENCES public.tenants(id),   -- 테넌트
-
-    quantity DECIMAL(12,4) NOT NULL,                      	 -- 사용 양(토큰 및 호출수..)  
-    amount DECIMAL(12,7),                                 	 -- 트리거: 크레딧 합계
-    metadata JSONB,                                       	 -- 계산용 데이터
-    service_rate_id UUID REFERENCES public.service_rate(id), -- 트리거: 해당 시점의 가격
-    group_id UUID, 									      	 -- 연결된 사용량 ID
-
-    model TEXT,                                           	 -- 사용 모델
-    service_id TEXT,	                                  	 -- 서비스 ID (LLM, RAG 등)
-    user_id TEXT,                                         	 -- 사용자
-    agent_id TEXT,                                        	 -- agent ID
-    process_def_id  TEXT,                                 	 -- 프로세스 정의 ID
-    process_inst_id TEXT,                                 	 -- 프로세스 인스턴스 ID
-	
-	usage_start_at TIMESTAMPTZ NOT NULL,     			  	 -- 사용 시작
-    usage_end_at TIMESTAMPTZ DEFAULT NOW(),    			  	 -- 사용 종료(자동 생성)
-
-    CONSTRAINT usage_service_fk
-	    FOREIGN KEY (service_id, tenant_id)
-	    REFERENCES public.service (id, tenant_id)
-	    ON UPDATE CASCADE
-	    ON DELETE RESTRICT
-);
-CREATE INDEX idx_usage_service_id      ON public.usage(service_id);
-CREATE INDEX idx_usage_process_def_id  ON public.usage(process_def_id);
-CREATE INDEX idx_usage_process_inst_id ON public.usage(process_inst_id);
-CREATE INDEX idx_usage_tenant_master_date ON public.usage (tenant_id, service_id, usage_start_at);
-
--- payment(결제 이력)
-CREATE TABLE public.payment (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- 고유ID
-    payment_key TEXT,                              -- 결제 KEY(PG 관리)
-    order_id TEXT UNIQUE,                          -- 주문 ID(난수)
-    order_name TEXT,                               -- 사용자 표시용 상품명
-    status TEXT DEFAULT 'READY' CHECK (
-      status IN (
-        'READY',               -- 생성 직후
-        'IN_PROGRESS',         -- 인증 완료 (승인 전)
-        'AUTH_FAILED',         -- 인증 실패
-        'DONE',                -- 결제 승인 완료
-        'CANCELED',            -- 전체 취소
-        'PARTIAL_CANCELED',    -- 부분 취소
-        'ABORTED',             -- 승인 실패
-        'EXPIRED',             -- 유효시간 만료
-        'WAITING_FOR_DEPOSIT'  -- 가상계좌 대기
-      )
-    ),
-    receipt_url TEXT,                           	-- PG 영수증 링크               
-    amount DECIMAL(10,2) NOT NULL,              	-- 결제 금액
-    approved_at TIMESTAMPTZ,                      	-- 결제 완료 시간
-    method TEXT,                                	-- 카드, 가상계좌 등
-    user_id TEXT,                               	-- 결제자
-    created_at TIMESTAMPTZ DEFAULT now(),        	 	-- 생성 날짜
-    ref_type TEXT,                              	-- 상품 타입(subscription, credit)                             
-    ref_id TEXT,                                	-- 상품 ID(subscription.id, credit.id)
-    tenant_id TEXT REFERENCES public.tenants(id)  	-- 테넌트
 );
 
 -- Create indexes
