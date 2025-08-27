@@ -447,10 +447,20 @@ BEGIN
 
     -- 오케스트레이션 방식 enum
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'agent_orch') THEN
-        CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research');
+        CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react');
         RAISE NOTICE 'Created agent_orch enum type';
     ELSE
-        RAISE NOTICE 'agent_orch enum type already exists';
+        -- 기존 enum에 langchain-react 값 추가
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_enum 
+            WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'agent_orch')
+            AND enumlabel = 'langchain-react'
+        ) THEN
+            ALTER TYPE agent_orch ADD VALUE 'langchain-react';
+            RAISE NOTICE 'Added langchain-react value to agent_orch enum type';
+        ELSE
+            RAISE NOTICE 'langchain-react value already exists in agent_orch enum type';
+        END IF;
     END IF;
 
     -- 이벤트 타입 enum
@@ -600,6 +610,7 @@ BEGIN
             WHEN agent_orch = 'crewai-deep-research' THEN 'crewai-deep-research'::agent_orch
             WHEN agent_orch = 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
             WHEN agent_orch = 'crewai-action' THEN 'crewai-action'::agent_orch
+            WHEN agent_orch = 'langchain-react' THEN 'langchain-react'::agent_orch
             ELSE NULL  -- 기본값을 NULL로 설정
         END;
         

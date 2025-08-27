@@ -335,6 +335,7 @@ export default {
         { value: 'crewai-deep-research', label: 'CrewAI 심층 연구', startLabel: 'CrewAI Deep Research', icon: 'playoff' },
         { value: 'crewai-action', label: 'CrewAI 액션', startLabel: 'CrewAI Action', icon: 'flowchart' },
         { value: 'openai-deep-research', label: 'OpenAI 심층 연구', startLabel: 'OpenAI Deep Research', icon: 'playoff' },
+        { value: 'langchain-react', label: 'LangChain 반응형 연구', startLabel: 'LangChain React', icon: 'playoff' },
         { value: 'browser-use', label: 'Browser Use', startLabel: 'Browser Use', icon: 'browser' }
       ]
     }
@@ -559,6 +560,7 @@ export default {
         (task.crewType === 'report' && task.jobId.includes('final_report_merge')) ||
         task.crewType === 'slide' ||
         task.crewType === 'text' ||
+        task.crewType === 'react' ||
         (task.crewType === 'result' && task.jobId.includes('action'))
       )
     },
@@ -570,20 +572,20 @@ export default {
     },
 
     isMarkdownType(crewType) {
-      return crewType === 'report' || crewType === 'action' || crewType === 'planning'
+      return crewType === 'report' || crewType === 'action' || crewType === 'planning' || crewType === 'react'
     },
 
-    shouldShowExpandControls(payload) {
-        if (payload.crewType === 'slide') return false
-        if (payload.crewType === 'report' || payload.crewType === 'action' || payload.crewType === 'planning') {
-          return this.isContentLong(payload.content);
-        }
-        // JSON의 경우 표시용 컨텐츠를 문자열화해서 판단
-        const rawJson = typeof payload.content === 'string' 
-          ? payload.content 
-          : JSON.stringify(payload.content, null, 2);
-        return this.isContentLong(rawJson);
-      },
+         shouldShowExpandControls(payload) {
+         if (payload.crewType === 'slide') return false
+         if (payload.crewType === 'report' || payload.crewType === 'action' || payload.crewType === 'planning' || payload.crewType === 'react') {
+           return this.isContentLong(payload.content);
+         }
+         // JSON의 경우 표시용 컨텐츠를 문자열화해서 판단
+         const rawJson = typeof payload.content === 'string' 
+           ? payload.content 
+           : JSON.stringify(payload.content, null, 2);
+         return this.isContentLong(rawJson);
+       },
 
     getToolUsageList(jobId) {
       return (!jobId || !this.toolUsageStatusByTask[jobId]) ? [] : this.toolUsageStatusByTask[jobId]
@@ -618,15 +620,8 @@ export default {
 
     getLoadingMessage() {
       const draftStatus = this.todoStatus?.draft_status;
-      const agentOrch = this.todoStatus?.agent_orch;
-      if (draftStatus === 'STARTED' && agentOrch === 'crewai-action') {
-        return '액션 실행 작업을 진행중입니다...'
-      }
       if (draftStatus === 'STARTED') {
-        return '초안 생성 작업을 진행중입니다...'
-      }
-      if (draftStatus === 'FB_REQUESTED' && agentOrch === 'crewai-action') {
-        return '피드백을 반영하여 액션을 다시 실행하고 있습니다...'
+        return '작업을 진행중입니다...'
       }
       if (draftStatus === 'FB_REQUESTED') {
         return '피드백을 반영하여 초안을 다시 생성하고 있습니다...'
@@ -765,6 +760,7 @@ export default {
     formatMarkdownOutput(output) {
       return this.formatOutput(output, 'markdown');
     },
+
 
     // 객체면 첫번째 키의 값을 반환, 배열/문자열 등은 그대로 반환
     resolvePrimaryValue(output, crewType) {
@@ -1229,37 +1225,45 @@ export default {
     },
 
     getMarkdownContent(task) {
-      console.log('마크다운 컨텐츠 처리:', task.content, typeof task.content);
-      
-      // JSON 형태의 데이터인지 확인하고 key : value 형태로 변환
-      if (task.content && typeof task.content === 'object') {
-        const keyValueText = this.convertJsonToKeyValue(task.content);
-        console.log('객체에서 변환된 텍스트:', keyValueText);
+  console.log('마크다운 컨텐츠 처리:', task.content, typeof task.content);
+  
+  // react 타입은 항상 마크다운으로 처리
+  if (task.crewType === 'react') {
+    console.log('react 타입 마크다운 처리');
+    return this.formatMarkdownOutput(task.content);
+  }
+  
+  // JSON 형태의 데이터인지 확인하고 key : value 형태로 변환
+  if (task.content && typeof task.content === 'object') {
+    const keyValueText = this.convertJsonToKeyValue(task.content);
+    console.log('객체에서 변환된 텍스트:', keyValueText);
+    if (keyValueText) {
+      return keyValueText.replace(/\n/g, '<br>');
+    }
+  }
+  
+  // 문자열 형태의 JSON 데이터 처리
+  if (typeof task.content === 'string') {
+    try {
+      const parsed = JSON.parse(task.content);
+      if (typeof parsed === 'object' && parsed !== null) {
+        const keyValueText = this.convertJsonToKeyValue(parsed);
+        console.log('문자열에서 파싱 후 변환된 텍스트:', keyValueText);
         if (keyValueText) {
           return keyValueText.replace(/\n/g, '<br>');
         }
       }
-      
-      // 문자열 형태의 JSON 데이터 처리
-      if (typeof task.content === 'string') {
-        try {
-          const parsed = JSON.parse(task.content);
-          if (typeof parsed === 'object' && parsed !== null) {
-            const keyValueText = this.convertJsonToKeyValue(parsed);
-            console.log('문자열에서 파싱 후 변환된 텍스트:', keyValueText);
-            if (keyValueText) {
-              return keyValueText.replace(/\n/g, '<br>');
-            }
-          }
-        } catch {
-          // JSON이 아니면 기존 마크다운 처리
-          console.log('JSON 파싱 실패, 마크다운으로 처리');
-        }
-      }
-      
-      console.log('기본 마크다운 처리로 진행');
-      return this.formatMarkdownOutput(task.content);
-    },
+    } catch {
+      // JSON이 아니면 기존 마크다운 처리
+      console.log('JSON 파싱 실패, 마크다운으로 처리');
+    }
+  }
+  
+  console.log('기본 마크다운 처리로 진행');
+  return this.formatMarkdownOutput(task.content);
+  },
+
+
 
     // ========================================
     // 🎯 오케스트레이션 방식 관련 메서드들
@@ -1273,6 +1277,7 @@ export default {
         'crewai-deep-research': '다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 | 5~15분 소요',
         'crewai-action': '최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A | 1~5분 소요',
         'openai-deep-research': 'GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 | 3~10분 소요',
+        'langchain-react': 'LangChain 기반의 반응형 에이전트가 다양한 도구를 호출해서 목적을 달성함. ex) AI 이미지 생성, 코드 분석 및 실행 | 2~6분 소요',
         'browser-use': '실제 브라우저를 조작하여 실시간 웹 정보 수집 및 작업 수행. ex) 검색, 폼 작성, 스크래핑 | 2~8분 소요'
       };
       return descriptions[method] || '';
