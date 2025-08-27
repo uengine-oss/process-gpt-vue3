@@ -574,6 +574,7 @@ export default {
                     formValue: inputFields[key]
                 });
             });
+            this.$emit('loadInputData', inputFields);
         },
         backToPrevStep() {
             this.$emit('backToPrevStep');
