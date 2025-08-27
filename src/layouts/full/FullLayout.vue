@@ -108,9 +108,9 @@ const isModelingTab = computed(() => {
                         </div>
                     </v-container>
                 </div>
-                <footer class="footer">
+                <!-- <footer class="footer">
                     <Footer />
-                </footer>
+                </footer> -->
             </v-main>
         </v-app>
     </v-locale-provider>

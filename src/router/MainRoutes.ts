@@ -125,16 +125,17 @@ const MainRoutes = {
             path: '/account-settings',
             component: () => import('@/views/pages/account-settings/AccountSettings.vue')
         },
-        {
-            name: 'privacy',
-            path: '/privacy',
-            component: () => import('@/views/pages/term-policy/Privacy.vue')
-        },
-        {
-            name: 'Terms',
-            path: '/terms',
-            component: () => import('@/views/pages/term-policy/Terms.vue')
-        },
+        // 기존 페이지 방식으로 띄울 때 사용하던 이용약관 주석
+        // {
+        //     name: 'privacy',
+        //     path: '/privacy',
+        //     component: () => import('@/views/pages/term-policy/Privacy.vue')
+        // },
+        // {
+        //     name: 'Terms',
+        //     path: '/terms',
+        //     component: () => import('@/views/pages/term-policy/Terms.vue')
+        // },
         {
             name: 'BSCard',
             path: '/bscard',

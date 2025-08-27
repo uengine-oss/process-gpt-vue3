@@ -260,7 +260,8 @@ export default {
             const dueDate = new Date(this.task.dueDate);
             dueDate.setHours(0, 0, 0, 0); // 기한 날짜의 자정
 
-            return dueDate < today;
+            // 완료된 업무는 기한 지남 메시지를 표시하지 않음
+            return dueDate < today && this.task.status !== 'DONE';
         },
         formattedDate() {
             let dateString = "";
