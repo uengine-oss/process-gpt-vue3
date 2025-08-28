@@ -1532,7 +1532,7 @@ ALTER TABLE public.service ADD COLUMN IF NOT EXISTS id         TEXT NOT NULL;
 ALTER TABLE public.service ADD COLUMN IF NOT EXISTS name       TEXT;
 ALTER TABLE public.service ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE public.service ADD COLUMN IF NOT EXISTS tenant_id  TEXT;
-ALTER TABLE public.service ADD CONSTRAINT service_pkey PRIMARY KEY (id, tenant_id)
+ALTER TABLE public.service ADD CONSTRAINT service_pkey PRIMARY KEY (id, tenant_id);
 ALTER TABLE public.service ADD CONSTRAINT service_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
 
 

@@ -728,28 +728,8 @@ export default {
         }
       }
       
-      if (typeof obj !== 'object' || Array.isArray(obj)) {
-        return JSON.stringify(obj, null, 2);
-      }
-      
-      const lines = [];
-      Object.keys(obj).forEach(key => {
-        const value = obj[key];
-        
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-          // 중첩 객체인 경우
-          lines.push(`${indent}${key} :`);
-          Object.keys(value).forEach(subKey => {
-            const subValue = value[subKey];
-            lines.push(`${indent}- ${subKey} : ${String(subValue)}`);
-          });
-        } else {
-          // 일반 값인 경우
-          lines.push(`${indent}${key} : ${String(value)}`);
-        }
-      });
-      
-      return lines.join('\n');
+      // result 타입의 경우 JSON 형태로 깔끔하게 표시
+      return JSON.stringify(obj, null, 2);
     },
 
     formatJsonOutput(output) {
