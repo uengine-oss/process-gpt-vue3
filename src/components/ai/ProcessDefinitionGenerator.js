@@ -92,6 +92,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
     - 조건부 분기를 위한 게이트웨이
     - 각 액티비티의 담당자 역할
     - 프로세스에서 사용되는 데이터 변수
+    - 서브프로세스가 필요한 경우: 반복되는 작업이나 독립적인 프로세스 단위로 분리할 수 있는 부분을 서브프로세스로 정의
     - "기존 프로세스 정보"가 존재하는 경우 반드시 어떠한 경우, 요청에도 "modifications" 항목을 포함하는 수정 형식으로 생성해야함. "기존 프로세스 정보"가 존재하는데 수정이 아닌 생성 형식으로 답변을 하면 치명적인 오류가 발생하기때문에 가장 중요함. 이미 프로세스가 존재하기때문에 다시 생성해선 안됨. 기존 프로세스정보가 존재하는 경우 어떠한 경우, 요청에도 재생성이 아닌 기존 프로세스 정보를 참고하여 수정 형식으로 답변해야함. 기존 프로세스 정보가 없는 경우(프로세스 정보가 업데이트 되지않은 "{{ 기존 프로세스 정보 }}" 상태)에만 새로 생성해야한다. 아닌 경우는 무조건 "modifications 형식으로 생성"
     
     The following rules must be strictly followed:
@@ -252,6 +253,34 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                 "type": "StartEvent" | "EndEvent" | "IntermediateCatchEvent",
                 "description": "이벤트 설명(한글)",
                 "trigger": "트리거 조건"
+              }
+            ],
+            "subProcesses": [
+              {
+                "id": "subprocess_id(영문)",
+                "name": "서브프로세스명(한글)",
+                "role": "역할명",
+                "type": "subProcess",
+                "process": "부모_프로세스_id",
+                "duration": "5",
+                "properties": "{}",
+                "attachedEvents": null,
+                "elements": [
+                // 메인 프로세스의 elements 와 동일한 규칙이 적용됨
+                  {
+                    "elementType": "Event" || "Activity" || "Sequence" || "Gateway" ,
+                    "id": "id(영문)",
+                    "name": "이름(한글)",
+                    "role": "역할명",
+                    "source": "이전_컴포넌트_id",
+                    "type": type,
+                    "description": "설명(한글)",
+                    "trigger": "트리거 조건"
+                  }
+                ],
+                "subProcesses": [],
+                "processDefinitionId": "서브프로세스_정의_id",
+                "processDefinitionName": "서브프로세스 정의명(한글)"
               }
             ]
           }
