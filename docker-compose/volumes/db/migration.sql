@@ -29,6 +29,8 @@
 -- 4. 인덱스 및 제약조건:
 --    - 유니크 인덱스는 테넌트별로 설정
 --    - CHECK 제약조건은 명확한 값 범위 지정
+--    - 제약조건 추가 시 DO 블록 사용하여 중복 오류 방지
+--      예시: DO $$ BEGIN IF NOT EXISTS (...) THEN ALTER TABLE ... ADD CONSTRAINT ...; END IF; END $$;
 --
 -- 5. 함수 및 트리거:
 --    - 기존 함수/트리거 삭제 후 재생성
@@ -1476,40 +1478,88 @@ BEGIN
         RAISE NOTICE 'FAILED value already exists in draft_status enum type';
     END IF;
 END $$;
-CREATE POLICY agents_insert_policy ON agents FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
-CREATE POLICY agents_select_policy ON agents FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
-CREATE POLICY agents_update_policy ON agents FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
-CREATE POLICY agents_delete_policy ON agents FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
 
 
 -- Billing
--- credit 테이블 추가
-ALTER TABLE public.credit ADD COLUMN id UUID PRIMARY KEY DEFAULT gen_random_uuid();
-ALTER TABLE public.credit ADD COLUMN name TEXT NOT NULL;
-ALTER TABLE public.credit ADD COLUMN description TEXT;
-ALTER TABLE public.credit ADD COLUMN type TEXT NOT NULL;
-ALTER TABLE public.credit ADD COLUMN price DECIMAL(10,2) NOT NULL DEFAULT 0;
-ALTER TABLE public.credit ADD COLUMN credit DECIMAL(12,3) NOT NULL DEFAULT 0;
-ALTER TABLE public.credit ADD COLUMN badge JSONB NOT NULL DEFAULT '{}'::jsonb;
-ALTER TABLE public.credit ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'hidden'));
-ALTER TABLE public.credit ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
-ALTER TABLE public.credit ADD COLUMN validity_months INT DEFAULT 12;
-ALTER TABLE public.credit ADD COLUMN tenant_id TEXT;
-ALTER TABLE public.credit ADD CONSTRAINT credit_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+-- credit 테이블 컬럼 추가 (IF NOT EXISTS 사용)
+ALTER TABLE public.credit ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE public.credit ADD COLUMN IF NOT EXISTS name TEXT NOT NULL;
+ALTER TABLE public.credit ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.credit ADD COLUMN IF NOT EXISTS type TEXT NOT NULL;
+ALTER TABLE public.credit ADD COLUMN IF NOT EXISTS price DECIMAL(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE public.credit ADD COLUMN IF NOT EXISTS credit DECIMAL(12,3) NOT NULL DEFAULT 0;
+ALTER TABLE public.credit ADD COLUMN IF NOT EXISTS badge JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE public.credit ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'hidden'));
+ALTER TABLE public.credit ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.credit ADD COLUMN IF NOT EXISTS validity_months INT DEFAULT 12;
+ALTER TABLE public.credit ADD COLUMN IF NOT EXISTS tenant_id TEXT;
+-- credit 테이블 제약조건 추가 (DO 블록 사용)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'credit_tenant_fk' 
+        AND table_name = 'credit'
+    ) THEN
+        ALTER TABLE public.credit ADD CONSTRAINT credit_tenant_fk 
+            FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+        RAISE NOTICE 'Added credit_tenant_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'credit_tenant_fk foreign key constraint already exists';
+    END IF;
+END $$;
 
 
--- 크레딧 구매 테이블 컬럼 추가 (존재하지 않을 경우만)
-ALTER TABLE public.credit_purchase ADD COLUMN id UUID PRIMARY KEY DEFAULT gen_random_uuid();
-ALTER TABLE public.credit_purchase ADD COLUMN tenant_id TEXT NOT NULL;
-ALTER TABLE public.credit_purchase ADD COLUMN added_credit DECIMAL(12,7) NOT NULL;
-ALTER TABLE public.credit_purchase ADD COLUMN source_type TEXT NOT NULL DEFAULT 'purchase' CHECK (source_type IN ('purchase'));
-ALTER TABLE public.credit_purchase ADD COLUMN source_id TEXT NOT NULL;
-ALTER TABLE public.credit_purchase ADD COLUMN payment_id UUID;
-ALTER TABLE public.credit_purchase ADD COLUMN expires_at TIMESTAMPTZ;
-ALTER TABLE public.credit_purchase ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
-ALTER TABLE public.credit_purchase ADD CONSTRAINT credit_purchase_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
-ALTER TABLE public.credit_purchase ADD CONSTRAINT credit_purchase_payment_fk FOREIGN KEY (payment_id) REFERENCES public.payment(id);
-ALTER TABLE public.credit_purchase ADD CONSTRAINT added_credit_ch CHECK (added_credit >= 0);
+-- 크레딧 구매 테이블 컬럼 추가 (IF NOT EXISTS 사용)
+ALTER TABLE public.credit_purchase ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE public.credit_purchase ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL;
+ALTER TABLE public.credit_purchase ADD COLUMN IF NOT EXISTS added_credit DECIMAL(12,7) NOT NULL;
+ALTER TABLE public.credit_purchase ADD COLUMN IF NOT EXISTS source_type TEXT NOT NULL DEFAULT 'purchase' CHECK (source_type IN ('purchase'));
+ALTER TABLE public.credit_purchase ADD COLUMN IF NOT EXISTS source_id TEXT NOT NULL;
+ALTER TABLE public.credit_purchase ADD COLUMN IF NOT EXISTS payment_id UUID;
+ALTER TABLE public.credit_purchase ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+ALTER TABLE public.credit_purchase ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+-- credit_purchase 테이블 제약조건 추가 (DO 블록 사용)
+DO $$
+BEGIN
+    -- Foreign Key 제약조건들
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'credit_purchase_tenant_fk' 
+        AND table_name = 'credit_purchase'
+    ) THEN
+        ALTER TABLE public.credit_purchase ADD CONSTRAINT credit_purchase_tenant_fk 
+            FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+        RAISE NOTICE 'Added credit_purchase_tenant_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'credit_purchase_tenant_fk foreign key constraint already exists';
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'credit_purchase_payment_fk' 
+        AND table_name = 'credit_purchase'
+    ) THEN
+        ALTER TABLE public.credit_purchase ADD CONSTRAINT credit_purchase_payment_fk 
+            FOREIGN KEY (payment_id) REFERENCES public.payment(id);
+        RAISE NOTICE 'Added credit_purchase_payment_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'credit_purchase_payment_fk foreign key constraint already exists';
+    END IF;
+    
+    -- CHECK 제약조건
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'added_credit_ch' 
+        AND table_name = 'credit_purchase'
+    ) THEN
+        ALTER TABLE public.credit_purchase ADD CONSTRAINT added_credit_ch 
+            CHECK (added_credit >= 0);
+        RAISE NOTICE 'Added added_credit_ch check constraint';
+    ELSE
+        RAISE NOTICE 'added_credit_ch check constraint already exists';
+    END IF;
+END $$;
 
 
 -- public.credit_usage 컬럼 추가 (존재하지 않을 경우만)
@@ -1519,10 +1569,59 @@ ALTER TABLE public.credit_usage ADD COLUMN IF NOT EXISTS usage_id UUID NOT NULL;
 ALTER TABLE public.credit_usage ADD COLUMN IF NOT EXISTS credit_purchase_id UUID;
 ALTER TABLE public.credit_usage ADD COLUMN IF NOT EXISTS used_credit DECIMAL(12,7) NOT NULL;
 ALTER TABLE public.credit_usage ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-ALTER TABLE public.credit_usage ADD CONSTRAINT credit_usage_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
-ALTER TABLE public.credit_usage ADD CONSTRAINT credit_usage_usage_fk FOREIGN KEY (usage_id) REFERENCES public.usage(id);
-ALTER TABLE public.credit_usage ADD CONSTRAINT credit_usage_purchase_fk FOREIGN KEY (credit_purchase_id) REFERENCES public.credit_purchase(id);
-ALTER TABLE public.credit_usage ADD CONSTRAINT used_credit_ch CHECK (used_credit >= 0);
+-- credit_usage 테이블 제약조건 추가 (DO 블록 사용)
+DO $$
+BEGIN
+    -- Foreign Key 제약조건들
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'credit_usage_tenant_fk' 
+        AND table_name = 'credit_usage'
+    ) THEN
+        ALTER TABLE public.credit_usage ADD CONSTRAINT credit_usage_tenant_fk 
+            FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+        RAISE NOTICE 'Added credit_usage_tenant_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'credit_usage_tenant_fk foreign key constraint already exists';
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'credit_usage_usage_fk' 
+        AND table_name = 'credit_usage'
+    ) THEN
+        ALTER TABLE public.credit_usage ADD CONSTRAINT credit_usage_usage_fk 
+            FOREIGN KEY (usage_id) REFERENCES public.usage(id);
+        RAISE NOTICE 'Added credit_usage_usage_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'credit_usage_usage_fk foreign key constraint already exists';
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'credit_usage_purchase_fk' 
+        AND table_name = 'credit_usage'
+    ) THEN
+        ALTER TABLE public.credit_usage ADD CONSTRAINT credit_usage_purchase_fk 
+            FOREIGN KEY (credit_purchase_id) REFERENCES public.credit_purchase(id);
+        RAISE NOTICE 'Added credit_usage_purchase_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'credit_usage_purchase_fk foreign key constraint already exists';
+    END IF;
+    
+    -- CHECK 제약조건
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'used_credit_ch' 
+        AND table_name = 'credit_usage'
+    ) THEN
+        ALTER TABLE public.credit_usage ADD CONSTRAINT used_credit_ch 
+            CHECK (used_credit >= 0);
+        RAISE NOTICE 'Added used_credit_ch check constraint';
+    ELSE
+        RAISE NOTICE 'used_credit_ch check constraint already exists';
+    END IF;
+END $$;
 
 
 -- service 테이블 추가
@@ -1530,8 +1629,34 @@ ALTER TABLE public.service ADD COLUMN IF NOT EXISTS id         TEXT NOT NULL;
 ALTER TABLE public.service ADD COLUMN IF NOT EXISTS name       TEXT;
 ALTER TABLE public.service ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE public.service ADD COLUMN IF NOT EXISTS tenant_id  TEXT;
-ALTER TABLE public.service ADD CONSTRAINT service_pkey PRIMARY KEY (id, tenant_id)
-ALTER TABLE public.service ADD CONSTRAINT service_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+-- service 테이블 제약조건 추가 (DO 블록 사용)
+DO $$
+BEGIN
+    -- Primary Key 제약조건
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'service_pkey' 
+        AND table_name = 'service'
+    ) THEN
+        ALTER TABLE public.service ADD CONSTRAINT service_pkey PRIMARY KEY (id, tenant_id);
+        RAISE NOTICE 'Added service_pkey primary key constraint';
+    ELSE
+        RAISE NOTICE 'service_pkey primary key constraint already exists';
+    END IF;
+    
+    -- Foreign Key 제약조건
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'service_tenant_fk' 
+        AND table_name = 'service'
+    ) THEN
+        ALTER TABLE public.service ADD CONSTRAINT service_tenant_fk 
+            FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+        RAISE NOTICE 'Added service_tenant_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'service_tenant_fk foreign key constraint already exists';
+    END IF;
+END $$;
 
 
 -- service_rate 테이블 추가
@@ -1542,13 +1667,50 @@ ALTER TABLE public.service_rate ADD COLUMN IF NOT EXISTS model TEXT NOT NULL;
 ALTER TABLE public.service_rate ADD COLUMN IF NOT EXISTS available_from TIMESTAMPTZ NOT NULL DEFAULT now();
 ALTER TABLE public.service_rate ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 ALTER TABLE public.service_rate ADD COLUMN IF NOT EXISTS dimension JSONB NOT NULL DEFAULT '{}'::jsonb;
-ALTER TABLE public.service_rate ADD CONSTRAINT unique_service_dimension UNIQUE (service_id, tenant_id, model, available_from);
-ALTER TABLE public.service_rate ADD CONSTRAINT service_rate_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants (id);
-ALTER TABLE public.service_rate ADD CONSTRAINT service_rate_service_tenant_fk
-    FOREIGN KEY (service_id, tenant_id)
-    REFERENCES public.service (id, tenant_id)
-    ON UPDATE CASCADE
-    ON DELETE CASCADE;
+-- service_rate 테이블 제약조건 추가 (DO 블록 사용)
+DO $$
+BEGIN
+    -- Unique 제약조건
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'unique_service_dimension' 
+        AND table_name = 'service_rate'
+    ) THEN
+        ALTER TABLE public.service_rate ADD CONSTRAINT unique_service_dimension 
+            UNIQUE (service_id, tenant_id, model, available_from);
+        RAISE NOTICE 'Added unique_service_dimension unique constraint';
+    ELSE
+        RAISE NOTICE 'unique_service_dimension unique constraint already exists';
+    END IF;
+    
+    -- Foreign Key 제약조건들
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'service_rate_tenant_id_fkey' 
+        AND table_name = 'service_rate'
+    ) THEN
+        ALTER TABLE public.service_rate ADD CONSTRAINT service_rate_tenant_id_fkey 
+            FOREIGN KEY (tenant_id) REFERENCES public.tenants (id);
+        RAISE NOTICE 'Added service_rate_tenant_id_fkey foreign key constraint';
+    ELSE
+        RAISE NOTICE 'service_rate_tenant_id_fkey foreign key constraint already exists';
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'service_rate_service_tenant_fk' 
+        AND table_name = 'service_rate'
+    ) THEN
+        ALTER TABLE public.service_rate ADD CONSTRAINT service_rate_service_tenant_fk
+            FOREIGN KEY (service_id, tenant_id)
+            REFERENCES public.service (id, tenant_id)
+            ON UPDATE CASCADE
+            ON DELETE CASCADE;
+        RAISE NOTICE 'Added service_rate_service_tenant_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'service_rate_service_tenant_fk foreign key constraint already exists';
+    END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_service_rate_service_tenant 
     ON public.service_rate (service_id, tenant_id);
 
@@ -1569,10 +1731,59 @@ ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS process_def_id TEXT;
 ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS process_inst_id TEXT;
 ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS usage_start_at TIMESTAMPTZ NOT NULL;
 ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS usage_end_at TIMESTAMPTZ DEFAULT NOW();
-ALTER TABLE public.usage ADD CONSTRAINT usage_pkey PRIMARY KEY (id);
-ALTER TABLE public.usage ADD CONSTRAINT usage_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
-ALTER TABLE public.usage ADD CONSTRAINT usage_service_rate_fk FOREIGN KEY (service_rate_id) REFERENCES public.service_rate(id);
-ALTER TABLE public.usage ADD CONSTRAINT usage_service_fk FOREIGN KEY (service_id, tenant_id) REFERENCES public.service (id, tenant_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+-- usage 테이블 제약조건 추가 (DO 블록 사용)
+DO $$
+BEGIN
+    -- Primary Key 제약조건
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'usage_pkey' 
+        AND table_name = 'usage'
+    ) THEN
+        ALTER TABLE public.usage ADD CONSTRAINT usage_pkey PRIMARY KEY (id);
+        RAISE NOTICE 'Added usage_pkey primary key constraint';
+    ELSE
+        RAISE NOTICE 'usage_pkey primary key constraint already exists';
+    END IF;
+    
+    -- Foreign Key 제약조건들
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'usage_tenant_fk' 
+        AND table_name = 'usage'
+    ) THEN
+        ALTER TABLE public.usage ADD CONSTRAINT usage_tenant_fk 
+            FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+        RAISE NOTICE 'Added usage_tenant_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'usage_tenant_fk foreign key constraint already exists';
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'usage_service_rate_fk' 
+        AND table_name = 'usage'
+    ) THEN
+        ALTER TABLE public.usage ADD CONSTRAINT usage_service_rate_fk 
+            FOREIGN KEY (service_rate_id) REFERENCES public.service_rate(id);
+        RAISE NOTICE 'Added usage_service_rate_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'usage_service_rate_fk foreign key constraint already exists';
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'usage_service_fk' 
+        AND table_name = 'usage'
+    ) THEN
+        ALTER TABLE public.usage ADD CONSTRAINT usage_service_fk 
+            FOREIGN KEY (service_id, tenant_id) REFERENCES public.service (id, tenant_id) 
+            ON UPDATE CASCADE ON DELETE RESTRICT;
+        RAISE NOTICE 'Added usage_service_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'usage_service_fk foreign key constraint already exists';
+    END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_usage_service_id       ON public.usage(service_id);
 CREATE INDEX IF NOT EXISTS idx_usage_process_def_id   ON public.usage(process_def_id);
 CREATE INDEX IF NOT EXISTS idx_usage_process_inst_id  ON public.usage(process_inst_id);
@@ -1608,6 +1819,46 @@ ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAU
 ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS ref_type TEXT;
 ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS ref_id TEXT;
 ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS tenant_id TEXT;
-ALTER TABLE public.payment ADD CONSTRAINT payment_pkey PRIMARY KEY (id);
-ALTER TABLE public.payment ADD CONSTRAINT payment_order_id_key UNIQUE (order_id);
-ALTER TABLE public.payment ADD CONSTRAINT payment_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+-- 제약조건 추가 (DO 블록 사용)
+DO $$
+BEGIN
+    -- Primary Key 제약조건
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'payment_pkey' 
+        AND table_name = 'payment'
+    ) THEN
+        ALTER TABLE public.payment ADD CONSTRAINT payment_pkey PRIMARY KEY (id);
+        RAISE NOTICE 'Added payment_pkey primary key constraint';
+    ELSE
+        RAISE NOTICE 'payment_pkey primary key constraint already exists';
+    END IF;
+    
+    -- order_id 유니크 제약조건 (테넌트별로 설정)
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'payment_order_id_key' 
+        AND table_name = 'payment'
+    ) THEN
+        -- 기존 유니크 제약조건 삭제 후 테넌트별로 재생성
+        ALTER TABLE public.payment DROP CONSTRAINT IF EXISTS payment_order_id_key;
+        CREATE UNIQUE INDEX IF NOT EXISTS payment_order_id_tenant_key 
+            ON public.payment (order_id, tenant_id);
+        RAISE NOTICE 'Added payment_order_id_tenant_key unique index';
+    ELSE
+        RAISE NOTICE 'payment_order_id_key constraint already exists';
+    END IF;
+    
+    -- Foreign Key 제약조건
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'payment_tenant_fk' 
+        AND table_name = 'payment'
+    ) THEN
+        ALTER TABLE public.payment ADD CONSTRAINT payment_tenant_fk 
+            FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+        RAISE NOTICE 'Added payment_tenant_fk foreign key constraint';
+    ELSE
+        RAISE NOTICE 'payment_tenant_fk foreign key constraint already exists';
+    END IF;
+END $$;

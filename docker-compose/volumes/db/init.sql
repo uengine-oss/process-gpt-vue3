@@ -549,7 +549,7 @@ CREATE TABLE public.credit_purchase (
     expires_at TIMESTAMPTZ ,              			  -- 만료일(생성일 기준 + validity_months)
     created_at TIMESTAMPTZ DEFAULT NOW(), 			  -- 생성일(자동생성)
 
-    CONSTRAINT added_credit_ch CHECK (added_credit >= 0);
+    CONSTRAINT added_credit_ch CHECK (added_credit >= 0)
 );
  
 
