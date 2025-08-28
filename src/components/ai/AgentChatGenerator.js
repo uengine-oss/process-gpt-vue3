@@ -5,25 +5,25 @@ export default class AgentChatGenerator extends AIGenerator {
     constructor(client, language) {
         super(client, language);
         this.model = "gpt-4o"
-        this.chatRoomId = this.client.currentChatRoom.id;
         this.options = {};
     }
 
     beforeGenerate(message) {
         this.message = message.text;
-        this.agentInfo = this.client.selectedUserInfo;
+        this.agentInfo = this.client.agentInfo;
+        this.chatRoomId = this.client.chatRoomId;
         this.isAgentLearning = this.client.isAgentLearning;
 
-        if (this.client.selectedUserInfo && this.client.selectedUserInfo.url && this.client.selectedUserInfo.url !== '') {
+        if (this.client.agentInfo && this.client.agentInfo.url && this.client.agentInfo.url !== '') {
             this.type = 'a2a';
             this.options = {
-                agent_url: this.client.selectedUserInfo.url,
+                agent_url: this.client.agentInfo.url,
                 stream: true
             }
         } else {
             this.type = 'mem0';
             this.options = {
-                agent_id: this.client.selectedUserInfo.id,
+                agent_id: this.client.agentInfo.id,
                 is_learning_mode: this.isAgentLearning
             }
         }
@@ -44,6 +44,7 @@ export default class AgentChatGenerator extends AIGenerator {
                     role: 'agent',
                     name: this.agentInfo.username,
                     profile: this.agentInfo.profile,
+                    email: this.agentInfo.email || 'agent@uengine.org',
                     content: '답변을 생성 중입니다...',
                     isLoading: true
                 });
@@ -128,6 +129,7 @@ export default class AgentChatGenerator extends AIGenerator {
                     });
                     if (this.client.afterGenerationFinished) {
                         this.client.afterGenerationFinished(model);
+                        await this.client.getMessages(this.chatRoomId);
                     }
                 }
             } else {
