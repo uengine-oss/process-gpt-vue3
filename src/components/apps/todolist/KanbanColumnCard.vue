@@ -117,7 +117,16 @@
                     class="my-2"
                 >
                     <div v-if="currentDraftStatus === 'STARTED'">
-                        <div v-if="!detailContent">에이전트 상태 : 진행중 
+                        <div v-if="!detailContent"
+                            class="text-subtitle-2"
+                        >
+                            <span class="thinking-wave-text">
+                                <span v-for="(char, index) in '에이전트 작업중'" :key="index" 
+                                    :style="{ animationDelay: `${index * 0.1}s` }"
+                                    class="thinking-char"
+                                >{{ char === ' ' ? '\u00A0' : char }}
+                                </span>
+                            </span>
                             <span class="loading-dots">
                                 <span>.</span>
                                 <span>.</span>
@@ -127,8 +136,10 @@
                             </span>
                         </div>
                     </div>
-                    <div v-else>
-                        에이전트 상태 : {{ currentDraftStatus }}
+                    <div v-else
+                        class="text-subtitle-2"
+                    >
+                        에이전트 작업 완료
                     </div>
                 </div>
                 <v-row v-if="!isTodolistPath" class="pa-0 ma-0 mt-1 d-flex align-center">
@@ -249,7 +260,8 @@ export default {
             const dueDate = new Date(this.task.dueDate);
             dueDate.setHours(0, 0, 0, 0); // 기한 날짜의 자정
 
-            return dueDate < today;
+            // 완료된 업무는 기한 지남 메시지를 표시하지 않음
+            return dueDate < today && this.task.status !== 'DONE';
         },
         formattedDate() {
             let dateString = "";

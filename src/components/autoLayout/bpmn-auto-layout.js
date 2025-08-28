@@ -33,6 +33,16 @@
       // BPMN 모델에서 요소 가져오기
       const elements = bpmnModeler.get('elementRegistry').getAll();
       
+      // 서브프로세스가 있으면 깨지는 문제가 있어 서브프로세스가 있을 경우에는 임시 비활성화
+      let isSubprocessImported = false;
+      elements.forEach(element => {
+        if(element.type === "bpmn:SubProcess") {
+          isSubprocessImported = true;
+        }
+      });
+      if(isSubprocessImported) {
+        return;
+      }
       // 노드 맵 생성 (빠른 참조를 위함)
       const nodeMap = {};
       

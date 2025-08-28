@@ -6,7 +6,9 @@ hr {
     opacity: 1 !important;
 }
 
-
+.vue-bpmn-diagram-container-view-mode .bjs-container {
+    height: 93% !important;
+}
 
 .form-layout-card-contents-desktop {
     /* 여러 개의 컬럼이 있을 때 세로 구분선 적용 */
@@ -15,14 +17,6 @@ hr {
         padding-right: 1rem;
         margin-right: 1rem;
     }
-}
-
-.bpmn-uengine-viewer-ssignments-box {
-    position: absolute;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    margin: 16px;
-    border: 1px solid #e9ecef;
 }
 
 .gantt_cal_ltitle {

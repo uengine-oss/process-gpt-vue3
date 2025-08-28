@@ -1,7 +1,5 @@
 <template>
   <div class="privacy-policy">
-    <h1>이용약관</h1>
-    
     <div class="policy-content">
       <p>본 이용약관은 Process GPT 관련 소프트웨어 애플리케이션과 웹사이트를 이용하거나 접근하는 개인 또는 단체("사용자", "귀하") 간의 관계를 규율합니다(이하 통칭하여 "서비스").</p>
       <br>

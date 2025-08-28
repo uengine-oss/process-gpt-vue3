@@ -572,7 +572,7 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (options && options.instId) {
-                filter.match.proc_inst_id = options.instId;
+                filter.match.root_proc_inst_id = options.instId;
             }
 
             if (options && options.userId) {
@@ -582,7 +582,16 @@ class ProcessGPTBackend implements Backend {
                 }
             }
 
-            const list = await storage.list('todolist', filter);
+            let list = await storage.list('todolist', filter);
+            if(list.length === 0) { //자식인스턴스 워크아이템 조회
+                if (options && options.instId) {
+                    filter.match.proc_inst_id = options.instId;
+                    delete filter.match.root_proc_inst_id;
+                }
+                list = await storage.list('todolist', filter);
+            } else {
+                list = list.filter((item: any) => item.tool !== null && item.tool !== undefined && item.tool !== '');
+            }
 
             return list.map((item: any) => {
                 return this.returnWorkItemObject(item);
@@ -1345,7 +1354,7 @@ class ProcessGPTBackend implements Backend {
 
             const lists = await storage.list('bpm_proc_inst', options);
             if (lists && lists.length > 0) {
-                return lists.map((item: any) => {
+                return lists.filter((item: any) => !item.parent_proc_inst_id).map((item: any) => {
                     return me.returnInstanceObject(item);
                 });
             }
@@ -1389,6 +1398,7 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
 
     async watchInstanceList(callback: (payload: any) => void, options?: any){
         try {
@@ -3160,7 +3170,10 @@ class ProcessGPTBackend implements Backend {
             dueDate: item.due_date,
             updatedAt: item.updated_at,
             is_deleted: item.is_deleted,
-            deleted_at: item.deleted_at
+            deleted_at: item.deleted_at,
+            parent_proc_inst_id: item.parent_proc_inst_id,
+            root_proc_inst_id: item.root_proc_inst_id,
+            execution_scope: item.execution_scope
         }
     }
 
@@ -3782,7 +3795,9 @@ class ProcessGPTBackend implements Backend {
             const formId = fieldInfo[0];
             const fieldId = fieldInfo[1];
             const activityId = formId.replace(`${procDefId}_`, '').replace('_form', '');
+            let executionScope = null;
 
+            let workitem = null;
             const { data, error } = await window.$supabase
                 .from('todolist')
                 .select('*')
@@ -3791,15 +3806,46 @@ class ProcessGPTBackend implements Backend {
                 .single();
 
             if (error) {
-                throw new Error('workitem not found');
+                const instance = await this.getInstance(instanceId);
+                const rootInstanceId = instance.root_proc_inst_id;
+                executionScope = instance.execution_scope;
+                const { data, error } = await window.$supabase
+                    .from('todolist')
+                    .select('*')
+                    .eq('proc_inst_id', rootInstanceId)
+                    .ilike('activity_id', activityId)
+                    .single();
+                if(error) {
+                    throw new Error('workitem not found');
+                } else {
+                    workitem = data;
+                }
+            } else {
+                workitem = data;
             }
-            const workitem = data;
             const output = workitem.output;
             if (!output) {
                 throw new Error('output not found');
             }
-            fieldValue[formId] = {
-                [fieldId]: output[formId][fieldId]
+
+            let filed = output[formId][fieldId];
+            if(filed) {
+                fieldValue[formId] = {
+                    [fieldId]: filed
+                }
+            } else {
+                let group = Object.values(output[formId]);
+                if(group) {
+                    group.forEach((item: any) => {
+                        if(executionScope) {
+                            if(item[executionScope][fieldId]) {
+                                fieldValue[formId] = {
+                                    [fieldId]: item[executionScope][fieldId]
+                                }
+                            }
+                        }
+                    });
+                }
             }
             return fieldValue;
         } catch (error) {

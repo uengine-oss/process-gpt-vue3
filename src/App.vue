@@ -336,7 +336,7 @@ export default {
 .footer-content {
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 15px;
 }
 
 .footer-section {
@@ -429,10 +429,6 @@ export default {
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-    .footer-content {
-        gap: 20px;
-    }
-    
     .terms-links {
         gap: 20px;
     }

@@ -1,41 +1,78 @@
 <template>
-    <v-container>
-        <div class="footer-content">
-            <!-- Copyright 및 회사 정보 -->
-            <div class="footer-section">
-                <div class="copyright">
-                    Copyright © uEngine Solutions. All Rights Reserved
-                </div>
-                <div class="company-info">
-                    <div>사업자등록번호 211-87-95355 | 대표 : 장진영</div>
-                    <div>서울특별시 서초구 사임당로 31, 301호(서초동, 궁현빌딩) | 고객센터 02-567-8301</div>
-                </div>
+    <v-container class="ma-0 pa-0">
+        <v-divider></v-divider>
+        <div class="footer-content ma-0 pa-3 text-center">
+            <!-- Copyright -->
+            <div class="mb-2 text-caption text-medium-emphasis">
+                Copyright © uEngine Solutions.<br>All Rights Reserved
+            </div>
+            
+            <!-- 회사 정보 -->
+            <div class="mb-2 text-caption text-medium-emphasis">
+                <div class="mb-1">사업자등록번호 211-87-95355<br>대표 : 장진영</div>
+                <div class="mb-1">서울특별시 서초구 사임당로 31<br>301호(서초동, 궁현빌딩)</div>
+                <div>고객센터 02-567-8301</div>
             </div>
             
             <!-- 약관 링크 -->
-            <div class="footer-section">
-                <div class="terms-links">
-                    <a href="/terms" class="terms-link" target="_blank">서비스 이용약관</a>
-                    <a href="/privacy" class="terms-link" target="_blank">개인정보처리방침</a>
-                    <!-- <a href="/terms/refund" class="terms-link" target="_blank">취소/환불 정책</a> -->
-                </div>
-            </div>
-            
-            <!-- 소셜 미디어 아이콘 -->
-            <div class="footer-section" v-if="false">
-                <div class="social-icons">
-                    <v-btn icon variant="text" class="social-icon">
-                        <div class="social-icon-inner">
-                            <span class="social-text">TALK</span>
-                        </div>
-                    </v-btn>
-                    <v-btn icon variant="text" class="social-icon">
-                        <div class="social-icon-inner">
-                            <span class="social-text">N</span>
-                        </div>
-                    </v-btn>
-                </div>
+            <div class="d-flex justify-center gap-3 text-caption">
+                <a @click="showTermsDialog = true" class="text-decoration-none text-primary cursor-pointer">서비스 이용약관</a>
+                <span class="text-medium-emphasis">|</span>
+                <a @click="showPrivacyDialog = true" class="text-decoration-none text-primary cursor-pointer">개인정보처리방침</a>
             </div>
         </div>
+
+        <!-- 서비스 이용약관 다이얼로그 -->
+        <v-dialog v-model="showTermsDialog" max-width="800px" scrollable>
+            <v-card>
+                <v-row class="ma-0 pa-4 align-center">
+                    <v-card-title class="pa-0">서비스 이용약관</v-card-title>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="closeDialog"
+                        class="ml-auto" 
+                        variant="text" 
+                        density="compact"
+                        icon
+                    >
+                        <v-icon @click="showTermsDialog = false">mdi-close</v-icon>
+                    </v-btn>
+                </v-row>
+                <v-divider></v-divider>
+                <v-card-text class="pa-4" style="max-height: 70vh;">
+                    <Terms />
+                </v-card-text>
+            </v-card>
+        </v-dialog>
+
+        <!-- 개인정보처리방침 다이얼로그 -->
+        <v-dialog v-model="showPrivacyDialog" max-width="800px" scrollable>
+            <v-card>
+                <v-row class="ma-0 pa-4 align-center">
+                    <v-card-title class="pa-0">개인정보처리방침</v-card-title>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="closeDialog"
+                        class="ml-auto" 
+                        variant="text" 
+                        density="compact"
+                        icon
+                    >
+                        <v-icon @click="showPrivacyDialog = false">mdi-close</v-icon>
+                    </v-btn>
+                </v-row>
+                <v-divider></v-divider>
+                <v-card-text class="pa-4" style="max-height: 70vh;">
+                    <Privacy />
+                </v-card-text>
+            </v-card>
+        </v-dialog>
     </v-container>
 </template>
+
+<script setup>
+import { ref } from 'vue'
+import Terms from '@/views/pages/term-policy/Terms.vue'
+import Privacy from '@/views/pages/term-policy/Privacy.vue'
+
+const showTermsDialog = ref(false)
+const showPrivacyDialog = ref(false)
+</script>
