@@ -549,7 +549,10 @@
         "name": "Name",
         "message": "Description",
         "save": "Save",
-        "versionDescriptionTitle": "If checked, it will save by incrementing the version by one step, otherwise it will save in the current version."
+        "versionDescriptionTitle": "If checked, it will save by incrementing the version by one step, otherwise it will save in the current version.",
+        "idRequired": "ID is required.",
+        "idRules": "Use lowercase letters, numbers, and underscores only (e.g., new_process_id)",
+        "nameRequired": "Name is required."
     },
     "FormDefinitionPanel": {
         "editForm": "Edit Form Attribute",
