@@ -11,7 +11,7 @@ export default class AgentChatGenerator extends AIGenerator {
     beforeGenerate(message) {
         this.message = message.text;
         this.agentInfo = this.client.agentInfo;
-        this.chatRoomId = this.client.agentInfo.id;
+        this.chatRoomId = this.client.chatRoomId;
         this.isAgentLearning = this.client.isAgentLearning;
 
         if (this.client.agentInfo && this.client.agentInfo.url && this.client.agentInfo.url !== '') {
@@ -129,6 +129,7 @@ export default class AgentChatGenerator extends AIGenerator {
                     });
                     if (this.client.afterGenerationFinished) {
                         this.client.afterGenerationFinished(model);
+                        await this.client.getMessages(this.chatRoomId);
                     }
                 }
             } else {

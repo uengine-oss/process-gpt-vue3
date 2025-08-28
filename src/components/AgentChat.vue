@@ -43,6 +43,10 @@
                                 <v-icon start class="mr-2">mdi-school</v-icon>
                                 학습 모드
                             </v-tab>
+                            <v-tab value="question" class="text-left justify-start">
+                                <v-icon start class="mr-2">mdi-chat</v-icon>
+                                질의 모드
+                            </v-tab>
                             <v-tab value="knowledge" class="text-left justify-start">
                                 <v-icon start class="mr-2">mdi-database</v-icon>
                                 지식 관리
@@ -53,11 +57,11 @@
             </template>
             <template v-slot:rightpart>
                 <!-- Learning Mode Tab Content -->
-                <div v-if="activeTab === 'learning'" class="chat-info-view-wrapper-chats">
+                <div v-if="activeTab === 'learning' || activeTab === 'question'" class="chat-info-view-wrapper-chats">
                     <Chat :messages="messages" :agentInfo="agentInfo"
                         :isAgentMode="isAgentMode" :userInfo="userInfo" 
                         :disableChat="disableChat" :type="'instances'"
-                        :name="chatName" :chatRoomId="agentInfo.id"
+                        :name="chatName" :chatRoomId="chatRoomId"
                         @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
                         @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
                     ></Chat>
@@ -147,9 +151,15 @@ export default {
         Chat
     },
     data: () => ({
-        agentInfo: {},
+        agentInfo: {
+            id: '',
+            profile: '/images/defaultUser.png',
+            username: 'Agent',
+            goal: '에이전트의 목표가 설정되지 않았습니다.',
+        },
         isAgentLearning: true,
         activeTab: 'learning', // 기본값은 학습 모드
+        chatRoomId: '',
     }),
     computed: {
         id() {
@@ -158,8 +168,8 @@ export default {
     },
     watch: {
         "$route": {
-            handler() {
-                this.init();
+            async handler() {
+                await this.init();
             },
             deep: true
         },
@@ -167,6 +177,14 @@ export default {
             async handler(newVal) {
                 if(newVal === 'knowledge') {
                     await this.getKnowledge();
+                } else if(newVal === 'question') {
+                    this.isAgentLearning = false;
+                    this.chatRoomId = `${this.agentInfo.id}-question`;
+                    await this.getMessages(this.chatRoomId);
+                } else {
+                    this.isAgentLearning = true;
+                    this.chatRoomId = `${this.agentInfo.id}-learning`;
+                    await this.getMessages(this.chatRoomId);
                 }
             },
             immediate: true
@@ -186,8 +204,14 @@ export default {
     methods: {
         async init() {
             this.agentInfo = await this.backend.getUserById(this.id);
-            await this.getMessages(this.agentInfo.id);
 
+            if (this.isAgentLearning) {
+                this.chatRoomId = `${this.agentInfo.id}-learning`;
+            } else {
+                this.chatRoomId = `${this.agentInfo.id}-question`;
+            }
+
+            await this.getMessages(this.chatRoomId);
         },
         async getKnowledge() {
             const options = {
@@ -202,7 +226,7 @@ export default {
             }
             let messageObj = {
                 "messages": message,
-                "id": this.agentInfo.id,
+                "id": this.chatRoomId,
                 "uuid": uuid
             }
             
@@ -233,7 +257,13 @@ export default {
                 let obj = this.createMessageObj(responseObj, 'agent')
                 obj.name = this.agentInfo.username
                 obj.profile = this.agentInfo.profile
-                if (responseObj.work == 'Mem0AgentInformation' || responseObj.work == 'Mem0AgentResponse') {
+                if (responseObj.work == 'Mem0AgentQuery') {
+                    if (responseObj.searchResults) {
+                        obj.content = responseObj.content
+                        obj.htmlContent = responseObj.htmlContent
+                        obj.searchResults = responseObj.searchResults
+                    }
+                } else if (responseObj.work == 'Mem0AgentInformation' || responseObj.work == 'Mem0AgentResponse') {
                     obj.content = responseObj.content
                 } else if (responseObj.work == 'A2AResponse') {
                     let content = responseObj.content
@@ -243,8 +273,8 @@ export default {
                 }
                 obj.uuid = this.uuid()
                 await this.putMessage(obj)
-                await this.getMessages(this.agentInfo.id);
             }
+            await this.getMessages(this.chatRoomId);
         },
     }
 }
