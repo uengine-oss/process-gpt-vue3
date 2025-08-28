@@ -48,7 +48,7 @@
         </div>
       </div>
       <div class="hero-image">
-        <img src="@/assets/images/mainPages/how-02.gif" alt="Process GPT 프로세스 정의관리 gif 이미지" />
+        <img src="@/assets/images/mainPages/main-img-processgpt.png" alt="Process GPT 프로세스 정의관리 gif 이미지" />
       </div>
     </div>
   </section>
@@ -177,7 +177,7 @@ export default {
   width: 100%;
   height: auto;
   border-radius: 10px;
-  border: 4px solid #b1dbf6;
+  /* border: 4px solid #b1dbf6; */
   /* box-shadow: 0 10px 30px var(--shadow-color); */
 }
 

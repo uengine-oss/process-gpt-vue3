@@ -69,7 +69,6 @@
    - **[이미지-3]**: 사용자 업무 폼 생성
    ![](../../uengine-image/process-gpt/process_definition_chat3.png)
 
-
    - 생성된 폼은 업무 패널에서 확인 가능하고 직접 폼을 수정하거나 채팅을 통해 수정할 수 있습니다.
    - **[이미지-4]**: 사용자 업무 폼 수정
    ![](../../uengine-image/process-gpt/process_definition_chat4.png)
