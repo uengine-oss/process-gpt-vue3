@@ -86,8 +86,6 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS role text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tenant_id text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS device_token text;
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_credentials jsonb;
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_credentials_updated_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS goal text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS persona text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS url text;
@@ -295,13 +293,13 @@ ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS html text;
 ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS author_uid text;
 
 -- tenant_oauth table
-ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS id UUID DEFAULT uuid_generate_v4();
-ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS tenant_id TEXT;
-ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS provider VARCHAR(50);
-ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS client_id VARCHAR(255);
-ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS client_secret TEXT;
-ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS redirect_uri VARCHAR(255);
+ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS tenant_id text;
+ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS client_id text;
+ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS client_secret text;
+ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS redirect_uri text;
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS drive_folder_id TEXT;
+ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS google_credentials jsonb;
+ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS google_credentials_updated_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
