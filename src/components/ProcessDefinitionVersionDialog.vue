@@ -11,7 +11,7 @@
                         <Icons :icon="'close'" :size="16" />
                     </v-btn>
                 </v-row>
-                <v-card-text class="delete-input-details pt-0">
+                <v-card-text class="pt-0">
                     <v-switch v-model="isVersion" color="primary" :label="`${$t('ProcessDefinitionVersionDialog.minorUpdate')}: ${newVersion}`"></v-switch>
                     <DetailComponent
                         :title="$t('ProcessDefinitionVersionDialog.versionDescriptionTitle')"
@@ -28,7 +28,7 @@
                             <v-text-field
                                 v-model="information.name"
                                 :label="$t('ProcessDefinitionVersionDialog.name')"
-                                :rules="[(v) => !!v || 'Name is required']"
+                                :rules="[(v) => !!v || $t('ProcessDefinitionVersionDialog.nameRequired')]"
                                 required
                                 class="pb-2"
                             ></v-text-field>
@@ -54,7 +54,7 @@
                                 <v-text-field
                                     v-model="information.name"
                                     :label="$t('ProcessDefinitionVersionDialog.name')"
-                                    :rules="[(v) => !!v || 'Name is required']"
+                                    :rules="[(v) => !!v || $t('ProcessDefinitionVersionDialog.nameRequired')]"
                                     required
                                     class="pb-2"
                                 ></v-text-field>
@@ -119,8 +119,8 @@ export default {
     computed: {
         idRules() {
             return [
-                (v) => !!v || 'ID is required',
-                (v) => (v ? /^[a-z0-9_]+$/.test(v) : false) || 'Use lowercase letters, numbers, and underscores only (e.g., new_process_id)'
+                (v) => !!v || this.$t('ProcessDefinitionVersionDialog.idRequired'),
+                (v) => (v ? /^[a-z0-9_]+$/.test(v) : false) || this.$t('ProcessDefinitionVersionDialog.idRules')
             ];
         },
         newVersion() {

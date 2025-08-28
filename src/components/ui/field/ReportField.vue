@@ -11,11 +11,11 @@
                 <v-spacer></v-spacer>
                 <!-- 드롭다운 미리보기 버튼 제거, 대신 토글 버튼으로 변경 -->
                 <div v-if="localModelValue.length > 0 && !previewMenu && !showDialog" >
-                    <MarkdownEditor 
-                    @click.stop="previewMenu = !previewMenu"
-                    style="width: 120px; height: 120px; transform: rotate(5deg); box-shadow: 0 2px 8px rgba(0,0,0,0.08);"
-                    v-model="localModelValue" :readOnly="true" 
-                    :isPreview="true" />
+                    <MarkdownEditor class="report-field-markdown-editor"
+                        @click.stop="previewMenu = !previewMenu"
+                        v-model="localModelValue" :readOnly="true" 
+                        :isPreview="true"
+                    />
                 </div>
                 <div v-else-if="localModelValue.length == 0" :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px;`">
                     <Icons :icon="'report'" color="white" />
@@ -30,7 +30,7 @@
             </v-row>
             <!-- 미리보기 확장 영역 -->
             <v-row v-if="previewMenu" class="ma-0 pa-4" @click.stop>
-                <v-sheet elevation="3" rounded style="width: 100%; min-width: 400px; min-height: 300px; padding: 16px; background: white;">
+                <v-sheet elevation="3" rounded style="width: 100%; padding: 16px; background: white;">
                     <MarkdownEditor
                         :style="'width: 100%; height: 100%;'"
                         v-model="localModelValue"
@@ -281,5 +281,19 @@ $e^{i\\pi} + 1 = 0$
   resize: none;
   line-height: 1.5;
   font-size: 14px;
+}
+
+.report-field-markdown-editor {
+    width: 120px;
+    height: 120px;
+    transform: rotate(5deg);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+}
+
+.report-field-markdown-editor:hover {
+    transform: rotate(5deg) translateY(-8px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 </style>

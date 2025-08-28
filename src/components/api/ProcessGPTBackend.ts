@@ -3968,6 +3968,21 @@ class ProcessGPTBackend implements Backend {
             if (diff.instruction) {
                 activity.instruction = diff.instruction;
             }
+
+            if (diff.conditionExamples && diff.conditionExamples.sequenceId) {
+                const sequence = process.definition.sequences.find((sequence: any) => sequence.id === diff.conditionExamples.sequenceId);
+                if (sequence) {
+                    const properties = JSON.parse(sequence.properties);
+                    if (properties.examples) {
+                        properties.examples = {
+                            good_example: diff.conditionExamples.good_example,
+                            bad_example: diff.conditionExamples.bad_example
+                        };
+                    }
+                    sequence.properties = JSON.stringify(properties);
+                }
+            }
+            console.log(process.definition)
             await storage.putObject('proc_def', process);
         } catch (error) {
             throw new Error(error.message);

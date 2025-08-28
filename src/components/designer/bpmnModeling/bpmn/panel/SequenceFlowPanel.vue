@@ -9,6 +9,7 @@
                 :value="copyUengineProperties.examples" 
                 :processDefinitionId="processDefinitionId"
                 :condition="copyUengineProperties.condition"
+                :element="element"
                 @update:value="updateExamples"
             />
         </div>
@@ -50,6 +51,7 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         name: String,
+        element: Object
     },
     data() {
         return {
