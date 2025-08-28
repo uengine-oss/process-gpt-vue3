@@ -406,6 +406,805 @@ export default {
                 this.strategy = card.value;
             }
         });
+        let json = {
+  "data": [],
+  "roles": [
+    {
+      "name": "디자이너",
+      "default": "7650d25c-6303-4f40-a42f-283f00f385c8",
+      "endpoint": ""
+    },
+    {
+      "name": "결재권자",
+      "default": "7650d25c-6303-4f40-a42f-283f00f385c8",
+      "endpoint": ""
+    }
+  ],
+  "events": [
+    {
+      "id": "Event_14j6t25",
+      "role": "디자이너",
+      "type": "startEvent",
+      "process": "Process_1oscmbn",
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1bxw4d2",
+      "role": "디자이너",
+      "type": "endEvent",
+      "process": "Process_1oscmbn",
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1ttnk4r",
+      "role": "디자이너",
+      "type": "startEvent",
+      "process": "Activity_08aib4b",
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_19liwrk",
+      "role": "디자이너",
+      "type": "endEvent",
+      "process": "Activity_08aib4b",
+      "properties": "{}",
+      "description": "start event"
+    }
+  ],
+  "version": "2.0",
+  "gateways": [
+    {
+      "id": "Gateway_1xw3wmh",
+      "name": "Gateway",
+      "role": "결재권자",
+      "type": "exclusiveGateway",
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "Gateway description",
+      "conditionData": [
+        "activity_0hrng6y_form.review_status"
+      ]
+    },
+    {
+      "id": "Event_14j6t25",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1bxw4d2",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1ttnk4r",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_19liwrk",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_14j6t25",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1bxw4d2",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1ttnk4r",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_19liwrk",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_14j6t25",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1bxw4d2",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1ttnk4r",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_19liwrk",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_14j6t25",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1bxw4d2",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1ttnk4r",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_19liwrk",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_14j6t25",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1bxw4d2",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1ttnk4r",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_19liwrk",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_14j6t25",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1bxw4d2",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1ttnk4r",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_19liwrk",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_14j6t25",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1bxw4d2",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1ttnk4r",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_19liwrk",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_14j6t25",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1bxw4d2",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Process_1oscmbn",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_1ttnk4r",
+      "name": "",
+      "role": "디자이너",
+      "type": "startEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    },
+    {
+      "id": "Event_19liwrk",
+      "name": "",
+      "role": "디자이너",
+      "type": "endEvent",
+      "srcTrg": null,
+      "process": "Activity_08aib4b",
+      "condition": {},
+      "properties": "{}",
+      "description": "start event"
+    }
+  ],
+  "sequences": [
+    {
+      "id": "Flow_1mtgmyv",
+      "source": "Event_14j6t25",
+      "target": "Activity_0ot7kwf",
+      "condition": "",
+      "properties": "{}"
+    },
+    {
+      "id": "Flow_1x53tpo",
+      "source": "Activity_0ot7kwf",
+      "target": "Activity_1en8e0l",
+      "condition": "",
+      "properties": "{}"
+    },
+    {
+      "id": "Flow_1yfk5wt",
+      "source": "Activity_1en8e0l",
+      "target": "Activity_08aib4b",
+      "condition": "",
+      "properties": "{}"
+    },
+    {
+      "id": "Flow_1vddwar",
+      "source": "Activity_08aib4b",
+      "target": "Activity_1bzewxr",
+      "condition": "",
+      "properties": "{}"
+    },
+    {
+      "id": "Flow_1fpafph",
+      "source": "Activity_1bzewxr",
+      "target": "Event_1bxw4d2",
+      "condition": "",
+      "properties": "{}"
+    },
+    {
+      "id": "Flow_12osyax",
+      "source": "Event_1ttnk4r",
+      "target": "Activity_10pn15v",
+      "condition": "",
+      "properties": "{}"
+    },
+    {
+      "id": "Flow_0a6gf2r",
+      "source": "Activity_10pn15v",
+      "target": "Activity_0hrng6y",
+      "condition": "",
+      "properties": "{}"
+    },
+    {
+      "id": "Flow_02lwxun",
+      "source": "Activity_0hrng6y",
+      "target": "Gateway_1xw3wmh",
+      "condition": "",
+      "properties": "{}"
+    },
+    {
+      "id": "Flow_1gq2six",
+      "source": "Gateway_1xw3wmh",
+      "target": "Activity_10pn15v",
+      "condition": "",
+      "properties": "{\"condition\":\"재 작성 시\"}"
+    },
+    {
+      "id": "Flow_0thzfd7",
+      "source": "Gateway_1xw3wmh",
+      "target": "Activity_1rzgb75",
+      "condition": "",
+      "properties": "{\"condition\":\"결재 완료 시\"}"
+    },
+    {
+      "id": "Flow_1nuq6rk",
+      "source": "Activity_1rzgb75",
+      "target": "Event_19liwrk",
+      "condition": "",
+      "properties": "{}"
+    }
+  ],
+  "activities": [
+    {
+      "id": "Activity_0ot7kwf",
+      "name": "뉴스레터 초안 작성",
+      "role": "디자이너",
+      "tool": "formHandler:vip_newsletter_process_activity_0ot7kwf_form",
+      "type": "userTask",
+      "process": "Process_1oscmbn",
+      "duration": 5,
+      "agentMode": "none",
+      "inputData": [],
+      "outputData": [],
+      "properties": "{\"_type\":\"org.uengine.kernel.FormActivity\",\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"activity_0ot7kwf_form\"}}",
+      "description": "뉴스레터 초안 작성 description",
+      "instruction": "뉴스레터 초안 작성 instruction",
+      "orchestration": "none",
+      "attachedEvents": null
+    },
+    {
+      "id": "Activity_1en8e0l",
+      "name": "VIP 관심사 정리",
+      "role": "디자이너",
+      "tool": "formHandler:vip_newsletter_process_activity_1en8e0l_form",
+      "type": "userTask",
+      "process": "Process_1oscmbn",
+      "duration": 5,
+      "agentMode": "none",
+      "inputData": [
+        "vip_newsletter_process_activity_0ot7kwf_form.newsletter_report"
+      ],
+      "outputData": [],
+      "properties": "{\"_type\":\"org.uengine.kernel.FormActivity\",\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"activity_1en8e0l_form\"}}",
+      "description": "VIP 관심사 정리 description",
+      "instruction": "VIP 관심사 정리 instruction",
+      "orchestration": "none",
+      "attachedEvents": null
+    },
+    {
+      "id": "Activity_1bzewxr",
+      "name": "발송 결과 확인",
+      "role": "디자이너",
+      "tool": "formHandler:vip_newsletter_process_activity_1bzewxr_form",
+      "type": "userTask",
+      "process": "Process_1oscmbn",
+      "duration": 5,
+      "agentMode": "none",
+      "inputData": [
+        "vip_newsletter_process_activity_0ot7kwf_form.newsletter_report",
+        "vip_newsletter_process_activity_1en8e0l_form.name",
+        "vip_newsletter_process_activity_1en8e0l_form.interest",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager_relation",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager_email",
+        "vip_newsletter_process_activity_1en8e0l_form.skill_level",
+        "vip_newsletter_process_activity_10pn15v_form.newsletter_report",
+        "vip_newsletter_process_activity_0hrng6y_form.review_status",
+        "vip_newsletter_process_activity_1rzgb75_form.recipient_name",
+        "vip_newsletter_process_activity_1rzgb75_form.recipient_email"
+      ],
+      "outputData": [],
+      "properties": "{\"_type\":\"org.uengine.kernel.FormActivity\",\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"activity_1bzewxr_form\"}}",
+      "description": "발송 결과 확인 description",
+      "instruction": "발송 결과 확인 instruction",
+      "orchestration": "none",
+      "attachedEvents": null
+    },
+    {
+      "id": "Activity_10pn15v",
+      "name": "VIP 관심사 기반 뉴스레터 작성",
+      "role": "디자이너",
+      "tool": "formHandler:vip_newsletter_process_activity_10pn15v_form",
+      "type": "userTask",
+      "process": "Activity_08aib4b",
+      "duration": 5,
+      "agentMode": "none",
+      "inputData": [
+        "vip_newsletter_process_activity_0ot7kwf_form.newsletter_report",
+        "vip_newsletter_process_activity_1en8e0l_form.name",
+        "vip_newsletter_process_activity_1en8e0l_form.interest",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager_relation",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager_email",
+        "vip_newsletter_process_activity_1en8e0l_form.skill_level"
+      ],
+      "outputData": [],
+      "properties": "{\"_type\":\"org.uengine.kernel.FormActivity\",\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"activity_10pn15v_form\"}}",
+      "description": "VIP 관심사 기반 뉴스레터 작성 description",
+      "instruction": "VIP 관심사 기반 뉴스레터 작성 instruction",
+      "orchestration": "none",
+      "attachedEvents": null
+    },
+    {
+      "id": "Activity_0hrng6y",
+      "name": "리뷰",
+      "role": "결재권자",
+      "tool": "formHandler:vip_newsletter_process_activity_0hrng6y_form",
+      "type": "userTask",
+      "process": "Activity_08aib4b",
+      "duration": 5,
+      "agentMode": "none",
+      "inputData": [
+        "vip_newsletter_process_activity_0ot7kwf_form.newsletter_report",
+        "vip_newsletter_process_activity_1en8e0l_form.name",
+        "vip_newsletter_process_activity_1en8e0l_form.interest",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager_relation",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager_email",
+        "vip_newsletter_process_activity_1en8e0l_form.skill_level",
+        "vip_newsletter_process_activity_10pn15v_form.newsletter_report"
+      ],
+      "outputData": [],
+      "properties": "{\"_type\":\"org.uengine.kernel.FormActivity\",\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"activity_0hrng6y_form\"}}",
+      "description": "리뷰 description",
+      "instruction": "리뷰 instruction",
+      "orchestration": "none",
+      "attachedEvents": null
+    },
+    {
+      "id": "Activity_1rzgb75",
+      "name": "뉴스레터 발송",
+      "role": "디자이너",
+      "tool": "formHandler:vip_newsletter_process_activity_1rzgb75_form",
+      "type": "userTask",
+      "process": "Activity_08aib4b",
+      "duration": 5,
+      "agentMode": "none",
+      "inputData": [
+        "vip_newsletter_process_activity_0ot7kwf_form.newsletter_report",
+        "vip_newsletter_process_activity_1en8e0l_form.name",
+        "vip_newsletter_process_activity_1en8e0l_form.interest",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager_relation",
+        "vip_newsletter_process_activity_1en8e0l_form.sales_manager_email",
+        "vip_newsletter_process_activity_1en8e0l_form.skill_level",
+        "vip_newsletter_process_activity_10pn15v_form.newsletter_report",
+        "vip_newsletter_process_activity_0hrng6y_form.review_status"
+      ],
+      "outputData": [],
+      "properties": "{\"_type\":\"org.uengine.kernel.FormActivity\",\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"activity_1rzgb75_form\"}}",
+      "description": "뉴스레터 발송 description",
+      "instruction": "뉴스레터 발송 instruction",
+      "orchestration": "none",
+      "attachedEvents": null
+    }
+  ],
+  "description": "process.description",
+  "participants": {
+    "id": "Participant_09k5scl",
+    "name": "VIP 뉴스레터",
+    "processRef": "Process_1oscmbn",
+    "bpmn:extensionElements": {
+      "uengine:properties": {
+        "uengine:json": "{}"
+      }
+    }
+  },
+  "subProcesses": [
+    {
+      "id": "Activity_08aib4b",
+      "name": "VIP 정보 수 만큼 실행",
+      "role": "디자이너",
+      "type": "subProcess",
+      "process": "Process_1oscmbn",
+      "children": {
+        "data": [],
+        "roles": [],
+        "events": [
+          {
+            "id": "Event_1ttnk4r",
+            "role": "디자이너",
+            "type": "startEvent",
+            "process": "Activity_08aib4b",
+            "properties": "{}",
+            "description": "start event"
+          },
+          {
+            "id": "Event_19liwrk",
+            "role": "디자이너",
+            "type": "endEvent",
+            "process": "Activity_08aib4b",
+            "properties": "{}",
+            "description": "start event"
+          }
+        ],
+        "gateways": [
+          {
+            "id": "Gateway_1xw3wmh",
+            "name": "Gateway",
+            "role": "결재권자",
+            "type": "exclusiveGateway",
+            "process": "Activity_08aib4b",
+            "condition": "",
+            "properties": "{}",
+            "description": "Gateway description"
+          }
+        ],
+        "sequences": [
+          {
+            "id": "Flow_12osyax",
+            "source": "Event_1ttnk4r",
+            "target": "Activity_10pn15v",
+            "condition": "",
+            "properties": "{}"
+          },
+          {
+            "id": "Flow_0a6gf2r",
+            "source": "Activity_10pn15v",
+            "target": "Activity_0hrng6y",
+            "condition": "",
+            "properties": "{}"
+          },
+          {
+            "id": "Flow_02lwxun",
+            "source": "Activity_0hrng6y",
+            "target": "Gateway_1xw3wmh",
+            "condition": "",
+            "properties": "{}"
+          },
+          {
+            "id": "Flow_1gq2six",
+            "source": "Gateway_1xw3wmh",
+            "target": "Activity_10pn15v",
+            "condition": "",
+            "properties": "{\"condition\":\"재 작성 시\"}"
+          },
+          {
+            "id": "Flow_0thzfd7",
+            "source": "Gateway_1xw3wmh",
+            "target": "Activity_1rzgb75",
+            "condition": "",
+            "properties": "{\"condition\":\"결재 완료 시\"}"
+          },
+          {
+            "id": "Flow_1nuq6rk",
+            "source": "Activity_1rzgb75",
+            "target": "Event_19liwrk",
+            "condition": "",
+            "properties": "{}"
+          }
+        ],
+        "activities": [
+          {
+            "id": "Activity_10pn15v",
+            "name": "VIP 관심사 기반 뉴스레터 작성",
+            "role": "디자이너",
+            "tool": "formHandler:vip_newsletter_process_activity_10pn15v_form",
+            "type": "userTask",
+            "process": "Activity_08aib4b",
+            "duration": 5,
+            "inputData": [],
+            "outputData": [],
+            "properties": "{\"_type\":\"org.uengine.kernel.FormActivity\",\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"activity_10pn15v_form\"}}",
+            "description": "VIP 관심사 기반 뉴스레터 작성 description",
+            "instruction": "VIP 관심사 기반 뉴스레터 작성 instruction",
+            "attachedEvents": null
+          },
+          {
+            "id": "Activity_0hrng6y",
+            "name": "리뷰",
+            "role": "결재권자",
+            "tool": "formHandler:vip_newsletter_process_activity_0hrng6y_form",
+            "type": "userTask",
+            "process": "Activity_08aib4b",
+            "duration": 5,
+            "inputData": [],
+            "outputData": [],
+            "properties": "{\"_type\":\"org.uengine.kernel.FormActivity\",\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"activity_0hrng6y_form\"}}",
+            "description": "리뷰 description",
+            "instruction": "리뷰 instruction",
+            "attachedEvents": null
+          },
+          {
+            "id": "Activity_1rzgb75",
+            "name": "뉴스레터 발송",
+            "role": "디자이너",
+            "tool": "formHandler:vip_newsletter_process_activity_1rzgb75_form",
+            "type": "userTask",
+            "process": "Activity_08aib4b",
+            "duration": 5,
+            "inputData": [],
+            "outputData": [],
+            "properties": "{\"_type\":\"org.uengine.kernel.FormActivity\",\"role\":{\"name\":\"\"},\"variableForHtmlFormContext\":{\"name\":\"activity_1rzgb75_form\"}}",
+            "description": "뉴스레터 발송 description",
+            "instruction": "뉴스레터 발송 instruction",
+            "attachedEvents": null
+          }
+        ],
+        "subProcesses": [],
+        "processDefinitionId": "vip_newsletter_process",
+        "processDefinitionName": "VIP 뉴스레터 전송 프로세스"
+      },
+      "duration": 5,
+      "properties": "{}",
+      "attachedEvents": null
+    }
+  ],
+  "shortDescription": {
+    "text": ""
+  },
+  "instanceNamePattern": null,
+  "processDefinitionId": "vip_newsletter_process",
+  "processDefinitionName": "VIP 뉴스레터 전송 프로세스"
+}
+        this.afterModelCreated(json);
     },
     watch: {
         $route: {

@@ -585,6 +585,183 @@ export default {
       return laneActivityMapping;
     },
 
+    createSubProcesses(xmlDoc, jsonModel, process, inComing, outGoing) {
+      console.log('createSubProcesses 시작');
+      
+      if (!jsonModel.subProcesses || !Array.isArray(jsonModel.subProcesses)) {
+        console.log('서브프로세스가 없습니다.');
+        return;
+      }
+      
+      jsonModel.subProcesses.forEach((subProcess, index) => {
+        console.log(`서브프로세스 ${index + 1} 처리:`, subProcess.id);
+        
+        // 서브프로세스 요소 생성
+        const subProcessElement = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:subProcess');
+        subProcessElement.setAttribute('id', subProcess.id);
+        subProcessElement.setAttribute('name', subProcess.name || subProcess.id);
+        
+                 // 서브프로세스에 대한 incoming/outgoing 연결 추가
+         if (inComing[subProcess.id] && inComing[subProcess.id].length > 0) {
+           inComing[subProcess.id].forEach(seqId => {
+             const incoming = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:incoming');
+             incoming.textContent = seqId;
+             subProcessElement.appendChild(incoming);
+           });
+         }
+        
+        if (outGoing[subProcess.id] && outGoing[subProcess.id].length > 0) {
+          outGoing[subProcess.id].forEach(seqId => {
+            const outgoing = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
+            outgoing.textContent = seqId;
+            subProcessElement.appendChild(outgoing);
+          });
+        }
+        
+        // 서브프로세스 내부 요소들 생성
+        this.createSubProcessElements(xmlDoc, subProcess, subProcessElement, inComing, outGoing);
+        
+        process.appendChild(subProcessElement);
+      });
+      
+      console.log('createSubProcesses 완료');
+    },
+
+    createSubProcessElements(xmlDoc, subProcess, subProcessElement, inComing, outGoing) {
+      console.log(`서브프로세스 ${subProcess.id} 내부 요소 생성 시작`);
+      
+      // 서브프로세스 내부의 events, activities, gateways, sequences 처리
+      if (subProcess.events && Array.isArray(subProcess.events)) {
+        subProcess.events.forEach(event => {
+          let eventElement;
+          
+          if (event.type === 'StartEvent') {
+            eventElement = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:startEvent');
+          } else if (event.type === 'EndEvent') {
+            eventElement = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:endEvent');
+          } else {
+            eventElement = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:intermediateCatchEvent');
+          }
+          
+          eventElement.setAttribute('id', event.id);
+          if (event.name) {
+            eventElement.setAttribute('name', event.name);
+          }
+          
+          // 이벤트에 대한 incoming/outgoing 연결 추가
+          if (inComing[event.id] && inComing[event.id].length > 0) {
+            inComing[event.id].forEach(seqId => {
+              const incoming = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:incoming');
+              incoming.textContent = seqId;
+              eventElement.appendChild(incoming);
+            });
+          }
+          
+                      if (outGoing[event.id] && outGoing[event.id].length > 0) {
+              outGoing[event.id].forEach(seqId => {
+                const outgoing = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
+                outgoing.textContent = seqId;
+                eventElement.appendChild(outgoing);
+              });
+            }
+          
+          subProcessElement.appendChild(eventElement);
+        });
+      }
+      
+      if (subProcess.activities && Array.isArray(subProcess.activities)) {
+        subProcess.activities.forEach(activity => {
+          const activityElement = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:userTask');
+          activityElement.setAttribute('id', activity.id);
+          if (activity.name) {
+            activityElement.setAttribute('name', activity.name);
+          }
+          
+          // 액티비티에 대한 incoming/outgoing 연결 추가
+          if (inComing[activity.id] && inComing[activity.id].length > 0) {
+            inComing[activity.id].forEach(seqId => {
+              const incoming = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:incoming');
+              incoming.textContent = seqId;
+              activityElement.appendChild(incoming);
+            });
+          }
+          
+          if (outGoing[activity.id] && outGoing[activity.id].length > 0) {
+            outGoing[activity.id].forEach(seqId => {
+              const outgoing = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
+              outgoing.textContent = seqId;
+              activityElement.appendChild(outgoing);
+            });
+          }
+          
+          subProcessElement.appendChild(activityElement);
+        });
+      }
+      
+      if (subProcess.gateways && Array.isArray(subProcess.gateways)) {
+        subProcess.gateways.forEach(gateway => {
+          let gatewayElement;
+          
+          if (gateway.type === 'ExclusiveGateway') {
+            gatewayElement = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:exclusiveGateway');
+          } else if (gateway.type === 'ParallelGateway') {
+            gatewayElement = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:parallelGateway');
+          } else {
+            gatewayElement = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:exclusiveGateway');
+          }
+          
+          gatewayElement.setAttribute('id', gateway.id);
+          if (gateway.name) {
+            gatewayElement.setAttribute('name', gateway.name);
+          }
+          
+          // 게이트웨이에 대한 incoming/outgoing 연결 추가
+          if (inComing[gateway.id] && inComing[gateway.id].length > 0) {
+            inComing[gateway.id].forEach(seqId => {
+              const incoming = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:incoming');
+              incoming.textContent = seqId;
+              gatewayElement.appendChild(incoming);
+            });
+          }
+          
+          if (outGoing[gateway.id] && outGoing[gateway.id].length > 0) {
+            outGoing[gateway.id].forEach(seqId => {
+              const outgoing = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
+              outgoing.textContent = seqId;
+              gatewayElement.appendChild(outgoing);
+            });
+          }
+          
+          subProcessElement.appendChild(gatewayElement);
+        });
+      }
+      
+      // 서브프로세스 내부의 시퀀스 플로우 생성
+      if (subProcess.sequences && Array.isArray(subProcess.sequences)) {
+        subProcess.sequences.forEach(sequence => {
+          const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
+          sequenceFlow.setAttribute('id', sequence.id);
+          sequenceFlow.setAttribute('sourceRef', sequence.source);
+          sequenceFlow.setAttribute('targetRef', sequence.target);
+          
+          if (sequence.condition) {
+            sequenceFlow.setAttribute('name', sequence.condition);
+          }
+          
+          subProcessElement.appendChild(sequenceFlow);
+        });
+      }
+      
+      // 중첩된 서브프로세스가 있다면 재귀적으로 처리
+      if (subProcess.subProcesses && Array.isArray(subProcess.subProcesses)) {
+        subProcess.subProcesses.forEach(nestedSubProcess => {
+          this.createSubProcesses(xmlDoc, { subProcesses: [nestedSubProcess] }, subProcessElement, inComing, outGoing);
+        });
+      }
+      
+      console.log(`서브프로세스 ${subProcess.id} 내부 요소 생성 완료`);
+    },
+
     createLaneSet(xmlDoc, jsonModel, process, laneActivityMapping) {
         if (jsonModel.roles) {
             const laneSet = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:laneSet');
@@ -811,6 +988,13 @@ export default {
                 }
                 }
             });
+        }
+        
+        // 서브프로세스 모양 생성
+        if (jsonModel.subProcesses && Array.isArray(jsonModel.subProcesses)) {
+            console.log('서브프로세스 모양 생성 시작:', jsonModel.subProcesses.length, '개');
+            this.createSubProcessShapes(xmlDoc, jsonModel, bpmnPlane, isHorizontal, activityPos, offsetPos, roleVector);
+            console.log('서브프로세스 모양 생성 완료');
         }
         
         console.log('createShapes 완료:', Object.keys(activityPos).length, '개의 모양 생성됨');
@@ -1471,6 +1655,11 @@ export default {
         const laneActivityMapping = this.createProcessElements(xmlDoc, jsonModel, process, inComing, outGoing);
         console.log('프로세스 요소 생성 완료:', Object.keys(laneActivityMapping).length, '개 레인');
         
+        // 서브프로세스 생성
+        console.log('서브프로세스 생성 시작');
+        this.createSubProcesses(xmlDoc, jsonModel, process, inComing, outGoing);
+        console.log('서브프로세스 생성 완료');
+        
         // 레인 생성
         this.createLaneSet(xmlDoc, jsonModel, process, laneActivityMapping);
         
@@ -1866,6 +2055,193 @@ export default {
       };
       
       return typeMapping[elementType] || 'bpmn:Task';
+    },
+
+    createSubProcessShapes(xmlDoc, jsonModel, bpmnPlane, isHorizontal, activityPos, offsetPos, roleVector) {
+        console.log('createSubProcessShapes 시작');
+        
+        jsonModel.subProcesses.forEach((subProcess, index) => {
+            console.log(`서브프로세스 ${index + 1} 모양 생성:`, subProcess.id);
+            
+            // 서브프로세스 자체의 모양 생성
+            const subProcessShape = this.createSubProcessShape(xmlDoc, subProcess, index, isHorizontal);
+            bpmnPlane.appendChild(subProcessShape);
+            
+            // 서브프로세스 내부 요소들의 모양 생성
+            this.createSubProcessInternalShapes(xmlDoc, subProcess, bpmnPlane, isHorizontal, activityPos, offsetPos, roleVector);
+        });
+    },
+
+    createSubProcessShape(xmlDoc, subProcess, index, isHorizontal) {
+        const subProcessShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
+        subProcessShape.setAttribute('id', `BPMNShape_${subProcess.id}`);
+        subProcessShape.setAttribute('bpmnElement', subProcess.id);
+        
+        const dcBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+        
+        // 서브프로세스 위치 및 크기 설정 (기본값)
+        let x = 200 + (index * 50);
+        let y = 200 + (index * 50);
+        let width = 400;
+        let height = 300;
+        
+        // 서브프로세스에 위치 정보가 있다면 사용
+        if (subProcess.x && subProcess.y) {
+            x = subProcess.x;
+            y = subProcess.y;
+        }
+        if (subProcess.width && subProcess.height) {
+            width = subProcess.width;
+            height = subProcess.height;
+        }
+        
+        // 수평 모드인 경우 x, y 좌표 스왑
+        if (isHorizontal) {
+            [x, y] = [y, x];
+        }
+        
+        dcBounds.setAttribute('x', x);
+        dcBounds.setAttribute('y', y);
+        dcBounds.setAttribute('width', width);
+        dcBounds.setAttribute('height', height);
+        
+        subProcessShape.appendChild(dcBounds);
+        
+        // 서브프로세스 라벨 추가
+        if (subProcess.name) {
+            const bpmnLabel = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNLabel');
+            const dcBoundsLabel = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+            
+            dcBoundsLabel.setAttribute('x', x);
+            dcBoundsLabel.setAttribute('y', y + height + 5);
+            dcBoundsLabel.setAttribute('width', width);
+            dcBoundsLabel.setAttribute('height', 14);
+            
+            bpmnLabel.appendChild(dcBoundsLabel);
+            elementShape.appendChild(bpmnLabel);
+        }
+        
+        return subProcessShape;
+    },
+
+    createSubProcessInternalShapes(xmlDoc, subProcess, bpmnPlane, isHorizontal, activityPos, offsetPos, roleVector) {
+        console.log(`서브프로세스 ${subProcess.id} 내부 요소 모양 생성 시작`);
+        
+        // 서브프로세스 내부의 events, activities, gateways 모양 생성
+        if (subProcess.events && Array.isArray(subProcess.events)) {
+            subProcess.events.forEach(event => {
+                this.createSubProcessElementShape(xmlDoc, event, bpmnPlane, isHorizontal, activityPos, offsetPos, subProcess.id);
+            });
+        }
+        
+        if (subProcess.activities && Array.isArray(subProcess.activities)) {
+            subProcess.activities.forEach(activity => {
+                this.createSubProcessElementShape(xmlDoc, activity, bpmnPlane, isHorizontal, activityPos, offsetPos, subProcess.id);
+            });
+        }
+        
+        if (subProcess.gateways && Array.isArray(subProcess.gateways)) {
+            subProcess.gateways.forEach(gateway => {
+                this.createSubProcessElementShape(xmlDoc, gateway, bpmnPlane, isHorizontal, activityPos, offsetPos, subProcess.id);
+            });
+        }
+        
+        // 중첩된 서브프로세스가 있다면 재귀적으로 처리
+        if (subProcess.subProcesses && Array.isArray(subProcess.subProcesses)) {
+            subProcess.subProcesses.forEach(nestedSubProcess => {
+                this.createSubProcessInternalShapes(xmlDoc, nestedSubProcess, bpmnPlane, isHorizontal, activityPos, offsetPos, roleVector);
+            });
+        }
+    },
+
+    createSubProcessElementShape(xmlDoc, element, bpmnPlane, isHorizontal, activityPos, offsetPos, parentSubProcessId) {
+        const elementShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
+        
+        if (element.elementType === "Event") {
+            elementShape.setAttribute('id', `Shape_${element.id}`);
+        } else {
+            elementShape.setAttribute('id', `BPMNShape_${element.id}`);
+        }
+        elementShape.setAttribute('bpmnElement', element.id);
+        
+        if (element.elementType === "Gateway") {
+            elementShape.setAttribute('isMarkerVisible', 'true');
+        }
+
+        const dcBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+        
+        // 서브프로세스 내부 요소의 크기 설정
+        let width = 50;
+        let height = 50;
+        
+        if (element.elementType === "Gateway") {
+            width = 50;
+            height = 50;
+        } else if (element.elementType === "Activity") {
+            width = 100;
+            height = 80;
+        } else if (element.elementType === "Event") {
+            width = 34;
+            height = 34;
+        }
+
+        dcBounds.setAttribute('width', width);
+        dcBounds.setAttribute('height', height);
+
+        // 서브프로세스 내부 요소의 위치 설정 (서브프로세스 내부 상대 좌표)
+        let x = 220 + (Math.random() * 300); // 서브프로세스 내부에 랜덤 배치
+        let y = 220 + (Math.random() * 200);
+        
+        if (element.x && element.y) {
+            x = element.x;
+            y = element.y;
+        }
+        
+        if (isHorizontal) {
+            [x, y] = [y, x];
+        }
+        
+        const topLeftX = x - (width / 2);
+        const topLeftY = y - (height / 2);
+        
+        dcBounds.setAttribute('x', topLeftX);
+        dcBounds.setAttribute('y', topLeftY);
+        
+        elementShape.appendChild(dcBounds);
+
+        // 라벨 추가
+        if (element.name) {
+            const bpmnLabel = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNLabel');
+            const dcBoundsLabel = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+            
+            dcBoundsLabel.setAttribute('x', topLeftX);
+            dcBoundsLabel.setAttribute('y', topLeftY + height + 5);
+            dcBoundsLabel.setAttribute('width', width);
+            dcBoundsLabel.setAttribute('height', 14);
+            
+            bpmnLabel.appendChild(dcBoundsLabel);
+            subProcessShape.appendChild(bpmnLabel);
+        }
+        
+        bpmnPlane.appendChild(elementShape);
+        
+        // 위치 정보 저장
+        activityPos[element.id] = {
+            x: Math.round(x),
+            y: Math.round(y),
+            width: width,
+            height: height
+        };
+        
+        offsetPos[element.id] = {
+            topLeftX: topLeftX,
+            topLeftY: topLeftY,
+            center: { x: x, y: y },
+            topLeft: { x: topLeftX, y: topLeftY },
+            topRight: { x: topLeftX + width, y: topLeftY },
+            bottomLeft: { x: topLeftX, y: topLeftY + height },
+            bottomRight: { x: topLeftX + width, y: topLeftY + height }
+        };
     },
   }
 };
