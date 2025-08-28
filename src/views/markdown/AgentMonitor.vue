@@ -215,29 +215,28 @@
                 </v-alert>
               </v-col>
             </v-row>
-            
-            <v-row justify="center" class="ma-0 pa-4 pr-2">
-              <v-spacer></v-spacer>
-              <v-btn v-if="showDownloadButton" 
-                  @click="downloadBrowserAgent" 
-                  :disabled="!selectedOrchestrationMethod"
-                  color="primary"
-                  variant="elevated" 
-                  class="rounded-pill"
-                  density="compact"
-              >다운로드</v-btn>
-              <v-btn v-else 
-                  @click="startTask" 
-                  :disabled="!selectedOrchestrationMethod"
-                  color="primary"
-                  variant="elevated" 
-                  class="rounded-pill"
-                  density="compact"
-              >시작하기</v-btn>
-            </v-row>
           </v-container>
         </div>
       </div>
+        <v-row justify="center" class="ma-0 pa-4 pr-2 pb-0">
+          <v-spacer></v-spacer>
+          <v-btn v-if="showDownloadButton" 
+              @click="downloadBrowserAgent" 
+              :disabled="!selectedOrchestrationMethod"
+              color="primary"
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+          >다운로드</v-btn>
+          <v-btn v-else 
+              @click="startTask" 
+              :disabled="!selectedOrchestrationMethod"
+              color="primary"
+              variant="elevated" 
+              class="rounded-pill"
+              density="compact"
+          >시작하기</v-btn>
+        </v-row>
 
       <!-- 로딩 상태 -->
       <div v-if="isLoading" class="feedback-loading">
@@ -1844,11 +1843,11 @@ export default {
 
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 16px;
   background: white;
-  border-radius: 12px;
-  border: 1px solid #e1e8ed;
   margin-top: 12px;
+  height: calc(100vh - 340px);
+  overflow: auto;
 }
 
 .empty-state .empty-icon {

@@ -11,8 +11,7 @@
                 <v-spacer></v-spacer>
                 <!-- 드롭다운 미리보기 버튼 제거, 대신 토글 버튼으로 변경 -->
                 <div v-if="localModelValue.length > 0 && !previewMenu && !showDialog" >
-                    <SlideComponent
-                        @click.stop="previewMenu = !previewMenu"
+                    <SlideComponent @click.stop="previewMenu = !previewMenu"
                         :content="localModelValue"
                         :isEditMode="false"
                         style="width: 120px; height: 120px; transform: rotate(5deg); box-shadow: 0 2px 8px rgba(0,0,0,0.08);"
@@ -31,7 +30,7 @@
             </v-row>
             <!-- 미리보기 확장 영역 -->
             <v-row v-if="previewMenu" class="ma-0 pa-4" @click.stop>
-                <v-sheet elevation="3" rounded style="width: 100%; min-width: 400px; min-height: 300px; padding: 16px; background: white; position: relative;">
+                <v-sheet elevation="3" rounded style="width: 100%; padding: 16px; background: white; position: relative;">
                     <SlideComponent
                         :content="localModelValue"
                         :isEditMode="false"
