@@ -89,24 +89,57 @@ export default {
 
     async mounted() {
         if (this.modelValue) {
-            const response = await backend.downloadFile(this.modelValue);
-            if (response.error) {
+            try {
+                // modelValue 검증 - 올바른 파일 경로인지 확인
+                if (typeof this.modelValue !== 'string' || this.modelValue.includes('[object Object]')) {
+                    console.warn('[FileField] 잘못된 파일 경로 형식:', this.modelValue);
+                    this.$emit('update:modelValue', "");
+                    return;
+                }
+                
+                console.log('[FileField] 파일 다운로드 시도:', this.modelValue);
+                const response = await backend.downloadFile(this.modelValue);
+                if (response && response.error) {
+                    console.warn('[FileField] 파일 다운로드 응답 에러:', response.error);
+                    this.$emit('update:modelValue', "");
+                } else if (response && response.file) {
+                    this.selectedFiles = [response.file];
+                    console.log('[FileField] 파일 다운로드 성공');
+                } else {
+                    console.warn('[FileField] 파일 다운로드 응답이 비어있음');
+                    this.$emit('update:modelValue', "");
+                }
+            } catch (error) {
+                console.error('[FileField] 파일 다운로드 에러 발생:', error);
                 this.$emit('update:modelValue', "");
-            } else {
-                this.selectedFiles = [response.file];
+                // 에러를 부모 컴포넌트에 전달 (선택적)
+                this.$emit('download-error', error);
             }
         }
     },
 
     methods: {
         async handleFileChange(event) {
-            const file = event.target.files[0];
-            const fileName = file.name;
-            const res = await backend.uploadFile(fileName, file);
-            if (res.error) {
+            try {
+                const file = event.target.files[0];
+                const fileName = file.name;
+                console.log('[FileField] 파일 업로드 시도:', fileName);
+                const res = await backend.uploadFile(fileName, file);
+                if (res && res.error) {
+                    console.warn('[FileField] 파일 업로드 응답 에러:', res.error);
+                    this.$emit('update:modelValue', "");
+                } else if (res && res.path) {
+                    console.log('[FileField] 파일 업로드 성공:', res.path);
+                    this.$emit('update:modelValue', res.path);
+                } else {
+                    console.warn('[FileField] 파일 업로드 응답이 비어있음');
+                    this.$emit('update:modelValue', "");
+                }
+            } catch (error) {
+                console.error('[FileField] 파일 업로드 에러 발생:', error);
                 this.$emit('update:modelValue', "");
-            } else {
-                this.$emit('update:modelValue', res.path);
+                // 에러를 부모 컴포넌트에 전달 (선택적)
+                this.$emit('upload-error', error);
             }
         }
     }

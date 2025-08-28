@@ -176,6 +176,7 @@ ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS is_deleted boolean DEF
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS parent_proc_inst_id text;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS root_proc_inst_id text;
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS execution_scope text;
 
 -- Properly migrate current_user_ids to participants
 DO $$
@@ -232,6 +233,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone default now();
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS temp_feedback text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS execution_scope text;
 
 -- chat_rooms table
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS id text;
@@ -445,10 +447,20 @@ BEGIN
 
     -- 오케스트레이션 방식 enum
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'agent_orch') THEN
-        CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research');
+        CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react');
         RAISE NOTICE 'Created agent_orch enum type';
     ELSE
-        RAISE NOTICE 'agent_orch enum type already exists';
+        -- 기존 enum에 langchain-react 값 추가
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_enum 
+            WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'agent_orch')
+            AND enumlabel = 'langchain-react'
+        ) THEN
+            ALTER TYPE agent_orch ADD VALUE 'langchain-react';
+            RAISE NOTICE 'Added langchain-react value to agent_orch enum type';
+        ELSE
+            RAISE NOTICE 'langchain-react value already exists in agent_orch enum type';
+        END IF;
     END IF;
 
     -- 이벤트 타입 enum
@@ -598,6 +610,7 @@ BEGIN
             WHEN agent_orch = 'crewai-deep-research' THEN 'crewai-deep-research'::agent_orch
             WHEN agent_orch = 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
             WHEN agent_orch = 'crewai-action' THEN 'crewai-action'::agent_orch
+            WHEN agent_orch = 'langchain-react' THEN 'langchain-react'::agent_orch
             ELSE NULL  -- 기본값을 NULL로 설정
         END;
         
@@ -1463,3 +1476,138 @@ BEGIN
         RAISE NOTICE 'FAILED value already exists in draft_status enum type';
     END IF;
 END $$;
+CREATE POLICY agents_insert_policy ON agents FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+CREATE POLICY agents_select_policy ON agents FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY agents_update_policy ON agents FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY agents_delete_policy ON agents FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+
+-- Billing
+-- credit 테이블 추가
+ALTER TABLE public.credit ADD COLUMN id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE public.credit ADD COLUMN name TEXT NOT NULL;
+ALTER TABLE public.credit ADD COLUMN description TEXT;
+ALTER TABLE public.credit ADD COLUMN type TEXT NOT NULL;
+ALTER TABLE public.credit ADD COLUMN price DECIMAL(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE public.credit ADD COLUMN credit DECIMAL(12,3) NOT NULL DEFAULT 0;
+ALTER TABLE public.credit ADD COLUMN badge JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE public.credit ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'hidden'));
+ALTER TABLE public.credit ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.credit ADD COLUMN validity_months INT DEFAULT 12;
+ALTER TABLE public.credit ADD COLUMN tenant_id TEXT;
+ALTER TABLE public.credit ADD CONSTRAINT credit_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+
+
+-- 크레딧 구매 테이블 컬럼 추가 (존재하지 않을 경우만)
+ALTER TABLE public.credit_purchase ADD COLUMN id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE public.credit_purchase ADD COLUMN tenant_id TEXT NOT NULL;
+ALTER TABLE public.credit_purchase ADD COLUMN added_credit DECIMAL(12,7) NOT NULL;
+ALTER TABLE public.credit_purchase ADD COLUMN source_type TEXT NOT NULL DEFAULT 'purchase' CHECK (source_type IN ('purchase'));
+ALTER TABLE public.credit_purchase ADD COLUMN source_id TEXT NOT NULL;
+ALTER TABLE public.credit_purchase ADD COLUMN payment_id UUID;
+ALTER TABLE public.credit_purchase ADD COLUMN expires_at TIMESTAMPTZ;
+ALTER TABLE public.credit_purchase ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.credit_purchase ADD CONSTRAINT credit_purchase_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+ALTER TABLE public.credit_purchase ADD CONSTRAINT credit_purchase_payment_fk FOREIGN KEY (payment_id) REFERENCES public.payment(id);
+ALTER TABLE public.credit_purchase ADD CONSTRAINT added_credit_ch CHECK (added_credit >= 0);
+
+
+-- public.credit_usage 컬럼 추가 (존재하지 않을 경우만)
+ALTER TABLE public.credit_usage ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid() PRIMARY KEY;
+ALTER TABLE public.credit_usage ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL;
+ALTER TABLE public.credit_usage ADD COLUMN IF NOT EXISTS usage_id UUID NOT NULL;
+ALTER TABLE public.credit_usage ADD COLUMN IF NOT EXISTS credit_purchase_id UUID;
+ALTER TABLE public.credit_usage ADD COLUMN IF NOT EXISTS used_credit DECIMAL(12,7) NOT NULL;
+ALTER TABLE public.credit_usage ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.credit_usage ADD CONSTRAINT credit_usage_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+ALTER TABLE public.credit_usage ADD CONSTRAINT credit_usage_usage_fk FOREIGN KEY (usage_id) REFERENCES public.usage(id);
+ALTER TABLE public.credit_usage ADD CONSTRAINT credit_usage_purchase_fk FOREIGN KEY (credit_purchase_id) REFERENCES public.credit_purchase(id);
+ALTER TABLE public.credit_usage ADD CONSTRAINT used_credit_ch CHECK (used_credit >= 0);
+
+
+-- service 테이블 추가
+ALTER TABLE public.service ADD COLUMN IF NOT EXISTS id         TEXT NOT NULL;
+ALTER TABLE public.service ADD COLUMN IF NOT EXISTS name       TEXT;
+ALTER TABLE public.service ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.service ADD COLUMN IF NOT EXISTS tenant_id  TEXT;
+ALTER TABLE public.service ADD CONSTRAINT service_pkey PRIMARY KEY (id, tenant_id)
+ALTER TABLE public.service ADD CONSTRAINT service_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+
+
+-- service_rate 테이블 추가
+ALTER TABLE public.service_rate ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE public.service_rate ADD COLUMN IF NOT EXISTS service_id TEXT NOT NULL;
+ALTER TABLE public.service_rate ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL;
+ALTER TABLE public.service_rate ADD COLUMN IF NOT EXISTS model TEXT NOT NULL;
+ALTER TABLE public.service_rate ADD COLUMN IF NOT EXISTS available_from TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE public.service_rate ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE public.service_rate ADD COLUMN IF NOT EXISTS dimension JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE public.service_rate ADD CONSTRAINT unique_service_dimension UNIQUE (service_id, tenant_id, model, available_from);
+ALTER TABLE public.service_rate ADD CONSTRAINT service_rate_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants (id);
+ALTER TABLE public.service_rate ADD CONSTRAINT service_rate_service_tenant_fk
+    FOREIGN KEY (service_id, tenant_id)
+    REFERENCES public.service (id, tenant_id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_service_rate_service_tenant 
+    ON public.service_rate (service_id, tenant_id);
+
+
+-- usage 테이블 추가
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid();
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS tenant_id TEXT;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS quantity DECIMAL(12,4) NOT NULL;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS amount DECIMAL(12,7);
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS metadata JSONB;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS service_rate_id UUID;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS group_id UUID;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS model TEXT;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS service_id TEXT;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS user_id TEXT;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS agent_id TEXT;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS process_def_id TEXT;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS process_inst_id TEXT;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS usage_start_at TIMESTAMPTZ NOT NULL;
+ALTER TABLE public.usage ADD COLUMN IF NOT EXISTS usage_end_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.usage ADD CONSTRAINT usage_pkey PRIMARY KEY (id);
+ALTER TABLE public.usage ADD CONSTRAINT usage_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
+ALTER TABLE public.usage ADD CONSTRAINT usage_service_rate_fk FOREIGN KEY (service_rate_id) REFERENCES public.service_rate(id);
+ALTER TABLE public.usage ADD CONSTRAINT usage_service_fk FOREIGN KEY (service_id, tenant_id) REFERENCES public.service (id, tenant_id) ON UPDATE CASCADE ON DELETE RESTRICT;
+CREATE INDEX IF NOT EXISTS idx_usage_service_id       ON public.usage(service_id);
+CREATE INDEX IF NOT EXISTS idx_usage_process_def_id   ON public.usage(process_def_id);
+CREATE INDEX IF NOT EXISTS idx_usage_process_inst_id  ON public.usage(process_inst_id);
+CREATE INDEX IF NOT EXISTS idx_usage_tenant_master_date ON public.usage (tenant_id, service_id, usage_start_at);
+
+
+-- payment 테이블 추가
+-- 컬럼 추가
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid();
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS payment_key TEXT;
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS order_id TEXT UNIQUE;
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS order_name TEXT;
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'READY'
+    CHECK (
+        status IN (
+            'READY',
+            'IN_PROGRESS',
+            'AUTH_FAILED',
+            'DONE',
+            'CANCELED',
+            'PARTIAL_CANCELED',
+            'ABORTED',
+            'EXPIRED',
+            'WAITING_FOR_DEPOSIT'
+        )
+    );
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS receipt_url TEXT;
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS amount DECIMAL(10,2) NOT NULL;
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ;
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS method TEXT;
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS user_id TEXT;
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS ref_type TEXT;
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS ref_id TEXT;
+ALTER TABLE public.payment ADD COLUMN IF NOT EXISTS tenant_id TEXT;
+ALTER TABLE public.payment ADD CONSTRAINT payment_pkey PRIMARY KEY (id);
+ALTER TABLE public.payment ADD CONSTRAINT payment_order_id_key UNIQUE (order_id);
+ALTER TABLE public.payment ADD CONSTRAINT payment_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);

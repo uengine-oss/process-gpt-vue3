@@ -201,6 +201,7 @@ create table if not exists public.bpm_proc_inst (
     proc_inst_name text null,
     root_proc_inst_id text null,
     parent_proc_inst_id text null,
+    execution_scope text null,
     current_activity_ids text[] null,
     participants text[] null,
     role_bindings jsonb null,
@@ -225,6 +226,7 @@ create table if not exists public.todolist (
     username text null,
     proc_inst_id text null,
     root_proc_inst_id text null,
+    execution_scope text null,
     proc_def_id text null,
     activity_id text null,
     activity_name text null,
@@ -414,6 +416,154 @@ create table if not exists public.events (
   timestamp timestamp with time zone null default now(),
   constraint events_pkey primary key (id)
 ) TABLESPACE pg_default;
+
+
+
+------------------ 결제시스템 ---------------------------
+-- payment(결제 이력)
+CREATE TABLE public.payment (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- 고유ID
+    payment_key TEXT,                              -- 결제 KEY(PG 관리)
+    order_id TEXT UNIQUE,                          -- 주문 ID(난수)
+    order_name TEXT,                               -- 사용자 표시용 상품명
+    status TEXT DEFAULT 'READY' CHECK (
+      status IN (
+        'READY',               -- 생성 직후
+        'IN_PROGRESS',         -- 인증 완료 (승인 전)
+        'AUTH_FAILED',         -- 인증 실패
+        'DONE',                -- 결제 승인 완료
+        'CANCELED',            -- 전체 취소
+        'PARTIAL_CANCELED',    -- 부분 취소
+        'ABORTED',             -- 승인 실패
+        'EXPIRED',             -- 유효시간 만료
+        'WAITING_FOR_DEPOSIT'  -- 가상계좌 대기
+      )
+    ),
+    receipt_url TEXT,                           	-- PG 영수증 링크               
+    amount DECIMAL(10,2) NOT NULL,              	-- 결제 금액
+    approved_at TIMESTAMPTZ,                      	-- 결제 완료 시간
+    method TEXT,                                	-- 카드, 가상계좌 등
+    user_id TEXT,                               	-- 결제자
+    created_at TIMESTAMPTZ DEFAULT now(),        	 	-- 생성 날짜
+    ref_type TEXT,                              	-- 상품 타입(subscription, credit)                             
+    ref_id TEXT,                                	-- 상품 ID(subscription.id, credit.id)
+    tenant_id TEXT REFERENCES public.tenants(id)  	-- 테넌트
+);
+
+
+-- service(개별 서비스 식별)
+CREATE TABLE public.service (
+    id          TEXT NOT NULL, 								 -- 서비스 ID
+    name        TEXT,                                        -- 서비스 이름
+    created_at  TIMESTAMPTZ DEFAULT NOW(),      			 -- 생성일
+    tenant_id   TEXT       REFERENCES public.tenants(id),    -- 테넌트
+
+    CONSTRAINT service_pkey PRIMARY KEY (id, tenant_id)
+);
+
+-- service_rate(각 서비스별 과금 단위·크레딧 정의)
+CREATE TABLE IF NOT EXISTS public.service_rate (
+    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(), 	-- 고유 ID
+    service_id      text NOT NULL,								-- 서비스 ID 
+    tenant_id       text NOT NULL,								-- 테넌트
+    model           text NOT NULL,								-- 모델명
+    available_from  TIMESTAMPTZ NOT NULL DEFAULT now(), 			-- 적용 시점
+    created_at      TIMESTAMPTZ DEFAULT now(), 					-- 생성일
+    dimension       jsonb NOT NULL DEFAULT '{}'::jsonb, 			-- 가격 및 unit 정보
+
+    CONSTRAINT unique_service_dimension
+    UNIQUE (service_id, tenant_id, model, available_from),
+
+    CONSTRAINT service_rate_tenant_id_fkey
+    FOREIGN KEY (tenant_id) REFERENCES public.tenants (id),
+
+    -- 핵심: service(id, tenant_id) 복합키 참조 + 서비스 삭제 시 함께 삭제
+    CONSTRAINT service_rate_service_tenant_fk
+    FOREIGN KEY (service_id, tenant_id)
+    REFERENCES public.service (id, tenant_id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_service_rate_service_tenant ON public.service_rate (service_id, tenant_id);
+
+
+-- usage(사용량)
+CREATE TABLE public.usage (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,        	 -- 사용량 ID
+    tenant_id TEXT NOT NULL REFERENCES public.tenants(id),   -- 테넌트
+
+    quantity DECIMAL(12,4) NOT NULL,                      	 -- 사용 양(토큰 및 호출수..)  
+    amount DECIMAL(12,7),                                 	 -- 트리거: 크레딧 합계
+    metadata JSONB,                                       	 -- 계산용 데이터
+    service_rate_id UUID REFERENCES public.service_rate(id), -- 트리거: 해당 시점의 가격
+    group_id UUID, 									      	 -- 연결된 사용량 ID
+
+    model TEXT,                                           	 -- 사용 모델
+    service_id TEXT,	                                  	 -- 서비스 ID (LLM, RAG 등)
+    user_id TEXT,                                         	 -- 사용자
+    agent_id TEXT,                                        	 -- agent ID
+    process_def_id  TEXT,                                 	 -- 프로세스 정의 ID
+    process_inst_id TEXT,                                 	 -- 프로세스 인스턴스 ID
+	
+	usage_start_at TIMESTAMPTZ NOT NULL,     			  	 -- 사용 시작
+    usage_end_at TIMESTAMPTZ DEFAULT NOW(),    			  	 -- 사용 종료(자동 생성)
+
+    CONSTRAINT usage_service_fk
+	    FOREIGN KEY (service_id, tenant_id)
+	    REFERENCES public.service (id, tenant_id)
+	    ON UPDATE CASCADE
+	    ON DELETE RESTRICT
+);
+CREATE INDEX idx_usage_service_id      ON public.usage(service_id);
+CREATE INDEX idx_usage_process_def_id  ON public.usage(process_def_id);
+CREATE INDEX idx_usage_process_inst_id ON public.usage(process_inst_id);
+CREATE INDEX idx_usage_tenant_master_date ON public.usage (tenant_id, service_id, usage_start_at);
+
+
+-- credit(크레딧 정의)
+CREATE TABLE public.credit (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),      -- 크레딧 ID
+    name TEXT NOT NULL,                                 -- 크레딧 명
+    description TEXT,                                   -- 크레딧 설명
+    type TEXT NOT NULL,                                 -- 크레딧 타입
+    price DECIMAL(10,2) NOT NULL DEFAULT 0,             -- 결제 금액
+    credit DECIMAL(12,3) NOT NULL DEFAULT 0,            -- 제공 크레딧
+    badge JSONB NOT NULL DEFAULT '{}'::jsonb,           -- 크레딧 특징
+    status TEXT NOT NULL DEFAULT 'active'               -- 크레딧 상태
+        CHECK (status IN ('active', 'inactive', 'hidden')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),               -- 생성 날짜
+    validity_months INT DEFAULT 12,                     -- 크레딧 만료 개월(기본 12개월)
+    tenant_id TEXT REFERENCES public.tenants(id)        -- 테넌트
+);
+
+-- credit_purchase(테넌트의 '충전 크래딧' 구매이력)
+CREATE TABLE public.credit_purchase (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,    		-- 크레딧 구매ID
+    tenant_id TEXT NOT NULL REFERENCES public.tenants(id),  -- 테넌트
+    added_credit DECIMAL(12,7) NOT NULL,              	   	-- 추가된 크레딧 
+    source_type TEXT NOT NULL                         		-- 충전 방식 구분
+        CHECK (source_type IN ('purchase'))
+        DEFAULT 'purchase',
+    source_id   TEXT NOT NULL,                        -- 충전 ID (credit.id 또는 promo code)
+    payment_id UUID REFERENCES public.payment(id),    -- 결제 ID 정보(구매자 추적용)
+    expires_at TIMESTAMPTZ ,              			  -- 만료일(생성일 기준 + validity_months)
+    created_at TIMESTAMPTZ DEFAULT NOW(), 			  -- 생성일(자동생성)
+
+    CONSTRAINT added_credit_ch CHECK (added_credit >= 0);
+);
+ 
+
+-- credit_usage(크레딧 차감 이력 테이블)
+CREATE TABLE public.credit_usage (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,                    -- 크레딧 이력 ID
+    tenant_id TEXT NOT NULL REFERENCES public.tenants(id),            -- 테넌트ID
+    usage_id UUID NOT NULL REFERENCES public.usage(id),               -- 사용량 ID
+    credit_purchase_id UUID REFERENCES public.credit_purchase(id),    -- 연결된 구매 크레딧 ID
+    used_credit DECIMAL(12,7) NOT NULL, 								-- 실제로 이만큼 소진
+    created_at TIMESTAMPTZ DEFAULT NOW(),                				-- 생성 날짜
+
+    CONSTRAINT used_credit_ch CHECK (used_credit >= 0)
+);
 
 -- Create indexes
 create index if not exists idx_processed_files_tenant_id on public.processed_files using btree (tenant_id) tablespace pg_default;
@@ -1416,7 +1566,7 @@ CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 
 -- 에이전트 모드 enum
 CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
 -- 오케스트레이션 방식 enum
-CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research');
+CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react');
 -- 드래프트 상태 enum
 CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
 -- 이벤트 타입 enum
@@ -1525,6 +1675,7 @@ SET agent_orch_new = CASE
     WHEN agent_orch = 'crewai-deep-research' THEN 'crewai-deep-research'::agent_orch
     WHEN agent_orch = 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
     WHEN agent_orch = 'crewai-action' THEN 'crewai-action'::agent_orch
+    WHEN agent_orch = 'langchain-react' THEN 'langchain-react'::agent_orch
     ELSE NULL  -- 기본값을 NULL로 설정
 END;
 -- 3. 기존 컬럼 삭제 후 새 컬럼명 변경

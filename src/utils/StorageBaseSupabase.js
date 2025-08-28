@@ -793,9 +793,13 @@ export default class StorageBaseSupabase {
             if (!options) options = {};
             const orderByField = options.orderBy || 'id';
             const isAscending = !options.sort || !options.sort.includes('desc');
-            let query = window.$supabase.from(path);
-            // let obj = this.formatDataPath(path, options);
-            // let query = window.$supabase.from(obj.table)
+            let query = window.$supabase
+
+            if(path) {
+                query = query.from(path);
+            } else {
+                query = query.from();
+            }
 
             // key 처리 - 컬럼명
             if (options.key) {
@@ -893,6 +897,22 @@ export default class StorageBaseSupabase {
         }
     }
 
+    async callProcedure(procedure, params) {
+        try {
+            const { data, error } = await window.$supabase.rpc(procedure, params);
+    
+            if (error) {
+                console.error('Error calling function:', error);
+                return null;
+            }
+    
+            return data;
+        } catch (error) {
+            console.error('Error in callProcedure:', error);
+            return error;
+        }
+    }
+    
     async writeUserData(value, userInfo) {
         try {
             if (value.session) {

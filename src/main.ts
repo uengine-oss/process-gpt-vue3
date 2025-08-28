@@ -193,23 +193,35 @@ async function setupSupabase() {
     // window.$mode = 'uEngine';
     // window.$mode = 'ProcessGPT';
     // window.$jms = false;
+    
+    // $supabase가 이미 정의되어 있는지 확인
+    if (window.$supabase) {
+        console.log('[Main] $supabase가 이미 정의되어 있습니다.');
+        return;
+    }
+    
     const supabaseUrl = window._env_?.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
     const supabaseKey = window._env_?.VITE_SUPABASE_KEY || import.meta.env.VITE_SUPABASE_KEY;
 
-    Object.defineProperty(window, '$supabase', {
-        value: createClient(
-            supabaseUrl,
-            supabaseKey,
-            {
-                auth: {
-                    autoRefreshToken: true,
-                    persistSession: true
+    try {
+        Object.defineProperty(window, '$supabase', {
+            value: createClient(
+                supabaseUrl,
+                supabaseKey,
+                {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true
+                    }
                 }
-            }
-        ),
-        writable: false,
-        configurable: false
-    });
+            ),
+            writable: false,
+            configurable: false
+        });
+        console.log('[Main] $supabase 클라이언트가 성공적으로 설정되었습니다.');
+    } catch (error) {
+        console.error('[Main] $supabase 설정 중 오류 발생:', error);
+    }
 }
 
 async function setupTenant() {
@@ -232,6 +244,8 @@ async function setupTenant() {
             configurable: true
         });
         Object.defineProperty(window, '$tenantName', {
+            // uengine supabase 운영기 연결할때 사용
+            // value: 'uengine',
             value: 'localhost',
             writable: false,
             configurable: false

@@ -135,8 +135,8 @@ export default {
 
 <style>
 .slide-presentation {
-  height: 100vh;
-  width: 92vw;
+  height: 90vh;
+  width: 80vw;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -158,6 +158,7 @@ export default {
   align-items: center;
   justify-content: center;
   position: relative;
+  overflow: auto;
 }
 
 .presentation-slide {

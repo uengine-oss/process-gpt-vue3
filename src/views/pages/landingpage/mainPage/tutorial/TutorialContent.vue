@@ -12,33 +12,7 @@
                 </div>
             </div>
             
-            <div class="markdown-content" v-html="renderedContent"></div>
-            
-            <div class="content-navigation">
-                <button 
-                    v-if="previousPage" 
-                    @click="navigatePage(previousPage)"
-                    class="nav-btn prev-btn"
-                >
-                    <span class="nav-arrow">←</span>
-                    <div class="nav-text">
-                        <span class="nav-label">이전</span>
-                        <span class="nav-title">{{ previousPage.title }}</span>
-                    </div>
-                </button>
-                
-                <button 
-                    v-if="nextPage" 
-                    @click="navigatePage(nextPage)"
-                    class="nav-btn next-btn"
-                >
-                    <div class="nav-text">
-                        <span class="nav-label">다음</span>
-                        <span class="nav-title">{{ nextPage.title }}</span>
-                    </div>
-                    <span class="nav-arrow">→</span>
-                </button>
-            </div>
+            <div class="markdown-content" v-html="renderedContent" @click="handleContentClick"></div>
         </div>
     </div>
 </template>
@@ -103,7 +77,7 @@ export default {
                     this.currentMarkdownData = markdownData;
                     this.renderedContent = markdownData.renderedContent;
                 } else {
-                    this.renderedContent = '<p>컨텐츠를 찾을 수 없습니다.</p>';
+                    this.renderedContent = '<p>마크다운 컨텐츠 로드중입니다.</p>';
                     console.error('마크다운 파일을 찾을 수 없습니다:', page.markdownFile);
                 }
             } catch (error) {
@@ -120,6 +94,35 @@ export default {
         },
         navigatePage(page) {
             this.$emit('page-selected', page);
+        },
+
+        // 마크다운 콘텐츠 내 링크 클릭 처리
+        handleContentClick(event) {
+            let target = event.target;
+            
+            // 부모 요소들을 검사하여 tutorial-link 클래스를 가진 요소 찾기
+            let linkElement = null;
+            let currentElement = target;
+            
+            // 최대 5단계까지 부모 요소 검사
+            for (let i = 0; i < 5; i++) {
+                if (currentElement && currentElement.classList && currentElement.classList.contains('tutorial-link')) {
+                    linkElement = currentElement;
+                    break;
+                }
+                currentElement = currentElement.parentElement;
+                if (!currentElement) break;
+            }
+            
+            if (linkElement) {
+                event.preventDefault();
+                const targetPath = linkElement.getAttribute('data-target');
+                
+                if (targetPath) {
+                    // 부모 컴포넌트로 링크 클릭 이벤트 전달
+                    this.$emit('tutorial-link-clicked', targetPath);
+                }
+            }
         }
     }
 }
@@ -202,10 +205,18 @@ export default {
 .markdown-content :deep(ul) {
     margin: 16px 0;
     padding-left: 20px;
+    list-style-type: disc;
+}
+
+.markdown-content :deep(ol) {
+    margin: 16px 0;
+    padding-left: 20px;
+    list-style-type: decimal;
 }
 
 .markdown-content :deep(li) {
     margin: 8px 0;
+    line-height: 1.5;
 }
 
 .markdown-content :deep(a) {
@@ -213,8 +224,26 @@ export default {
     padding-bottom: 24px;
 }
 
-.markdown-content :deep(img) {
-    margin-bottom: 32px !important;
+.markdown-content :deep(.tutorial-link) {
+    color: #3b82f6;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.markdown-content :deep(.tutorial-link:hover) {
+    color: #1d4ed8;
+    text-decoration: none;
+}
+
+.markdown-content :deep(img),
+.markdown-content :deep(.tutorial-markdown-img) {
+    max-width: 60vw;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin: 8px 0px 48px 0px;
+    display: block;
 }
 
 .markdown-content :deep(code) {
@@ -226,18 +255,28 @@ export default {
 }
 
 .markdown-content :deep(pre) {
-    background: #1f2937;
-    color: #f9fafb;
-    padding: 16px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 16px 0;
+    background: #2d3748 !important;
+    color: #ffffff !important;
+    padding: 16px !important;
+    border-radius: 4px !important;
+    border: 1px solid #4a5568 !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    margin: 16px 0 !important;
+    font-family: 'Courier New', monospace !important;
+    white-space: pre !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    display: block !important;
+    box-sizing: border-box !important;
 }
 
 .markdown-content :deep(pre code) {
-    background: none;
-    padding: 0;
-    color: inherit;
+    background: none !important;
+    padding: 0 !important;
+    color: #ffffff !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
 }
 
 .content-navigation {
@@ -306,8 +345,12 @@ export default {
 }
 
 @media (max-width: 768px) {
+    .tutorial-markdown-img {
+        max-width: 90vw;
+    }
     .tutorial-content {
         margin-left: 0;
+        padding-top: 80px; /* 모바일 햄버거 버튼 공간 확보 */
     }
     
     .content-area {

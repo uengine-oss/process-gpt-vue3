@@ -286,6 +286,7 @@
                             :currentActivities="currentActivities"
                             :isOwnWorkItem="isOwnWorkItem"
                             :activityIndex="activityIndex"
+                            @loadInputData="loadInputData"
                             @updateCurrentActivities="updateCurrentActivities"
                             @close="close"
                             @executeProcess="executeProcess"
@@ -293,10 +294,13 @@
                             :is-simulate="isSimulate"
                             :is-finished-agent-generation="isFinishedAgentGeneration"
                             :processDefinition="processDefinition"
-                        >
+                        >   
+                            <template #form-work-item-action-label>
+                                <div class="text-h5 font-weight-semibold">결과 입력</div>
+                            </template>
                             <template #form-work-item-action-btn>
                                 <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
-                                    class="work-item-form-btn-box d-flex justify-end align-center pr-3"
+                                    class="work-item-form-btn-box align-center pr-3"
                                 >
                                     <v-btn v-if="hasGeneratedContent"
                                         @click="resetGeneratedContent"
@@ -553,6 +557,7 @@ export default {
         assigneeUserInfo: null,
         isLoading: false,
         delegateTaskDialog: false,
+        inputData: null,
     }),
     created() {
         // this.init();
@@ -973,6 +978,12 @@ export default {
                     })
                 }
             }
+            if(this.inputData){
+                this.generator.previousMessages.push({
+                    "content": "참고 정보: " + JSON.stringify(this.inputData),
+                    "role": "user"
+                })
+            }
             if(this.processInstance && this.processInstance.instId){
                 const instance = await backend.getInstance(this.processInstance.instId);
                 this.generator.previousMessages.push({
@@ -1372,7 +1383,10 @@ export default {
         },
         goBackToPreviousPage() {
             this.$router.go(-1);
-        },
+        },  
+        loadInputData(data) {
+            this.inputData = data;
+        }
     }
 };
 </script>
