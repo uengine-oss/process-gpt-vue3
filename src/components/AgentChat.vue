@@ -231,6 +231,8 @@ export default {
         async afterGenerationFinished(responseObj) {
             if(responseObj && responseObj.work) {
                 let obj = this.createMessageObj(responseObj, 'agent')
+                obj.name = this.agentInfo.username
+                obj.profile = this.agentInfo.profile
                 if (responseObj.work == 'Mem0AgentInformation' || responseObj.work == 'Mem0AgentResponse') {
                     obj.content = responseObj.content
                 } else if (responseObj.work == 'A2AResponse') {
