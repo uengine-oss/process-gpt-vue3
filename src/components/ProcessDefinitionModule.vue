@@ -955,85 +955,6 @@ export default {
                     const childLanes = raw.lanes || [];
                     const parentLanes = parentLanesForInheritance || [];
 
-                    // elements가 있으면 우선적으로 처리, 없으면 기존 방식 사용
-                    let events, activities, gateways, sequences;
-                    
-                    if (raw.elements && Array.isArray(raw.elements)) {
-                        // elements를 각 타입별로 분리
-                        events = [];
-                        activities = [];
-                        gateways = [];
-                        sequences = [];
-                        
-                        raw.elements.forEach(element => {
-                            switch (element.elementType) {
-                                case 'Event':
-                                    events.push(buildEvent({
-                                        id: element.id,
-                                        name: element.name || element.id,
-                                        type: element.type === 'StartEvent' ? 'startEvent' : element.type === 'EndEvent' ? 'endEvent' : 'intermediateCatchEvent',
-                                        description: element.description || '',
-                                        trigger: element.trigger || '',
-                                        role: element.role || '',
-                                        process: parentProcId
-                                    }, childLanes, parentLanes));
-                                    break;
-                                case 'Activity':
-                                    activities.push(buildActivity({
-                                        id: element.id,
-                                        name: element.name || element.id,
-                                        type: element.type === 'UserActivity' ? 'userTask' : 'task',
-                                        description: element.description || '',
-                                        instruction: element.instruction || '',
-                                        role: element.role || '',
-                                        process: parentProcId,
-                                        inputData: element.inputData || [],
-                                        outputData: element.outputData || [],
-                                        duration: element.duration || '5',
-                                        properties: JSON.stringify({
-                                            description: element.description,
-                                            instruction: element.instruction,
-                                            checkpoints: element.checkpoints || [],
-                                            duration: element.duration || '5'
-                                        })
-                                    }, childLanes, parentLanes));
-                                    break;
-                                case 'Gateway':
-                                    gateways.push(buildGateway({
-                                        id: element.id,
-                                        name: element.name || element.id,
-                                        type: element.type === 'ExclusiveGateway' ? 'exclusiveGateway' : element.type === 'ParallelGateway' ? 'parallelGateway' : 'exclusiveGateway',
-                                        description: element.description || '',
-                                        role: element.role || '',
-                                        process: parentProcId,
-                                        condition: element.condition || '',
-                                        properties: JSON.stringify({
-                                            description: element.description,
-                                            condition: element.condition || ''
-                                        })
-                                    }, childLanes, parentLanes));
-                                    break;
-                                case 'Sequence':
-                                    sequences.push(buildSequence({
-                                        id: element.id,
-                                        source: element.source,
-                                        target: element.target,
-                                        condition: element.condition || '',
-                                        properties: JSON.stringify({
-                                            condition: element.condition || ''
-                                        })
-                                    }));
-                                    break;
-                            }
-                        });
-                    } else {
-                        // 기존 방식: events, activities, gateways, sequences를 직접 사용
-                        events = (raw.events || []).map(ev => buildEvent(ev, childLanes, parentLanes));
-                        activities = (raw.activities || []).map(a => buildActivity(a, childLanes, parentLanes));
-                        gateways = (raw.gateways || []).map(g => buildGateway(g, childLanes, parentLanes));
-                        sequences = (raw.sequences || raw.sequenceFlows || []).map(buildSequence);
-                    }
-
                     return {
                         // Pydantic 필수 필드 보완(부모 정의 상속)
                         processDefinitionName: parentProcName,
@@ -1041,31 +962,31 @@ export default {
 
                         data: (raw.data || []).slice(),
                         roles: buildRolesFromLanes(childLanes),
-                        events: events,
-                        activities: activities,
-                        gateways: gateways,
-                        sequences: sequences,
+                        events: (raw.events || []).map(ev => buildEvent(ev, childLanes, parentLanes)),
+                        activities: (raw.activities || []).map(a => buildActivity(a, childLanes, parentLanes)),
+                        gateways: (raw.gateways || []).map(g => buildGateway(g, childLanes, parentLanes)),
+                        sequences: (raw.sequences || raw.sequenceFlows || []).map(buildSequence),
 
                         subProcesses: (raw.subProcesses || []).map((childSp) => {
-                            const propsJson = getPropsJson(childSp) || {};
-                            return {
-                                id: childSp.id,
-                                name: childSp.name,
-                                role: resolveRole(childSp.id, childLanes, parentLanes),
-                                type: childSp.type,
-                                process: childSp.process,
-                                duration: propsJson?.duration ? propsJson.duration : 5,
-                                properties:
-                                childSp['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}',
-                                attachedEvents: childSp.attachedEvents || null,
-                                // 재귀적으로 children 처리
-                                children: buildSubprocessChildren(
-                                    childSp.childrenRaw,
-                                    INHERIT_LANE_TO_CHILDREN ? (childLanes.length ? childLanes : parentLanes) : [],
-                                    parentProcName,
-                                    parentProcId
-                                )
-                            };
+                        const propsJson = getPropsJson(childSp) || {};
+                        return {
+                            id: childSp.id,
+                            name: childSp.name,
+                            role: resolveRole(childSp.id, childLanes, parentLanes),
+                            type: childSp.type,
+                            process: childSp.process,
+                            duration: propsJson?.duration ? propsJson.duration : 5,
+                            properties:
+                            childSp['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}',
+                            attachedEvents: childSp.attachedEvents || null,
+                            // 재귀
+                            children: buildSubprocessChildren(
+                            childSp.childrenRaw,
+                            INHERIT_LANE_TO_CHILDREN ? (childLanes.length ? childLanes : parentLanes) : [],
+                            parentProcName,
+                            parentProcId
+                            )
+                        };
                         })
                     };
                 };

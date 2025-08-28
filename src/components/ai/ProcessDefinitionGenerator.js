@@ -93,6 +93,31 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
     - 각 액티비티의 담당자 역할
     - 프로세스에서 사용되는 데이터 변수
     - 서브프로세스가 필요한 경우: 반복되는 작업이나 독립적인 프로세스 단위로 분리할 수 있는 부분을 서브프로세스로 정의
+    - 서브(하위)프로세스가 필요하다고 판단되는 경우:
+      - 하나의 단계 자체가 Task 가 아닌 "subProcesses" 항목이 된다. 
+        - 예를 들어 사용자의 요청이 
+          역할: 디자인 봇
+          1. 프로세스 시작
+          2. 뉴스레터 초안 작성
+          3. VIP 관심사 정리
+
+          역할: VIP 뉴스레터 담당자
+          4. VIP 뉴스레터 작성 및 리뷰(서브 프로세스)
+            - 1. 시작 이벤트
+            - 2. vip 뉴스레터 작성
+            - 3. 리뷰
+            - 4. 분기(gateway)
+            - 4-1. 승인 > - 5. 뉴스레터 발송 > - 6. 서브 프로세스 종료
+            - 4-2. 반려 > 2. vip 뉴스레터 작성
+          5. 뉴스레터 발송
+          6. 프로세스 종료
+
+          이런 식의 프로세스 흐름 요청이 들어온 경우 4번째 단계인 "VIP 뉴스레터 작성 및 리뷰" 단계는 userTask 가 아닌 subProcesses 항목이다. userTask 에 추가하면 안됨.
+      - 위 예시의 경우 메인 프로세스의 시퀀스는 3. VIP 관심사 정리(userTask) > 4. VIP 뉴스레터 작성 및 리뷰(서브 프로세스) > 5. 뉴스레터 발송(userTask) > 6. 프로세스 종료(endEvent) 가 된다.
+      - 서브프로세스는 마지막에 생성되기때문에 전체 프로세스 흐름에 맞게 서브 프로세스 (id를 정해놓고)가 있다고 가정하고 메인 프로세스를 생성하여야함. 생성할때에는 메인 프로세스에서 사용한(가정한) 서브 프로세스 id로 따라 생성해주어야함.
+        - 예를 들어 프로세스가 start > A > B > C(서브프로세스) > D > end 인 경우 B, D 액티비티는 C(서브프로세스)가 있다고 가정하고 시퀀스를 생성해주어야하고, 서브 프로세스 생성시에는 가정한 C로 서브 프로세스 id 및 정보를 생성해주어야함.
+        - 사용자가 서브프로세스를 생성해달라고 명시한 경우 그 단계는 이벤트나 userTask 등이 아닌 반드시 "subProcesses" 항목에 서브프로세스 정보를 추가해줘야함. 서브프로세스 역할을 하는 액티비티(task)는 존재할 수 없음.
+    
     - "기존 프로세스 정보"가 존재하는 경우 반드시 어떠한 경우, 요청에도 "modifications" 항목을 포함하는 수정 형식으로 생성해야함. "기존 프로세스 정보"가 존재하는데 수정이 아닌 생성 형식으로 답변을 하면 치명적인 오류가 발생하기때문에 가장 중요함. 이미 프로세스가 존재하기때문에 다시 생성해선 안됨. 기존 프로세스정보가 존재하는 경우 어떠한 경우, 요청에도 재생성이 아닌 기존 프로세스 정보를 참고하여 수정 형식으로 답변해야함. 기존 프로세스 정보가 없는 경우(프로세스 정보가 업데이트 되지않은 "{{ 기존 프로세스 정보 }}" 상태)에만 새로 생성해야한다. 아닌 경우는 무조건 "modifications 형식으로 생성"
     
     The following rules must be strictly followed:
@@ -265,20 +290,59 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                 "duration": "5",
                 "properties": "{}",
                 "attachedEvents": null,
-                "elements": [
-                // 메인 프로세스의 elements 와 동일한 규칙이 적용됨
-                  {
-                    "elementType": "Event" || "Activity" || "Sequence" || "Gateway" ,
-                    "id": "id(영문)",
-                    "name": "이름(한글)",
-                    "role": "역할명",
-                    "source": "이전_컴포넌트_id",
-                    "type": type,
-                    "description": "설명(한글)",
-                    "trigger": "트리거 조건"
-                  }
-                ],
-                "subProcesses": [],
+                "children": {
+                  "data": [],
+                  "roles": [],
+                  "events": [
+                    {
+                      "id": "event_id(영문)",
+                      "role": "역할명",
+                      "type": "StartEvent" | "EndEvent" | "IntermediateCatchEvent",
+                      "process": "subprocess_id",
+                      "properties": "{}",
+                      "description": "이벤트 설명(한글)"
+                    }
+                  ],
+                  "gateways": [
+                    {
+                      "id": "gateway_id(영문)",
+                      "name": "게이트웨이명(한글)",
+                      "role": "역할명",
+                      "type": "exclusiveGateway" | "parallelGateway" | "inclusiveGateway",
+                      "process": "subprocess_id",
+                      "condition": "",
+                      "properties": "{}",
+                      "description": "게이트웨이 설명(한글)"
+                    }
+                  ],
+                  "sequences": [
+                    {
+                      "id": "sequence_id(영문)",
+                      "source": "시작_컴포넌트_id",
+                      "target": "도착_컴포넌트_id",
+                      "condition": "",
+                      "properties": "{}"
+                    }
+                  ],
+                  "activities": [
+                    {
+                      "id": "activity_id(영문)",
+                      "name": "액티비티명(한글)",
+                      "role": "역할명",
+                      "tool": "formHandler:form_name",
+                      "type": "userTask" | "emailTask",
+                      "process": "subprocess_id",
+                      "duration": 5,
+                      "inputData": [],
+                      "outputData": [],
+                      "properties": "{}",
+                      "description": "액티비티 설명(한글)",
+                      "instruction": "사용자 지침(한글)",
+                      "attachedEvents": null
+                    }
+                  ],
+                  "subProcesses": []
+                },
                 "processDefinitionId": "서브프로세스_정의_id",
                 "processDefinitionName": "서브프로세스 정의명(한글)"
               }
