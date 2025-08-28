@@ -956,7 +956,8 @@
         "chat": "채팅",
         "kanbanBoard": "칸반보드",
         "sendEvent": "{event} 이벤트 보내기",
-        "output": "산출물"
+        "output": "산출물",
+        "source": "소스"
     },
     "ProjectCard": {
         "managment": "프로세스",

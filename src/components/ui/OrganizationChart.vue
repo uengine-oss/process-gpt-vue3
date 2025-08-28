@@ -152,7 +152,8 @@ export default {
                     const titleBox = textElement.closest('.node-content-title-box');
                     if (titleBox) {
                         const nodeId = titleBox.getAttribute('data-node-id');
-                        const foundNode = this.findNodeById(this.node, nodeId);
+                        // 원본 데이터에서 노드를 찾아서 사용
+                        const foundNode = this.findOriginalNodeById(this.node, nodeId);
                         if (foundNode) {
                             this.showNodeInfo(foundNode, event, true);
                         }
@@ -187,7 +188,45 @@ export default {
     },
     methods: {
         drawTree() {
-            this.tree.render(this.node);
+            // 팀원들을 세로 배치하기 위한 데이터 변환
+            const transformedNode = this.transformForVerticalLayout(this.node);
+            this.tree.render(transformedNode);
+        },
+        transformForVerticalLayout(node) {
+            if (!node) return node;
+            
+            // 깊은 복사를 통해 원본 데이터 보존
+            const clonedNode = JSON.parse(JSON.stringify(node));
+            
+            // 자식 노드들을 변환
+            if (clonedNode.children && clonedNode.children.length > 0) {
+                clonedNode.children = clonedNode.children.map(child => {
+                    const transformedChild = this.transformForVerticalLayout(child);
+                    
+                    // 팀 노드인 경우 팀원들을 세로로 연결
+                    if (transformedChild.data && transformedChild.data.isTeam && 
+                        transformedChild.children && transformedChild.children.length > 0) {
+                        
+                        // 팀원들을 체인 형태로 연결
+                        const members = transformedChild.children;
+                        if (members.length > 1) {
+                            // 첫 번째 팀원부터 시작하여 체인 연결
+                            for (let i = 0; i < members.length - 1; i++) {
+                                members[i].children = [members[i + 1]];
+                            }
+                            // 마지막 팀원은 자식이 없음
+                            members[members.length - 1].children = [];
+                            
+                            // 팀의 자식은 첫 번째 팀원만
+                            transformedChild.children = [members[0]];
+                        }
+                    }
+                    
+                    return transformedChild;
+                });
+            }
+            
+            return clonedNode;
         },
         findNodeById(node, id) {
             if (node.id === id) {
@@ -196,6 +235,21 @@ export default {
             if (node.children) {
                 for (let child of node.children) {
                     let found = this.findNodeById(child, id);
+                    if (found) {
+                        return found;
+                    }
+                }
+            }
+            return null;
+        },
+        // 원본 데이터에서 노드를 찾는 메서드 (변환 전 데이터 사용)
+        findOriginalNodeById(node, id) {
+            if (node.id === id) {
+                return node;
+            }
+            if (node.children) {
+                for (let child of node.children) {
+                    let found = this.findOriginalNodeById(child, id);
                     if (found) {
                         return found;
                     }
@@ -213,14 +267,21 @@ export default {
                         previousTextBox.style.backgroundColor = '';
                     }
                 }
-                const foundNode = this.findNodeById(this.node, target.id);
+                // 원본 데이터에서 노드를 찾아서 사용
+                const foundNode = this.findOriginalNodeById(this.node, target.id);
                 if (foundNode && foundNode.data) {
                     this.editNode = foundNode;
                     
-                    // Agent 클릭 시 뱃지 다이어그램 표시, 아닌 경우 닫기
+                    // Agent 클릭 시 뱃지 다이어그램 토글, 아닌 경우 닫기
                     if (foundNode.data.isAgent) {
-                        this.selectedAgent = foundNode.data;
-                        this.showBadgesDiagram = true;
+                        // 이미 같은 Agent가 선택되어 있고 다이어그램이 열려있으면 닫기
+                        if (this.showBadgesDiagram && this.selectedAgent && this.selectedAgent.id === foundNode.data.id) {
+                            this.closeBadgesDiagram();
+                        } else {
+                            // 새로운 Agent이거나 다이어그램이 닫혀있으면 열기
+                            this.selectedAgent = foundNode.data;
+                            this.showBadgesDiagram = true;
+                        }
                     } else {
                         this.closeBadgesDiagram();
                     }

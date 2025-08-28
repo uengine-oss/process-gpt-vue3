@@ -386,9 +386,7 @@ export default {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-.result-content {
-  padding: 16px;
-}
+
 .learning-progress {
   display: flex;
   align-items: center;

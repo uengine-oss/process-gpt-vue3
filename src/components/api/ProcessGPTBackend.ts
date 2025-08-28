@@ -359,6 +359,7 @@ class ProcessGPTBackend implements Backend {
             });
 
             if (response && response.data) {
+                console.log(response.data);
                 return response.data;
             } else {
                 return null;
@@ -2315,8 +2316,7 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!response.error) {
-                const indexRes = await this.processFile(response, storageType);
-                console.log(indexRes);
+                const indexRes = await this.processFile(response, storageType, options);
                 return response;
             } else {
                 return response;
@@ -2342,12 +2342,13 @@ class ProcessGPTBackend implements Backend {
             formData.append('file', file);
             formData.append('file_name', fileName);
             formData.append('tenant_id', window.$tenantName);
+            if (options && options.folder_path) {
+                formData.append('folder_path', options.folder_path);
+            }
 
-            const token = localStorage.getItem('accessToken');
             const response = await axios.post('/memento/save-to-drive', formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'multipart/form-data'
                 }
             });
 
@@ -2362,6 +2363,14 @@ class ProcessGPTBackend implements Backend {
                         tenant_id: window.$tenantName
                     }
                     await storage.putObject('chat_attachments', putObj);
+                } else if (options && options.proc_inst_id && options.file_id) {
+                    const putObj = {
+                        id: options.file_id,
+                        proc_inst_id: options.proc_inst_id,
+                        file_path: response.data.download_link,
+                        is_process: true
+                    }
+                    await storage.putObject('proc_inst_source', putObj);
                 }
                 return response.data;
             } else {
@@ -2433,7 +2442,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async processFile(file: any, storageType: string) {
+    async processFile(file: any, storageType: string, options?: any) {
         try {
             let file_path = '';
             let original_filename = '';
@@ -2441,11 +2450,14 @@ class ProcessGPTBackend implements Backend {
                 file_path = file.fullPath.replace('files/', '');
                 original_filename = file.original_filename;
             } else {
-                file_path = file.file_name;
+                if (options && options.folder_path) {
+                    file_path = file.file_id;
+                } else {
+                    file_path = file.file_name;
+                }
                 original_filename = file.file_name;
             }
 
-            const token = localStorage.getItem('accessToken');
             const response = await axios.post('/memento/process', {
                 file_path: file_path,
                 original_filename: original_filename,
@@ -2453,8 +2465,7 @@ class ProcessGPTBackend implements Backend {
                 tenant_id: window.$tenantName
             }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 }
             });
             return response.data;
@@ -3986,7 +3997,37 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
-    
+
+    async getInstanceSource(proc_inst_id: string) {
+        try {
+            const response = await storage.list('proc_inst_source', {
+                match: {
+                    proc_inst_id: proc_inst_id
+                },
+                sort: 'desc',
+                orderBy: 'created_at'
+            });
+            return response;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async putInstanceSource(source: any) {
+        try {
+            return await storage.putObject('proc_inst_source', source);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteInstanceSource(source: any) {
+        try {
+            return await storage.delete('proc_inst_source', { match: { id: source.id } });
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
 
 }
 

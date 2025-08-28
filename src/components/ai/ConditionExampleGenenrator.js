@@ -27,52 +27,72 @@ Goal: From the CURRENT CONDITION (natural language), produce minimal Given When 
 
 TASK
 1. Focus only on CURRENT CONDITION.
-2. Internally (do not output) interpret into clear predicates (count, date, amount, status, membership, null, range).
-3. Identify closest pass/fail boundaries for each predicate.
-4. Output only minimal examples covering all boundaries—no redundancy.
-5. Use realistic business data.
+2. Analyze the CONDITION's meaning and business logic to understand what constitutes TRUE vs FALSE.
+3. Identify what business outcomes/actions should happen when condition is TRUE vs FALSE.
+4. Create examples that clearly demonstrate the business difference between TRUE and FALSE cases.
+5. Use realistic business data that shows the actual business impact.
 
 CONTEXT
-Proc:
+Process Definition:
 - activities: ${JSON.stringify(activities)}
 - gateways: ${JSON.stringify(gateways)}
 - events: ${JSON.stringify(events)}
 - sequences: ${JSON.stringify(sequences)}
 
-Condition: ${this.options.condition}
+CURRENT CONDITION: ${this.options.condition}
 
-BOUNDARY COVERAGE (guideline counts, adjust if needed for minimal coverage)
-- Threshold → ~2 (nearest pass & fail)
-- Range → ~3 (low pass, high pass, nearest fail outside)
-- Status → ~2 (minimal valid vs adjacent invalid)
-- Membership → ~1/pass category (+1 fail if no pass route)
-- Null/empty → ~2 (null fail vs minimal valid non-empty pass)
-- AND: vary 1 variable at a time, cover all boundaries minimally.
-- OR: 1 pass per route; add fail if needed.
+CONDITION ANALYSIS APPROACH:
+1. First, understand what the condition is checking for in business terms.
+2. Determine what business action/outcome should happen when condition is TRUE.
+3. Determine what business action/outcome should happen when condition is FALSE.
+4. Create examples that show these different business outcomes clearly.
+
+CONDITION ANALYSIS GUIDELINES:
+1. Analyze the given condition to understand what business situation it checks for.
+2. Determine what business action/outcome should happen when condition is TRUE.
+3. Determine what business action/outcome should happen when condition is FALSE.
+4. Create examples that show these different business outcomes clearly.
 
 VALUE RULES
 - Keep non-boundary vars constant, realistic.
 - Step: int=1, date=1d, money=0.01, else smallest sensible.
 
-NATURAL LANGUAGE PARSING EXAMPLES (internal use only):
-- "재고가 주문 수량 이상이면 출고" → 재고 >= 주문
-- "승인 상태인 경우 결재로 이동" → 상태 == 승인
-- "요청 금액이 한도 초과시 반려" → 요청금액 > 한도
-- "배송지가 없으면 출고 불가" → 배송지 IS NOT NULL
+BUSINESS LOGIC PATTERN:
+For stock-related conditions:
+- When condition indicates INSUFFICIENT STOCK (TRUE) → Production Request needed
+- When condition indicates SUFFICIENT STOCK (FALSE) → Shipment/Outbound possible
+
+For status-related conditions:
+- When condition indicates APPROVED status (TRUE) → Proceed to next step
+- When condition indicates NOT APPROVED status (FALSE) → Wait for approval
+
+For amount-related conditions:
+- When condition indicates EXCEEDS LIMIT (TRUE) → Reject/Return
+- When condition indicates WITHIN LIMIT (FALSE) → Approve/Process
 
 RULES
 - No explanations or extra text.
-- Ensure all boundaries are represented with minimal number of examples.
-- Use realistic business values.
+- Focus on business outcomes, not just mathematical boundaries.
+- Good examples (condition TRUE): Show scenarios where the condition is met and what business action should happen.
+- Bad examples (condition FALSE): Show scenarios where the condition is not met and what different business action should happen.
+- Use realistic business values that clearly demonstrate the business difference.
+- Each example should show a clear business scenario with different outcomes.
 
 OUTPUT FORMAT:
 \`\`\`json
 {
-  "examples": [
+  "good_examples": [
     {
-      "given": "<first variable value: e.g., 재고=100>",
-      "when": "<second variable value: e.g., 주문=99>",
-      "then": "<outcome based on condition: e.g., 출고 가능>"
+      "given": "<business context>",
+      "when": "<trigger condition>",
+      "then": "<business outcome when condition is TRUE>"
+    }
+  ],
+  "bad_examples": [
+    {
+      "given": "<business context>",
+      "when": "<trigger condition>",
+      "then": "<business outcome when condition is FALSE>"
     }
   ]
 }
