@@ -169,6 +169,12 @@
                     <v-window-item value="chat" class="instance-card-tab-5">
                         <Chats :isInstanceChat="true" :instanceInfo="instance" :participantUsers="participantUsers" />
                     </v-window-item>
+                    <v-window-item value="source" class="instance-card-tab-6">
+                        <InstanceSource :instance="instance" />
+                    </v-window-item>
+                    <v-window-item value="output" class="instance-card-tab-7">
+                        <InstanceOutput :instance="instance" />
+                    </v-window-item>
                 </v-window>
             </div>
         </div>
@@ -221,6 +227,8 @@ import KanbanBoard from '@/components/apps/todolist/KanbanBoard.vue';
 import KanbanColumnConfig from './KanbanColumnConfig.vue';
 import TodoDialog from './TodoDialog.vue';
 import Chats from '@/views/apps/chat/Chats.vue';
+import InstanceSource from './InstanceSource.vue'
+import InstanceOutput from './InstanceOutput.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -234,7 +242,9 @@ export default {
         GanttChart,
         KanbanBoard,
         TodoDialog,
-        Chats
+        Chats,
+        InstanceSource,
+        InstanceOutput
     },
     data: () => ({
         isLoading: true,
@@ -249,6 +259,8 @@ export default {
             { value: 'todo', label: 'InstanceCard.kanbanBoard', mobile: true},
             { value: 'gantt', label: 'InstanceCard.ganttChart', mobile: false},
             { value: 'chat', label: 'InstanceCard.chat', mobile: true},
+            { value: 'source', label: 'InstanceCard.source', mobile: true},
+            { value: 'output', label: 'InstanceCard.output', mobile: true},
         ],
 
         updatedKey: 0,

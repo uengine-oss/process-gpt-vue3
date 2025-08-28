@@ -954,7 +954,8 @@
         "chat": "Chat",
         "kanbanBoard": "Kanban Board",
         "sendEvent": "Send {event} event",
-        "output": "Output"
+        "output": "Output",
+        "source": "Source"
     },
     "ProjectCard": {
         "managment": "Progress",

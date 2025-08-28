@@ -312,12 +312,20 @@ export default {
         attachments: [],
 
         isAgentLearning: false,
-        showAgentLearning: false,
+        // showAgentLearning: true,
     }),
     computed: {
         filteredChatRoomList() {
             return this.chatRoomList.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
+        },
+        showAgentLearning() {
+            if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
+                return true;
+            } else {
+                return false;
+            }
         }
+
     },
     watch: {
         currentChatRoom: {
@@ -326,11 +334,11 @@ export default {
                     if (newVal.participants.length > 0) {
                         this.isAgentChat = newVal.participants.some(participant => participant.is_agent);
                         this.selectedUserInfo = newVal.participants.find(participant => participant.is_agent);
-                        if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
-                            this.showAgentLearning = true;
-                        } else {
-                            this.showAgentLearning = false;
-                        }
+                        // if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
+                        //     this.showAgentLearning = true;
+                        // } else {
+                        //     this.showAgentLearning = false;
+                        // }
                     }
                     if(this.generator) {
                         this.chatRoomId = newVal.id;
@@ -691,11 +699,11 @@ export default {
             }
             this.isAgentChat = chatRoomInfo.participants.some(participant => participant.is_agent);
             this.selectedUserInfo = chatRoomInfo.participants.find(participant => participant.is_agent);
-            if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
-                this.showAgentLearning = true;
-            } else {
-                this.showAgentLearning = false;
-            }
+            // if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
+            //     this.showAgentLearning = true;
+            // } else {
+            //     this.showAgentLearning = false;
+            // }
             this.getMessages(this.currentChatRoom.id);
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
             

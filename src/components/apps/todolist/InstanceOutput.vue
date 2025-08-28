@@ -9,15 +9,15 @@
                 :lg="isInWorkItem ? 12 : 6" 
                 :md="isInWorkItem ? 12 : 6" 
                 sm="12"
-                class="pa-0"
+                class="pa-2"
             >
-                <div class="h-100">
-                    <v-card-title class="pa-0 pb-2"> {{ item.name }} </v-card-title>
-                    <v-card-text class="pa-0">
+                <v-card class="h-100" elevation="2">
+                    <v-card-title class="pa-2"> {{ item.name }} </v-card-title>
+                    <v-card-text class="pa-2">
                         <DynamicForm v-if="item.type === 'form'" :formHTML="item.html" v-model="item.output" :readonly="true" class="dynamic-form" />
                         <div v-else-if="item.type === 'html'" v-html="item.html" class="border border-1 border-gray-300 rounded-md pa-2"></div>
                     </v-card-text>
-                </div>
+                </v-card>
             </v-col>
         </v-row>
     </div>

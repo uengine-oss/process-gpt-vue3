@@ -334,17 +334,18 @@ create table if not exists public.form_def_marketplace (
     constraint form_def_marketplace_pkey primary key (uuid)
 ) tablespace pg_default;
 
-create table if not exists public.tenant_oauth (
-    id text not null,
+create table public.tenant_oauth (
     tenant_id text not null,
-    provider text not null,
     client_id text not null,
     client_secret text not null,
     redirect_uri text null,
     drive_folder_id text null,
     created_at timestamp with time zone null default now(),
     updated_at timestamp with time zone null default now(),
-    constraint tenant_oauth_pkey primary key (id)
+    google_credentials jsonb null,
+    google_credentials_updated_at timestamp with time zone null,
+    constraint tenant_oauth_pkey primary key (tenant_id),
+    constraint tenant_oauth_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
 
 create table if not exists public.project (
@@ -548,7 +549,7 @@ CREATE TABLE public.credit_purchase (
     expires_at TIMESTAMPTZ ,              			  -- 만료일(생성일 기준 + validity_months)
     created_at TIMESTAMPTZ DEFAULT NOW(), 			  -- 생성일(자동생성)
 
-    CONSTRAINT added_credit_ch CHECK (added_credit >= 0);
+    CONSTRAINT added_credit_ch CHECK (added_credit >= 0)
 );
  
 
@@ -1702,3 +1703,30 @@ ALTER TABLE public.todolist RENAME COLUMN draft_status_new TO draft_status;
 
 
 
+create table public.proc_inst_source (
+    id uuid not null default gen_random_uuid (),
+    proc_inst_id text null,
+    file_name text null,
+    file_path text null,
+    created_at timestamp with time zone not null,
+    is_process boolean not null default false,
+    constraint proc_inst_source_pkey primary key (id),
+    constraint proc_inst_source_proc_inst_id_fkey foreign key (proc_inst_id) references bpm_proc_inst (proc_inst_id) on update cascade on delete cascade
+) tablespace pg_default;
+
+
+-- 문서 이미지 테이블
+CREATE TABLE document_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES documents(id),
+    tenant_id TEXT NOT NULL,
+    image_id TEXT NOT NULL,
+    image_url TEXT NOT NULL,
+    download_url TEXT NOT NULL,
+    metadata JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 인덱스 생성
+CREATE INDEX idx_document_images_document_id ON document_images(document_id);
+CREATE INDEX idx_document_images_tenant_id ON document_images(tenant_id);
