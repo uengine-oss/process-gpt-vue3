@@ -34,9 +34,6 @@
                 <span class="meta-label">{{ meta.label }}</span>
                 <span class="meta-value">{{ meta.value }}</span>
               </div>
-              <div v-if="shouldShowSubmitButton(item.payload)" class="meta-submit">
-                <button @click="submitTask(item.payload)" class="submit-button-light">채택</button>
-              </div>
             </div>
 
             <!-- Human Asked 응답 영역 -->
@@ -65,16 +62,25 @@
                   계속 진행하시려면 확인을 눌러주세요.
                 </div>
               </div>
-              <div v-if="!item.payload.isCompleted" class="query-actions">
-                <button 
-                  class="query-confirm" 
+              <v-row v-if="!item.payload.isCompleted" class="query-actions ma-0 pa-0">
+                <v-spacer></v-spacer>
+                <v-btn @click="onCancelHumanQuery(item.payload)"
+                  class="query-cancel rounded-pill mr-2" 
+                  variant="elevated" 
+                  color="gray"
+                  density="compact"
+                >취소
+                </v-btn>
+                <v-btn @click="onConfirmHumanQuery(item.payload)"
+                  class="query-confirm rounded-pill" 
+                  color="primary"
+                  variant="elevated" 
+                  density="compact"
                   :disabled="item.payload.humanQueryData.type !== 'confirm' && !humanQueryAnswers[item.payload.id]" 
-                  @click="onConfirmHumanQuery(item.payload)"
                 >
                   확인
-                </button>
-                <button class="query-cancel" @click="onCancelHumanQuery(item.payload)">취소</button>
-              </div>
+                </v-btn>
+              </v-row>
               <div v-else class="query-completed">
                 <span class="completed-pill" :class="getHumanResultClass(item.payload)">{{ getHumanResultText(item.payload) }}</span>
                 <span v-if="getHumanResultDetail(item.payload)" class="completed-detail">{{ getHumanResultDetail(item.payload) }}</span>
@@ -84,7 +90,17 @@
             <!-- 작업 결과 -->
             <div v-else-if="item.payload.isCompleted && item.payload.content" class="task-result">
               <div class="result-header">
-                <h4 class="result-title">작업 결과</h4>
+                <v-row class="ma-0 pa-0 align-center">
+                  <h4 class="result-title">작업 결과</h4>
+                  <v-spacer></v-spacer>
+                  <v-btn v-if="shouldShowSubmitButton(item.payload)"
+                      @click="submitTask(item.payload)"
+                      color="primary"
+                      variant="elevated" 
+                      class="rounded-pill"
+                      density="compact"
+                  >채택</v-btn>
+                </v-row>
               </div>
               <div class="result-content">
                 <!-- 슬라이드 결과 -->
@@ -121,23 +137,24 @@
                 ></div>
                 
                 <!-- JSON 결과 -->
-                 <div v-else :class="['json-container', { 
-                       expanded: isTaskExpanded(item.payload.id),
-                       'has-expand-controls': shouldShowExpandControls(item.payload)
-                     }]"
-                     @dblclick="toggleTaskExpansion(item.payload.id)"
+                 <div v-else class="pa-4"
+                  :class="['json-container', { 
+                    expanded: isTaskExpanded(item.payload.id),
+                    'has-expand-controls': shouldShowExpandControls(item.payload)
+                  }]"
+                  @dblclick="toggleTaskExpansion(item.payload.id)"
                 >
                   <div>{{ formatJsonOutput(item.payload.content) }}</div>
                 </div>
               </div>
               <div v-if="shouldShowExpandControls(item.payload)" class="expand-controls">
+                <span class="expand-hint">
+                  더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다
+                </span>
                 <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
                   {{ isTaskExpanded(item.payload.id) ? '접기' : '더보기' }}
                   <span class="expand-icon">{{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}</span>
                 </button>
-                <span class="expand-hint">
-                  더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다
-                </span>
               </div>
             </div>
 
@@ -192,18 +209,39 @@
                   :variant="selectedOrchestrationMethod === option.value ? 'elevated' : 'outlined'"
                   @click="selectOrchestrationMethod(option.value)"
                   hover
-                  class="flex-fill"
+                  class="flex-fill d-flex flex-column"
+                  style="height: 100%;"
                 >
-                    <v-card-text class="text-center pa-4">
+                    <v-card-text class="text-center pa-4 flex-grow-1 d-flex flex-column justify-center">
                       <div class="card-icon-vuetify mb-3">
                         <Icons :icon="option.icon" :color="selectedOrchestrationMethod === option.value ? 'white' : 'black'" :size="50" />
                       </div>
                       <v-card-title class="card-title-vuetify pa-0 mb-2">{{ option.label }}</v-card-title>
                       <v-card-subtitle class="card-description-vuetify pa-0">{{ getMethodDescription(option.value) }}</v-card-subtitle>
-                    <v-icon v-if="selectedOrchestrationMethod === option.value" 
-                           class="selected-indicator-vuetify" 
-                           color="white">mdi-check-circle</v-icon>
-                  </v-card-text>
+                      <v-icon v-if="selectedOrchestrationMethod === option.value" 
+                             class="selected-indicator-vuetify" 
+                             color="white"
+                        >mdi-check-circle
+                      </v-icon>
+                    </v-card-text>
+                    <v-card-actions class="justify-end pa-4 pb-4 pr-4 mt-auto">
+                      <v-btn v-if="showDownloadButton" 
+                          @click="downloadBrowserAgent" 
+                          :disabled="selectedOrchestrationMethod !== option.value"
+                          :color="selectedOrchestrationMethod === option.value ? '' : 'primary'"
+                          variant="elevated" 
+                          class="rounded-pill"
+                          density="compact"
+                      >다운로드</v-btn>
+                      <v-btn v-else 
+                          @click="startTask" 
+                          :disabled="selectedOrchestrationMethod !== option.value"
+                          :color="selectedOrchestrationMethod === option.value ? '' : 'primary'"
+                          variant="elevated" 
+                          class="rounded-pill"
+                          density="compact"
+                      >시작하기</v-btn>
+                    </v-card-actions>
                 </v-card>
               </v-col>
             </v-row>
@@ -215,30 +253,9 @@
                 </v-alert>
               </v-col>
             </v-row>
-            
-            <v-row justify="center" class="ma-0 pa-4 pr-2">
-              <v-spacer></v-spacer>
-              <v-btn v-if="showDownloadButton" 
-                  @click="downloadBrowserAgent" 
-                  :disabled="!selectedOrchestrationMethod"
-                  color="primary"
-                  variant="elevated" 
-                  class="rounded-pill"
-                  density="compact"
-              >다운로드</v-btn>
-              <v-btn v-else 
-                  @click="startTask" 
-                  :disabled="!selectedOrchestrationMethod"
-                  color="primary"
-                  variant="elevated" 
-                  class="rounded-pill"
-                  density="compact"
-              >시작하기</v-btn>
-            </v-row>
           </v-container>
         </div>
       </div>
-
       <!-- 로딩 상태 -->
       <div v-if="isLoading" class="feedback-loading">
         <div class="loading-spinner"></div>
@@ -335,6 +352,7 @@ export default {
         { value: 'crewai-deep-research', label: 'CrewAI 심층 연구', startLabel: 'CrewAI Deep Research', icon: 'playoff' },
         { value: 'crewai-action', label: 'CrewAI 액션', startLabel: 'CrewAI Action', icon: 'flowchart' },
         { value: 'openai-deep-research', label: 'OpenAI 심층 연구', startLabel: 'OpenAI Deep Research', icon: 'playoff' },
+        { value: 'langchain-react', label: 'LangChain 연구', startLabel: 'LangChain Research', icon: 'playoff' },
         { value: 'browser-use', label: 'Browser Use', startLabel: 'Browser Use', icon: 'browser' }
       ]
     }
@@ -555,6 +573,7 @@ export default {
     },
 
     isSubmittableTask(task) {
+      console.log('isSubmittableTask');
       return (
         (task.crewType === 'report' && task.jobId.includes('final_report_merge')) ||
         task.crewType === 'slide' ||
@@ -570,7 +589,7 @@ export default {
     },
 
     isMarkdownType(crewType) {
-      return crewType === 'report' || crewType === 'action' || crewType === 'planning'
+      return crewType === 'report' || crewType === 'action' || crewType === 'planning' || crewType === 'react'
     },
 
     shouldShowExpandControls(payload) {
@@ -618,15 +637,8 @@ export default {
 
     getLoadingMessage() {
       const draftStatus = this.todoStatus?.draft_status;
-      const agentOrch = this.todoStatus?.agent_orch;
-      if (draftStatus === 'STARTED' && agentOrch === 'crewai-action') {
-        return '액션 실행 작업을 진행중입니다...'
-      }
       if (draftStatus === 'STARTED') {
-        return '초안 생성 작업을 진행중입니다...'
-      }
-      if (draftStatus === 'FB_REQUESTED' && agentOrch === 'crewai-action') {
-        return '피드백을 반영하여 액션을 다시 실행하고 있습니다...'
+        return '작업을 진행중입니다...'
       }
       if (draftStatus === 'FB_REQUESTED') {
         return '피드백을 반영하여 초안을 다시 생성하고 있습니다...'
@@ -894,6 +906,13 @@ export default {
         if (error) throw error;
         
         if (data) {
+          // final_report_merge가 포함된 job_id에 대한 상세 로그 (DB에서 가져온 데이터)
+          data.forEach(row => {
+            if (row.job_id && row.job_id.includes('final_report_merge')) {
+              console.log('[DB Load] final_report_merge 이벤트:', row);
+            }
+          });
+          
           this.events = data;
           this.isCancelled = data.some(e => e.event_type === 'crew_completed');
         }
@@ -906,8 +925,15 @@ export default {
     // ========================================
     setupRealtimeSubscription() {
       try {
-        const validEventTypes = ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked'];
-        
+        const validEventTypes = [
+          'task_started',
+          'task_completed',
+          'crew_completed',
+          'tool_usage_started',
+          'tool_usage_finished',
+          'human_asked'
+        ];
+
         this.channel = window.$supabase
           .channel('events')
           .on('postgres_changes', { 
@@ -917,16 +943,34 @@ export default {
           }, ({ new: row }) => {
             const taskId = this.getTaskIdFromWorkItem();
             const { todo_id: todoId, event_type, job_id, id } = row;
-            
-            // 이벤트 유효성 검사
+
+            if (job_id && job_id.includes('final_report_merge')) {
+              console.log('[Realtime] final_report_merge 이벤트 수신:', row);
+            }
+
             const isValidEvent = !this.events.some(e => e.id === id) &&
-                               validEventTypes.includes(event_type) &&
-                               todoId === taskId;
+                                validEventTypes.includes(event_type) &&
+                                todoId === taskId;
+
+            console.log('todostatus', this.todoStatus);
 
             if (isValidEvent) {
-              this.events = [...this.events, row];
-              
-              // 첫 유효 이벤트 수신 시: 상태 동기화 후 로딩 표시 여부 결정
+              // === task_completed인 경우 data 없을 때 fallback 재조회 ===
+              if (event_type === 'task_completed' && (!row.data || Object.keys(row.data).length === 0)) {
+                window.$supabase
+                  .from('events')
+                  .select('*')
+                  .eq('id', id)
+                  .single()
+                  .then(({ data: full, error }) => {
+                    console.log("[RealTime Failed] fallback DB")
+                    this.pushEventAndMaybeSubmit(!error && full ? full : row);
+                  });
+              } else {
+                this.pushEventAndMaybeSubmit(row);
+              }
+
+              // 첫 이벤트 수신시 상태 동기화
               if (!this.hasReceivedEvent) {
                 this.hasReceivedEvent = true;
                 if (!this.hasSyncedTodoStatusOnce) {
@@ -940,19 +984,11 @@ export default {
                   }, 300);
                 }
               }
-              
-              // 이벤트 타입별 처리
+
               if (event_type === 'crew_completed') {
                 this.isLoading = false;
-              } else if (event_type === 'task_completed' && this.todoStatus?.agent_mode === 'COMPLETE') {
-                this.$nextTick(() => {
-                  const task = this.tasks.find(t => t.jobId === job_id || t.id === id);
-                  if (task?.isCompleted && this.isSubmittableTask(task)) {
-                    console.log('[AgentMonitor] submitTask 감지', task)
-                    this.submitTask(task);
-                  }
-                });
               }
+
             } else if (todoId !== taskId) {
               console.warn('[ID 불일치]', { eventTodoId: todoId, currentTaskId: taskId, event: row });
             }
@@ -966,6 +1002,26 @@ export default {
         this.handleError(error, '실시간 구독 중 오류가 발생했습니다');
       }
     },
+
+    pushEventAndMaybeSubmit(row) {
+      // 중복 방지는 isValidEvent에서 이미 처리
+      this.events = [...this.events, row];
+
+      if (row.event_type !== 'task_completed') return;
+
+      const jobId = row.job_id || row.id;
+
+      this.$nextTick(() => {
+        const task = this.tasks.find(t => t.jobId === jobId || t.id === row.id);
+        console.log('tasks', task);
+        if (task && task.isCompleted && this.isSubmittableTask(task)) {
+          console.log('[AgentMonitor] submitTask 감지', task);
+          this.submitTask(task);
+        }
+      });
+    },
+
+
     // human_asked 응답 처리 (status 비사용: 응답 레코드만 저장)
     async onConfirmHumanQuery(task) {
       if (!task || !task.isHumanAsked) return;
@@ -1229,8 +1285,6 @@ export default {
     },
 
     getMarkdownContent(task) {
-      console.log('마크다운 컨텐츠 처리:', task.content, typeof task.content);
-      
       // JSON 형태의 데이터인지 확인하고 key : value 형태로 변환
       if (task.content && typeof task.content === 'object') {
         const keyValueText = this.convertJsonToKeyValue(task.content);
@@ -1252,12 +1306,9 @@ export default {
             }
           }
         } catch {
-          // JSON이 아니면 기존 마크다운 처리
-          console.log('JSON 파싱 실패, 마크다운으로 처리');
         }
       }
       
-      console.log('기본 마크다운 처리로 진행');
       return this.formatMarkdownOutput(task.content);
     },
 
@@ -1273,6 +1324,7 @@ export default {
         'crewai-deep-research': '다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 | 5~15분 소요',
         'crewai-action': '최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A | 1~5분 소요',
         'openai-deep-research': 'GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 | 3~10분 소요',
+        'langchain-react': 'LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 | 3~5분 소요',
         'browser-use': '실제 브라우저를 조작하여 실시간 웹 정보 수집 및 작업 수행. ex) 검색, 폼 작성, 스크래핑 | 2~8분 소요'
       };
       return descriptions[method] || '';
@@ -1374,9 +1426,8 @@ export default {
 .task-avatar {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
-  color: white;
+  border-radius: 50%;
+  background: #e8e8e8;
   font-weight: 600;
   font-size: 14px;
   display: flex;
@@ -1390,7 +1441,7 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 50%;
 }
 
 .task-info {
@@ -1424,8 +1475,8 @@ export default {
 .task-status {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 2px;
+  padding: 2px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
@@ -1465,7 +1516,7 @@ export default {
   gap: 24px;
   margin-bottom: 16px;
   padding: 12px 0;
-  border-top: 1px solid #f0f2f5;
+  border-top: 1px solid #f8fafb;
 }
 
 .meta-item {
@@ -1528,7 +1579,7 @@ export default {
 
 .result-header {
   padding: 12px 16px;
-  background: #f0f2f5;
+  background: #f8fafb;
   border-bottom: 1px solid #e4e6ea;
   display: flex;
   justify-content: space-between;
@@ -1544,12 +1595,6 @@ export default {
   letter-spacing: 0.5px;
 }
 
-.result-content {
-  padding: 16px;
-}
-
-
-
 .json-container {
   max-height: 400px;
   overflow: hidden;
@@ -1558,6 +1603,8 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
+  font-size: 14px;
+  color: #1d2129;
 }
 
 .json-container > div {
@@ -1844,11 +1891,10 @@ export default {
 
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 16px;
   background: white;
-  border-radius: 12px;
-  border: 1px solid #e1e8ed;
   margin-top: 12px;
+  overflow: auto;
 }
 
 .empty-state .empty-icon {
@@ -1959,7 +2005,7 @@ export default {
 
 .expand-button {
   background: #ffffff;
-  color: #6c757d;
+  color: #1d2129;
   border: 1px solid #dee2e6;
   padding: 6px 12px;
   border-radius: 4px;
@@ -1979,14 +2025,13 @@ export default {
 }
 
 .expand-icon {
-  font-size: 10px;
+  font-size: 11px;
   transition: transform 0.2s ease;
 }
 
 .expand-hint {
-  font-size: 10px;
-  color: #adb5bd;
-  font-style: italic;
+  font-size: 11px;
+  color: #1d2129;
 }
 
 .tool-usage-status-list {
@@ -2314,11 +2359,10 @@ export default {
 
 /* human_asked 카드 스타일 (블루톤, 가독성 향상) */
 .human-query-input {
-  background: #f8fbff; /* lighter than blue-50 */
-  border: 1px solid #bfdbfe; /* blue-200 */
+  background: #f8fafb; /* lighter than blue-50 */
+  border: 1px solid #e4e6ea; /* blue-200 */
   border-radius: 10px;
   padding: 16px 16px 14px;
-  margin-top: 12px;
 }
 
 .query-header {
@@ -2329,9 +2373,8 @@ export default {
 }
 
 .query-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1e3a8a; /* blue-800 */
+  font-size: 13px;
+  font-weight: 500;
   margin: 0;
 }
 
@@ -2339,7 +2382,7 @@ export default {
   font-size: 12px;
   color: #1e40af; /* blue-700 */
   background: #dbeafe; /* blue-100 */
-  padding: 4px 10px;
+  padding: 2px 10px;
   border-radius: 999px;
 }
 
@@ -2351,8 +2394,8 @@ export default {
   margin: 0 0 10px 0;
   line-height: 1.5;
   font-size: 14px;
-  color: #1e3a8a; /* blue-800 */
-  font-weight: 500;
+  font-weight: 400;
+  color: #1d2129;
 }
 
 .input-field { margin-top: 8px; }
@@ -2360,8 +2403,8 @@ export default {
 .query-input, .query-select {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #bfdbfe; /* blue-200 */
-  border-radius: 8px;
+  border: 1px solid #e4e6ea; /* blue-200 */
+  border-radius: 25px;
   font-size: 14px;
   color: #1f2937; /* gray-800 */
   background: #ffffff;
@@ -2370,7 +2413,6 @@ export default {
 .query-input:focus, .query-select:focus {
   outline: none;
   border-color: #60a5fa; /* blue-400 */
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
 }
 
 .confirm-hint {
@@ -2400,12 +2442,6 @@ export default {
   white-space: pre-wrap;
 }
 
-.query-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
 .query-completed {
   display: flex;
   align-items: center;
@@ -2426,35 +2462,5 @@ export default {
 .completed-detail {
   font-size: 13px;
   color: #1f2937;
-}
-
-.query-cancel, .query-confirm {
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.query-cancel {
-  background: #ffffff;
-  border: 1px solid #e5e7eb; /* gray-300 */
-  color: #374151; /* gray-700 */
-}
-
-.query-cancel:hover { background: #f9fafb; }
-
-.query-confirm {
-  background: #60a5fa; /* blue-400 */
-  border: 1px solid #3b82f6; /* blue-500 */
-  color: #ffffff;
-}
-
-.query-confirm:hover:not(:disabled) { background: #3b82f6; }
-
-.query-confirm:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 </style>

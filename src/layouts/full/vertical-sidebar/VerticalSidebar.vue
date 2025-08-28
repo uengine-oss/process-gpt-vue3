@@ -215,8 +215,8 @@
                         </template>
                 </v-col> -->
             </v-list>
+            <Footer />
         </div>
-
         <div class="pa-4 px-4 bg-containerBg">
             <ExtraBox />
         </div>
@@ -266,6 +266,8 @@ import BackendFactory from '@/components/api/BackendFactory';
 
 import VerticalHeader from '../vertical-header/VerticalHeader.vue';
 
+import Footer from '../Footer.vue'
+
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -278,7 +280,8 @@ export default {
         NavGroup,
         NavItem,
         ExtraBox,
-        VerticalHeader
+        VerticalHeader,
+        Footer
     },
     setup() {
         const customizer = useCustomizerStore();
@@ -319,7 +322,7 @@ export default {
             return this.instanceLists.length > 0;
         },
         isShowProject(){
-            return false;
+            return true;
         },
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') == 'true';

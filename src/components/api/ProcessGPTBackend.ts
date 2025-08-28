@@ -359,6 +359,7 @@ class ProcessGPTBackend implements Backend {
             });
 
             if (response && response.data) {
+                console.log(response.data);
                 return response.data;
             } else {
                 return null;
@@ -572,7 +573,7 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (options && options.instId) {
-                filter.match.proc_inst_id = options.instId;
+                filter.match.root_proc_inst_id = options.instId;
             }
 
             if (options && options.userId) {
@@ -582,7 +583,16 @@ class ProcessGPTBackend implements Backend {
                 }
             }
 
-            const list = await storage.list('todolist', filter);
+            let list = await storage.list('todolist', filter);
+            if(list.length === 0) { //자식인스턴스 워크아이템 조회
+                if (options && options.instId) {
+                    filter.match.proc_inst_id = options.instId;
+                    delete filter.match.root_proc_inst_id;
+                }
+                list = await storage.list('todolist', filter);
+            } else {
+                list = list.filter((item: any) => item.tool !== null && item.tool !== undefined && item.tool !== '');
+            }
 
             return list.map((item: any) => {
                 return this.returnWorkItemObject(item);
@@ -1345,7 +1355,7 @@ class ProcessGPTBackend implements Backend {
 
             const lists = await storage.list('bpm_proc_inst', options);
             if (lists && lists.length > 0) {
-                return lists.map((item: any) => {
+                return lists.filter((item: any) => !item.parent_proc_inst_id).map((item: any) => {
                     return me.returnInstanceObject(item);
                 });
             }
@@ -2306,8 +2316,7 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!response.error) {
-                const indexRes = await this.processFile(response, storageType);
-                console.log(indexRes);
+                const indexRes = await this.processFile(response, storageType, options);
                 return response;
             } else {
                 return response;
@@ -2333,12 +2342,13 @@ class ProcessGPTBackend implements Backend {
             formData.append('file', file);
             formData.append('file_name', fileName);
             formData.append('tenant_id', window.$tenantName);
+            if (options && options.folder_path) {
+                formData.append('folder_path', options.folder_path);
+            }
 
-            const token = localStorage.getItem('accessToken');
             const response = await axios.post('/memento/save-to-drive', formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'multipart/form-data'
                 }
             });
 
@@ -2353,6 +2363,14 @@ class ProcessGPTBackend implements Backend {
                         tenant_id: window.$tenantName
                     }
                     await storage.putObject('chat_attachments', putObj);
+                } else if (options && options.proc_inst_id && options.file_id) {
+                    const putObj = {
+                        id: options.file_id,
+                        proc_inst_id: options.proc_inst_id,
+                        file_path: response.data.download_link,
+                        is_process: true
+                    }
+                    await storage.putObject('proc_inst_source', putObj);
                 }
                 return response.data;
             } else {
@@ -2424,7 +2442,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async processFile(file: any, storageType: string) {
+    async processFile(file: any, storageType: string, options?: any) {
         try {
             let file_path = '';
             let original_filename = '';
@@ -2432,11 +2450,14 @@ class ProcessGPTBackend implements Backend {
                 file_path = file.fullPath.replace('files/', '');
                 original_filename = file.original_filename;
             } else {
-                file_path = file.file_name;
+                if (options && options.folder_path) {
+                    file_path = file.file_id;
+                } else {
+                    file_path = file.file_name;
+                }
                 original_filename = file.file_name;
             }
 
-            const token = localStorage.getItem('accessToken');
             const response = await axios.post('/memento/process', {
                 file_path: file_path,
                 original_filename: original_filename,
@@ -2444,8 +2465,7 @@ class ProcessGPTBackend implements Backend {
                 tenant_id: window.$tenantName
             }, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 }
             });
             return response.data;
@@ -2958,6 +2978,41 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getUsage(options?: any){
+        try {
+            if(!options) options = {}
+            if(!options.match) options.match = {}
+            if(!options.match['tenant_id']) options.match['tenant_id'] = window.$tenantName
+
+            const lists = await storage.list('usage', options);
+            if (lists && lists.length > 0) {
+                return lists.map((item: any) => {
+                    return this.convertKeysToCamelCase(item)
+                });
+            }
+            return [];
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getUsageWithService(options?: any){
+        try {
+            if(!options) options = {}
+            if(!options.startAt) options.startAt = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10).replace(/-/g, '-')
+            if(!options.endAt) options.endAt = `${new Date().toISOString().slice(0, 10).replace(/-/g, '-')} 23:59:59`
+
+            return await storage.callProcedure('get_usage_with_service', {
+                p_tenant_id: window.$tenantName,
+                p_start_time: options.startAt,
+                p_end_time: options.endAt
+            })
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
     async watchOff(ref: any){
         try {
             return await storage._watch_off(ref);
@@ -3126,7 +3181,10 @@ class ProcessGPTBackend implements Backend {
             dueDate: item.due_date,
             updatedAt: item.updated_at,
             is_deleted: item.is_deleted,
-            deleted_at: item.deleted_at
+            deleted_at: item.deleted_at,
+            parent_proc_inst_id: item.parent_proc_inst_id,
+            root_proc_inst_id: item.root_proc_inst_id,
+            execution_scope: item.execution_scope
         }
     }
 
@@ -3186,6 +3244,161 @@ class ProcessGPTBackend implements Backend {
             //@ts-ignore
             throw new Error(error.message);
         }
+    }
+    
+    async getCredits(options?: any){
+        try {
+            if(!options) options = {}
+            if(!options.match) options.match = {}
+            if(!options.match['tenant_id']) options.match['tenant_id'] = window.$tenantName
+
+            const lists = await storage.list('credit', options);
+            if (lists && lists.length > 0) {
+                return lists.map((item: any) => {
+                    return this.convertKeysToCamelCase(item)
+                });
+            }
+            return [];
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getService(options?: any){
+        try {
+            if(!options) options = {}
+            if(!options.match) options.match = {}
+            if(!options.match['tenant_id']) options.match['tenant_id'] = window.$tenantName
+
+            const lists = await storage.list('credit', options);
+            if (lists && lists.length > 0) {
+                return lists.map((item: any) => {
+                    return this.convertKeysToCamelCase(item)
+                });
+            }
+            return [];
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getCurrentServiceCatalog(){
+        try {
+            return await storage.callProcedure('get_current_service_catalog', {
+                p_tenant_id: window.$tenantName
+            })
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getCreditBalance(){
+        try {
+            return await storage.callProcedure('get_credit_balance', {
+                p_tenant_id: window.$tenantName
+            })
+        } catch (error){
+            throw new Error(error.message);
+        }
+    }
+
+    async getValidCreditPurchase(options?: any){
+        try {
+            if(!options.startAt) options.startAt = new Date().toISOString().slice(0, 10).replace(/-/g, '-')
+
+            return await storage.callProcedure('get_valid_credit_purchases', {
+                p_tenant_id: window.$tenantName,
+                p_date: options.startAt
+            })
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+
+    async watchCreditUsage(callback: (payload: any) => void) {
+        try {
+            
+            return await storage._watch({
+                channel: 'credit_usage',
+                table: 'credit_usage',
+                filter: `tenant_id=eq.(${window.$tenantName}))`
+            },(payload) => {
+                callback(payload);
+            });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getPlans(options?: any){
+        try {
+            if(!options) options = {}
+
+            const lists = await storage.list('plan', options);
+            if (lists && lists.length > 0) {
+                return lists.map((item: any) => {
+                    return this.convertKeysToCamelCase(item)
+                });
+            }
+            return [];
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getCurrentPlan(){
+        var me = this
+        try {
+            // if(!options) options = {}
+            // window.$tenantName;
+
+            return {
+                id: '1',
+                tenant_id: window.$tenantName,
+                plan_id: '7fb2d603-59ab-4365-948b-68c62d6622a5',
+                user_id: 'sooheon45@uengine.org',
+                start_at: "",
+                end_at: "",
+                created_at: null,
+                plan: {
+                    type: 'free',
+                    status: 'active'
+                }
+            };
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+
+    async putRequestPayment(item: any) {
+        try {
+            return await storage.putObject('payment', item);     
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    convertKeysToCamelCase(obj: any): any {
+        if (typeof obj !== 'object' || obj === null) {
+            return obj;
+        }
+
+        if (Array.isArray(obj)) {
+            return obj.map(item => this.convertKeysToCamelCase(item));
+        }
+
+        return Object.keys(obj).reduce((acc: any, key: string) => {
+            const camelCaseKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+            acc[camelCaseKey] = this.convertKeysToCamelCase(obj[key]);
+            return acc;
+        }, {});
     }
     
     async setMCPByTenant(mcp: any) {
@@ -3593,7 +3806,9 @@ class ProcessGPTBackend implements Backend {
             const formId = fieldInfo[0];
             const fieldId = fieldInfo[1];
             const activityId = formId.replace(`${procDefId}_`, '').replace('_form', '');
+            let executionScope = null;
 
+            let workitem = null;
             const { data, error } = await window.$supabase
                 .from('todolist')
                 .select('*')
@@ -3602,15 +3817,46 @@ class ProcessGPTBackend implements Backend {
                 .single();
 
             if (error) {
-                throw new Error('workitem not found');
+                const instance = await this.getInstance(instanceId);
+                const rootInstanceId = instance.root_proc_inst_id;
+                executionScope = instance.execution_scope;
+                const { data, error } = await window.$supabase
+                    .from('todolist')
+                    .select('*')
+                    .eq('proc_inst_id', rootInstanceId)
+                    .ilike('activity_id', activityId)
+                    .single();
+                if(error) {
+                    throw new Error('workitem not found');
+                } else {
+                    workitem = data;
+                }
+            } else {
+                workitem = data;
             }
-            const workitem = data;
             const output = workitem.output;
             if (!output) {
                 throw new Error('output not found');
             }
-            fieldValue[formId] = {
-                [fieldId]: output[formId][fieldId]
+
+            let filed = output[formId][fieldId];
+            if(filed) {
+                fieldValue[formId] = {
+                    [fieldId]: filed
+                }
+            } else {
+                let group = Object.values(output[formId]);
+                if(group) {
+                    group.forEach((item: any) => {
+                        if(executionScope) {
+                            if(item[executionScope][fieldId]) {
+                                fieldValue[formId] = {
+                                    [fieldId]: item[executionScope][fieldId]
+                                }
+                            }
+                        }
+                    });
+                }
             }
             return fieldValue;
         } catch (error) {
@@ -3751,7 +3997,37 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
-    
+
+    async getInstanceSource(proc_inst_id: string) {
+        try {
+            const response = await storage.list('proc_inst_source', {
+                match: {
+                    proc_inst_id: proc_inst_id
+                },
+                sort: 'desc',
+                orderBy: 'created_at'
+            });
+            return response;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async putInstanceSource(source: any) {
+        try {
+            return await storage.putObject('proc_inst_source', source);
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteInstanceSource(source: any) {
+        try {
+            return await storage.delete('proc_inst_source', { match: { id: source.id } });
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
 
 }
 

@@ -150,7 +150,7 @@
                                                     </div>
                                                     <div class="d-flex justify-end">
                                                         <slot name="custom-message-actions" :message="message"></slot>
-                                                        <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-2 mb-1">
+                                                        <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-3 mb-1">
                                                             <div 
                                                                 @mouseover="hoverIndex = index"
                                                                 @mouseleave="hoverIndex = -1"

@@ -286,6 +286,7 @@
                             :currentActivities="currentActivities"
                             :isOwnWorkItem="isOwnWorkItem"
                             :activityIndex="activityIndex"
+                            @loadInputData="loadInputData"
                             @updateCurrentActivities="updateCurrentActivities"
                             @close="close"
                             @executeProcess="executeProcess"
@@ -556,6 +557,7 @@ export default {
         assigneeUserInfo: null,
         isLoading: false,
         delegateTaskDialog: false,
+        inputData: null,
     }),
     created() {
         // this.init();
@@ -976,6 +978,12 @@ export default {
                     })
                 }
             }
+            if(this.inputData){
+                this.generator.previousMessages.push({
+                    "content": "참고 정보: " + JSON.stringify(this.inputData),
+                    "role": "user"
+                })
+            }
             if(this.processInstance && this.processInstance.instId){
                 const instance = await backend.getInstance(this.processInstance.instId);
                 this.generator.previousMessages.push({
@@ -1375,7 +1383,10 @@ export default {
         },
         goBackToPreviousPage() {
             this.$router.go(-1);
-        },
+        },  
+        loadInputData(data) {
+            this.inputData = data;
+        }
     }
 };
 </script>

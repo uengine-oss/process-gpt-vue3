@@ -105,6 +105,11 @@ import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
 import Link from '@tiptap/extension-link';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { Image } from '@tiptap/extension-image';
 import TurndownService from 'turndown';
 
 import MarkdownGenerator from '@/components/ai/MarkdownGenerator.js';
@@ -189,7 +194,15 @@ export default {
     },
     computed: {
         htmlContent() {
-            return marked(this.modelValue || '');
+            if (!this.modelValue) return '';
+            
+            // marked 옵션 설정으로 테이블과 이미지 지원 강화
+            marked.setOptions({
+                breaks: true,
+                gfm: true, // GitHub Flavored Markdown 활성화 (테이블 지원)
+            });
+            
+            return marked(this.modelValue);
         }
     },
     watch: {
@@ -226,6 +239,18 @@ export default {
                     Underline,
                     Highlight,
                     Link,
+                    Table.configure({
+                        resizable: true,
+                    }),
+                    TableRow,
+                    TableHeader,
+                    TableCell,
+                    Image.configure({
+                        inline: true,
+                        HTMLAttributes: {
+                            class: 'markdown-image',
+                        },
+                    }),
                     Markdown
                 ],
                 editorProps: {
@@ -242,10 +267,8 @@ export default {
                     }
                 },
                 onUpdate: ({ editor }) => {
-                    const html = editor.getHTML();
                     const markdown = this.getMarkdown();
-                    // const markdown = this.convertHtmlToMarkdown(html);
-                    console.log('markdown', markdown);
+                    console.log('편집된 마크다운:', markdown);
                     this.$emit('update:modelValue', markdown);
                 }
             });
@@ -260,7 +283,10 @@ export default {
             return markdown;
         },
         convertHtmlToMarkdown(html) {
-            const turndownService = new TurndownService();
+            const turndownService = new TurndownService({
+                headingStyle: 'atx',
+                codeBlockStyle: 'fenced'
+            });
 
             // <hr> → ---
             turndownService.addRule('horizontalRule', {
@@ -272,6 +298,49 @@ export default {
                 }
             });
 
+            // 테이블 처리 규칙 추가
+            turndownService.addRule('table', {
+                filter: 'table',
+                replacement: function (content) {
+                    return '\n\n' + content + '\n\n';
+                }
+            });
+
+            turndownService.addRule('tableRow', {
+                filter: 'tr',
+                replacement: function (content, node) {
+                    let borderCells = '';
+                    const alignMap = { left: ':--', right: '--:', center: ':-:' };
+                    
+                    if (node.parentNode.nodeName === 'THEAD') {
+                        for (const childNode of node.childNodes) {
+                            const align = childNode.getAttribute ? 
+                                (childNode.getAttribute('align') || 'left') : 'left';
+                            borderCells += '| ' + (alignMap[align] || ':--') + ' ';
+                        }
+                        borderCells += '|\n';
+                    }
+                    return '| ' + content + ' |\n' + borderCells;
+                }
+            });
+
+            turndownService.addRule('tableCell', {
+                filter: ['th', 'td'],
+                replacement: function (content) {
+                    return content + ' |';
+                }
+            });
+
+            // 이미지 처리 규칙 강화
+            turndownService.addRule('image', {
+                filter: 'img',
+                replacement: function (content, node) {
+                    const alt = node.getAttribute('alt') || '';
+                    const src = node.getAttribute('src') || '';
+                    return '![' + alt + '](' + src + ')';
+                }
+            });
+
             // <pre><code> → ```lang\ncode\n```
             turndownService.addRule('codeBlock', {
                 filter: function (node) {
@@ -279,7 +348,6 @@ export default {
                 },
                 replacement: function (content, node) {
                     const codeNode = node.firstChild;
-                    const classAttr = codeNode.getAttribute('class') || '';
                     const highlight = content.match(/^\[.*\]/);
                     const lang = highlight;
                     const code = codeNode.textContent.replace('\n', '').replace(highlight, '');
@@ -401,9 +469,7 @@ export default {
                 tr.replaceRange(from, to, slice);
                 dispatch(tr);
                 this.$nextTick(() => {
-                    const html = this.editor.getHTML();
                     const markdown = this.getMarkdown();
-                    // const markdown = this.convertHtmlToMarkdown(html);
                     this.$emit('update:modelValue', markdown);
                 });
                 return true;
@@ -417,9 +483,7 @@ export default {
                 tr.insert(to, slice.content);
                 dispatch(tr);
                 this.$nextTick(() => {
-                    const html = this.editor.getHTML();
                     const markdown = this.getMarkdown();
-                    // const markdown = this.convertHtmlToMarkdown(html);
                     this.$emit('update:modelValue', markdown);
                 });
                 return true;
@@ -432,9 +496,7 @@ export default {
                 tr.delete(from, to);
                 dispatch(tr);
                 this.$nextTick(() => {
-                    const html = this.editor.getHTML();
                     const markdown = this.getMarkdown();
-                    // const markdown = this.convertHtmlToMarkdown(html);
                     this.$emit('update:modelValue', markdown);
                 });
                 return true;
@@ -447,9 +509,7 @@ export default {
             this.replaceText(responseHtml);
         },
         save() {
-            const html = this.editor.getHTML();
             const markdown = this.getMarkdown();
-            // const markdown = this.convertHtmlToMarkdown(html);
             this.$emit('save', markdown);
         }
     }
@@ -465,7 +525,7 @@ export default {
     background-color: #fff;
     border-radius: 12px;
     min-height: 600px;
-    font-family: 'Plus Jakarta Sans' !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 
 .editor-preview {
@@ -486,7 +546,7 @@ export default {
     margin: 0 auto;
     background-color: #fff;
     padding: 0;
-    font-size: 8px;
+    font-size: 11px;
     line-height: 1.2;
 }
 
@@ -577,5 +637,168 @@ export default {
     flex-wrap: wrap;
     gap: 4px;
     margin-bottom: 8px;
+}
+
+/* 테이블 스타일 */
+::v-deep(.ProseMirror table) {
+    border-collapse: collapse;
+    margin: 16px 0;
+    overflow: hidden;
+    table-layout: fixed;
+    width: 100%;
+}
+
+::v-deep(.ProseMirror table td),
+::v-deep(.ProseMirror table th) {
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+    min-width: 1em;
+    padding: 8px;
+    position: relative;
+    vertical-align: top;
+}
+
+::v-deep(.ProseMirror table th) {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    text-align: left;
+}
+
+::v-deep(.ProseMirror table .selectedCell:after) {
+    background: rgba(200, 200, 255, 0.4);
+    content: "";
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 2;
+}
+
+/* 이미지 스타일 */
+::v-deep(.ProseMirror .markdown-image) {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+/* 헤딩 태그 스타일 */
+::v-deep(.ProseMirror h1),
+::v-deep(.ProseMirror h2),
+::v-deep(.ProseMirror h3),
+::v-deep(.ProseMirror h4),
+::v-deep(.ProseMirror h5),
+::v-deep(.ProseMirror h6) {
+    margin-bottom: 8px !important;
+}
+
+/* 읽기 모드에서의 헤딩 스타일 */
+.editor-preview h1,
+.editor-preview h2,
+.editor-preview h3,
+.editor-preview h4,
+.editor-preview h5,
+.editor-preview h6,
+.editor-preview-overflow h1,
+.editor-preview-overflow h2,
+.editor-preview-overflow h3,
+.editor-preview-overflow h4,
+.editor-preview-overflow h5,
+.editor-preview-overflow h6 {
+    margin-bottom: 8px !important;
+}
+
+/* 리스트 스타일 복원 */
+::v-deep(.ProseMirror ul),
+::v-deep(.ProseMirror ol) {
+    padding-left: 24px;
+    margin: 12px 0;
+}
+
+::v-deep(.ProseMirror ul li) {
+    list-style-type: disc;
+    margin: 4px 0;
+}
+
+::v-deep(.ProseMirror ol li) {
+    list-style-type: decimal;
+    margin: 4px 0;
+}
+
+::v-deep(.ProseMirror ul ul li) {
+    list-style-type: circle;
+}
+
+::v-deep(.ProseMirror ul ul ul li) {
+    list-style-type: square;
+}
+
+/* 읽기 모드에서의 리스트 스타일 */
+.editor-preview ul,
+.editor-preview-overflow ul {
+    padding-left: 16px;
+    margin: 8px 0;
+}
+
+.editor-preview ol,
+.editor-preview-overflow ol {
+    padding-left: 16px;
+    margin: 8px 0;
+}
+
+.editor-preview ul li,
+.editor-preview-overflow ul li {
+    list-style-type: disc;
+    margin: 2px 0;
+}
+
+.editor-preview ol li,
+.editor-preview-overflow ol li {
+    list-style-type: decimal;
+    margin: 2px 0;
+}
+
+.editor-preview ul ul li,
+.editor-preview-overflow ul ul li {
+    list-style-type: circle;
+}
+
+.editor-preview ul ul ul li,
+.editor-preview-overflow ul ul ul li {
+    list-style-type: square;
+}
+
+/* 읽기 모드에서의 테이블과 이미지 스타일 */
+.editor-preview table,
+.editor-preview-overflow table {
+    border-collapse: collapse;
+    margin: 16px 0;
+    width: 100%;
+    font-size: 6px;
+}
+
+.editor-preview table td,
+.editor-preview table th,
+.editor-preview-overflow table td,
+.editor-preview-overflow table th {
+    border: 1px solid #ddd;
+    padding: 4px;
+    text-align: left;
+}
+
+.editor-preview table th,
+.editor-preview-overflow table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+.editor-preview img,
+.editor-preview-overflow img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 2px;
+    margin: 4px 0;
 }
 </style>

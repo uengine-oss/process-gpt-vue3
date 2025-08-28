@@ -11,7 +11,7 @@
                         <Icons :icon="'close'" :size="16" />
                     </v-btn>
                 </v-row>
-                <v-card-text class="delete-input-details pt-0">
+                <v-card-text class="pt-0">
                     <v-switch v-model="isVersion" color="primary" :label="`${$t('ProcessDefinitionVersionDialog.minorUpdate')}: ${newVersion}`"></v-switch>
                     <DetailComponent
                         :title="$t('ProcessDefinitionVersionDialog.versionDescriptionTitle')"
@@ -21,14 +21,14 @@
                             <v-text-field
                                 v-model="information.proc_def_id"
                                 :label="$t('ProcessDefinitionVersionDialog.id')"
-                                :rules="[(v) => !!v || 'ID is required']"
+                                :rules="idRules"
                                 required
                                 class="pb-2"
                             ></v-text-field>
                             <v-text-field
                                 v-model="information.name"
                                 :label="$t('ProcessDefinitionVersionDialog.name')"
-                                :rules="[(v) => !!v || 'Name is required']"
+                                :rules="[(v) => !!v || $t('ProcessDefinitionVersionDialog.nameRequired')]"
                                 required
                                 class="pb-2"
                             ></v-text-field>
@@ -47,14 +47,14 @@
                                 <v-text-field
                                     v-model="information.proc_def_id"
                                     :label="$t('ProcessDefinitionVersionDialog.id')"
-                                    :rules="[(v) => !!v || 'ID is required']"
+                                    :rules="idRules"
                                     required
                                     class="pb-2"
                                 ></v-text-field>
                                 <v-text-field
                                     v-model="information.name"
                                     :label="$t('ProcessDefinitionVersionDialog.name')"
-                                    :rules="[(v) => !!v || 'Name is required']"
+                                    :rules="[(v) => !!v || $t('ProcessDefinitionVersionDialog.nameRequired')]"
                                     required
                                     class="pb-2"
                                 ></v-text-field>
@@ -74,8 +74,8 @@
                         프로세스 정의 분석 중...
                     </span>
                     <v-spacer></v-spacer>
-                    <v-btn v-if="!loading" @click="save()" color="primary" rounded>{{ $t('ProcessDefinitionVersionDialog.save') }}</v-btn>
                     <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate style="margin: 5px"></v-progress-circular>
+                    <v-btn v-else @click="save()" color="primary" rounded :disabled="!validate()">{{ $t('ProcessDefinitionVersionDialog.save') }}</v-btn>
                 </v-row>
             </v-card>
         </v-dialog>
@@ -117,6 +117,12 @@ export default {
         isOpen: false // inner var
     }),
     computed: {
+        idRules() {
+            return [
+                (v) => !!v || this.$t('ProcessDefinitionVersionDialog.idRequired'),
+                (v) => (v ? /^[a-z0-9_]+$/.test(v) : false) || this.$t('ProcessDefinitionVersionDialog.idRules')
+            ];
+        },
         newVersion() {
             // 4.13
             let major = Math.floor(this.information.version); // 4
@@ -273,6 +279,27 @@ export default {
         },
         close() {
             this.$emit('close', false);
+        },
+        validate() {
+            // idRules 검증
+            if (this.information.proc_def_id) {
+                for (const rule of this.idRules) {
+                    const result = rule(this.information.proc_def_id);
+                    if (result !== true) {
+                        return false;
+                    }
+                }
+            } else {
+                return false;
+            }
+            if (this.information.name) {
+                if (this.information.name.length < 1) {
+                    return false; 
+                }
+            } else {
+                return false;
+            }
+            return true;
         }
     }
 };

@@ -1,16 +1,15 @@
 <template>
     <v-card class="process-feedback" elevation="2">
-            <v-skeleton-loader
-                v-if="isLoading"
-                type="image"
-                class="mx-auto"
-            ></v-skeleton-loader>
-
-            <v-card-text v-else-if="!isLoading && isAcceptMode" class="pa-4">
+            <v-card-text v-if="isAcceptMode" class="pa-4">
                 <div class="text-h6 mb-2">피드백 반영</div>
+                <v-skeleton-loader
+                    v-if="isLoading"
+                    type="image"
+                    class="mx-auto"
+                ></v-skeleton-loader>
                 
                 <!-- 데스크톱 테이블 뷰 -->
-                <v-table v-if="!isMobile" class="diff-table">
+                <v-table v-else-if="!isLoading && !isMobile" class="diff-table">
                     <thead>
                         <tr>
                             <th class="text-left" scope="col">반영 여부</th>
@@ -108,7 +107,7 @@
                 </v-table>
 
                 <!-- 모바일 카드 뷰 -->
-                <div v-else class="mobile-diff-view">
+                <div v-else-if="!isLoading && isMobile" class="mobile-diff-view">
                     <v-card
                         v-for="(item, key) in diffItems"
                         :key="`mobile-${key}`"
@@ -210,7 +209,7 @@
                     </v-card>
                 </div>
 
-                <v-row class="ma-0 pa-0 mt-2">
+                <v-row v-if="!isLoading" class="ma-0 pa-0 mt-2">
                     <v-spacer></v-spacer>
                     <v-btn @click="closeFeedback"
                         color="gray"
@@ -228,10 +227,17 @@
                 </v-row>
             </v-card-text>
 
-            <v-card-text v-else-if="!isLoading && !isAcceptMode" class="pa-3">
+            <v-card-text v-else class="pa-3">
                 <div class="text-h6 mb-2 text-left">피드백을 선택해주세요:</div>
+                
                 <v-list class="feedback-list">
+                    <v-skeleton-loader
+                        v-if="isLoading"
+                        type="image"
+                        class="mx-auto"
+                    ></v-skeleton-loader>
                     <v-list-item
+                        v-else
                         v-for="(item, index) in feedbackItems"
                         :key="'feedback-'+index"
                         :active="feedbackValue === item"
@@ -241,19 +247,24 @@
                         <v-list-item-title>{{ item }}</v-list-item-title>
                     </v-list-item>
                     <v-list-item
+                        v-if="!isLoading"
                         :active="feedbackValue === 'etc'"
                         @click="feedbackValue = 'etc'"
                         class="feedback-item"
                     >
-                        <v-list-item-title>기타</v-list-item-title>
+                        <v-list-item-title>기타 입력</v-list-item-title>
                     </v-list-item>
                 </v-list>
-                <v-textarea v-if="feedbackValue == 'etc'" v-model="feedbackText" label="기타" rows="3" />
+
+                <v-textarea 
+                    v-if="feedbackValue == 'etc'"
+                    v-model="feedbackText"
+                    label="기타"
+                rows="3" />
 
                 <v-row class="ma-0 pa-0">
                     <v-spacer></v-spacer>
                     <v-btn @click="closeFeedback"
-                        :disabled="!feedbackValue"
                         color="gray"
                         variant="elevated" 
                         class="rounded-pill mr-2"
@@ -327,6 +338,7 @@ export default {
     async mounted() {
         if (this.task && !this.isAcceptMode) {
             this.isLoading = true;
+            this.feedbackValue = 'etc';
             await this.getFeedback();
         } else if (this.task && this.isAcceptMode) {
             this.isLoading = true;
@@ -448,6 +460,7 @@ export default {
             if (items) {
                 this.feedbackItems = items;
             }
+            this.feedbackValue = '';
             this.isLoading = false;
         },
         async submitFeedback() {
@@ -500,8 +513,6 @@ export default {
 
 <style scoped>
 .feedback-list {
-    max-height: 200px;
-    overflow-y: auto;
     margin-bottom: 16px;
 }
 

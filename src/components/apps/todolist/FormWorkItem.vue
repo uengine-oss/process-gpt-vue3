@@ -39,7 +39,7 @@
 
         <div class="pa-2">
             <v-card elevation="10">
-                <v-card-text class="pa-4 pt-3">
+                <v-card-text class="pa-4">
                     <!-- 참고해야 할 이전 산출물이 있는 경우 -->
                     <ActivityInputData v-if="hasInputFields" :inputFields="inputFields" :workItem="workItem" />
 
@@ -574,6 +574,7 @@ export default {
                     formValue: inputFields[key]
                 });
             });
+            this.$emit('loadInputData', inputFields);
         },
         backToPrevStep() {
             this.$emit('backToPrevStep');

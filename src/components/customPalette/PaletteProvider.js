@@ -201,6 +201,16 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
   }
 
   const childElements = element.children || [];
+  let isSubprocessImported = false;
+  // 서브프로세스가 있으면 깨지는 문제가 있어 서브프로세스가 있을 경우에는 임시 비활성화
+  childElements.forEach(child => {
+    if(child.type === "bpmn:SubProcess") {
+      isSubprocessImported = true;
+    }
+  });
+  if(isSubprocessImported) {
+    return;
+  }
   const lanes = childElements
     .filter(el => el.type === 'bpmn:Lane')
     .sort((a, b) => a.di.bounds.y - b.di.bounds.y);
@@ -393,6 +403,16 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
   }
 
   const childElements = element.children || [];
+  let isSubprocessImported = false;
+  // 서브프로세스가 있으면 깨지는 문제가 있어 서브프로세스가 있을 경우에는 임시 비활성화
+  childElements.forEach(child => {
+    if(child.type === "bpmn:SubProcess") {
+      isSubprocessImported = true;
+    }
+  });
+  if(isSubprocessImported) {
+    return;
+  }
   const lanes = childElements
     .filter(el => el.type === 'bpmn:Lane')
     .sort((a, b) => a.di.bounds.x - b.di.bounds.x);
