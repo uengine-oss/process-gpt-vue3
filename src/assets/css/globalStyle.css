@@ -119,7 +119,6 @@ hr {
 
 .thinking-char {
     display: inline-block;
-    color: #333333;
     animation: char-shimmer 2s ease-in-out infinite;
 }
 
