@@ -335,7 +335,7 @@ export default {
         { value: 'crewai-deep-research', label: 'CrewAI 심층 연구', startLabel: 'CrewAI Deep Research', icon: 'playoff' },
         { value: 'crewai-action', label: 'CrewAI 액션', startLabel: 'CrewAI Action', icon: 'flowchart' },
         { value: 'openai-deep-research', label: 'OpenAI 심층 연구', startLabel: 'OpenAI Deep Research', icon: 'playoff' },
-        { value: 'langchain-react', label: 'LangChain 반응형 연구', startLabel: 'LangChain React', icon: 'playoff' },
+        { value: 'langchain-react', label: 'LangChain 연구', startLabel: 'LangChain Research', icon: 'playoff' },
         { value: 'browser-use', label: 'Browser Use', startLabel: 'Browser Use', icon: 'browser' }
       ]
     }
@@ -556,11 +556,11 @@ export default {
     },
 
     isSubmittableTask(task) {
+      console.log('isSubmittableTask');
       return (
         (task.crewType === 'report' && task.jobId.includes('final_report_merge')) ||
         task.crewType === 'slide' ||
         task.crewType === 'text' ||
-        task.crewType === 'react' ||
         (task.crewType === 'result' && task.jobId.includes('action'))
       )
     },
@@ -575,17 +575,17 @@ export default {
       return crewType === 'report' || crewType === 'action' || crewType === 'planning' || crewType === 'react'
     },
 
-         shouldShowExpandControls(payload) {
-         if (payload.crewType === 'slide') return false
-         if (payload.crewType === 'report' || payload.crewType === 'action' || payload.crewType === 'planning' || payload.crewType === 'react') {
-           return this.isContentLong(payload.content);
-         }
-         // JSON의 경우 표시용 컨텐츠를 문자열화해서 판단
-         const rawJson = typeof payload.content === 'string' 
-           ? payload.content 
-           : JSON.stringify(payload.content, null, 2);
-         return this.isContentLong(rawJson);
-       },
+    shouldShowExpandControls(payload) {
+        if (payload.crewType === 'slide') return false
+        if (payload.crewType === 'report' || payload.crewType === 'action' || payload.crewType === 'planning') {
+          return this.isContentLong(payload.content);
+        }
+        // JSON의 경우 표시용 컨텐츠를 문자열화해서 판단
+        const rawJson = typeof payload.content === 'string' 
+          ? payload.content 
+          : JSON.stringify(payload.content, null, 2);
+        return this.isContentLong(rawJson);
+      },
 
     getToolUsageList(jobId) {
       return (!jobId || !this.toolUsageStatusByTask[jobId]) ? [] : this.toolUsageStatusByTask[jobId]
@@ -761,7 +761,6 @@ export default {
       return this.formatOutput(output, 'markdown');
     },
 
-
     // 객체면 첫번째 키의 값을 반환, 배열/문자열 등은 그대로 반환
     resolvePrimaryValue(output, crewType) {
       const type = crewType ? String(crewType).toLowerCase() : '';
@@ -890,6 +889,13 @@ export default {
         if (error) throw error;
         
         if (data) {
+          // final_report_merge가 포함된 job_id에 대한 상세 로그 (DB에서 가져온 데이터)
+          data.forEach(row => {
+            if (row.job_id && row.job_id.includes('final_report_merge')) {
+              console.log('[DB Load] final_report_merge 이벤트:', row);
+            }
+          });
+          
           this.events = data;
           this.isCancelled = data.some(e => e.event_type === 'crew_completed');
         }
@@ -902,8 +908,15 @@ export default {
     // ========================================
     setupRealtimeSubscription() {
       try {
-        const validEventTypes = ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked'];
-        
+        const validEventTypes = [
+          'task_started',
+          'task_completed',
+          'crew_completed',
+          'tool_usage_started',
+          'tool_usage_finished',
+          'human_asked'
+        ];
+
         this.channel = window.$supabase
           .channel('events')
           .on('postgres_changes', { 
@@ -913,16 +926,34 @@ export default {
           }, ({ new: row }) => {
             const taskId = this.getTaskIdFromWorkItem();
             const { todo_id: todoId, event_type, job_id, id } = row;
-            
-            // 이벤트 유효성 검사
+
+            if (job_id && job_id.includes('final_report_merge')) {
+              console.log('[Realtime] final_report_merge 이벤트 수신:', row);
+            }
+
             const isValidEvent = !this.events.some(e => e.id === id) &&
-                               validEventTypes.includes(event_type) &&
-                               todoId === taskId;
+                                validEventTypes.includes(event_type) &&
+                                todoId === taskId;
+
+            console.log('todostatus', this.todoStatus);
 
             if (isValidEvent) {
-              this.events = [...this.events, row];
-              
-              // 첫 유효 이벤트 수신 시: 상태 동기화 후 로딩 표시 여부 결정
+              // === task_completed인 경우 data 없을 때 fallback 재조회 ===
+              if (event_type === 'task_completed' && (!row.data || Object.keys(row.data).length === 0)) {
+                window.$supabase
+                  .from('events')
+                  .select('*')
+                  .eq('id', id)
+                  .single()
+                  .then(({ data: full, error }) => {
+                    console.log("[RealTime Failed] fallback DB")
+                    this.pushEventAndMaybeSubmit(!error && full ? full : row);
+                  });
+              } else {
+                this.pushEventAndMaybeSubmit(row);
+              }
+
+              // 첫 이벤트 수신시 상태 동기화
               if (!this.hasReceivedEvent) {
                 this.hasReceivedEvent = true;
                 if (!this.hasSyncedTodoStatusOnce) {
@@ -936,19 +967,11 @@ export default {
                   }, 300);
                 }
               }
-              
-              // 이벤트 타입별 처리
+
               if (event_type === 'crew_completed') {
                 this.isLoading = false;
-              } else if (event_type === 'task_completed' && this.todoStatus?.agent_mode === 'COMPLETE') {
-                this.$nextTick(() => {
-                  const task = this.tasks.find(t => t.jobId === job_id || t.id === id);
-                  if (task?.isCompleted && this.isSubmittableTask(task)) {
-                    console.log('[AgentMonitor] submitTask 감지', task)
-                    this.submitTask(task);
-                  }
-                });
               }
+
             } else if (todoId !== taskId) {
               console.warn('[ID 불일치]', { eventTodoId: todoId, currentTaskId: taskId, event: row });
             }
@@ -962,6 +985,26 @@ export default {
         this.handleError(error, '실시간 구독 중 오류가 발생했습니다');
       }
     },
+
+    pushEventAndMaybeSubmit(row) {
+      // 중복 방지는 isValidEvent에서 이미 처리
+      this.events = [...this.events, row];
+
+      if (row.event_type !== 'task_completed') return;
+
+      const jobId = row.job_id || row.id;
+
+      this.$nextTick(() => {
+        const task = this.tasks.find(t => t.jobId === jobId || t.id === row.id);
+        console.log('tasks', task);
+        if (task && task.isCompleted && this.isSubmittableTask(task)) {
+          console.log('[AgentMonitor] submitTask 감지', task);
+          this.submitTask(task);
+        }
+      });
+    },
+
+
     // human_asked 응답 처리 (status 비사용: 응답 레코드만 저장)
     async onConfirmHumanQuery(task) {
       if (!task || !task.isHumanAsked) return;
@@ -1225,45 +1268,32 @@ export default {
     },
 
     getMarkdownContent(task) {
-  console.log('마크다운 컨텐츠 처리:', task.content, typeof task.content);
-  
-  // react 타입은 항상 마크다운으로 처리
-  if (task.crewType === 'react') {
-    console.log('react 타입 마크다운 처리');
-    return this.formatMarkdownOutput(task.content);
-  }
-  
-  // JSON 형태의 데이터인지 확인하고 key : value 형태로 변환
-  if (task.content && typeof task.content === 'object') {
-    const keyValueText = this.convertJsonToKeyValue(task.content);
-    console.log('객체에서 변환된 텍스트:', keyValueText);
-    if (keyValueText) {
-      return keyValueText.replace(/\n/g, '<br>');
-    }
-  }
-  
-  // 문자열 형태의 JSON 데이터 처리
-  if (typeof task.content === 'string') {
-    try {
-      const parsed = JSON.parse(task.content);
-      if (typeof parsed === 'object' && parsed !== null) {
-        const keyValueText = this.convertJsonToKeyValue(parsed);
-        console.log('문자열에서 파싱 후 변환된 텍스트:', keyValueText);
+      // JSON 형태의 데이터인지 확인하고 key : value 형태로 변환
+      if (task.content && typeof task.content === 'object') {
+        const keyValueText = this.convertJsonToKeyValue(task.content);
+        console.log('객체에서 변환된 텍스트:', keyValueText);
         if (keyValueText) {
           return keyValueText.replace(/\n/g, '<br>');
         }
       }
-    } catch {
-      // JSON이 아니면 기존 마크다운 처리
-      console.log('JSON 파싱 실패, 마크다운으로 처리');
-    }
-  }
-  
-  console.log('기본 마크다운 처리로 진행');
-  return this.formatMarkdownOutput(task.content);
-  },
-
-
+      
+      // 문자열 형태의 JSON 데이터 처리
+      if (typeof task.content === 'string') {
+        try {
+          const parsed = JSON.parse(task.content);
+          if (typeof parsed === 'object' && parsed !== null) {
+            const keyValueText = this.convertJsonToKeyValue(parsed);
+            console.log('문자열에서 파싱 후 변환된 텍스트:', keyValueText);
+            if (keyValueText) {
+              return keyValueText.replace(/\n/g, '<br>');
+            }
+          }
+        } catch {
+        }
+      }
+      
+      return this.formatMarkdownOutput(task.content);
+    },
 
     // ========================================
     // 🎯 오케스트레이션 방식 관련 메서드들
@@ -1277,7 +1307,7 @@ export default {
         'crewai-deep-research': '다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 | 5~15분 소요',
         'crewai-action': '최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A | 1~5분 소요',
         'openai-deep-research': 'GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 | 3~10분 소요',
-        'langchain-react': 'LangChain 기반의 반응형 에이전트가 다양한 도구를 호출해서 목적을 달성함. ex) AI 이미지 생성, 코드 분석 및 실행 | 2~6분 소요',
+        'langchain-react': 'LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 | 3~5분 소요',
         'browser-use': '실제 브라우저를 조작하여 실시간 웹 정보 수집 및 작업 수행. ex) 검색, 폼 작성, 스크래핑 | 2~8분 소요'
       };
       return descriptions[method] || '';
