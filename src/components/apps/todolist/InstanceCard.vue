@@ -143,8 +143,6 @@
                                     :users="userList"
                                     :isNotAll="false"
                                     :showAddButton="false"
-                                    @loadMore="handleLoadMore"
-                                    @updateStatus="updateStatus"
                                     ref="todo"
                                 />
                             </div>

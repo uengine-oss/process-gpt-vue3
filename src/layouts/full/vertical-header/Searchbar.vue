@@ -22,13 +22,11 @@
         <!-- Search Result -->
         <v-sheet class="main-search-box" elevation="10" rounded="md">
             <h5 class="text-h5 mt-3 px-5 pb-3">검색 결과</h5>
-            <div style="height: 50vh; max-height: 500px; overflow: auto;">
-                <v-list v-if="searchResult.length == 0 && searchKeyword.length == 0" class="pt-0 pb-5" lines="two">
-                    <v-list-item>
-                        <v-list-item-title>검색어를 입력해주세요.</v-list-item-title>
-                    </v-list-item>
+            <div style="max-height: 500px; overflow: auto;">
+                <v-list v-if="!searching" class="pt-0 pb-5" lines="two">
+                    <v-list-subheader>검색하고자 하는 키워드 입력 후 엔터를 눌러주세요.</v-list-subheader>
                 </v-list>
-                <v-list v-else-if="searchResult.length > 0" class="pt-0 pb-5" lines="two">
+                <v-list v-else-if="searchKeyword.length > 0 && searchResult.length > 0" class="pt-0 pb-5" lines="two">
                     <div v-for="item in searchResult" :key="item.type" class="py-1">
                         <v-divider inset></v-divider>
                         <v-list-subheader class="text-caption">{{ item.header }}</v-list-subheader>
@@ -39,15 +37,8 @@
                         </v-list-item>
                     </div>
                 </v-list>
-                <v-list v-else-if="searchKeyword.length > 0 && !searching" class="pt-0 pb-5" lines="two">
-                    <v-list-item>
-                        <v-list-item-title></v-list-item-title>
-                    </v-list-item>
-                </v-list>
                 <v-list v-else class="pt-0 pb-5" lines="two">
-                    <v-list-item>
-                        <v-list-item-title>검색 결과가 없습니다.</v-list-item-title>
-                    </v-list-item>
+                    <v-list-subheader>검색 결과가 없습니다.</v-list-subheader>
                 </v-list>
             </div>
         </v-sheet>

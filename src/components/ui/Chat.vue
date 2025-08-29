@@ -1155,6 +1155,26 @@ export default {
             default: () => []
         }
     },
+    emits: [
+        'stopMessage',
+        'clickedWorkOrder',
+        'startWorkOrder',
+        'toggleProcessGPTActive',
+        'openVerMangerDialog',
+        'requestDraftAgent',
+        'viewProcess',
+        'startProcess',
+        'deleteWorkList',
+        'cancelProcess',
+        'deleteAllWorkList',
+        'getMoreChat',
+        'beforeReply',
+        'sendEditedMessage',
+        'sendMessage',
+        'addTeam',
+        'addTeamMembers',
+        'requestFile'
+    ],
     data() {
         return {
             workIcons: {
