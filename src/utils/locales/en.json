@@ -1163,7 +1163,7 @@
     "HeroSection": {
         "title1": "Define your business processes, and Process GPT will execute them.",
         "title2": "",
-        "description1": "The best agents are configured for your company's strategy, creating a business draft and automating it. If the agent makes a mistake, you teach it. Then, it will fix the process on its own.",
+        "description1": "Elite agents tailored to strategic goals create work drafts and automate them. If agents make mistakes, teach them. Processes and knowledge will improve automatically.",
         "betaTestButton": "Try Beta Test",
         "galleryButton": "View Gallery",
         "educationButton": "View Education Course",
@@ -1208,7 +1208,7 @@
     "HowSection": {
         "title": "How Process GPT Works?",
         "subtitle": "Various business tasks, now Process-GPT executes them",
-        "subtitle1": "1. Agent Setup",
+        "subtitle1": "1. Agent Declaration",
         "subtitle2": "2. Process Creation",
         "subtitle3": "3. Process Execution",
         "subtitle4": "4. Improvement",
@@ -1278,6 +1278,9 @@
         "agentDraftTitle": "Agent Draft Generation",
         "a2aAgentRegistrationTitle": "A2A Agent Registration",
         "a2aCallServiceTitle": "A2A Call & Service Exposure",
+        "processExample1Title": "Order Processing Process with ERP System Integration",
+        "processExample2Title": "Sales Proposal Writing Process Using Browser Use Function",
+        "processExample3Title": "VIP Customized Newsletter Automation Process",
         "coreDistinctionTitle": "Core Differentiators of Process GPT",
         "coreDistinctionDescription": "Unlike existing AI agent systems, Process GPT provides an innovative approach that automatically identifies and implements business processes. Users can define and execute complex business processes through natural language conversation alone without coding knowledge.",
         "feature1Title": "No Coding Knowledge Required",
