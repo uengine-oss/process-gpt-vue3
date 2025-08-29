@@ -1,6 +1,6 @@
 <template>
     <div v-if="show" class="profile-container" :class="{ 'mobile': isMobile }">
-        <div class="learning-buttons">
+        <div v-if="agentData && agentData.id" class="learning-buttons">
             <div class="learning-buttons-item">
                 <v-btn color="info" @click="goToLearning">
                     <span>학습 시키기</span>
@@ -118,6 +118,7 @@ export default {
         }
     },
     mounted() {
+        console.log(this.agentData);
         this.checkMobile();
         window.addEventListener('resize', this.handleResize);
     },
