@@ -4061,9 +4061,15 @@ class ProcessGPTBackend implements Backend {
 
     async getVecsDocuments(options?: any) {
         try {
-            const response = await axios.post('/execution/get-vecs-documents', { params: options });
-            if(response.data) {
-                return response.data;
+            if (!options.agent_id) {
+                throw new Error('agent_id is required');
+            }
+            const response = await storage.callProcedure('get_memories', {
+                agent: options.agent_id,
+                lim: options.limit || 100
+            });
+            if (response) {
+                return response;
             }
             return [];
         } catch (error) {
@@ -4071,10 +4077,17 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async deleteVecsDocument(id: string) {
+    async deleteVecsDocument(options?: any) {
         try {
-            const response = await axios.post('/execution/delete-vecs-document', { id: id });
-            return response.data;
+            if (options.agent_id) {
+                return await storage.callProcedure('delete_memories_by_agent', {
+                    agent: options.agent_id
+                });
+            } else if (options.memory_id) {
+                return await storage.callProcedure('delete_memory', {
+                    mem_id: options.memory_id
+                });
+            }
         } catch (error) {
             throw new Error(error.message);
         }

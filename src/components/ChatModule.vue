@@ -207,8 +207,11 @@ export default {
         },
         async getMessages(chatRoomId) {
             var me = this;
+            if (!me.backend || me.backend == null) {
+                me.backend = BackendFactory.createBackend();
+            }
             me.messages = []
-            let messages = await this.backend.getMessages(chatRoomId)
+            let messages = await me.backend.getMessages(chatRoomId)
             if (messages) {
                 let allMessages = messages.map(message => {
                     let newMessage = message.messages;
