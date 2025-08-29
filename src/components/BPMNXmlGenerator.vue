@@ -2164,8 +2164,11 @@ export default {
           
           console.log('내부 activity 모양 생성:', activity.id, activityX, activityY);
           
+          // Activity 타입을 명시적으로 설정하여 올바른 크기로 생성되도록 함
+          const activityForShape = { ...activity, elementType: 'Activity' };
+          
           const { elementShape, activityPosInfo, offsetPosInfo } = this.createElementShape(
-            xmlDoc, activity, activityX, activityY, isHorizontal, 'subProcess'
+            xmlDoc, activityForShape, activityX, activityY, isHorizontal, 'subProcess'
           );
           
           bpmnPlane.appendChild(elementShape);
