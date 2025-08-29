@@ -44,7 +44,7 @@
         </div>
       </div>
 
-      <div class="movie-gallery-box-2">
+      <div class="movie-gallery-box-2 mb-8">
         <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
             <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
@@ -64,6 +64,37 @@
           <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('MovieGallerySection.a2aCallServiceTitle') }}</h3>
         </div>
       </div>
+
+      <div class="movie-gallery-box-3">
+        <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
+          <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+              src="https://www.youtube.com/embed/tVYanY4GqJE" 
+              frameborder="0" crolling="no" allowfullscreen="">
+            </iframe>
+          </div>
+          <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('MovieGallerySection.processExample1Title') }}</h3>
+        </div>
+        <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
+          <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+              src="https://www.youtube.com/embed/2Ou30L_vNpY" 
+              frameborder="0" crolling="no" allowfullscreen="">
+            </iframe>
+          </div>
+          <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('MovieGallerySection.processExample2Title') }}</h3>
+        </div>
+        <div class="movie-gallery-item bg-white p-6 rounded-md shadow-md">
+          <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+              src="https://www.youtube.com/embed/aq1u11RNRgk" 
+              frameborder="0" crolling="no" allowfullscreen="">
+            </iframe>
+          </div>
+          <h3 class="movie-gallery-h3 text-center font-bold mt-4">{{ $t('MovieGallerySection.processExample3Title') }}</h3>
+        </div>
+      </div>
+
     </div>
   </section>
 

@@ -1,12 +1,12 @@
 <template>
   <section id="works" class="works">
     <div class="container">
-      <div class="section-header">
+      <!-- <div class="section-header">
         <h2>{{ $t('HowSection.title') }}</h2>
         <p>{{ $t('HowSection.subtitle') }}</p>
-      </div>
+      </div> -->
       
-      <div class="">
+      <div>
 
         <!-- 1 에이전트 설정 (Agent Setup) -->
         <div class="bg-white pa-12 rounded-lg shadow-md mb-16" style="border: 1px solid #efefef;">
