@@ -54,21 +54,20 @@ export default {
     methods: {
         async checkedFormData() {
             if (this.processDefinition && this.processDefinition.elements) {
-                const activities = this.processDefinition.elements.filter(element => 
-                    element.elementType === 'Activity' && 
-                    element.type === 'UserActivity'
-                );
+                // 메인 프로세스와 서브프로세스의 모든 activities를 수집
+                const allActivities = this.collectAllActivities(this.processDefinition);
+                
                 this.generateFormTask = {};
 
                 let externalCustomerActs = null;
                 if (this.processDefinition.roles && this.processDefinition.roles.length > 0) {
                     const externalCustomer = this.processDefinition.roles.find(role => role.endpoint == "external_customer");
                     if (externalCustomer && externalCustomer.name) {
-                        externalCustomerActs = activities.filter(act => act.role == externalCustomer.name);
+                        externalCustomerActs = allActivities.filter(act => act.role == externalCustomer.name);
                     }
                 }
                 
-                for (const activity of activities) {
+                for (const activity of allActivities) {
                     let inputs = null;
                     if (externalCustomerActs && externalCustomerActs.length > 0) {
                         if (activity.id == externalCustomerActs[0].id) {
@@ -115,7 +114,7 @@ export default {
                 }
                 
                 // 모든 폼 생성이 완료된 후 최종 메시지 추가
-                if (activities.length > 0) {
+                if (allActivities.length > 0) {
                     this.messages.push({
                         "role": "system",
                         "content": `모든 활동에 대한 폼 생성을 완료했습니다.`,
@@ -133,6 +132,43 @@ export default {
                 
                 this.generateFormTask = {};
             }
+        },
+
+        // 메인 프로세스와 서브프로세스의 모든 activities를 재귀적으로 수집하는 함수
+        collectAllActivities(processDefinition) {
+            const allActivities = [];
+            
+            // 메인 프로세스의 activities 수집
+            if (processDefinition.elements) {
+                const mainActivities = processDefinition.elements.filter(element => 
+                    element.elementType === 'Activity' && 
+                    element.type === 'UserActivity'
+                );
+                allActivities.push(...mainActivities);
+            }
+            
+            // 서브프로세스의 activities 수집
+            if (processDefinition.subProcesses && processDefinition.subProcesses.length > 0) {
+                for (const subProcess of processDefinition.subProcesses) {
+                    if (subProcess.children && subProcess.children.activities) {
+                        const subActivities = subProcess.children.activities.filter(activity => 
+                            activity.type === 'userTask' || activity.type === 'emailTask'
+                        );
+                        allActivities.push(...subActivities);
+                    }
+                    
+                    // 서브프로세스 내의 서브프로세스도 재귀적으로 처리
+                    if (subProcess.children && subProcess.children.subProcesses && subProcess.children.subProcesses.length > 0) {
+                        const nestedSubProcess = {
+                            subProcesses: subProcess.children.subProcesses
+                        };
+                        const nestedActivities = this.collectAllActivities(nestedSubProcess);
+                        allActivities.push(...nestedActivities);
+                    }
+                }
+            }
+            
+            return allActivities;
         },
         async generateForm(generateMsg, activity) {
             var me = this;
