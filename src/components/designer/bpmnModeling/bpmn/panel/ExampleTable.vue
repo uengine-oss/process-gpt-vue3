@@ -113,7 +113,7 @@ export default {
     },
     computed: {
         icon() {
-            return this.title === '좋은 예시' ? 'mdi-thumb-up' : 'mdi-thumb-down';
+            return this.title === '좋은 예시' ? 'mdi-check-circle-outline' : 'mdi-cancel';
         },
         title() {
             return this.type === 'good' ? '좋은 예시' : '나쁜 예시';

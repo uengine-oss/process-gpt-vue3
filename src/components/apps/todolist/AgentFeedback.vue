@@ -9,7 +9,7 @@
         <div class="dot"></div>
         <div class="dot"></div>
       </div>
-      <span>에이전트가 피드백을 기반으로 학습중입니다...</span>
+      <span>{{ $t('agentFeedback.learningInProgress') }}</span>
     </div>
 
     <!-- 피드백 완료시 여러 카드로 표시 -->
@@ -22,20 +22,20 @@
               <span v-else>{{ feedback.agent ? feedback.agent.charAt(0) : 'A' }}</span>
             </div>
             <div class="task-info">
-              <h3 class="task-title">{{ feedback.agent || '에이전트' }}</h3>
-              <p class="task-description">{{ feedback.goal || '피드백을 제공했습니다' }}</p>
+              <h3 class="task-title">{{ feedback.agent || $t('agentFeedback.agent') }}</h3>
+              <p class="task-description">{{ feedback.goal || $t('agentFeedback.goal') }}</p>
             </div>
           </div>
           <div class="task-header-right">
             <div class="task-status completed">
               <div class="status-dot"></div>
-              <span>학습완료</span>
+              <span>{{ $t('agentFeedback.learningCompleted') }}</span>
             </div>
           </div>
         </div>
         <div class="task-result">
           <div class="result-header">
-            <h4 class="result-title">피드백 내용</h4>
+            <h4 class="result-title">{{ $t('agentFeedback.feedbackContent') }}</h4>
           </div>
           <div class="result-content">
             <div class="feedback-text">
@@ -49,14 +49,14 @@
     <!-- 피드백 완료했지만 내용이 없는 경우 -->
     <div v-else-if="feedbackState === 'completed'" class="empty-feedback">
       <div class="empty-icon">📝</div>
-      <h3>학습 내용이 없습니다</h3>
+      <h3>{{ $t('agentFeedback.noLearning') }}</h3>
     </div>
 
     <!-- 대기 상태 -->
     <div v-else class="empty-state">
       <div class="empty-icon">📋</div>
-      <h3>학습 대기중입니다</h3>
-      <p>에이전트 피드학습이 시작되면 여기에 표시됩니다.</p>
+      <h3>{{ $t('agentFeedback.waitingInProgress') }}</h3>
+      <p>{{ $t('agentFeedback.learningInProgressDescription') }}</p>
     </div>
   </div>
 </template>

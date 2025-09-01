@@ -143,8 +143,6 @@
                                     :users="userList"
                                     :isNotAll="false"
                                     :showAddButton="false"
-                                    @loadMore="handleLoadMore"
-                                    @updateStatus="updateStatus"
                                     ref="todo"
                                 />
                             </div>
@@ -169,12 +167,12 @@
                     <v-window-item value="chat" class="instance-card-tab-5">
                         <Chats :isInstanceChat="true" :instanceInfo="instance" :participantUsers="participantUsers" />
                     </v-window-item>
-                    <v-window-item value="source" class="instance-card-tab-6">
+                    <!-- <v-window-item value="source" class="instance-card-tab-6">
                         <InstanceSource :instance="instance" />
                     </v-window-item>
                     <v-window-item value="output" class="instance-card-tab-7">
                         <InstanceOutput :instance="instance" />
-                    </v-window-item>
+                    </v-window-item> -->
                 </v-window>
             </div>
         </div>
@@ -259,8 +257,8 @@ export default {
             { value: 'todo', label: 'InstanceCard.kanbanBoard', mobile: true},
             { value: 'gantt', label: 'InstanceCard.ganttChart', mobile: false},
             { value: 'chat', label: 'InstanceCard.chat', mobile: true},
-            { value: 'source', label: 'InstanceCard.source', mobile: true},
-            { value: 'output', label: 'InstanceCard.output', mobile: true},
+            // { value: 'source', label: 'InstanceCard.source', mobile: true},
+            // { value: 'output', label: 'InstanceCard.output', mobile: true},
         ],
 
         updatedKey: 0,

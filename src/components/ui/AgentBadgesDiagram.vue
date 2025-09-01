@@ -1,5 +1,13 @@
 <template>
     <div v-if="show" class="profile-container" :class="{ 'mobile': isMobile }">
+        <div v-if="agentData && agentData.id" class="learning-buttons">
+            <div class="learning-buttons-item">
+                <v-btn color="info" @click="goToLearning">
+                    <span>학습 시키기</span>
+                </v-btn>
+            </div>
+        </div>
+
         <div class="profile-wrapper">
             <div class="profile-header">
                 <span class="profile-title">{{ agentName }}</span>
@@ -110,6 +118,7 @@ export default {
         }
     },
     mounted() {
+        console.log(this.agentData);
         this.checkMobile();
         window.addEventListener('resize', this.handleResize);
     },
@@ -635,6 +644,10 @@ export default {
             if (this.zoomLevel < 2) {
                 this.zoomLevel = Math.round((this.zoomLevel + 0.1) * 10) / 10;
             }
+        },
+
+        goToLearning() {
+            this.$router.push(`/agent-chat/${this.agentData.id}`)
         }
     }
 }
@@ -932,5 +945,12 @@ export default {
         opacity: 1;
         transform: translateX(0);
     }
+}
+
+.learning-buttons {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    z-index: 1000;
 }
 </style> 

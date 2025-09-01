@@ -56,69 +56,72 @@
     </perfect-scrollbar>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue';
-import { defineProps } from 'vue';
-
-const props = defineProps({
-    userList: Array,
-});
-
-const emit = defineEmits(['startChat', 'selectedUser']);
-
-const searchValue = ref('');
-
-const filteredUsers = computed(() => {
-    return props.userList.filter((user) => {
-        const searchLower = searchValue.value.toLowerCase();
-        return user.username.toLowerCase().includes(searchLower) || user.email.toLowerCase().includes(searchLower);
-    });
-});
-
-const getProfile = (participant) => {
-    let basePath = window.location.port == '' ? window.location.origin:'' 
-    if(participant.email == "system@uengine.org"){
-        return `${basePath}/images/chat-icon.png`;
-    } else {
-        if (participant.profile) {
-            if(participant.profile.includes("defaultUser.png")){
-                return `${basePath}/images/defaultUser.png`;
+<script>
+export default {
+    name: 'UserListing',
+    props: {
+        userList: Array,
+    },
+    emits: ['startChat', 'selectedUser'],
+    data() {
+        return {
+            searchValue: '',
+            selectedUserInfo: null
+        };
+    },
+    computed: {
+        filteredUsers() {
+            return this.userList.filter((user) => {
+                const searchLower = this.searchValue.toLowerCase();
+                return user.username.toLowerCase().includes(searchLower) || user.email.toLowerCase().includes(searchLower);
+            });
+        }
+    },
+    methods: {
+        getProfile(participant) {
+            let basePath = window.location.port == '' ? window.location.origin:'' 
+            if(participant.email == "system@uengine.org"){
+                return `${basePath}/images/chat-icon.png`;
             } else {
-                const img = new Image();
-                img.src = participant.profile;
-                img.onerror = () => {
-                    return `${basePath}/images/defaultUser.png`;
-                };
-                return participant.profile;
-            }
-        } else {
-            const user = props.userList.find(user => user.email === participant.email);
-            if (user && user.profile) {
-                if(user.profile.includes("defaultUser.png")){
-                    return `${basePath}/images/defaultUser.png`;
-                } else {
-                    const img = new Image();
-                    img.src = user.profile;
-                    img.onerror = () => {
+                if (participant.profile) {
+                    if(participant.profile.includes("defaultUser.png")){
                         return `${basePath}/images/defaultUser.png`;
-                    };
-                    return user.profile;
+                    } else {
+                        const img = new Image();
+                        img.src = participant.profile;
+                        img.onerror = () => {
+                            return `${basePath}/images/defaultUser.png`;
+                        };
+                        return participant.profile;
+                    }
+                } else {
+                    const user = this.userList.find(user => user.email === participant.email);
+                    if (user && user.profile) {
+                        if(user.profile.includes("defaultUser.png")){
+                            return `${basePath}/images/defaultUser.png`;
+                        } else {
+                            const img = new Image();
+                            img.src = user.profile;
+                            img.onerror = () => {
+                                return `${basePath}/images/defaultUser.png`;
+                            };
+                            return user.profile;
+                        }
+                    } else {
+                        return `${basePath}/images/defaultUser.png`;
+                    }
                 }
-            } else {
-                return `${basePath}/images/defaultUser.png`;
             }
+        },
+        selectedUser(user) {
+            this.selectedUserInfo = user;
+            this.$emit('selectedUser', user);
+            this.startChat('chat');
+        },
+        startChat(type) {
+            this.$emit('startChat', type);
         }
     }
-};
-const selectedUserInfo = ref(null);
-const selectedUser = (user) => {
-    selectedUserInfo.value = user;
-    emit('selectedUser', user);
-    startChat('chat')
-};
-
-const startChat = (type) => {
-    emit('startChat', type);
 };
 </script>
 

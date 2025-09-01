@@ -151,6 +151,12 @@ const MainRoutes = {
             path: '/usage',
             component: () => import('@/components/ui/usage-billing/Usage.vue')
         },
+
+        {
+            name: 'Agent Chat',
+            path: '/agent-chat/:id',
+            component: () => import('@/components/AgentChat.vue')
+        },
        
 
         // {

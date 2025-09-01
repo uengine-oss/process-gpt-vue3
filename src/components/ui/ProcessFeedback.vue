@@ -1,7 +1,10 @@
 <template>
     <v-card class="process-feedback" elevation="2">
             <v-card-text v-if="isAcceptMode" class="pa-4">
-                <div class="text-h6 mb-2">피드백 반영</div>
+                <div class="d-flex justify-start align-center mb-2">
+                    <v-icon>mdi-information</v-icon>
+                    <span class="text-h6 ml-2">피드백 반영</span>
+                </div>
                 <v-skeleton-loader
                     v-if="isLoading"
                     type="image"
@@ -19,6 +22,12 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <tr v-if="Object.keys(diffItems).length === 0">
+                            <td colspan="4" class="text-center px-0">
+                                <v-icon class="mr-2">mdi-information</v-icon>
+                                반영 할 내용이 없습니다.
+                            </td>
+                        </tr>
                         <tr v-for="(item, key) in diffItems" :key="key">
                             <td class="text-center">
                                 <v-checkbox v-model="item.accepted"
@@ -46,6 +55,34 @@
                                             </v-list-item-title>
                                         </v-list-item>
                                     </v-list>
+                                </div>
+                                <div v-else-if="typeof item.before === 'object'">
+                                    <template v-if="key === 'conditionExamples'">
+                                        <div class="pa-2">
+                                            <div class="gwt-section-title">좋은 예시</div>
+                                            <div v-if="item.before && item.before.good_example && item.before.good_example.length > 0">
+                                                <div v-for="(ex, gi) in item.before.good_example" :key="`${key}-before-good-${gi}`" class="gwt-card">
+                                                    <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text">{{ ex.given }}</span></div>
+                                                    <div class="gwt-row"><span class="gwt-label">when</span><span class="gwt-text">{{ ex.when }}</span></div>
+                                                    <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text">{{ ex.then }}</span></div>
+                                                </div>
+                                            </div>
+                                            <div v-else class="text-grey text-body-2">내용 없음</div>
+                                            <div class="gwt-divider"></div>
+                                            <div class="gwt-section-title">나쁜 예시</div>
+                                            <div v-if="item.before && item.before.bad_example && item.before.bad_example.length > 0">
+                                                <div v-for="(ex, bi) in item.before.bad_example" :key="`${key}-before-bad-${bi}`" class="gwt-card">
+                                                    <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text">{{ ex.given }}</span></div>
+                                                    <div class="gwt-row"><span class="gwt-label">when</span><span class="gwt-text">{{ ex.when }}</span></div>
+                                                    <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text">{{ ex.then }}</span></div>
+                                                </div>
+                                            </div>
+                                            <div v-else class="text-grey text-body-2">내용 없음</div>
+                                        </div>
+                                    </template>
+                                    <template v-else>
+                                        <div class="text-body-2 pa-2">{{ item.before }}</div>
+                                    </template>
                                 </div>
                                 <div v-else>
                                     <div class="text-body-2 pa-2">{{ item.before }}</div>
@@ -85,20 +122,75 @@
                                     </v-list>
                                     </template>
                                 </div>
-                                <div v-else>
-                                    <template v-if="diffItems[key] && diffItems[key].changed">
-                                        <!-- Diff UI 적용된 문자열 표시 -->
-                                        <div class="text-body-2 pa-2 diff-text">
-                                            <span
-                                                v-for="(diffWord, index) in calculateStringDiff(item.before, item.after).after"
-                                                :key="`${key}-word-${index}`"
-                                                :class="['diff-word', diffWord.type]"
-                                            >{{ diffWord.text }}</span>
+                                <div v-else-if="typeof item.after === 'object'">
+                                    <template v-if="key === 'conditionExamples'">
+                                        <div class="pa-2">
+                                            <div class="gwt-section-title">좋은 예시</div>
+                                            <div v-if="item.after && item.after.good_example">
+                                                <div v-for="(ex, gi) in calculateGwtArrayDiff(item.before && item.before.good_example, item.after.good_example)" :key="`${key}-after-good-${gi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">given</span>
+                                                        <span class="gwt-text">
+                                                            <span :class="['diff-word', ex.given.type]">{{ ex.given.text }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">when</span>
+                                                        <span class="gwt-text">
+                                                            <span :class="['diff-word', ex.when.type]">{{ ex.when.text }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">then</span>
+                                                        <span class="gwt-text">
+                                                            <span :class="['diff-word', ex.then.type]">{{ ex.then.text }}</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div v-else class="text-grey text-body-2">내용 없음</div>
+                                            <div class="gwt-divider"></div>
+                                            <div class="gwt-section-title">나쁜 예시</div>
+                                            <div v-if="item.after && item.after.bad_example">
+                                                <div v-for="(ex, bi) in calculateGwtArrayDiff(item.before && item.before.bad_example, item.after.bad_example)" :key="`${key}-after-bad-${bi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">given</span>
+                                                        <span class="gwt-text">
+                                                            <span :class="['diff-word', ex.given.type]">{{ ex.given.text }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">when</span>
+                                                        <span class="gwt-text">
+                                                            <span :class="['diff-word', ex.when.type]">{{ ex.when.text }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">then</span>
+                                                        <span class="gwt-text">
+                                                            <span :class="['diff-word', ex.then.type]">{{ ex.then.text }}</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div v-else class="text-grey text-body-2">내용 없음</div>
                                         </div>
                                     </template>
                                     <template v-else>
-                                        <!-- 기본 문자열 표시 -->
-                                    <div class="text-body-2 pa-2">{{ item.after }}</div>
+                                        <template v-if="diffItems[key] && diffItems[key].changed">
+                                            <!-- Diff UI 적용된 문자열 표시 -->
+                                            <div class="text-body-2 pa-2 diff-text">
+                                                <span
+                                                    v-for="(diffWord, index) in calculateStringDiff(item.before, item.after).after"
+                                                    :key="`${key}-word-${index}`"
+                                                    :class="['diff-word', diffWord.type]"
+                                                >{{ diffWord.text }}</span>
+                                            </div>
+                                        </template>
+                                        <template v-else>
+                                            <!-- 기본 문자열 표시 -->
+                                        <div class="text-body-2 pa-2">{{ item.after }}</div>
+                                        </template>
                                     </template>
                                 </div>
                             </td>
@@ -188,19 +280,44 @@
                                         </template>
                                     </div>
                                     <div v-else>
-                                        <template v-if="diffItems[key] && diffItems[key].changed">
-                                            <!-- Diff UI 적용된 문자열 표시 -->
-                                            <div class="diff-text">
-                                                <span
-                                                    v-for="(diffWord, index) in calculateStringDiff(item.before, item.after).after"
-                                                    :key="`${key}-mobile-word-${index}`"
-                                                    :class="['diff-word', diffWord.type]"
-                                                >{{ diffWord.text }}</span>
+                                        <template v-if="key === 'conditionExamples'">
+                                            <div class="text-body-2">
+                                                <div class="gwt-section-title">좋은 예시</div>
+                                                <div v-if="item.after && item.after.good_example">
+                                                    <div v-for="(ex, gi) in calculateGwtArrayDiff(item.before && item.before.good_example, item.after.good_example)" :key="`${key}-m-after-good-${gi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
+                                                        <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text"><span :class="['diff-word', ex.given.type]">{{ ex.given.text }}</span></span></div>
+                                                        <div class="gwt-row"><span class="gwt-label">when</span><span class="gwt-text"><span :class="['diff-word', ex.when.type]">{{ ex.when.text }}</span></span></div>
+                                                        <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text"><span :class="['diff-word', ex.then.type]">{{ ex.then.text }}</span></span></div>
+                                                    </div>
+                                                </div>
+                                                <div v-else class="text-grey text-body-2">내용 없음</div>
+                                                <div class="gwt-divider"></div>
+                                                <div class="gwt-section-title">나쁜 예시</div>
+                                                <div v-if="item.after && item.after.bad_example">
+                                                    <div v-for="(ex, bi) in calculateGwtArrayDiff(item.before && item.before.bad_example, item.after.bad_example)" :key="`${key}-m-after-bad-${bi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
+                                                        <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text"><span :class="['diff-word', ex.given.type]">{{ ex.given.text }}</span></span></div>
+                                                        <div class="gwt-row"><span class="gwt-label">when</span><span class="gwt-text"><span :class="['diff-word', ex.when.type]">{{ ex.when.text }}</span></span></div>
+                                                        <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text"><span :class="['diff-word', ex.then.type]">{{ ex.then.text }}</span></span></div>
+                                                    </div>
+                                                </div>
+                                                <div v-else class="text-grey text-body-2">내용 없음</div>
                                             </div>
                                         </template>
                                         <template v-else>
-                                            <!-- 기본 문자열 표시 -->
-                                            <div class="text-body-2">{{ item.after || '내용 없음' }}</div>
+                                            <template v-if="diffItems[key] && diffItems[key].changed">
+                                                <!-- Diff UI 적용된 문자열 표시 -->
+                                                <div class="diff-text">
+                                                    <span
+                                                        v-for="(diffWord, index) in calculateStringDiff(item.before, item.after).after"
+                                                        :key="`${key}-mobile-word-${index}`"
+                                                        :class="['diff-word', diffWord.type]"
+                                                    >{{ diffWord.text }}</span>
+                                                </div>
+                                            </template>
+                                            <template v-else>
+                                                <!-- 기본 문자열 표시 -->
+                                                <div class="text-body-2">{{ item.after || '내용 없음' }}</div>
+                                            </template>
                                         </template>
                                     </div>
                                 </div>
@@ -228,7 +345,10 @@
             </v-card-text>
 
             <v-card-text v-else class="pa-3">
-                <div class="text-h6 mb-2 text-left">피드백을 선택해주세요:</div>
+                <div class="d-flex justify-start align-center mb-2">
+                    <v-icon>mdi-information</v-icon>
+                    <span class="text-h6 ml-2">피드백을 선택해주세요</span>
+                </div>
                 
                 <v-list class="feedback-list">
                     <v-skeleton-loader
@@ -326,13 +446,22 @@ export default {
                 after: '',
                 accepted: true,
                 changed: false
+            },
+            conditionExamples: {
+                title: '조건 예시',
+                before: {},
+                after: {},
+                accepted: true,
+                changed: false,
+                sequenceId: ''
             }
         },
         feedbackDiff: {
             inputData: [],
             checkpoints: [],
             description: '',
-            instruction: ''
+            instruction: '',
+            conditionExamples: {}
         }
     }),
     async mounted() {
@@ -449,6 +578,33 @@ export default {
             
             return { before: beforeItems, after: afterItems };
         },
+
+        calculateGwtArrayDiff(beforeArr, afterArr) {
+            const normArr = (arr) => Array.isArray(arr) ? arr : [];
+            const before = normArr(beforeArr);
+            const after = normArr(afterArr);
+            const getKey = (it) => (it && (it.given || it.then || it.when)) || JSON.stringify(it || {});
+            const beforeMap = new Map();
+            before.forEach((b) => beforeMap.set(getKey(b), b));
+            return after.map((a) => {
+                const key = getKey(a);
+                const b = beforeMap.get(key);
+                if (!b) {
+                    return {
+                        __isNew: true,
+                        given: { text: a.given || '', type: 'added' },
+                        when: { text: a.when || '', type: 'added' },
+                        then: { text: a.then || '', type: 'added' },
+                    };
+                }
+                return {
+                    __isNew: false,
+                    given: { text: a.given || '', type: (a.given || '') === (b.given || '') ? 'unchanged' : 'added' },
+                    when: { text: a.when || '', type: (a.when || '') === (b.when || '') ? 'unchanged' : 'added' },
+                    then: { text: a.then || '', type: (a.then || '') === (b.then || '') ? 'unchanged' : 'added' },
+                };
+            });
+        },
         
         async getFeedback() {
             const obj = {
@@ -477,18 +633,22 @@ export default {
         },
         async getFeedbackDiff() {
             const diff = await backend.getFeedbackDiff(this.task.taskId);
-            console.log('피드백 diff 데이터:', diff);
+            // console.log('피드백 diff 데이터:', diff);
             if (diff && diff.modifications) {
                 for (const key in diff.modifications) {
                     if (diff.modifications[key] && diff.modifications[key].changed) {
                         this.diffItems[key].before = diff.modifications[key].before;
                         this.diffItems[key].after = diff.modifications[key].after;
                         this.diffItems[key].changed = diff.modifications[key].changed;
+                        if (key == 'conditionExamples') {
+                            this.diffItems[key].sequenceId = diff.modifications[key].sequenceId;
+                        }
                     } else {
                         delete this.diffItems[key];
                     }
                 }
             }
+            console.log(this.diffItems);
             this.isLoading = false;
         },
         async setFeedbackDiff() {
@@ -498,6 +658,9 @@ export default {
             Object.keys(this.diffItems).forEach(key => {
                 if (this.diffItems[key].accepted) {
                     this.feedbackDiff[key] = this.diffItems[key].after;
+                    if (key == 'conditionExamples') {
+                        this.feedbackDiff[key].sequenceId = this.diffItems[key].sequenceId;
+                    }
                 }
             });
             if (this.feedbackDiff && this.feedbackDiff.inputData) {
@@ -556,19 +719,19 @@ export default {
 
 .diff-table th:first-child,
 .diff-table td:first-child {
-    width: 60px;
+    width: 65px !important;
 }
 
 .diff-table th:nth-child(2),
 .diff-table td:nth-child(2) {
-    width: 100px;
+    width: 120px !important;
 }
 
 .diff-table th:nth-child(3),
 .diff-table td:nth-child(3),
 .diff-table th:nth-child(4),
 .diff-table td:nth-child(4) {
-    width: calc(50% - 70px);
+    width: calc((100vw - 185px) / 2) !important;
 }
 
 .text-body-2 {
@@ -617,6 +780,47 @@ export default {
 
 .diff-word.unchanged {
     color: inherit;
+}
+
+/* GWT structured cards */
+.gwt-section-title {
+    font-weight: 600;
+    margin: 8px 0 4px;
+}
+
+.gwt-divider {
+    border-top: 1px dashed #e0e0e0;
+    margin: 8px 0;
+}
+
+.gwt-card {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+}
+
+.gwt-card.added {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+}
+
+.gwt-row {
+    display: flex;
+    align-items: flex-start;
+    margin: 2px 0;
+}
+
+.gwt-label {
+    width: 48px;
+    color: #6c757d;
+    flex-shrink: 0;
+}
+
+.gwt-text {
+    flex: 1;
+    word-break: break-word;
 }
 
 .diff-list-item {

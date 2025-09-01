@@ -7,7 +7,7 @@
       </div>
       <nav class="nav">
         <ul>
-          <li><a class="nav-link" href="https://bpm-intro.uengine.io/process-gpt/" target="_blank">{{ $t('Header.tutorial') }}</a></li>
+          <li><a class="nav-link" href="https://bpm-intro.uengine.io/process-gpt/" target="_blank">{{ $t('Header.tutorial') }}</a></li> 
           <!-- <li><a class="nav-link" @click.prevent="navigateToTutorial">{{ $t('Header.tutorial') }}</a></li> -->
           <li><a class="nav-link" @click.prevent="navigateToSection('works')">{{ $t('Header.works') }}</a></li>
           <li><a class="nav-link" @click.prevent="navigateToSection('ai3Steps')">{{ $t('Header.ai3Steps') }}</a></li>

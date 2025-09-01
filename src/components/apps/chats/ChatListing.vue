@@ -1,214 +1,3 @@
-<script setup>
-import { ref, onMounted, computed, onUnmounted, watch, getCurrentInstance } from 'vue';
-import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns';
-import { last } from 'lodash';
-import ChatBackgroundManager from '@/components/ai/ChatBackgroundManager.js';
-
-const { proxy } = getCurrentInstance();
-
-const props = defineProps({
-    chatRoomList: Array,
-    userList: Array,
-    userInfo: Object,
-    chatRoomId: String,
-    closeDrawer: Function
-});
-
-const emit = defineEmits(['chat-selected', 'create-chat-room', 'delete-chat-room']);
-
-const formatTimeOrNow = (createdAt) => {
-    const createdAtDate = new Date(createdAt);
-    const now = new Date();
-    const diffInSeconds = differenceInSeconds(now, createdAtDate);
-
-    if (diffInSeconds < 60) {
-        return 'now';
-    } else {
-        return formatDistanceToNowStrict(createdAtDate, { addSuffix: false });
-    }
-};
-
-const refreshKey = ref(Date.now());
-
-const refreshChatList = () => {
-    refreshKey.value = Date.now();
-};
-
-let intervalId;
-let backgroundStatusListener;
-
-onMounted(() => {
-    intervalId = setInterval(refreshChatList, 60000);
-    
-    // 기존 백그라운드 작업 상태 확인
-    const activeChatRooms = ChatBackgroundManager.getActiveChatRooms();
-    backgroundGeneratingRooms.value = new Set(activeChatRooms);
-    
-    // 백그라운드 생성 상태 이벤트 리스너 등록
-    backgroundStatusListener = (event) => {
-        const { chatRoomId, isActive } = event.detail;
-        if (isActive) {
-            backgroundGeneratingRooms.value.add(chatRoomId);
-        } else {
-            backgroundGeneratingRooms.value.delete(chatRoomId);
-        }
-        // ref의 값을 업데이트하여 반응성 트리거
-        backgroundGeneratingRooms.value = new Set(backgroundGeneratingRooms.value);
-    };
-    
-    window.addEventListener('background-generation-status', backgroundStatusListener);
-});
-
-onUnmounted(() => {
-    clearInterval(intervalId);
-    if (backgroundStatusListener) {
-        window.removeEventListener('background-generation-status', backgroundStatusListener);
-    }
-});
-
-const selectedChatId = ref(null);
-const backgroundGeneratingRooms = ref(new Set()); // 백그라운드 생성 중인 채팅방들
-
-const selectChatRoom = (chat) => {
-    selectedChatId.value = chat.id;
-    emit('chat-selected', chat);
-    if (props.closeDrawer) {
-        props.closeDrawer();
-    }
-};
-
-watch(() => props.chatRoomId, (newVal) => {
-    if (newVal) {
-        selectedChatId.value = newVal;
-    }
-}, { immediate: true });
-
-const chatItem = props.chatRoomList;
-const searchValue = ref('');
-const filteredChats = computed(() => {
-    return chatItem.filter((chat) => {
-        return chat.name.toLowerCase().includes(searchValue.value.toLowerCase());
-    });
-});
-
-const getChatRoomName = (chat) => {
-    // 참가자가 2명인 경우
-    if (chat.participants.length === 2) {
-        // 상대방 찾기 (나가 아닌 참가자)
-        const otherParticipant = chat.participants.find(participant => participant.email !== props.userInfo.email);
-        
-        if (otherParticipant) {
-            // system chat인 경우
-            if (otherParticipant.email === "system@uengine.org") {
-                return "Assistant";
-            } else {
-                // 일반 사용자인 경우 상대방 이름 표시
-                return otherParticipant.username || otherParticipant.email;
-            }
-        }
-    }
-    
-    // 참가자가 3명 이상인 경우 설정된 채팅방 이름 사용
-    if (chat.participants.length >= 3) {
-        return chat.name || chat.participants.map(participant => participant.username).join(', ');
-    }
-    
-    // 기본값 (예외 상황)
-    return chat.name || chat.participants.map(participant => participant.username).join(', ');
-}
-
-const getProfile = (participant) => {
-    let basePath = window.location.port == '' ? window.location.origin:'' 
-    if(participant.email == "system@uengine.org"){
-        return `${basePath}/images/chat-icon.png`;
-    } else {
-        if (participant.profile) {
-            if(participant.profile.includes("defaultUser.png")){
-                return `${basePath}/images/defaultUser.png`;
-            } else {
-                const img = new Image();
-                img.src = participant.profile;
-                img.onerror = () => {
-                    return `${basePath}/images/defaultUser.png`;
-                };
-                return participant.profile;
-            }
-        } else {
-            const user = props.userList.find(user => user.email === participant.email);
-            if (user && user.profile) {
-                if(user.profile.includes("defaultUser.png")){
-                    return `${basePath}/images/defaultUser.png`;
-                } else {
-                    const img = new Image();
-                    img.src = user.profile;
-                    img.onerror = () => {
-                        return `${basePath}/images/defaultUser.png`;
-                    };
-                    return user.profile;
-                }
-            } else {
-                return `${basePath}/images/defaultUser.png`;
-            }
-        }
-    }
-};
-
-// const items = ref([{ title: 'Sort by time' }, { title: 'Sort by Unread' }, { title: 'Mark all as read' }]);
-
-const dialog = ref(false);
-const deleteDialog = ref(false);
-const inputObj = ref({
-    name: '',
-    participants: []
-});
-
-const editMode = ref(false);
-
-// 이름 입력 필드에 대한 검증 규칙
-const nameRules = [
-    v => !!v || proxy.$t('chatListing.enterChatRoomName'),
-];
-
-// 참여자 선택 필드에 대한 검증 규칙
-const participantsRules = [
-    v => (v && v.length > 0) || proxy.$t('chatListing.selectAtLeastOneParticipant'),
-];
-
-const confirmDialog = () => {
-    if (!inputObj.value.name || !inputObj.value.participants.length) {
-        console.log('Invalid input');
-        return;
-    }
-    emit('create-chat-room', inputObj.value);
-    dialog.value = false;
-    // 여기서 서버에 데이터를 보내거나 추가 처리를 할 수 있습니다.
-};
-
-const openDialog = () => {
-    inputObj.value = {
-        name: '',
-        participants: []
-    }
-    editMode.value = false;
-    dialog.value = true;
-};
-const openEditDialog = (chat) => {
-    inputObj.value = { ...chat };
-    editMode.value = true;
-    dialog.value = true;
-};
-
-const openDeleteDialog = (chat) => {
-    inputObj.value = { ...chat };
-    deleteDialog.value = true;
-};
-
-const deleteChatRoom = () => {
-    emit('delete-chat-room', inputObj.value.id);
-    deleteDialog.value = false;
-};
-
-</script>
 <template>
     <v-sheet>
         <div class="px-6 pt-3">
@@ -401,6 +190,211 @@ const deleteChatRoom = () => {
         </v-list>
     </perfect-scrollbar>
 </template>
+
+<script>
+import { formatDistanceToNowStrict, differenceInSeconds } from 'date-fns';
+import ChatBackgroundManager from '@/components/ai/ChatBackgroundManager.js';
+
+export default {
+    props: {
+        chatRoomList: Array,
+        userList: Array,
+        userInfo: Object,
+        chatRoomId: String,
+        closeDrawer: Function
+    },
+    emits: ['chat-selected', 'create-chat-room', 'delete-chat-room'],
+    data() {
+        return {
+            refreshKey: Date.now(),
+            selectedChatId: null,
+            backgroundGeneratingRooms: new Set(),
+            searchValue: '',
+            dialog: false,
+            deleteDialog: false,
+            inputObj: {
+                name: '',
+                participants: []
+            },
+            editMode: false,
+            intervalId: null,
+            backgroundStatusListener: null
+        };
+    },
+    computed: {
+        filteredChats() {
+            return this.chatItem.filter((chat) => {
+                return chat.name.toLowerCase().includes(this.searchValue.toLowerCase());
+            });
+        },
+        chatItem() {
+            return this.chatRoomList;
+        },
+        nameRules() {
+            return [
+                v => !!v || this.$t('chatListing.enterChatRoomName'),
+            ];
+        },
+        participantsRules() {
+            return [
+                v => (v && v.length > 0) || this.$t('chatListing.selectAtLeastOneParticipant'),
+            ];
+        }
+    },
+    watch: {
+        chatRoomId: {
+            handler(newVal) {
+                if (newVal) {
+                    this.selectedChatId = newVal;
+                }
+            },
+            immediate: true
+        }
+    },
+    mounted() {
+        this.intervalId = setInterval(this.refreshChatList, 60000);
+        
+        // 기존 백그라운드 작업 상태 확인
+        const activeChatRooms = ChatBackgroundManager.getActiveChatRooms();
+        this.backgroundGeneratingRooms = new Set(activeChatRooms);
+        
+        // 백그라운드 생성 상태 이벤트 리스너 등록
+        this.backgroundStatusListener = (event) => {
+            const { chatRoomId, isActive } = event.detail;
+            if (isActive) {
+                this.backgroundGeneratingRooms.add(chatRoomId);
+            } else {
+                this.backgroundGeneratingRooms.delete(chatRoomId);
+            }
+            // Set의 값을 업데이트하여 반응성 트리거
+            this.backgroundGeneratingRooms = new Set(this.backgroundGeneratingRooms);
+        };
+        
+        window.addEventListener('background-generation-status', this.backgroundStatusListener);
+    },
+    beforeUnmount() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+        }
+        if (this.backgroundStatusListener) {
+            window.removeEventListener('background-generation-status', this.backgroundStatusListener);
+        }
+    },
+    methods: {
+        formatTimeOrNow(createdAt) {
+            const createdAtDate = new Date(createdAt);
+            const now = new Date();
+            const diffInSeconds = differenceInSeconds(now, createdAtDate);
+
+            if (diffInSeconds < 60) {
+                return 'now';
+            } else {
+                return formatDistanceToNowStrict(createdAtDate, { addSuffix: false });
+            }
+        },
+        refreshChatList() {
+            this.refreshKey = Date.now();
+        },
+        selectChatRoom(chat) {
+            this.selectedChatId = chat.id;
+            this.$emit('chat-selected', chat);
+            if (this.closeDrawer) {
+                this.closeDrawer();
+            }
+        },
+        getChatRoomName(chat) {
+            // 참가자가 2명인 경우
+            if (chat.participants.length === 2) {
+                // 상대방 찾기 (나가 아닌 참가자)
+                const otherParticipant = chat.participants.find(participant => participant.email !== this.userInfo.email);
+                
+                if (otherParticipant) {
+                    // system chat인 경우
+                    if (otherParticipant.email === "system@uengine.org") {
+                        return "Assistant";
+                    } else {
+                        // 일반 사용자인 경우 상대방 이름 표시
+                        return otherParticipant.username || otherParticipant.email;
+                    }
+                }
+            }
+            
+            // 참가자가 3명 이상인 경우 설정된 채팅방 이름 사용
+            if (chat.participants.length >= 3) {
+                return chat.name || chat.participants.map(participant => participant.username).join(', ');
+            }
+            
+            // 기본값 (예외 상황)
+            return chat.name || chat.participants.map(participant => participant.username).join(', ');
+        },
+        getProfile(participant) {
+            let basePath = window.location.port == '' ? window.location.origin:'' 
+            if(participant.email == "system@uengine.org"){
+                return `${basePath}/images/chat-icon.png`;
+            } else {
+                if (participant.profile) {
+                    if(participant.profile.includes("defaultUser.png")){
+                        return `${basePath}/images/defaultUser.png`;
+                    } else {
+                        const img = new Image();
+                        img.src = participant.profile;
+                        img.onerror = () => {
+                            return `${basePath}/images/defaultUser.png`;
+                        };
+                        return participant.profile;
+                    }
+                } else {
+                    const user = this.userList.find(user => user.email === participant.email);
+                    if (user && user.profile) {
+                        if(user.profile.includes("defaultUser.png")){
+                            return `${basePath}/images/defaultUser.png`;
+                        } else {
+                            const img = new Image();
+                            img.src = user.profile;
+                            img.onerror = () => {
+                                return `${basePath}/images/defaultUser.png`;
+                            };
+                            return user.profile;
+                        }
+                    } else {
+                        return `${basePath}/images/defaultUser.png`;
+                    }
+                }
+            }
+        },
+        confirmDialog() {
+            if (!this.inputObj.name || !this.inputObj.participants.length) {
+                console.log('Invalid input');
+                return;
+            }
+            this.$emit('create-chat-room', this.inputObj);
+            this.dialog = false;
+        },
+        openDialog() {
+            this.inputObj = {
+                name: '',
+                participants: []
+            };
+            this.editMode = false;
+            this.dialog = true;
+        },
+        openEditDialog(chat) {
+            this.inputObj = { ...chat };
+            this.editMode = true;
+            this.dialog = true;
+        },
+        openDeleteDialog(chat) {
+            this.inputObj = { ...chat };
+            this.deleteDialog = true;
+        },
+        deleteChatRoom() {
+            this.$emit('delete-chat-room', this.inputObj.id);
+            this.deleteDialog = false;
+        }
+    }
+};
+</script>
+
 <style>
 .chatItem {
     padding: 16px 24px !important;

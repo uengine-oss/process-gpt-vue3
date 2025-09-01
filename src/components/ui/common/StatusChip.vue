@@ -107,12 +107,12 @@
         if(this.type == 'instance'){
           textMap = {
             // 인스턴스 상태
-            'TODO': '예정 업무',
-            'IN_PROGRESS': '진행 중',
-            'PENDING': '보류 중',
-            'CANCELLED': '취소',
-            'COMPLETED': '완료',
-            'DONE': '완료',
+            'TODO': this.$t('statusChip.scheduled'),
+            'IN_PROGRESS': this.$t('statusChip.inProgress'),
+            'PENDING': this.$t('statusChip.pending'),
+            'CANCELLED': this.$t('statusChip.cancelled'),
+            'COMPLETED': this.$t('statusChip.completed'),
+            'DONE': this.$t('statusChip.completed'),
 
             // 기본값
             'DEFAULT': this.status
@@ -120,11 +120,11 @@
         } else if(this.type == 'project'){
           textMap = {
             // 프로젝트 상태
-            'TODO': '예정 업무',
-            'RUNNING': '진행 중',
-            'PENDING': '보류 중',
-            'CANCELLED': '취소',
-            'DONE': '완료',
+            'TODO': this.$t('statusChip.scheduled'),
+            'RUNNING': this.$t('statusChip.inProgress'),
+            'PENDING': this.$t('statusChip.pending'),
+            'CANCELLED': this.$t('statusChip.cancelled'),
+            'DONE': this.$t('statusChip.completed'),
             
             // 기본값
             'DEFAULT': this.status
@@ -132,11 +132,11 @@
         } else if(this.type == 'task'){
           textMap = {
             // 태스크 상태
-            'TODO': '예정 업무',
-            'IN_PROGRESS': '진행 중',
-            'PENDING': '보류 중',
-            'CANCELLED': '취소',
-            'DONE': '완료',
+            'TODO': this.$t('statusChip.scheduled'),
+            'IN_PROGRESS': this.$t('statusChip.inProgress'),
+            'PENDING': this.$t('statusChip.pending'),
+            'CANCELLED': this.$t('statusChip.cancelled'),
+            'DONE': this.$t('statusChip.completed'),
             // 기본값
             'DEFAULT': this.status
           }
