@@ -120,13 +120,13 @@
                         <div v-if="!detailContent"
                             class="text-subtitle-2"
                         >
-                            <span class="thinking-wave-text">
-                                <span v-for="(char, index) in '에이전트 작업중'" :key="index" 
+                            <div class="thinking-wave-text">
+                                <div v-for="(char, index) in '에이전트 작업중'" :key="index" 
                                     :style="{ animationDelay: `${index * 0.1}s` }"
                                     class="thinking-char"
                                 >{{ char === ' ' ? '\u00A0' : char }}
-                                </span>
-                            </span>
+                                </div>
+                            </div>
                             <span class="loading-dots">
                                 <span>.</span>
                                 <span>.</span>
@@ -138,8 +138,7 @@
                     </div>
                     <div v-else
                         class="text-subtitle-2"
-                    >
-                        에이전트 작업 완료
+                    >에이전트 작업 완료
                     </div>
                 </div>
                 <v-row v-if="!isTodolistPath" class="pa-0 ma-0 mt-1 d-flex align-center">
