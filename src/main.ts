@@ -282,7 +282,7 @@ async function initializeApp() {
         
         // 에러가 발생해도 애플리케이션이 계속 작동하도록 처리
         // 심각한 에러가 아닌 경우 무시하고 계속 진행
-        const errorMessage = err?.message || err?.toString() || '';
+        const errorMessage = (err instanceof Error ? err.message : String(err)) || '';
         
         if (errorMessage.includes('putObject') ||
             errorMessage.includes('setCalendarData') ||
