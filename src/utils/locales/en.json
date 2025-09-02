@@ -1430,8 +1430,8 @@
         "overdue": "Overdue",
         "pastDue": "Past Due",
         "error": "Execution Error",
-        "agentStatus": "Agent Status",
-        "inProgress": "In Progress"
+        "agentWorking": "Agent Working",
+        "agentCompleted": "Agent Completed"
     },
     "agentMonitor": {
         "accept": "Accept",
@@ -1461,11 +1461,13 @@
         "crewaiDeepResearch": "CrewAI Deep Research",
         "crewaiAction": "CrewAI Action",
         "openaiDeepResearch": "OpenAI Deep Research",
+        "langchainReact": "LangChain Research",
         "humanApproval": "User approval and additional information request",
         "humanApprovalDescription": "User approval and additional information are required. If you approve the following work plan, please click the check button. If needed, please enter or select the item.",
         "crewaiDeepResearchDescription": "Multi-agent collaboration for deep research and analysis. ex) Document analysis, data collection, report writing (5~15 minutes)",
         "crewaiActionDescription": "Optimal path call various tools to achieve the goal. ex) MCP, A2A (1~5 minutes)",
         "openaiDeepResearchDescription": "Advanced reasoning and systematic analysis based on GPT-4. ex) Logical thinking, creative problem solving (3~10 minutes)",
+        "langchainReactDescription": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)",
         "browserUseDescription": "Perform real-time web information collection and tasks by manipulating the actual browser. ex) Search, form filling, scraping (2~8 minutes)"
     },
     "agentFeedback": {
