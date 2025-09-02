@@ -274,6 +274,28 @@ async function initializeApp() {
     
     const app = createApp(App);
     
+    // Vue 애플리케이션 전역 에러 핸들러 추가
+    app.config.errorHandler = (err, vm, info) => {
+        console.error('[Vue Error Handler] 에러 발생:', err);
+        console.error('[Vue Error Handler] 컴포넌트:', vm);
+        console.error('[Vue Error Handler] 정보:', info);
+        
+        // 에러가 발생해도 애플리케이션이 계속 작동하도록 처리
+        // 심각한 에러가 아닌 경우 무시하고 계속 진행
+        const errorMessage = err?.message || err?.toString() || '';
+        
+        if (errorMessage.includes('putObject') ||
+            errorMessage.includes('setCalendarData') ||
+            errorMessage.includes('Cannot read properties of null') ||
+            errorMessage.includes('400 (Bad Request)')) {
+            console.warn('[Vue Error Handler] 비즈니스 로직 에러 - 계속 진행');
+            return;
+        }
+        
+        // 기타 에러는 콘솔에만 로그하고 애플리케이션 중단 방지
+        console.error('[Vue Error Handler] 예상치 못한 에러 발생 - 애플리케이션 계속 진행');
+    };
+    
     app.use(VueMonacoEditorPlugin, {
         paths: {
             vs: '/node_modules/monaco-editor/min/vs'
