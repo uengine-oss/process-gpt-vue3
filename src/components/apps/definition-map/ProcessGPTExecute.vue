@@ -47,6 +47,14 @@
                             ></user-select-field>
                         </div>
                     </div>
+                    <div v-if="isSimulate == 'false'">
+                        <div class="text-h5 font-weight-semibold">{{ $t('InstanceCard.source') }}</div>
+                        <InstanceSource 
+                            ref="instanceSourceRef"
+                            :isStarted="isStarted" 
+                            :processDefinitionId="definitionId" 
+                        />
+                    </div>
                 </div>
                 <div class="w-100">
                     <div v-if="workItem != null">
@@ -92,6 +100,7 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
 import WorkItem from '@/components/apps/todolist/WorkItem.vue';
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
+import InstanceSource from '@/components/apps/todolist/InstanceSource.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -100,7 +109,8 @@ export default {
     components: {
         AppBaseCard,
         WorkItem,
-        UserSelectField
+        UserSelectField,
+        InstanceSource
     },
     props: {
         definitionId: String,
@@ -120,6 +130,7 @@ export default {
         activityIndex: 0,
         renderKey: 0,
         simulationInstances: [],
+        isStarted: true
     }),
     async mounted() {
         await this.init();
@@ -229,7 +240,6 @@ export default {
                 let hasDefaultRole = false;
                 me.roleMappings = roles.map((role) => {
                     let disabled = "false";
-                    console.log(role.name, startActivity.role)
                     if (role.name == startActivity.role) {
                         const uid = localStorage.getItem('uid');
                         role.endpoint = uid;
@@ -238,7 +248,12 @@ export default {
                         hasDefaultRole = true;
                         if (Array.isArray(role.default)) {
                             role.default = role.default.filter((item) => isUUID(item));
+                        } else {
+                            role.default = isUUID(role.default) ? role.default : "";
                         }
+                    } else {
+                        hasDefaultRole = false;
+                        role.endpoint = isUUID(role.endpoint) ? role.endpoint : "";
                     }
                     return {
                         name: role.name,
@@ -330,6 +345,11 @@ export default {
                     answer: answer,
                     form_values: value || {}
                 };
+                
+                if (me.$refs.instanceSourceRef) {
+                    input.source_list = me.$refs.instanceSourceRef.sourceList;
+                }
+
                 me.roleMappings.forEach(role => {
                     if (me.workItem.worklist.role === role.name && role.endpoint) {
                         me.workItem.worklist.endpoint = role.endpoint;
