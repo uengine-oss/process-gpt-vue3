@@ -6,7 +6,7 @@
         >
             <v-card flat class="pa-1">
                 <v-card-item class="pa-0">
-                    <h5 class="text-h5 mb-4">MCP Servers</h5>
+                    <!-- <h5 class="text-h5 mb-4">MCP Servers</h5> -->
 
                     <v-list>
                         <v-list-item

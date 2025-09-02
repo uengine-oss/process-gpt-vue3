@@ -20,35 +20,33 @@
                         <img :src="getProfile(user)" :alt="user.username" style="width: 100%; height: 100%; object-fit: cover;" />
                     </v-avatar>
                 </template>
-                <v-list-item-content>
-                    <v-list-item-title class="text-subtitle-1 w-100 font-weight-semibold">{{ user.username }}</v-list-item-title>
-                    <v-list-item-subtitle class="text-subtitle-2">{{ user.email }}</v-list-item-subtitle>
-                    <!-- <div v-if="selectedUserInfo && selectedUserInfo.id === user.id"> -->
-                        <!-- <v-tooltip location="bottom" :text="$t('userListing.chat')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="startChat('chat')" v-bind="props" 
-                                    icon variant="text"
-                                    class="text-medium-emphasis" 
-                                    density="comfortable"
-                                >
-                                    <v-icon>mdi-message-text-outline</v-icon>
-                                </v-btn>
-                            </template> 
-                        </v-tooltip>
-                        <v-tooltip location="bottom" text="업무 지시">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="startChat('work')" v-bind="props" 
-                                    icon variant="text"
-                                    class="text-medium-emphasis" 
-                                    density="comfortable"
-                                    style="margin-left:5px;"
-                                >
-                                    <v-icon>mdi-file-document-outline</v-icon>
-                                </v-btn>
-                            </template> 
-                        </v-tooltip> -->
-                    <!-- </div> -->
-                </v-list-item-content>
+                <v-list-item-title class="text-subtitle-1 w-100 font-weight-semibold">{{ user.username }}</v-list-item-title>
+                <v-list-item-subtitle class="text-subtitle-2">{{ user.email }}</v-list-item-subtitle>
+                <!-- <div v-if="selectedUserInfo && selectedUserInfo.id === user.id"> -->
+                    <!-- <v-tooltip location="bottom" :text="$t('userListing.chat')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn @click="startChat('chat')" v-bind="props" 
+                                icon variant="text"
+                                class="text-medium-emphasis" 
+                                density="comfortable"
+                            >
+                                <v-icon>mdi-message-text-outline</v-icon>
+                            </v-btn>
+                        </template> 
+                    </v-tooltip>
+                    <v-tooltip location="bottom" text="업무 지시">
+                        <template v-slot:activator="{ props }">
+                            <v-btn @click="startChat('work')" v-bind="props" 
+                                icon variant="text"
+                                class="text-medium-emphasis" 
+                                density="comfortable"
+                                style="margin-left:5px;"
+                            >
+                                <v-icon>mdi-file-document-outline</v-icon>
+                            </v-btn>
+                        </template> 
+                    </v-tooltip> -->
+                <!-- </div> -->
             </v-list-item>
 
             <!-- <v-divider></v-divider> -->
