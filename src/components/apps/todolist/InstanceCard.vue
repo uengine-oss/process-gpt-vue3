@@ -57,7 +57,23 @@
                     </div>
                 </v-row>
                 <div v-if="instance.instId && !isMobile" class="font-weight-medium pl-4 pr-4" style="color:gray; font-size:14px;">
-                    시작자: {{ getStarterName() }} | 시작일시: {{ getFormattedStartDate() }}
+                    <span v-if="!getStarterName()">시작자: 정보 불러오는 중
+                        <span class="loading-dots">
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                        </span>
+                    </span>
+                    <span v-else>시작자: {{ getStarterName() }}</span>
+                    <span> | </span>
+                    <span v-if="!getFormattedStartDate()">시작일시: 정보 불러오는 중
+                        <span class="loading-dots">
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                        </span>
+                    </span>
+                    <span v-else>시작일시: {{ getFormattedStartDate() }}</span>
                 </div>
             </div>
         </div>
@@ -606,15 +622,20 @@ export default {
             }
         },
         getStarterName() {
-            if (this.firstWorkItem && this.firstWorkItem.username) {
+            if (!this.firstWorkItem) {
+                return; // 로딩 중 - undefined 반환
+            }
+            if (this.firstWorkItem.username) {
                 return this.firstWorkItem.username;
-            } else if (this.firstWorkItem && this.firstWorkItem.endpoint) {
+            } else if (this.firstWorkItem.endpoint) {
                 return this.firstWorkItem.endpoint;
             }
-            return '알 수 없음';
         },
         getFormattedStartDate() {
-            if (this.firstWorkItem && this.firstWorkItem.startDate) {
+            if (!this.firstWorkItem) {
+                return; // 로딩 중 - undefined 반환
+            }
+            if (this.firstWorkItem.startDate) {
                 const date = new Date(this.firstWorkItem.startDate);
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -623,7 +644,6 @@ export default {
                 const minutes = String(date.getMinutes()).padStart(2, '0');
                 return `${year}.${month}.${day} / ${hours}:${minutes}`;
             }
-            return '알 수 없음';
         }
     }
 };

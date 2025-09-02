@@ -35,18 +35,18 @@ function getIcon(item) {
             v-scroll-to="{ el: '#top' }"
             :style="{ marginLeft: 8 + (level - 1) + 'px' }"
         >
-            <!---If icon-->
-            <template v-slot:prepend>
+            <!-- 정의관리 아이콘 보여지던곳 -->
+            <!-- <template v-slot:prepend>
                 <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
                     <Icons
                         :icon="getIcon(item)"
                     />
                 </div>
-            </template>
+            </template> -->
             <v-tooltip bottom :text="useI18n ? $t(item.title) : item.title">
                 <template v-slot:activator="{ props }">
                     <v-list-item-title
-                        class="ml-4 text-body-1"
+                        class="ml-0 text-body-1"
                         v-bind="props"
                     >
                         {{ useI18n ? $t(item.title) : item.title }}

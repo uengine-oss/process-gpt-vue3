@@ -6,6 +6,10 @@ hr {
     opacity: 1 !important;
 }
 
+.font-weight-medium {
+    font-weight: 400 !important;
+}
+
 .vue-bpmn-diagram-container-view-mode .bjs-container {
     height: 93% !important;
 }
