@@ -14,7 +14,7 @@
                 <div v-if="streamingText" class="position-absolute bottom-0 end-0 ml-2">
                     <div class="mx-2">
                         <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100" style="max-width: 100% !important;">
-                            <pre class="text-body-1">{{ streamingText }}</pre>
+                            <pre class="text-body-1">{{ filteredStreamingText }}</pre>
                         </v-sheet>
                     </div>
                 </div>
@@ -116,6 +116,13 @@ export default {
                 return this.processInstance.name;
             }
             return '';
+        },
+        filteredStreamingText() {
+            if (!this.streamingText) {
+                return '';
+            }
+            // ```json 마크다운 표시 제거 (줄바꿈 포함)
+            return this.streamingText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
         },
     },
     async mounted() {
