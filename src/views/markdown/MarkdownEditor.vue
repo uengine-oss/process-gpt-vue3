@@ -1,10 +1,10 @@
 <template>
     <div v-if="readOnly || isPreview">
-        <div v-html="htmlContent" :class="isOverflow ? 'editor-preview-overflow' : 'editor-preview'"></div>
+        <div v-html="htmlContent" class="form-markdown-preview" :style="{ overflow: isOverflow ? 'auto' : 'hidden' }"></div>
     </div>
     <div v-else class="editor-wrapper">
         <v-card flat>
-            <v-card-text>
+            <v-card-text class="pa-0">
                 <BubbleMenu
                     v-if="editor"
                     :editor="editor"
@@ -87,7 +87,7 @@
                 </BubbleMenu>
 
                 <!-- 에디터 본문 -->
-                <EditorContent :editor="editor" :class="useDefaultEditorStyle ? 'editor-content editor-border' : 'editor-content'" />
+                <EditorContent :editor="editor" class="form-markdown-preview" />
             </v-card-text>
         </v-card>
     </div>
@@ -98,6 +98,7 @@ import { Editor, EditorContent, BubbleMenu as BubbleMenuComponent } from '@tipta
 import { DOMSerializer, DOMParser as ProseMirrorDOMParser } from 'prosemirror-model';
 import { Markdown } from 'tiptap-markdown';
 import { marked } from 'marked';
+import mermaid from 'mermaid';
 
 import StarterKit from '@tiptap/starter-kit';
 import BubbleMenuExtension from '@tiptap/extension-bubble-menu';
@@ -177,6 +178,14 @@ export default {
         };
     },
     mounted() {
+        // Mermaid 초기화
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose',
+            fontFamily: 'Arial',
+        });
+        
         this.initEditor();
         if (this.modelValue) {
             const html = marked(this.modelValue);
@@ -188,6 +197,11 @@ export default {
             // 에디터에 반영
             this.editor.commands.setContent(slice.content, false); // false = history에 쌓지 않음
         }
+        
+        // 미리보기 모드에서 Mermaid 렌더링
+        this.$nextTick(() => {
+            this.renderMermaidDiagrams();
+        });
     },
     beforeUnmount() {
         if (this.editor) this.editor.destroy();
@@ -202,7 +216,13 @@ export default {
                 gfm: true, // GitHub Flavored Markdown 활성화 (테이블 지원)
             });
             
-            return marked(this.modelValue);
+            let html = marked(this.modelValue);
+            
+            // Mermaid 코드 블록을 div로 변환
+            html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, 
+                '<div class="mermaid-container"><div class="mermaid">$1</div></div>');
+            
+            return html;
         }
     },
     watch: {
@@ -222,6 +242,14 @@ export default {
 
                     this.isUpdated = true;
                 }
+            }
+        },
+        htmlContent: {
+            handler() {
+                // HTML 내용이 변경될 때마다 Mermaid 다이어그램 렌더링
+                this.$nextTick(() => {
+                    this.renderMermaidDiagrams();
+                });
             }
         }
     },
@@ -511,12 +539,62 @@ export default {
         save() {
             const markdown = this.getMarkdown();
             this.$emit('save', markdown);
+            // 저장 후 Mermaid 다이어그램 렌더링
+            this.$nextTick(() => {
+                this.renderMermaidDiagrams();
+            });
+        },
+        async renderMermaidDiagrams() {
+            console.log('Mermaid 다이어그램 렌더링 시작');
+            
+            // 미리보기 모드에서만 실행
+            if (!this.readOnly && !this.isPreview) return;
+            
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            
+            for (let i = 0; i < mermaidElements.length; i++) {
+                const element = mermaidElements[i];
+                if (element.hasAttribute('data-processed')) continue;
+                
+                try {
+                    const graphDefinition = element.textContent?.trim();
+                    
+                    // 빈 텍스트나 너무 짧은 텍스트는 건너뛰기
+                    if (!graphDefinition || graphDefinition.length < 5) {
+                        console.warn('Mermaid: 빈 다이어그램 건너뛰기');
+                        element.innerHTML = `<div style="color: #666; font-style: italic;">빈 다이어그램</div>`;
+                        element.setAttribute('data-processed', 'true');
+                        continue;
+                    }
+                    
+                    // 기본 다이어그램 타입이 있는지 확인
+                    const hasValidType = /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|journey|gantt|pie|gitgraph|mindmap)/i.test(graphDefinition);
+                    if (!hasValidType) {
+                        console.warn('Mermaid: 알 수 없는 다이어그램 타입');
+                        element.innerHTML = `<pre><code>${graphDefinition}</code></pre>`;
+                        element.setAttribute('data-processed', 'true');
+                        continue;
+                    }
+                    
+                    const { svg } = await mermaid.render(`mermaid-${Date.now()}-${i}`, graphDefinition);
+                    element.innerHTML = svg;
+                    element.setAttribute('data-processed', 'true');
+                    console.log(`Mermaid 다이어그램 ${i + 1} 렌더링 완료`);
+                } catch (error) {
+                    console.error('Mermaid 렌더링 오류:', error);
+                    element.innerHTML = `<div style="color: #d73a49; background: #fff5f5; padding: 8px; border-radius: 4px; border: 1px solid #f85149;">
+                        <strong>Mermaid 렌더링 실패:</strong><br>
+                        <pre style="margin: 4px 0; font-size: 12px;">${element.textContent}</pre>
+                    </div>`;
+                    element.setAttribute('data-processed', 'true');
+                }
+            }
         }
     }
 };
 </script>
 
-<style scoped>
+<style>
 .editor-wrapper {
     overflow: visible;
     width: 100%;
@@ -528,26 +606,41 @@ export default {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 
-.editor-preview {
-    overflow: hidden;
+.form-markdown-preview {
     width: 100%;
     height: 100%;
     margin: 0 auto;
     background-color: #fff;
-    padding: 0;
-    font-size: 8px;
-    line-height: 1.2;
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.editor-preview-overflow {
-    overflow: auto;
-    width: 100%;
-    height: 100%;
-    margin: 0 auto;
-    background-color: #fff;
-    padding: 0;
-    font-size: 11px;
-    line-height: 1.2;
+/* 전역 테이블 스타일 강제 적용 */
+.form-markdown-preview table,
+.form-markdown-preview table * {
+    box-sizing: border-box !important;
+}
+
+.form-markdown-preview table {
+    border-collapse: collapse !important;
+    border: 1px solid #000000 !important;
+    margin: 16px 0 !important;
+    width: 100% !important;
+}
+
+.form-markdown-preview table td,
+.form-markdown-preview table th {
+    border: 0.75px solid #000000 !important;
+    padding: 8px 12px !important;
+    text-align: left !important;
+}
+
+.form-markdown-preview table th {
+    background-color: #f0f0f0 !important;
+    font-weight: 600 !important;
 }
 
 .toolbar {
@@ -571,7 +664,6 @@ export default {
 
 .ProseMirror {
     outline: none;
-    border: 1px solid silver;
     padding: 1em;
     white-space: pre-wrap;
 }
@@ -694,20 +786,35 @@ export default {
     margin-bottom: 8px !important;
 }
 
-/* 읽기 모드에서의 헤딩 스타일 */
-.editor-preview h1,
-.editor-preview h2,
-.editor-preview h3,
-.editor-preview h4,
-.editor-preview h5,
-.editor-preview h6,
-.editor-preview-overflow h1,
-.editor-preview-overflow h2,
-.editor-preview-overflow h3,
-.editor-preview-overflow h4,
-.editor-preview-overflow h5,
-.editor-preview-overflow h6 {
-    margin-bottom: 8px !important;
+/* 미리보기 모드에서의 헤딩 스타일 */
+.form-markdown-preview h1 {
+    font-size: 2em;
+    font-weight: 600;
+    margin: 24px 0 16px 0;
+    border-bottom: 1px solid #d0d7de;
+    padding-bottom: 8px;
+}
+
+.form-markdown-preview h2 {
+    font-size: 1.5em;
+    font-weight: 600;
+    margin: 24px 0 16px 0;
+    border-bottom: 1px solid #d0d7de;
+    padding-bottom: 8px;
+}
+
+.form-markdown-preview h3 {
+    font-size: 1.25em;
+    font-weight: 600;
+    margin: 24px 0 16px 0;
+}
+
+.form-markdown-preview h4,
+.form-markdown-preview h5,
+.form-markdown-preview h6 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 24px 0 16px 0;
 }
 
 /* 리스트 스타일 복원 */
@@ -735,70 +842,109 @@ export default {
     list-style-type: square;
 }
 
-/* 읽기 모드에서의 리스트 스타일 */
-.editor-preview ul,
-.editor-preview-overflow ul {
-    padding-left: 16px;
-    margin: 8px 0;
+/* 미리보기 모드에서의 리스트 스타일 */
+.form-markdown-preview ul {
+    list-style-type: disc !important;
+    padding-left: 16px !important;
+    margin: 16px 0 !important;
+    list-style-position: outside !important;
 }
 
-.editor-preview ol,
-.editor-preview-overflow ol {
-    padding-left: 16px;
-    margin: 8px 0;
+.form-markdown-preview ol {
+    list-style-type: decimal !important;
+    padding-left: 16px !important;
+    margin: 16px 0 !important;
+    list-style-position: outside !important;
 }
 
-.editor-preview ul li,
-.editor-preview-overflow ul li {
-    list-style-type: disc;
-    margin: 2px 0;
+.form-markdown-preview ul li,
+.form-markdown-preview ol li {
+    margin: 6px 0 !important;
+    line-height: 1.5 !important;
+    padding-left: 0px !important;
+    text-indent: 0 !important;
+    position: relative !important;
+    overflow: visible !important;
 }
 
-.editor-preview ol li,
-.editor-preview-overflow ol li {
-    list-style-type: decimal;
-    margin: 2px 0;
-}
-
-.editor-preview ul ul li,
-.editor-preview-overflow ul ul li {
+.form-markdown-preview ul ul li {
     list-style-type: circle;
 }
 
-.editor-preview ul ul ul li,
-.editor-preview-overflow ul ul ul li {
+.form-markdown-preview ul ul ul li {
     list-style-type: square;
 }
 
-/* 읽기 모드에서의 테이블과 이미지 스타일 */
-.editor-preview table,
-.editor-preview-overflow table {
-    border-collapse: collapse;
-    margin: 16px 0;
-    width: 100%;
-    font-size: 6px;
-}
-
-.editor-preview table td,
-.editor-preview table th,
-.editor-preview-overflow table td,
-.editor-preview-overflow table th {
-    border: 1px solid #ddd;
-    padding: 4px;
-    text-align: left;
-}
-
-.editor-preview table th,
-.editor-preview-overflow table th {
-    background-color: #f5f5f5;
-    font-weight: bold;
-}
-
-.editor-preview img,
-.editor-preview-overflow img {
+/* 미리보기 모드에서의 이미지 스타일 */
+.form-markdown-preview img {
     max-width: 100%;
     height: auto;
-    border-radius: 2px;
-    margin: 4px 0;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+/* 미리보기 모드에서의 코드 블록 스타일 */
+.form-markdown-preview pre {
+    background: #f6f8fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 16px;
+    overflow: auto;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 14px;
+    line-height: 1.45;
+    margin: 16px 0;
+}
+
+.form-markdown-preview code {
+    background: #f6f8fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 85%;
+}
+
+.form-markdown-preview pre code {
+    background: transparent;
+    padding: 0;
+}
+
+/* 미리보기 모드에서의 블록쿼트 스타일 */
+.form-markdown-preview blockquote {
+    border-left: 4px solid #d0d7de;
+    padding: 0 16px;
+    color: #656d76;
+    margin: 16px 0;
+}
+
+/* Mermaid 다이어그램 스타일 */
+.mermaid-container {
+    margin: 16px 0;
+    text-align: center;
+    background: #f9f9f9;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.mermaid {
+    display: inline-block;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* 미리보기 모드에서의 Mermaid 스타일 */
+.form-markdown-preview .mermaid-container {
+    margin: 16px 0;
+    padding: 16px;
+    background: #f9f9f9;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.form-markdown-preview .mermaid svg {
+    max-width: 100%;
+    height: auto;
 }
 </style>
