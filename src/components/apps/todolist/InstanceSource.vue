@@ -257,12 +257,12 @@ export default {
 
                             backend.uploadFile(file.name, file, 'drive', options).then(async (response) => {
                                 const item = this.sourceList.find(item => item.id === fileId);
-                                item.path = response.download_link;
+                                item.path = response.download_url;
                                 item.isProcess = true;
                                 const result = await backend.putInstanceSource({
                                     id: fileId,
                                     is_process: true,
-                                    file_path: response.download_link
+                                    file_path: response.download_url
                                 });
                             });
                         }
