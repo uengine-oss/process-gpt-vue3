@@ -3,18 +3,17 @@
     <!-- DataSource 사용 여부 토글 - 개선된 UI -->
     <v-card flat class="mb-6 pa-1">
       <v-row align="center" no-gutters>
-        <v-col cols="auto" class="mr-3">
-          <v-icon size="24" color="primary">mdi-database-settings</v-icon>
-        </v-col>
         <v-col>
           <div class="d-flex align-center">
             <h4 class="text-h4 mr-2">{{ $t('accountTab.dataSourceConnection') }}</h4>
             <!-- <h3 class="text-h6 font-weight-medium mr-2">DataSource 연동</h3> -->
             <v-chip 
-              small 
+              x-small 
               color="orange" 
               text-color="white"
-              class="mr-2"
+              class="mr-2 text-caption"
+              style="font-size: 11px;"
+              density="compact"
             >
               <v-icon small left>mdi-flask</v-icon>
               {{ $t('accountTab.experimentalFeature') }}
@@ -22,7 +21,10 @@
             <v-chip 
               :color="isUseDataSource ? 'success' : 'grey'" 
               :text-color="isUseDataSource ? 'white' : 'white'"
-              small
+              x-small
+              density="compact"
+              class="mr-2 text-caption"
+              style="font-size: 11px;"
             >
               {{ isUseDataSource ? 'ON' : 'OFF' }}
             </v-chip>
@@ -47,7 +49,7 @@
         dense
         outlined
         type="info"
-        color="orange"
+        color="gray"
       >
         <v-row class="ma-0 pa-0">
           <!-- <v-icon color="orange" class="mr-2">mdi-information-outline</v-icon> -->

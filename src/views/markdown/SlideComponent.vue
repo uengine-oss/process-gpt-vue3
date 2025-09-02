@@ -33,19 +33,19 @@ export default {
   },
   mounted() {
     try {
-      if (this.$refs.markdownContent) {
-        console.log('[Reveal Debug] textarea 콘텐츠 설정 중')
-        let content = this.content;
-        // replaceAll 대신 replace와 정규표현식 사용 (호환성 향상)
-        content = content.replace(/::fragment::/g, '<!-- .element: class="fragment" -->');
-        this.$refs.markdownContent.textContent = content;
+      this.$nextTick(() => {
+        // DOM이 완전히 렌더링된 후에 초기화
+        if (this.$refs.markdownContent) {
+          let content = this.content;
+          // replaceAll 대신 replace와 정규표현식 사용 (호환성 향상)
+          content = content.replace(/::fragment::/g, '<!-- .element: class="fragment" -->');
+          this.$refs.markdownContent.textContent = content;
+        }
 
-        this.$nextTick(() => {
-          requestAnimationFrame(() => {
-            this.init()
-          })
+        requestAnimationFrame(() => {
+          this.init()
         })
-      }
+      })
     } catch (error) {
       console.error('[Reveal Error] mounted 에러 발생:', error)
       this.$emit('error', error)
@@ -56,7 +56,6 @@ export default {
       handler: async function (newContent) {
         try {
           if (this.$refs.markdownContent) {
-            console.log('[Reveal Debug] textarea 콘텐츠 업데이트 중')
             let content = newContent;
             // replaceAll 대신 replace와 정규표현식 사용 (호환성 향상)
             content = content.replace(/::fragment::/g, '<!-- .element: class="fragment" -->');
@@ -66,7 +65,6 @@ export default {
             requestAnimationFrame(() => {
               if (this.deck) {
                 this.init();
-                console.log('[Reveal Debug] 동기화 후 슬라이드 수:', this.deck.getSlides().length)
               }
             })
           }
@@ -92,15 +90,34 @@ export default {
     },
     async initReveal() {
       try {
+        // 핵심 DOM 요소들이 존재하는지 확인
+        const revealElement = this.$el?.querySelector('.reveal');
+        const slidesElement = this.$el?.querySelector('.slides');
+        
+        if (!revealElement || !slidesElement) {
+          console.error('[Reveal Error] 필수 DOM 요소를 찾을 수 없습니다:', {
+            reveal: !!revealElement,
+            slides: !!slidesElement
+          });
+          return;
+        }
+        
+        // textarea는 나중에 확인 (선택적)
+        const textareaElement = this.$refs.markdownContent;
+        if (!textareaElement && process.env.NODE_ENV === 'development') {
+          console.warn('[Reveal Warning] textarea ref를 찾을 수 없음, 마크다운 설정은 나중에 처리됩니다.');
+        }
+
         const isPrintPdf = /print-pdf/gi.test(window.location.search)
         const showNotes = this.getQueryParam('showNotes')
         const pdfSeparateFragments = this.getQueryParam('pdfSeparateFragments') !== 'false'
+        
         if (this.deck) {
           this.deck.destroy()
           this.deck = null
         }
 
-        this.deck = new Reveal({
+        this.deck = new Reveal(revealElement, {
           plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.KaTeX],
           embedded: true,
           margin: 0.1,
@@ -115,7 +132,7 @@ export default {
           viewDistance: this.isEditMode ? 0 : 3,
           autoSlide: 0,
           width: this.isEditMode ? 600 : 960,
-          height: this.isEditMode ? 400 : 700,
+          height: this.isEditMode ? 400 : 300,
           highlight: {
             highlightOnLoad: true,
             lineNumbers: true 
@@ -129,7 +146,26 @@ export default {
         })
 
         await this.deck.initialize()
-        console.log('[Reveal Debug] 슬라이드 수:', this.deck.getSlides().length)
+        
+        // 초기화 후 안전하게 레이아웃 업데이트
+        this.$nextTick(() => {
+          setTimeout(() => {
+            if (this.deck && this.$el) {
+              try {
+                // 마크다운 플러그인 강제 실행
+                const markdownPlugin = this.deck.getPlugin('markdown');
+                if (markdownPlugin && markdownPlugin.processSlides) {
+                  markdownPlugin.processSlides(this.$el);
+                }
+                
+                this.deck.layout();
+                this.deck.sync();
+              } catch (layoutError) {
+                console.error('[Reveal Error] 레이아웃 업데이트 에러:', layoutError);
+              }
+            }
+          }, 300);
+        });
       } catch (error) {
         console.error('[Reveal Error] initReveal 에러 발생:', error)
         this.$emit('error', error)
@@ -138,6 +174,16 @@ export default {
     getQueryParam(name) {
       const urlParams = new URLSearchParams(window.location.search)
       return urlParams.get(name)
+    }
+  },
+  beforeUnmount() {
+    if (this.deck) {
+      try {
+        this.deck.destroy()
+        this.deck = null
+      } catch (error) {
+        console.error('[Reveal Error] 컴포넌트 정리 중 에러:', error)
+      }
     }
   }
 }

@@ -39,15 +39,11 @@
                         </div>
                         <v-list dense class="pa-0">
                             <v-list-item v-for="(activity, index) in resultJson.completedActivities" :key="'completed-' + index" class="px-0">
-                                <v-list-item-content>
-                                    <v-list-item-title class="font-weight-bold">활동: {{ activity.completedActivityName }}</v-list-item-title>
-                                    <div style="color: #808080;">{{ activity.description }}</div>
-                                </v-list-item-content>
+                                <v-list-item-title class="font-weight-bold">활동: {{ activity.completedActivityName }}</v-list-item-title>
+                                <div style="color: #808080;">{{ activity.description }}</div>
                             </v-list-item>
                             <v-list-item v-if="resultJson.completedActivities.length === 0" class="px-0">
-                                <v-list-item-content>
-                                    <v-list-item-subtitle class="text-grey">완료된 작업이 없습니다.</v-list-item-subtitle>
-                                </v-list-item-content>
+                                <v-list-item-subtitle class="text-grey">완료된 작업이 없습니다.</v-list-item-subtitle>
                             </v-list-item>
                         </v-list>
                     </v-card-text>
@@ -91,15 +87,11 @@
                         </div>
                         <v-list dense class="pa-0">
                             <v-list-item v-for="(activity, index) in resultJson.nextActivities" :key="'next-' + index" class="px-0">
-                                <v-list-item-content>
-                                    <v-list-item-title class="font-weight-bold">활동: {{ activity.nextActivityName }}</v-list-item-title>
-                                    <div style="color: #808080;">{{ activity.description }}</div>
-                                </v-list-item-content>
+                                <v-list-item-title class="font-weight-bold">활동: {{ activity.nextActivityName }}</v-list-item-title>
+                                <v-list-item-subtitle style="color: #808080;">{{ activity.description }}</v-list-item-subtitle>
                             </v-list-item>
                             <v-list-item v-if="resultJson.nextActivities.length === 0" class="px-0">
-                                <v-list-item-content>
-                                    <v-list-item-subtitle class="text-grey">다음 작업이 없습니다.</v-list-item-subtitle>
-                                </v-list-item-content>
+                                <v-list-item-subtitle class="text-grey">다음 작업이 없습니다.</v-list-item-subtitle>
                             </v-list-item>
                         </v-list>
                     </v-card-text>
@@ -119,10 +111,8 @@
                     </div>
                     <v-list dense class="pa-0">
                         <v-list-item v-for="(info, index) in resultJson.referenceInfo" :key="'ref-' + index" class="px-0">
-                            <v-list-item-content>
-                                <v-list-item-title class="font-weight-bold">{{ info.key }}</v-list-item-title>
-                                <v-list-item-subtitle>{{ info.value }}</v-list-item-subtitle>
-                            </v-list-item-content>
+                            <v-list-item-title class="font-weight-bold">{{ info.key }}</v-list-item-title>
+                            <v-list-item-subtitle>{{ info.value }}</v-list-item-subtitle>
                         </v-list-item>
                     </v-list>
                 </v-card-text>
