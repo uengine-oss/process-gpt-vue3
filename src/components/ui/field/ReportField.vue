@@ -30,7 +30,7 @@
             </v-row>
             <!-- 미리보기 확장 영역 -->
             <v-row v-if="previewMenu" class="ma-0 pa-4" @click.stop>
-                <v-sheet elevation="3" rounded style="width: 100%; padding: 16px; background: white;">
+                <v-sheet elevation="3" rounded style="width: 100%; background: white;">
                     <MarkdownEditor
                         :style="'width: 100%; height: 100%;'"
                         v-model="localModelValue"
@@ -247,9 +247,20 @@ $e^{i\\pi} + 1 = 0$
             const markdownEditor = this.$refs.markdownEditor;
             markdownEditor.save();
         },
-        saveMarkdownContent(markdownContent) {
+        async saveMarkdownContent(markdownContent) {
             this.localModelValue = markdownContent;
             this.editorValue = this.localModelValue;
+            
+            // EventBus를 통해 상위 컴포넌트에 저장 요청
+            this.$nextTick(() => {
+                if (this.EventBus) {
+                    this.EventBus.emit('form-save-request', {
+                        fieldName: this.localName,
+                        fieldValue: markdownContent
+                    });
+                }
+            });
+            
             this.showDialog = false;
         },
         editMarkdown() {

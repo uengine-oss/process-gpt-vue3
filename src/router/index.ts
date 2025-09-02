@@ -47,12 +47,11 @@ let hasRouterError = false;
 
 router.beforeEach(async (to: any, from: any, next: any) => {
     try {
-        // 라우터 에러 상태가 있으면 강제 새로고침
+        // 라우터 에러 상태가 있으면 상태 리셋 후 계속 진행
         if (hasRouterError) {
-            console.log('[라우터] 에러 상태 감지 - 페이지 새로고침 실행');
+            console.log('[라우터] 에러 상태 감지 - 상태 리셋 후 계속 진행');
             hasRouterError = false;
-            window.location.reload();
-            return;
+            // 새로고침 대신 에러 상태만 리셋하고 라우팅 계속 진행
         }
 
         if (window.$mode !== 'uEngine') {
@@ -98,7 +97,19 @@ router.beforeEach(async (to: any, from: any, next: any) => {
 // 라우터 에러 핸들러 추가
 router.onError((error) => {
     console.error('[라우터] 라우팅 에러 발생:', error);
-    hasRouterError = true;
+    
+    const errorMessage = error?.message || error?.toString() || '';
+    
+    // 심각한 라우팅 에러만 hasRouterError 설정
+    // 비즈니스 로직이나 API 에러는 라우팅에 영향주지 않음
+    if (errorMessage.includes('Failed to fetch dynamically imported module') ||
+        errorMessage.includes('Module not found') ||
+        errorMessage.includes('Cannot resolve component')) {
+        console.warn('[라우터] 심각한 라우팅 에러 - 상태 설정');
+        hasRouterError = true;
+    } else {
+        console.warn('[라우터] 일반적인 에러 - 라우팅 계속 진행');
+    }
 });
 
 // 전역 에러 핸들러로 Vue 컴포넌트 에러도 감지
@@ -118,7 +129,18 @@ window.addEventListener('unhandledrejection', (event) => {
     }
     
     console.error('[전역] 처리되지 않은 Promise 에러:', event.reason);
-    hasRouterError = true;
+    
+    // 정말 심각한 에러만 라우터 에러로 처리
+    if (errorMessage.includes('Failed to fetch dynamically imported module') ||
+        errorMessage.includes('Module not found') ||
+        errorMessage.includes('Cannot resolve component') ||
+        errorMessage.includes('ReferenceError') ||
+        errorMessage.includes('SyntaxError')) {
+        console.warn('[전역] 심각한 애플리케이션 에러 - 라우터 상태 설정');
+        hasRouterError = true;
+    } else {
+        console.warn('[전역] 일반적인 에러 - 애플리케이션 계속 진행');
+    }
 });
 
 window.addEventListener('error', (event) => {
@@ -137,7 +159,18 @@ window.addEventListener('error', (event) => {
     }
     
     console.error('[전역] JavaScript 에러:', event.error);
-    hasRouterError = true;
+    
+    // 정말 심각한 에러만 라우터 에러로 처리
+    if (errorMessage.includes('Failed to fetch dynamically imported module') ||
+        errorMessage.includes('Module not found') ||
+        errorMessage.includes('Cannot resolve component') ||
+        errorMessage.includes('ReferenceError') ||
+        errorMessage.includes('SyntaxError')) {
+        console.warn('[전역] 심각한 JavaScript 에러 - 라우터 상태 설정');
+        hasRouterError = true;
+    } else {
+        console.warn('[전역] 일반적인 JavaScript 에러 - 애플리케이션 계속 진행');
+    }
 });
 
 export default router;

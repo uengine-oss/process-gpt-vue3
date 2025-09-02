@@ -20,10 +20,8 @@
 import ChatModule from "@/components/ChatModule.vue";
 import ChatGenerator from "@/components/ai/ChatAssistantGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
-import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
-import { VDataTable } from 'vuetify/components/VDataTable';
 
 
 export default {
@@ -33,9 +31,6 @@ export default {
         Chat,
         AppBaseCard,
         ChatListing,
-        ChatProfile,
-        VDataTable,
-
     },
     data: () => ({
         headers: [

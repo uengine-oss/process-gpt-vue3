@@ -234,6 +234,20 @@ export default {
                             })
                         }
                     });
+                    
+        // ReportField에서 저장 요청이 올 때 실제 저장 처리
+        this.EventBus.on('form-save-request', async (data) => {
+            if (data && data.fieldName && data.fieldValue !== undefined) {
+                me.formData[data.fieldName] = data.fieldValue;
+                
+                // 실제 데이터베이스에 저장
+                try {
+                    await me.saveForm();
+                } catch (error) {
+                    console.error('❌ 데이터베이스 저장 실패:', error);
+                }
+            }
+        });
         await this.init();
     },
     methods: {
@@ -242,11 +256,20 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    if(me.isDryRun) {
-                        me.formDefId = me.dryRunWorkItem.activity.tool.split(':')[1];
-                    } else {
-                        me.formDefId = me.workItem.worklist.tool.split(':')[1];
+                    // 안전한 formDefId 설정
+                    try {
+                        if(me.isDryRun) {
+                            const tool = me.dryRunWorkItem?.activity?.tool;
+                            me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
+                        } else {
+                            const tool = me.workItem?.worklist?.tool;
+                            me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
+                        }
+                    } catch (error) {
+                        console.warn('formDefId 설정 중 오류:', error);
+                        me.formDefId = null;
                     }
+                    
                     if(!me.formDefId) {
                         if (me.mode == 'ProcessGPT') {
                             me.formDefId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.workItem.worklist.defId}_${me.workItem.activity.tracingTag}_form`
@@ -354,9 +377,9 @@ export default {
         async saveForm(variables){
             let me = this;
 
-            let varName = me.workItem.activity.outParameterContext.variable.name;
-            if(!varName && me.workItem.worklist.adhoc) varName = me.formDefId;
-            // let varName = me.workItem.activity.variableForHtmlFormContext.name;
+            let varName = me.workItem.activity.outParameterContext?.variable?.name;
+            if(!varName) varName = me.formDefId;
+            
             let variable = {};
             if(!me.isDryRun){
                 variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, varName);
