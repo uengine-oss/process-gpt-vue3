@@ -78,6 +78,7 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
 
     private boolean isValidToken(String token, String expectedSubdomain) {
         try {
+            System.out.println("SECRET_KEY: " + SECRET_KEY);
             Claims claims = Jwts.parser()
                     .setSigningKey(SECRET_KEY.getBytes(StandardCharsets.UTF_8))
                     .parseClaimsJws(token)
