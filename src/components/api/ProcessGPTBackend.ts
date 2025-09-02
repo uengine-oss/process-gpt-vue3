@@ -2790,7 +2790,7 @@ class ProcessGPTBackend implements Backend {
                             id: majorId,
                             name: majorId,
                             sub_proc_list: [{
-                                id: definition.id,
+                                id: result.new_definition_id,
                                 name: definition.name,
                             }]
                         }]

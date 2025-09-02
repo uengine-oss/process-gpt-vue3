@@ -2,7 +2,12 @@
     <div class="w-100">
        <v-row class="ma-0 pa-0">
             <!-- 새 파일 추가 카드 -->
-            <v-col cols="12" lg="4" md="6" sm="12" class="pa-2">
+            <v-col cols="12" 
+                :lg="isMobile || isStarted ? 12 : 4" 
+                :md="isMobile || isStarted ? 12 : 6" 
+                :sm="isMobile || isStarted ? 12 : 6" 
+                class="pa-2"
+            >
                 <v-card
                     class="add-file-card d-flex align-center justify-center"
                     elevation="2"
@@ -19,9 +24,9 @@
                 v-for="(item, index) in sourceList"
                 :key="item.id || index"
                 cols="12"
-                lg="4"
-                md="6"
-                sm="12"
+                :lg="isMobile || isStarted ? 12 : 4"
+                :md="isMobile || isStarted ? 12 : 6"
+                :sm="isMobile || isStarted ? 12 : 6"
                 class="pa-2"
             >
                 <v-card
@@ -46,6 +51,7 @@
                                     variant="text"
                                     size="small"
                                     v-bind="props"
+                                    :disabled="!item.isProcess"
                                 ></v-btn>
                             </template>
                             <v-list>
@@ -106,10 +112,19 @@ import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
 
 export default {
-    components: {
-    },
     props: {
-        instance: Object,
+        instance: {
+            type: Object,
+            default: () => {}
+        },
+        isStarted: {
+            type: Boolean,
+            default: false
+        },
+        processDefinitionId: {
+            type: String,
+            default: ''
+        }
     },
     data: () => ({
         sourceList: [],
@@ -131,7 +146,10 @@ export default {
             } else {
                 return null;
             }
-        },        
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
+        }
     },
     watch: {
         $route: {
@@ -146,11 +164,15 @@ export default {
     },
     methods: {
         async init() {
-            await this.getSourceList();
+            if (this.isStarted) {
+                this.sourceList = [];
+            } else {
+                await this.getSourceList();
+            }
         },
 
         async getSourceList() {
-            if (this.instance.instId) {
+            if (this.instance && this.instance.instId) {
                 const list = await backend.getInstanceSource(this.instance.instId);
                 this.sourceList = list.map(item => ({
                     id: item.id,
@@ -203,43 +225,76 @@ export default {
             var me = this;
             for (const file of files) {
                 if (me.validateFile(file)) {
-                    const fileId = this.uuid()
-                    const result = await backend.putInstanceSource({
-                        id: fileId,
-                        proc_inst_id: me.instance.instId,
-                        file_name: file.name
-                    });
-                    await this.getSourceList();
+                    const fileId = this.uuid();
+                    if (me.isStarted) {
+                        if (me.processDefinitionId) {
+                            const result = await backend.putInstanceSource({
+                                id: fileId,
+                                file_name: file.name
+                            });
+                            this.sourceList.push({
+                                id: fileId,
+                                name: file.name,
+                                path: '',
+                                type: me.getFileExtension(file.name),
+                                isProcess: false
+                            });
 
-                    const fileData = {
-                        id: Date.now() + Math.random(),
-                        name: file.name,
-                        size: file.size,
-                        type: me.getFileExtension(file.name),
-                        uploadTime: new Date(),
-                        status: 'ready',
-                        file: file
-                    };
+                            if (result.error) {
+                                me.showSnackbar(result.error.message, 'error');
+                                return;
+                            }
 
-                    const today = new Date();
-                    const year = today.getFullYear();
-                    const month = String(today.getMonth() + 1).padStart(2, '0');
-                    const day = String(today.getDate()).padStart(2, '0');
-                    
-                    const options = {
-                        folder_path: `${me.instance.defId}/${year}/${month}/${day}/${me.instance.instId}/source/`,
-                        proc_inst_id: me.instance.instId,
-                        file_id: fileId
-                    };
+                            const today = new Date();
+                            const year = today.getFullYear();
+                            const month = String(today.getMonth() + 1).padStart(2, '0');
+                            const day = String(today.getDate()).padStart(2, '0');
 
-                    if (result.error) {
-                        me.showSnackbar(result.error.message, 'error');
-                        return;
-                    }
-                    backend.uploadFile(file.name, file, 'drive', options).then(async (response) => {
+                            const options = {
+                                folder_path: `${me.processDefinitionId}/${year}/${month}/${day}/_new/source/`,
+                                file_id: fileId
+                            };
+
+                            backend.uploadFile(file.name, file, 'drive', options).then(async (response) => {
+                                const item = this.sourceList.find(item => item.id === fileId);
+                                item.path = response.download_link;
+                                item.isProcess = true;
+                                const result = await backend.putInstanceSource({
+                                    id: fileId,
+                                    is_process: true,
+                                    file_path: response.download_link
+                                });
+                            });
+                        }
+                    } else {
+                        const result = await backend.putInstanceSource({
+                            id: fileId,
+                            proc_inst_id: me.instance.instId,
+                            file_name: file.name
+                        });
                         await this.getSourceList();
-                        me.showSnackbar(`${file.name} 파일이 업로드되었습니다.`, 'success');
-                    });
+
+                        if (result.error) {
+                            me.showSnackbar(result.error.message, 'error');
+                            return;
+                        }
+
+                        const today = new Date();
+                        const year = today.getFullYear();
+                        const month = String(today.getMonth() + 1).padStart(2, '0');
+                        const day = String(today.getDate()).padStart(2, '0');
+
+                        const options = {
+                            folder_path: `${me.instance.defId}/${year}/${month}/${day}/${me.instance.instId}/source/`,
+                            proc_inst_id: me.instance.instId,
+                            file_id: fileId
+                        };
+
+                        backend.uploadFile(file.name, file, 'drive', options).then(async (response) => {
+                            await this.getSourceList();
+                            me.showSnackbar(`${file.name} 파일이 업로드되었습니다.`, 'success');
+                        });
+                    }
                 }
             }
         },
@@ -306,7 +361,6 @@ export default {
 
         downloadFile(file) {
             window.open(file.path, '_blank');
-            // this.showSnackbar(`${file.name} 다운로드를 시작합니다.`, 'info');
         },
 
         async deleteFile(file) {
