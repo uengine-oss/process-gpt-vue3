@@ -536,7 +536,8 @@ class ProcessGPTBackend implements Backend {
                     adhoc: workitem.adhoc || false,
                     currentActivities: workitem.adhoc ? [] : (instance && instance.currentActivityIds ? instance.currentActivityIds : [ activityInfo.id ]),
                     defVerId: instance && instance.defVersion ? instance.defVersion : null,
-                    output: workitem.output || ""
+                    output: workitem.output || "",
+                    log: workitem.log || ""
                 },
                 activity: {
                     name: workitem.activity_name,
@@ -3209,6 +3210,7 @@ class ProcessGPTBackend implements Backend {
             referenceIds: item.reference_ids || [],
             projectId: item.project_id || null,
             updatedAt: item.updated_at,
+            log: item.log || "",
             task: item
         }
     }

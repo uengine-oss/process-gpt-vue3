@@ -76,7 +76,7 @@
                             <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336; padding-top: 3px;" />
                             <span class="text-caption ml-1" style="color: #F44336;">{{ $t('kanbanColumnCard.pastDue') }}</span>
                         </div>
-                        <div v-if="isPending && errorMessage" class="d-flex align-center ml-auto">
+                        <div v-if="isPending" class="d-flex align-center ml-auto">
                             <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
                             <span class="text-caption ml-1" style="color: #F44336;">{{ errorMessage }}</span>
                         </div>
@@ -97,7 +97,7 @@
                             <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336; padding-top: 3px;" />
                             <span class="text-caption ml-1" style="color: #F44336;">{{ $t('kanbanColumnCard.pastDue') }}</span>
                         </div>
-                        <v-tooltip v-if="isPending && errorMessage" location="right">
+                        <v-tooltip v-if="isPending" location="right">
                             <template v-slot:activator="{ props }">
                                 <div class="d-flex align-center ml-auto" v-bind="props">
                                     <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
@@ -346,14 +346,14 @@ export default {
             return this.task.status === 'PENDING';
         },
         errorMessage() {
-            if (this.task.status === 'PENDING' && this.task.task && this.task.task.log && this.task.task.log.length > 0) {
-                if (this.task.task.log.includes('PROCEED_CONDITION_NOT_MET') ||
-                    this.task.Task.log.includes('SYSTEM_ERROR') || this.task.task.log.includes('DATA_FIELD_NOT_EXIST')
+            if (this.task.status === 'PENDING' && this.task.log && this.task.log.length > 0) {
+                if (this.task.log.includes('PROCEED_CONDITION_NOT_MET') ||
+                    this.task.log.includes('SYSTEM_ERROR') || this.task.log.includes('DATA_FIELD_NOT_EXIST')
                 ) {
-                    return this.task.task.log;
+                    return this.task.log;
                 }
             }
-            return null;
+            return '출력된 메시지가 없습니다.';
         },
         isStartedStatus() {
             return this.currentDraftStatus === 'STARTED';
