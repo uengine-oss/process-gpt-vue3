@@ -1382,6 +1382,8 @@ export default {
             });
         },
         goBackToPreviousPage() {
+            // 칸반보드 탭 상태를 localStorage에 미리 저장
+            localStorage.setItem('instanceCard-lastTab', 'todo');
             this.$router.go(-1);
         },  
         loadInputData(data) {

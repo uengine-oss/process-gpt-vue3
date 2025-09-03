@@ -288,13 +288,18 @@ export default {
                 if (newVal && newVal.query && newVal.query.submitted) {
                     this.tab = "workhistory";
                 } else if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
-                    this.tab = "progress";
+                    // localStorage에 저장된 탭이 있으면 그것을 사용, 없으면 기본값
+                    const lastTab = localStorage.getItem('instanceCard-lastTab');
+                    this.tab = lastTab || "progress";
                     await this.init();
                 }
             }
         },
         async tab(newVal, oldVal) {
             if (newVal !== oldVal) {
+                // 탭 상태를 localStorage에 저장
+                localStorage.setItem('instanceCard-lastTab', newVal);
+                
                 // 탭 변경 시 해당 컴포넌트 초기화
                 await this.$nextTick();
                 const activeComponents = this.$refs[newVal];
@@ -310,7 +315,9 @@ export default {
                     if (this.$route.query && this.$route.query.submitted) {
                         this.tab = "workhistory";
                     } else {
-                        this.tab = "workhistory";
+                        // localStorage에 저장된 탭이 있으면 그것을 사용, 없으면 기본값
+                        const lastTab = localStorage.getItem('instanceCard-lastTab');
+                        this.tab = lastTab || "workhistory";
                     }
                 }
             }
@@ -333,6 +340,11 @@ export default {
         }
     },
     mounted() {
+        // localStorage에서 마지막 탭 상태 복원
+        const lastTab = localStorage.getItem('instanceCard-lastTab');
+        if (lastTab) {
+            this.tab = lastTab;
+        }
         this.init();
     },
     computed: {
