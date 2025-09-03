@@ -1116,8 +1116,6 @@ export default {
             }
         },
         async afterModelCreated(response) {
-            let isBackendConnected = await this.generator.checkBackendConnection();
-            console.log('isBackendConnected', isBackendConnected);
             let jsonProcess;
             try {
                 if (typeof response === 'string') {
