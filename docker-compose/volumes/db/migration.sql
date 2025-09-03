@@ -96,6 +96,8 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tools text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS skills text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_agent boolean DEFAULT false;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS model text;
+ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials;
+ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials_updated_at;
 
 
 -- configuration table
@@ -1862,3 +1864,15 @@ BEGIN
         RAISE NOTICE 'payment_tenant_fk foreign key constraint already exists';
     END IF;
 END $$;
+
+
+
+-- proc_inst_source 테이블 추가
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid();
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS proc_inst_id TEXT;
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS file_name TEXT;
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS is_process BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS file_path TEXT;
+
+    

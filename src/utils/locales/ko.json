@@ -1432,8 +1432,8 @@
         "overdue": "기한 임박",
         "pastDue": "기한 지남",
         "error": "실행 오류",
-        "agentStatus": "에이전트 상태",
-        "inProgress": "진행중"
+        "agentWorking": "에이전트 작업중",
+        "agentCompleted": "에이전트 작업 완료"
     },
     "agentMonitor": {
         "accept": "채택",
@@ -1463,11 +1463,13 @@
         "crewaiDeepResearch": "CrewAI 심층 연구",
         "crewaiAction": "CrewAI 액션",
         "openaiDeepResearch": "OpenAI 심층 연구",
+        "langchainReact": "LangChain 연구",
         "humanApproval": "사용자 승인 및 추가 정보 요청",
         "humanApprovalDescription": "사용자의 승인 및 추가 정보가 필요합니다. 아래 작업 계획대로 진행해도 괜찮다면 확인을 눌러주세요. 필요한 경우 입력 또는 선택 항목을 작성해 주세요.",
         "crewaiDeepResearchDescription": "다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 (5~15분 소요)",
         "crewaiActionDescription": "최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A (1~5분 소요)",
         "openaiDeepResearchDescription": "GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 (3~10분 소요)",
+        "langchainReactDescription": "LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 (3~5분 소요)",
         "browserUseDescription": "실제 브라우저를 조작하여 실시간 웹 정보 수집 및 작업 수행. ex) 검색, 폼 작성, 스크래핑 (2~8분 소요)"
     },
     "agentFeedback": {

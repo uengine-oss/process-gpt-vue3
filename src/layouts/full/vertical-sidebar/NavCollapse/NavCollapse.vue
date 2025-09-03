@@ -32,10 +32,9 @@
                     <v-tooltip :text="item.title">
                         <template v-slot:activator="{ props }">
                             <v-list-item-title
-                                class="text-subtitle-1 font-weight-medium"
+                                class="text-medium-emphasis cp-menu mt-0 ml-2"
                                 v-bind="props"
-                            >
-                                {{ item.title }}
+                            >{{ item.title }}
                             </v-list-item-title>
                         </template>
                     </v-tooltip>

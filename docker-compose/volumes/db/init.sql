@@ -812,6 +812,8 @@ DECLARE
     v_result JSONB := '{}';
     v_proc_def_uuid UUID;
     v_form_def_uuid UUID;
+    v_new_definition_id TEXT;
+    v_new_definition JSONB;
 BEGIN
     -- 프로세스 정의를 marketplace에서 복사
     SELECT * INTO v_proc_def_record
@@ -822,6 +824,13 @@ BEGIN
         RETURN jsonb_build_object('error', 'Process definition not found in marketplace');
     END IF;
     
+    -- 새로운 정의 ID 생성 (기존 ID + UUID)
+    v_new_definition_id := p_definition_id || '_' || gen_random_uuid()::TEXT;
+    
+    -- definition JSON에서 processDefinitionId 업데이트
+    v_new_definition := v_proc_def_record.definition;
+    v_new_definition := jsonb_set(v_new_definition, '{processDefinitionId}', to_jsonb(v_new_definition_id));
+    
     -- proc_def에 복사
     INSERT INTO proc_def (
         id,
@@ -830,9 +839,9 @@ BEGIN
         bpmn,
         tenant_id
     ) VALUES (
-        v_proc_def_record.id,
+        v_new_definition_id,
         v_proc_def_record.name,
-        v_proc_def_record.definition,
+        v_new_definition,
         v_proc_def_record.bpmn,
         p_tenant_id
     )
@@ -857,7 +866,7 @@ BEGIN
             fields_json
         ) VALUES (
             v_form_def_record.html,
-            v_form_def_record.proc_def_id,
+            v_new_definition_id,
             v_form_def_record.activity_id,
             p_tenant_id,
             v_form_def_record.id,
@@ -878,6 +887,7 @@ BEGIN
     v_result := jsonb_build_object(
         'success', true,
         'proc_def_uuid', v_proc_def_uuid,
+        'new_definition_id', v_new_definition_id,
         'message', 'Definition duplicated successfully'
     );
     
@@ -1703,20 +1713,20 @@ ALTER TABLE public.todolist RENAME COLUMN draft_status_new TO draft_status;
 
 
 
-create table public.proc_inst_source (
+create table if not exists public.proc_inst_source (
     id uuid not null default gen_random_uuid (),
     proc_inst_id text null,
     file_name text null,
-    file_path text null,
-    created_at timestamp with time zone not null,
+    created_at timestamp with time zone not null default now(),
     is_process boolean not null default false,
+    file_path text null,
     constraint proc_inst_source_pkey primary key (id),
     constraint proc_inst_source_proc_inst_id_fkey foreign key (proc_inst_id) references bpm_proc_inst (proc_inst_id) on update cascade on delete cascade
 ) tablespace pg_default;
 
 
 -- 문서 이미지 테이블
-CREATE TABLE document_images (
+CREATE TABLE IF NOT EXISTS public.document_images (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id UUID REFERENCES documents(id),
     tenant_id TEXT NOT NULL,
@@ -1728,8 +1738,8 @@ CREATE TABLE document_images (
 );
 
 -- 인덱스 생성
-CREATE INDEX idx_document_images_document_id ON document_images(document_id);
-CREATE INDEX idx_document_images_tenant_id ON document_images(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_document_images_document_id ON document_images(document_id);
+CREATE INDEX IF NOT EXISTS idx_document_images_tenant_id ON document_images(tenant_id);
 
 
 -- 조회 (agent_id 필터링 + limit)

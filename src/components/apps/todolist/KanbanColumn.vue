@@ -34,7 +34,7 @@
             <!-- 드래그 기능 제거된 단순 구조 -->
             <div class="list-group">
                 <transition-group>
-                    <div v-for="task in column.tasks" :key="task.id" class="todo-task-item-card-style">
+                    <div v-for="task in column.tasks" :key="task.taskId" class="todo-task-item-card-style">
                         <KanbanColumnCard :task="task" @deleteTask="deleteTask" :userList="users" />
                     </div>
                 </transition-group>

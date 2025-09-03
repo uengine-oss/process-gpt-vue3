@@ -31,7 +31,7 @@
                     <!-- 위임하기 UI -->
                     <v-row class="ma-0 pa-0"  v-if="!isCompleted && !isOwnWorkItem && isSimulate != 'true'">
                         <v-spacer></v-spacer>
-                        <v-tooltip text="위임하기">
+                        <v-tooltip :text="$t('WorkItem.delegate')">
                             <template v-slot:activator="{ props }">
                                 <div
                                     @click="openDelegateTask()"
@@ -674,7 +674,7 @@ export default {
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
-                        { value: 'agent-feedback', label: '에이전트 학습' },
+                        { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                     ]
                 } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
                     return [
@@ -682,13 +682,13 @@ export default {
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
-                        { value: 'agent-feedback', label: '에이전트 학습' },
+                        { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                     ]
                 } else {
                     return [
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') }, //어시스턴트
-                        { value: 'agent-feedback', label: '에이전트 학습' },
+                        { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                     ]
                 }
                 
@@ -696,7 +696,7 @@ export default {
                 return[
                     { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                     { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
-                    { value: 'agent-feedback', label: '에이전트 학습' },
+                    { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                 ]
 
                 // if(this.inFormNameTabs.length > 0) {
@@ -1382,6 +1382,8 @@ export default {
             });
         },
         goBackToPreviousPage() {
+            // 칸반보드 탭 상태를 localStorage에 미리 저장
+            localStorage.setItem('instanceCard-lastTab', 'todo');
             this.$router.go(-1);
         },  
         loadInputData(data) {

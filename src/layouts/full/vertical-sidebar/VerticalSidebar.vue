@@ -68,7 +68,6 @@
                 style="display: flex;
                     flex-direction: column;
                     flex: 1 1 auto;
-                    gap: 8px;
                     overflow: hidden;"
             >
                 <!---Menu Loop -->
@@ -90,40 +89,46 @@
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
                 <VerticalHeader v-if="globalIsMobile.value" @update-noti-count="updateNotiCount" />
-                <v-row v-if="isShowProject" class="ma-0 pa-0 ml-2 align-center">
-                    <div class="text-medium-emphasis cp-menu">
-                        {{ $t('VerticalSidebar.projectList') }}
+
+                <!-- 프로젝트 타이틀 + 목록 -->
+                <div v-if="isShowProject" class="mb-4">
+                    <div  class="d-flex align-center justify-between">
+                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                            {{ $t('VerticalSidebar.projectList') }}
+                        </div>
+                        <v-spacer></v-spacer>
+                        <PlusIcon v-if="isAdmin" @click="openNewProject()" size="15"
+                            style="cursor: pointer;"
+                        />
                     </div>
-                    <v-spacer></v-spacer>
-                    <v-btn v-if="isAdmin" @click="openNewProject()" icon text style="margin-bottom: 2px;" :size="32">
-                        <PlusIcon size="15"/>
-                    </v-btn>
-                </v-row>
-                <v-col v-if="isShowProject" class="pa-0">
-                    <ProjectList/>
-                </v-col>
+                    <v-col class="pa-0">
+                        <ProjectList/>
+                    </v-col>
+                </div>
                 
-                <v-col v-if="!pal" class="pa-0">
-                    <div class="d-flex align-center justify-between">
-                        <div v-for="(item, index) in instanceItem" :key="item.title">
-                            <div v-if="!item.icon" style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
-                                {{ $t(item.title) }}
+                <!-- 인스턴스 타이틀 + 목록 -->
+                <v-col  class="pa-0 mb-4">
+                    <div v-if="!pal" class="d-flex align-center justify-between">
+                        <div v-for="(item, index) in instanceItem" :key="item.title"
+                            style="height: 24px;"
+                        >
+                            <div v-if="!item.icon"
+                                style="font-size:14px;"
+                                class="text-medium-emphasis cp-menu mt-0 ml-2"
+                            >{{ $t(item.title) }}
                             </div>
-                            <div v-else-if="item.disable">
-                                <v-tooltip location="bottom" :text="$t(item.title)">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            @click="navigateTo(item.to)"
-                                            v-bind="props"
-                                            icon variant="text" 
-                                            class="text-medium-emphasis cp-menu"
-                                            density="comfortable"
-                                        >
-                                            <Icons :icon="item.icon" :size="item.size ? item.size : 20" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
-                            </div>
+                            <v-tooltip v-else-if="item.disable" location="bottom" :text="$t(item.title)">
+                                <template v-slot:activator="{ props }">
+                                    <div class="pl-2 pt-1">
+                                        <Icons @click="navigateTo(item.to)" v-bind="props"
+                                            :icon="item.icon"
+                                            :size="16"
+                                            :color="'#808080'"
+                                            style="cursor: pointer; width: 16px; height: 16px;"
+                                        />
+                                    </div>
+                                </template>
+                            </v-tooltip>
                         </div>
                     </div>
                     <!-- <template v-for="(item, index) in instanceItem" :key="item.title">
@@ -158,7 +163,7 @@
                     />
                 </v-col>
               
-               
+               <!-- 정의관리 타이틀 + 목록 -->
                 <v-col class="pa-0">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">

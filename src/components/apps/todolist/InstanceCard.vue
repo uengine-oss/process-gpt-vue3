@@ -57,7 +57,23 @@
                     </div>
                 </v-row>
                 <div v-if="instance.instId && !isMobile" class="font-weight-medium pl-4 pr-4" style="color:gray; font-size:14px;">
-                    시작자: {{ getStarterName() }} | 시작일시: {{ getFormattedStartDate() }}
+                    <span v-if="!getStarterName()">시작자: 정보 불러오는 중
+                        <span class="loading-dots">
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                        </span>
+                    </span>
+                    <span v-else>시작자: {{ getStarterName() }}</span>
+                    <span> | </span>
+                    <span v-if="!getFormattedStartDate()">시작일시: 정보 불러오는 중
+                        <span class="loading-dots">
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                        </span>
+                    </span>
+                    <span v-else>시작일시: {{ getFormattedStartDate() }}</span>
                 </div>
             </div>
         </div>
@@ -167,12 +183,12 @@
                     <v-window-item value="chat" class="instance-card-tab-5">
                         <Chats :isInstanceChat="true" :instanceInfo="instance" :participantUsers="participantUsers" />
                     </v-window-item>
-                    <!-- <v-window-item value="source" class="instance-card-tab-6">
+                    <v-window-item value="source" class="instance-card-tab-6">
                         <InstanceSource :instance="instance" />
                     </v-window-item>
                     <v-window-item value="output" class="instance-card-tab-7">
                         <InstanceOutput :instance="instance" />
-                    </v-window-item> -->
+                    </v-window-item>
                 </v-window>
             </div>
         </div>
@@ -257,8 +273,8 @@ export default {
             { value: 'todo', label: 'InstanceCard.kanbanBoard', mobile: true},
             { value: 'gantt', label: 'InstanceCard.ganttChart', mobile: false},
             { value: 'chat', label: 'InstanceCard.chat', mobile: true},
-            // { value: 'source', label: 'InstanceCard.source', mobile: true},
-            // { value: 'output', label: 'InstanceCard.output', mobile: true},
+            { value: 'source', label: 'InstanceCard.source', mobile: true},
+            { value: 'output', label: 'InstanceCard.output', mobile: true},
         ],
 
         updatedKey: 0,
@@ -272,13 +288,18 @@ export default {
                 if (newVal && newVal.query && newVal.query.submitted) {
                     this.tab = "workhistory";
                 } else if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
-                    this.tab = "progress";
+                    // localStorage에 저장된 탭이 있으면 그것을 사용, 없으면 기본값
+                    const lastTab = localStorage.getItem('instanceCard-lastTab');
+                    this.tab = lastTab || "progress";
                     await this.init();
                 }
             }
         },
         async tab(newVal, oldVal) {
             if (newVal !== oldVal) {
+                // 탭 상태를 localStorage에 저장
+                localStorage.setItem('instanceCard-lastTab', newVal);
+                
                 // 탭 변경 시 해당 컴포넌트 초기화
                 await this.$nextTick();
                 const activeComponents = this.$refs[newVal];
@@ -294,7 +315,9 @@ export default {
                     if (this.$route.query && this.$route.query.submitted) {
                         this.tab = "workhistory";
                     } else {
-                        this.tab = "workhistory";
+                        // localStorage에 저장된 탭이 있으면 그것을 사용, 없으면 기본값
+                        const lastTab = localStorage.getItem('instanceCard-lastTab');
+                        this.tab = lastTab || "workhistory";
                     }
                 }
             }
@@ -317,6 +340,11 @@ export default {
         }
     },
     mounted() {
+        // localStorage에서 마지막 탭 상태 복원
+        const lastTab = localStorage.getItem('instanceCard-lastTab');
+        if (lastTab) {
+            this.tab = lastTab;
+        }
         this.init();
     },
     computed: {
@@ -606,15 +634,20 @@ export default {
             }
         },
         getStarterName() {
-            if (this.firstWorkItem && this.firstWorkItem.username) {
+            if (!this.firstWorkItem) {
+                return; // 로딩 중 - undefined 반환
+            }
+            if (this.firstWorkItem.username) {
                 return this.firstWorkItem.username;
-            } else if (this.firstWorkItem && this.firstWorkItem.endpoint) {
+            } else if (this.firstWorkItem.endpoint) {
                 return this.firstWorkItem.endpoint;
             }
-            return '알 수 없음';
         },
         getFormattedStartDate() {
-            if (this.firstWorkItem && this.firstWorkItem.startDate) {
+            if (!this.firstWorkItem) {
+                return; // 로딩 중 - undefined 반환
+            }
+            if (this.firstWorkItem.startDate) {
                 const date = new Date(this.firstWorkItem.startDate);
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -623,7 +656,6 @@ export default {
                 const minutes = String(date.getMinutes()).padStart(2, '0');
                 return `${year}.${month}.${day} / ${hours}:${minutes}`;
             }
-            return '알 수 없음';
         }
     }
 };

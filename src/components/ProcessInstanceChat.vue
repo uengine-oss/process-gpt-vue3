@@ -5,13 +5,14 @@
             :type="'instances'" :name="chatName" 
             :chatRoomId="chatRoomId" :hideInput="!isTaskMode"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
-            @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage">
+            @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
+            ref="chatComponent">
             <template v-slot:custom-title>
                 <div></div>
             </template>
             <template v-slot:custom-chat>
                 <!-- streaming text -->
-                <div v-if="streamingText" class="position-absolute bottom-0 end-0 ml-2">
+                <div v-if="streamingText" class="position-absolute bottom-0 end-0">
                     <div class="mx-2">
                         <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100" style="max-width: 100% !important;">
                             <pre class="text-body-1">{{ filteredStreamingText }}</pre>
@@ -49,14 +50,14 @@
                 </div>
             </template>
             <template v-slot:custom-message-actions="{ message }">
-                <v-tooltip location="left">
+                <!-- <v-tooltip location="left">
                     <template v-slot:activator="{ props }">
                         <v-btn size="small" variant="flat" class="mr-1" icon v-bind="props" @click="revertActivity(message)">
                             <v-icon>mdi-replay</v-icon>
                         </v-btn>
                     </template>
                     <span>해당 단계로 되돌리기</span>
-                </v-tooltip>
+                </v-tooltip> -->
             </template>
         </Chat>
     </div>
@@ -121,6 +122,7 @@ export default {
             if (!this.streamingText) {
                 return '';
             }
+            this.$refs.chatComponent.scrollToBottom();
             // ```json 마크다운 표시 제거 (줄바꿈 포함)
             return this.streamingText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
         },
@@ -422,7 +424,7 @@ export default {
                 if (task.log) {
                     this.streamingText = task.log;
                 }
-                if (task.status == "DONE") {
+                if (task.status == "DONE" || task.status == "PENDING") {
                     this.streamingText = '';
                     if (this.subscription) {
                         // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);

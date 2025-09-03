@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-row class="ma-0 pa-0">
-            <v-col cols="12" md="6" class="pa-4 pt-0 pl-0">
+            <v-col cols="12" md="6" class="pa-4 pt-0 pl-0" v-if="!(pendingActivities.length > 0 && completedActivities.length == 0)">
                 <v-card class="mb-0 h-100 process-work-result-card" elevation="2">
                     <v-card-text class="pa-4">
                         <div class="process-work-result-header">
@@ -10,7 +10,7 @@
                                 <h4 class="text-h6 mb-0">완료된 작업</h4>
                             </div>
                             <div class="process-work-result-user-section">
-                                <template v-for="(activity, index) in resultJson.completedActivities" :key="'completed-' + index">
+                                <template v-for="(activity, index) in completedActivities" :key="'completed-' + index">
                                     <template v-if="getUserInfoForCompleted(activity)">
                                         <div class="mr-2" style="width: 24px;">
                                             <v-img 
@@ -38,12 +38,57 @@
                             </div>
                         </div>
                         <v-list dense class="pa-0">
-                            <v-list-item v-for="(activity, index) in resultJson.completedActivities" :key="'completed-' + index" class="px-0">
+                            <v-list-item v-for="(activity, index) in completedActivities" :key="'completed-' + index" class="px-0">
                                 <v-list-item-title class="font-weight-bold">활동: {{ activity.completedActivityName }}</v-list-item-title>
                                 <div style="color: #808080;">{{ activity.description }}</div>
                             </v-list-item>
-                            <v-list-item v-if="resultJson.completedActivities.length === 0" class="px-0">
+                            <v-list-item v-if="completedActivities.length === 0" class="px-0">
                                 <v-list-item-subtitle class="text-grey">완료된 작업이 없습니다.</v-list-item-subtitle>
+                            </v-list-item>
+                        </v-list>
+                    </v-card-text>
+                </v-card>
+            </v-col>
+            <v-col cols="12" md="6" class="pa-4 pt-0 pl-0" v-if="pendingActivities.length > 0">
+                <v-card class="mb-0 h-100 process-work-result-card" elevation="2">
+                    <v-card-text class="pa-4">
+                        <div class="process-work-result-header">
+                            <div class="process-work-result-title-section">
+                                <v-icon class="mr-2">mdi-cancel</v-icon>
+                                <h4 class="text-h6 mb-0">보류/반송된 작업</h4>
+                            </div>
+                            <div class="process-work-result-user-section">
+                                <template v-for="(activity, index) in pendingActivities" :key="'pending-' + index">
+                                    <template v-if="getUserInfoForCompleted(activity)">
+                                        <div class="mr-2" style="width: 24px;">
+                                            <v-img 
+                                                :src="getUserInfoForCompleted(activity).profile || '/images/defaultUser.png'"
+                                                alt="profile"
+                                                width="24"
+                                                height="24"
+                                                style="border-radius: 50%;"
+                                            />
+                                        </div>
+                                        <span class="body-text-2 text-medium-emphasis">{{ getUserInfoForCompleted(activity).username }}</span>
+                                    </template>
+                                    <template v-else-if="isLoadingUsers">
+                                        <div class="mr-2" style="width: 24px;">
+                                            <v-progress-circular 
+                                                indeterminate 
+                                                color="primary" 
+                                                size="16"
+                                                width="2"
+                                            ></v-progress-circular>
+                                        </div>
+                                        <span class="body-text-2 text-medium-emphasis">보류/반송자 정보 로딩 중...</span>
+                                    </template>
+                                </template>
+                            </div>
+                        </div>
+                        <v-list dense class="pa-0">
+                            <v-list-item v-for="(activity, index) in pendingActivities" :key="'pending-' + index" class="px-0">
+                                <v-list-item-title class="font-weight-bold">활동: {{ activity.completedActivityName }}</v-list-item-title>
+                                <div style="color: #808080;">{{ activity.description }}</div>
                             </v-list-item>
                         </v-list>
                     </v-card-text>
@@ -58,7 +103,7 @@
                                 <h4 class="text-h6 mb-0">다음 작업</h4>
                             </div>
                             <div class="process-work-result-user-section">
-                                <template v-for="(activity, index) in resultJson.nextActivities" :key="'next-' + index">
+                                <template v-for="(activity, index) in nextActivities" :key="'next-' + index">
                                     <template v-if="getUserInfoForNext(activity)">
                                         <div class="mr-2" style="width: 24px;">
                                             <v-img 
@@ -86,11 +131,11 @@
                             </div>
                         </div>
                         <v-list dense class="pa-0">
-                            <v-list-item v-for="(activity, index) in resultJson.nextActivities" :key="'next-' + index" class="px-0">
+                            <v-list-item v-for="(activity, index) in nextActivities" :key="'next-' + index" class="px-0">
                                 <v-list-item-title class="font-weight-bold">활동: {{ activity.nextActivityName }}</v-list-item-title>
                                 <v-list-item-subtitle style="color: #808080;">{{ activity.description }}</v-list-item-subtitle>
                             </v-list-item>
-                            <v-list-item v-if="resultJson.nextActivities.length === 0" class="px-0">
+                            <v-list-item v-if="nextActivities.length === 0" class="px-0">
                                 <v-list-item-subtitle class="text-grey">다음 작업이 없습니다.</v-list-item-subtitle>
                             </v-list-item>
                         </v-list>
@@ -100,7 +145,7 @@
         </v-row>
 
         <div class="pa-4 pt-0 pl-0">
-            <v-card v-if="resultJson.referenceInfo && resultJson.referenceInfo.length > 0"
+            <v-card v-if="referenceInfo && referenceInfo.length > 0"
                 elevation="2"
                 class="ma-0 pa-0"
             >
@@ -110,7 +155,7 @@
                         <h4 class="text-h6 mb-0">참조 정보</h4>
                     </div>
                     <v-list dense class="pa-0">
-                        <v-list-item v-for="(info, index) in resultJson.referenceInfo" :key="'ref-' + index" class="px-0">
+                        <v-list-item v-for="(info, index) in referenceInfo" :key="'ref-' + index" class="px-0">
                             <v-list-item-title class="font-weight-bold">{{ info.key }}</v-list-item-title>
                             <v-list-item-subtitle>{{ info.value }}</v-list-item-subtitle>
                         </v-list-item>
@@ -130,11 +175,11 @@ export default {
         message: Object
     },
     data: () => ({
-        resultJson: {
-            completedActivities: [],
-            nextActivities: [],
-            referenceInfo: []
-        },
+        resultJson: {},
+        completedActivities: [],
+        pendingActivities: [],
+        nextActivities: [],
+        referenceInfo: [],
         userList: [],
         isLoadingUsers: false,
         loadedUserInfo: {} // 로드된 사용자 정보 캐시
@@ -147,8 +192,20 @@ export default {
             if (this.message && this.message.jsonContent) {
                 if (typeof this.message.jsonContent == 'string') {
                     this.resultJson = JSON.parse(this.message.jsonContent);
+                    if (this.resultJson.completedActivities && this.resultJson.completedActivities.length > 0) {
+                        this.completedActivities = this.resultJson.completedActivities.filter(activity => activity.result == "DONE");
+                        this.pendingActivities = this.resultJson.completedActivities.filter(activity => activity.result == "PENDING");
+                    }
+                    this.nextActivities = this.resultJson.nextActivities;
+                    this.referenceInfo = this.resultJson.referenceInfo;
                 } else {
                     this.resultJson = this.message.jsonContent;
+                    if (this.resultJson.completedActivities && this.resultJson.completedActivities.length > 0) {
+                        this.completedActivities = this.resultJson.completedActivities.filter(activity => activity.result == "DONE");
+                        this.pendingActivities = this.resultJson.completedActivities.filter(activity => activity.result == "PENDING");
+                    }
+                    this.nextActivities = this.resultJson.nextActivities;
+                    this.referenceInfo = this.resultJson.referenceInfo;
                 }
             }
         },

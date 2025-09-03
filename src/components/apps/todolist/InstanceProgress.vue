@@ -12,7 +12,13 @@
                     style="height: 100%"
                 ></BpmnUengine>
             </div>
-            <dif v-else class="no-bpmn-found-text"> No BPMN found </dif>
+            <span v-else class="no-bpmn-found-text"> 불러오는 중
+                <span class="loading-dots">
+                    <span>.</span>
+                    <span>.</span>
+                    <span>.</span>
+                </span>
+            </span>
         </div>
     </div>
 </template>

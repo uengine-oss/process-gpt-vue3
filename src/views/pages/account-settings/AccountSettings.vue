@@ -26,7 +26,7 @@
                         <div v-if="superAdmin" @click="goToTenantManage"
                             class="settings-tenant-manage-btn v-tab-style"
                         >
-                            <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.tenantManage') }}
+                            <Icons :icon="'office'"  :size="20" class="mr-2" />{{ $t('accountTab.tenantManage') }}
                         </div>
                     </v-row>
                 </div>
@@ -101,7 +101,7 @@
                                 size="small"
                                 @click="goToTenantManage"
                             >
-                                <UserCircleIcon class="mr-2" size="16" />{{ $t('accountTab.tenantManage') }}
+                            <Icons :icon="'office'"  :size="16" class="mr-2" />{{ $t('accountTab.tenantManage') }}
                             </v-btn>
                         </template>
                     </div>
