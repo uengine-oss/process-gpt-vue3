@@ -970,7 +970,22 @@
     "ProjectCard": {
         "managment": "프로세스",
         "kanbanBoard": "칸반보드",
-        "instanceList": "인스턴스 목록"
+        "instanceList": "인스턴스 목록",
+        "projectInfo": "프로젝트 정보",
+        "projectId": "프로젝트ID",
+        "projectName": "프로젝트명",
+        "expectedPeriod": "예상 기간",
+        "projectCreatedDate": "프로젝트 생성일",
+        "noProjectInfo": "프로젝트 정보가 없습니다",
+        "period": "기간",
+        "statusNew": "신규",
+        "statusRunning": "실행중",
+        "statusCompleted": "완료",
+        "statusTodo": "예정업무",
+        "statusInProgress": "진행중",
+        "statusPendingCancelled": "보류/반송",
+        "statusDone": "완료업무",
+        "executeProcess": "프로세스 실행"
     },
     "DryRunProcess": {
         "notFound": "워크아이템을 찾을 수 없습니다."
@@ -1513,5 +1528,8 @@
         "pending": "보류 중",
         "cancelled": "취소",
         "completed": "완료"
+    },
+    "SubProcess": {
+        "execute": "실행"
     }
 }

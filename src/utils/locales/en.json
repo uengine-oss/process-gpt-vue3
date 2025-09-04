@@ -968,7 +968,22 @@
     "ProjectCard": {
         "managment": "Progress",
         "kanbanBoard": "Kanban Board",
-        "instanceList": "Instance List"
+        "instanceList": "Instance List",
+        "projectInfo": "Project Information",
+        "projectId": "Project ID",
+        "projectName": "Project Name",
+        "expectedPeriod": "Expected Period",
+        "projectCreatedDate": "Project Created Date",
+        "noProjectInfo": "No project information available",
+        "period": "Period",
+        "statusNew": "New",
+        "statusRunning": "Running",
+        "statusCompleted": "Completed",
+        "statusTodo": "Scheduled",
+        "statusInProgress": "In Progress",
+        "statusPendingCancelled": "Pending/Cancelled",
+        "statusDone": "Done",
+        "executeProcess": "Execute Process"
     },
     "DryRunProcess": {
         "notFound": "Work item not found."
@@ -1511,5 +1526,8 @@
         "pending": "Pending",
         "cancelled": "Cancelled",
         "completed": "Completed"
+    },
+    "SubProcess": {
+        "execute": "Execute"
     }
 }

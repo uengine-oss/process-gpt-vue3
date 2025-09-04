@@ -12,7 +12,7 @@
                     style="height: 100%"
                 ></BpmnUengine>
             </div>
-            <span v-else class="no-bpmn-found-text"> 불러오는 중
+            <span v-else class="no-bpmn-found-text">BPMN 정보 불러오는 중
                 <span class="loading-dots">
                     <span>.</span>
                     <span>.</span>

@@ -199,7 +199,13 @@
                                             :isViewMode="true"
                                         ></process-definition> -->
                                     </div>
-                                    <div v-else class="no-bpmn-found-text">No BPMN found</div>
+                                    <span v-else>BPMN 정보 불러오는 중
+                                        <span class="loading-dots">
+                                            <span>.</span>
+                                            <span>.</span>
+                                            <span>.</span>
+                                        </span>
+                                    </span>
                                 </div>
                             </div>
                         </v-window-item>

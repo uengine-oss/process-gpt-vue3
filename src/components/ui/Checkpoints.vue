@@ -1,9 +1,16 @@
 <template>
-    <v-sheet v-if="checkpoints" class="mt-3 pa-3 border border-success rounded">
-        <div class="text-success font-weight-semibold">
-            <v-icon class="mr-2">$success</v-icon>
-            {{ $t('Checkpoints.checkpoints') }} ({{ checkedCount }}/{{ checkpoints ? checkpoints.length : 0 }})
-        </div>
+    <v-sheet v-if="checkpoints" class="mt-3 pa-3 border border-success rounded activity-checkpoints-box">
+        <v-row class="ma-0 pa-0 align-center">
+            <div class="text-success font-weight-semibold">
+                <v-icon class="mr-2">$success</v-icon>
+                {{ $t('Checkpoints.checkpoints') }} ({{ checkedCount }}/{{ checkpoints ? checkpoints.length : 0 }})
+            </div>
+            <v-spacer></v-spacer>
+            <div v-if="!allChecked && showWarning" class="text-warning font-weight-medium">
+                <v-icon class="mr-1" size="small">mdi-alert</v-icon>
+                체크포인트를 모두 확인해주세요.
+            </div>
+        </v-row>
         <div v-for="(checkpoint, index) in checkpoints" :key="index" class="mt-2">
             <v-checkbox v-model="checkpoint.checked" hide-details density="compact" color="success" :disabled="readOnly">
                 <template v-slot:label>
@@ -12,12 +19,6 @@
             </v-checkbox>
         </div>
     </v-sheet>
-    <v-snackbar v-model="snackbar" class="custom-snackbar" timeout="3000" color="warning" elevation="24" location="top">
-        체크포인트를 확인해주세요.
-        <template v-slot:actions>
-            <v-btn variant="text" @click="snackbar = false">x </v-btn>
-        </template>
-    </v-snackbar>
 </template>
 
 <script>
@@ -32,7 +33,7 @@ export default {
     },
     data: () => ({
         checkpoints: null,
-        snackbar: false,
+        showWarning: false,
     }),
     computed: {
         checkedCount() {
