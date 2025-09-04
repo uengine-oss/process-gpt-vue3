@@ -40,6 +40,14 @@
         <div class="pa-2">
             <v-card elevation="10">
                 <v-card-text class="pa-4">
+                    <!-- 보류/반송된 활동 메시지 -->
+                    <div v-if="workItemStatus == 'PENDING'" class="mb-4">
+                        <v-alert density="compact" type="error" closable>
+                            <span class="text-body-1">
+                                {{ workItem.worklist.log }}
+                            </span>
+                        </v-alert>
+                    </div>
                     <!-- 참고해야 할 이전 산출물이 있는 경우 -->
                     <ActivityInputData v-if="hasInputFields" :inputFields="inputFields" :workItem="workItem" />
 
