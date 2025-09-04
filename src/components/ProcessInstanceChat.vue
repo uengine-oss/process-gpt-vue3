@@ -156,6 +156,7 @@ export default {
         // child streaming text
         childStreamingText: {},
         childSubscription: {},
+        childTasks: [],
         isOpenSubprocess: {},
     }),
     computed: {
@@ -486,6 +487,10 @@ export default {
                         // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);
                         window.$supabase.removeChannel(this.subscription);
                     }
+                    this.childTasks.forEach(childTaskId => {
+                        this.removeChildTaskLog(childTaskId);
+                    });
+                    this.childStreamingText = {};
                     this.$emit('updated');
                     this.EventBus.emit('instances-updated');
                     this.useFeedback = useFeedback;
@@ -507,14 +512,16 @@ export default {
                             if (childTask.log) {
                                 this.childStreamingText[childTaskId] = childTask.log;
                             }
-                            if (childTask.status == "DONE") {
-                                this.streamingText = '';
-                                window.$supabase.removeChannel(this.childSubscription[childTaskId]);
-                            }
                         });
+                        this.childTasks.push(childTaskId);
                     }
                 });
             }
+        },
+        removeChildTaskLog(childTaskId) {
+            this.childStreamingText[childTaskId] = '';
+            window.$supabase.removeChannel(this.childSubscription[childTaskId]);
+            this.childTasks.splice(this.childTasks.indexOf(childTaskId), 1);
         },
         async cancelAppliedFeedback() {
             if (this.lastMessage && this.lastMessage.jsonContent) {
