@@ -1531,5 +1531,10 @@
     },
     "SubProcess": {
         "execute": "실행"
+    },
+    "ProcessInstanceChat": {
+        "subprocessCreating": "서브프로세스 생성 중입니다...",
+        "feedback": "프로세스 실행이 정상인가요?",
+        "feedbackDescription": "프로세스 실행이 정상인가요?"
     }
 }

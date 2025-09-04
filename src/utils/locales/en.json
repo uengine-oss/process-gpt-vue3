@@ -1529,5 +1529,10 @@
     },
     "SubProcess": {
         "execute": "Execute"
+    },
+    "ProcessInstanceChat": {
+        "subprocessCreating": "Subprocess creating...",
+        "feedback": "Is the process execution normal?",
+        "feedbackDescription": "Is the process execution normal?"
     }
 }
