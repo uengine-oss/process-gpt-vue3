@@ -54,11 +54,8 @@ export default {
     data() {
         return {
             header: [
-                { key: 'given', name: 'Given' },
-                { key: 'when', name: 'When' },
-                { key: 'then', name: 'Then' },
-                { key: 'valid_at', name: 'Valid At' },
-                { key: 'invalid_at', name: 'Invalid At' }
+                { key: 'when', name: '조건 (When)' },
+                { key: 'then', name: '결과 (Then)' }
             ],
             goodExamples: [],
             badExamples: [],
@@ -98,14 +95,18 @@ export default {
                     const properties = JSON.parse(sequence.properties);
                     const today = new Date().toISOString();
                     if (properties.examples) {
-                        this.goodExamples = properties.examples.good_example;
-                        this.goodExamples.forEach(example => {
-                            example.valid_at = example.valid_at ? example.valid_at : today;
-                        });
-                        this.badExamples = properties.examples.bad_example;
-                        this.badExamples.forEach(example => {
-                            example.invalid_at = example.invalid_at ? example.invalid_at : today;
-                        });
+                        this.goodExamples = properties.examples.good_examples;
+                        if (this.goodExamples) {
+                            this.goodExamples.forEach(example => {
+                                example.valid_at = example.valid_at ? example.valid_at : today;
+                            });
+                        }
+                        this.badExamples = properties.examples.bad_examples;
+                        if (this.badExamples) {
+                            this.badExamples.forEach(example => {
+                                example.invalid_at = example.invalid_at ? example.invalid_at : today;
+                            });
+                        }
                     }
                 }
             } else {

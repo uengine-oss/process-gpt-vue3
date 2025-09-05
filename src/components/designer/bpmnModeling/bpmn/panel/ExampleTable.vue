@@ -20,15 +20,6 @@
                     <tr v-for="(example, index) in examples" :key="index">
                         <td>
                             <v-text-field
-                                v-model="example.given"
-                                variant="outlined"
-                                density="compact"
-                                hide-details
-                                @input="updateExample(index, 'given', $event.target.value)"
-                            />
-                        </td>
-                        <td>
-                            <v-text-field
                                 v-model="example.when"
                                 variant="outlined"
                                 density="compact"
@@ -45,29 +36,14 @@
                                 @input="updateExample(index, 'then', $event.target.value)"
                             />
                         </td>
-                        <td>
-                            <v-text-field
-                                v-model="example.valid_at"
-                                type="datetime-local"
-                                variant="outlined"
-                                density="compact"
-                                hide-details
-                                @click="activateDateTimeField($event.target)"
-                                @input="updateExample(index, 'valid_at', $event.target.value)"
-                            />
-                        </td>
-                        <td>
-                            <v-text-field
-                                v-model="example.invalid_at"
-                                type="datetime-local"
-                                variant="outlined"
-                                density="compact"
-                                hide-details
-                                @click="activateDateTimeField($event.target)"
-                                @input="updateExample(index, 'invalid_at', $event.target.value)"
-                            />
-                        </td>
                         <td class="text-center">
+                            <v-btn
+                                icon="mdi-calendar-edit"
+                                variant="text"
+                                color="primary"
+                                size="small"
+                                @click="openDateTimeDialog(index)"
+                            />
                             <v-btn
                                 icon="mdi-delete"
                                 variant="text"
@@ -88,9 +64,59 @@
                 prepend-icon="mdi-plus"
                 @click="addNewRow"
             >
-                새 행 추가
+                새 예시 추가
             </v-btn>
         </div>
+
+        <!-- 날짜/시간 설정 다이얼로그 -->
+        <v-dialog v-model="dateTimeDialog" max-width="400px">
+            <v-card>
+                <v-card-title>
+                    <span class="text-h5">유효 기간 설정</span>
+                </v-card-title>
+                <v-card-text>
+                    <v-container>
+                        <v-row>
+                            <v-col cols="12">
+                                <v-text-field
+                                    v-model="editingExample.valid_at"
+                                    label="유효 시작일"
+                                    type="datetime-local"
+                                    variant="outlined"
+                                    prepend-icon="mdi-calendar-start"
+                                />
+                            </v-col>
+                            <v-col cols="12">
+                                <v-text-field
+                                    v-model="editingExample.invalid_at"
+                                    label="유효 종료일"
+                                    type="datetime-local"
+                                    variant="outlined"
+                                    prepend-icon="mdi-calendar-end"
+                                />
+                            </v-col>
+                        </v-row>
+                    </v-container>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer />
+                    <v-btn
+                        color="blue darken-1"
+                        text
+                        @click="closeDateTimeDialog"
+                    >
+                        취소
+                    </v-btn>
+                    <v-btn
+                        color="blue darken-1"
+                        text
+                        @click="saveDateTimeSettings"
+                    >
+                        저장
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -111,6 +137,16 @@ export default {
             required: true
         }
     },
+    data() {
+        return {
+            dateTimeDialog: false,
+            editingIndex: -1,
+            editingExample: {
+                valid_at: '',
+                invalid_at: ''
+            }
+        };
+    },
     computed: {
         icon() {
             return this.title === '좋은 예시' ? 'mdi-check-circle-outline' : 'mdi-cancel';
@@ -127,7 +163,6 @@ export default {
         },
         addNewRow() {
             const newExample = {
-                given: '',
                 when: '',
                 then: '',
                 valid_at: '',
@@ -139,12 +174,29 @@ export default {
         removeRow(index) {
             this.$emit('remove-row', index);
         },
-        activateDateTimeField(target) {
-            // datetime-local 입력 필드를 클릭했을 때 바로 활성화
-            if (target.type === 'datetime-local') {
-                target.showPicker();
+        openDateTimeDialog(index) {
+            this.editingIndex = index;
+            this.editingExample = {
+                valid_at: this.examples[index].valid_at || '',
+                invalid_at: this.examples[index].invalid_at || ''
+            };
+            this.dateTimeDialog = true;
+        },
+        closeDateTimeDialog() {
+            this.dateTimeDialog = false;
+            this.editingIndex = -1;
+            this.editingExample = {
+                valid_at: '',
+                invalid_at: ''
+            };
+        },
+        saveDateTimeSettings() {
+            if (this.editingIndex >= 0) {
+                this.updateExample(this.editingIndex, 'valid_at', this.editingExample.valid_at);
+                this.updateExample(this.editingIndex, 'invalid_at', this.editingExample.invalid_at);
             }
-        }
+            this.closeDateTimeDialog();
+        },
     }
 };
 </script>
