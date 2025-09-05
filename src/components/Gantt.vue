@@ -1,8 +1,11 @@
 <template>
-    <div ref="ganttContainer" style="width: 100%; height: 100%"></div>
-  </template>
+    <div ref="ganttContainer"
+        class="custom-gantt-container"
+        style="width: 100%; height: 100%"
+    ></div>
+</template>
   
-  <script>
+<script>
   import { onMounted, ref, watch, onUnmounted } from 'vue'
   import 'dhtmlx-gantt/codebase/dhtmlxgantt.css'
   import 'dhtmlx-gantt'
@@ -159,9 +162,28 @@
                     width: 80,
                     resize: true,
                     template: function(task) {
+                        // task.taskId와 일치하는 workitem에서 username 찾기
+                        if (task.taskId && props.tasks) {
+                            const workItem = props.tasks.find(item => item.taskId === task.taskId);
+                            if (workItem && workItem.username) {
+                                return workItem.username;
+                            }
+                        }
+                        
+                        // 기존 로직 유지 (fallback)
                         if (task.assignees) {
-                            const user = props.users.find(u => u.userId === task.assignees);
-                            return user ? user.userName : task.assignees;
+                            let assigneeId = task.assignees;
+                            if (Array.isArray(task.assignees)) {
+                                assigneeId = task.assignees[0];
+                            } else if (typeof task.assignees === 'object') {
+                                assigneeId = task.assignees.id || task.assignees.userId;
+                            }
+                            
+                            const user = props.users.find(u => u.id === assigneeId);
+                            if (user) {
+                                return user.email ? `${user.username}(${user.email})` : user.username;
+                            }
+                            return assigneeId || task.assignees;
                         }
                         return "";
                     }
@@ -199,8 +221,8 @@
                     type: "select", 
                     map_to: "assignees",
                     options: props.users.map(user => ({
-                        key: user.email,
-                        label: user.email
+                        key: user.id,
+                        label: user.email ? `${user.username}(${user.email})` : user.username
                     })),
                     default_value: null
                 },
@@ -211,18 +233,101 @@
                     duration_unit: "day" 
                 }
             ];
+            
+            // 라이트박스에 커스텀 클래스 추가
+            gantt.attachEvent("onLightbox", function(taskId) {
+                setTimeout(() => {
+                    const lightbox = document.querySelector('.gantt_cal_light');
+                    if (lightbox) {
+                        lightbox.classList.add('custom-gantt-lightbox');
+                    }
+                    
+                    const lightboxHeader = document.querySelector('.gantt_cal_lheader');
+                    if (lightboxHeader) {
+                        lightboxHeader.classList.add('custom-gantt-lightbox-header');
+                    }
+                    
+                    const lightboxContent = document.querySelector('.gantt_cal_larea');
+                    if (lightboxContent) {
+                        lightboxContent.classList.add('custom-gantt-lightbox-content');
+                        
+                        // 라이트박스 내부 폼 요소들에 클래스 추가
+                        const sections = lightboxContent.querySelectorAll('.gantt_cal_lsection');
+                        sections.forEach(section => {
+                            section.classList.add('custom-gantt-lightbox-section');
+                        });
+                        
+                        const textInputs = lightboxContent.querySelectorAll('textarea, input[type="text"]');
+                        textInputs.forEach(input => {
+                            input.classList.add('custom-gantt-lightbox-text-input');
+                        });
+                        
+                        const selects = lightboxContent.querySelectorAll('select');
+                        selects.forEach(select => {
+                            select.classList.add('custom-gantt-lightbox-select');
+                            
+                            // select의 option들에도 클래스 추가
+                            const options = select.querySelectorAll('option');
+                            options.forEach(option => {
+                                option.classList.add('custom-gantt-lightbox-option');
+                            });
+                        });
+                        
+                        const dateInputs = lightboxContent.querySelectorAll('input[type="date"], .gantt_cal_ltext');
+                        dateInputs.forEach(input => {
+                            input.classList.add('custom-gantt-lightbox-date-input');
+                        });
+                        
+                        const labels = lightboxContent.querySelectorAll('.gantt_cal_ltext');
+                        labels.forEach(label => {
+                            label.classList.add('custom-gantt-lightbox-label');
+                        });
+                    }
+                    
+                    const lightboxButtons = document.querySelector('.gantt_btn_set');
+                    if (lightboxButtons) {
+                        lightboxButtons.classList.add('custom-gantt-lightbox-buttons');
+                        
+                        // 개별 버튼들에도 클래스 추가
+                        const buttons = lightboxButtons.querySelectorAll('div[class*="gantt_"]');
+                        buttons.forEach(button => {
+                            if (button.classList.contains('gantt_save_btn')) {
+                                button.classList.add('custom-gantt-lightbox-save-btn');
+                            } else if (button.classList.contains('gantt_cancel_btn')) {
+                                button.classList.add('custom-gantt-lightbox-cancel-btn');
+                            } else if (button.classList.contains('gantt_delete_btn')) {
+                                button.classList.add('custom-gantt-lightbox-delete-btn');
+                            }
+                            button.classList.add('custom-gantt-lightbox-btn');
+                        });
+                    }
+                }, 10);
+                return true;
+            });
             gantt.templates.task_text = function(start, end, task) {
                 let assigneeName = '';
                 if (task.assignees) {
+                    // assignees가 배열이나 객체인 경우 처리
+                    let assigneeId = task.assignees;
+                    if (Array.isArray(task.assignees)) {
+                        assigneeId = task.assignees[0]; // 첫 번째 담당자만 표시
+                    } else if (typeof task.assignees === 'object') {
+                        assigneeId = task.assignees.id || task.assignees.userId;
+                    }
+                    
                     // users 배열에서 담당자 찾기
-                    const user = props.users.find(u => u.userId === task.assignees);
-                    assigneeName = user ? user.userName : task.assignees;
+                    const user = props.users.find(u => u.id === assigneeId);
+                    if (user) {
+                        assigneeName = user.email ? `${user.username}(${user.email})` : user.username;
+                    } else {
+                        assigneeName = assigneeId || JSON.stringify(task.assignees);
+                    }
                 }
                 
-                return `<div class="gantt-task-content">
-                    <span class="task-text">${task.name}</span>
+                return `<div class="custom-gantt-task-content gantt-task-content">
+                    <span class="custom-task-text task-text">${task.name}</span>
                     ${task.assignees ? `
-                        <span class="task-assignee">
+                        <span class="custom-task-assignee task-assignee">
                             <i class="fas fa-user"></i> 
                             ${assigneeName}
                         </span>
@@ -231,20 +336,21 @@
             };
             // 작업 바 스타일 커스터마이징
             gantt.templates.task_class = function(start, end, task) {
-                let classes = [];
+                let classes = ['custom-gantt-task-bar'];
                 if (task.assignees) {
                     classes.push('has-assignee');
                 }
                 if (task.status) {
                     classes.push(`status-${task.status}`);
                 }
+
                 return classes.join(' ');
             };
             // 작업 바 오른쪽 끝에 담당자 아이콘 표시
             gantt.templates.rightside_text = function(start, end, task) {
                 if (task.assignees) {
-                    const user = props.users.find(u => u.userId === task.assignees);
-                    return `<div class="task-assignee-icon">
+                    const user = props.users.find(u => u.id === task.assignees);
+                    return `<div class="custom-task-assignee-icon task-assignee-icon">
                               <i class="fas fa-user-circle"></i>
                            </div>`;
                 }
@@ -257,7 +363,7 @@
 
             // 작업 바 스타일 설정
             gantt.templates.grid_row_class = function(start, end, task) {
-                return "";
+                return `custom-gantt-grid-row`;
             };
 
             // 작업 바 배경색 설정
@@ -272,7 +378,7 @@
             };
 
             gantt.templates.progress_class = function(start, end, task) {
-                return `progress-${task.status ? task.status.toLowerCase() : 'default'}`;
+                return `custom-gantt-progress progress-${task.status ? task.status.toLowerCase() : 'default'}`;
             };
 
             ////////////////////////////////// EVENTS //////////////////////////////////

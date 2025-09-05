@@ -79,7 +79,7 @@
                         </div> -->
                         <Checkpoints v-if="workItem.activity.checkpoints.length > 0" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
                         <!-- 모바일 상태에서 나오는 버튼 -->
-                        <v-row v-if="!isCompleted && isOwnWorkItem && isMobile && (html || workItem.activity.checkpoints.length > 0)" class="ma-0 pa-0">
+                        <v-row v-if="!isCompleted && isOwnWorkItem && isMobile && (html || workItem.activity.checkpoints.length > 0)" class="ma-0 pa-0 mt-4">
                             <v-spacer></v-spacer>
                             <v-btn v-if="isSimulate == 'true'" 
                                 :disabled="activityIndex == 0"
@@ -108,7 +108,7 @@
                                 rounded variant="flat"
                                 :disabled="isLoading"
                                 :loading="isLoading"
-                            >제출 완료 </v-btn>
+                            >제출 완료</v-btn>
                         </v-row>
                     </div>
                 </v-card-text>
@@ -503,7 +503,18 @@ export default {
             }
             
             if (this.$refs.checkpoints && !this.$refs.checkpoints.allChecked) {
-                this.$refs.checkpoints.snackbar = true;
+                // 경고 메시지 표시
+                this.$refs.checkpoints.showWarning = true;
+                // 체크포인트 컴포넌트로 스크롤
+                this.$nextTick(() => {
+                    const checkpointsDiv = document.querySelector('.activity-checkpoints-box');
+                    if (checkpointsDiv) {
+                        checkpointsDiv.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center' 
+                        });
+                    }
+                });
                 return;
             }
             let value = {};

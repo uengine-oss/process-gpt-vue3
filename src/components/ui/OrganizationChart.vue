@@ -54,7 +54,7 @@ export default {
     },
     data: () => ({
         tree: null,
-        tooltipHideTimer: null,
+        userList: [],
         
         // dialog
         editNode: null,
@@ -71,13 +71,17 @@ export default {
         },
     },
     watch: {
-        node(newVal) {
+        async node(newVal) {
             if (newVal && newVal.id && newVal.data) {
+                await this.loadUserList();
                 this.drawTree()
             }
         },
     },
     async mounted() {
+        // 사용자 목록 로드
+        await this.loadUserList();
+        
         if (this.node && this.node.id && this.node.data) {
             const options = {
                 contentKey: 'data',
@@ -87,31 +91,35 @@ export default {
                 siblingSpacing: 20,
                 direction: 'top',
                 enableExpandCollapse: true,
-                nodeTemplate: (content) =>`
-                <div class='node-content' id='${content.id}'>
-                    <div class="node-content-text-box">
-                        <div style="display: flex;">
-                            ${content.id == 'root' || content.isTeam ? '' : (content.img ? `<img class="node-content-img" src='${content.img}' />` : `<img class="node-content-img" src='/images/defaultUser.png' />`)}
-                            <div style="flex: 1;"></div>
-                            <div class="node-content-btn-box">
-                                ${content.id == 'root' ? `<div class="node-content-btn add-team-btn"><img class="node-content-icon" src="/assets/images/icon/plus.svg"></div>` : ''}
-                                ${content.isTeam == true ? `<div class="node-content-btn add-member-btn"><img class="node-content-icon" src="/assets/images/icon/plus.svg"></div>` : ''}
-                                ${content.isTeam == true ? `<div class="node-content-btn edit-team-btn"><img class="node-content-icon" src="/assets/images/icon/pencil.svg"></div>` : ''}
-                                ${content.isTeam == true ? `<div class="node-content-btn delete-team-btn"><img class="node-content-icon" src="/assets/images/icon/trash.svg"></div>` : ''}
-                                ${content.isAgent == true ? `<div class="node-content-btn edit-agent-btn"><img class="node-content-icon" src="/assets/images/icon/pencil.svg"></div>` : ''}
-                                ${content.isAgent == true ? `<div class="node-content-btn delete-agent-btn"><img class="node-content-icon" src="/assets/images/icon/trash.svg"></div>` : ''}
-                                ${!content.isAgent && !content.isTeam && content.id != 'root' ? `<div class="node-content-btn edit-member-btn"><img class="node-content-icon" src="/assets/images/icon/pencil.svg"></div>` : ''}
-                                ${content.id != 'root' && !content.isTeam ? `<div class="node-content-btn node-info-btn"><img class="node-content-icon" src="/assets/images/icon/question-mark.svg"></div>` : ''}
+                nodeTemplate: (content) => {
+                    // 실제 사용자 데이터 가져오기
+                    const userData = this.getUserData(content);
+                    return `
+                    <div class='node-content' id='${content.id}'>
+                        <div class="node-content-text-box">
+                            <div style="display: flex;">
+                                ${content.id == 'root' || content.isTeam ? '' : (userData.profile ? `<img class="node-content-img" src='${userData.profile}' onerror="this.src='/images/defaultUser.png'" />` : `<img class="node-content-img" src='/images/defaultUser.png' />`)}
+                                <div style="flex: 1;"></div>
+                                <div class="node-content-btn-box">
+                                    ${content.id == 'root' ? `<div class="node-content-btn add-team-btn"><img class="node-content-icon" src="/assets/images/icon/plus.svg"></div>` : ''}
+                                    ${content.isTeam == true ? `<div class="node-content-btn add-member-btn"><img class="node-content-icon" src="/assets/images/icon/plus.svg"></div>` : ''}
+                                    ${content.isTeam == true ? `<div class="node-content-btn edit-team-btn"><img class="node-content-icon" src="/assets/images/icon/pencil.svg"></div>` : ''}
+                                    ${content.isTeam == true ? `<div class="node-content-btn delete-team-btn"><img class="node-content-icon" src="/assets/images/icon/trash.svg"></div>` : ''}
+                                    ${content.isAgent == true ? `<div class="node-content-btn edit-agent-btn"><img class="node-content-icon" src="/assets/images/icon/pencil.svg"></div>` : ''}
+                                    ${content.isAgent == true ? `<div class="node-content-btn delete-agent-btn"><img class="node-content-icon" src="/assets/images/icon/trash.svg"></div>` : ''}
+                                    ${!content.isAgent && !content.isTeam && content.id != 'root' ? `<div class="node-content-btn edit-member-btn"><img class="node-content-icon" src="/assets/images/icon/pencil.svg"></div>` : ''}
+
+                                </div>
+                            </div>
+                            <div class="node-content-title-box" data-node-id="${content.id}">
+                                <div style="font-weight: bold; font-family: Arial; font-size: 14px;">${userData.username || content.name}</div>
+                                ${userData.email ? `<div style="font-family: Arial; font-size: 12px">${userData.email}</div>` : ''}
+                                ${userData.role ? `<div style="font-family: Arial; color:gray; font-size: 11px">${userData.role}</div>` : ''}
                             </div>
                         </div>
-                        <div class="node-content-title-box" data-node-id="${content.id}">
-                            <div class="node-text-hover" style="font-weight: bold; font-family: Arial; font-size: 14px;">${content.name}</div>
-                            ${content.email ? `<div class="node-text-hover" style="font-family: Arial; font-size: 12px">${content.email}</div>` : ''}
-                            ${content.role ? `<div class="node-text-hover" style="font-family: Arial; color:gray; font-size: 11px">${content.role}</div>` : ''}
-                        </div>
                     </div>
-                </div>
-                `,
+                    `;
+                },
                 enableToolbar: true,
             };
             this.tree = new ApexTree(document.getElementById('tree'), options);
@@ -137,41 +145,12 @@ export default {
                         this.openEditDialog('edit-agent');
                     } else if (button.classList.contains('delete-agent-btn')) {
                         this.openEditDialog('delete');
-                    } else if (button.classList.contains('node-info-btn')) {
-                        this.showNodeInfo(this.editNode, event);
+
                     }
                 }
             });
 
-            // 텍스트 호버 이벤트 추가
-            document.addEventListener('mouseover', (event) => {
-                const textElement = event.target.closest('.node-text-hover');
-                if (textElement) {
-                    // 기존 타이머 클리어
-                    clearTimeout(this.tooltipHideTimer);
-                    const titleBox = textElement.closest('.node-content-title-box');
-                    if (titleBox) {
-                        const nodeId = titleBox.getAttribute('data-node-id');
-                        // 원본 데이터에서 노드를 찾아서 사용
-                        const foundNode = this.findOriginalNodeById(this.node, nodeId);
-                        if (foundNode) {
-                            this.showNodeInfo(foundNode, event, true);
-                        }
-                    }
-                }
-            });
 
-            document.addEventListener('mouseout', (event) => {
-                const textElement = event.target.closest('.node-text-hover');
-                if (textElement) {
-                    // 기존 타이머가 있으면 클리어
-                    clearTimeout(this.tooltipHideTimer);
-                    // 새 타이머 설정
-                    this.tooltipHideTimer = setTimeout(() => {
-                        this.hideNodeInfoTooltip();
-                    }, 200); // 0.2초 후 숨김
-                }
-            });
         }
 
         this.$refs.tree.addEventListener('click', this.handleNodeClick);
@@ -182,11 +161,42 @@ export default {
         this.$refs.tree.addEventListener('touchmove', this.handleTouch, { passive: false });
         this.$refs.tree.addEventListener('touchend', this.handleTouch, { passive: false });
     },
-    beforeUnmount() {
-        clearTimeout(this.tooltipHideTimer);
-        this.hideNodeInfoTooltip();
-    },
+
     methods: {
+        async loadUserList() {
+            try {
+                // backend 인스턴스가 없으면 생성
+                if (!this.backend) {
+                    const BackendFactory = (await import('@/components/api/BackendFactory')).default;
+                    this.backend = BackendFactory.createBackend();
+                }
+                this.userList = await this.backend.getUserList({});
+                console.log('사용자 목록 로드됨:', this.userList);
+            } catch (error) {
+                console.error('사용자 목록 로드 실패:', error);
+                this.userList = [];
+            }
+        },
+        getUserData(content) {
+            // root나 팀인 경우 원본 데이터 사용
+            if (content.id === 'root' || content.isTeam) {
+                return content;
+            }
+            
+            // 사용자 ID로 실제 사용자 데이터 찾기
+            const user = this.userList.find(u => u.id === content.id);
+            if (user) {
+                return {
+                    username: user.username,
+                    email: user.email,
+                    role: user.role,
+                    profile: user.profile
+                };
+            }
+            
+            // 사용자를 찾지 못한 경우 원본 데이터 사용
+            return content;
+        },
         drawTree() {
             // 팀원들을 세로 배치하기 위한 데이터 변환
             const transformedNode = this.transformForVerticalLayout(this.node);
@@ -368,8 +378,8 @@ export default {
         },
         handleTouch(e) {
             
-            // 버튼 영역이나 텍스트 호버 영역이면 터치 이벤트 처리하지 않음
-            if (e.target.closest('.node-content-btn') || e.target.closest('.node-text-hover')) {
+            // 버튼 영역이면 터치 이벤트 처리하지 않음
+            if (e.target.closest('.node-content-btn')) {
                 return;
             }
             
@@ -390,63 +400,7 @@ export default {
                 e.preventDefault();
             }
         },
-        showNodeInfo(node, event, isHover = false) {
-            if (!node || !node.data) {
-                return;
-            }
-            
-            // 기존 툴팁과 타이머 제거
-            clearTimeout(this.tooltipHideTimer);
-            this.hideNodeInfoTooltip();
-            
-            const data = node.data;
-            
-            // 툴팁 생성
-            const tooltip = document.createElement('div');
-            tooltip.id = 'node-info-tooltip';
-            tooltip.className = 'node-info-tooltip';
-            
-            let content = '<div class="node-info-content">';
-            if (data.name) content += `<div><strong>이름:</strong> ${data.name}</div>`;
-            if (data.email) content += `<div><strong>이메일:</strong> ${data.email}</div>`;
-            if (data.role) content += `<div><strong>역할:</strong> ${data.role}</div>`;
-            content += '</div>';
-            
-            tooltip.innerHTML = content;
-            
-            // 툴팁을 body에 추가
-            document.body.appendChild(tooltip);
-            
-            // 마우스 위치에 툴팁 표시
-            const rect = event.target.getBoundingClientRect();
-            tooltip.style.left = (rect.left + window.scrollX - 100) + 'px';
-            tooltip.style.top = (rect.top + window.scrollY - tooltip.offsetHeight - 5) + 'px';
-            
-            // 툴팁에 마우스 이벤트 추가
-            tooltip.addEventListener('mouseenter', () => {
-                clearTimeout(this.tooltipHideTimer);
-            });
-            
-            tooltip.addEventListener('mouseleave', () => {
-                this.tooltipHideTimer = setTimeout(() => {
-                    this.hideNodeInfoTooltip();
-                }, 100);
-            });
-            
-            // 클릭시에만 자동 제거 타이머 설정
-            if (!isHover) {
-                this.tooltipHideTimer = setTimeout(() => {
-                    this.hideNodeInfoTooltip();
-                }, 3000);
-            }
-        },
-        hideNodeInfoTooltip() {
-            clearTimeout(this.tooltipHideTimer);
-            const existingTooltip = document.getElementById('node-info-tooltip');
-            if (existingTooltip) {
-                existingTooltip.remove();
-            }
-        },
+
     },
 }
 </script>

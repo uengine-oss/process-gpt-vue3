@@ -429,49 +429,11 @@ hr {
     max-width: 100%;
 }
 
-.node-text-hover {
-    cursor: help;
-    transition: opacity 0.2s ease;
-}
 
-.node-text-hover:hover {
-    opacity: 0.8;
-}
 
-.node-info-tooltip {
-    position: absolute;
-    background-color: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 10px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    max-width: 250px;
-    min-width: 150px;
-    animation: fadeIn 0.2s ease-in;
-    pointer-events: auto;
-}
 
-.node-info-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border: 5px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.9);
-}
 
-.node-info-content div {
-    margin: 3px 0;
-    line-height: 1.4;
-}
 
-.node-info-content strong {
-    color: #FFF;
-    margin-right: 5px;
-}
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-5px); }

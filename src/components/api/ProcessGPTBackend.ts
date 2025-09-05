@@ -1462,6 +1462,19 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getWorkListByRootInstId(rootInstId: number) {
+        try {
+            const list = await storage.list('todolist', { match: { 'root_proc_inst_id': rootInstId } });
+            const worklist: any[] = list.map((item: any) => {
+                return this.returnWorkItemObject(item);
+            })
+            return worklist;
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getFilteredInstanceList(filters: object, page: number) {
         //TODO: 인스턴스 목록 관리자 페이지 필터 결과
         return null

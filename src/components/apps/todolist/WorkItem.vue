@@ -188,6 +188,8 @@
                                             v-on:change-sequence="onChangeSequence"
                                             v-on:remove-shape="onRemoveShape"
                                             v-on:change-shape="onChangeShape"
+                                            :onLoadStart="onBpmnLoadStart"
+                                            :onLoadEnd="onBpmnLoadEnd"
                                             style="height: 100%"
                                         ></BpmnUengine>
                                         
@@ -199,7 +201,13 @@
                                             :isViewMode="true"
                                         ></process-definition> -->
                                     </div>
-                                    <div v-else class="no-bpmn-found-text">No BPMN found</div>
+                                    <span v-else>BPMN 정보 불러오는 중
+                                        <span class="loading-dots">
+                                            <span>.</span>
+                                            <span>.</span>
+                                            <span>.</span>
+                                        </span>
+                                    </span>
                                 </div>
                             </div>
                         </v-window-item>
@@ -749,6 +757,14 @@ export default {
         }
     },
     methods: {
+        onBpmnLoadStart() {
+            this.isBpmnLoading = true;
+            console.log('onBpmnLoadStart');
+        },
+        onBpmnLoadEnd() {
+            this.isBpmnLoading = false;
+            console.log('onBpmnLoadEnd');
+        },
         isTabAvailable(tabValue) {
             return this.tabList.some(tab => tab.value === tabValue);
         },

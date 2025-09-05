@@ -1,18 +1,24 @@
 <template>
     <div>
         <v-dialog v-model="isOpen" max-width="400" persistent>
-            <v-card>
-                <v-row class="ma-0 pa-2 pt-0 pb-0">
-                    <v-card-title>{{
+            <v-card class="ma-0 pa-0">
+                <v-row class="ma-0 pa-4 pb-0 align-center">
+                    <v-card-title class="ma-0 pa-0">{{
                         isNew ? $t('ProcessDefinitionVersionDialog.title') : $t('ProcessDefinitionVersionDialog.title2')
                     }}</v-card-title>
                     <v-spacer></v-spacer>
-                    <v-btn @click="close()" icon variant="text" density="comfortable">
+                    <v-btn @click="close()" icon variant="text" density="comfortable"
+                        style="width: 16px; height: 16px;"
+                    >
                         <Icons :icon="'close'" :size="16" />
                     </v-btn>
                 </v-row>
-                <v-card-text class="pt-0">
-                    <v-switch v-model="isVersion" color="primary" :label="`${$t('ProcessDefinitionVersionDialog.minorUpdate')}: ${newVersion}`"></v-switch>
+                <v-card-text class="ma-0 pa-4 pb-0 pt-0">
+                    <v-switch v-model="isVersion"
+                        :label="`${$t('ProcessDefinitionVersionDialog.minorUpdate')}: ${newVersion}`"
+                        hide-details
+                        color="primary"
+                    ></v-switch>
                     <DetailComponent
                         :title="$t('ProcessDefinitionVersionDialog.versionDescriptionTitle')"
                     />
@@ -68,14 +74,29 @@
                         </div>
                     </div>
                 </v-card-text>
-                <v-row class="ma-0 pa-4 pt-0 pr-5">
-                    <span v-if="analysisResult && loading" class="text-body-2">
-                        <v-icon>mdi-information</v-icon>
-                        프로세스 정의 분석 중...
+                <v-row v-if="loading"
+                    class="ma-0 pa-4 pt-0 align-center text-body-2"
+                >
+                    <v-icon class="mr-2">mdi-information</v-icon>
+                    <span>프로세스 정의 분석 중
+                        <span class="loading-dots">
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                        </span>
                     </span>
+                </v-row>
+                <v-row v-else class="ma-0 pa-4 pt-0">
                     <v-spacer></v-spacer>
-                    <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate style="margin: 5px"></v-progress-circular>
-                    <v-btn v-else @click="save()" color="primary" rounded :disabled="!validate()">{{ $t('ProcessDefinitionVersionDialog.save') }}</v-btn>
+                    <!-- <v-progress-circular v-if="!loading" color="primary" :size="25" indeterminate style="margin: 5px"></v-progress-circular> -->
+                    <v-btn @click="save()"
+                        :disabled="!validate()"
+                        color="primary"
+                        variant="elevated" 
+                        class="rounded-pill"
+                        density="compact"
+                    >{{ $t('ProcessDefinitionVersionDialog.save') }}
+                    </v-btn>
                 </v-row>
             </v-card>
         </v-dialog>
