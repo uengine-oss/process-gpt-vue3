@@ -142,7 +142,7 @@ PaletteProvider.prototype.adjustParticipantBoundsByLanes = function(participant,
   });
 }
 
-PaletteProvider.prototype.applyAutoLayout = function() {
+PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onLoadEnd = () => {}) {
   var injector = this._injector;
   var elementFactory = this._elementFactory;
   var eventBus = this._eventBus;
@@ -159,7 +159,7 @@ PaletteProvider.prototype.applyAutoLayout = function() {
               const elementRegistry = bpmnJS.get('elementRegistry');
               const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
               const horizontal = participant[0].di.isHorizontal;
-              window.BpmnAutoLayout.applyAutoLayout(bpmnJS, { horizontal: horizontal });
+              window.BpmnAutoLayout.applyAutoLayout(bpmnJS, { horizontal: horizontal }, onLoadStart, onLoadEnd);
               
               const canvas = elementFactory._canvas;
               if (canvas && canvas.zoom) {
@@ -178,7 +178,8 @@ PaletteProvider.prototype.applyAutoLayout = function() {
 }
 
 // 함수 정의를 getPaletteEntries 바깥으로 옮긴다
-PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event, element) {
+PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event, element, onLoadStart = () => {}, onLoadEnd = () => {}) {
+  onLoadStart();
   var actions = {},
       create = this._create,
       elementFactory = this._elementFactory,
@@ -378,10 +379,11 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
   });
 
 
-  this.applyAutoLayout();
+  this.applyAutoLayout(onLoadEnd = onLoadEnd);
 };
 
-PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event, element) {
+PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event, element, onLoadStart = () => {}, onLoadEnd = () => {}) {
+  onLoadStart();
   var actions = {},
       create = this._create,
       elementFactory = this._elementFactory,
@@ -584,7 +586,7 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
     modeling.resizeShape(label.label, label.bounds);
   });
 
-  this.applyAutoLayout();
+  this.applyAutoLayout(onLoadEnd = onLoadEnd);
 };
 
 
@@ -609,7 +611,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
 
 
   
-  function applyAutoLayout() {
+  function applyAutoLayout(onLoadStart = () => {}, onLoadEnd = () => {}) {
     try {
         if (!window.BpmnAutoLayout) {
             console.error('BpmnAutoLayout 이 존재하지 않습니다.');
@@ -622,7 +624,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
                 const elementRegistry = bpmnJS.get('elementRegistry');
                 const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
                 const horizontal = participant[0].di.isHorizontal;
-                window.BpmnAutoLayout.applyAutoLayout(bpmnJS, { horizontal: horizontal });
+                window.BpmnAutoLayout.applyAutoLayout(bpmnJS, { horizontal: horizontal }, onLoadStart, onLoadEnd);
                 
                 const canvas = elementFactory._canvas;
                 if (canvas && canvas.zoom) {
