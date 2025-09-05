@@ -188,6 +188,8 @@
                                             v-on:change-sequence="onChangeSequence"
                                             v-on:remove-shape="onRemoveShape"
                                             v-on:change-shape="onChangeShape"
+                                            :onLoadStart="onBpmnLoadStart"
+                                            :onLoadEnd="onBpmnLoadEnd"
                                             style="height: 100%"
                                         ></BpmnUengine>
                                         
@@ -755,6 +757,14 @@ export default {
         }
     },
     methods: {
+        onBpmnLoadStart() {
+            this.isBpmnLoading = true;
+            console.log('onBpmnLoadStart');
+        },
+        onBpmnLoadEnd() {
+            this.isBpmnLoading = false;
+            console.log('onBpmnLoadEnd');
+        },
         isTabAvailable(tabValue) {
             return this.tabList.some(tab => tab.value === tabValue);
         },

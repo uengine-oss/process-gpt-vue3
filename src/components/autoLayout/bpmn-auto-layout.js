@@ -13,8 +13,9 @@
    * @param {Object} options - 레이아웃 옵션
    * @param {boolean} options.horizontal - 가로 방향 레이아웃 사용 여부
    */
-  BpmnAutoLayout.applyAutoLayout = function(bpmnModeler, options = {}) {
+  BpmnAutoLayout.applyAutoLayout = function(bpmnModeler, options = {}, onLoadStart = () => {}, onLoadEnd = () => {}) {
     const { horizontal = false } = options;
+    onLoadStart();
     
     // 가로 모드 여부를 전역 변수로 설정하여 다른 클래스/함수에서도 참조 가능하게 함
     window.isHorizontalLayout = horizontal;
@@ -416,6 +417,8 @@
     } catch (error) {
       console.error('자동 레이아웃 적용 중 오류가 발생했습니다:', error);
       throw error;
+    } finally {
+      onLoadEnd();
     }
   };
 
