@@ -19,8 +19,8 @@
                         </v-sheet>
                     </div>
                 </div>
-                <div v-if="childStreamingText && Object.keys(childStreamingText).length > 0" class="position-absolute bottom-0 end-0">
-                    <div class="mx-2" v-for="key in Object.keys(childStreamingText)" :key="key">
+                <div v-if="childStreamingText && Object.keys(filteredChildStreamingText).length > 0" class="position-absolute bottom-0 end-0">
+                    <div class="mx-2" v-for="key in Object.keys(filteredChildStreamingText)" :key="key">
                         <template v-if="isOpenSubprocess[key]">
                             <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100" style="max-width:100% !important;">
                                 <div
@@ -155,6 +155,7 @@ export default {
 
         // child streaming text
         childStreamingText: {},
+        // childStreamingText: { "4003a495-b591-4aed-baf9-fc08b37536aa": { "name": "VIP 뉴스레터 작성 시작:0", "log": "```json\n{\n \"completedActivities\": [\n {\n \"completedActivityId\": \"Event_1ttnk4r\",\n \"completedActivityName\": \"VIP 뉴스레터 작성 시작\",\n \"completedUserEmail\": \"827ac44b-1435-4ad8-ab14-8b28c3f64ef2\",\n \"type\": \"event\",\n \"expression\": \"\",\n \"dueDate\": \"2025-09-05\",\n \"result\": \"DONE\",\n \"description\": \"VIP 뉴스레터 작성 시작 이벤트\",\n \"cannotProceedErrors\": []\n }\n ],\n " }, "bea1984c-a95d-492f-a9d4-34d3d2810a82": { "name": "VIP 뉴스레터 작성 시작:1", "log": "```json\n{\n \"completedActivities\": [\n {\n \"completedActivityId\": \"Event_1ttnk4r\",\n \"completedActivityName\": \"VIP 뉴스레터 작성 시작\",\n \"completedUserEmail\": \"827ac44b-1435-4ad8-ab14-8b28c3f64ef2\",\n \"type\": \"event\",\n \"expression\": \"\",\n \"dueDate\": \"2025-09-05\",\n \"result\": \"DONE\",\n \"description\": \"VIP 뉴스레터 작성 시작 이벤트\",\n \"cannotProceedErrors\": []\n }\n ],\n " } },
         childSubscription: {},
         childTasks: [],
         isOpenSubprocess: {},
@@ -178,7 +179,7 @@ export default {
             let result = {};
             if (this.childStreamingText) {
                 Object.keys(this.childStreamingText).forEach(key => {
-                    result[key] = this.childStreamingText[key].replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+                    result[this.childStreamingText[key].name] = this.childStreamingText[key].log.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
                 });
             }
             return result;
@@ -511,7 +512,10 @@ export default {
                         this.childSubscription[childTaskId] = await backend.getTaskLog(childTaskId, async (childTask) => {
                             this.useFeedback = false;
                             if (childTask.log) {
-                                this.childStreamingText[childTaskId] = childTask.log;
+                                this.childStreamingText[childTaskId] = {
+                                    name: item.task.activity_name + ":" + item.task.execution_scope,
+                                    log: childTask.log,
+                                }
                             }
                         });
                         this.childTasks.push(childTaskId);
