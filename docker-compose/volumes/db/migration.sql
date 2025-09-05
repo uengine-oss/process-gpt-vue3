@@ -238,6 +238,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone default now();
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS temp_feedback text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS execution_scope text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS output_url text;
 
 -- chat_rooms table
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS id text;
