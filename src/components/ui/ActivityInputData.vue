@@ -192,7 +192,14 @@ export default {
             }
             if (typeof value === 'object') {
                 if (Array.isArray(value)) {
-                    return value.join(', ');
+                    const isObject = value.some(item => {
+                        return typeof item === 'object';
+                    });
+                    if (isObject) {
+                        return JSON.stringify(value, null, 2);
+                    } else {
+                        return value.join(', ');
+                    }
                 }
                 // 객체인 경우 JSON.stringify로 변환하되, 너무 길면 잘라서 표시
                 const jsonString = JSON.stringify(value, null, 2);
