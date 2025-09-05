@@ -434,6 +434,7 @@ export default {
                     this.EventBus.emit('instances-updated');
                     this.useFeedback = useFeedback;
                     await this.loadData();
+                    this.$refs.chatComponent.scrollToBottom();
                 }
             });
         },

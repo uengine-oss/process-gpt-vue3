@@ -377,7 +377,7 @@ export default {
 
                     await me.saveForm();
                     ///////////////////////////////////
-                    await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} }, me.isSimulate);
+                    // await backend.putWorkItem(me.$route.params.taskId, { parameterValues: {} }, me.isSimulate);
                 },
                 successMsg: this.$t('successMsg.intermediate')
             });
@@ -593,6 +593,8 @@ export default {
                     const fieldValue = await backend.getFieldValue(fieldInfo, procDefId, me.workItem.worklist.instId);
                     if (fieldValue) {
                         inputFields[fieldInfo] = fieldValue;
+                    } else {
+                        inputFields[fieldInfo] = '';
                     }
                 });
                 await Promise.all(fieldValuePromises);

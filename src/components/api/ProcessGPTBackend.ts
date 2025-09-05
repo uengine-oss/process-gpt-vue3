@@ -1649,7 +1649,7 @@ class ProcessGPTBackend implements Backend {
             await axios.post(`/execution/role-binding`, {
                 "input": {
                     "roles": roles,
-                    "email": localStorage.getItem('email'),
+                    "uuid": localStorage.getItem('uid'),
                     "proc_def_id": defId || null
                 }
             })
@@ -2317,7 +2317,7 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!response.error) {
-                const indexRes = await this.processFile(response, storageType, options);
+                this.processFile(response, storageType, options);
                 return response;
             } else {
                 return response;
@@ -2379,8 +2379,9 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             if (error && error.error && error.error == 'authentication_required') {
-                location.href = error.auth_url;
-                return { error: true, message: 'authentication_required' };
+                // location.href = error.auth_url;
+                // return { error: true, message: 'authentication_required' };
+                throw new Error('구글 드라이브 연동이 필요합니다. 관리자에게 문의하세요.');
             } else {
                 //@ts-ignore
                 throw new Error(error.message);
@@ -3837,30 +3838,30 @@ class ProcessGPTBackend implements Backend {
                 workitem = data;
             }
             const output = workitem.output;
-            if (!output) {
-                throw new Error('output not found');
-            }
-
-            let filed = output[formId][fieldId];
-            if(filed) {
-                fieldValue[formId] = {
-                    [fieldId]: filed
-                }
-            } else {
-                let group = Object.values(output[formId]);
-                if(group) {
-                    group.forEach((item: any) => {
-                        if(executionScope) {
-                            if(item[executionScope][fieldId]) {
-                                fieldValue[formId] = {
-                                    [fieldId]: item[executionScope][fieldId]
+            if (output && output[formId] && output[formId][fieldId]) {
+                let filed = output[formId][fieldId];
+                if(filed) {
+                    fieldValue[formId] = {
+                        [fieldId]: filed
+                    }
+                } else {
+                    let group = Object.values(output[formId]);
+                    if(group) {
+                        group.forEach((item: any) => {
+                            if(executionScope) {
+                                if(item[executionScope][fieldId]) {
+                                    fieldValue[formId] = {
+                                        [fieldId]: item[executionScope][fieldId]
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
+                return fieldValue;
+            } else {
+                return null;
             }
-            return fieldValue;
         } catch (error) {
             throw new Error(error.message);
         }
