@@ -23,7 +23,7 @@ export default class ConditionExampleGenenrator extends AIGenerator {
             {
                 role: "system",
                 content: `You are a process flow analysis expert.  
-Goal: From the CURRENT CONDITION (natural language), produce minimal Given When Then (GWT) examples that cover all essential decision boundaries with the fewest possible cases.
+Goal: From the CURRENT CONDITION (natural language), produce minimal When Then (WT) examples that cover all essential decision boundaries with the fewest possible cases.
 
 TASK
 1. Focus only on CURRENT CONDITION.
@@ -77,20 +77,19 @@ RULES
 - Bad examples (condition FALSE): Show scenarios where the condition is not met and what different business action should happen.
 - Use realistic business values that clearly demonstrate the business difference.
 - Each example should show a clear business scenario with different outcomes.
+- Each example should be in Korean.
 
 OUTPUT FORMAT:
 \`\`\`json
 {
   "good_examples": [
     {
-      "given": "<business context>",
       "when": "<trigger condition>",
       "then": "<business outcome when condition is TRUE>"
     }
   ],
   "bad_examples": [
     {
-      "given": "<business context>",
       "when": "<trigger condition>",
       "then": "<business outcome when condition is FALSE>"
     }
