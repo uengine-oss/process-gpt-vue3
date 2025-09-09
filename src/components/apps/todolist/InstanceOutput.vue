@@ -2,32 +2,37 @@
     <div class="w-100">
         <v-row v-if="outputList.length > 0" 
             class="ma-0 pa-0" 
-            style="height:calc(100vh - 180px); overflow: auto;"
         >
-            <v-col v-for="item in outputList" 
+            <v-col v-for="(item, index) in outputList" 
                 :key="item.id" cols="12" 
                 :lg="isInWorkItem ? 12 : 6" 
                 :md="isInWorkItem ? 12 : 6" 
                 sm="12"
                 class="pa-2"
             >
-                <v-card class="h-100" elevation="2">
-                    <v-card-title class="pa-2">
-                        <span>{{ item.name }}</span>
-                        <!-- output URL -->
-                        <v-tooltip v-if="item.outputURL" location="bottom">
-                            <template v-slot:activator="{ props }">
-                                <v-icon class="ml-1" v-bind="props" size="16" @click="openOutputURL(item.outputURL)">
-                                    mdi-link-variant
-                                </v-icon>
-                            </template>
-                            {{ item.outputURL }}
-                        </v-tooltip>
-                    </v-card-title>
-                    <v-card-text class="pa-2">
-                        <DynamicForm v-if="item.type === 'form'" :formHTML="item.html" v-model="item.output" :readonly="true" class="dynamic-form" />
-                        <div v-else-if="item.type === 'html'" v-html="item.html" class="border border-1 border-gray-300 rounded-md pa-2"></div>
-                    </v-card-text>
+                <v-card elevation="2" :style="`overflow: ${isItemExpanded(index) ? 'visible' : 'hidden'}; height: ${isItemExpanded(index) ? 'auto' : '150px'}; transition: all 0.3s ease;`" :class="{ 'expanded-card': isItemExpanded(index) }">
+                    <v-card-title class="pa-4 pb-0">{{ item.name }}</v-card-title>
+                    <!-- output URL -->
+                    <v-tooltip v-if="item.outputURL" location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-icon class="ml-1" v-bind="props" size="16" @click="openOutputURL(item.outputURL)">
+                                mdi-link-variant
+                            </v-icon>
+                        </template>
+                        {{ item.outputURL }}
+                    </v-tooltip>
+                    <v-row class="ma-0 pa-0 justify-end">
+                        <SummaryButton v-if="item.type === 'form'"
+                            @expanded="(isExpanded) => handleReportExpanded(index, isExpanded)"
+                        >
+                            <DynamicForm :formHTML="item.html" v-model="item.output" :readonly="true" class="dynamic-form" />
+                        </SummaryButton>
+                        <SummaryButton v-else-if="item.type === 'html'"
+                            @expanded="(isExpanded) => handleReportExpanded(index, isExpanded)"
+                        >
+                            <div v-html="item.html" class="border border-1 border-gray-300 rounded-md pa-2"></div>
+                        </SummaryButton>
+                    </v-row>
                 </v-card>
             </v-col>
         </v-row>
@@ -36,6 +41,7 @@
 
 <script>
 import DynamicForm from '@/components/designer/DynamicForm.vue';
+import SummaryButton from '@/components/ui/SummaryButton.vue';
 
 import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
@@ -43,6 +49,7 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         DynamicForm,
+        SummaryButton
     },
     props: {
         instance: Object,
@@ -53,6 +60,7 @@ export default {
     },
     data: () => ({
         outputList: [],
+        expandedItems: {}, // 각 아이템별 확장 상태
     }),
     mounted() {
         this.init();
@@ -137,7 +145,22 @@ export default {
         openOutputURL(url) {
             window.open(url, '_blank');
         },
+        handleReportExpanded(index, isExpanded) {
+            this.expandedItems[index] = isExpanded;
+        },
+        // 각 아이템의 확장 상태를 확인하는 조건문
+        isItemExpanded(index) {
+            return this.expandedItems[index] || false;
+        }
     },
 }
 </script>
+
+<style scoped>
+.expanded-card {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+}
+</style>
 

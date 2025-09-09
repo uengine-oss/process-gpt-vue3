@@ -16,7 +16,7 @@
                         color="primary" 
                         size="small" 
                         @click="openPDM()" 
-                        class="ml-3"
+                        class="ml-3 rounded-pill"
                         style="align-self: center;"
                     >
                         {{ $t('ProjectCard.executeProcess') }}
@@ -94,7 +94,7 @@
                                 {{ $t('ProjectCard.noProjectInfo') }}
                             </div>
                         </div>
-                        <div class="pa-4 pt-2 pb-2" v-for="index in 20" :key="index">
+                        <div class="pa-4 pt-2 pb-2">
                             <!-- 인스턴스 카드 리스트 -->
                             <v-card v-for="item in instanceList" 
                                 :key="item.name" 

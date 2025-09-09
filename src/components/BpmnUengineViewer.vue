@@ -1,5 +1,4 @@
 <template>
-    <!-- <div> -->
     <div style="height: 100%; position: relative;" 
         ref="container" class="vue-bpmn-diagram-container" 
         :class="{ 'view-mode': isViewMode, 'vue-bpmn-diagram-container-view-mode': isViewMode }" 
@@ -63,7 +62,6 @@
             </v-row>
         </div>
     </div>
-    <!-- </div> -->
 </template>
 
 <script>
