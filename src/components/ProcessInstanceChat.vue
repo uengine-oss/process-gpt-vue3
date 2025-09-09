@@ -91,16 +91,6 @@
                     />
                 </div>
             </template>
-            <template v-slot:custom-message-actions="{ message }">
-                <!-- <v-tooltip location="left">
-                    <template v-slot:activator="{ props }">
-                        <v-btn size="small" variant="flat" class="mr-1" icon v-bind="props" @click="revertActivity(message)">
-                            <v-icon>mdi-replay</v-icon>
-                        </v-btn>
-                    </template>
-                    <span>해당 단계로 되돌리기</span>
-                </v-tooltip> -->
-            </template>
         </Chat>
     </div>
 </template>
@@ -535,32 +525,6 @@ export default {
             }
             this.showAcceptFeedback = false;
         },
-        async revertActivity(message) {
-            let input = {
-                activity_id: '',
-                process_instance_id: '',
-                process_definition_id: '',
-                form_values: null,
-                revert_from: ''
-            }
-            if (message.jsonContent) {
-                input.form_values = message.jsonContent;
-            }
-            if (message.workitemId) {
-                input.revert_from = message.workitemId;
-                this.runningTaskId = message.workitemId;
-            }
-            if (message.activityId) {
-                input.activity_id = message.activityId;
-            }
-            if (this.processInstance && this.processInstance.instId) {
-                input.process_instance_id = this.processInstance.instId;
-                input.process_definition_id = this.processInstance.defId;
-            }
-            console.log(input);
-            await backend.executeInstance(input);
-            await this.getTaskLog(false);
-        }
     }
 };
 </script>
