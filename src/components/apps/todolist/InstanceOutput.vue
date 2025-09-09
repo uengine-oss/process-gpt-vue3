@@ -4,14 +4,16 @@
             class="ma-0 pa-0" 
         >
             <v-col v-for="(item, index) in outputList" 
-                :key="item.id" cols="12" 
+                :key="index" cols="12" 
                 :lg="isInWorkItem ? 12 : 6" 
                 :md="isInWorkItem ? 12 : 6" 
                 sm="12"
                 class="pa-2"
             >
-                <v-card elevation="2" :style="`overflow: ${isItemExpanded(index) ? 'visible' : 'hidden'}; height: ${isItemExpanded(index) ? 'auto' : '150px'}; transition: all 0.3s ease;`" :class="{ 'expanded-card': isItemExpanded(index) }">
-                    <v-card-title class="pa-4 pb-0">{{ item.name }}</v-card-title>
+                <v-card elevation="2"
+                    class="pa-4"
+                >
+                    <v-card-title class="pa-0 pb-4">{{ item.name }}</v-card-title>
                     <!-- output URL -->
                     <v-tooltip v-if="item.outputURL" location="bottom">
                         <template v-slot:activator="{ props }">
@@ -22,14 +24,10 @@
                         {{ item.outputURL }}
                     </v-tooltip>
                     <v-row class="ma-0 pa-0 justify-end">
-                        <SummaryButton v-if="item.type === 'form'"
-                            @expanded="(isExpanded) => handleReportExpanded(index, isExpanded)"
-                        >
+                        <SummaryButton v-if="item.type === 'form'">
                             <DynamicForm :formHTML="item.html" v-model="item.output" :readonly="true" class="dynamic-form" />
                         </SummaryButton>
-                        <SummaryButton v-else-if="item.type === 'html'"
-                            @expanded="(isExpanded) => handleReportExpanded(index, isExpanded)"
-                        >
+                        <SummaryButton v-else-if="item.type === 'html'">
                             <div v-html="item.html" class="border border-1 border-gray-300 rounded-md pa-2"></div>
                         </SummaryButton>
                     </v-row>
@@ -60,7 +58,6 @@ export default {
     },
     data: () => ({
         outputList: [],
-        expandedItems: {}, // 각 아이템별 확장 상태
     }),
     mounted() {
         this.init();
@@ -145,22 +142,8 @@ export default {
         openOutputURL(url) {
             window.open(url, '_blank');
         },
-        handleReportExpanded(index, isExpanded) {
-            this.expandedItems[index] = isExpanded;
-        },
-        // 각 아이템의 확장 상태를 확인하는 조건문
-        isItemExpanded(index) {
-            return this.expandedItems[index] || false;
-        }
     },
 }
 </script>
 
-<style scoped>
-.expanded-card {
-    height: auto !important;
-    min-height: auto !important;
-    max-height: none !important;
-}
-</style>
 

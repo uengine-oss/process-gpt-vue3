@@ -6,6 +6,11 @@ hr {
     opacity: 1 !important;
 }
 
+.work-item-tab-box .ps__rail-y,
+.work-item-tab-box .ps__rail-x {
+    display: none !important;
+}
+
 .font-weight-medium {
     font-weight: 400 !important;
 }
@@ -492,6 +497,10 @@ hr {
 .agent-field-User-input-generator .user-input-generator-textarea .v-field__field {
     max-height: calc(100vh - 420px);
     overflow-y: auto;
+}
+.work-item-skeleton-loader .v-skeleton-loader__image {
+    height: 70vh;
+    border-radius: 8px;
 }
 
 .agent-field-skeleton .v-skeleton-loader__image {
