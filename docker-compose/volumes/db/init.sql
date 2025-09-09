@@ -100,8 +100,6 @@ create table if not exists public.users (
     role text null,
     tenant_id text null,
     device_token text null,
-    google_credentials jsonb,
-    google_credentials_updated_at TIMESTAMP WITH TIME ZONE,
     goal text null,
     persona text null,
     url text null,
@@ -254,6 +252,7 @@ create table if not exists public.todolist (
     updated_at timestamp with time zone default now(),
     temp_feedback text null,
     output_url text null,
+    rework_count integer null default 0,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -418,6 +417,29 @@ create table if not exists public.events (
   constraint events_pkey primary key (id)
 ) TABLESPACE pg_default;
 
+create or replace function match_documents(
+  query_embedding vector(1536),
+  filter jsonb default '{}'::jsonb,
+  match_count int default 5
+)
+returns table (
+  id uuid,
+  content text,
+  metadata jsonb,
+  similarity float
+)
+language sql
+as $$
+  select
+    documents.id,
+    documents.content,
+    documents.metadata,
+    1 - (documents.embedding <=> query_embedding) as similarity
+  from documents
+  where documents.metadata @> filter
+  order by documents.embedding <=> query_embedding
+  limit match_count;
+$$;
 
 
 ------------------ 결제시스템 ---------------------------
@@ -953,11 +975,6 @@ CREATE TRIGGER set_updated_at
     BEFORE UPDATE ON public.todolist
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER encrypt_credentials_trigger
-    BEFORE INSERT OR UPDATE ON public.users
-    FOR EACH ROW
-    EXECUTE FUNCTION encrypt_credentials_trigger();
 
 CREATE TRIGGER before_insert_user_permissions
     BEFORE INSERT ON public.user_permissions
@@ -1731,9 +1748,8 @@ CREATE TABLE IF NOT EXISTS public.document_images (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id UUID REFERENCES documents(id),
     tenant_id TEXT NOT NULL,
-    image_id TEXT NOT NULL,
-    image_url TEXT NOT NULL,
-    download_url TEXT NOT NULL,
+    image_id TEXT NULL,
+    image_url TEXT NULL,
     metadata JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -1743,6 +1759,9 @@ CREATE INDEX IF NOT EXISTS idx_document_images_document_id ON document_images(do
 CREATE INDEX IF NOT EXISTS idx_document_images_tenant_id ON document_images(tenant_id);
 
 
+-- ==========================================
+-- Mem0 vector store 함수 (vecs 스키마)
+-- ==========================================
 -- 조회 (agent_id 필터링 + limit)
 create or replace function public.get_memories(agent text, lim int default 100)
 returns setof vecs.memories
@@ -1773,5 +1792,8 @@ security definer
 as $$
   delete from vecs.memories where metadata->>'agent_id' = agent;
 $$;
+
+
+
 
 

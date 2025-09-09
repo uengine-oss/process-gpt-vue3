@@ -2381,7 +2381,7 @@ class ProcessGPTBackend implements Backend {
                     const putObj = {
                         id: options.file_id,
                         proc_inst_id: options.proc_inst_id,
-                        file_path: response.data.download_link,
+                        file_path: response.data.download_url,
                         is_process: true
                     }
                     await storage.putObject('proc_inst_source', putObj);
@@ -2417,11 +2417,45 @@ class ProcessGPTBackend implements Backend {
 
     async saveDriveInfo(driveInfo: any) {
         try {
-            driveInfo.id = driveInfo.provider + '_' + driveInfo.tenant_id;
-            const response = await storage.putObject('tenant_oauth', driveInfo);
-            return response;
+            await storage.putObject('tenant_oauth', driveInfo);
+            const drive = await storage.getObject('tenant_oauth', {
+                match: {
+                    tenant_id: window.$tenantName
+                }
+            })
+
+            if (!drive.google_credentials || !drive.google_credentials_updated_at) {
+                const response = await axios.get('/memento/auth/google/url?tenant_id='+window.$tenantName);
+                if (response.data && response.data.auth_url) {
+                    location.href = response.data.auth_url;
+                } else {
+                    throw new Error(response.data.message);
+                }
+            }
         } catch (error) {
             throw new Error(error.message);
+        }
+    }
+
+    async callbackOAuth() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            const scope = urlParams.get('scope');
+            const email = localStorage.getItem('email');
+
+            const response = await fetch('/memento/auth/google/callback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, state, scope, user_email: email })
+            });
+            const result = await response.json();
+            if (result.success) {
+                console.log('OAuth 성공');
+            }
+        } catch (error) {
+            console.error('OAuth 실패:', error);
         }
     }
 
