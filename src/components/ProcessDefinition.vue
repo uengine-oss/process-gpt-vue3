@@ -57,12 +57,19 @@
                             </template>
                         </v-tooltip>
                     </v-row>
+                    <div v-show="isBpmnLoading">
+                        <v-skeleton-loader
+                            type="image"
+                            class="mx-auto work-item-skeleton-loader"
+                        ></v-skeleton-loader>
+                    </div>
                     <div v-if="isXmlMode" style="height: calc(100% - 50px); margin-top: 50px; overflow: auto; padding: 10px">
                         <XmlViewer v-if="isViewMode" :xml="bpmn"/>
                         <XMLEditor v-else :xml="bpmn" @changeBpmn="changeBpmn"/>
                     </div>
-                    <BpmnuEngine
-                        v-else
+                    <template v-else>
+                        <BpmnuEngine
+                        v-show="!isBpmnLoading"
                         ref="bpmnVue"
                         :key="bpmnKey"
                         :bpmn="bpmn"
@@ -75,18 +82,21 @@
                         :isAIGenerated="isAIGenerated"
                         @closePDFDialog="closePDFDialog"
                         v-on:error="handleError"
-                        v-on:shown="handleShown"
+                        v-on:shown="handleBpmnShown"
                         v-on:openDefinition="(ele) => openSubProcess(ele)"
                         v-on:loading="handleLoading"
                         v-on:openPanel="(id) => openPanel(id)"
                         v-on:update-xml="(val) => $emit('update-xml', val)"
                         v-on:definition="(def) => (definitions = def)"
                         v-on:add-shape="onAddShape"
-                        v-on:done="setDefinition"
+                        v-on:done="handleBpmnDone"
                         @changeElement="changeElement"
                         @update:isAIGenerated="updateIsAIGenerated"
-                        style="height: 100%"
-                    ></BpmnuEngine>
+                        :onLoadStart="onBpmnLoadStart"
+                        :onLoadEnd="onBpmnLoadEnd"
+                            style="height: 100%"
+                        ></BpmnuEngine>
+                    </template>
                     
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
                         :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
@@ -340,6 +350,7 @@ export default {
             { title: 'processDefinition.actions', key: 'actions' }
         ],
         taskStatus: null,
+        isBpmnLoading: false,
 
         // preview
         isPreviewMode: false,
@@ -525,6 +536,12 @@ export default {
         // this.processVariables = this.copyProcessDefinition.data
     },
     methods: {
+        onBpmnLoadStart() {
+            this.isBpmnLoading = true;
+        },
+        onBpmnLoadEnd() {
+            this.isBpmnLoading = false;
+        },
         updateCurrentStep(){
             this.closePanel();
             this.isPreviewMode = true
@@ -959,6 +976,13 @@ export default {
         },
         handleShown() {
             console.log('diagram shown');
+        },
+        handleBpmnShown() {
+            this.onBpmnLoadEnd();
+        },
+        handleBpmnDone() {
+            this.setDefinition();
+            this.onBpmnLoadEnd();
         },
         handleLoading() {
             console.log('diagram loading');

@@ -966,7 +966,7 @@
         "source": "Source"
     },
     "ProjectCard": {
-        "managment": "Progress",
+        "managment": "Schedule",
         "kanbanBoard": "Kanban Board",
         "instanceList": "Instance List",
         "projectInfo": "Project Information",
