@@ -968,7 +968,7 @@
         "source": "소스"
     },
     "ProjectCard": {
-        "managment": "프로세스",
+        "managment": "스케줄",
         "kanbanBoard": "칸반보드",
         "instanceList": "인스턴스 목록",
         "projectInfo": "프로젝트 정보",
