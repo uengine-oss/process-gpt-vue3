@@ -1534,5 +1534,14 @@
         "subprocessCreating": "Subprocess creating...",
         "feedback": "Is the process execution normal?",
         "feedbackDescription": "Is the process execution normal?"
+    },
+    "footer": {
+        "BusinessNumber": "BusinessRegistration<br>No.",
+        "CEO": "CEO : Jin-young Jang",
+        "Address1": "301-ho, 31 Saimdang-ro, Seocho-gu,",
+        "Address2": "Seoul, 06650, Republic of Korea",
+        "tel": "Customer Center",
+        "serviceTerms": "Service Terms",
+        "privacyPolicy": "Privacy Policy"
     }
 }
