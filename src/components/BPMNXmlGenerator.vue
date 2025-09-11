@@ -581,6 +581,14 @@ export default {
         });
       }
       
+      // 서브프로세스 처리 추가
+      if (jsonModel.subProcesses && Array.isArray(jsonModel.subProcesses)) {
+        console.log('서브프로세스 처리 시작:', jsonModel.subProcesses.length, '개');
+        jsonModel.subProcesses.forEach(subProcess => {
+          this.createSubProcess(xmlDoc, subProcess, process, inComing, outGoing, laneActivityMapping);
+        });
+      }
+      
       console.log('createProcessElements 완료:', Object.keys(laneActivityMapping).length, '개 레인 매핑');
       return laneActivityMapping;
     },
@@ -811,6 +819,14 @@ export default {
                 }
                 }
             });
+        }
+
+        // 서브프로세스 모양 생성 추가
+        if (jsonModel.subProcesses && Array.isArray(jsonModel.subProcesses)) {
+          console.log('서브프로세스 모양 생성 시작:', jsonModel.subProcesses.length, '개');
+          jsonModel.subProcesses.forEach(subProcess => {
+            this.createSubProcessShape(xmlDoc, subProcess, bpmnPlane, isHorizontal, activityPos, offsetPos, roleVector);
+          });
         }
         
         console.log('createShapes 완료:', Object.keys(activityPos).length, '개의 모양 생성됨');
@@ -1866,6 +1882,403 @@ export default {
       };
       
       return typeMapping[elementType] || 'bpmn:Task';
+    },
+    createSubProcess(xmlDoc, subProcess, process, inComing, outGoing, laneActivityMapping) {
+      console.log('서브프로세스 생성:', subProcess.id, subProcess.name);
+      
+      // 서브프로세스 요소 생성
+      const subProcessElement = xmlDoc.createElementNS(
+        'http://www.omg.org/spec/BPMN/20100524/MODEL',
+        'bpmn:subProcess'
+      );
+      
+      subProcessElement.setAttribute('id', subProcess.id);
+      subProcessElement.setAttribute('name', subProcess.name || '');
+
+      // extensionElements 추가
+      const ext = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
+      const prop = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+      const json = xmlDoc.createElementNS('http://uengine', 'uengine:json');
+      json.textContent = '{}';
+      prop.appendChild(json);
+      ext.appendChild(prop);
+      subProcessElement.appendChild(ext);
+      
+      // 서브프로세스에 대한 incoming/outgoing 연결 추가
+      if (inComing[subProcess.id] && inComing[subProcess.id].length > 0) {
+        inComing[subProcess.id].forEach(seqId => {
+          const incoming = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:incoming');
+          incoming.textContent = seqId;
+          subProcessElement.appendChild(incoming);
+        });
+      }
+      
+      if (outGoing[subProcess.id] && outGoing[subProcess.id].length > 0) {
+        outGoing[subProcess.id].forEach(seqId => {
+          const outgoing = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:outgoing');
+          outgoing.textContent = seqId;
+          subProcessElement.appendChild(outgoing);
+        });
+      }
+      
+      // 서브프로세스 내부 요소들 생성 (이미 있는 메서드들 사용)
+      if (subProcess.children && subProcess.children.activities) {
+        // activities 처리
+        subProcess.children.activities.forEach(activity => {
+          if (activity.type === 'userTask') {
+            this.createActivity(activity, subProcess.children.data || [], laneActivityMapping, outGoing, inComing, subProcessElement, xmlDoc);
+          }
+        });
+      }
+      
+      if (subProcess.children && subProcess.children.events) {
+        // events 처리
+        subProcess.children.events.forEach(event => {
+          if (event.type === 'StartEvent' || event.type === 'EndEvent') {
+            // 이벤트에 대한 레인 매핑 추가
+            if (!laneActivityMapping[event.role]) {
+              laneActivityMapping[event.role] = [];
+            }
+            laneActivityMapping[event.role].push(event.id);
+            
+            // 이벤트 요소 생성
+            const eventElement = this.createEvent(event, subProcessElement, xmlDoc);
+          }
+        });
+      }
+      
+      if (subProcess.children && subProcess.children.gateways) {
+        // gateways 처리
+        subProcess.children.gateways.forEach(gateway => {
+          this.createGateway(gateway, laneActivityMapping, outGoing, inComing, subProcessElement, xmlDoc);
+        });
+      }
+      
+      // 서브프로세스 내부 시퀀스 플로우 생성
+      if (subProcess.children && subProcess.children.sequences) {
+        subProcess.children.sequences.forEach(sequence => {
+          if (!sequence.source || !sequence.target) {
+            console.log('소스나 타겟이 없는 서브프로세스 시퀀스 무시:', sequence.id || '미지정 ID');
+            return;
+          }
+          
+          const sequenceId = 'SequenceFlow_' + sequence.source + '_' + sequence.target;
+          console.log('서브프로세스 시퀀스 처리:', sequenceId);
+          
+          const sequenceFlow = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sequenceFlow');
+          sequenceFlow.setAttribute('id', sequenceId);
+          sequenceFlow.setAttribute('sourceRef', sequence.source);
+          sequenceFlow.setAttribute('targetRef', sequence.target);
+          
+          // 조건이 있을 경우 extensionElements 추가
+          if (sequence.condition) {
+            const ext = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:extensionElements');
+            const prop = xmlDoc.createElementNS('http://uengine', 'uengine:properties');
+            const json = xmlDoc.createElementNS('http://uengine', 'uengine:json');
+            
+            let conditionPayload = { condition: null };
+            if (typeof sequence.condition === 'string') {
+              conditionPayload.condition = sequence.condition;
+              sequenceFlow.setAttribute('name', sequence.condition || '');
+            } else {
+              conditionPayload = {
+                condition: {
+                  _type: sequence.condition._type || 'org.uengine.kernel.Evaluate',
+                  key: sequence.condition.key || '',
+                  value: sequence.condition.value || '',
+                  condition: sequence.condition.condition || '=='
+                }
+              };
+            }
+            
+            json.textContent = JSON.stringify(conditionPayload);
+            prop.appendChild(json);
+            ext.appendChild(prop);
+            sequenceFlow.appendChild(ext);
+          }
+          
+          subProcessElement.appendChild(sequenceFlow);
+        });
+      }
+      
+      // 서브프로세스를 메인 프로세스에 추가
+      process.appendChild(subProcessElement);
+      
+      console.log('서브프로세스 생성 완료:', subProcess.id);
+    },
+    createSubProcessShape(xmlDoc, subProcess, bpmnPlane, isHorizontal, activityPos, offsetPos, roleVector) {
+      console.log('서브프로세스 모양 생성:', subProcess.id);
+      console.log('서브프로세스 위치 정보:', subProcess.x, subProcess.y);
+      console.log('서브프로세스 전체 정보:', subProcess);
+      
+      // ✅ 1. 서브프로세스 크기 동적 계산
+      let subProcessWidth = 200;  // 기본 너비
+      let subProcessHeight = 150; // 기본 높이
+      
+      if (subProcess.children) {
+        const activities = subProcess.children.activities || [];
+        const events = subProcess.children.events || [];
+        const gateways = subProcess.children.gateways || [];
+        
+        // 내부 요소 개수에 따른 크기 계산
+        const totalElements = activities.length + events.length + gateways.length;
+        
+        if (totalElements > 0) {
+          // 요소 간 간격 고려하여 크기 계산
+          const elementSpacing = 80;  // 요소 간 간격
+          const padding = 40;         // 여백
+          
+          // 너비: 요소 개수 * 요소 너비 + 간격 + 여백
+          subProcessWidth = Math.max(200, totalElements * 10 + (totalElements - 1) * elementSpacing + padding * 2);
+          
+          // 높이: 최대 3개 요소까지는 기본 높이, 그 이상이면 증가
+          subProcessHeight = Math.max(150, Math.ceil(totalElements / 3) * 100 + padding * 2);
+        }
+      }
+      
+      // ✅ 2. 위치 자동 설정 (동일한 역할의 가장 최근 액티비티 우측)
+      let subProcessX = subProcess.x;
+      let subProcessY = subProcess.y;
+      
+      if (!subProcessX || !subProcessY) {
+        console.log('위치 정보 없음, 동일한 역할의 가장 최근 액티비티 우측에 자동 배치');
+        
+        // ✅ 동일한 역할을 가진 가장 최근 액티비티 찾기
+        let mostRecentActivity = null;
+        let maxOrder = -1;
+        
+        if (subProcess.role && roleVector[subProcess.role]) {
+          // 해당 역할의 모든 액티비티 중에서 가장 최근 것 찾기
+          Object.keys(roleVector[subProcess.role]).forEach(activityId => {
+            const activity = roleVector[subProcess.role][activityId];
+            
+            // layer와 order 정보가 있으면 그것을 우선 사용
+            if (activity.layer !== undefined && activity.order !== undefined) {
+              if (activity.layer > maxOrder) {
+                maxOrder = activity.layer;
+                mostRecentActivity = activity;
+              } else if (activity.layer === maxOrder && activity.order > (mostRecentActivity?.order || -1)) {
+                mostRecentActivity = activity;
+              }
+            } else {
+              // layer/order 정보가 없으면 x 좌표 기준으로 가장 오른쪽에 있는 것 선택
+              if (!mostRecentActivity || activity.x > mostRecentActivity.x) {
+                mostRecentActivity = activity;
+              }
+            }
+          });
+        }
+        
+        if (mostRecentActivity) {
+          console.log('동일한 역할의 가장 최근 액티비티 발견:', mostRecentActivity);
+          
+          // 가장 최근 액티비티의 우측에 배치
+          const spacing = 150; // 액티비티 간 간격
+          subProcessX = mostRecentActivity.x + spacing;
+          subProcessY = mostRecentActivity.y; // Y는 동일하게 유지
+          
+          console.log('서브프로세스 위치 설정:', subProcessX, subProcessY, '(가장 최근 액티비티 우측)');
+        } else {
+          console.log('동일한 역할의 액티비티를 찾을 수 없음, 기본 위치 사용');
+          subProcessX = 300;
+          subProcessY = 200;
+        }
+      }
+      
+      const subProcessShape = xmlDoc.createElementNS('http://www.omg.org/spec/BPMN/20100524/DI', 'bpmndi:BPMNShape');
+      subProcessShape.setAttribute('id', `BPMNShape_${subProcess.id}`);
+      subProcessShape.setAttribute('bpmnElement', subProcess.id);
+      subProcessShape.setAttribute('isExpanded', 'true');
+      
+      const dcBounds = xmlDoc.createElementNS('http://www.omg.org/spec/DD/20100524/DC', 'dc:Bounds');
+      
+      // 중앙점에서 좌상단 좌표로 변환
+      const topLeftX = subProcessX - (subProcessWidth / 2);
+      const topLeftY = subProcessY - (subProcessHeight / 2);
+      
+      console.log('서브프로세스 모양 좌표:', { x: topLeftX, y: topLeftY, width: subProcessWidth, height: subProcessHeight });
+      
+      dcBounds.setAttribute('x', topLeftX);
+      dcBounds.setAttribute('y', topLeftY);
+      dcBounds.setAttribute('width', subProcessWidth);
+      dcBounds.setAttribute('height', subProcessHeight);
+      
+      subProcessShape.appendChild(dcBounds);
+      bpmnPlane.appendChild(subProcessShape);
+      
+      console.log('서브프로세스 모양 DOM에 추가 완료');
+      
+      // activityPos와 offsetPos 업데이트
+      activityPos[subProcess.id] = {
+        x: subProcessX,
+        y: subProcessY,
+        width: subProcessWidth,
+        height: subProcessHeight
+      };
+      
+      offsetPos[subProcess.id] = {
+        topLeftX: topLeftX,
+        topLeftY: topLeftY,
+        center: { x: subProcessX, y: subProcessY },
+        topLeft: { x: topLeftX, y: topLeftY },
+        topRight: { x: topLeftX + subProcessWidth, y: topLeftY },
+        bottomLeft: { x: topLeftX, y: topLeftY + subProcessHeight },
+        bottomRight: { x: topLeftX + subProcessWidth, y: topLeftY + subProcessHeight },
+        top: { x: topLeftX + (subProcessWidth / 2), y: topLeftY },
+        right: { x: topLeftX + subProcessWidth, y: topLeftY + (subProcessHeight / 2) },
+        bottom: { x: topLeftX + (subProcessWidth / 2), y: topLeftY + subProcessHeight },
+        left: { x: topLeftX, y: topLeftY + (subProcessHeight / 2) }
+      };
+      
+      // ✅ 3. 레인 자동 매핑 (role 기반)
+      if (subProcess.role) {
+        if (!roleVector[subProcess.role]) {
+          roleVector[subProcess.role] = {};
+        }
+        roleVector[subProcess.role][subProcess.id] = {
+          x: subProcessX,
+          y: subProcessY
+        };
+        
+        console.log(`서브프로세스 '${subProcess.id}'을(를) 역할 '${subProcess.role}'의 레인에 할당`);
+      }
+      
+      // ✅ 4. 내부 요소 배치 개선 (동적 크기에 맞춰 배치)
+      if (subProcess.children && subProcess.children.activities) {
+        console.log('내부 activities 처리 시작:', subProcess.children.activities.length, '개');
+        subProcess.children.activities.forEach((activity, index) => {
+          let activityX = activity.x;
+          let activityY = activity.y;
+          
+          if (!activityX || !activityY) {
+            console.log('내부 activity 위치 정보 없음, 동적 배치:', activity.id);
+            
+            // 서브프로세스 크기에 맞춰 균등 배치
+            const elementSpacing = 80;
+            const startX = topLeftX + 50;  // 서브프로세스 내부 여백
+            const centerY = subProcessY;   // 서브프로세스 중앙 Y
+            
+            activityX = startX + (index * (100 + elementSpacing));  // 100은 액티비티 너비
+            activityY = centerY;
+          }
+          
+          console.log('내부 activity 모양 생성:', activity.id, activityX, activityY);
+          
+          // Activity 타입을 명시적으로 설정하여 올바른 크기로 생성되도록 함
+          const activityForShape = { ...activity, elementType: 'Activity' };
+          
+          const { elementShape, activityPosInfo, offsetPosInfo } = this.createElementShape(
+            xmlDoc, activityForShape, activityX, activityY, isHorizontal, 'subProcess'
+          );
+          
+          bpmnPlane.appendChild(elementShape);
+          Object.assign(activityPos, activityPosInfo);
+          Object.assign(offsetPos, offsetPosInfo);
+          
+          // 역할 벡터 업데이트 (서브프로세스와 동일한 역할)
+          if (subProcess.role) {
+            if (!roleVector[subProcess.role]) {
+              roleVector[subProcess.role] = {};
+            }
+            roleVector[subProcess.role][activity.id] = {
+              x: activityX,
+              y: activityY
+            };
+          }
+        });
+      }
+      
+      if (subProcess.children && subProcess.children.events) {
+        console.log('내부 events 처리 시작:', subProcess.children.events.length, '개');
+        subProcess.children.events.forEach((event, index) => {
+          let eventX = event.x, eventY = event.y;
+          if (!eventX || !eventY) {
+            // 시작/종료 이벤트를 서브프로세스 좌우 끝에 배치
+            if (/^start/i.test(event.type)) {
+              eventX = topLeftX + 20;  // 서브프로세스 왼쪽
+              eventY = subProcessY;
+            } else {
+              eventX = topLeftX + subProcessWidth - 20;  // 서브프로세스 오른쪽
+              eventY = subProcessY;
+            }
+          }
+
+          const eventForShape = { ...event, elementType: 'Event' };
+
+          const { elementShape, activityPosInfo, offsetPosInfo } = this.createElementShape(
+            xmlDoc, eventForShape, eventX, eventY, isHorizontal, 'subProcess'
+          );
+
+          bpmnPlane.appendChild(elementShape);
+          Object.assign(activityPos, activityPosInfo);
+          Object.assign(offsetPos,  offsetPosInfo);
+          
+          // 역할 벡터 업데이트
+          if (subProcess.role) {
+            if (!roleVector[subProcess.role]) {
+              roleVector[subProcess.role] = {};
+            }
+            roleVector[subProcess.role][event.id] = {
+              x: eventX,
+              y: eventY
+            };
+          }
+        });
+      }
+      
+      if (subProcess.children && subProcess.children.gateways) {
+        console.log('내부 gateways 처리 시작:', subProcess.children.gateways.length, '개');
+        subProcess.children.gateways.forEach((gateway, index) => {
+          let gatewayX = gateway.x, gatewayY = gateway.y;
+          if (!gatewayX || !gatewayY) {
+            // 게이트웨이를 서브프로세스 하단 중앙에 배치
+            gatewayX = subProcessX;
+            gatewayY = topLeftY + subProcessHeight - 30;
+          }
+
+          const gatewayForShape = { ...gateway, elementType: 'Gateway' };
+
+          const { elementShape, activityPosInfo, offsetPosInfo } = this.createElementShape(
+            xmlDoc, gatewayForShape, gatewayX, gatewayY, isHorizontal, 'subProcess'
+          );
+
+          elementShape.setAttribute('isMarkerVisible', 'true');
+
+          bpmnPlane.appendChild(elementShape);
+          Object.assign(activityPos, activityPosInfo);
+          Object.assign(offsetPos,  offsetPosInfo);
+          
+          // 역할 벡터 업데이트
+          if (subProcess.role) {
+            if (!roleVector[subProcess.role]) {
+              roleVector[subProcess.role] = {};
+            }
+            roleVector[subProcess.role][gateway.id] = {
+              x: gatewayX,
+              y: gatewayY
+            };
+          }
+        });
+      }
+
+      if (subProcess.children && subProcess.children.sequences) {
+        console.log('서브프로세스 내부 시퀀스 엣지 생성 시작:', subProcess.children.sequences.length, '개');
+        
+        const tempModel = {
+          elements: subProcess.children.sequences.map(seq => ({
+            elementType: 'Sequence',
+            id: seq.id || `SequenceFlow_${seq.source}_${seq.target}`,
+            source: seq.source,
+            target: seq.target,
+            condition: seq.condition || {},
+            waypoints: seq.waypoints || []
+          }))
+        };
+        
+        this.createSequenceEdges(xmlDoc, tempModel, bpmnPlane, offsetPos, activityPos, isHorizontal);
+      }
+      
+      console.log('서브프로세스 모양 생성 완료:', subProcess.id);
     },
   }
 };

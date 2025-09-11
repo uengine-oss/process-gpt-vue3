@@ -1,29 +1,3 @@
-<script setup>
-import { ref } from 'vue';
-
-const name = localStorage.getItem("userName");
-const email = localStorage.getItem("email");
-const picture = localStorage.getItem("picture");
-
-const getProfile = (profile) => {
-    let basePath = window.location.port == '' ? window.location.origin:'' 
-    if(profile){
-        if(profile.includes("defaultUser.png")){
-            return `${basePath}/images/defaultUser.png`;
-        } else {
-            const img = new Image();
-            img.src = profile;
-            img.onerror = () => {
-                return `${basePath}/images/defaultUser.png`;
-            };
-            return profile;
-        }
-    } else {
-        return `${basePath}/images/defaultUser.png`;
-    }
-}
-</script>
-
 <template>
     <v-sheet>
         <!---Topbar Row-->
@@ -42,3 +16,36 @@ const getProfile = (profile) => {
         </div>
     </v-sheet>
 </template>
+
+<script>
+export default {
+    name: 'ChatProfile',
+    data() {
+        return {
+            name: localStorage.getItem("userName"),
+            email: localStorage.getItem("email"),
+            picture: localStorage.getItem("picture")
+        };
+    },
+    methods: {
+        getProfile(profile) {
+            let basePath = window.location.port == '' ? window.location.origin:'' 
+            if(profile){
+                if(profile.includes("defaultUser.png")){
+                    return `${basePath}/images/defaultUser.png`;
+                } else {
+                    const img = new Image();
+                    img.src = profile;
+                    img.onerror = () => {
+                        return `${basePath}/images/defaultUser.png`;
+                    };
+                    return profile;
+                }
+            } else {
+                return `${basePath}/images/defaultUser.png`;
+            }
+        }
+    }
+};
+</script>
+

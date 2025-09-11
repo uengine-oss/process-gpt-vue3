@@ -6,7 +6,7 @@
         >
             <v-card flat class="pa-1">
                 <v-card-item class="pa-0">
-                    <h5 class="text-h5 mb-4">MCP Servers</h5>
+                    <!-- <h5 class="text-h5 mb-4">MCP Servers</h5> -->
 
                     <v-list>
                         <v-list-item
@@ -100,16 +100,14 @@
 
             <v-card v-else elevation="10" class="d-flex align-center justify-center add-mcp-server" @click="addNewMCP">
                 <div class="text-center">
-                    <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-server</v-icon>
+                    <v-icon size="64" color="gray" class="mb-4 server-icon">mdi-server</v-icon>
                     <v-list-item class="mt-4 add-mcp-server-item">
                         
                         <v-row class="pa-0 ma-0 align-center">
-                            <v-icon icon="mdi-plus" color="primary" size="24" style="padding-top: 1px;"></v-icon>
-                            <v-list-item-title class="font-weight-medium text-primary ml-2">{{ $t('accountTab.addMCPServer') }}</v-list-item-title>
+                            <v-icon icon="mdi-plus" color="gray" size="24" class="plus-icon" style="padding-top: 1px;"></v-icon>
+                            <v-list-item-title class="font-weight-medium text-gray ml-2 server-title">{{ $t('accountTab.addMCPServer') }}</v-list-item-title>
                         </v-row>
                     </v-list-item>
-                    <!-- <h6 class="text-h6 text-grey">서버를 선택하여 설정을 편집하세요</h6>
-                    <p class="text-caption text-grey">좌측 리스트에서 편집 아이콘을 클릭하세요</p> -->
                 </div>
             </v-card>
         </v-col>
@@ -428,11 +426,20 @@ export default {
 <style scoped>
 .add-mcp-server {
     height: 400px; 
-    border: 3px dashed rgba(var(--v-theme-primary), 0.5);
+    border: 3px dashed rgba(128, 128, 128, 0.5);
 }
 .add-mcp-server:hover {
     border: 3px dashed rgba(var(--v-theme-primary), 1);
     background-color: rgba(var(--v-theme-primary), 0.1);
+}
+.add-mcp-server:hover .server-icon {
+    color: rgb(var(--v-theme-primary)) !important;
+}
+.add-mcp-server:hover .plus-icon {
+    color: rgb(var(--v-theme-primary)) !important;
+}
+.add-mcp-server:hover .server-title {
+    color: rgb(var(--v-theme-primary)) !important;
 }
 .v-list-item {
     transition: background-color 0.2s ease;

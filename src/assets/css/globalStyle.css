@@ -6,6 +6,15 @@ hr {
     opacity: 1 !important;
 }
 
+.work-item-tab-box .ps__rail-y,
+.work-item-tab-box .ps__rail-x {
+    display: none !important;
+}
+
+.font-weight-medium {
+    font-weight: 400 !important;
+}
+
 .vue-bpmn-diagram-container-view-mode .bjs-container {
     height: 93% !important;
 }
@@ -425,49 +434,11 @@ hr {
     max-width: 100%;
 }
 
-.node-text-hover {
-    cursor: help;
-    transition: opacity 0.2s ease;
-}
 
-.node-text-hover:hover {
-    opacity: 0.8;
-}
 
-.node-info-tooltip {
-    position: absolute;
-    background-color: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 10px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    max-width: 250px;
-    min-width: 150px;
-    animation: fadeIn 0.2s ease-in;
-    pointer-events: auto;
-}
 
-.node-info-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border: 5px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.9);
-}
 
-.node-info-content div {
-    margin: 3px 0;
-    line-height: 1.4;
-}
 
-.node-info-content strong {
-    color: #FFF;
-    margin-right: 5px;
-}
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-5px); }
@@ -526,6 +497,10 @@ hr {
 .agent-field-User-input-generator .user-input-generator-textarea .v-field__field {
     max-height: calc(100vh - 420px);
     overflow-y: auto;
+}
+.work-item-skeleton-loader .v-skeleton-loader__image {
+    height: 70vh;
+    border-radius: 8px;
 }
 
 .agent-field-skeleton .v-skeleton-loader__image {
@@ -586,7 +561,7 @@ hr {
 }
 
 #apexTreeWrapper > svg {
-    height: 98% !important;
+    height: 99.2% !important;
     width: 100% !important;
 }
 
@@ -750,6 +725,12 @@ hr {
     height: calc(100vh - 310px) !important
 }
 
+
+.instance-card-tab-6 {
+    height: calc(100vh - 250px);
+    overflow: auto;
+}
+
 .instance-card-tab-4 .chat-message-bubble,
 .work-item-activity-box .chat-message-bubble {
   position: relative;
@@ -768,10 +749,6 @@ hr {
     flex: 1 1 auto;
     overflow-y: auto;
     min-height: 0; /* 중요! 안 주면 flexbox에서 스크롤 안 생기는 경우 있음 */
-}
-
-.app-base-card-is-mobile-height {
-    max-height: calc(100vh - 110px);
 }
 
 .app-base-card-is-pc-height {
@@ -852,8 +829,11 @@ hr {
     width: 100% !important;
 }
 
-.gantt-area {
-    height: calc(100vh - 180px);
+.instance-card-gantt-area {
+    height: calc(100vh - 246px);
+}
+.project-card-gantt-area {
+    height: calc(100vh - 200px);
 }
 
 .project-card-kanban-board .todo-list-card-box {
@@ -1149,7 +1129,7 @@ hr {
         max-width: 300px;
     }
 
-    .gantt-area {
+    .project-card-gantt-area {
         height: calc(100vh - 50px);
     }
 
@@ -1180,12 +1160,16 @@ hr {
         display: flex !important;
     }
 
-    .process-consulting-ai-third-screen {
-        height: calc(100vh - 110px);
+    .instance-card-tab-6 {
+        height: calc(100vh - 200px);
+        overflow: auto;
     }
 
+    .app-base-card-is-mobile-height,
+    .process-consulting-ai-third-screen,
     .instance-card-process-box {
-        height: calc(100vh - 110px);
+        max-height: calc(100vh - 200px);
+        height: calc(100vh - 200px);
     }
 
     .work-itme-current-component .v-checkbox {
@@ -1229,8 +1213,14 @@ hr {
     }
 
     .instance-card-tab-4 .chat-view-box {
-        max-height: calc(100vh - 110px);
+        max-height: calc(100vh - 200px);
     }
+
+    .instance-card-tab-7 .instance-card-tab-height {
+        height: calc(100vh - 200px);
+        overflow: auto;
+    }
+    
     .todo-list-card-box {
         max-height: calc(100vh - 100px) !important;
         height: 100% !important;

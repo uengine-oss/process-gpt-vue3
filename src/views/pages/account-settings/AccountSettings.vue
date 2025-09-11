@@ -7,24 +7,29 @@
             >
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
-                    <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default">
-                        <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
-                        <div v-if="admin">
-                            <v-tab v-if="superAdmin" value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
-                            <v-tab v-if="superAdmin" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
-                            <v-tab value="MCP-Servers"> MCP - Servers </v-tab>
-                            <v-tab value="MCP-Environments"> MCP - Environments </v-tab>
-                            <v-tab value="ConnectionInfo">
-                                <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
-                            </v-tab>
-                            <v-tab v-if="superAdmin" @click="goToTenantManage">
-                                <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.tenantManage') }}
-                            </v-tab>
+                    <v-row class="ma-0 pa-0 align-center">
+                        <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default">
+                            <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
+                            <div v-if="admin">
+                                <v-tab v-if="superAdmin" value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
+                                <v-tab v-if="superAdmin" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
+                                <v-tab value="MCP-Servers"> MCP - Servers </v-tab>
+                                <v-tab value="MCP-Environments"> MCP - Environments </v-tab>
+                                <v-tab value="ConnectionInfo">
+                                    <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
+                                </v-tab>
+                            </div>
+                            <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
+                            <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
+                            <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
+                        </v-tabs>
+                        <div v-if="superAdmin" @click="goToTenantManage"
+                            class="settings-tenant-manage-btn v-tab-style text-none"
+                            style="letter-spacing: 0;"
+                        >
+                            <Icons :icon="'office'"  :size="20" class="mr-2" />{{ $t('accountTab.tenantManage') }}
                         </div>
-                        <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
-                        <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
-                        <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
-                    </v-tabs>
+                    </v-row>
                 </div>
 
                 <!-- 모바일: 버튼 형태 -->
@@ -97,7 +102,7 @@
                                 size="small"
                                 @click="goToTenantManage"
                             >
-                                <UserCircleIcon class="mr-2" size="16" />{{ $t('accountTab.tenantManage') }}
+                            <Icons :icon="'office'"  :size="16" class="mr-2" />{{ $t('accountTab.tenantManage') }}
                             </v-btn>
                         </template>
                     </div>
@@ -247,5 +252,40 @@ export default {
 .selected-tab {
     background: #808080 !important;
     color: white !important;
+}
+
+.v-tab-style {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    min-height: 70px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.0892857143em;
+    line-height: 1.25rem;
+    text-transform: uppercase;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 4px 4px 0 0;
+    position: relative;
+}
+
+.v-tab-style:hover {
+    background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.v-tab-style:focus {
+    outline: none;
+}
+
+.v-tab-style::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: transparent;
+    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>

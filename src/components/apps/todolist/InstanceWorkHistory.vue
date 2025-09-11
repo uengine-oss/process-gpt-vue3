@@ -12,11 +12,13 @@
 <script>
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
+import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
+    mixins: [ScrollBottomHandle],
     components: {
         'work-history-uEngine': WorkItemChat,
         'work-history-ProcessGPT': ProcessInstanceChat,

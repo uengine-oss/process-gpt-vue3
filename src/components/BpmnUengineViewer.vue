@@ -1,5 +1,4 @@
 <template>
-    <!-- <div> -->
     <div style="height: 100%; position: relative;" 
         ref="container" class="vue-bpmn-diagram-container" 
         :class="{ 'view-mode': isViewMode, 'vue-bpmn-diagram-container-view-mode': isViewMode }" 
@@ -63,7 +62,6 @@
             </v-row>
         </div>
     </div>
-    <!-- </div> -->
 </template>
 
 <script>
@@ -121,6 +119,20 @@ export default {
         lineAnimation: {
             type: Boolean,
             default: false
+        },
+        onLoadStart: {
+            type: Function,
+            default: () => {
+                return () => {
+                }
+            }
+        },
+        onLoadEnd: {
+            type: Function,
+            default: () => {
+                return () => {
+                }
+            }
         }
     },
     data: function () {
@@ -150,6 +162,7 @@ export default {
         },
     },
     mounted() {
+        this.onLoadStart();
         this.currentInstanceId = this.instanceId;
         this.initializeViewer();
         this.setDiagramEvent();
@@ -745,10 +758,10 @@ export default {
             participant.forEach(element => {
                 const horizontal = element.di.isHorizontal;
                 if(horizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element);
+                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
                     element.di.isHorizontal = false;
                 } else {
-                    palleteProvider.changeParticipantVerticalToHorizontal(event, element);
+                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
                     element.di.isHorizontal = true;
                 }
             });
@@ -777,13 +790,13 @@ export default {
                 const horizontal = element.di.isHorizontal;
                 if(isHorizontal && !horizontal) {
                     if(element.width < element.height) {
-                        palleteProvider.changeParticipantVerticalToHorizontal(event, element);
+                        palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
                         self.isHorizontal = true;
                         element.di.isHorizontal = true;
                     }
                 } else if(!isHorizontal && horizontal) {
                     if(element.width > element.height) {
-                        palleteProvider.changeParticipantHorizontalToVertical(event, element);
+                        palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
                         self.isHorizontal = false;
                         element.di.isHorizontal = false;
                     }

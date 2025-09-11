@@ -45,7 +45,6 @@
                     <Chat
                         :messages="messages"
                         :userInfo="userInfo"
-                        :agentInfo="agentInfo"
                         :userList="userList"
                         :currentChatRoom="currentChatRoom"
                         :type="path"
@@ -71,9 +70,6 @@
                         <template v-slot:custom-chat-top>
                             <div class="custom-top-area">
                                 <div class="position-fixed">
-                                    <div v-if="showAgentLearning">
-                                        <v-switch v-model="isAgentLearning" color="primary" label="학습 모드" density="compact" class="ml-4" />
-                                    </div>
                                     <div v-if="attachments.length > 0">
                                         <v-tooltip text="Attachments" location="right">
                                             <template v-slot:activator="{ props }">
@@ -234,7 +230,6 @@ import AssistantChats from "../chat/AssistantChats.vue";
 import Attachments from "./Attachments.vue";
 import ChatModule from "@/components/ChatModule.vue";
 import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
-import AgentChatGenerator from "@/components/ai/AgentChatGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import UserListing from '@/components/apps/chats/UserListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
@@ -242,7 +237,6 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import Chat from "@/components/ui/Chat.vue";
 import axios from 'axios';
 import partialParse from "partial-json-parser";
-import { VDataTable } from 'vuetify/components/VDataTable';
 
 
 export default {
@@ -254,7 +248,6 @@ export default {
         ChatListing,
         UserListing,
         ChatProfile,
-        VDataTable,
         AssistantChats,
         Attachments
     },
@@ -310,59 +303,29 @@ export default {
         // attachments
         isAttachmentsOpen: false,
         attachments: [],
-
-        isAgentLearning: false,
-        // showAgentLearning: true,
     }),
     computed: {
         filteredChatRoomList() {
             return this.chatRoomList.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
         },
-        showAgentLearning() {
-            if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
-                return true;
-            } else {
-                return false;
-            }
-        }
-
     },
     watch: {
         currentChatRoom: {
             async handler(newVal) {
                 if (newVal && newVal.id) {
-                    if (newVal.participants.length > 0) {
-                        this.isAgentChat = newVal.participants.some(participant => participant.is_agent);
-                        this.selectedUserInfo = newVal.participants.find(participant => participant.is_agent);
-                        // if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
-                        //     this.showAgentLearning = true;
-                        // } else {
-                        //     this.showAgentLearning = false;
-                        // }
-                    }
                     if(this.generator) {
                         this.chatRoomId = newVal.id;
                         this.generator.setChatRoomData(newVal);
                         await this.getAttachments();
+                    } else {
+                        this.generator = new ChatGenerator(this, {
+                            isStream: true,
+                            preferredLanguage: "Korean"
+                        });
                     }
                 }
             },
             deep: true
-        },
-        isAgentChat: {
-            async handler(newVal) {
-                if (newVal) {
-                    this.generator = new AgentChatGenerator(this, {
-                        isStream: false,
-                        preferredLanguage: "Korean",
-                    });
-                } else {
-                    this.generator = new ChatGenerator(this, {
-                        isStream: true,
-                        preferredLanguage: "Korean"
-                    });
-                }
-            }
         },
     },
     async mounted() {
@@ -380,7 +343,6 @@ export default {
 
         await this.getCalendar();
         await this.getAttachments();
-
 
 
         this.EventBus.on('messages-updated', () => {
@@ -415,17 +377,10 @@ export default {
             this.chatRoomId = this.currentChatRoom.id;
         }
 
-        if (this.isAgentChat) {
-            this.generator = new AgentChatGenerator(this, {
-                isStream: false,
-                preferredLanguage: "Korean",
-            });
-        } else {
-            this.generator = new ChatGenerator(this, {
-                isStream: true,
-                preferredLanguage: "Korean"
-            });
-        }
+        this.generator = new ChatGenerator(this, {
+            isStream: true,
+            preferredLanguage: "Korean"
+        });
     },
     beforeUnmount() {
         this.EventBus.emit('chat-room-unselected');
@@ -697,13 +652,6 @@ export default {
                 this.ProcessGPTActive = false
                 this.isSystemChat = false
             }
-            this.isAgentChat = chatRoomInfo.participants.some(participant => participant.is_agent);
-            this.selectedUserInfo = chatRoomInfo.participants.find(participant => participant.is_agent);
-            // if (this.selectedUserInfo && this.selectedUserInfo.is_agent && this.selectedUserInfo.persona && this.selectedUserInfo.persona !== '') {
-            //     this.showAgentLearning = true;
-            // } else {
-            //     this.showAgentLearning = false;
-            // }
             this.getMessages(this.currentChatRoom.id);
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
             
@@ -750,18 +698,14 @@ export default {
         async beforeSendMessage(newMessage) {
             if (newMessage && (newMessage.text != '' || (newMessage.images && newMessage.images.length > 0) || newMessage.image != null)) {
                 this.putMessage(this.createMessageObj(newMessage))
-                if (this.isAgentChat) {
-                    this.generator.beforeGenerate(newMessage);
-                } else {
-                    if(!this.generator.contexts) {
-                        let contexts = await this.backend.listDefinition();
-                        this.generator.setContexts(contexts);
-                    }
-                    
-                    let instanceList = await this.backend.getAllInstanceList(); 
-                    this.generator.setWorkList(instanceList);
-                    newMessage.callType = 'chats'
+                if(!this.generator.contexts) {
+                    let contexts = await this.backend.listDefinition();
+                    this.generator.setContexts(contexts);
                 }
+                
+                let instanceList = await this.backend.getAllInstanceList(); 
+                this.generator.setWorkList(instanceList);
+                newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
                 this.backend.saveAccessPage(this.userInfo.email, 'chat:' + this.currentChatRoom.id);
             }
@@ -946,7 +890,7 @@ export default {
         async afterGenerationFinished(responseObj, chatRoomId = null) {
             if(responseObj){
                 let startProcess = false;
-                let role = this.isAgentChat ? 'agent' : 'system';
+                let role = 'system';
                 let obj = this.createMessageObj(responseObj, role)
                 if(responseObj.messageForUser){
                     obj.messageForUser = responseObj.messageForUser
@@ -1006,19 +950,6 @@ export default {
                         }
                     } else if(responseObj.work == 'ScheduleQuery'){
                         console.log(responseObj)
-                    } else if (responseObj.work == 'Mem0AgentQuery') {
-                        if (responseObj.searchResults) {
-                            obj.content = responseObj.content
-                            obj.htmlContent = responseObj.htmlContent
-                            obj.searchResults = responseObj.searchResults
-                        }
-                    } else if (responseObj.work == 'Mem0AgentInformation' || responseObj.work == 'Mem0AgentResponse') {
-                        obj.content = responseObj.content
-                    } else if (responseObj.work == 'A2AResponse') {
-                        let content = responseObj.content
-                        content = content.replaceAll('undefined', '')
-                        obj.content = content
-                        obj.htmlContent = content.replaceAll('\n', '<br>')
                     } else {
                         startProcess = true;
                     }
@@ -1026,10 +957,6 @@ export default {
                     if(startProcess) {
                         this.startProcess(obj, chatRoomId)
                     } else {
-                        if (this.isAgentChat) {
-                            obj.profile = this.selectedUserInfo.profile
-                            obj.name = this.selectedUserInfo.username
-                        }
                         this.putMessage(obj, chatRoomId)
                     }
                 } else {

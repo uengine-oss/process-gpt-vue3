@@ -47,17 +47,15 @@ export default {
     },
     props: {
         value: Object,
+        element: Object,
         processDefinitionId: String,
         condition: String
     },
     data() {
         return {
             header: [
-                { key: 'given', name: 'Given' },
-                { key: 'when', name: 'When' },
-                { key: 'then', name: 'Then' },
-                { key: 'valid_at', name: 'Valid At' },
-                { key: 'invalid_at', name: 'Invalid At' }
+                { key: 'when', name: '조건 (When)' },
+                { key: 'then', name: '결과 (Then)' }
             ],
             goodExamples: [],
             badExamples: [],
@@ -68,22 +66,9 @@ export default {
         };
     },
     watch: {
-        value: {
-            handler(newVal) {
-                if (newVal.good_examples) {
-                    this.goodExamples = newVal.good_examples.map(example => ({
-                        ...example,
-                        valid_at: example.valid_at ? example.valid_at : null,
-                        invalid_at: example.invalid_at ? example.invalid_at : null
-                    }));
-                }
-                if (newVal.bad_examples) {
-                    this.badExamples = newVal.bad_examples.map(example => ({
-                        ...example,
-                        valid_at: example.valid_at ? example.valid_at : null,
-                        invalid_at: example.invalid_at ? example.invalid_at : null
-                    }));
-                }
+        element: {
+            async handler() {
+                await this.getExamples();
             },
             deep: true
         }
@@ -91,35 +76,44 @@ export default {
     async mounted() {
         this.backend = BackendFactory.createBackend();
 
-        if (this.value) {
-            const today = new Date().toISOString();
-            if (this.value.good_examples) {
-                this.goodExamples = this.value.good_examples;
-                this.goodExamples.forEach(example => {
-                    example.valid_at = example.valid_at ? example.valid_at : today;
-                });
-            }
-            if (this.value.bad_examples) {
-                this.badExamples = this.value.bad_examples;
-                this.badExamples.forEach(example => {
-                    example.invalid_at = example.invalid_at ? example.invalid_at : today;
-                });
-            }
-        } else {
-            this.examples = [];
-        }
-
-        const process = await this.backend.getRawDefinition(this.processDefinitionId);
-        this.processDefinition = process.definition;
-
         this.genenrator = new ConditionExampleGenenrator(this, {
             isStream: true,
             preferredLanguage: "Korean",
             processDefinition: this.processDefinition,
             condition: this.condition
         });
-    },  
+
+        await this.getExamples();
+    },
     methods: {
+        async getExamples() {
+            const process = await this.backend.getRawDefinition(this.processDefinitionId);
+            this.processDefinition = process.definition;
+            if (this.processDefinition && this.element && this.element.id) {
+                const sequence = this.processDefinition.sequences.find((sequence) => sequence.id === this.element.id);
+                if (sequence) {
+                    const properties = JSON.parse(sequence.properties);
+                    const today = new Date().toISOString();
+                    if (properties.examples) {
+                        this.goodExamples = properties.examples.good_examples;
+                        if (this.goodExamples) {
+                            this.goodExamples.forEach(example => {
+                                example.valid_at = example.valid_at ? example.valid_at : today;
+                            });
+                        }
+                        this.badExamples = properties.examples.bad_examples;
+                        if (this.badExamples) {
+                            this.badExamples.forEach(example => {
+                                example.invalid_at = example.invalid_at ? example.invalid_at : today;
+                            });
+                        }
+                    }
+                }
+            } else {
+                this.goodExamples = [];
+                this.badExamples = [];
+            }
+        },
         async generateExamples() {
             this.isGenerating = true;
             await this.genenrator.generate();

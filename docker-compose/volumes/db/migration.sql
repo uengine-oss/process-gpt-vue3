@@ -96,6 +96,8 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tools text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS skills text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_agent boolean DEFAULT false;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS model text;
+ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials;
+ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials_updated_at;
 
 
 -- configuration table
@@ -166,7 +168,7 @@ ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS current_activity_ids t
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS participants text[];
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS role_bindings jsonb;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS variables_data jsonb;
-ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS status text;
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS status process_status;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS proc_def_version text;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS project_id uuid;
@@ -214,7 +216,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS activity_id text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS activity_name text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS start_date timestamp without time zone;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS end_date timestamp without time zone;
-ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS status text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS status todo_status;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS description text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS tool text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS due_date timestamp without time zone;
@@ -229,13 +231,15 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS consumer text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS log text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS project_id uuid;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft jsonb;
-ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_mode text;
-ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_mode agent_mode;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch agent_orch;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback jsonb;
-ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status draft_status;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone default now();
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS temp_feedback text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS execution_scope text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS output_url text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS rework_count integer DEFAULT 0;
 
 -- chat_rooms table
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS id text;
@@ -389,10 +393,10 @@ ALTER TABLE public.events ADD COLUMN IF NOT EXISTS id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS job_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS todo_id text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS proc_inst_id text;
-ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS event_type event_type_enum;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS crew_type text;
 ALTER TABLE public.events ADD COLUMN IF NOT EXISTS data jsonb;
-ALTER TABLE public.events ADD COLUMN IF NOT EXISTS status text;
+ALTER TABLE public.events ADD COLUMN IF NOT EXISTS status event_status;
 
 
 -- ==========================================
@@ -1862,3 +1866,15 @@ BEGIN
         RAISE NOTICE 'payment_tenant_fk foreign key constraint already exists';
     END IF;
 END $$;
+
+
+
+-- proc_inst_source 테이블 추가
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid();
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS proc_inst_id TEXT;
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS file_name TEXT;
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS is_process BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS file_path TEXT;
+
+    

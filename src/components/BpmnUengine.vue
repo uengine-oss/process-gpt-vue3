@@ -82,6 +82,20 @@ export default {
         },
         isAIGenerated: {
             type: Boolean
+        },
+        onLoadStart: {
+            type: Function,
+            default: () => {
+                return () => {
+                }
+            }
+        },
+        onLoadEnd: {
+            type: Function,
+            default: () => {
+                return () => {
+                }
+            }
         }
     },
     components: {
@@ -117,6 +131,7 @@ export default {
         },
     },
     mounted() {
+        this.onLoadStart();
         this.canvasContainer = document.getElementById('canvas-container');
         this.initializeViewer();
         this.setDiagramEvent();
@@ -267,10 +282,10 @@ export default {
             participant.forEach(element => {
                 const horizontal = element.di.isHorizontal;
                 if(horizontal) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element);
+                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
                     element.di.isHorizontal = false;
                 } else {
-                    palleteProvider.changeParticipantVerticalToHorizontal(event, element);
+                    palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
                     element.di.isHorizontal = true;
                 }
             });
@@ -302,13 +317,13 @@ export default {
                 const horizontal = element.di.isHorizontal;
                 if(isHorizontal && !horizontal) {
                     if(element.width < element.height) {
-                        palleteProvider.changeParticipantVerticalToHorizontal(event, element);
+                        palleteProvider.changeParticipantVerticalToHorizontal(event, element, onLoadStart = self.onLoadStart, onLoadEnd = self.onLoadEnd);
                         self.isHorizontal = true;
                         element.di.isHorizontal = true;
                     }
                 } else if(!isHorizontal && horizontal) {
                     if(element.width > element.height) {
-                        palleteProvider.changeParticipantHorizontalToVertical(event, element);
+                        palleteProvider.changeParticipantHorizontalToVertical(event, element, onLoadStart = self.onLoadStart, onLoadEnd = self.onLoadEnd);
                         self.isHorizontal = false;
                         element.di.isHorizontal = false;
                     }

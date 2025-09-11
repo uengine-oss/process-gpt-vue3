@@ -48,7 +48,7 @@
             <td class="border-left-n" style="font-weight: 600;">{{ $t('AI3StepsSection.platform') }}</td>
             <td>MS Copilot 365<br>Google Duet AI</td>
             <td>Google AgentSpace<br>IBM Orchestrate</td>
-            <td>Palantir AIP<br>SAP AI, Custom AI Orchestration</td>
+            <td><b>Process GPT</b>, Palantir AIP<br>SAP AI, Custom AI Orchestration</td>
           </tr>
         </table>
       </div>

@@ -536,7 +536,8 @@ class ProcessGPTBackend implements Backend {
                     adhoc: workitem.adhoc || false,
                     currentActivities: workitem.adhoc ? [] : (instance && instance.currentActivityIds ? instance.currentActivityIds : [ activityInfo.id ]),
                     defVerId: instance && instance.defVersion ? instance.defVersion : null,
-                    output: workitem.output || ""
+                    output: workitem.output || "",
+                    log: workitem.log || ""
                 },
                 activity: {
                     name: workitem.activity_name,
@@ -1461,6 +1462,19 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getWorkListByRootInstId(rootInstId: number) {
+        try {
+            const list = await storage.list('todolist', { match: { 'root_proc_inst_id': rootInstId } });
+            const worklist: any[] = list.map((item: any) => {
+                return this.returnWorkItemObject(item);
+            })
+            return worklist;
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getFilteredInstanceList(filters: object, page: number) {
         //TODO: 인스턴스 목록 관리자 페이지 필터 결과
         return null
@@ -1648,7 +1662,7 @@ class ProcessGPTBackend implements Backend {
             await axios.post(`/execution/role-binding`, {
                 "input": {
                     "roles": roles,
-                    "email": localStorage.getItem('email'),
+                    "uuid": localStorage.getItem('uid'),
                     "proc_def_id": defId || null
                 }
             })
@@ -2316,7 +2330,7 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!response.error) {
-                const indexRes = await this.processFile(response, storageType, options);
+                this.processFile(response, storageType, options);
                 return response;
             } else {
                 return response;
@@ -2367,7 +2381,7 @@ class ProcessGPTBackend implements Backend {
                     const putObj = {
                         id: options.file_id,
                         proc_inst_id: options.proc_inst_id,
-                        file_path: response.data.download_link,
+                        file_path: response.data.download_url,
                         is_process: true
                     }
                     await storage.putObject('proc_inst_source', putObj);
@@ -2378,8 +2392,9 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             if (error && error.error && error.error == 'authentication_required') {
-                location.href = error.auth_url;
-                return { error: true, message: 'authentication_required' };
+                // location.href = error.auth_url;
+                // return { error: true, message: 'authentication_required' };
+                throw new Error('구글 드라이브 연동이 필요합니다. 관리자에게 문의하세요.');
             } else {
                 //@ts-ignore
                 throw new Error(error.message);
@@ -2402,11 +2417,45 @@ class ProcessGPTBackend implements Backend {
 
     async saveDriveInfo(driveInfo: any) {
         try {
-            driveInfo.id = driveInfo.provider + '_' + driveInfo.tenant_id;
-            const response = await storage.putObject('tenant_oauth', driveInfo);
-            return response;
+            await storage.putObject('tenant_oauth', driveInfo);
+            const drive = await storage.getObject('tenant_oauth', {
+                match: {
+                    tenant_id: window.$tenantName
+                }
+            })
+
+            if (!drive.google_credentials || !drive.google_credentials_updated_at) {
+                const response = await axios.get('/memento/auth/google/url?tenant_id='+window.$tenantName);
+                if (response.data && response.data.auth_url) {
+                    location.href = response.data.auth_url;
+                } else {
+                    throw new Error(response.data.message);
+                }
+            }
         } catch (error) {
             throw new Error(error.message);
+        }
+    }
+
+    async callbackOAuth() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            const scope = urlParams.get('scope');
+            const email = localStorage.getItem('email');
+
+            const response = await fetch('/memento/auth/google/callback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, state, scope, user_email: email })
+            });
+            const result = await response.json();
+            if (result.success) {
+                console.log('OAuth 성공');
+            }
+        } catch (error) {
+            console.error('OAuth 실패:', error);
         }
     }
 
@@ -2790,7 +2839,7 @@ class ProcessGPTBackend implements Backend {
                             id: majorId,
                             name: majorId,
                             sub_proc_list: [{
-                                id: definition.id,
+                                id: result.new_definition_id,
                                 name: definition.name,
                             }]
                         }]
@@ -3209,6 +3258,7 @@ class ProcessGPTBackend implements Backend {
             referenceIds: item.reference_ids || [],
             projectId: item.project_id || null,
             updatedAt: item.updated_at,
+            log: item.log || "",
             task: item
         }
     }
@@ -3809,6 +3859,7 @@ class ProcessGPTBackend implements Backend {
             let executionScope = null;
 
             let workitem = null;
+            let workitems = null;
             const { data, error } = await window.$supabase
                 .from('todolist')
                 .select('*')
@@ -3816,7 +3867,11 @@ class ProcessGPTBackend implements Backend {
                 .ilike('activity_id', activityId)
                 .single();
 
-            if (error) {
+            if (!error) { 
+                workitem = data;           
+            } 
+
+            if(!workitem) {
                 const instance = await this.getInstance(instanceId);
                 const rootInstanceId = instance.root_proc_inst_id;
                 executionScope = instance.execution_scope;
@@ -3826,39 +3881,77 @@ class ProcessGPTBackend implements Backend {
                     .eq('proc_inst_id', rootInstanceId)
                     .ilike('activity_id', activityId)
                     .single();
-                if(error) {
-                    throw new Error('workitem not found');
-                } else {
+                if(!error) {
                     workitem = data;
                 }
-            } else {
-                workitem = data;
-            }
-            const output = workitem.output;
-            if (!output) {
-                throw new Error('output not found');
             }
 
-            let filed = output[formId][fieldId];
-            if(filed) {
-                fieldValue[formId] = {
-                    [fieldId]: filed
-                }
-            } else {
-                let group = Object.values(output[formId]);
-                if(group) {
-                    group.forEach((item: any) => {
-                        if(executionScope) {
-                            if(item[executionScope][fieldId]) {
-                                fieldValue[formId] = {
-                                    [fieldId]: item[executionScope][fieldId]
-                                }
-                            }
-                        }
-                    });
+            if(!workitem) {
+                const { data, error } = await window.$supabase
+                    .from('todolist')
+                    .select('*')
+                    .eq('root_proc_inst_id', instanceId)
+                    .ilike('activity_id', activityId);
+                if(!error) {
+                    workitems = data;
+                    
+                    const sorted = (workitems ?? []).sort(
+                        (a, b) => Number(a.execution_scope ?? 0) - Number(b.execution_scope ?? 0)
+                    );
+                    
+                    workitems = sorted;
                 }
             }
-            return fieldValue;
+
+            if(!workitem && !workitems) {
+                throw new Error('workitem not found');
+            }
+
+            if(workitems) {
+                let filedList = [];
+                workitems.forEach((item: any, index: number) => {
+                    workitem = item;
+                    const output = item.output;
+                    if(output && output[formId]) {
+                        let filed = output[formId][fieldId];
+                        if(filed) {
+                            filedList.push(workitem.execution_scope + ":" + filed);
+                        }
+                    }
+                });
+                
+                fieldValue[formId] = {
+                    [fieldId]: filedList
+                }
+                return fieldValue;
+            }
+            if(workitem) {
+                const output = workitem.output;
+                if (output && output[formId]) {
+                    let filed = output[formId][fieldId];
+                    if(filed) {
+                        fieldValue[formId] = {
+                            [fieldId]: filed
+                        }
+                    } else {
+                        let group = Object.values(output[formId]);
+                        if(group) {
+                            group.forEach((item: any) => {
+                                if(executionScope) {
+                                    if(item[executionScope][fieldId]) {
+                                        fieldValue[formId] = {
+                                            [fieldId]: item[executionScope][fieldId]
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    return fieldValue;
+                } else {
+                    return null;
+                }
+            }
         } catch (error) {
             throw new Error(error.message);
         }
@@ -3968,6 +4061,18 @@ class ProcessGPTBackend implements Backend {
             if (diff.instruction) {
                 activity.instruction = diff.instruction;
             }
+
+            if (diff.conditionExamples && diff.conditionExamples.sequenceId) {
+                const sequence = process.definition.sequences.find((sequence: any) => sequence.id === diff.conditionExamples.sequenceId);
+                if (sequence) {
+                    const properties = JSON.parse(sequence.properties);
+                    properties.examples = {
+                        good_example: diff.conditionExamples.good_example,
+                        bad_example: diff.conditionExamples.bad_example
+                    };
+                    sequence.properties = JSON.stringify(properties);
+                }
+            }
             await storage.putObject('proc_def', process);
         } catch (error) {
             throw new Error(error.message);
@@ -4029,6 +4134,57 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getUserById(id: string) {
+        try {
+            const user = await storage.getObject('users', {
+                match: {
+                    id: id,
+                    tenant_id: window.$tenantName
+                }
+            });
+            if(!user) {
+                throw new Error('user not found');
+            }
+            return user;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getVecsDocuments(options?: any) {
+        try {
+            if (!options.agent_id) {
+                throw new Error('agent_id is required');
+            }
+            const response = await storage.callProcedure('get_memories', {
+                agent: options.agent_id,
+                lim: options.limit || 100
+            });
+            if (response) {
+                return response;
+            }
+            return [];
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteVecsDocument(options?: any) {
+        try {
+            if (options.agent_id) {
+                return await storage.callProcedure('delete_memories_by_agent', {
+                    agent: options.agent_id
+                });
+            } else if (options.memory_id) {
+                return await storage.callProcedure('delete_memory', {
+                    mem_id: options.memory_id
+                });
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
 }
 
 export default ProcessGPTBackend;

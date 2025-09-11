@@ -1,20 +1,62 @@
 <template>
     <div class="center-container">
         <v-card elevation="10" class="list-card">
-            <v-tabs v-model="tab" color="primary">
-                <v-tab value="managment">{{ $t('ProjectCard.managment') }}</v-tab>
-                <v-tab value="kanbanBoard">{{ $t('ProjectCard.kanbanBoard') }}</v-tab>
-                <v-tab value="instanceList">{{ $t('ProjectCard.instanceList') }}</v-tab>
-                <Icons :icon="'play'" :size="20" @click="openPDM()" style="align-self: center;"/>
-            </v-tabs>
+            <!-- 데스크톱: 기존 탭 -->
+            <div v-if="!isMobile">
+                <v-tabs v-model="tab" color="primary">
+                    <v-tab
+                        v-for="item in tabItems"
+                        :key="item.value"
+                        :value="item.value"
+                    >
+                        {{ $t(item.label) }}
+                    </v-tab>
+                    <v-btn 
+                        variant="elevated" 
+                        color="primary" 
+                        size="small" 
+                        @click="openPDM()" 
+                        class="ml-3 rounded-pill"
+                        style="align-self: center;"
+                    >
+                        {{ $t('ProjectCard.executeProcess') }}
+                    </v-btn>
+                </v-tabs>
+            </div>
+            
+            <!-- 모바일: 버튼 형태 -->
+            <div v-else class="pa-2">
+                <div class="d-flex flex-wrap ga-2 align-center">
+                    <v-btn
+                        v-for="item in tabItems"
+                        :key="item.value"
+                        :variant="tab === item.value ? 'flat' : 'text'"
+                        :color="tab === item.value ? '' : 'default'"
+                        :style="tab === item.value ? 'background: #808080; color: white;' : ''"
+                        size="small"
+                        @click="tab = item.value"
+                    >
+                        {{ $t(item.label) }}
+                    </v-btn>
+                    <v-btn 
+                        variant="elevated" 
+                        color="primary" 
+                        size="small" 
+                        @click="openPDM()" 
+                        style="margin-left: auto;"
+                    >
+                        {{ $t('ProjectCard.executeProcess') }}
+                    </v-btn>
+                </div>
+            </div>
             
             <v-window v-model="tab"
                 :touch="false"
             >
                 <v-window-item value="managment" class="h-100">
-                    <div class="gantt-area" v-if="!isLoading">
+                    <div class="project-card-gantt-area" v-if="!isLoading">
                         <GanttChart 
-                            :tasks="tasks" 
+                            :tasks="tasks"
                             :dependencies="dependencies"
                             :users="userList" 
                             @task-updated="handleTaskUpdated" 
@@ -35,33 +77,46 @@
                 <v-window-item value="instanceList">
                     <div class="project-card-kanban-instanceList">
                         <!-- 프로젝트 정보 -->
-                        <div style="padding: 24px; text-align: left; color: #888;">
+                        <div class="pa-5 pb-0">
                             <div v-if="project">
-                                <div style="font-size:18px; font-weight:bold; margin-bottom: 12px;">프로젝트 정보</div>
-                                <div style="font-size: 16px; margin-bottom: 4px;">프로젝트ID: {{ project.projectId }}</div>
-                                <div style="font-size: 16px; margin-bottom: 4px;">프로젝트명: {{ project.name }}</div>
-                                <div style="font-size: 16px; margin-bottom: 4px;">예상 기간: {{ project.startDate }} ~ {{ project.endDate }}</div>
-                                <div style="font-size: 16px; margin-bottom: 4px;">상태: {{ project.status }}</div>
-                                <div style="font-size: 16px;">프로젝트 생성일: {{ project.createdDate }}</div>
+                                <div class="d-flex align-center mb-3">
+                                    <span style="font-size:18px; font-weight:bold;">{{ $t('ProjectCard.projectInfo') }}</span>
+                                    <v-chip class="ml-3" size="small" :color="getStatusColor(project.status)" variant="outlined" density="comfortable">
+                                        {{ getStatusText(project.status) }}
+                                    </v-chip>
+                                </div>
+                                <div style="font-size: 16px; margin-bottom: 4px;">{{ $t('ProjectCard.projectId') }}: {{ project.projectId }}</div>
+                                <div style="font-size: 16px; margin-bottom: 4px;">{{ $t('ProjectCard.projectName') }}: {{ project.name }}</div>
+                                <div style="font-size: 16px; margin-bottom: 4px;">{{ $t('ProjectCard.expectedPeriod') }}: {{ formatDate(project.startDate) }} ~ {{ formatDate(project.endDate) }}</div>
+                                <div style="font-size: 16px;">{{ $t('ProjectCard.projectCreatedDate') }}: {{ formatDate(project.createdDate) }}</div>
                             </div>
                             <div v-else>
-                                프로젝트 정보가 없습니다.
+                                {{ $t('ProjectCard.noProjectInfo') }}
                             </div>
                         </div>
-                        <!-- 인스턴스 리스트 -->
-                        <v-list>
-                            <template v-for="(item, idx) in instanceList" :key="item.name">
-                                <v-list-item @click="onItemClick(item)">
-                                <v-list-item-content>
-                                    <v-list-item-title class="font-weight-bold">{{ item.name }}</v-list-item-title>
-                                    <v-list-item-subtitle>
-                                    {{ item.instId }} | {{ item.status }} | {{ item.startDate }} ~ {{ item.endDate }}
-                                    </v-list-item-subtitle>
-                                </v-list-item-content>
-                                </v-list-item>
-                                <v-divider v-if="idx < instanceList.length - 1" />
-                            </template>
-                        </v-list>
+                        <div class="pa-4 pt-2 pb-2">
+                            <!-- 인스턴스 카드 리스트 -->
+                            <v-card v-for="item in instanceList" 
+                                :key="item.name" 
+                                @click="onItemClick(item)"
+                                class="cursor-pointer"
+                                elevation="2"
+                                hover
+                            >
+                                <v-card-text class="pa-4 text-left">
+                                    <div class="d-flex align-center mb-2">
+                                        <div class="font-weight-bold text-h6 text-left" style="text-align: left !important;">{{ item.name }}</div>
+                                        <v-chip class="ml-3" size="small" :color="getStatusColor(item.status)" variant="outlined" density="comfortable">
+                                            {{ getStatusText(item.status) }}
+                                        </v-chip>
+                                    </div>
+                                    <div class="text-body-2 text-medium-emphasis text-left">
+                                        <div class="text-left">ID: {{ item.instId }}</div>
+                                        <div class="text-left">{{ $t('ProjectCard.period') }}: {{ formatDate(item.startDate) }} ~ {{ formatDate(item.endDate) }}</div>
+                                    </div>
+                                </v-card-text>
+                            </v-card>
+                        </div>
                     </div>
                 </v-window-item>
             </v-window>
@@ -109,6 +164,11 @@ export default {
         isShowProcess: false,
         processDefinitionData: null,
         processDefinition: null,
+        tabItems: [
+            { value: 'managment', label: 'ProjectCard.managment' },
+            { value: 'kanbanBoard', label: 'ProjectCard.kanbanBoard' },
+            { value: 'instanceList', label: 'ProjectCard.instanceList' }
+        ]
     }),
     mounted() {
         this.init();
@@ -126,7 +186,10 @@ export default {
     computed: {
         projectId() {
             return this.$route.params.projectId.replace(/_DOT_/g, '.');
-        }
+        },
+        isMobile() {
+            return this.$vuetify.display.width <= 768;
+        },
     },
     methods: {
         init() {
@@ -240,6 +303,78 @@ export default {
         },
         onItemClick(item) {
             this.$router.push(`/instancelist/${item.instId}`);
+        },
+        formatDate(dateString) {
+            if (!dateString) return '';
+            
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString; // 유효하지 않은 날짜인 경우 원본 반환
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            return `${year}.${month}.${day} / ${hours}:${minutes}`;
+        },
+        getStatusColor(status) {
+            if (!status) return 'grey';
+            
+            const statusUpper = status.toUpperCase();
+            
+            // INSTANCE 상태
+            if (statusUpper === 'NEW') {
+                return 'info';
+            } else if (statusUpper === 'RUNNING') {
+                return 'primary';
+            } else if (statusUpper === 'COMPLETED') {
+                return 'success';
+            }
+            // WORKLIST 상태
+            else if (statusUpper === 'TODO') {
+                return 'info';
+            } else if (statusUpper === 'IN_PROGRESS' || statusUpper === 'SUBMITTED' || statusUpper === 'RUNNING') {
+                return 'primary';
+            } else if (statusUpper === 'PENDING' || statusUpper === 'CANCELLED') {
+                return 'warning';
+            } else if (statusUpper === 'DONE') {
+                return 'success';
+            } else {
+                return 'grey';
+            }
+        },
+        getStatusText(status) {
+            if (!status) return '';
+            
+            const statusUpper = status.toUpperCase();
+            
+            // INSTANCE 상태
+            if (statusUpper === 'NEW') {
+                return this.$t('ProjectCard.statusNew');
+            } else if (statusUpper === 'RUNNING') {
+                return this.$t('ProjectCard.statusRunning');
+            } else if (statusUpper === 'COMPLETED') {
+                return this.$t('ProjectCard.statusCompleted');
+            }
+            // WORKLIST 상태
+            else if (statusUpper === 'TODO') {
+                return this.$t('ProjectCard.statusTodo');
+            } else if (statusUpper === 'IN_PROGRESS') {
+                return this.$t('ProjectCard.statusInProgress');
+            } else if (statusUpper === 'SUBMITTED') {
+                return this.$t('ProjectCard.statusInProgress');
+            } else if (statusUpper === 'RUNNING') {
+                return this.$t('ProjectCard.statusInProgress');
+            } else if (statusUpper === 'PENDING') {
+                return this.$t('ProjectCard.statusPendingCancelled');
+            } else if (statusUpper === 'CANCELLED') {
+                return this.$t('ProjectCard.statusPendingCancelled');
+            } else if (statusUpper === 'DONE') {
+                return this.$t('ProjectCard.statusDone');
+            } else {
+                return status; // 알 수 없는 상태는 원본 반환
+            }
         },
     }
 };

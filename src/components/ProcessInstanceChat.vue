@@ -1,26 +1,69 @@
 <template>
     <div style="background-color: rgba(255, 255, 255, 0); width: 100%;">
         <Chat :messages="messages" :agentInfo="agentInfo"
-            :isAgentMode="isAgentMode" :userInfo="userInfo" 
-            :disableChat="disableChat" :type="'instances'" :name="chatName" 
+            :userInfo="userInfo" :disableChat="disableChat"
+            :type="'instances'" :name="chatName" 
             :chatRoomId="chatRoomId" :hideInput="!isTaskMode"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
-            @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage">
+            @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
+            ref="chatComponent">
             <template v-slot:custom-title>
                 <div></div>
             </template>
             <template v-slot:custom-chat>
                 <!-- streaming text -->
-                <div v-if="streamingText" class="position-absolute bottom-0 end-0 ml-2">
+                <div v-if="streamingText" class="position-absolute bottom-0 end-0">
                     <div class="mx-2">
                         <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100" style="max-width: 100% !important;">
-                            <pre class="text-body-1">{{ streamingText }}</pre>
+                            <pre class="text-body-1">{{ filteredStreamingText }}</pre>
                         </v-sheet>
+                    </div>
+                </div>
+                <div v-if="childStreamingText && Object.keys(filteredChildStreamingText).length > 0" class="position-absolute bottom-0 end-0">
+                    <div class="mx-2" v-for="key in Object.keys(filteredChildStreamingText)" :key="key">
+                        <template v-if="isOpenSubprocess[key]">
+                            <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100" style="max-width:100% !important;">
+                                <div
+                                style="display:flex;align-items:center;gap:6px;width:100%;min-width:0;cursor:pointer;"
+                                @click="isOpenSubprocess[key] = false"
+                                >
+                                <div class="text-body-2"
+                                    style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                                    :title="key">
+                                    {{ key }}
+                                </div>
+                                <v-btn icon variant="text" @click.stop="isOpenSubprocess[key] = false" :aria-label="$t('common.close')">
+                                    <v-icon>mdi-chevron-up</v-icon>
+                                </v-btn>
+                                </div>
+
+                                <pre class="text-body-1"
+                                    style="margin:8px 0 0 0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;">
+                            {{ filteredChildStreamingText[key] }}</pre>
+                            </v-sheet>
+                        </template>
+                        <template v-if="!isOpenSubprocess[key]">
+                            <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100">
+                                <div
+                                    style="display:flex;align-items:center;gap:6px;width:100%;min-width:0;cursor:pointer;"
+                                    @click="isOpenSubprocess[key] = true"
+                                >
+                                <div class="text-body-1"
+                                    style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                    {{ key }} {{ $t('ProcessInstanceChat.subprocessCreating') }}
+                                </div>
+                                <v-btn icon variant="text" @click.stop="isOpenSubprocess[key] = true" :aria-label="$t('common.open')">
+                                    <v-icon>mdi-chevron-down</v-icon>
+                                </v-btn>
+                                </div>
+                            </v-sheet>
+                        </template>
+
                     </div>
                 </div>
                 <!-- feedback -->
                 <div v-if="useFeedback" class="bottom-0 end-0 ml-2 mr-2">
-                    <span class="text-body-2">프로세스 실행이 정상인가요?</span>
+                    <span class="text-body-2">{{ $t('ProcessInstanceChat.feedback') }}</span>
                     <v-btn icon size="x-small" variant="text" color="success" @click="selectFeedback('good')">
                         <v-icon>mdi-thumb-up</v-icon>
                     </v-btn>
@@ -29,7 +72,7 @@
                     </v-btn>
                 </div>
                 <div v-else-if="!useFeedback && showAcceptFeedback && !showFeedback" class="bottom-0 end-0 ml-2">
-                    <span class="text-body-2">피드백 변경사항 확인</span>
+                    <span class="text-body-2">{{ $t('ProcessInstanceChat.feedbackDescription') }}</span>
                     <v-btn icon size="x-small" variant="text" color="success" @click="showFeedback = true">
                         <v-icon>mdi-check</v-icon>
                     </v-btn>
@@ -47,16 +90,6 @@
                         @closeFeedback="closeFeedback"
                     />
                 </div>
-            </template>
-            <template v-slot:custom-message-actions="{ message }">
-                <v-tooltip location="left">
-                    <template v-slot:activator="{ props }">
-                        <v-btn size="small" variant="flat" class="mr-1" icon v-bind="props" @click="revertActivity(message)">
-                            <v-icon>mdi-replay</v-icon>
-                        </v-btn>
-                    </template>
-                    <span>해당 단계로 되돌리기</span>
-                </v-tooltip>
             </template>
         </Chat>
     </div>
@@ -109,6 +142,13 @@ export default {
         lastMessage: null,
         lastTask: null,
         showAcceptFeedback: false,
+
+        // child streaming text
+        childStreamingText: {},
+        // childStreamingText: { "4003a495-b591-4aed-baf9-fc08b37536aa": { "name": "VIP 뉴스레터 작성 시작:0", "log": "```json\n{\n \"completedActivities\": [\n {\n \"completedActivityId\": \"Event_1ttnk4r\",\n \"completedActivityName\": \"VIP 뉴스레터 작성 시작\",\n \"completedUserEmail\": \"827ac44b-1435-4ad8-ab14-8b28c3f64ef2\",\n \"type\": \"event\",\n \"expression\": \"\",\n \"dueDate\": \"2025-09-05\",\n \"result\": \"DONE\",\n \"description\": \"VIP 뉴스레터 작성 시작 이벤트\",\n \"cannotProceedErrors\": []\n }\n ],\n " }, "bea1984c-a95d-492f-a9d4-34d3d2810a82": { "name": "VIP 뉴스레터 작성 시작:1", "log": "```json\n{\n \"completedActivities\": [\n {\n \"completedActivityId\": \"Event_1ttnk4r\",\n \"completedActivityName\": \"VIP 뉴스레터 작성 시작\",\n \"completedUserEmail\": \"827ac44b-1435-4ad8-ab14-8b28c3f64ef2\",\n \"type\": \"event\",\n \"expression\": \"\",\n \"dueDate\": \"2025-09-05\",\n \"result\": \"DONE\",\n \"description\": \"VIP 뉴스레터 작성 시작 이벤트\",\n \"cannotProceedErrors\": []\n }\n ],\n " } },
+        childSubscription: {},
+        childTasks: [],
+        isOpenSubprocess: {},
     }),
     computed: {
         chatName() {
@@ -117,6 +157,23 @@ export default {
             }
             return '';
         },
+        filteredStreamingText() {
+            if (!this.streamingText) {
+                return '';
+            }
+            this.$refs.chatComponent.scrollToBottom();
+            // ```json 마크다운 표시 제거 (줄바꿈 포함)
+            return this.streamingText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        },
+        filteredChildStreamingText() {
+            let result = {};
+            if (this.childStreamingText) {
+                Object.keys(this.childStreamingText).forEach(key => {
+                    result[this.childStreamingText[key].name] = this.childStreamingText[key].log.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+                });
+            }
+            return result;
+        }
     },
     async mounted() {
         await this.init();
@@ -421,12 +478,45 @@ export default {
                         // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);
                         window.$supabase.removeChannel(this.subscription);
                     }
+                    this.childTasks.forEach(childTaskId => {
+                        this.removeChildTaskLog(childTaskId);
+                    });
+                    this.childStreamingText = {};
                     this.$emit('updated');
                     this.EventBus.emit('instances-updated');
                     this.useFeedback = useFeedback;
                     await this.loadData();
+                    this.$refs.chatComponent.scrollToBottom();
+                }
+                if (task.status == "PENDING") {
+                    await this.getChildTaskLog(this.processInstance.instId);
                 }
             });
+        },
+        async getChildTaskLog(instId) {
+            const rootWorklist = await backend.getWorkListByRootInstId(instId);
+            if (rootWorklist) {
+                rootWorklist.forEach(async (item) => {
+                    if (item.task.status == 'SUBMITTED') {
+                        const childTaskId = item.taskId;
+                        this.childSubscription[childTaskId] = await backend.getTaskLog(childTaskId, async (childTask) => {
+                            this.useFeedback = false;
+                            if (childTask.log) {
+                                this.childStreamingText[childTaskId] = {
+                                    name: item.task.activity_name + ":" + item.task.execution_scope,
+                                    log: childTask.log,
+                                }
+                            }
+                        });
+                        this.childTasks.push(childTaskId);
+                    }
+                });
+            }
+        },
+        removeChildTaskLog(childTaskId) {
+            this.childStreamingText[childTaskId] = '';
+            window.$supabase.removeChannel(this.childSubscription[childTaskId]);
+            this.childTasks.splice(this.childTasks.indexOf(childTaskId), 1);
         },
         async cancelAppliedFeedback() {
             if (this.lastMessage && this.lastMessage.jsonContent) {
@@ -435,32 +525,6 @@ export default {
             }
             this.showAcceptFeedback = false;
         },
-        async revertActivity(message) {
-            let input = {
-                activity_id: '',
-                process_instance_id: '',
-                process_definition_id: '',
-                form_values: null,
-                revert_from: ''
-            }
-            if (message.jsonContent) {
-                input.form_values = message.jsonContent;
-            }
-            if (message.workitemId) {
-                input.revert_from = message.workitemId;
-                this.runningTaskId = message.workitemId;
-            }
-            if (message.activityId) {
-                input.activity_id = message.activityId;
-            }
-            if (this.processInstance && this.processInstance.instId) {
-                input.process_instance_id = this.processInstance.instId;
-                input.process_definition_id = this.processInstance.defId;
-            }
-            console.log(input);
-            await backend.executeInstance(input);
-            await this.getTaskLog(false);
-        }
     }
 };
 </script>

@@ -9,9 +9,9 @@
                 </v-btn>
             </v-card-title>
             <v-card-text class="pa-0 pl-4 pr-4 pb-4">
-                <v-text-field v-model="project.name" label="프로젝트 명" autofocus required style="margin-bottom: 10px;"></v-text-field>
-                <v-text-field v-model="project.startDate" label="시작일" type="datetime-local" required style="margin-bottom: 10px;"></v-text-field>
-                <v-text-field v-model="project.dueDate" label="마감일" type="datetime-local" required></v-text-field>
+                <v-text-field v-model="project.name" :label="$t('ProjectCreationForm.projectName')" autofocus required style="margin-bottom: 10px;"></v-text-field>
+                <v-text-field v-model="project.startDate" :label="$t('ProjectCreationForm.startDate')" type="datetime-local" required style="margin-bottom: 10px;"></v-text-field>
+                <v-text-field v-model="project.dueDate" :label="$t('ProjectCreationForm.dueDate')" type="datetime-local" required></v-text-field>
             </v-card-text>
 
             <v-card-actions class="justify-end pt-0">

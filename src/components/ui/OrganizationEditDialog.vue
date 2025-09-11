@@ -13,7 +13,7 @@
             </v-btn>
         </v-row>
 
-        <v-card-text class="ma-0 pa-4 pb-0 pt-0 organization-edit-dialog-contents">
+        <v-card-text class="ma-0 pa-4 pb-0 pt-2 organization-edit-dialog-contents">
             <!-- edit user -->
             <div v-if="dialogType == 'edit-user'">
                 <v-text-field 

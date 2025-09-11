@@ -3,19 +3,22 @@
         <!-- <slide-component :key="localModelValue" style="width: 100%; height: 250px;" :content="localModelValue" :isEditMode="false" class="presentation-slide" /> -->
         <v-card class="rounded-lg mb-2" variant="outlined" hover @click="editMarkdown">
             <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
-            <v-row class="ma-0 pa-4" style="overflow: hidden; max-height: 120px;">
+            <v-row class="ma-0 pa-4" :style="`overflow: hidden; max-height: ${isReportExpanded ? 'auto' : '120px'};`">
                 <div>
                     <div class="font-weight-medium" style="font-size: 16px;">{{ localAlias ? localAlias : localName }} <span v-if="!localReadonly" class="mdi mdi-pencil"></span></div>
                     <div class="font-weight-medium">Report</div>
                 </div>
                 <v-spacer></v-spacer>
-                <!-- 드롭다운 미리보기 버튼 제거, 대신 토글 버튼으로 변경 -->
-                <div v-if="localModelValue.length > 0 && !previewMenu && !showDialog" >
-                    <MarkdownEditor class="report-field-markdown-editor"
-                        @click.stop="previewMenu = !previewMenu"
-                        v-model="localModelValue" :readOnly="true" 
-                        :isPreview="true"
-                    />
+                <!-- SummaryButton 컴포넌트로 대체 -->
+                <div v-if="localModelValue.length > 0 && !showDialog">
+                    <SummaryButton @expanded="handleReportExpanded">
+                        <MarkdownEditor
+                            v-model="localModelValue"
+                            :readOnly="true"
+                            :isPreview="true"
+                            :isOverflow="true"
+                        />
+                    </SummaryButton>
                 </div>
                 <div v-else-if="localModelValue.length == 0" :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px;`">
                     <Icons :icon="'report'" color="white" />
@@ -27,18 +30,6 @@
                 >
                     <v-icon :icon="previewMenu ? 'mdi-chevron-up' : 'mdi-chevron-down'" :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
                 </div>
-            </v-row>
-            <!-- 미리보기 확장 영역 -->
-            <v-row v-if="previewMenu" class="ma-0 pa-4" @click.stop>
-                <v-sheet elevation="3" rounded style="width: 100%; padding: 16px; background: white;">
-                    <MarkdownEditor
-                        :style="'width: 100%; height: 100%;'"
-                        v-model="localModelValue"
-                        :readOnly="true"
-                        :isPreview="true"
-                        :isOverflow="true"
-                    />
-                </v-sheet>
             </v-row>
         </v-card>
         <v-dialog 
@@ -83,6 +74,7 @@ import SlideComponent from '@/views/markdown/SlideComponent.vue';
 import SlideEditor from '@/views/markdown/SlideEditor.vue';
 import MarkdownEditor from '@/views/markdown/MarkdownEditor.vue';
 import Icons from "@/components/ui-components/Icons.vue";
+import SummaryButton from "@/components/ui/SummaryButton.vue";
 import ThemeColorMixin from "./ThemeColorMixin.js";
 import SlidePresentation from '@/views/markdown/SlidePresentation.vue';
 import { i18n } from '@/main';
@@ -94,6 +86,7 @@ export default {
         SlideEditor,
         MarkdownEditor,
         Icons,
+        SummaryButton,
         SlidePresentation
     },
     mixins: [ThemeColorMixin],
@@ -199,6 +192,7 @@ $e^{i\\pi} + 1 = 0$
             showDialog: false,
             editorValue: "",
             previewMenu: false,
+            isReportExpanded: false,
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -247,9 +241,20 @@ $e^{i\\pi} + 1 = 0$
             const markdownEditor = this.$refs.markdownEditor;
             markdownEditor.save();
         },
-        saveMarkdownContent(markdownContent) {
+        async saveMarkdownContent(markdownContent) {
             this.localModelValue = markdownContent;
             this.editorValue = this.localModelValue;
+            
+            // EventBus를 통해 상위 컴포넌트에 저장 요청
+            this.$nextTick(() => {
+                if (this.EventBus) {
+                    this.EventBus.emit('form-save-request', {
+                        fieldName: this.localName,
+                        fieldValue: markdownContent
+                    });
+                }
+            });
+            
             this.showDialog = false;
         },
         editMarkdown() {
@@ -262,6 +267,9 @@ $e^{i\\pi} + 1 = 0$
         onDialogReady() {
             console.log("onDialogReady")
             this.$refs.slideEditor.init();
+        },
+        handleReportExpanded(isExpanded) {
+            this.isReportExpanded = isExpanded;
         }
     }
 }
@@ -283,17 +291,15 @@ $e^{i\\pi} + 1 = 0$
   font-size: 14px;
 }
 
-.report-field-markdown-editor {
-    width: 120px;
-    height: 120px;
-    transform: rotate(5deg);
+/* 확장된 콘텐츠 스타일 */
+.expanded-content {
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.report-field-markdown-editor:hover {
-    transform: rotate(5deg) translateY(-8px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-}
+/* SummaryButton 컴포넌트로 대체되어 더 이상 필요하지 않음 */
 </style>

@@ -20,35 +20,33 @@
                         <img :src="getProfile(user)" :alt="user.username" style="width: 100%; height: 100%; object-fit: cover;" />
                     </v-avatar>
                 </template>
-                <v-list-item-content>
-                    <v-list-item-title class="text-subtitle-1 w-100 font-weight-semibold">{{ user.username }}</v-list-item-title>
-                    <v-list-item-subtitle class="text-subtitle-2">{{ user.email }}</v-list-item-subtitle>
-                    <!-- <div v-if="selectedUserInfo && selectedUserInfo.id === user.id"> -->
-                        <!-- <v-tooltip location="bottom" :text="$t('userListing.chat')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="startChat('chat')" v-bind="props" 
-                                    icon variant="text"
-                                    class="text-medium-emphasis" 
-                                    density="comfortable"
-                                >
-                                    <v-icon>mdi-message-text-outline</v-icon>
-                                </v-btn>
-                            </template> 
-                        </v-tooltip>
-                        <v-tooltip location="bottom" text="업무 지시">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="startChat('work')" v-bind="props" 
-                                    icon variant="text"
-                                    class="text-medium-emphasis" 
-                                    density="comfortable"
-                                    style="margin-left:5px;"
-                                >
-                                    <v-icon>mdi-file-document-outline</v-icon>
-                                </v-btn>
-                            </template> 
-                        </v-tooltip> -->
-                    <!-- </div> -->
-                </v-list-item-content>
+                <v-list-item-title class="text-subtitle-1 w-100 font-weight-semibold">{{ user.username }}</v-list-item-title>
+                <v-list-item-subtitle class="text-subtitle-2">{{ user.email }}</v-list-item-subtitle>
+                <!-- <div v-if="selectedUserInfo && selectedUserInfo.id === user.id"> -->
+                    <!-- <v-tooltip location="bottom" :text="$t('userListing.chat')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn @click="startChat('chat')" v-bind="props" 
+                                icon variant="text"
+                                class="text-medium-emphasis" 
+                                density="comfortable"
+                            >
+                                <v-icon>mdi-message-text-outline</v-icon>
+                            </v-btn>
+                        </template> 
+                    </v-tooltip>
+                    <v-tooltip location="bottom" text="업무 지시">
+                        <template v-slot:activator="{ props }">
+                            <v-btn @click="startChat('work')" v-bind="props" 
+                                icon variant="text"
+                                class="text-medium-emphasis" 
+                                density="comfortable"
+                                style="margin-left:5px;"
+                            >
+                                <v-icon>mdi-file-document-outline</v-icon>
+                            </v-btn>
+                        </template> 
+                    </v-tooltip> -->
+                <!-- </div> -->
             </v-list-item>
 
             <!-- <v-divider></v-divider> -->
@@ -56,69 +54,72 @@
     </perfect-scrollbar>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue';
-import { defineProps } from 'vue';
-
-const props = defineProps({
-    userList: Array,
-});
-
-const emit = defineEmits(['startChat', 'selectedUser']);
-
-const searchValue = ref('');
-
-const filteredUsers = computed(() => {
-    return props.userList.filter((user) => {
-        const searchLower = searchValue.value.toLowerCase();
-        return user.username.toLowerCase().includes(searchLower) || user.email.toLowerCase().includes(searchLower);
-    });
-});
-
-const getProfile = (participant) => {
-    let basePath = window.location.port == '' ? window.location.origin:'' 
-    if(participant.email == "system@uengine.org"){
-        return `${basePath}/images/chat-icon.png`;
-    } else {
-        if (participant.profile) {
-            if(participant.profile.includes("defaultUser.png")){
-                return `${basePath}/images/defaultUser.png`;
+<script>
+export default {
+    name: 'UserListing',
+    props: {
+        userList: Array,
+    },
+    emits: ['startChat', 'selectedUser'],
+    data() {
+        return {
+            searchValue: '',
+            selectedUserInfo: null
+        };
+    },
+    computed: {
+        filteredUsers() {
+            return this.userList.filter((user) => {
+                const searchLower = this.searchValue.toLowerCase();
+                return user.username.toLowerCase().includes(searchLower) || user.email.toLowerCase().includes(searchLower);
+            });
+        }
+    },
+    methods: {
+        getProfile(participant) {
+            let basePath = window.location.port == '' ? window.location.origin:'' 
+            if(participant.email == "system@uengine.org"){
+                return `${basePath}/images/chat-icon.png`;
             } else {
-                const img = new Image();
-                img.src = participant.profile;
-                img.onerror = () => {
-                    return `${basePath}/images/defaultUser.png`;
-                };
-                return participant.profile;
-            }
-        } else {
-            const user = props.userList.find(user => user.email === participant.email);
-            if (user && user.profile) {
-                if(user.profile.includes("defaultUser.png")){
-                    return `${basePath}/images/defaultUser.png`;
-                } else {
-                    const img = new Image();
-                    img.src = user.profile;
-                    img.onerror = () => {
+                if (participant.profile) {
+                    if(participant.profile.includes("defaultUser.png")){
                         return `${basePath}/images/defaultUser.png`;
-                    };
-                    return user.profile;
+                    } else {
+                        const img = new Image();
+                        img.src = participant.profile;
+                        img.onerror = () => {
+                            return `${basePath}/images/defaultUser.png`;
+                        };
+                        return participant.profile;
+                    }
+                } else {
+                    const user = this.userList.find(user => user.email === participant.email);
+                    if (user && user.profile) {
+                        if(user.profile.includes("defaultUser.png")){
+                            return `${basePath}/images/defaultUser.png`;
+                        } else {
+                            const img = new Image();
+                            img.src = user.profile;
+                            img.onerror = () => {
+                                return `${basePath}/images/defaultUser.png`;
+                            };
+                            return user.profile;
+                        }
+                    } else {
+                        return `${basePath}/images/defaultUser.png`;
+                    }
                 }
-            } else {
-                return `${basePath}/images/defaultUser.png`;
             }
+        },
+        selectedUser(user) {
+            this.selectedUserInfo = user;
+            this.$emit('selectedUser', user);
+            this.startChat('chat');
+        },
+        startChat(type) {
+            this.$emit('startChat', type);
         }
     }
-};
-const selectedUserInfo = ref(null);
-const selectedUser = (user) => {
-    selectedUserInfo.value = user;
-    emit('selectedUser', user);
-    startChat('chat')
-};
-
-const startChat = (type) => {
-    emit('startChat', type);
 };
 </script>
 

@@ -14,9 +14,17 @@
                                 variant="outlined"
                                 size="x-small"
                             >New</v-chip>
-                            <Icons v-if="isExecutionByProject" :icon="'play'" :size="20" @click="clickPlayBtn()" style="align-self: center;"/>
+                            <v-btn 
+                                v-if="isExecutionByProject" 
+                                variant="elevated" 
+                                color="primary" 
+                                size="x-small" 
+                                @click="clickPlayBtn()" 
+                                class="ml-2 mr-2 rounded-pill"
+                            >
+                                {{ $t('SubProcess.execute') }}
+                            </v-btn>
                         </div>
-                       
                     </v-row>
                 </v-col>
                 <v-col :cols="enableEdit ? '6' : ''" class="ma-0 pa-0">

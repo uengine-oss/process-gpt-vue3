@@ -31,10 +31,10 @@
                                     <v-menu activator="parent">
                                         <v-list density="compact">
                                             <v-list-item @click="editTask">
-                                                <v-list-item-title>수정</v-list-item-title>
+                                                <v-list-item-title>{{ $t('kanbanColumnCard.edit') }}</v-list-item-title>
                                             </v-list-item>
                                             <v-list-item @click="deleteTask">
-                                                <v-list-item-title>삭제</v-list-item-title>
+                                                <v-list-item-title>{{ $t('kanbanColumnCard.delete') }}</v-list-item-title>
                                             </v-list-item>
                                         </v-list>
                                     </v-menu>
@@ -70,13 +70,13 @@
                         </div>
                         <div v-if="isDueTodayOrTomorrow" class="d-flex align-center ml-auto">
                             <v-icon size="16" icon="mdi-alert" style="color: #FF9800;" />
-                            <span class="text-caption ml-1" style="color: #FF9800;">기한 임박</span>
+                            <span class="text-caption ml-1" style="color: #FF9800;">{{ $t('kanbanColumnCard.overdue') }}</span>
                         </div>
                         <div v-else-if="isPastDue" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
-                            <span class="text-caption ml-1" style="color: #F44336;">기한 지남</span>
+                            <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336; padding-top: 3px;" />
+                            <span class="text-caption ml-1" style="color: #F44336;">{{ $t('kanbanColumnCard.pastDue') }}</span>
                         </div>
-                        <div v-if="isPending && errorMessage" class="d-flex align-center ml-auto">
+                        <div v-if="isPending" class="d-flex align-center ml-auto">
                             <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
                             <span class="text-caption ml-1" style="color: #F44336;">{{ errorMessage }}</span>
                         </div>
@@ -91,17 +91,17 @@
                         <v-spacer></v-spacer>
                         <div v-if="isDueTodayOrTomorrow" class="d-flex align-center ml-auto">
                             <v-icon size="16" icon="mdi-alert" style="color: #FF9800;" />
-                            <span class="text-caption ml-1" style="color: #FF9800;">기한 임박</span>
+                            <span class="text-caption ml-1" style="color: #FF9800;">{{ $t('kanbanColumnCard.overdue') }}</span>
                         </div>
                         <div v-else-if="isPastDue" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
-                            <span class="text-caption ml-1" style="color: #F44336;">기한 지남</span>
+                            <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336; padding-top: 3px;" />
+                            <span class="text-caption ml-1" style="color: #F44336;">{{ $t('kanbanColumnCard.pastDue') }}</span>
                         </div>
-                        <v-tooltip v-if="isPending && errorMessage" location="right">
+                        <v-tooltip v-if="isPending" location="right">
                             <template v-slot:activator="{ props }">
                                 <div class="d-flex align-center ml-auto" v-bind="props">
                                     <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
-                                    <span class="text-caption ml-1" style="color: #F44336;">실행 오류</span>
+                                    <span class="text-caption ml-1" style="color: #F44336;">{{ $t('kanbanColumnCard.error') }}</span>
                                 </div>
                             </template>
                             <div class="text-caption text-wrap" style="max-width: 200px;">{{ errorMessage }}</div>
@@ -120,13 +120,13 @@
                         <div v-if="!detailContent"
                             class="text-subtitle-2"
                         >
-                            <span class="thinking-wave-text">
-                                <span v-for="(char, index) in '에이전트 작업중'" :key="index" 
+                            <div class="thinking-wave-text">
+                                <div v-for="(char, index) in '에이전트 작업중'" :key="index" 
                                     :style="{ animationDelay: `${index * 0.1}s` }"
                                     class="thinking-char"
                                 >{{ char === ' ' ? '\u00A0' : char }}
-                                </span>
-                            </span>
+                                </div>
+                            </div>
                             <span class="loading-dots">
                                 <span>.</span>
                                 <span>.</span>
@@ -138,8 +138,7 @@
                     </div>
                     <div v-else
                         class="text-subtitle-2"
-                    >
-                        에이전트 작업 완료
+                    >{{ $t('kanbanColumnCard.agentCompleted') }}
                     </div>
                 </div>
                 <v-row v-if="!isTodolistPath" class="pa-0 ma-0 mt-1 d-flex align-center">
@@ -347,14 +346,14 @@ export default {
             return this.task.status === 'PENDING';
         },
         errorMessage() {
-            if (this.task.status === 'PENDING' && this.task.task && this.task.task.log && this.task.task.log.length > 0) {
-                if (this.task.task.log.includes('PROCEED_CONDITION_NOT_MET') ||
-                    this.task.Task.log.includes('SYSTEM_ERROR') || this.task.task.log.includes('DATA_FIELD_NOT_EXIST')
+            if (this.task.status === 'PENDING' && this.task.log && this.task.log.length > 0) {
+                if (this.task.log.includes('PROCEED_CONDITION_NOT_MET') ||
+                    this.task.log.includes('SYSTEM_ERROR') || this.task.log.includes('DATA_FIELD_NOT_EXIST')
                 ) {
-                    return this.task.task.log;
+                    return this.task.log;
                 }
             }
-            return null;
+            return '출력된 메시지가 없습니다.';
         },
         isStartedStatus() {
             return this.currentDraftStatus === 'STARTED';

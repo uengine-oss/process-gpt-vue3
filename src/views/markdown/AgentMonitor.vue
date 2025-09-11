@@ -39,27 +39,27 @@
             <!-- Human Asked 응답 영역 -->
             <div v-if="item.payload.isHumanAsked" class="human-query-input">
               <div class="query-header">
-                <h4 class="query-title">응답 요청</h4>
+                <h4 class="query-title">{{ $t('agentMonitor.request') }}</h4>
                 <div class="role-pill">{{ item.payload.role }}</div>
               </div>
               <div class="query-content">
-                <p class="query-question">{{ item.payload.humanQueryData.text || '요청 내용이 전송되었습니다.' }}</p>
+                <p class="query-question">{{ item.payload.humanQueryData.text || $t('agentMonitor.requestContent') }}</p>
                 <div v-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'text'" class="input-field">
                   <input 
                     v-model.trim="humanQueryAnswers[item.payload.id]" 
                     class="query-input" 
                     type="text" 
-                    placeholder="답변을 입력하세요" 
+                    :placeholder="$t('agentMonitor.inputAnswer')" 
                   />
                 </div>
                 <div v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'select'" class="input-field">
                   <select v-model="humanQueryAnswers[item.payload.id]" class="query-select">
-                    <option disabled value="">선택하세요</option>
+                    <option disabled value="">{{ $t('agentMonitor.selectAnswer') }}</option>
                     <option v-for="opt in item.payload.humanQueryData.options" :key="opt" :value="opt">{{ opt }}</option>
                   </select>
                 </div>
                 <div v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'confirm'" class="confirm-hint">
-                  계속 진행하시려면 확인을 눌러주세요.
+                  {{ $t('agentMonitor.continue') }}
                 </div>
               </div>
               <v-row v-if="!item.payload.isCompleted" class="query-actions ma-0 pa-0">
@@ -69,7 +69,8 @@
                   variant="elevated" 
                   color="gray"
                   density="compact"
-                >취소
+                >
+                  {{ $t('agentMonitor.cancel') }}
                 </v-btn>
                 <v-btn @click="onConfirmHumanQuery(item.payload)"
                   class="query-confirm rounded-pill" 
@@ -78,7 +79,7 @@
                   density="compact"
                   :disabled="item.payload.humanQueryData.type !== 'confirm' && !humanQueryAnswers[item.payload.id]" 
                 >
-                  확인
+                  {{ $t('agentMonitor.confirm') }}
                 </v-btn>
               </v-row>
               <div v-else class="query-completed">
@@ -91,7 +92,7 @@
             <div v-else-if="item.payload.isCompleted && item.payload.content" class="task-result">
               <div class="result-header">
                 <v-row class="ma-0 pa-0 align-center">
-                  <h4 class="result-title">작업 결과</h4>
+                  <h4 class="result-title">{{ $t('agentMonitor.result') }}</h4>
                   <v-spacer></v-spacer>
                   <v-btn v-if="shouldShowSubmitButton(item.payload)"
                       @click="submitTask(item.payload)"
@@ -99,7 +100,9 @@
                       variant="elevated" 
                       class="rounded-pill"
                       density="compact"
-                  >채택</v-btn>
+                  >
+                  {{ $t('agentMonitor.accept') }}
+                </v-btn>
                 </v-row>
               </div>
               <div class="result-content">
@@ -107,8 +110,8 @@
                 <div v-if="item.payload.crewType === 'slide'" class="slides-container">
                   <div class="slides-header">
                     <div class="header-info">
-                      <h5>프레젠테이션 모드</h5>
-                      <span class="slide-hint">슬라이드를 클릭하여 탐색하세요</span>
+                      <h5>{{ $t('agentMonitor.presentationMode') }}</h5>
+                      <span class="slide-hint">{{ $t('agentMonitor.slideHint') }}</span>
                     </div>
                     <div class="slide-navigation">
                       <button @click="previousSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === 0" class="nav-btn">←</button>
@@ -152,7 +155,7 @@
                   더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다
                 </span>
                 <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
-                  {{ isTaskExpanded(item.payload.id) ? '접기' : '더보기' }}
+                  {{ isTaskExpanded(item.payload.id) ? $t('agentMonitor.collapse') : $t('agentMonitor.expand') }}
                   <span class="expand-icon">{{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}</span>
                 </button>
               </div>
@@ -165,7 +168,7 @@
                 <div class="dot"></div>
                 <div class="dot"></div>
               </div>
-              <span>작업을 진행하고 있습니다...</span>
+              <span>{{ $t('agentMonitor.workInProgress') }}</span>
             </div>
 
             <!-- 도구 사용 상태 -->
@@ -189,13 +192,13 @@
 
       <!-- 빈 상태 -->
       <div v-else class="empty-state">
-        <h3>{{ isQueued ? '작업이 대기열에 등록되었습니다' : '진행중인 작업이 없습니다' }}</h3>
-        <p>작업이 시작되면 여기에 표시됩니다.</p>
+        <h3>{{ isQueued ? $t('agentMonitor.workQueued') : $t('agentMonitor.noWorkInProgress') }}</h3>
+        <p>{{ $t('agentMonitor.workStarted') }}</p>
         <div v-if="!isQueued" class="start-controls">
           <v-container>
             <v-row justify="center">
               <v-col cols="12" class="text-center mb-4">
-                <h3>연구 방식을 선택하세요</h3>
+                <h3>{{ $t('agentMonitor.selectResearchMethod') }}</h3>
               </v-col>
             </v-row>
             
@@ -232,7 +235,7 @@
                           variant="elevated" 
                           class="rounded-pill"
                           density="compact"
-                      >다운로드</v-btn>
+                      >{{ $t('agentMonitor.download') }}</v-btn>
                       <v-btn v-else 
                           @click="startTask" 
                           :disabled="selectedOrchestrationMethod !== option.value"
@@ -240,7 +243,7 @@
                           variant="elevated" 
                           class="rounded-pill"
                           density="compact"
-                      >시작하기</v-btn>
+                      >{{ $t('agentMonitor.start') }}</v-btn>
                     </v-card-actions>
                 </v-card>
               </v-col>
@@ -249,7 +252,7 @@
             <v-row v-if="showDownloadButton" justify="center" class="ma-0 pa-0">
               <v-col cols="auto">
                 <v-alert type="info" variant="tonal" color="gray" class="text-caption">
-                  Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)
+                  {{ $t('agentMonitor.browserUse') }}
                 </v-alert>
               </v-col>
             </v-row>
@@ -279,7 +282,7 @@
         <template #custom-input-tools>
           <div class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
             <div class="dropdown-trigger">
-              <span class="dropdown-label">연구방식</span>
+              <span class="dropdown-label">{{ $t('agentMonitor.researchMethod') }}</span>
             </div>
             <div v-if="isDropdownOpen" class="dropdown-menu">
               <div v-for="option in orchestrationOptions" :key="option.value"
@@ -349,10 +352,10 @@ export default {
       humanQueryAnswers: {},
       // 공통 옵션 배열
       orchestrationOptions: [
-        { value: 'crewai-deep-research', label: 'CrewAI 심층 연구', startLabel: 'CrewAI Deep Research', icon: 'playoff' },
-        { value: 'crewai-action', label: 'CrewAI 액션', startLabel: 'CrewAI Action', icon: 'flowchart' },
-        { value: 'openai-deep-research', label: 'OpenAI 심층 연구', startLabel: 'OpenAI Deep Research', icon: 'playoff' },
-        { value: 'langchain-react', label: 'LangChain 연구', startLabel: 'LangChain Research', icon: 'playoff' },
+        { value: 'crewai-deep-research', label: this.$t('agentMonitor.crewaiDeepResearch'), startLabel: 'CrewAI Deep Research', icon: 'playoff' },
+        { value: 'crewai-action', label: this.$t('agentMonitor.crewaiAction'), startLabel: 'CrewAI Action', icon: 'flowchart' },
+        { value: 'openai-deep-research', label: this.$t('agentMonitor.openaiDeepResearch'), startLabel: 'OpenAI Deep Research', icon: 'playoff' },
+        { value: 'langchain-react', label: this.$t('agentMonitor.langchainReact'), startLabel: 'LangChain Research', icon: 'playoff' },
         { value: 'browser-use', label: 'Browser Use', startLabel: 'Browser Use', icon: 'browser' }
       ]
     }
@@ -398,14 +401,13 @@ export default {
           task.content = this.resolvePrimaryValue(data || null, task.crewType)
         } else if (event_type === 'human_asked') {
           // human_asked 이벤트를 별도 작업으로 추가 (블루톤 카드용 텍스트 구성)
-          const baseDescription = '사용자의 승인 및 추가 정보가 필요합니다. 아래 작업 계획대로 진행해도 괜찮다면 확인을 눌러주세요. 필요한 경우 입력 또는 선택 항목을 작성해 주세요.'
-
+          const baseDescription = this.$t('agentMonitor.humanApprovalDescription')
           const response = humanResponseByJobId[jobId] || null
           humanAskedTasks.push({
             id,
             jobId,
             goal: baseDescription,
-            name: '사용자 승인 및 추가 정보 요청',
+            name: this.$t('agentMonitor.humanApproval'),
             role: data?.role || 'System',
             crewType: 'human_asked',
             startTime: timestamp,
@@ -1301,11 +1303,11 @@ export default {
 
     getMethodDescription(method) {
       const descriptions = {
-        'crewai-deep-research': '다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 | 5~15분 소요',
-        'crewai-action': '최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A | 1~5분 소요',
-        'openai-deep-research': 'GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 | 3~10분 소요',
-        'langchain-react': 'LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 | 3~5분 소요',
-        'browser-use': '실제 브라우저를 조작하여 실시간 웹 정보 수집 및 작업 수행. ex) 검색, 폼 작성, 스크래핑 | 2~8분 소요'
+        'crewai-deep-research': this.$t('agentMonitor.crewaiDeepResearchDescription'),
+        'crewai-action': this.$t('agentMonitor.crewaiActionDescription'),
+        'openai-deep-research': this.$t('agentMonitor.openaiDeepResearchDescription'),
+        'langchain-react': this.$t('agentMonitor.langchainReactDescription'),
+        'browser-use': this.$t('agentMonitor.browserUseDescription')
       };
       return descriptions[method] || '';
     },

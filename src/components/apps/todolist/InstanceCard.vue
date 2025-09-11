@@ -57,7 +57,23 @@
                     </div>
                 </v-row>
                 <div v-if="instance.instId && !isMobile" class="font-weight-medium pl-4 pr-4" style="color:gray; font-size:14px;">
-                    시작자: {{ getStarterName() }} | 시작일시: {{ getFormattedStartDate() }}
+                    <span v-if="!getStarterName()">시작자: 정보 불러오는 중
+                        <span class="loading-dots">
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                        </span>
+                    </span>
+                    <span v-else>시작자: {{ getStarterName() }}</span>
+                    <span> | </span>
+                    <span v-if="!getFormattedStartDate()">시작일시: 정보 불러오는 중
+                        <span class="loading-dots">
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                        </span>
+                    </span>
+                    <span v-else>시작일시: {{ getFormattedStartDate() }}</span>
                 </div>
             </div>
         </div>
@@ -100,7 +116,7 @@
                 
                 <v-window v-model="tab" :class="isMobile ? 'mt-0' : ''" :touch="false">
                     <v-window-item value="gantt" class="instance-card-tab-1">
-                        <div class="gantt-area" v-if="!isLoading">
+                        <div class="instance-card-gantt-area" v-if="!isLoading">
                             <GanttChart 
                                 :key="`gantt-${updatedKey}-${instance?.instId}`"
                                 :tasks="tasks" 
@@ -115,8 +131,43 @@
                             />
                         </div>
                     </v-window-item>
+                    
+                    <!-- PC에서 액티비티와 프로세스를 가로 배치 -->
                     <v-window-item value="progress" class="instance-card-tab-2">
-                        <div class="instance-card-process-box">
+                        <v-row v-if="!isMobile"
+                            no-gutters
+                            class="ma-0 pa-0"
+                            style="height: 100%;"
+                        >
+                            <!-- 프로세스 영역 (왼쪽, 5/12) -->
+                            <v-col cols="5"
+                                class="pr-2 ma-0 pa-0"
+                                style="border-right: 1px solid #e0e0e0;"
+                            >
+                                <div class="instance-card-process-box">
+                                    <InstanceProgress 
+                                        :key="`progress-${updatedKey}-${instance?.instId}`"
+                                        :instance="instance"
+                                        ref="progress"
+                                    />
+                                </div>
+                            </v-col>
+                            
+                            <!-- 액티비티 영역 (오른쪽, 7/12) -->
+                            <v-col cols="7"
+                                class="pl-2 ma-0 pa-0"
+                            >
+                                <InstanceWorkHistory @updated="handleInstanceUpdated"
+                                    class="instance-card-tab-4"
+                                    :key="`workhistory-desktop-${updatedKey}-${instance?.instId}`"
+                                    :instance="instance"
+                                    ref="workhistory"
+                                />
+                            </v-col>
+                        </v-row>
+                        
+                        <!-- 모바일에서는 기존 프로세스만 표시 -->
+                        <div v-else class="instance-card-process-box">
                             <InstanceProgress 
                                 :key="`progress-${updatedKey}-${instance?.instId}`"
                                 :instance="instance"
@@ -124,6 +175,7 @@
                             />
                         </div>
                     </v-window-item>
+                    
                     <v-window-item value="todo" class="instance-card-tab-3">
                         <div>
                             <div class="pa-4 instance-card-kanban-board-box">
@@ -143,8 +195,6 @@
                                     :users="userList"
                                     :isNotAll="false"
                                     :showAddButton="false"
-                                    @loadMore="handleLoadMore"
-                                    @updateStatus="updateStatus"
                                     ref="todo"
                                 />
                             </div>
@@ -158,6 +208,8 @@
                             </v-dialog>
                         </div>
                     </v-window-item>
+                    
+                    <!-- 모바일에서만 표시되는 별도 액티비티 탭 -->
                     <v-window-item value="workhistory" class="instance-card-tab-4">
                         <InstanceWorkHistory 
                             :key="`workhistory-${updatedKey}-${instance?.instId}`"
@@ -166,12 +218,15 @@
                             ref="workhistory"
                         />
                     </v-window-item>
+                    <!-- 채팅 -->
                     <v-window-item value="chat" class="instance-card-tab-5">
                         <Chats :isInstanceChat="true" :instanceInfo="instance" :participantUsers="participantUsers" />
                     </v-window-item>
+                    <!-- 소스 -->
                     <v-window-item value="source" class="instance-card-tab-6">
                         <InstanceSource :instance="instance" />
                     </v-window-item>
+                    <!-- 산출물  -->
                     <v-window-item value="output" class="instance-card-tab-7">
                         <InstanceOutput :instance="instance" />
                     </v-window-item>
@@ -254,7 +309,7 @@ export default {
         // tab
         tab: "workhistory",
         tabItems: [
-            { value: 'workhistory', label: 'InstanceCard.workHistory', mobile: true},
+            { value: 'workhistory', label: 'InstanceCard.activity', mobile: true},
             { value: 'progress', label: 'InstanceCard.progress', mobile: true},
             { value: 'todo', label: 'InstanceCard.kanbanBoard', mobile: true},
             { value: 'gantt', label: 'InstanceCard.ganttChart', mobile: false},
@@ -274,18 +329,31 @@ export default {
                 if (newVal && newVal.query && newVal.query.submitted) {
                     this.tab = "workhistory";
                 } else if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
-                    this.tab = "progress";
+                    // localStorage에 저장된 탭이 있으면 그것을 사용, 없으면 기본값
+                    const lastTab = localStorage.getItem('instanceCard-lastTab');
+                    this.tab = lastTab || "progress";
                     await this.init();
                 }
             }
         },
         async tab(newVal, oldVal) {
             if (newVal !== oldVal) {
+                // 탭 상태를 localStorage에 저장
+                localStorage.setItem('instanceCard-lastTab', newVal);
+                
                 // 탭 변경 시 해당 컴포넌트 초기화
                 await this.$nextTick();
                 const activeComponents = this.$refs[newVal];
                 if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
                     await activeComponents[0].init();
+                }
+                
+                // PC에서 progress 탭 선택 시 workhistory 컴포넌트도 초기화
+                if (newVal === 'progress' && !this.isMobile) {
+                    const workhistoryComponents = this.$refs.workhistory;
+                    if (workhistoryComponents && workhistoryComponents.init) {
+                        await workhistoryComponents.init();
+                    }
                 }
             }
         },
@@ -296,7 +364,9 @@ export default {
                     if (this.$route.query && this.$route.query.submitted) {
                         this.tab = "workhistory";
                     } else {
-                        this.tab = "workhistory";
+                        // localStorage에 저장된 탭이 있으면 그것을 사용, 없으면 기본값
+                        const lastTab = localStorage.getItem('instanceCard-lastTab');
+                        this.tab = lastTab || "workhistory";
                     }
                 }
             }
@@ -319,6 +389,11 @@ export default {
         }
     },
     mounted() {
+        // localStorage에서 마지막 탭 상태 복원
+        const lastTab = localStorage.getItem('instanceCard-lastTab');
+        if (lastTab) {
+            this.tab = lastTab;
+        }
         this.init();
     },
     computed: {
@@ -339,6 +414,9 @@ export default {
             
             if (this.isMobile) {
                 items = items.filter(item => item.mobile !== false);
+            } else {
+                // PC에서는 액티비티 탭을 숨김 (프로세스 탭에 통합됨)
+                items = items.filter(item => item.value !== 'workhistory');
             }
             
             return items;
@@ -608,24 +686,28 @@ export default {
             }
         },
         getStarterName() {
-            if (this.firstWorkItem && this.firstWorkItem.username) {
+            if (!this.firstWorkItem) {
+                return; // 로딩 중 - undefined 반환
+            }
+            if (this.firstWorkItem.username) {
                 return this.firstWorkItem.username;
-            } else if (this.firstWorkItem && this.firstWorkItem.endpoint) {
+            } else if (this.firstWorkItem.endpoint) {
                 return this.firstWorkItem.endpoint;
             }
-            return '알 수 없음';
         },
         getFormattedStartDate() {
-            if (this.firstWorkItem && this.firstWorkItem.startDate) {
+            if (!this.firstWorkItem) {
+                return; // 로딩 중 - undefined 반환
+            }
+            if (this.firstWorkItem.startDate) {
                 const date = new Date(this.firstWorkItem.startDate);
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
                 const day = String(date.getDate()).padStart(2, '0');
                 const hours = String(date.getHours()).padStart(2, '0');
                 const minutes = String(date.getMinutes()).padStart(2, '0');
-                return `${year}.${month}.${day} ${hours}:${minutes}`;
+                return `${year}.${month}.${day} / ${hours}:${minutes}`;
             }
-            return '알 수 없음';
         }
     }
 };

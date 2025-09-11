@@ -1,6 +1,6 @@
 .ProseMirror {
     padding: 20px;
-    border: 1px solid rgb(var(--v-theme-inputBorder), 0.3);
+    border: none;
     border-radius: 0 0 12px 12px;
     &.ProseMirror-focused {
         outline-color: rgb(var(--v-theme-primary), 0.3) !important;
@@ -25,7 +25,7 @@
 
     code {
         background-color: rgba(#616161, 0.1);
-        color: #616161;
+        color: #616161 !important;
     }
 
     pre {

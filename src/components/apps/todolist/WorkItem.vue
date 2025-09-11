@@ -31,7 +31,7 @@
                     <!-- 위임하기 UI -->
                     <v-row class="ma-0 pa-0"  v-if="!isCompleted && !isOwnWorkItem && isSimulate != 'true'">
                         <v-spacer></v-spacer>
-                        <v-tooltip text="위임하기">
+                        <v-tooltip :text="$t('WorkItem.delegate')">
                             <template v-slot:activator="{ props }">
                                 <div
                                     @click="openDelegateTask()"
@@ -157,6 +157,7 @@
                         </div>
                     </div>
                     <v-window v-model="selectedTab"
+                        class="work-item-tab-box"
                         :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px); overflow: auto' : 'height: calc(100vh - 257px); color: black; overflow: auto'"
                         :touch="false"
                     >
@@ -167,8 +168,14 @@
 
                             >
                                 <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
-                                    <div v-if="bpmn" style="height: 100%">
-                                        <BpmnUengine
+                                    <div v-if="bpmn" style="height: 100%;">
+                                        <div v-show="isBpmnLoading">
+                                            <v-skeleton-loader
+                                                type="image"
+                                                class="mx-auto work-item-skeleton-loader"
+                                            ></v-skeleton-loader>
+                                        </div>
+                                        <BpmnUengine v-show="!isBpmnLoading"
                                             ref="bpmnVue"
                                             :bpmn="bpmn"
                                             :options="options"
@@ -188,6 +195,8 @@
                                             v-on:change-sequence="onChangeSequence"
                                             v-on:remove-shape="onRemoveShape"
                                             v-on:change-shape="onChangeShape"
+                                            :onLoadStart="onBpmnLoadStart"
+                                            :onLoadEnd="onBpmnLoadEnd"
                                             style="height: 100%"
                                         ></BpmnUengine>
                                         
@@ -199,7 +208,14 @@
                                             :isViewMode="true"
                                         ></process-definition> -->
                                     </div>
-                                    <div v-else class="no-bpmn-found-text">No BPMN found</div>
+                                    <span v-else style="height: 100%;">
+                                        <div v-show="isBpmnLoading">
+                                            <v-skeleton-loader
+                                                type="image"
+                                                class="mx-auto work-item-skeleton-loader"
+                                            ></v-skeleton-loader>
+                                        </div>
+                                    </span>
                                 </div>
                             </div>
                         </v-window-item>
@@ -510,6 +526,7 @@ export default {
     
         // bpmn
         bpmn: null,
+        isBpmnLoading: false,
         options: {
             propertiesPanel: {},
             additionalModules: [customBpmnModule]
@@ -674,7 +691,7 @@ export default {
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
-                        { value: 'agent-feedback', label: '에이전트 학습' },
+                        { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                     ]
                 } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
                     return [
@@ -682,13 +699,13 @@ export default {
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
-                        { value: 'agent-feedback', label: '에이전트 학습' },
+                        { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                     ]
                 } else {
                     return [
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') }, //어시스턴트
-                        { value: 'agent-feedback', label: '에이전트 학습' },
+                        { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                     ]
                 }
                 
@@ -696,7 +713,7 @@ export default {
                 return[
                     { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                     { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
-                    { value: 'agent-feedback', label: '에이전트 학습' },
+                    { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                 ]
 
                 // if(this.inFormNameTabs.length > 0) {
@@ -749,6 +766,12 @@ export default {
         }
     },
     methods: {
+        onBpmnLoadStart() {
+            this.isBpmnLoading = true;
+        },
+        onBpmnLoadEnd() {
+            this.isBpmnLoading = false;
+        },
         isTabAvailable(tabValue) {
             return this.tabList.some(tab => tab.value === tabValue);
         },
@@ -1382,6 +1405,8 @@ export default {
             });
         },
         goBackToPreviousPage() {
+            // 칸반보드 탭 상태를 localStorage에 미리 저장
+            localStorage.setItem('instanceCard-lastTab', 'todo');
             this.$router.go(-1);
         },  
         loadInputData(data) {

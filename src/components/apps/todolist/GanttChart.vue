@@ -26,61 +26,83 @@
                 :tasks="tasks" 
                 :dependencies="dependencies"
                 :users="users" 
-                
                 @task-clicked="handleTaskClicked"
                 @task-updated="handleTaskUpdated" 
                 @task-added="handleTaskAdded"
-                
                 @link-clicked="handleLinkClicked"
                 @link-event="handleLinkEvent"
-                
                 @message="handleMessage"
+                @task-panel-close="handleTaskPanelClose"
             />
 
             <div class="gantt-detail-overlay" v-if="editItem">
                 <v-card flat dense>
                     <!-- 상세 정보 -->
-                    <v-card-actions style="justify-content: flex-end;">
-                        <Icons v-if="type === 'task'" :icon="'tab-move'" :size="20" @click="moveDetail()" />
-                        <Icons v-if="editItem.adhoc" :icon="'trash'" :size="20" @click="deleteDetail()"/>
-                        <Icons :icon="'close'" :size="16" @click="closeDetail()"/>
-                    </v-card-actions>
-                    <v-card-text v-if="type === 'task'">
-                        <v-col>
+                    <v-row class="ma-0 pa-0 pa-4 pb-0 align-center">
+                        <v-spacer></v-spacer>
+                        <v-tooltip :text="getTooltipText()">
+                            <template v-slot:activator="{ props }">
+                                <Icons v-if="type === 'task'"
+                                    @click="moveDetail()"
+                                    class="mr-4 cursor-pointer"
+                                    :icon="'tab-move'" :size="20"
+                                    v-bind="props"
+                                />
+                            </template>
+                        </v-tooltip>
+                        <Icons v-if="editItem.adhoc"
+                            @click="deleteDetail()"
+                            class="mr-2 cursor-pointer"
+                            :icon="'trash'" :size="16"
+                        />
+                        <Icons @click="closeDetail()"
+                            class="cursor-pointer"
+                            :icon="'close'" :size="14"
+                        />
+                    </v-row>
+                    <v-card-text v-if="type === 'task'"
+                        class="ma-0 pa-0"
+                    >
+                        <v-col class="ma-0 pa-0">
                             <!-- 상단 요약 -->
-                            <div class="issue-header">
+                            <div class="issue-header pa-4">
                                 <div class="issue-title">{{ editItem.name }}</div>
-                                <v-chip color="primary" class="ml-2">{{ editItem.status }}</v-chip>
+                                <v-chip class="ml-2"
+                                    color="primary"
+                                    density="compact"
+                                >{{ getStatusText(editItem.status) }}</v-chip>
                             </div>
+                            <div class="gantt-detail-overlay-contents pa-4">
                             <!-- {{ editItem }} -->
-                            <div class="issue-desc mt-2">
-                                <div class="issue-title">설명</div>
-                                {{ editItem.description }}
-                            </div>
+                                <div v-if="editItem.description" class="issue-desc mt-2">
+                                    <div class="issue-title">설명</div>
+                                    {{ editItem.description }}
+                                </div>
 
-                            <!-- 하위 업무 항목 -->
-                            <div class="issue-desc mt-2" v-if="false">
-                                <div class="issue-title">하위 업무 항목</div>
-                                <v-progress-linear value="0" height="8" class="mb-2"></v-progress-linear>
-                            </div>
+                                <!-- 하위 업무 항목 -->
+                                <div class="issue-desc mt-2" v-if="false">
+                                    <div class="issue-title">하위 업무 항목</div>
+                                    <v-progress-linear value="0" height="8" class="mb-2"></v-progress-linear>
+                                </div>
 
-                            <!-- 연결된 업무 항목 -->
-                            <div class="issue-desc mt-2" v-if="false">
-                                <div class="issue-title">연결된 업무 항목</div>
-                            </div>
+                                <!-- 연결된 업무 항목 -->
+                                <div class="issue-desc mt-2" v-if="false">
+                                    <div class="issue-title">연결된 업무 항목</div>
+                                </div>
 
-                            <!-- 세부 사항 -->
-                            <div class="issue-desc mt-2" v-if="false">
-                                <div class="issue-title">세부 사항</div>
-                                <div class="issue-desc">
-                                    <v-col>
-                                        <div class="issue-title">
-                                            담당자
-                                        </div>
-                                        <div class="issue-desc">
-                                            {{ editItem.participants }}
-                                        </div>
-                                    </v-col>
+                                <!-- 세부 사항 -->
+                                <div class="issue-desc mt-2" v-if="false">
+                                    <div class="issue-title">세부 사항</div>
+                                    <div class="issue-desc">
+                                        <v-col>
+                                            <div class="issue-title">
+                                                담당자
+                                            </div>
+                                            <div class="issue-desc">
+                                                {{ editItem.participants }}
+                                            </div>
+                                        </v-col>
+                                    </div>
                                 </div>
                             </div>
                         </v-col>
@@ -117,6 +139,7 @@ export default {
         users: Array
     },
     data: () => ({
+        isLoading: false,
         snackbar: {
             show: false,
             color: 'success',
@@ -129,6 +152,26 @@ export default {
 
     }),
     methods: {
+        getStatusText(status) {
+            const statusMap = {
+                'IN_PROGRESS': '진행중',
+                'SUBMITTED': '진행중',
+                'RUNNING': '진행중',
+                'PENDING': '보류/반송',
+                'CANCELLED': '보류/반송',
+                'TODO': '예정업무',
+                'DONE': '완료업무'
+            };
+            return statusMap[status] || status;
+        },
+        getTooltipText() {
+            if (!this.editItem) return '';
+            if (this.editItem.parent == 0) {
+                return '인스턴스로 이동';
+            } else {
+                return '워크아이템으로 이동';
+            }
+        },
         handleMessage(value){
            this.snackbar.show = true
            this.snackbar.color = value.color
@@ -157,6 +200,9 @@ export default {
         },
         handleLinkEvent(event){
             this.$emit('link-event', event);
+        },
+        handleTaskPanelClose(){
+            this.editItem = null;
         },
         closeDetail(){
             this.editItem = null
@@ -212,22 +258,6 @@ export default {
   position: relative;
   width: 100%;
   height: 100%;
-}
-
-.gantt-detail-overlay {
-    position: absolute; /* 또는 fixed */
-    top: 4px;
-    right: 2px;
-    width: 40vw;
-    max-width: 400px; /* 패널 너비 */
-    border-radius: 10px;
-    height: calc(100vh - 190px);
-    background: #fff;
-    box-shadow: 0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12);
-    z-index: 100;
-    border-left: 1px solid #eee;
-    overflow-y: auto;
-    transition: transform 0.2s;
 }
 .issue-header {
   display: flex;
