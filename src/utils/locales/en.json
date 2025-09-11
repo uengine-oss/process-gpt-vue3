@@ -41,7 +41,11 @@
         "layoutSetting": "Layout Setting",
         "admin" : "Admin Page",
         "setting" : "Setting",
-        "search": "Search"
+        "search": "Search",
+        "searchResult": "Search Result",
+        "searchKeyword": "Enter the keyword you want to search for and press enter.",
+        "noSearchResult": "No search results found.",
+        "pricing" : "Pricing Information"
     },
     "DashboardTodoList": {
         "todo": "My Task List",
@@ -1134,13 +1138,26 @@
         "sourceStrategy": "Source Strategy",
         "targetStrategy": "Target Strategy",
         "addConnectionBtn": "Add Connection",
-        "perspectiveFinance": "Finance",
-        "perspectiveCustomer": "Customer",
-        "perspectiveProcess": "Internal Process",
-        "perspectiveLearning": "Learning & Growth"
+        "perspectiveFinance": "Finance Perspective",
+        "perspectiveCustomer": "Customer Perspective",
+        "finance": "Finance",
+        "customer": "Customer",
+        "process": "Internal Process",
+        "learning": "Learning & Growth",
+        "selectUpperStrategy1": "Sales Growth 20%",
+        "selectUpperStrategy2": "Customer Satisfaction 90 points or higher",
+        "selectUpperStrategy3": "Process Efficiency 50%",
+        "selectUpperStrategy4": "Employee Capability Enhancement Program",
+        "s1description": "Increase total sales by 20% compared to last year",
+        "s2description": "Maintain customer satisfaction at 90 points or higher based on NPS",
+        "s3description": "Convert 50% or more of internal business processes to automated systems",
+        "s4description": "Conduct capability enhancement training for all employees twice a year or more"
     },
     "ProjectCreationForm": {
         "title": "Create Project",
+        "projectName": "Project Name",
+        "startDate": "Start Date",
+        "dueDate": "Due Date",
         "create": "Create"
     },
     "AppBaseCard": {
@@ -1534,5 +1551,14 @@
         "subprocessCreating": "Subprocess creating...",
         "feedback": "Is the process execution normal?",
         "feedbackDescription": "Is the process execution normal?"
+    },
+    "footer": {
+        "BusinessNumber": "BusinessRegistration<br>No.",
+        "CEO": "CEO : Jin-young Jang",
+        "Address1": "301-ho, 31 Saimdang-ro, Seocho-gu,",
+        "Address2": "Seoul, 06650, Republic of Korea",
+        "tel": "Customer Center",
+        "serviceTerms": "Service Terms",
+        "privacyPolicy": "Privacy Policy"
     }
 }

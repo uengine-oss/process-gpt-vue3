@@ -9,16 +9,16 @@
             
             <!-- 회사 정보 -->
             <div class="mb-2 text-caption text-medium-emphasis">
-                <div class="mb-1">사업자등록번호 211-87-95355<br>대표 : 장진영</div>
-                <div class="mb-1">서울특별시 서초구 사임당로 31<br>301호(서초동, 궁현빌딩)</div>
-                <div>고객센터 02-567-8301</div>
+                <div class="mb-1"><span v-html="$t('footer.BusinessNumber')"></span>211-87-95355<br>{{ $t('footer.CEO') }}</div>
+                <div class="mb-1">{{ $t('footer.Address1') }}<br>{{ $t('footer.Address2') }}</div>
+                <div>{{ $t('footer.tel') }} 02-567-8301</div>
             </div>
             
             <!-- 약관 링크 -->
             <div class="d-flex justify-center gap-3 text-caption">
-                <a @click="showTermsDialog = true" class="text-decoration-none text-primary cursor-pointer">서비스 이용약관</a>
+                <a @click="showTermsDialog = true" class="text-decoration-none text-primary cursor-pointer">{{ $t('footer.serviceTerms') }}</a>
                 <span class="text-medium-emphasis">|</span>
-                <a @click="showPrivacyDialog = true" class="text-decoration-none text-primary cursor-pointer">개인정보처리방침</a>
+                <a @click="showPrivacyDialog = true" class="text-decoration-none text-primary cursor-pointer">{{ $t('footer.privacyPolicy') }}</a>
             </div>
         </div>
 
@@ -26,7 +26,7 @@
         <v-dialog v-model="showTermsDialog" max-width="800px" scrollable>
             <v-card>
                 <v-row class="ma-0 pa-4 align-center">
-                    <v-card-title class="pa-0">서비스 이용약관</v-card-title>
+                    <v-card-title class="pa-0">{{ $t('footer.serviceTerms') }}</v-card-title>
                     <v-spacer></v-spacer>
                     <v-btn @click="closeDialog"
                         class="ml-auto" 
@@ -48,7 +48,7 @@
         <v-dialog v-model="showPrivacyDialog" max-width="800px" scrollable>
             <v-card>
                 <v-row class="ma-0 pa-4 align-center">
-                    <v-card-title class="pa-0">개인정보처리방침</v-card-title>
+                    <v-card-title class="pa-0">{{ $t('footer.privacyPolicy') }}</v-card-title>
                     <v-spacer></v-spacer>
                     <v-btn @click="closeDialog"
                         class="ml-auto" 

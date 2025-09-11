@@ -133,10 +133,6 @@ export default {
                 email: '',
                 is_admin: false
             }
-        ],
-        roleOptions: [
-            { text: '사용자', value: false },
-            { text: '관리자', value: true }
         ]
     }),
     methods: {
@@ -220,6 +216,12 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        roleOptions() {
+            return [
+                { text: this.$t('accountTab.user'), value: false },
+                { text: this.$t('accountTab.admin'), value: true }
+            ];
         }
     }
 };
