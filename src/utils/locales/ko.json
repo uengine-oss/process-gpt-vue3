@@ -959,7 +959,7 @@
     "InstanceCard": {
         "progress": "프로세스",
         "workItem": "워크 아이템",
-        "workHistory": "액티비티",
+        "activity": "액티비티",
         "ganttChart": "간트 차트",
         "chat": "채팅",
         "kanbanBoard": "칸반보드",

@@ -1,5 +1,5 @@
 <template>
-    <div class="w-100">
+    <div class="w-100 instance-card-tab-height">
         <v-row v-if="outputList.length > 0" 
             class="ma-0 pa-0" 
         >

@@ -957,7 +957,7 @@
     "InstanceCard": {
         "progress": "Progress",
         "workItem": "Work Item",
-        "workHistory": "Work History",
+        "activity": "Activity",
         "ganttChart": "Gantt Chart",
         "chat": "Chat",
         "kanbanBoard": "Kanban Board",

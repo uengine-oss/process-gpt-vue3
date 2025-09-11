@@ -725,6 +725,12 @@ hr {
     height: calc(100vh - 310px) !important
 }
 
+
+.instance-card-tab-6 {
+    height: calc(100vh - 250px);
+    overflow: auto;
+}
+
 .instance-card-tab-4 .chat-message-bubble,
 .work-item-activity-box .chat-message-bubble {
   position: relative;
@@ -743,10 +749,6 @@ hr {
     flex: 1 1 auto;
     overflow-y: auto;
     min-height: 0; /* 중요! 안 주면 flexbox에서 스크롤 안 생기는 경우 있음 */
-}
-
-.app-base-card-is-mobile-height {
-    max-height: calc(100vh - 110px);
 }
 
 .app-base-card-is-pc-height {
@@ -827,8 +829,11 @@ hr {
     width: 100% !important;
 }
 
-.gantt-area {
-    height: calc(100vh - 180px);
+.instance-card-gantt-area {
+    height: calc(100vh - 246px);
+}
+.project-card-gantt-area {
+    height: calc(100vh - 200px);
 }
 
 .project-card-kanban-board .todo-list-card-box {
@@ -1124,7 +1129,7 @@ hr {
         max-width: 300px;
     }
 
-    .gantt-area {
+    .project-card-gantt-area {
         height: calc(100vh - 50px);
     }
 
@@ -1155,12 +1160,16 @@ hr {
         display: flex !important;
     }
 
-    .process-consulting-ai-third-screen {
-        height: calc(100vh - 110px);
+    .instance-card-tab-6 {
+        height: calc(100vh - 200px);
+        overflow: auto;
     }
 
+    .app-base-card-is-mobile-height,
+    .process-consulting-ai-third-screen,
     .instance-card-process-box {
-        height: calc(100vh - 110px);
+        max-height: calc(100vh - 200px);
+        height: calc(100vh - 200px);
     }
 
     .work-itme-current-component .v-checkbox {
@@ -1204,8 +1213,14 @@ hr {
     }
 
     .instance-card-tab-4 .chat-view-box {
-        max-height: calc(100vh - 110px);
+        max-height: calc(100vh - 200px);
     }
+
+    .instance-card-tab-7 .instance-card-tab-height {
+        height: calc(100vh - 200px);
+        overflow: auto;
+    }
+    
     .todo-list-card-box {
         max-height: calc(100vh - 100px) !important;
         height: 100% !important;
