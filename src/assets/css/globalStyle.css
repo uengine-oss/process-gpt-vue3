@@ -6,6 +6,17 @@ hr {
     opacity: 1 !important;
 }
 
+
+.chip-select-wrapper .v-field__input {
+    padding: 0px !important;
+    color: white;
+}
+.chip-select-wrapper .v-field__append-inner {
+    padding-top: 5px !important;
+    color: white;
+}
+
+
 .work-item-tab-box .ps__rail-y,
 .work-item-tab-box .ps__rail-x {
     display: none !important;

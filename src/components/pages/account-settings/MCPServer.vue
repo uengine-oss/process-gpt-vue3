@@ -7,10 +7,24 @@
             <v-card flat class="pa-1">
                 <v-card-item class="pa-0">
                     <!-- <h5 class="text-h5 mb-4">MCP Servers</h5> -->
-
+                    <!-- 검색 UI -->
+                    <v-row class="align-center flex-fill border border-borderColor header-search rounded-pill px-5 ma-0 pa-0 mb-3"
+                        style="min-width:100%;"
+                    >
+                        <Icons :icon="'magnifer-linear'" :size="22" />
+                        <v-text-field 
+                            v-model="searchQuery" 
+                            variant="plain" 
+                            density="compact"
+                            class="position-relative pt-0 ml-3 custom-placeholer-color" 
+                            :placeholder="$t('MCPServer.searchMCPServers')"
+                            single-line 
+                            hide-details
+                        ></v-text-field>
+                    </v-row>
                     <v-list>
                         <v-list-item
-                            v-for="(server, key) in mcpServers"
+                            v-for="(server, key) in filteredMcpServers"
                             :key="key"
                             class="mb-2"
                             :class="{ 'bg-grey-lighten-4': editingKey === key }"
@@ -53,50 +67,73 @@
             </v-card>
         </v-col>
 
+        <!-- 세로 디바이더 (데스크톱에서만 표시) -->
+        <v-divider vertical class="d-none d-md-block"></v-divider>
+
         <!-- 우측: 수정 화면 (데스크톱) -->
         <v-col cols="12" lg="6" class="d-none d-lg-block pa-4">
-            <v-card v-if="editingKey && !isAddMode" flat>
-                <v-card-item class="pt-0">
-                    <h5 class="text-h5 mb-3">{{ formatServerName(editingKey) }}</h5>
-                    <div style="height: 40vh">
-                        <!-- <vue-monaco-editor
-                            v-model:value="mcpJsonText"
-                            language="json"
-                            :options="MONACO_EDITOR_OPTIONS"
-                            @mount="handleMount"
-                        /> -->
-                        <v-textarea v-model="mcpJsonText" label="MCP JSON" rows="10" />
-                    </div>
+            <div v-if="editingKey && !isAddMode" flat>
+                <div class="pt-0 pb-4">
+                    <v-row class="ma-0 pa-0 align-center">
+                        <h5 class="text-h5 mb-3">{{ formatServerName(editingKey) }}</h5>
+                    </v-row>
+                    <!-- <vue-monaco-editor
+                        v-model:value="mcpJsonText"
+                        language="json"
+                        :options="MONACO_EDITOR_OPTIONS"
+                        @mount="handleMount"
+                    /> -->
+                    <v-textarea 
+                        v-model="mcpJsonText" 
+                        label="MCP JSON" 
+                        hide-details
+                        no-resize
+                        class="limited-textarea"
+                    />
+                </div>
 
-                    <div class="d-flex justify-space-between pb-2">
-                        <v-btn color="grey" variant="flat" rounded class="mr-auto" @click="deleteServer">{{ $t('accountTab.delete') }}</v-btn>
-                        <div class="d-flex align-center">
-                            <v-btn color="grey" variant="flat" rounded class="mr-2" @click="closeEdit">{{ $t('accountTab.cancel') }}</v-btn>
-                            <v-btn color="primary" variant="flat" rounded @click="saveServerChanges" :loading="saving">{{ $t('accountTab.save') }}</v-btn>
-                        </div>
+                <div class="d-flex justify-space-between pb-2">
+                    <v-btn v-if="editingKey"
+                        class=" mr-2" 
+                        color="error" 
+                        variant="flat" 
+                        rounded 
+                        @click="deleteServer"
+                        :loading="saving || adding"
+                    >{{ $t('accountTab.delete') }}
+                    </v-btn>
+                    <div class="d-flex align-center ml-auto">
+                        <v-btn color="grey" variant="flat" rounded class="mr-2" @click="closeEdit">{{ $t('accountTab.cancel') }}</v-btn>
+                        <v-btn color="primary" variant="flat" rounded @click="saveServerChanges" :loading="saving">{{ $t('accountTab.save') }}</v-btn>
                     </div>
-                </v-card-item>
-            </v-card>
+                </div>
+            </div>
 
-            <v-card v-else-if="isAddMode && !editingKey" flat>
-                <v-card-item class="pt-0">
+            <div v-else-if="isAddMode && !editingKey" flat>
+                <div class="pt-0 pb-4">
                     <h5 class="text-h5 mb-3">New MCP</h5>
-                    <div style="height: 40vh">
-                        <!-- <vue-monaco-editor
-                            v-model:value="newJsonText"
-                            language="json"
-                            :options="MONACO_EDITOR_OPTIONS"
-                            @mount="handleMount"
-                        /> -->
-                        <v-textarea v-model="newJsonText" label="MCP JSON" rows="10" />
-                    </div>
+                    <!-- <vue-monaco-editor
+                        v-model:value="newJsonText"
+                        language="json"
+                        :options="MONACO_EDITOR_OPTIONS"
+                        @mount="handleMount"
+                    /> -->
+                    <v-textarea 
+                        v-model="newJsonText" 
+                        label="MCP JSON" 
+                        hide-details
+                        no-resize
+                        class="limited-textarea"
+                    />
+                </div>
 
-                    <div class="d-flex justify-end pb-2">
+                <div class="d-flex justify-end pb-2">
+                    <div class="d-flex align-center ml-auto">
                         <v-btn color="grey" variant="flat" rounded class="mr-2" @click="closeEdit">{{ $t('accountTab.cancel') }}</v-btn>
                         <v-btn color="primary" variant="flat" rounded @click="saveNewMCP" :loading="adding">{{ $t('accountTab.add') }}</v-btn>
                     </div>
-                </v-card-item>
-            </v-card>
+                </div>
+            </div>
 
             <v-card v-else elevation="10" class="d-flex align-center justify-center add-mcp-server" @click="addNewMCP">
                 <div class="text-center">
@@ -116,38 +153,69 @@
     <!-- 모바일용 수정 다이얼로그 -->
     <v-dialog v-model="editDialog" fullscreen transition="dialog-bottom-transition">
         <v-card>
-            <v-toolbar color="primary">
-                <v-btn icon @click="closeEdit">
-                    <v-icon>mdi-close</v-icon>
-                </v-btn>
-                <v-toolbar-title>{{ editingKey ? formatServerName(editingKey) : 'New MCP' }}</v-toolbar-title>
-                <v-spacer></v-spacer>
-                <v-btn v-if="editingKey" color="error" @click="deleteServer">{{ $t('accountTab.delete') }}</v-btn>
-                <v-btn color="white" @click="editingKey ? saveServerChanges : addCustomServer" :loading="saving || adding">
-                    {{ editingKey ? $t('accountTab.save') : $t('accountTab.add') }}
-                </v-btn>
-            </v-toolbar>
+            <!-- 상단 헤더 (배경 제거) -->
+            <div class="pa-4 pb-0">
+                <v-row class="ma-0 pa-0 align-center">
+                    <h5 class="text-h5 mr-auto">{{ editingKey ? formatServerName(editingKey) : 'New MCP' }}</h5>
+                    <Icons @click="closeEdit" :icon="'close'" :size="16" />
+                </v-row>
+            </div>
 
             <v-card-text class="pa-4">
-                <div style="height: 40vh">
-                    <!-- <vue-monaco-editor
-                        v-if="editingKey"
-                        v-model:value="mcpJsonText"
-                        language="json"
-                        :options="MONACO_EDITOR_OPTIONS"
-                        @mount="handleMount"
-                    />
-                    <vue-monaco-editor
-                        v-else
-                        v-model:value="newJsonText"
-                        language="json"
-                        :options="MONACO_EDITOR_OPTIONS"
-                        @mount="handleMount"
-                    /> -->
-                    <v-textarea v-if="editingKey" v-model="mcpJsonText" label="MCP JSON" rows="10" />
-                    <v-textarea v-else v-model="newJsonText" label="MCP JSON" rows="10" />
-                </div>
+                <!-- <vue-monaco-editor
+                    v-if="editingKey"
+                    v-model:value="mcpJsonText"
+                    language="json"
+                    :options="MONACO_EDITOR_OPTIONS"
+                    @mount="handleMount"
+                />
+                <vue-monaco-editor
+                    v-else
+                    v-model:value="newJsonText"
+                    language="json"
+                    :options="MONACO_EDITOR_OPTIONS"
+                    @mount="handleMount"
+                /> -->
+                <v-textarea 
+                    v-if="editingKey" 
+                    v-model="mcpJsonText" 
+                    label="MCP JSON" 
+                    hide-details
+                    no-resize
+                    class="mobile-textarea"
+                />
+                <v-textarea 
+                    v-else 
+                    v-model="newJsonText" 
+                    label="MCP JSON" 
+                    hide-details
+                    no-resize
+                    class="mobile-textarea"
+                />
             </v-card-text>
+
+            <!-- 하단 버튼 -->
+            <div class="pa-4 pt-0">
+                <div class="d-flex align-center ml-auto">
+                    <v-btn v-if="editingKey"
+                        class=" mr-2" 
+                        color="error" 
+                        variant="flat" 
+                        rounded 
+                        @click="deleteServer"
+                        :loading="saving || adding"
+                    >{{ $t('accountTab.delete') }}
+                    </v-btn>
+                    <v-btn @click="editingKey ? saveServerChanges : saveNewMCP" 
+                        class="ml-auto"
+                        color="primary" 
+                        variant="flat" 
+                        rounded 
+                        :loading="saving || adding"
+                    >{{ editingKey ? $t('accountTab.save') : $t('accountTab.add') }}
+                    </v-btn>
+                </div>
+            </div>
         </v-card>
     </v-dialog>
 </template>
@@ -166,6 +234,7 @@ export default {
         mcpServers: {},
         mcpJsonText: '',
         editDialog: false,
+        searchQuery: '',
         MONACO_EDITOR_OPTIONS: {
             automaticLayout: true,
             formatOnType: true,
@@ -208,7 +277,7 @@ export default {
                     [serverKey]: server
                 }
             };
-            this.mcpJsonText = JSON.stringify(jsonData);
+            this.mcpJsonText = JSON.stringify(jsonData, null, 4);
 
             if (window.innerWidth < 1024) {
                 this.editDialog = true;
@@ -221,7 +290,7 @@ export default {
             this.isAddMode = true;
 
             const newJson = { mcpServers: {} };
-            this.newJsonText = JSON.stringify(newJson);
+            this.newJsonText = JSON.stringify(newJson, null, 4);
 
             if (window.innerWidth < 1024) {
                 this.editDialog = true;
@@ -418,12 +487,43 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        filteredMcpServers() {
+            if (!this.searchQuery || this.searchQuery.trim() === '') {
+                return this.mcpServers;
+            }
+            
+            const query = this.searchQuery.toLowerCase();
+            const filtered = {};
+            
+            Object.keys(this.mcpServers).forEach(key => {
+                const server = this.mcpServers[key];
+                const serverName = this.formatServerName(key).toLowerCase();
+                const serverDescription = this.getServerDescription(server).toLowerCase();
+                
+                // 타이틀(서버명)과 서브타이틀(설명)에서 검색
+                if (serverName.includes(query) || serverDescription.includes(query)) {
+                    filtered[key] = server;
+                }
+            });
+            
+            return filtered;
         }
     }
 };
 </script>
 
 <style scoped>
+.limited-textarea :deep(.v-field__input) {
+    height: calc(100vh - 320px) !important;
+    overflow-y: auto !important;
+}
+
+.mobile-textarea :deep(.v-field__input) {
+    height: calc(100vh - 130px) !important;
+    overflow-y: auto !important;
+}
+
 .add-mcp-server {
     height: 400px; 
     border: 3px dashed rgba(128, 128, 128, 0.5);

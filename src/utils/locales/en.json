@@ -1552,6 +1552,9 @@
         "feedback": "Is the process execution normal?",
         "feedbackDescription": "Is the process execution normal?"
     },
+    "MCPServer": {
+        "searchMCPServers": "Search MCP Servers"
+    },
     "footer": {
         "BusinessNumber": "BusinessRegistration<br>No.",
         "CEO": "CEO : Jin-young Jang",

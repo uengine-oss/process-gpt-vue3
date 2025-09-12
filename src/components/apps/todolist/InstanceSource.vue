@@ -1,5 +1,9 @@
 <template>
-    <div class="w-100">
+    <div class="w-100 h-100"
+        @drop="onDrop" 
+        @dragover="onDragOver" 
+        @dragleave="onDragLeave"
+    >
        <v-row class="ma-0 pa-0">
             <!-- 새 파일 추가 카드 -->
             <v-col cols="12" 
@@ -10,13 +14,15 @@
             >
                 <v-card 
                     class="add-file-card d-flex align-center justify-center text-gray"
+                    :class="{ 'drag-over': isDragOver }"
                     elevation="2"
                     hover
                     @click="openFileDialog"
                 >
                     <div class="text-center">
-                        <v-icon size="48" color="grey" class="mb-2 add-file-icon">mdi-plus</v-icon>
+                        <v-icon size="48" color="grey" class="add-file-icon">mdi-plus</v-icon>
                         <p class="text-body-1 text-grey add-file-text">파일 추가</p>
+                        <p class="text-caption text-grey-darken-1">클릭하거나 파일을 드래그하세요</p>
                     </div>
                 </v-card>
             </v-col>
@@ -426,6 +432,20 @@ export default {
 
 .text-truncate {
     max-width: 200px;
+}
+
+/* 드래그앤드롭 스타일 */
+.add-file-card.drag-over {
+    border-color: rgb(var(--v-theme-primary)) !important;
+    background-color: rgba(var(--v-theme-primary), 0.15) !important;
+}
+
+.add-file-card.drag-over .add-file-icon {
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
+.add-file-card.drag-over .add-file-text {
+    color: rgb(var(--v-theme-primary)) !important;
 }
 </style>
 
