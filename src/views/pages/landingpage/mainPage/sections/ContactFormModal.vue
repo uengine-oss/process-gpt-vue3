@@ -5,7 +5,7 @@
       <div class="relative w-full p-6 bg-white rounded-lg shadow-xl">
         <div class="flex justify-between items-center mb-4">
           <div style="width: 32px;"></div>
-          <h2 class="text-3xl font-bold pb-4">문의하기</h2>
+          <h2 class="text-3xl font-bold pb-4">{{ $t('CTASection.contactButton') }}</h2>
           <button @click="toggleForm" 
             class="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full" 
             style="width: 32px; margin-top: -15px;">✖
@@ -16,42 +16,42 @@
           <!-- <input type="hidden" name="type" value="Process GPT"> -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="text-left">
-              <label class="block mb-1 font-medium">이름 <span class="text-red-500">*</span></label>
-              <input v-model="formData.name" type="text" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-primary" placeholder="이름을 입력해 주세요">
+              <label class="block mb-1 font-medium">{{ $t('CTASection.name') }} <span class="text-red-500">*</span></label>
+              <input v-model="formData.name" type="text" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-primary" :placeholder="$t('CTASection.namePlaceholder')">
             </div>
             <div class="text-left mb-3">
-              <label class="block mb-1 font-medium">이메일 <span class="text-red-500">*</span></label>
-              <input v-model="formData.email" type="email" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-primary" placeholder="답변받으실 이메일 주소를 입력해 주세요">
+              <label class="block mb-1 font-medium">{{ $t('CTASection.email') }} <span class="text-red-500">*</span></label>
+              <input v-model="formData.email" type="email" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-primary" :placeholder="$t('CTASection.emailPlaceholder')">
             </div>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="text-left">
-              <label class="block mb-1 font-medium">회사 <span class="text-red-500">*</span></label>
-              <input v-model="formData.company" type="text" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-primary" placeholder="회사명 또는 소속기관을 입력해 주세요">
+              <label class="block mb-1 font-medium">{{ $t('CTASection.company') }} <span class="text-red-500">*</span></label>
+              <input v-model="formData.company" type="text" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-primary" :placeholder="$t('CTASection.companyPlaceholder')">
             </div>
             <div class="text-left mb-3">
-              <label class="block mb-1 font-medium">직급</label>
-              <input v-model="formData.position" type="text" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-primary" placeholder="직급을 입력해 주세요">
+              <label class="block mb-1 font-medium">{{ $t('CTASection.position') }}</label>
+              <input v-model="formData.position" type="text" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-primary" :placeholder="$t('CTASection.positionPlaceholder')">
             </div>
           </div>
           <div class="text-left">
-            <label class="block mb-1 font-medium">문의내용 <span class="text-red-500">*</span></label>
-            <textarea v-model="formData.message" required rows="4" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-primary" placeholder="문의 내용을 입력해 주세요" style="resize: none;"></textarea>
+            <label class="block mb-1 font-medium">{{ $t('CTASection.message') }} <span class="text-red-500">*</span></label>
+            <textarea v-model="formData.message" required rows="4" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-primary" :placeholder="$t('CTASection.messagePlaceholder')" style="resize: none;"></textarea>
           </div>
           <div class="flex items-center my-2 mb-2">
             <input v-model="policyAgreed" type="checkbox" required class="mr-2">
             <span class="text-sm">
-              (필수) 
+              {{ $t('CTASection.policyAgreed1') }} 
               <a href="#" @click.prevent="showPrivacyPolicy = true" class="text-ui-primary" style="text-decoration: underline;">
-                개인정보 수집 및 이용
+                {{ $t('CTASection.policyAgreed2') }}
               </a>
-              에 동의합니다.
+              {{ $t('CTASection.policyAgreed3') }}
             </span>
           </div>
           <p v-if="policyError" class="text-sm text-red-600">{{ policyError }}</p>
           <div class="flex justify-center">
             <button type="submit" class="px-6 py-3 font-bold btn btn-privacy-modal rounded-lg hover:bg-ui-primary-dark">
-              문의하기
+              {{ $t('CTASection.contactButton') }}
             </button>
           </div>
           
@@ -63,18 +63,18 @@
     <div v-if="showPrivacyPolicy" class="privacy-modal" @click.self="showPrivacyPolicy = false">
       <div class="privacy-modal-content">
         <div class="privacy-modal-header">
-          <h2 class="text-xl font-bold">개인정보 수집 및 이용 동의</h2>
+          <h2 class="text-xl font-bold">{{ $t('CTASection.privacyPolicyTitle') }}</h2>
         </div>
         <div class="privacy-modal-body">
           <div class="prose max-w-none text-left">
-            유엔진솔루션즈(이하 "회사")가 문의하신 내용에 대한 답변을 제공하기 위해 개인정보를 수집·이용하고자 하는 경우에는 ｢개인정보 보호법｣등 관계 법령에 따라 본인의 동의가 필요합니다. 
-            <br>회사 제품 구매 및 컨설팅 문의 응답, 회사가 제공하는 서비스 이용과정을 위한 최소한의 개인정보를 수집하고 이용합니다.
-            <br>수집된 정보는 발송 외 다른 목적으로 이용되지 않으며, 서비스가 종료될 경우 즉시 파기됩니다.
+            {{ $t('CTASection.privacyPolicyDescription1') }}
+            <br>{{ $t('CTASection.privacyPolicyDescription2') }}
+            <br>{{ $t('CTASection.privacyPolicyDescription3') }}
           </div>
         </div>
         <div class="privacy-modal-footer">
           <button @click="showPrivacyPolicy = false" class="px-8 py-2 font-bold btn btn-privacy-modal rounded-lg hover:bg-ui-primary-dark">
-            닫기
+            {{ $t('CTASection.privacyPolicyClose') }}
           </button>
         </div>
       </div>
@@ -136,7 +136,7 @@ export default {
       });
 
       if (!this.policyAgreed) {
-        this.policyError = '개인정보 수집 및 이용에 동의해주세요.';
+        this.policyError = this.$t('CTASection.policyError');
         isValid = false;
       } else {
         this.policyError = '';
@@ -166,7 +166,7 @@ export default {
         });
 
         if (response.ok) {
-          alert('문의가 성공적으로 전송되었습니다.');
+          alert(this.$t('CTASection.contactSuccess'));
           this.resetForm();
           this.showForm = false; // 모달창 닫기
           this.$emit('form-toggle', false); // 부모 컴포넌트에 상태 변경 알림
@@ -175,7 +175,7 @@ export default {
         }
       } catch (error) {
         console.error('Error:', error);
-        alert('문의 전송 중 오류가 발생했습니다. 다시 시도해주세요.');
+        alert(this.$t('CTASection.contactError'));
       }
     },
 
