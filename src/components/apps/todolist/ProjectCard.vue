@@ -54,7 +54,7 @@
                 :touch="false"
             >
                 <v-window-item value="managment" class="h-100">
-                    <div class="gantt-area" v-if="!isLoading">
+                    <div class="project-card-gantt-area" v-if="!isLoading">
                         <GanttChart 
                             :tasks="tasks"
                             :dependencies="dependencies"

@@ -24,7 +24,8 @@
                             <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
                         </v-tabs>
                         <div v-if="superAdmin" @click="goToTenantManage"
-                            class="settings-tenant-manage-btn v-tab-style"
+                            class="settings-tenant-manage-btn v-tab-style text-none"
+                            style="letter-spacing: 0;"
                         >
                             <Icons :icon="'office'"  :size="20" class="mr-2" />{{ $t('accountTab.tenantManage') }}
                         </div>

@@ -1,10 +1,19 @@
 <template>
-    <div class="summary-button-container" @click.stop="toggleExpanded"
-        :style="isSummaryExpanded ? 'width: 100%; padding: 16px;' : 'padding: 0px 16px 0px 0px;'"
+    <div class="summary-wrapper" 
+         :class="isSummaryExpanded ? 'expanded' : ''"
+         :style="isSummaryExpanded ? 
+             'height: auto; overflow: visible; transition: all 0.3s ease;' : 
+             'height: 100px; overflow: hidden; transition: all 0.3s ease;'"
     >
-        <div class="summary-document" :class="{ expanded: isSummaryExpanded }">
-            <div class="document-content" :class="{ collapsed: !isSummaryExpanded }">
-                <slot></slot>
+        <div class="summary-button-container" @click.stop="toggleExpanded"
+            :style="isSummaryExpanded ? 
+                'width: 100%; padding: 0px;' : 
+                'padding: 0px 16px 0px 0px;'"
+        >
+            <div class="summary-document" :class="isSummaryExpanded ? 'expanded' : ''">
+                <div class="document-content" :class="isSummaryExpanded ? '' : 'collapsed'">
+                    <slot></slot>
+                </div>
             </div>
         </div>
     </div>
@@ -30,6 +39,16 @@ export default {
 </script>
 
 <style scoped>
+.summary-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.summary-wrapper.expanded {
+    justify-content: flex-start;
+}
+
 .summary-button-container {
     cursor: pointer;
 }

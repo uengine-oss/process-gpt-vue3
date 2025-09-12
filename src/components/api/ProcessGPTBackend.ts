@@ -3885,6 +3885,7 @@ class ProcessGPTBackend implements Backend {
             let executionScope = null;
 
             let workitem = null;
+            let workitems = null;
             const { data, error } = await window.$supabase
                 .from('todolist')
                 .select('*')
@@ -3894,7 +3895,11 @@ class ProcessGPTBackend implements Backend {
                 .order('updated_at', { ascending: false })
                 .limit(1)
 
-            if (error) {
+            if (!error) { 
+                workitem = data;           
+            } 
+
+            if(!workitem) {
                 const instance = await this.getInstance(instanceId);
                 const rootInstanceId = instance.root_proc_inst_id;
                 executionScope = instance.execution_scope;
@@ -3912,33 +3917,73 @@ class ProcessGPTBackend implements Backend {
                 } else {
                     workitem = data;
                 }
-            } else {
-                workitem = data;
             }
-            const output = workitem.output;
-            if (output && output[formId] && output[formId][fieldId]) {
-                let filed = output[formId][fieldId];
-                if(filed) {
-                    fieldValue[formId] = {
-                        [fieldId]: filed
+
+            if(!workitem) {
+                const { data, error } = await window.$supabase
+                    .from('todolist')
+                    .select('*')
+                    .eq('root_proc_inst_id', instanceId)
+                    .ilike('activity_id', activityId);
+                if(!error) {
+                    workitems = data;
+                    
+                    const sorted = (workitems ?? []).sort(
+                        (a, b) => Number(a.execution_scope ?? 0) - Number(b.execution_scope ?? 0)
+                    );
+                    
+                    workitems = sorted;
+                }
+            }
+
+            if(!workitem && !workitems) {
+                throw new Error('workitem not found');
+            }
+
+            if(workitems) {
+                let filedList = [];
+                workitems.forEach((item: any, index: number) => {
+                    workitem = item;
+                    const output = item.output;
+                    if(output && output[formId]) {
+                        let filed = output[formId][fieldId];
+                        if(filed) {
+                            filedList.push(workitem.execution_scope + ":" + filed);
+                        }
                     }
-                } else {
-                    let group = Object.values(output[formId]);
-                    if(group) {
-                        group.forEach((item: any) => {
-                            if(executionScope) {
-                                if(item[executionScope][fieldId]) {
-                                    fieldValue[formId] = {
-                                        [fieldId]: item[executionScope][fieldId]
-                                    }
-                                }
-                            }
-                        });
-                    }
+                });
+                
+                fieldValue[formId] = {
+                    [fieldId]: filedList
                 }
                 return fieldValue;
-            } else {
-                return null;
+            }
+            if(workitem) {
+                const output = workitem.output;
+                if (output && output[formId]) {
+                    let filed = output[formId][fieldId];
+                    if(filed) {
+                        fieldValue[formId] = {
+                            [fieldId]: filed
+                        }
+                    } else {
+                        let group = Object.values(output[formId]);
+                        if(group) {
+                            group.forEach((item: any) => {
+                                if(executionScope) {
+                                    if(item[executionScope][fieldId]) {
+                                        fieldValue[formId] = {
+                                            [fieldId]: item[executionScope][fieldId]
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    return fieldValue;
+                } else {
+                    return null;
+                }
             }
         } catch (error) {
             throw new Error(error.message);

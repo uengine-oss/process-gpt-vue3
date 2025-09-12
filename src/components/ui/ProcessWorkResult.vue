@@ -144,8 +144,10 @@
             </v-col>
         </v-row>
 
-        <div class="pa-4 pt-0 pl-0">
-            <v-card v-if="referenceInfo && referenceInfo.length > 0"
+        <div v-if="referenceInfo && referenceInfo.length > 0"
+            class="pa-4 pt-0 pl-0"
+        >
+            <v-card 
                 elevation="2"
                 class="ma-0 pa-0"
             >

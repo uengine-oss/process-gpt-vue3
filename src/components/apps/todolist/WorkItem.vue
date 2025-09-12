@@ -170,6 +170,7 @@
                         </div>
                     </div>
                     <v-window v-model="selectedTab"
+                        class="work-item-tab-box"
                         :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px); overflow: auto' : 'height: calc(100vh - 257px); color: black; overflow: auto'"
                         :touch="false"
                     >
@@ -180,8 +181,14 @@
 
                             >
                                 <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
-                                    <div v-if="bpmn" style="height: 100%">
-                                        <BpmnUengine
+                                    <div v-if="bpmn" style="height: 100%;">
+                                        <div v-show="isBpmnLoading">
+                                            <v-skeleton-loader
+                                                type="image"
+                                                class="mx-auto work-item-skeleton-loader"
+                                            ></v-skeleton-loader>
+                                        </div>
+                                        <BpmnUengine v-show="!isBpmnLoading"
                                             ref="bpmnVue"
                                             :bpmn="bpmn"
                                             :options="options"
@@ -214,12 +221,13 @@
                                             :isViewMode="true"
                                         ></process-definition> -->
                                     </div>
-                                    <span v-else>BPMN 정보 불러오는 중
-                                        <span class="loading-dots">
-                                            <span>.</span>
-                                            <span>.</span>
-                                            <span>.</span>
-                                        </span>
+                                    <span v-else style="height: 100%;">
+                                        <div v-show="isBpmnLoading">
+                                            <v-skeleton-loader
+                                                type="image"
+                                                class="mx-auto work-item-skeleton-loader"
+                                            ></v-skeleton-loader>
+                                        </div>
                                     </span>
                                 </div>
                             </div>
@@ -542,6 +550,7 @@ export default {
     
         // bpmn
         bpmn: null,
+        isBpmnLoading: false,
         options: {
             propertiesPanel: {},
             additionalModules: [customBpmnModule]
@@ -790,11 +799,9 @@ export default {
     methods: {
         onBpmnLoadStart() {
             this.isBpmnLoading = true;
-            console.log('onBpmnLoadStart');
         },
         onBpmnLoadEnd() {
             this.isBpmnLoading = false;
-            console.log('onBpmnLoadEnd');
         },
         isTabAvailable(tabValue) {
             return this.tabList.some(tab => tab.value === tabValue);

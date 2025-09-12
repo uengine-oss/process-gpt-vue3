@@ -6,6 +6,22 @@ hr {
     opacity: 1 !important;
 }
 
+
+.chip-select-wrapper .v-field__input {
+    padding: 0px !important;
+    color: white;
+}
+.chip-select-wrapper .v-field__append-inner {
+    padding-top: 5px !important;
+    color: white;
+}
+
+
+.work-item-tab-box .ps__rail-y,
+.work-item-tab-box .ps__rail-x {
+    display: none !important;
+}
+
 .font-weight-medium {
     font-weight: 400 !important;
 }
@@ -493,6 +509,10 @@ hr {
     max-height: calc(100vh - 420px);
     overflow-y: auto;
 }
+.work-item-skeleton-loader .v-skeleton-loader__image {
+    height: 70vh;
+    border-radius: 8px;
+}
 
 .agent-field-skeleton .v-skeleton-loader__image {
     border-radius: 10px !important;
@@ -716,6 +736,12 @@ hr {
     height: calc(100vh - 310px) !important
 }
 
+
+.instance-card-tab-6 {
+    height: calc(100vh - 250px);
+    overflow: auto;
+}
+
 .instance-card-tab-4 .chat-message-bubble,
 .work-item-activity-box .chat-message-bubble {
   position: relative;
@@ -734,10 +760,6 @@ hr {
     flex: 1 1 auto;
     overflow-y: auto;
     min-height: 0; /* 중요! 안 주면 flexbox에서 스크롤 안 생기는 경우 있음 */
-}
-
-.app-base-card-is-mobile-height {
-    max-height: calc(100vh - 110px);
 }
 
 .app-base-card-is-pc-height {
@@ -818,8 +840,11 @@ hr {
     width: 100% !important;
 }
 
-.gantt-area {
-    height: calc(100vh - 180px);
+.instance-card-gantt-area {
+    height: calc(100vh - 246px);
+}
+.project-card-gantt-area {
+    height: calc(100vh - 200px);
 }
 
 .project-card-kanban-board .todo-list-card-box {
@@ -1115,7 +1140,7 @@ hr {
         max-width: 300px;
     }
 
-    .gantt-area {
+    .project-card-gantt-area {
         height: calc(100vh - 50px);
     }
 
@@ -1146,12 +1171,16 @@ hr {
         display: flex !important;
     }
 
-    .process-consulting-ai-third-screen {
-        height: calc(100vh - 110px);
+    .instance-card-tab-6 {
+        height: calc(100vh - 200px);
+        overflow: auto;
     }
 
+    .app-base-card-is-mobile-height,
+    .process-consulting-ai-third-screen,
     .instance-card-process-box {
-        height: calc(100vh - 110px);
+        max-height: calc(100vh - 200px);
+        height: calc(100vh - 200px);
     }
 
     .work-itme-current-component .v-checkbox {
@@ -1195,8 +1224,14 @@ hr {
     }
 
     .instance-card-tab-4 .chat-view-box {
-        max-height: calc(100vh - 110px);
+        max-height: calc(100vh - 200px);
     }
+
+    .instance-card-tab-7 .instance-card-tab-height {
+        height: calc(100vh - 200px);
+        overflow: auto;
+    }
+    
     .todo-list-card-box {
         max-height: calc(100vh - 100px) !important;
         height: 100% !important;
