@@ -59,6 +59,32 @@
 create extension if not exists vector;
 create extension if not exists pgcrypto;
 
+-- ==========================================
+-- ENUM 타입 정의
+-- ==========================================
+-- 프로세스 인스턴스 상태 enum
+CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
+-- 할일 항목 상태 enum
+CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
+-- 에이전트 모드 enum
+CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
+-- 오케스트레이션 방식 enum
+CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react');
+-- 드래프트 상태 enum
+CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
+-- 이벤트 타입 enum
+CREATE TYPE event_type_enum AS ENUM (
+  'task_started',
+  'task_completed',
+  'tool_usage_started',
+  'tool_usage_finished',
+  'crew_completed',
+  'human_asked',
+  'human_response'
+);
+-- 이벤트 상태 enum
+CREATE TYPE event_status AS ENUM ('ASKED', 'APPROVED', 'REJECTED');
+
 -- Create tenant_id function
 create or replace function public.tenant_id()
 returns text
@@ -204,7 +230,7 @@ create table if not exists public.bpm_proc_inst (
     participants text[] null,
     role_bindings jsonb null,
     variables_data jsonb null,
-    status text null,
+    status process_status null,
     tenant_id text null default public.tenant_id(),
     proc_def_version text null,
     project_id uuid null,
@@ -230,7 +256,7 @@ create table if not exists public.todolist (
     activity_name text null,
     start_date timestamp without time zone null,
     end_date timestamp without time zone null,
-    status text null,
+    status todo_status null,
     description text null,
     tool text null,
     due_date timestamp without time zone null,
@@ -245,10 +271,10 @@ create table if not exists public.todolist (
     log text null,
     project_id uuid null,
     draft jsonb null,
-    agent_mode text null,
-    agent_orch text null,
+    agent_mode agent_mode null,
+    agent_orch agent_orch null,
     feedback jsonb null,
-    draft_status text null,
+    draft_status draft_status null,
     updated_at timestamp with time zone default now(),
     temp_feedback text null,
     output_url text null,
@@ -409,8 +435,8 @@ create table if not exists public.events (
   job_id text not null,
   todo_id text null,
   proc_inst_id text null,
-  event_type text not null,
-  status text null,
+  event_type event_type_enum not null,
+  status event_status null,
   crew_type text null,
   data jsonb not null,
   timestamp timestamp with time zone null default now(),
@@ -1586,30 +1612,13 @@ grant execute on all functions in schema cron to service_role;
 
 
 
--- enum 타입 추가
--- 프로세스 인스턴스 상태 enum
-CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
--- 할일 항목 상태 enum
-CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
--- 에이전트 모드 enum
-CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
--- 오케스트레이션 방식 enum
-CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react');
--- 드래프트 상태 enum
-CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
--- 이벤트 타입 enum
-CREATE TYPE event_type_enum AS ENUM (
-  'task_started',
-  'task_completed',
-  'tool_usage_started',
-  'tool_usage_finished',
-  'crew_completed',
-  'human_asked',
-  'human_response'
-);
--- 이벤트 상태 enum
-CREATE TYPE event_status AS ENUM ('ASKED', 'APPROVED', 'REJECTED');
 
+-- ==========================================
+-- ENUM 타입 마이그레이션 쿼리
+-- ==========================================
+-- ※ 주의: 아래 마이그레이션 쿼리들은 해당 컬럼이 text 타입인 경우에만 실행하세요
+-- 이미 enum 타입으로 변경된 경우에는 실행하지 마세요
+--
 -- events 테이블 마이그레이션 (event_type)
 -- 1. 임시 컬럼 추가
 ALTER TABLE public.events ADD COLUMN event_type_new event_type_enum;
@@ -1759,8 +1768,10 @@ CREATE INDEX IF NOT EXISTS idx_document_images_document_id ON document_images(do
 CREATE INDEX IF NOT EXISTS idx_document_images_tenant_id ON document_images(tenant_id);
 
 
+
 -- ==========================================
 -- Mem0 vector store 함수 (vecs 스키마)
+-- ※ vecs 스키마가 있는 경우에만 아래 함수 생성 쿼리들을 실행하세요
 -- ==========================================
 -- 조회 (agent_id 필터링 + limit)
 create or replace function public.get_memories(agent text, lim int default 100)

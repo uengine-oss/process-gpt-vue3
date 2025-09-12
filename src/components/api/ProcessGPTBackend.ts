@@ -316,7 +316,7 @@ class ProcessGPTBackend implements Backend {
                 input.answer = "";
             }
             if (!input.process_instance_id) {
-                input.process_instance_id = "new";
+                input.process_instance_id = `${defId}.${me.uuid()}`;
             } else {
                 input['chat_room_id'] = input.process_instance_id;
             }
@@ -1285,7 +1285,8 @@ class ProcessGPTBackend implements Backend {
                 process_instance_id: workItem.proc_inst_id,
                 process_definition_id: workItem.proc_def_id,
                 activity_id: workItem.activity_id,
-                chat_room_id: workItem.proc_inst_id
+                chat_room_id: workItem.proc_inst_id,
+                task_id: workItem.id
             };
 
             return await me.executeInstance(input);
@@ -1492,21 +1493,38 @@ class ProcessGPTBackend implements Backend {
         // instance/{instanceId}/completed
         //TODO: 현재 프로세스 진행상태 추가
         try {
-            const list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
+            let list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
             let result: any = {};
-            list.forEach((item: any) => {
-                if(item.status == 'DONE') {
-                    result[item.activity_id] = 'Completed';
-                } else if(item.status == 'IN_PROGRESS' || item.status == 'SUBMITTED') {
-                    result[item.activity_id] = 'Running';
-                } else if(item.status == 'PENDING') {
-                    result[item.activity_id] = 'Pending';
-                } else if(item.status == 'TODO') {
-                    result[item.activity_id] = 'New';
-                } else if(item.status == 'CANCELLED') {
-                    result[item.activity_id] = 'Cancelled';
+            
+            // activity_id별로 그룹화하고 rework_count가 큰 순서로 정렬
+            const groupedByActivity = list.reduce((acc: any, item: any) => {
+                if (!acc[item.activity_id]) {
+                    acc[item.activity_id] = [];
+                }
+                acc[item.activity_id].push(item);
+                return acc;
+            }, {});
+            
+            // 각 activity_id별로 rework_count가 가장 큰 아이템을 선택
+            Object.keys(groupedByActivity).forEach(activityId => {
+                const items = groupedByActivity[activityId];
+                // rework_count가 큰 순서로 정렬 (내림차순)
+                const sortedItems = items.sort((a: any, b: any) => (b.rework_count || 0) - (a.rework_count || 0));
+                const selectedItem = sortedItems[0]; // 가장 큰 rework_count를 가진 아이템
+                
+                if(selectedItem.status == 'DONE') {
+                    result[selectedItem.activity_id] = 'Completed';
+                } else if(selectedItem.status == 'IN_PROGRESS' || selectedItem.status == 'SUBMITTED') {
+                    result[selectedItem.activity_id] = 'Running';
+                } else if(selectedItem.status == 'PENDING') {
+                    result[selectedItem.activity_id] = 'Pending';
+                } else if(selectedItem.status == 'TODO') {
+                    result[selectedItem.activity_id] = 'New';
+                } else if(selectedItem.status == 'CANCELLED') {
+                    result[selectedItem.activity_id] = 'Cancelled';
                 }
             });
+            
             return result;
         } catch (e) {
             //@ts-ignore
@@ -2895,14 +2913,22 @@ class ProcessGPTBackend implements Backend {
 
             if (workItem && workItem.proc_def_id && workItem.reference_ids && workItem.reference_ids.length > 0) {
                 const formPromises = workItem.reference_ids.map(async (referenceId: string) => {
-                    const prevWorkItem = await storage.getObject('todolist', {
-                        match: {
-                            proc_inst_id: workItem.proc_inst_id,
-                            activity_id: referenceId,
-                            status: 'DONE'
-                        }
-                    });
-                    
+                    const { data, error } = await window.$supabase
+                        .from('todolist')
+                        .select('*')
+                        .eq('proc_inst_id', workItem.proc_inst_id)
+                        .eq('activity_id', referenceId)
+                        .eq('status', 'DONE')
+                        .order('updated_at', { ascending: false })
+                        .limit(1)
+
+                    if (error) {
+                        console.log(error);
+                        return null;
+                    }
+
+                    const prevWorkItem = data;
+
                     if (prevWorkItem && prevWorkItem.proc_inst_id && prevWorkItem.activity_id) {
                         const formId = prevWorkItem.tool.split('formHandler:')[1];
                         const [form, formData] = await Promise.all([
@@ -3864,7 +3890,9 @@ class ProcessGPTBackend implements Backend {
                 .select('*')
                 .eq('proc_inst_id', instanceId)
                 .ilike('activity_id', activityId)
-                .single();
+                .eq('status', 'DONE')
+                .order('updated_at', { ascending: false })
+                .limit(1)
 
             if (error) {
                 const instance = await this.getInstance(instanceId);
@@ -3875,7 +3903,10 @@ class ProcessGPTBackend implements Backend {
                     .select('*')
                     .eq('proc_inst_id', rootInstanceId)
                     .ilike('activity_id', activityId)
-                    .single();
+                    .eq('status', 'DONE')
+                    .order('updated_at', { ascending: false })
+                    .limit(1)
+
                 if(error) {
                     throw new Error('workitem not found');
                 } else {
@@ -4140,6 +4171,96 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             throw new Error(error.message);
+        }
+    }
+
+    async getReworkActivities(workItem: any) {
+        try {
+            const response = await axios.post('/execution/get-rework-activities', workItem);
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data.message);
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async reWorkItem(item?: any) {
+        try {
+            if (!item.instanceId || !item.activities) {
+                throw new Error('instance Id and activities are required');
+            }
+            const response = await axios.post('/execution/rework-complete', item);
+            return response;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async enableRework(workItem?: any) {
+        try {
+            if (!workItem) {
+                return false;
+            }
+            
+            const isCompleted = workItem.worklist.status === "COMPLETED" || workItem.worklist.status === "DONE";
+            if (!isCompleted) {
+                return false;
+            }
+            
+            const currentUserId = localStorage.getItem('uid');
+            const endpoint = workItem.worklist.endpoint;
+            if (!currentUserId || !endpoint) {
+                return false;
+            }
+            
+            let isOwnWorkItem = false;
+            if (Array.isArray(endpoint)) {
+                isOwnWorkItem = endpoint.includes(currentUserId);
+            } else {
+                const endpointList = String(endpoint).split(',').map(e => e.trim());
+                isOwnWorkItem = endpointList.includes(currentUserId);
+            }
+            
+            if (!isOwnWorkItem) {
+                return false;
+            }
+            
+            const activityId = workItem.activity.tracingTag;
+            const procInstId = workItem.worklist.instId;
+            
+            const allWorkItems = await storage.list('todolist', {
+                match: {
+                    'proc_inst_id': procInstId,
+                    'activity_id': activityId,
+                    'tenant_id': window.$tenantName
+                },
+                orderBy: 'rework_count',
+                sort: 'desc'
+            });
+            
+            if (allWorkItems.length === 0) {
+                return false;
+            }
+            
+            const recentWorkItem = allWorkItems[0];
+            const isRecentWorkItem = recentWorkItem.id === workItem.worklist.taskId;
+
+            if (isRecentWorkItem) {
+                return true;
+            }
+            
+            const isAllCompleted = allWorkItems.every(item => 
+                item.status === "COMPLETED" || item.status === "DONE"
+            );
+            
+            return isAllCompleted;
+            
+        } catch (error) {
+            console.error('Error checking rework enable:', error);
+            return false;
         }
     }
 }
