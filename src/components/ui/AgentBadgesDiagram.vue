@@ -1,16 +1,22 @@
 <template>
     <div v-if="show" class="profile-container" :class="{ 'mobile': isMobile }">
-        <div v-if="agentData && agentData.id" class="learning-buttons">
-            <div class="learning-buttons-item">
-                <v-btn color="info" @click="goToLearning">
-                    <span>학습 시키기</span>
-                </v-btn>
-            </div>
-        </div>
-
         <div class="profile-wrapper">
-            <div class="profile-header">
+            <v-row class="profile-header ma-0 pa-4 pb-0">
                 <span class="profile-title">{{ agentName }}</span>
+                <div v-if="agentData && agentData.id"
+                    class="ml-2"
+                >
+                    <div class="learning-buttons-item">
+                        <v-btn @click="goToLearning"
+                            color="primary"
+                            variant="elevated" 
+                            class="rounded-pill"
+                            density="compact"
+                        >학습 시키기
+                        </v-btn>
+                    </div>
+                </div>
+                <v-spacer></v-spacer>
                 <div class="header-controls">
                     <div v-if="!isMobile" class="zoom-controls">
                         <button @click="zoomOut" class="zoom-btn" :disabled="zoomLevel <= 0.5">-</button>
@@ -19,7 +25,7 @@
                     </div>
                     <button @click="close" class="close-btn">✕</button>
                 </div>
-            </div>
+            </v-row>
             <div class="diagram-container" v-if="!isMobile">
                 <svg ref="profileDiagram" :width="svgWidth" :height="svgHeight" class="profile-svg">
                     <g ref="contentGroup" :transform="`scale(${zoomLevel}) translate(${(svgWidth/2) * (1-zoomLevel)/zoomLevel}, ${(svgHeight/2) * (1-zoomLevel)/zoomLevel})`"></g>
@@ -664,7 +670,6 @@ export default {
 }
 
 .profile-wrapper {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 15px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 5px 15px rgba(0, 0, 0, 0.2);
     overflow: hidden;
@@ -693,12 +698,10 @@ export default {
 }
 
 .mobile-content {
-    padding: 20px;
     background: white;
-    border-radius: 10px;
-    margin: 15px;
-    max-height: calc(90vh - 30px);
+    height: 94vh;
     overflow-y: auto;
+    padding: 16px;
 }
 
 .mobile-center {
@@ -746,12 +749,10 @@ export default {
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 15px;
-    border-left: 4px solid #667eea;
 }
 
 .section-title {
     margin: 0 0 10px 0;
-    color: #667eea;
     font-size: 14px;
     font-weight: 600;
     text-transform: uppercase;
@@ -777,20 +778,13 @@ export default {
 }
 
 .profile-header {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    color: white;
-    padding: 12px 20px;
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    background: white;
 }
 
 .profile-title {
     font-weight: 600;
     font-size: 14px;
-    letter-spacing: 0.5px;
 }
 
 .header-controls {
@@ -811,7 +805,6 @@ export default {
 .zoom-btn {
     background: rgba(255, 255, 255, 0.2);
     border: none;
-    color: white;
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
@@ -845,7 +838,6 @@ export default {
 .close-btn {
     background: rgba(255, 255, 255, 0.2);
     border: none;
-    color: white;
     font-size: 14px;
     cursor: pointer;
     padding: 6px 8px;
@@ -871,12 +863,19 @@ export default {
     overflow: hidden;
 }
 
+.learning-buttons {
+    position: fixed;
+    bottom: 44px;
+    right: 44px;
+    z-index: 1000;
+}
+
 .profile-svg {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     display: block;
     width: 100%;
     height: 100%;
-    border-radius: 8px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
 }
 
 /* D3.js 스타일 */
@@ -947,10 +946,10 @@ export default {
     }
 }
 
-.learning-buttons {
-    position: fixed;
-    bottom: 40px;
-    right: 40px;
-    z-index: 1000;
+@media only screen and (max-width: 768px) {
+    .learning-buttons {
+        display: none;
+    }
 }
+
 </style> 

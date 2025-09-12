@@ -42,6 +42,9 @@
         "admin" : "관리자 페이지",
         "setting" : "설정",
         "search": "검색",
+        "searchResult": "검색 결과",
+        "searchKeyword": "검색하고자 하는 키워드 입력 후 엔터를 눌러주세요.",
+        "noSearchResult": "검색 결과가 없습니다.",
         "pricing" : "가격 정보"
     },
     "DashboardTodoList": {
@@ -959,7 +962,7 @@
     "InstanceCard": {
         "progress": "프로세스",
         "workItem": "워크 아이템",
-        "workHistory": "액티비티",
+        "activity": "액티비티",
         "ganttChart": "간트 차트",
         "chat": "채팅",
         "kanbanBoard": "칸반보드",
@@ -968,7 +971,7 @@
         "source": "소스"
     },
     "ProjectCard": {
-        "managment": "프로세스",
+        "managment": "스케줄",
         "kanbanBoard": "칸반보드",
         "instanceList": "인스턴스 목록",
         "projectInfo": "프로젝트 정보",
@@ -1136,13 +1139,26 @@
         "sourceStrategy": "출발 전략",
         "targetStrategy": "도착 전략",
         "addConnectionBtn": "연결 추가",
-        "perspectiveFinance": "재무",
-        "perspectiveCustomer": "고객",
-        "perspectiveProcess": "내부 프로세스",
-        "perspectiveLearning": "학습 및 성장"
+        "perspectiveFinance": "재무 관점",
+        "perspectiveCustomer": "고객 관점",
+        "finance": "재무",
+        "customer": "고객",
+        "process": "내부 프로세스",
+        "learning": "학습 및 성장",
+        "selectUpperStrategy1": "매출 20% 성장",
+        "selectUpperStrategy2": "고객 만족도 90점 이상 달성",
+        "selectUpperStrategy3": "프로세스 자동화율 50% 달성",
+        "selectUpperStrategy4": "직원 역량 강화 프로그램 운영",
+        "s1description": "전년도 대비 전체 매출을 20% 성장시키는 것이 목표",
+        "s2description": "NPS 기준 고객 만족도를 90점 이상으로 유지",
+        "s3description": "내부 업무 프로세스 중 50% 이상을 자동화 시스템으로 전환",
+        "s4description": "전 직원 대상 연 2회 이상 역량 강화 교육 진행"
     },
     "ProjectCreationForm": {
         "title": "프로젝트 생성",
+        "projectName": "프로젝트 명",
+        "startDate": "시작일",
+        "dueDate": "마감일",
         "create": "생성"
     },
     "AppBaseCard": {
@@ -1531,5 +1547,22 @@
     },
     "SubProcess": {
         "execute": "실행"
+    },
+    "ProcessInstanceChat": {
+        "subprocessCreating": "서브프로세스 생성 중입니다...",
+        "feedback": "프로세스 실행이 정상인가요?",
+        "feedbackDescription": "프로세스 실행이 정상인가요?"
+    },
+    "MCPServer": {
+        "searchMCPServers": "MCP 서버 검색"
+    },
+    "footer": {
+        "BusinessNumber": "사업자등록번호",
+        "CEO": "대표 : 장진영",
+        "Address1": "서울특별시 서초구 사임당로 31",
+        "Address2": "301호(서초동, 궁현빌딩)",
+        "tel": "고객센터",
+        "serviceTerms": "서비스 이용약관",
+        "privacyPolicy": "개인정보처리방침"
     }
 }

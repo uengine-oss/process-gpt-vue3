@@ -116,7 +116,7 @@
                 
                 <v-window v-model="tab" :class="isMobile ? 'mt-0' : ''" :touch="false">
                     <v-window-item value="gantt" class="instance-card-tab-1">
-                        <div class="gantt-area" v-if="!isLoading">
+                        <div class="instance-card-gantt-area" v-if="!isLoading">
                             <GanttChart 
                                 :key="`gantt-${updatedKey}-${instance?.instId}`"
                                 :tasks="tasks" 
@@ -131,8 +131,43 @@
                             />
                         </div>
                     </v-window-item>
+                    
+                    <!-- PC에서 액티비티와 프로세스를 가로 배치 -->
                     <v-window-item value="progress" class="instance-card-tab-2">
-                        <div class="instance-card-process-box">
+                        <v-row v-if="!isMobile"
+                            no-gutters
+                            class="ma-0 pa-0"
+                            style="height: 100%;"
+                        >
+                            <!-- 프로세스 영역 (왼쪽, 5/12) -->
+                            <v-col cols="5"
+                                class="pr-2 ma-0 pa-0"
+                                style="border-right: 1px solid #e0e0e0;"
+                            >
+                                <div class="instance-card-process-box">
+                                    <InstanceProgress 
+                                        :key="`progress-${updatedKey}-${instance?.instId}`"
+                                        :instance="instance"
+                                        ref="progress"
+                                    />
+                                </div>
+                            </v-col>
+                            
+                            <!-- 액티비티 영역 (오른쪽, 7/12) -->
+                            <v-col cols="7"
+                                class="pl-2 ma-0 pa-0"
+                            >
+                                <InstanceWorkHistory @updated="handleInstanceUpdated"
+                                    class="instance-card-tab-4"
+                                    :key="`workhistory-desktop-${updatedKey}-${instance?.instId}`"
+                                    :instance="instance"
+                                    ref="workhistory"
+                                />
+                            </v-col>
+                        </v-row>
+                        
+                        <!-- 모바일에서는 기존 프로세스만 표시 -->
+                        <div v-else class="instance-card-process-box">
                             <InstanceProgress 
                                 :key="`progress-${updatedKey}-${instance?.instId}`"
                                 :instance="instance"
@@ -140,6 +175,7 @@
                             />
                         </div>
                     </v-window-item>
+                    
                     <v-window-item value="todo" class="instance-card-tab-3">
                         <div>
                             <div class="pa-4 instance-card-kanban-board-box">
@@ -172,6 +208,8 @@
                             </v-dialog>
                         </div>
                     </v-window-item>
+                    
+                    <!-- 모바일에서만 표시되는 별도 액티비티 탭 -->
                     <v-window-item value="workhistory" class="instance-card-tab-4">
                         <InstanceWorkHistory 
                             :key="`workhistory-${updatedKey}-${instance?.instId}`"
@@ -180,12 +218,15 @@
                             ref="workhistory"
                         />
                     </v-window-item>
+                    <!-- 채팅 -->
                     <v-window-item value="chat" class="instance-card-tab-5">
                         <Chats :isInstanceChat="true" :instanceInfo="instance" :participantUsers="participantUsers" />
                     </v-window-item>
+                    <!-- 소스 -->
                     <v-window-item value="source" class="instance-card-tab-6">
                         <InstanceSource :instance="instance" />
                     </v-window-item>
+                    <!-- 산출물  -->
                     <v-window-item value="output" class="instance-card-tab-7">
                         <InstanceOutput :instance="instance" />
                     </v-window-item>
@@ -268,7 +309,7 @@ export default {
         // tab
         tab: "workhistory",
         tabItems: [
-            { value: 'workhistory', label: 'InstanceCard.workHistory', mobile: true},
+            { value: 'workhistory', label: 'InstanceCard.activity', mobile: true},
             { value: 'progress', label: 'InstanceCard.progress', mobile: true},
             { value: 'todo', label: 'InstanceCard.kanbanBoard', mobile: true},
             { value: 'gantt', label: 'InstanceCard.ganttChart', mobile: false},
@@ -305,6 +346,14 @@ export default {
                 const activeComponents = this.$refs[newVal];
                 if (activeComponents && activeComponents.length > 0 && activeComponents[0].init) {
                     await activeComponents[0].init();
+                }
+                
+                // PC에서 progress 탭 선택 시 workhistory 컴포넌트도 초기화
+                if (newVal === 'progress' && !this.isMobile) {
+                    const workhistoryComponents = this.$refs.workhistory;
+                    if (workhistoryComponents && workhistoryComponents.init) {
+                        await workhistoryComponents.init();
+                    }
                 }
             }
         },
@@ -365,6 +414,9 @@ export default {
             
             if (this.isMobile) {
                 items = items.filter(item => item.mobile !== false);
+            } else {
+                // PC에서는 액티비티 탭을 숨김 (프로세스 탭에 통합됨)
+                items = items.filter(item => item.value !== 'workhistory');
             }
             
             return items;

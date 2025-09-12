@@ -316,7 +316,7 @@ class ProcessGPTBackend implements Backend {
                 input.answer = "";
             }
             if (!input.process_instance_id) {
-                input.process_instance_id = "new";
+                input.process_instance_id = `${defId}.${me.uuid()}`;
             } else {
                 input['chat_room_id'] = input.process_instance_id;
             }
@@ -1285,7 +1285,8 @@ class ProcessGPTBackend implements Backend {
                 process_instance_id: workItem.proc_inst_id,
                 process_definition_id: workItem.proc_def_id,
                 activity_id: workItem.activity_id,
-                chat_room_id: workItem.proc_inst_id
+                chat_room_id: workItem.proc_inst_id,
+                task_id: workItem.id
             };
 
             return await me.executeInstance(input);
@@ -1462,6 +1463,19 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getWorkListByRootInstId(rootInstId: number) {
+        try {
+            const list = await storage.list('todolist', { match: { 'root_proc_inst_id': rootInstId } });
+            const worklist: any[] = list.map((item: any) => {
+                return this.returnWorkItemObject(item);
+            })
+            return worklist;
+        } catch (e) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getFilteredInstanceList(filters: object, page: number) {
         //TODO: 인스턴스 목록 관리자 페이지 필터 결과
         return null
@@ -1479,21 +1493,38 @@ class ProcessGPTBackend implements Backend {
         // instance/{instanceId}/completed
         //TODO: 현재 프로세스 진행상태 추가
         try {
-            const list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
+            let list = await storage.list('todolist', { match: { 'proc_inst_id': instId } });
             let result: any = {};
-            list.forEach((item: any) => {
-                if(item.status == 'DONE') {
-                    result[item.activity_id] = 'Completed';
-                } else if(item.status == 'IN_PROGRESS' || item.status == 'SUBMITTED') {
-                    result[item.activity_id] = 'Running';
-                } else if(item.status == 'PENDING') {
-                    result[item.activity_id] = 'Pending';
-                } else if(item.status == 'TODO') {
-                    result[item.activity_id] = 'New';
-                } else if(item.status == 'CANCELLED') {
-                    result[item.activity_id] = 'Cancelled';
+            
+            // activity_id별로 그룹화하고 rework_count가 큰 순서로 정렬
+            const groupedByActivity = list.reduce((acc: any, item: any) => {
+                if (!acc[item.activity_id]) {
+                    acc[item.activity_id] = [];
+                }
+                acc[item.activity_id].push(item);
+                return acc;
+            }, {});
+            
+            // 각 activity_id별로 rework_count가 가장 큰 아이템을 선택
+            Object.keys(groupedByActivity).forEach(activityId => {
+                const items = groupedByActivity[activityId];
+                // rework_count가 큰 순서로 정렬 (내림차순)
+                const sortedItems = items.sort((a: any, b: any) => (b.rework_count || 0) - (a.rework_count || 0));
+                const selectedItem = sortedItems[0]; // 가장 큰 rework_count를 가진 아이템
+                
+                if(selectedItem.status == 'DONE') {
+                    result[selectedItem.activity_id] = 'Completed';
+                } else if(selectedItem.status == 'IN_PROGRESS' || selectedItem.status == 'SUBMITTED') {
+                    result[selectedItem.activity_id] = 'Running';
+                } else if(selectedItem.status == 'PENDING') {
+                    result[selectedItem.activity_id] = 'Pending';
+                } else if(selectedItem.status == 'TODO') {
+                    result[selectedItem.activity_id] = 'New';
+                } else if(selectedItem.status == 'CANCELLED') {
+                    result[selectedItem.activity_id] = 'Cancelled';
                 }
             });
+            
             return result;
         } catch (e) {
             //@ts-ignore
@@ -1649,7 +1680,7 @@ class ProcessGPTBackend implements Backend {
             await axios.post(`/execution/role-binding`, {
                 "input": {
                     "roles": roles,
-                    "email": localStorage.getItem('email'),
+                    "uuid": localStorage.getItem('uid'),
                     "proc_def_id": defId || null
                 }
             })
@@ -2317,7 +2348,7 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (!response.error) {
-                const indexRes = await this.processFile(response, storageType, options);
+                this.processFile(response, storageType, options);
                 return response;
             } else {
                 return response;
@@ -2368,7 +2399,7 @@ class ProcessGPTBackend implements Backend {
                     const putObj = {
                         id: options.file_id,
                         proc_inst_id: options.proc_inst_id,
-                        file_path: response.data.download_link,
+                        file_path: response.data.download_url,
                         is_process: true
                     }
                     await storage.putObject('proc_inst_source', putObj);
@@ -2379,8 +2410,9 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             if (error && error.error && error.error == 'authentication_required') {
-                location.href = error.auth_url;
-                return { error: true, message: 'authentication_required' };
+                // location.href = error.auth_url;
+                // return { error: true, message: 'authentication_required' };
+                throw new Error('구글 드라이브 연동이 필요합니다. 관리자에게 문의하세요.');
             } else {
                 //@ts-ignore
                 throw new Error(error.message);
@@ -2403,11 +2435,45 @@ class ProcessGPTBackend implements Backend {
 
     async saveDriveInfo(driveInfo: any) {
         try {
-            driveInfo.id = driveInfo.provider + '_' + driveInfo.tenant_id;
-            const response = await storage.putObject('tenant_oauth', driveInfo);
-            return response;
+            await storage.putObject('tenant_oauth', driveInfo);
+            const drive = await storage.getObject('tenant_oauth', {
+                match: {
+                    tenant_id: window.$tenantName
+                }
+            })
+
+            if (!drive.google_credentials || !drive.google_credentials_updated_at) {
+                const response = await axios.get('/memento/auth/google/url?tenant_id='+window.$tenantName);
+                if (response.data && response.data.auth_url) {
+                    location.href = response.data.auth_url;
+                } else {
+                    throw new Error(response.data.message);
+                }
+            }
         } catch (error) {
             throw new Error(error.message);
+        }
+    }
+
+    async callbackOAuth() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            const scope = urlParams.get('scope');
+            const email = localStorage.getItem('email');
+
+            const response = await fetch('/memento/auth/google/callback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, state, scope, user_email: email })
+            });
+            const result = await response.json();
+            if (result.success) {
+                console.log('OAuth 성공');
+            }
+        } catch (error) {
+            console.error('OAuth 실패:', error);
         }
     }
 
@@ -2847,14 +2913,22 @@ class ProcessGPTBackend implements Backend {
 
             if (workItem && workItem.proc_def_id && workItem.reference_ids && workItem.reference_ids.length > 0) {
                 const formPromises = workItem.reference_ids.map(async (referenceId: string) => {
-                    const prevWorkItem = await storage.getObject('todolist', {
-                        match: {
-                            proc_inst_id: workItem.proc_inst_id,
-                            activity_id: referenceId,
-                            status: 'DONE'
-                        }
-                    });
-                    
+                    const { data, error } = await window.$supabase
+                        .from('todolist')
+                        .select('*')
+                        .eq('proc_inst_id', workItem.proc_inst_id)
+                        .eq('activity_id', referenceId)
+                        .eq('status', 'DONE')
+                        .order('updated_at', { ascending: false })
+                        .limit(1)
+
+                    if (error) {
+                        console.log(error);
+                        return null;
+                    }
+
+                    const prevWorkItem = data;
+
                     if (prevWorkItem && prevWorkItem.proc_inst_id && prevWorkItem.activity_id) {
                         const formId = prevWorkItem.tool.split('formHandler:')[1];
                         const [form, formData] = await Promise.all([
@@ -3811,14 +3885,21 @@ class ProcessGPTBackend implements Backend {
             let executionScope = null;
 
             let workitem = null;
+            let workitems = null;
             const { data, error } = await window.$supabase
                 .from('todolist')
                 .select('*')
                 .eq('proc_inst_id', instanceId)
                 .ilike('activity_id', activityId)
-                .single();
+                .eq('status', 'DONE')
+                .order('updated_at', { ascending: false })
+                .limit(1)
 
-            if (error) {
+            if (!error) { 
+                workitem = data;           
+            } 
+
+            if(!workitem) {
                 const instance = await this.getInstance(instanceId);
                 const rootInstanceId = instance.root_proc_inst_id;
                 executionScope = instance.execution_scope;
@@ -3827,40 +3908,83 @@ class ProcessGPTBackend implements Backend {
                     .select('*')
                     .eq('proc_inst_id', rootInstanceId)
                     .ilike('activity_id', activityId)
-                    .single();
+                    .eq('status', 'DONE')
+                    .order('updated_at', { ascending: false })
+                    .limit(1)
+
                 if(error) {
                     throw new Error('workitem not found');
                 } else {
                     workitem = data;
                 }
-            } else {
-                workitem = data;
-            }
-            const output = workitem.output;
-            if (!output) {
-                throw new Error('output not found');
             }
 
-            let filed = output[formId][fieldId];
-            if(filed) {
-                fieldValue[formId] = {
-                    [fieldId]: filed
-                }
-            } else {
-                let group = Object.values(output[formId]);
-                if(group) {
-                    group.forEach((item: any) => {
-                        if(executionScope) {
-                            if(item[executionScope][fieldId]) {
-                                fieldValue[formId] = {
-                                    [fieldId]: item[executionScope][fieldId]
-                                }
-                            }
-                        }
-                    });
+            if(!workitem) {
+                const { data, error } = await window.$supabase
+                    .from('todolist')
+                    .select('*')
+                    .eq('root_proc_inst_id', instanceId)
+                    .ilike('activity_id', activityId);
+                if(!error) {
+                    workitems = data;
+                    
+                    const sorted = (workitems ?? []).sort(
+                        (a, b) => Number(a.execution_scope ?? 0) - Number(b.execution_scope ?? 0)
+                    );
+                    
+                    workitems = sorted;
                 }
             }
-            return fieldValue;
+
+            if(!workitem && !workitems) {
+                throw new Error('workitem not found');
+            }
+
+            if(workitems) {
+                let filedList = [];
+                workitems.forEach((item: any, index: number) => {
+                    workitem = item;
+                    const output = item.output;
+                    if(output && output[formId]) {
+                        let filed = output[formId][fieldId];
+                        if(filed) {
+                            filedList.push(workitem.execution_scope + ":" + filed);
+                        }
+                    }
+                });
+                
+                fieldValue[formId] = {
+                    [fieldId]: filedList
+                }
+                return fieldValue;
+            }
+            if(workitem) {
+                const output = workitem.output;
+                if (output && output[formId]) {
+                    let filed = output[formId][fieldId];
+                    if(filed) {
+                        fieldValue[formId] = {
+                            [fieldId]: filed
+                        }
+                    } else {
+                        let group = Object.values(output[formId]);
+                        if(group) {
+                            group.forEach((item: any) => {
+                                if(executionScope) {
+                                    if(item[executionScope][fieldId]) {
+                                        fieldValue[formId] = {
+                                            [fieldId]: item[executionScope][fieldId]
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    return fieldValue;
+                } else {
+                    return null;
+                }
+            }
         } catch (error) {
             throw new Error(error.message);
         }
@@ -4092,6 +4216,96 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             throw new Error(error.message);
+        }
+    }
+
+    async getReworkActivities(workItem: any) {
+        try {
+            const response = await axios.post('/execution/get-rework-activities', workItem);
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data.message);
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async reWorkItem(item?: any) {
+        try {
+            if (!item.instanceId || !item.activities) {
+                throw new Error('instance Id and activities are required');
+            }
+            const response = await axios.post('/execution/rework-complete', item);
+            return response;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async enableRework(workItem?: any) {
+        try {
+            if (!workItem) {
+                return false;
+            }
+            
+            const isCompleted = workItem.worklist.status === "COMPLETED" || workItem.worklist.status === "DONE";
+            if (!isCompleted) {
+                return false;
+            }
+            
+            const currentUserId = localStorage.getItem('uid');
+            const endpoint = workItem.worklist.endpoint;
+            if (!currentUserId || !endpoint) {
+                return false;
+            }
+            
+            let isOwnWorkItem = false;
+            if (Array.isArray(endpoint)) {
+                isOwnWorkItem = endpoint.includes(currentUserId);
+            } else {
+                const endpointList = String(endpoint).split(',').map(e => e.trim());
+                isOwnWorkItem = endpointList.includes(currentUserId);
+            }
+            
+            if (!isOwnWorkItem) {
+                return false;
+            }
+            
+            const activityId = workItem.activity.tracingTag;
+            const procInstId = workItem.worklist.instId;
+            
+            const allWorkItems = await storage.list('todolist', {
+                match: {
+                    'proc_inst_id': procInstId,
+                    'activity_id': activityId,
+                    'tenant_id': window.$tenantName
+                },
+                orderBy: 'rework_count',
+                sort: 'desc'
+            });
+            
+            if (allWorkItems.length === 0) {
+                return false;
+            }
+            
+            const recentWorkItem = allWorkItems[0];
+            const isRecentWorkItem = recentWorkItem.id === workItem.worklist.taskId;
+
+            if (isRecentWorkItem) {
+                return true;
+            }
+            
+            const isAllCompleted = allWorkItems.every(item => 
+                item.status === "COMPLETED" || item.status === "DONE"
+            );
+            
+            return isAllCompleted;
+            
+        } catch (error) {
+            console.error('Error checking rework enable:', error);
+            return false;
         }
     }
 }

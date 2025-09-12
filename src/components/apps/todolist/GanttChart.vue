@@ -32,6 +32,7 @@
                 @link-clicked="handleLinkClicked"
                 @link-event="handleLinkEvent"
                 @message="handleMessage"
+                @task-panel-close="handleTaskPanelClose"
             />
 
             <div class="gantt-detail-overlay" v-if="editItem">
@@ -43,7 +44,7 @@
                             <template v-slot:activator="{ props }">
                                 <Icons v-if="type === 'task'"
                                     @click="moveDetail()"
-                                    class="mr-2 cursor-pointer"
+                                    class="mr-4 cursor-pointer"
                                     :icon="'tab-move'" :size="20"
                                     v-bind="props"
                                 />
@@ -52,11 +53,11 @@
                         <Icons v-if="editItem.adhoc"
                             @click="deleteDetail()"
                             class="mr-2 cursor-pointer"
-                            :icon="'trash'" :size="20"
+                            :icon="'trash'" :size="16"
                         />
                         <Icons @click="closeDetail()"
                             class="cursor-pointer"
-                            :icon="'close'" :size="16"
+                            :icon="'close'" :size="14"
                         />
                     </v-row>
                     <v-card-text v-if="type === 'task'"
@@ -138,6 +139,7 @@ export default {
         users: Array
     },
     data: () => ({
+        isLoading: false,
         snackbar: {
             show: false,
             color: 'success',
@@ -198,6 +200,9 @@ export default {
         },
         handleLinkEvent(event){
             this.$emit('link-event', event);
+        },
+        handleTaskPanelClose(){
+            this.editItem = null;
         },
         closeDetail(){
             this.editItem = null

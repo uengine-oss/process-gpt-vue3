@@ -59,6 +59,32 @@
 create extension if not exists vector;
 create extension if not exists pgcrypto;
 
+-- ==========================================
+-- ENUM 타입 정의
+-- ==========================================
+-- 프로세스 인스턴스 상태 enum
+CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
+-- 할일 항목 상태 enum
+CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
+-- 에이전트 모드 enum
+CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
+-- 오케스트레이션 방식 enum
+CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react');
+-- 드래프트 상태 enum
+CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
+-- 이벤트 타입 enum
+CREATE TYPE event_type_enum AS ENUM (
+  'task_started',
+  'task_completed',
+  'tool_usage_started',
+  'tool_usage_finished',
+  'crew_completed',
+  'human_asked',
+  'human_response'
+);
+-- 이벤트 상태 enum
+CREATE TYPE event_status AS ENUM ('ASKED', 'APPROVED', 'REJECTED');
+
 -- Create tenant_id function
 create or replace function public.tenant_id()
 returns text
@@ -100,8 +126,6 @@ create table if not exists public.users (
     role text null,
     tenant_id text null,
     device_token text null,
-    google_credentials jsonb,
-    google_credentials_updated_at TIMESTAMP WITH TIME ZONE,
     goal text null,
     persona text null,
     url text null,
@@ -206,7 +230,7 @@ create table if not exists public.bpm_proc_inst (
     participants text[] null,
     role_bindings jsonb null,
     variables_data jsonb null,
-    status text null,
+    status process_status null,
     tenant_id text null default public.tenant_id(),
     proc_def_version text null,
     project_id uuid null,
@@ -232,7 +256,7 @@ create table if not exists public.todolist (
     activity_name text null,
     start_date timestamp without time zone null,
     end_date timestamp without time zone null,
-    status text null,
+    status todo_status null,
     description text null,
     tool text null,
     due_date timestamp without time zone null,
@@ -247,12 +271,14 @@ create table if not exists public.todolist (
     log text null,
     project_id uuid null,
     draft jsonb null,
-    agent_mode text null,
-    agent_orch text null,
+    agent_mode agent_mode null,
+    agent_orch agent_orch null,
     feedback jsonb null,
-    draft_status text null,
+    draft_status draft_status null,
     updated_at timestamp with time zone default now(),
     temp_feedback text null,
+    output_url text null,
+    rework_count integer null default 0,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -409,14 +435,37 @@ create table if not exists public.events (
   job_id text not null,
   todo_id text null,
   proc_inst_id text null,
-  event_type text not null,
-  status text null,
+  event_type event_type_enum not null,
+  status event_status null,
   crew_type text null,
   data jsonb not null,
   timestamp timestamp with time zone null default now(),
   constraint events_pkey primary key (id)
 ) TABLESPACE pg_default;
 
+create or replace function match_documents(
+  query_embedding vector(1536),
+  filter jsonb default '{}'::jsonb,
+  match_count int default 5
+)
+returns table (
+  id uuid,
+  content text,
+  metadata jsonb,
+  similarity float
+)
+language sql
+as $$
+  select
+    documents.id,
+    documents.content,
+    documents.metadata,
+    1 - (documents.embedding <=> query_embedding) as similarity
+  from documents
+  where documents.metadata @> filter
+  order by documents.embedding <=> query_embedding
+  limit match_count;
+$$;
 
 
 ------------------ 결제시스템 ---------------------------
@@ -952,11 +1001,6 @@ CREATE TRIGGER set_updated_at
     BEFORE UPDATE ON public.todolist
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER encrypt_credentials_trigger
-    BEFORE INSERT OR UPDATE ON public.users
-    FOR EACH ROW
-    EXECUTE FUNCTION encrypt_credentials_trigger();
 
 CREATE TRIGGER before_insert_user_permissions
     BEFORE INSERT ON public.user_permissions
@@ -1568,30 +1612,13 @@ grant execute on all functions in schema cron to service_role;
 
 
 
--- enum 타입 추가
--- 프로세스 인스턴스 상태 enum
-CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
--- 할일 항목 상태 enum
-CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
--- 에이전트 모드 enum
-CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
--- 오케스트레이션 방식 enum
-CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react');
--- 드래프트 상태 enum
-CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
--- 이벤트 타입 enum
-CREATE TYPE event_type_enum AS ENUM (
-  'task_started',
-  'task_completed',
-  'tool_usage_started',
-  'tool_usage_finished',
-  'crew_completed',
-  'human_asked',
-  'human_response'
-);
--- 이벤트 상태 enum
-CREATE TYPE event_status AS ENUM ('ASKED', 'APPROVED', 'REJECTED');
 
+-- ==========================================
+-- ENUM 타입 마이그레이션 쿼리
+-- ==========================================
+-- ※ 주의: 아래 마이그레이션 쿼리들은 해당 컬럼이 text 타입인 경우에만 실행하세요
+-- 이미 enum 타입으로 변경된 경우에는 실행하지 마세요
+--
 -- events 테이블 마이그레이션 (event_type)
 -- 1. 임시 컬럼 추가
 ALTER TABLE public.events ADD COLUMN event_type_new event_type_enum;
@@ -1730,9 +1757,8 @@ CREATE TABLE IF NOT EXISTS public.document_images (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id UUID REFERENCES documents(id),
     tenant_id TEXT NOT NULL,
-    image_id TEXT NOT NULL,
-    image_url TEXT NOT NULL,
-    download_url TEXT NOT NULL,
+    image_id TEXT NULL,
+    image_url TEXT NULL,
     metadata JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -1742,6 +1768,11 @@ CREATE INDEX IF NOT EXISTS idx_document_images_document_id ON document_images(do
 CREATE INDEX IF NOT EXISTS idx_document_images_tenant_id ON document_images(tenant_id);
 
 
+
+-- ==========================================
+-- Mem0 vector store 함수 (vecs 스키마)
+-- ※ vecs 스키마가 있는 경우에만 아래 함수 생성 쿼리들을 실행하세요
+-- ==========================================
 -- 조회 (agent_id 필터링 + limit)
 create or replace function public.get_memories(agent text, lim int default 100)
 returns setof vecs.memories
@@ -1772,5 +1803,8 @@ security definer
 as $$
   delete from vecs.memories where metadata->>'agent_id' = agent;
 $$;
+
+
+
 
 

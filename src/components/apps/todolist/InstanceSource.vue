@@ -1,5 +1,9 @@
 <template>
-    <div class="w-100">
+    <div class="w-100 h-100"
+        @drop="onDrop" 
+        @dragover="onDragOver" 
+        @dragleave="onDragLeave"
+    >
        <v-row class="ma-0 pa-0">
             <!-- 새 파일 추가 카드 -->
             <v-col cols="12" 
@@ -8,15 +12,17 @@
                 :sm="isMobile || isStarted ? 12 : 6" 
                 class="pa-2"
             >
-                <v-card
-                    class="add-file-card d-flex align-center justify-center"
+                <v-card 
+                    class="add-file-card d-flex align-center justify-center text-gray"
+                    :class="{ 'drag-over': isDragOver }"
                     elevation="2"
                     hover
                     @click="openFileDialog"
                 >
                     <div class="text-center">
-                        <v-icon size="48" color="primary" class="mb-2">mdi-plus</v-icon>
-                        <p class="text-body-1 text-primary">파일 추가</p>
+                        <v-icon size="48" color="grey" class="add-file-icon">mdi-plus</v-icon>
+                        <p class="text-body-1 text-grey add-file-text">파일 추가</p>
+                        <p class="text-caption text-grey-darken-1">클릭하거나 파일을 드래그하세요</p>
                     </div>
                 </v-card>
             </v-col>
@@ -124,6 +130,10 @@ export default {
         processDefinitionId: {
             type: String,
             default: ''
+        },
+        instId: {
+            type: String,
+            default: ''
         }
     },
     data: () => ({
@@ -141,8 +151,10 @@ export default {
     },
     computed: {
         id() {
-            if (this.$route.params.instId) {
-                return this.$route.params.instId.replace(/_DOT_/g, '.');
+            if (this.instance && this.instance.instId) {
+                return this.instance.instId;
+            } else if (this.instId) {
+                return this.instId;
             } else {
                 return null;
             }
@@ -164,16 +176,13 @@ export default {
     },
     methods: {
         async init() {
-            if (this.isStarted) {
-                this.sourceList = [];
-            } else {
-                await this.getSourceList();
-            }
+            await this.getSourceList();
         },
 
         async getSourceList() {
-            if (this.instance && this.instance.instId) {
-                const list = await backend.getInstanceSource(this.instance.instId);
+            if (this.id) {
+                const instId = this.id;
+                const list = await backend.getInstanceSource(instId);
                 this.sourceList = list.map(item => ({
                     id: item.id,
                     name: item.file_name,
@@ -225,25 +234,24 @@ export default {
             var me = this;
             for (const file of files) {
                 if (me.validateFile(file)) {
+                    const instId = me.id;
                     const fileId = this.uuid();
-                    if (me.isStarted) {
-                        if (me.processDefinitionId) {
-                            const result = await backend.putInstanceSource({
-                                id: fileId,
-                                file_name: file.name
-                            });
-                            this.sourceList.push({
-                                id: fileId,
-                                name: file.name,
-                                path: '',
-                                type: me.getFileExtension(file.name),
-                                isProcess: false
-                            });
+                    const result = await backend.putInstanceSource({
+                        id: fileId,
+                        proc_inst_id: instId,
+                        file_name: file.name
+                    });
+                    await this.getSourceList();
 
-                            if (result.error) {
-                                me.showSnackbar(result.error.message, 'error');
-                                return;
-                            }
+                    if (result.error) {
+                        me.showSnackbar(result.error.message, 'error');
+                        return;
+                    }
+
+                    me.$try({
+                        context: me,
+                        action: async () => {
+                            const defId = me.instance && me.instance.defId ? me.instance.defId : me.processDefinitionId;
 
                             const today = new Date();
                             const year = today.getFullYear();
@@ -251,50 +259,16 @@ export default {
                             const day = String(today.getDate()).padStart(2, '0');
 
                             const options = {
-                                folder_path: `${me.processDefinitionId}/${year}/${month}/${day}/_new/source/`,
+                                folder_path: `${defId}/${year}/${month}/${day}/${instId}/source/`,
+                                proc_inst_id: instId,
                                 file_id: fileId
                             };
 
-                            backend.uploadFile(file.name, file, 'drive', options).then(async (response) => {
-                                const item = this.sourceList.find(item => item.id === fileId);
-                                item.path = response.download_url;
-                                item.isProcess = true;
-                                const result = await backend.putInstanceSource({
-                                    id: fileId,
-                                    is_process: true,
-                                    file_path: response.download_url
-                                });
-                            });
-                        }
-                    } else {
-                        const result = await backend.putInstanceSource({
-                            id: fileId,
-                            proc_inst_id: me.instance.instId,
-                            file_name: file.name
-                        });
-                        await this.getSourceList();
-
-                        if (result.error) {
-                            me.showSnackbar(result.error.message, 'error');
-                            return;
-                        }
-
-                        const today = new Date();
-                        const year = today.getFullYear();
-                        const month = String(today.getMonth() + 1).padStart(2, '0');
-                        const day = String(today.getDate()).padStart(2, '0');
-
-                        const options = {
-                            folder_path: `${me.instance.defId}/${year}/${month}/${day}/${me.instance.instId}/source/`,
-                            proc_inst_id: me.instance.instId,
-                            file_id: fileId
-                        };
-
-                        backend.uploadFile(file.name, file, 'drive', options).then(async (response) => {
+                            await backend.uploadFile(file.name, file, 'drive', options);
                             await this.getSourceList();
-                            me.showSnackbar(`${file.name} 파일이 업로드되었습니다.`, 'success');
-                        });
-                    }
+                        },
+                        successMsg: `${file.name} 파일이 업로드되었습니다.`
+                    });
                 }
             }
         },
@@ -402,15 +376,22 @@ export default {
 
 .add-file-card {
     min-height: 105px;
-    border: 2px dashed #e0e0e0;
+    border: 2px dashed #9e9e9e;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
 }
 
 .add-file-card:hover {
-    border-color: #1976d2;
-    background-color: #f3f8ff;
+    border-color: rgb(var(--v-theme-primary)) !important;
+    background-color: rgb(var(--v-theme-primary), 0.1) !important;
+}
+
+.add-file-card:hover .add-file-icon {
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
+.add-file-card:hover .add-file-text {
+    color: rgb(var(--v-theme-primary)) !important;
 }
 
 .file-info {
@@ -419,6 +400,20 @@ export default {
 
 .text-truncate {
     max-width: 200px;
+}
+
+/* 드래그앤드롭 스타일 */
+.add-file-card.drag-over {
+    border-color: rgb(var(--v-theme-primary)) !important;
+    background-color: rgba(var(--v-theme-primary), 0.15) !important;
+}
+
+.add-file-card.drag-over .add-file-icon {
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
+.add-file-card.drag-over .add-file-text {
+    color: rgb(var(--v-theme-primary)) !important;
 }
 </style>
 

@@ -53,7 +53,6 @@ export default {
             client_id: '',
             client_secret: '',
             drive_folder_id: '',
-            provider: 'google',
             redirect_uri: '',
         },
     }),

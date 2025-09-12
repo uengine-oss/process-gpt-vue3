@@ -162,12 +162,14 @@
                                                                 <v-divider v-if="message.replyContent"></v-divider>
     
                                                                 <div v-if="message.contentType && message.contentType == 'html'" class="w-100">
-                                                                    <DynamicForm 
+                                                                    <SummaryButton>
+                                                                        <DynamicForm 
                                                                         ref="dynamicForm" 
-                                                                        :formHTML="message.htmlContent" 
-                                                                        v-model="message.jsonContent"
-                                                                        :readonly="true"
-                                                                    ></DynamicForm>
+                                                                            :formHTML="message.htmlContent" 
+                                                                            v-model="message.jsonContent"
+                                                                            :readonly="true"
+                                                                        ></DynamicForm>
+                                                                    </SummaryButton>
                                                                 </div>
 
                                                                 <pre v-if="message.content && message.contentType != 'html'" class="text-body-1" v-html="linkify(message.content)"></pre>
@@ -1097,6 +1099,7 @@ import AgentsChat from './AgentsChat.vue';
 import axios from 'axios';
 import { HistoryIcon } from 'vue-tabler-icons';
 import Record from './Record.vue';
+import SummaryButton from '@/components/ui/SummaryButton.vue';
 import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ChatRoomNameGenerator from "@/components/ai/ChatRoomNameGenerator.js";
@@ -1112,6 +1115,7 @@ export default {
         AgentsChat,
         Record,
         DynamicForm,
+        SummaryButton,
         ProcessWorkResult
     },
     mixins: [

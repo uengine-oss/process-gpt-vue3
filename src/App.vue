@@ -71,13 +71,16 @@ export default {
         clickCount: 0
     }),
     watch: {
-        // $route(to, from) {
-        //     if(window.$mode == 'ProcessGPT' && localStorage.getItem('email')) {
-        //         if(to.path === '/todolist') {
-        //             this.backend.saveAccessPage(localStorage.getItem('email'), 'todolist');
-        //         }
-        //     }
-        // }
+        $route(to, from) {
+            if(to.query.code && to.query.state && to.query.scope && this.backend) {
+                this.backend.callbackOAuth();
+            }
+            // if(window.$mode == 'ProcessGPT' && localStorage.getItem('email')) {
+            //     if(to.path === '/todolist') {
+            //         this.backend.saveAccessPage(localStorage.getItem('email'), 'todolist');
+            //     }
+            // }
+        }
     },
     async created() {
         window.$app_ = this;

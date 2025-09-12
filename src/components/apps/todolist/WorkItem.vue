@@ -64,6 +64,19 @@
                             </template>
                         </v-tooltip>
                     </v-row>
+                    <div v-else-if="enableReworkButton">
+                        <v-btn 
+                            @click="handleReworkDialog('open')"
+                            color="primary"
+                            density="compact"
+                            rounded 
+                            variant="flat"
+                            :disabled="isLoading"
+                            :loading="isLoading"
+                        >
+                            다시 수행하기
+                        </v-btn>
+                    </div>
                 </v-row>
                 <v-divider v-if="isMobile" class="my-2"></v-divider>
                 <!-- <v-row v-if="isSimulate == 'true'" class="pa-0 pt-1 pb-1 ma-0 align-center">
@@ -157,6 +170,7 @@
                         </div>
                     </div>
                     <v-window v-model="selectedTab"
+                        class="work-item-tab-box"
                         :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px); overflow: auto' : 'height: calc(100vh - 257px); color: black; overflow: auto'"
                         :touch="false"
                     >
@@ -167,8 +181,14 @@
 
                             >
                                 <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
-                                    <div v-if="bpmn" style="height: 100%">
-                                        <BpmnUengine
+                                    <div v-if="bpmn" style="height: 100%;">
+                                        <div v-show="isBpmnLoading">
+                                            <v-skeleton-loader
+                                                type="image"
+                                                class="mx-auto work-item-skeleton-loader"
+                                            ></v-skeleton-loader>
+                                        </div>
+                                        <BpmnUengine v-show="!isBpmnLoading"
                                             ref="bpmnVue"
                                             :bpmn="bpmn"
                                             :options="options"
@@ -188,6 +208,8 @@
                                             v-on:change-sequence="onChangeSequence"
                                             v-on:remove-shape="onRemoveShape"
                                             v-on:change-shape="onChangeShape"
+                                            :onLoadStart="onBpmnLoadStart"
+                                            :onLoadEnd="onBpmnLoadEnd"
                                             style="height: 100%"
                                         ></BpmnUengine>
                                         
@@ -199,12 +221,13 @@
                                             :isViewMode="true"
                                         ></process-definition> -->
                                     </div>
-                                    <span v-else>BPMN 정보 불러오는 중
-                                        <span class="loading-dots">
-                                            <span>.</span>
-                                            <span>.</span>
-                                            <span>.</span>
-                                        </span>
+                                    <span v-else style="height: 100%;">
+                                        <div v-show="isBpmnLoading">
+                                            <v-skeleton-loader
+                                                type="image"
+                                                class="mx-auto work-item-skeleton-loader"
+                                            ></v-skeleton-loader>
+                                        </div>
                                     </span>
                                 </div>
                             </div>
@@ -444,6 +467,14 @@
                 @close="closeDelegateTask"
             />
         </v-dialog>
+
+        <v-dialog v-model="reworkDialog" width="500">
+            <ReworkDialog
+                :reworkActivities="reworkActivities"
+                @submitRework="submitRework"
+                @close="handleReworkDialog('close')"
+            />
+        </v-dialog>
     </v-card>
 </template>
 
@@ -465,6 +496,8 @@ import DynamicForm from '@/components/designer/DynamicForm.vue';
 import AgentFeedback from './AgentFeedback.vue';
 import DelegateTaskForm from '@/components/apps/todolist/DelegateTaskForm.vue';
 import exampleGenerator from '@/components/ai/WorkItemAgentGenerator.js';
+import ReworkDialog from './ReworkDialog.vue';
+
 import JSON5 from 'json5';
 import partialParse from 'partial-json-parser';
 import axios from 'axios';
@@ -507,7 +540,8 @@ export default {
         InstanceOutput,
         AgentMonitor,
         AgentFeedback,
-        DelegateTaskForm
+        DelegateTaskForm,
+        ReworkDialog
     },
     data: () => ({    
         workItem: null,
@@ -516,6 +550,7 @@ export default {
     
         // bpmn
         bpmn: null,
+        isBpmnLoading: false,
         options: {
             propertiesPanel: {},
             additionalModules: [customBpmnModule]
@@ -564,6 +599,11 @@ export default {
         isLoading: false,
         delegateTaskDialog: false,
         inputData: null,
+
+        // rework
+        reworkDialog: false,
+        reworkActivities: [],
+        enableReworkButton: false,
     }),
     created() {
         // this.init();
@@ -746,15 +786,23 @@ export default {
             }
         },
         workItem: {
-            handler(newVal) {
+            async handler(newVal) {
                 if (newVal && newVal.worklist && newVal.worklist.taskId) {
                     this.loadAssigneeInfo();
+                    this.enableReworkButton = await backend.enableRework(newVal);
+                    console.log('enableReworkButton', this.enableReworkButton);
                 }
             },
             deep: true
-        }
+        },
     },
     methods: {
+        onBpmnLoadStart() {
+            this.isBpmnLoading = true;
+        },
+        onBpmnLoadEnd() {
+            this.isBpmnLoading = false;
+        },
         isTabAvailable(tabValue) {
             return this.tabList.some(tab => tab.value === tabValue);
         },
@@ -1394,6 +1442,48 @@ export default {
         },  
         loadInputData(data) {
             this.inputData = data;
+        },
+        handleReworkDialog(action) {
+            var me = this;
+            if(action == 'open') {
+                me.$try({
+                    context: me,
+                    action: async () => {
+                        await me.loadReworkActivities();
+                        me.reworkDialog = true;
+                    }
+                });
+            } else if(action == 'close') {
+                this.reworkDialog = false;
+            }
+        },
+        async loadReworkActivities() {
+            this.reworkActivities = {
+                current: [{
+                    id: this.workItem.activity.tracingTag,
+                    name: this.workItem.activity.name
+                }],
+                reference: [],
+                all: []
+            };
+            const options = {
+                instanceId: this.workItem.worklist.instId,
+                activityId: this.workItem.activity.tracingTag
+            }
+            const result = await backend.getReworkActivities(options);
+            if (result.reference) {
+                this.reworkActivities.reference = result.reference;
+            }
+            if (result.all) {
+                this.reworkActivities.all = result.all;
+            }
+        },
+        async submitRework(activities) {
+            await backend.reWorkItem({
+                instanceId: this.workItem.worklist.instId,
+                activities: activities
+            })
+            this.reworkDialog = false;
         }
     }
 };

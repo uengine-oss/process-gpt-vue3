@@ -171,9 +171,7 @@ export default {
                     this.backend = BackendFactory.createBackend();
                 }
                 this.userList = await this.backend.getUserList({});
-                console.log('사용자 목록 로드됨:', this.userList);
             } catch (error) {
-                console.error('사용자 목록 로드 실패:', error);
                 this.userList = [];
             }
         },
@@ -383,7 +381,28 @@ export default {
                 return;
             }
             
-            if (e.touches.length === 1) {
+            // 터치 끝날 때 클릭으로 처리 (모바일에서 더 안정적)
+            if (e.type === 'touchend' && e.changedTouches && e.changedTouches.length === 1) {
+                const touch = e.changedTouches[0];
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                const nodeContent = target?.closest('.node-content');
+                
+                if (nodeContent) {
+                    // 직접 handleNodeClick 호출
+                    const syntheticEvent = {
+                        type: 'click',
+                        target: nodeContent,
+                        preventDefault: () => {},
+                        stopPropagation: () => {}
+                    };
+                    this.handleNodeClick(syntheticEvent);
+                }
+                e.preventDefault();
+                return;
+            }
+            
+            // 기존 터치-마우스 변환 로직 (스크롤/줌을 위해 유지)
+            if (e.touches && e.touches.length === 1) {
                 const touch = e.touches[0];
                 const mouseEvent = new MouseEvent(
                     e.type === 'touchstart' ? 'mousedown' :

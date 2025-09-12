@@ -91,8 +91,12 @@
                         >
                             <div class="d-flex align-center">
                                 <div class="mr-2">
-                                    <v-img v-if="delegateUser.profile" :src="delegateUser.profile" width="45px" 
-                                        class="rounded-circle img-fluid" />
+                                    <v-img v-if="delegateUser.profile && delegateUser.profile.trim() !== ''" 
+                                        :src="delegateUser.profile" 
+                                        width="45px" 
+                                        class="rounded-circle img-fluid"
+                                        :key="delegateUser.id || delegateUser.email"
+                                    />
                                     <v-avatar v-else>
                                         <Icons :icon="'user-circle-bold'" :size="50" />
                                     </v-avatar>
@@ -399,17 +403,21 @@ export default {
          handleUserRowClick(event) {
              const user = this.filteredUserList.find(u => u.id === event.id);
              if (user) {
-                 this.delegateUser = {
+                 // Vue 반응성을 위해 완전히 새로운 객체 생성
+                 this.delegateUser = Object.assign({}, {
                      ...user,
-                     uid: user.id // id를 uid로 사용
-                 };
+                     uid: user.id, // id를 uid로 사용
+                     profile: user.profile || '' // profile이 undefined일 경우 빈 문자열로 설정
+                 });
              }
          },
         selectUserFromTable(item) {
-            this.delegateUser = {
+            // Vue 반응성을 위해 완전히 새로운 객체 생성
+            this.delegateUser = Object.assign({}, {
                 ...item,
-                uid: item.id // id를 uid로 사용
-            };
+                uid: item.id, // id를 uid로 사용
+                profile: item.profile || '' // profile이 undefined일 경우 빈 문자열로 설정
+            });
         },
         async loadInitialUsers() {
             this.isUserLoading = true;
@@ -438,11 +446,12 @@ export default {
         },
         selectMyself(item) {
             // 나에게로 위임 기능 - 바로 위임 실행
-            this.delegateUser = {
+            // Vue 반응성을 위해 완전히 새로운 객체 생성
+            this.delegateUser = Object.assign({}, {
                 uid: item.id, // id를 uid로 사용
                 username: item.username,
-                profile: item.profile
-            };
+                profile: item.profile || '' // profile이 undefined일 경우 빈 문자열로 설정
+            });
             
             // 바로 위임 실행
             this.delegate();
