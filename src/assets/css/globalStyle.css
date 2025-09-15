@@ -6,13 +6,34 @@ hr {
     opacity: 1 !important;
 }
 
+.mcp-secret-monaco-editor {
+    height: calc(100vh - 550px) !important;
+}
+
+.mcp-environment-monaco-editor {
+    height: calc(100vh - 500px) !important;
+}
+
+.manage-access-tab-table-box .v-data-table {
+    height: calc(100vh - 280px) !important;
+}
+
+.mcp-server-list-box {
+    height: calc(100vh - 250px) !important;
+    overflow: auto;
+}
+
+.chip-select-wrapper {
+    padding-right: 0px !important;
+}
 
 .chip-select-wrapper .v-field__input {
     padding: 0px !important;
     color: white;
+    font-size: 14px;
 }
 .chip-select-wrapper .v-field__append-inner {
-    padding-top: 5px !important;
+    padding-top: 4px !important;
     color: white;
 }
 
@@ -1130,6 +1151,21 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+    .mcp-environment-monaco-editor {
+        height: calc(100vh - 330px) !important;
+    }
+    .mcp-secret-monaco-editor {
+        height: calc(100vh - 380px) !important;
+    }
+
+    .manage-access-tab-table-box .v-data-table {
+        height: calc(100vh - 160px) !important;
+    }
+    
+    .mcp-server-list-box {
+        height: calc(100vh - 200px) !important;
+        overflow: auto;
+    }
 
     .gantt-detail-overlay-contents {
         height: calc(100vh - 170px);

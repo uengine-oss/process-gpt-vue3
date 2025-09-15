@@ -426,8 +426,8 @@ export default {
 
 <style scoped>
 #tree {
-    width: 100%;
-    height:100%;
+    width: 100% !important;
+    height: 99% !important;
 }
 @media screen and (max-width: 768px) {
     #tree {
