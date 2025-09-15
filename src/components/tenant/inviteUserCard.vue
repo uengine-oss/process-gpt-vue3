@@ -108,6 +108,7 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { getTenantUrl } from '@/utils/domainUtils';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -197,7 +198,7 @@ export default {
                     }
                     this.isInviteLoading = false;
                     if(this.type === 'createTenant') {
-                        window.location.href = `https://${this.tenantInfo.id}.process-gpt.io/definition-map`
+                        window.location.href = getTenantUrl(this.tenantInfo.id, '/definition-map');
                     } else {
                         this.$emit('close', this.inviteUserlist);
                     }
@@ -210,7 +211,7 @@ export default {
             });
         },
         skipInvitation() {
-            window.location.href = `https://${this.tenantInfo.id}.process-gpt.io/definition-map`
+            window.location.href = getTenantUrl(this.tenantInfo.id, '/definition-map');
         }
     },
     computed: {

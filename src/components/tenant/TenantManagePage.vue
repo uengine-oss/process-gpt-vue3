@@ -250,6 +250,7 @@
 
 <script>
 import Logo from '@/layouts/full/logo/Logo.vue';
+import { getTenantUrl } from '@/utils/domainUtils';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -437,11 +438,7 @@ export default {
                 }
 
                 // 일반 웹 브라우저인 경우 기존 로직 실행
-                if(!location.port || location.port == '') {
-                    location.href = `https://${tenantId}.process-gpt.io/definition-map`;
-                } else {
-                    location.href = `http://${tenantId}.process-gpt.io:${location.port}/definition-map`;
-                }
+                location.href = getTenantUrl(tenantId, '/definition-map');
             } catch (error) {
                 console.error('테넌트 선택 중 오류가 발생했습니다:', error);
                 this.isNavigating = false;

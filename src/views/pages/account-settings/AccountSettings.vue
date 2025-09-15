@@ -175,6 +175,7 @@
 <script>
 /*import tabler icons*/
 import { UserCircleIcon, UsersIcon, BrandGoogleDriveIcon, DatabaseIcon } from 'vue-tabler-icons';
+import { getMainDomainUrl } from '@/utils/domainUtils';
 //components
 import AccountTab from '@/components/pages/account-settings/AccountTab.vue';
 import ManageAccessTab from '@/components/pages/account-settings/ManageAccessTab.vue';
@@ -238,11 +239,7 @@ export default {
             // ===== 로컬 테스트용 코드 끝 =====
             
             // www로 이동하면서 로컬스토리지 클리어 파라미터 추가 (기존 changeTenant 로직)
-            if(!location.port || location.port == '') {
-                location.href = `https://www.process-gpt.io/tenant/manage?clear=true`;
-            } else {
-                location.href = `http://www.process-gpt.io:${location.port}/tenant/manage?clear=true`;
-            }
+            location.href = getMainDomainUrl('/tenant/manage?clear=true');
         }
     }
 };

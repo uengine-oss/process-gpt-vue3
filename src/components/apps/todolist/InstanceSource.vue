@@ -130,6 +130,10 @@ export default {
         processDefinitionId: {
             type: String,
             default: ''
+        },
+        instId: {
+            type: String,
+            default: ''
         }
     },
     data: () => ({
@@ -147,8 +151,10 @@ export default {
     },
     computed: {
         id() {
-            if (this.$route.params.instId) {
-                return this.$route.params.instId.replace(/_DOT_/g, '.');
+            if (this.instance && this.instance.instId) {
+                return this.instance.instId;
+            } else if (this.instId) {
+                return this.instId;
             } else {
                 return null;
             }
@@ -170,16 +176,13 @@ export default {
     },
     methods: {
         async init() {
-            if (this.isStarted) {
-                this.sourceList = [];
-            } else {
-                await this.getSourceList();
-            }
+            await this.getSourceList();
         },
 
         async getSourceList() {
-            if (this.instance && this.instance.instId) {
-                const list = await backend.getInstanceSource(this.instance.instId);
+            if (this.id) {
+                const instId = this.id;
+                const list = await backend.getInstanceSource(instId);
                 this.sourceList = list.map(item => ({
                     id: item.id,
                     name: item.file_name,
@@ -231,25 +234,24 @@ export default {
             var me = this;
             for (const file of files) {
                 if (me.validateFile(file)) {
+                    const instId = me.id;
                     const fileId = this.uuid();
-                    if (me.isStarted) {
-                        if (me.processDefinitionId) {
-                            const result = await backend.putInstanceSource({
-                                id: fileId,
-                                file_name: file.name
-                            });
-                            this.sourceList.push({
-                                id: fileId,
-                                name: file.name,
-                                path: '',
-                                type: me.getFileExtension(file.name),
-                                isProcess: false
-                            });
+                    const result = await backend.putInstanceSource({
+                        id: fileId,
+                        proc_inst_id: instId,
+                        file_name: file.name
+                    });
+                    await this.getSourceList();
 
-                            if (result.error) {
-                                me.showSnackbar(result.error.message, 'error');
-                                return;
-                            }
+                    if (result.error) {
+                        me.showSnackbar(result.error.message, 'error');
+                        return;
+                    }
+
+                    me.$try({
+                        context: me,
+                        action: async () => {
+                            const defId = me.instance && me.instance.defId ? me.instance.defId : me.processDefinitionId;
 
                             const today = new Date();
                             const year = today.getFullYear();
@@ -257,50 +259,16 @@ export default {
                             const day = String(today.getDate()).padStart(2, '0');
 
                             const options = {
-                                folder_path: `${me.processDefinitionId}/${year}/${month}/${day}/_new/source/`,
+                                folder_path: `${defId}/${year}/${month}/${day}/${instId}/source/`,
+                                proc_inst_id: instId,
                                 file_id: fileId
                             };
 
-                            backend.uploadFile(file.name, file, 'drive', options).then(async (response) => {
-                                const item = this.sourceList.find(item => item.id === fileId);
-                                item.path = response.download_url;
-                                item.isProcess = true;
-                                const result = await backend.putInstanceSource({
-                                    id: fileId,
-                                    is_process: true,
-                                    file_path: response.download_url
-                                });
-                            });
-                        }
-                    } else {
-                        const result = await backend.putInstanceSource({
-                            id: fileId,
-                            proc_inst_id: me.instance.instId,
-                            file_name: file.name
-                        });
-                        await this.getSourceList();
-
-                        if (result.error) {
-                            me.showSnackbar(result.error.message, 'error');
-                            return;
-                        }
-
-                        const today = new Date();
-                        const year = today.getFullYear();
-                        const month = String(today.getMonth() + 1).padStart(2, '0');
-                        const day = String(today.getDate()).padStart(2, '0');
-
-                        const options = {
-                            folder_path: `${me.instance.defId}/${year}/${month}/${day}/${me.instance.instId}/source/`,
-                            proc_inst_id: me.instance.instId,
-                            file_id: fileId
-                        };
-
-                        backend.uploadFile(file.name, file, 'drive', options).then(async (response) => {
+                            await backend.uploadFile(file.name, file, 'drive', options);
                             await this.getSourceList();
-                            me.showSnackbar(`${file.name} 파일이 업로드되었습니다.`, 'success');
-                        });
-                    }
+                        },
+                        successMsg: `${file.name} 파일이 업로드되었습니다.`
+                    });
                 }
             }
         },

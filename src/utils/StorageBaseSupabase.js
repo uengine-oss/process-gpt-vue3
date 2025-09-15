@@ -1,3 +1,5 @@
+import { getBaseDomain, getMainDomainUrl } from './domainUtils.js';
+
 class StorageBaseError extends Error {
     constructor(message, cause, args) {
         super(message, { cause: cause });
@@ -77,9 +79,10 @@ export default class StorageBaseSupabase {
                 if (window.AndroidBridge) {
                     window.AndroidBridge.clearSession();
                 } else {
-                    if (window.location.host.includes('process-gpt.io')) {
-                        document.cookie = `access_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
-                        document.cookie = `refresh_token=; domain=.process-gpt.io; ${cookieOptionsBase}; Secure`;
+                    const baseDomain = getBaseDomain();
+                    if (baseDomain.includes('process-gpt')) {
+                        document.cookie = `access_token=; domain=.${baseDomain}; ${cookieOptionsBase}; Secure`;
+                        document.cookie = `refresh_token=; domain=.${baseDomain}; ${cookieOptionsBase}; Secure`;
                     } else {
                         document.cookie = `access_token=; ${cookieOptionsBase}`;
                         document.cookie = `refresh_token=; ${cookieOptionsBase}`;
@@ -96,9 +99,10 @@ export default class StorageBaseSupabase {
                     );
                     console.log("refreshSession - webview mode - saveSessionToken", refreshData.session.access_token, refreshData.session.refresh_token);
                 } else {
-                    if (window.location.host.includes('process-gpt.io')) {
-                        document.cookie = `access_token=${refreshData.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    const baseDomain = getBaseDomain();
+                    if (baseDomain.includes('process-gpt')) {
+                        document.cookie = `access_token=${refreshData.session.access_token}; domain=.${baseDomain}; path=/; Secure; SameSite=Lax`;
+                        document.cookie = `refresh_token=${refreshData.session.refresh_token}; domain=.${baseDomain}; path=/; Secure; SameSite=Lax`;
                     } else {
                         document.cookie = `access_token=${refreshData.session.access_token}; path=/; SameSite=Lax`;
                         document.cookie = `refresh_token=${refreshData.session.refresh_token}; path=/; SameSite=Lax`;
@@ -294,9 +298,10 @@ export default class StorageBaseSupabase {
             if (window.AndroidBridge) {
                 window.AndroidBridge.clearSession();
             } else {
-                if (window.location.host.includes('process-gpt.io')) {
-                    document.cookie = 'access_token=; domain=.process-gpt.io; path=/';
-                    document.cookie = 'refresh_token=; domain=.process-gpt.io; path=/';
+                const baseDomain = getBaseDomain();
+                if (baseDomain.includes('process-gpt')) {
+                    document.cookie = `access_token=; domain=.${baseDomain}; path=/`;
+                    document.cookie = `refresh_token=; domain=.${baseDomain}; path=/`;
                 } else {
                     document.cookie = 'access_token=; path=/';
                     document.cookie = 'refresh_token=; path=/';
@@ -368,9 +373,10 @@ export default class StorageBaseSupabase {
 
     async resetPassword(email) {
         try {
+            const baseDomain = getBaseDomain();
             let url;
-            if (window.location.host.includes('process-gpt.io')) {
-                url = 'https://process-gpt.io/auth/reset-password';
+            if (baseDomain.includes('process-gpt')) {
+                url = getMainDomainUrl('/auth/reset-password');
             } else {
                 url = window.location.origin + '/auth/reset-password';
             }
@@ -925,9 +931,10 @@ export default class StorageBaseSupabase {
                         value.session.refresh_token
                     );
                 } else {
-                    if (window.location.host.includes('process-gpt.io')) {
-                        document.cookie = `access_token=${value.session.access_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
-                        document.cookie = `refresh_token=${value.session.refresh_token}; domain=.process-gpt.io; path=/; Secure; SameSite=Lax`;
+                    const baseDomain = getBaseDomain();
+                    if (baseDomain.includes('process-gpt')) {
+                        document.cookie = `access_token=${value.session.access_token}; domain=.${baseDomain}; path=/; Secure; SameSite=Lax`;
+                        document.cookie = `refresh_token=${value.session.refresh_token}; domain=.${baseDomain}; path=/; Secure; SameSite=Lax`;
                     } else {
                         document.cookie = `access_token=${value.session.access_token}; path=/; SameSite=Lax`;
                         document.cookie = `refresh_token=${value.session.refresh_token}; path=/; SameSite=Lax`;

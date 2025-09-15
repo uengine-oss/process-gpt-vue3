@@ -76,6 +76,7 @@
 
 <script>
 import { profileImages } from '@/components/pages/account-settings/profileImage';
+import { getMainDomainUrl } from '@/utils/domainUtils';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -167,11 +168,7 @@ export default {
         },
         changeTenant() {
             // www로 이동하면서 로컬스토리지 클리어 파라미터 추가
-            if(!location.port || location.port == '') {
-                location.href = `https://www.process-gpt.io/tenant/manage?clear=true`;
-            } else {
-                location.href = `http://www.process-gpt.io:${location.port}/tenant/manage?clear=true`;
-            }
+            location.href = getMainDomainUrl('/tenant/manage?clear=true');
         }
     },
     computed: {

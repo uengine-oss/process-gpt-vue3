@@ -11,8 +11,9 @@
                 <!-- 가로배치 -->
                 <div class="pa-0">
                     <v-row class="ma-0 pa-0" style="width: 100%;">
-                        <v-col class="pa-0" cols="9">
-                            <div style="font-size:16px; font-weight:500; line-height: 20px;">{{ task.name }}</div>
+                        <v-col class="pa-0 d-flex align-center" cols="9">
+                            <span style="font-size:16px; font-weight:500; line-height: 20px;">{{ task.name }}</span>
+                            <v-chip v-if="reworkCount" class="ml-1" size="small" color="info" variant="flat" density="comfortable">{{ reworkCount }}</v-chip>
                         </v-col>
                         <v-col class="pa-0" cols="3">
                             <v-row class="ma-0 pa-0 justify-end align-start"
@@ -357,7 +358,13 @@ export default {
         },
         isStartedStatus() {
             return this.currentDraftStatus === 'STARTED';
-        }
+        },
+        reworkCount() {
+            if (this.task && this.task.task && this.task.task.rework_count) {
+                return this.task.task.rework_count;
+            }
+            return null;
+        },
     },
     async mounted() {
         this.managed = this.task.adhoc;

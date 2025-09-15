@@ -51,8 +51,9 @@
                         <div class="text-h5 font-weight-semibold">{{ $t('InstanceCard.source') }}</div>
                         <InstanceSource 
                             ref="instanceSourceRef"
-                            :isStarted="isStarted" 
-                            :processDefinitionId="definitionId" 
+                            :isStarted="isStarted"
+                            :instId="instId"
+                            :processDefinitionId="definitionId"
                         />
                     </div>
                 </div>
@@ -125,6 +126,7 @@ export default {
     data: () => ({
         definition: {},
         workItem: null,
+        instId: "",
         roleMappings: [],
         isMobile: false,
         activityIndex: 0,
@@ -133,6 +135,9 @@ export default {
         isStarted: true
     }),
     async mounted() {
+        if (this.processDefinition && this.processDefinition.processDefinitionId) {
+            this.instId = `${this.processDefinition.processDefinitionId}.${this.uuid()}`;
+        }
         await this.init();
         this.checkIfMobile();
         window.addEventListener('resize', this.checkIfMobile);
@@ -207,9 +212,9 @@ export default {
                         defId: me.processDefinition.id,
                         role: startActivity.role,
                         endpoint: "",
-                        instId: "",
-                        rootInstId: null,
-                        taskId: this.uuid(),
+                        instId: me.instId,
+                        rootInstId: me.instId,
+                        taskId: me.uuid(),
                         startDate: new Date(),
                         dueDate: null,
                         status: 'TODO',
@@ -339,6 +344,7 @@ export default {
                 }
 
                 let input = {
+                    process_instance_id: me.instId,
                     process_definition_id: me.definitionId,
                     activity_id: me.workItem.activity.tracingTag,
                     role_mappings: me.roleMappings,

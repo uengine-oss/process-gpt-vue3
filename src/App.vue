@@ -49,6 +49,7 @@
 import { RouterView } from 'vue-router';
 import BackendFactory from "@/components/api/BackendFactory";
 import partialParse from "partial-json-parser";
+import { getMainDomainUrl } from "@/utils/domainUtils";
 
 export default {
     components: {
@@ -114,9 +115,9 @@ export default {
                             }
                             alert(window.$tenantName + " 존재하지 않는 경로입니다.");
                             if (localStorage.getItem('email')) {
-                                window.location.href = 'https://www.process-gpt.io/tenant/manage';
+                                window.location.href = getMainDomainUrl('/tenant/manage');
                             } else {
-                                window.location.href = 'https://www.process-gpt.io/auth/login';
+                                window.location.href = getMainDomainUrl('/auth/login');
                             }
                             return;
                         } else {
@@ -130,7 +131,7 @@ export default {
                                         this.$try({}, null, {
                                             errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
                                         })
-                                        window.location.href = 'https://www.process-gpt.io/tenant/manage';
+                                        window.location.href = getMainDomainUrl('/tenant/manage');
                                     }
                                 } else {
                                     this.$router.push('/auth/login');
