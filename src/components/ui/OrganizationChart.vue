@@ -90,9 +90,8 @@ export default {
                 childrenSpacing: 50,
                 siblingSpacing: 20,
                 direction: 'top',
-                enableExpandCollapse: true,
+                enableExpandCollapse: false,
                 nodeTemplate: (content) => {
-                    console.log('🎨 [ApexTree] 노드 템플릿 렌더링:', content.id, content);
                     // 실제 사용자 데이터 가져오기
                     const userData = this.getUserData(content);
                     return `
@@ -199,14 +198,6 @@ export default {
         drawTree() {
             // 팀원들을 세로 배치하기 위한 데이터 변환
             const transformedNode = this.transformForVerticalLayout(this.node);
-            console.log('🔍 [OrganizationChart] 원본 노드:', this.node);
-            console.log('🔍 [OrganizationChart] 변환된 노드:', transformedNode);
-            console.log('🔍 [OrganizationChart] 환경 정보:', {
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                hostname: window.location.hostname,
-                isDevelopment: process.env.NODE_ENV === 'development'
-            });
             this.tree.render(transformedNode);
         },
         transformForVerticalLayout(node) {
