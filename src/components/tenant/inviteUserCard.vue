@@ -80,8 +80,6 @@
                     <v-spacer></v-spacer>
                     <v-btn v-if="type === 'createTenant'"
                         @click="skipInvitation"
-                        :loading="isInviteLoading"
-                        :disabled="hasInvalidEmails()"
                         color="grey"
                         variant="flat" 
                         class="rounded-pill mr-2"

@@ -104,42 +104,88 @@ export default {
                 this.loadScreen = false;
                 this.backend = BackendFactory.createBackend();
                 if (window.$isTenantServer) {
-                    await this.backend.checkDBConnection();
-                    this.loadScreen = true;
+                    try {
+                        await this.backend.checkDBConnection();
+                        this.loadScreen = true;
+                    } catch (error) {
+                        console.error('Error checking database connection:', error);
+                        this.loadScreen = true;
+                    }
                 } else {
-                    const tenantId = await this.backend.getTenant(window.$tenantName);
-                    if(window.$tenantName !== 'localhost') {
-                        if (!tenantId) {
-                            if(localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === window.$tenantName) {
-                                localStorage.removeItem('tenantId');
-                            }
-                            alert(window.$tenantName + " 존재하지 않는 경로입니다.");
-                            if (localStorage.getItem('email')) {
-                                window.location.href = getMainDomainUrl('/tenant/manage');
+                    try {
+                        console.log('=== TENANT SETUP DEBUG START ===');
+                        console.log('1. window.$tenantName:', window.$tenantName);
+                        console.log('2. window.$isTenantServer:', window.$isTenantServer);
+                        console.log('3. window.location.pathname:', window.location.pathname);
+                        console.log('4. window.location.hostname:', window.location.hostname);
+                        console.log('5. localStorage.getItem("tenantId"):', localStorage.getItem('tenantId'));
+                        console.log('6. localStorage.getItem("email"):', localStorage.getItem('email'));
+                        
+                        console.log('7. Calling backend.getTenant with:', window.$tenantName);
+                        const tenantId = await this.backend.getTenant(window.$tenantName);
+                        console.log('8. getTenant result:', tenantId);
+                        console.log('9. tenantId type:', typeof tenantId);
+                        console.log('10. tenantId truthy check:', !!tenantId);
+                        
+                        if(window.$tenantName !== 'localhost') {
+                            console.log('11. Not localhost, checking tenantId...');
+                            if (!tenantId) {
+                                console.log('12. tenantId is falsy, showing alert...');
+                                if(localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === window.$tenantName) {
+                                    console.log('13. Removing tenantId from localStorage');
+                                    localStorage.removeItem('tenantId');
+                                }
+                                console.log('14. Showing alert for non-existent tenant');
+                                alert(window.$tenantName + " 존재하지 않는 경로입니다.");
+                                if (localStorage.getItem('email')) {
+                                    console.log('15. Redirecting to tenant manage page');
+                                    window.location.href = getMainDomainUrl('/tenant/manage');
+                                } else {
+                                    console.log('16. Redirecting to login page');
+                                    window.location.href = getMainDomainUrl('/auth/login');
+                                }
+                                return;
                             } else {
-                                window.location.href = getMainDomainUrl('/auth/login');
-                            }
-                            return;
-                        } else {
-                            // 루트 페이지인 경우 로그인 체크 건너뛰기 옵션 추가
-                            const skipLoginCheck = window.location.pathname === '/';
-                            const userInfo = await this.backend.getUserInfo();
-                            if(!skipLoginCheck) {
-                                if(userInfo) {
-                                    const res = await this.backend.setTenant(window.$tenantName);
-                                    if (!res) {
-                                        this.$try({}, null, {
-                                            errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
-                                        })
-                                        window.location.href = getMainDomainUrl('/tenant/manage');
+                                console.log('17. tenantId exists, proceeding with user check...');
+                                // 루트 페이지인 경우 로그인 체크 건너뛰기 옵션 추가
+                                const skipLoginCheck = window.location.pathname === '/';
+                                console.log('18. skipLoginCheck:', skipLoginCheck);
+                                
+                                console.log('19. Calling backend.getUserInfo...');
+                                const userInfo = await this.backend.getUserInfo();
+                                console.log('20. getUserInfo result:', userInfo);
+                                
+                                if(!skipLoginCheck) {
+                                    console.log('21. Not skipping login check...');
+                                    if(userInfo) {
+                                        console.log('22. User info exists, calling setTenant...');
+                                        const res = await this.backend.setTenant(window.$tenantName);
+                                        console.log('23. setTenant result:', res);
+                                        if (!res) {
+                                            console.log('24. setTenant failed, showing error and redirecting...');
+                                            this.$try({}, null, {
+                                                errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
+                                            })
+                                            window.location.href = getMainDomainUrl('/tenant/manage');
+                                        }
+                                    } else {
+                                        console.log('25. No user info, redirecting to login...');
+                                        this.$router.push('/auth/login');
                                     }
                                 } else {
-                                    this.$router.push('/auth/login');
+                                    console.log('26. Skipping login check for root page');
                                 }
+                                console.log('27. Setting loadScreen to true');
+                                this.loadScreen = true;
                             }
+                        } else {
+                            console.log('28. localhost detected, setting loadScreen to true');
                             this.loadScreen = true;
                         }
-                    } else {
+                        console.log('=== TENANT SETUP DEBUG END ===');
+                    } catch (error) {
+                        console.error('Error in tenant setup:', error);
+                        console.error('Error stack:', error.stack);
                         this.loadScreen = true;
                     }
                 }

@@ -36,6 +36,8 @@ export default class StorageBaseSupabase {
                     refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token'))?.split('=')[1];
                 }
             }
+            
+            // 토큰이 있는 경우에만 세션 설정 시도
             if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
                 const { error: sessionError } = await window.$supabase.auth.setSession({
                     access_token: accessToken,
@@ -43,10 +45,16 @@ export default class StorageBaseSupabase {
                 });
 
                 if (sessionError) {
-                    await this.refreshSession();
+                    console.log('Session error, attempting refresh:', sessionError);
+                    // 세션 설정에 실패한 경우에만 refresh 시도
+                    const refreshResult = await this.refreshSession();
+                    if (!refreshResult) {
+                        return false;
+                    }
                 }
             } else {
-                await this.refreshSession();                
+                // 토큰이 없는 경우 바로 false 반환 (refreshSession 호출하지 않음)
+                return false;
             }
             
             // getSession()을 사용하여 세션과 사용자 정보를 모두 가져옴
@@ -69,6 +77,13 @@ export default class StorageBaseSupabase {
 
     async refreshSession() {
         try {
+            // 먼저 현재 세션이 있는지 확인
+            const { data: currentSession } = await window.$supabase.auth.getSession();
+            if (!currentSession.session) {
+                console.log('No current session to refresh');
+                return false;
+            }
+
             const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
 
             if (refreshError) {
@@ -89,6 +104,7 @@ export default class StorageBaseSupabase {
                     }
                 }
                 window.localStorage.removeItem('accessToken');
+                return false;
             } else {
                 // Check if we're in webview mode
                 if (window.AndroidBridge) {
@@ -109,9 +125,11 @@ export default class StorageBaseSupabase {
                     }
                 }
                 window.localStorage.setItem('accessToken', refreshData.session.access_token);
+                return true;
             }
         } catch (e) {
             console.error('Error in refreshSession:', e);
+            return false;
         }
     }
 
@@ -353,11 +371,19 @@ export default class StorageBaseSupabase {
                     return null;
                 }
                 
+                // 로그인 페이지가 아닌 경우에만 리다이렉션
                 if (window.location.pathname != '/auth/login') {
-                    await window.$app_.try({
-                        action: () => Promise.reject(new Error()),
-                        // errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
-                    });
+                    // 무한 리다이렉션 방지를 위해 try-catch로 감싸기
+                    try {
+                        if (window.$app_ && window.$app_.try) {
+                            await window.$app_.try({
+                                action: () => Promise.reject(new Error()),
+                                // errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
+                            });
+                        }
+                    } catch (e) {
+                        console.log('Error in try block:', e);
+                    }
                     window.location.href = '/auth/login';
                 }
             }
@@ -367,7 +393,8 @@ export default class StorageBaseSupabase {
             } else {
                 console.error('Unexpected error in getUserInfo:', e);
             }
-            throw new StorageBaseError('error in getUserInfo', e, arguments);
+            // 오류 발생 시 null 반환하여 무한 리다이렉션 방지
+            return null;
         }
     }
 
@@ -391,57 +418,103 @@ export default class StorageBaseSupabase {
 
     async getString(path, options) {
         try {
+            console.log('=== getString DEBUG START ===');
+            console.log('getString path:', path);
+            console.log('getString options:', options);
+            
             let obj = this.formatDataPath(path, options);
+            console.log('getString formatted obj:', obj);
+            
             const column = options.column ? options.column : "*";
+            console.log('getString column:', column);
+            
             if (options && options.match) {
+                console.log('getString using match query');
+                console.log('getString match conditions:', options.match);
+                
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select(column)
                     .match(options.match)
                     .maybeSingle()
 
+                console.log('getString match query result - data:', data);
+                console.log('getString match query result - error:', error);
+
                 if (error) {
+                    console.log('getString returning error:', error);
                     return error;
                 } else if (data) {
                     if (column != "*") {
+                        console.log('getString returning column value:', data[column]);
                         return data[column];
                     } else {
+                        console.log('getString returning full data:', data);
                         return data;
                     }
+                } else {
+                    console.log('getString no data found');
+                    return null;
                 }
             } else if (obj.searchVal) {
+                console.log('getString using searchVal query');
+                console.log('getString searchKey:', obj.searchKey);
+                console.log('getString searchVal:', obj.searchVal);
+                
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select(column)
                     .eq(obj.searchKey, obj.searchVal)
                     .maybeSingle()
 
+                console.log('getString searchVal query result - data:', data);
+                console.log('getString searchVal query result - error:', error);
+
                 if (error) {
+                    console.log('getString returning error:', error);
                     return error;
                 } else if (data) {
                     if (column != "*") {
+                        console.log('getString returning column value:', data[column]);
                         return data[column];
                     } else {
+                        console.log('getString returning full data:', data);
                         return data;
                     }
+                } else {
+                    console.log('getString no data found');
+                    return null;
                 }
             } else {
+                console.log('getString using simple query');
+                
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select(column)
                     .maybeSingle()
 
+                console.log('getString simple query result - data:', data);
+                console.log('getString simple query result - error:', error);
+
                 if (error) {
+                    console.log('getString returning error:', error);
                     return error;
                 } else if (data) {
                     if (column != "*") {
+                        console.log('getString returning column value:', data[column]);
                         return data[column];
                     } else {
+                        console.log('getString returning full data:', data);
                         return data;
                     }
+                } else {
+                    console.log('getString no data found');
+                    return null;
                 }
             }
+            console.log('=== getString DEBUG END ===');
         } catch (error) {
+            console.error('getString catch error:', error);
             if (error.code === 'PGRST116' || error.code === '42703') {
                 console.log(error.message);
                 return "";
@@ -921,7 +994,7 @@ export default class StorageBaseSupabase {
     
     async writeUserData(value, userInfo) {
         try {
-            if (value.session) {
+            if (value && value.session) {
                 window.localStorage.setItem('accessToken', value.session.access_token);
                 
                 // Check if we're in webview mode
@@ -941,7 +1014,7 @@ export default class StorageBaseSupabase {
                     }
                 }
             }
-            if (value.session.user) {
+            if (value && value.session && value.session.user) {
                 window.localStorage.setItem('author', value.session.user.email);
                 window.localStorage.setItem('uid', value.session.user.id);
 
@@ -955,7 +1028,7 @@ export default class StorageBaseSupabase {
                     .match(filter)
                     .maybeSingle();
 
-                if (!error) {
+                if (!error && data) {
                     window.localStorage.setItem('isAdmin', data.is_admin || false);
                     window.localStorage.setItem('picture', data.profile || '');
                     if (data.role && data.role !== '') {
