@@ -9,7 +9,7 @@
       <div>
 
         <!-- 1 에이전트 설정 (Agent Setup) -->
-        <div class="bg-white pa-12 rounded-lg shadow-md mb-16" style="border: 1px solid #efefef;">
+        <div class="tab-wrap">
 
           <div class="tab-flex">
             
@@ -18,7 +18,7 @@
             </div>
             <div class="tab-text">
                 <h3 class="text-left">{{ $t('HowSection.subtitle1') }}</h3>
-                <ul class="mt-4">
+                <ul>
                   <li>
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24">
                           <path stroke="#1976D2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -49,13 +49,13 @@
         </div>
 
         <!-- 2 프로세스 생성 -->
-        <div class="bg-white pa-12 rounded-lg shadow-md mb-16" style="border: 1px solid #efefef;">
+        <div class="tab-wrap">
 
-          <div class="tab-flex">
+          <div class="tab-flex tab-reverse">
             <div class="tab-image">
               <img src="@/assets/images/mainPages/how-02.gif" alt="" />
             </div>
-            <div class="tab-text mt-n20">
+            <div class="tab-text">
               <h3 class="text-left">{{ $t('HowSection.subtitle2') }}</h3>
               <ul>
                 <li>
@@ -88,13 +88,13 @@
         </div>
 
         <!-- 3 프로세스 실행 -->
-        <div class="bg-white pa-12 rounded-lg shadow-md mb-16" style="border: 1px solid #efefef;">
+        <div class="tab-wrap">
 
           <div class="tab-flex">
-            <div class="tab-image mt-n20">
+            <div class="tab-image">
               <img src="@/assets/images/mainPages/how-03.png" alt="" />
             </div>
-            <div class="tab-text mt-n20">
+            <div class="tab-text">
               <h3 class="text-left">{{ $t('HowSection.subtitle3') }}</h3>
               <ul>
                 <li>
@@ -133,9 +133,9 @@
         </div>
 
         <!-- 4 개선 -->
-        <div class="bg-white pa-12 rounded-lg shadow-md mb-16" style="border: 1px solid #efefef;">
+        <div class="tab-wrap">
 
-          <div class="tab-flex">
+          <div class="tab-flex tab-reverse">
             <div class="tab-image">
               <img src="@/assets/images/mainPages/how-04.png" alt="" />
             </div>
@@ -184,7 +184,7 @@
             <div class="tab-image">
               <img src="@/assets/images/mainPages/how-05.png" alt="" />
             </div>
-            <div class="tab-text mt-n20">
+            <div class="tab-text">
               <h3 class="text-left">{{ $t('HowSection.subtitle5') }}</h3>
               <ul>
                 <li>
@@ -224,7 +224,7 @@ export default {
 
 <style scoped>
 .works {
-  padding: 80px 0;
+  padding: 80px 0 40px;
   background-color: var(--bg-color);
 }
 
@@ -247,14 +247,9 @@ export default {
   margin: 0 auto;
 }
 
-
-h3 {
-  font-size: 1.8rem;
-  font-weight: 600;
-  color: var(--text-color-dark);
-  padding-bottom: 40px;
-  /* margin-bottom: 15px; */
-  text-align: center;
+.tab-wrap {
+  padding: 40px;
+  margin-bottom: 50px;
 }
 
 .tab-flex {
@@ -264,9 +259,27 @@ h3 {
   flex-wrap: wrap;
 }
 
+.tab-flex.tab-reverse {
+  flex-direction: row-reverse;
+}
+
 .tab-text {
   flex: 1;
   min-width: 300px;
+}
+
+.tab-text h3 {
+  max-width: 50%;
+  border-bottom: 1px solid #333;
+  padding-bottom: 15px;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--text-color-dark);
+  text-align: center;
+}
+
+.tab-text ul {
+  margin-top: 20px;
 }
 
 .tab-text ul li {
@@ -285,6 +298,8 @@ h3 {
 .tab-image {
   flex: 1;
   min-width: 300px;
+  border-radius: 15px;
+  border: 10px solid #efefef;
 }
 
 .tab-image img, .modal-image img {
@@ -301,18 +316,31 @@ h3 {
   /* margin: 0 auto; */
 }
 
-
 @media (max-width: 768px) {
   .works {
-    padding: 60px 0;
+    padding: 60px 0 20px;
   }
   
   .section-header h2 {
     font-size: 1.8rem;
   }
 
-  .mt-n20 {
-    margin-top: -20px;
+  .tab-wrap {
+    padding: 10px;
+    margin-bottom: 40px;
   }
+  
+  .tab-text h3 {
+    font-size: 1.4rem;
+    color: var(--text-color-dark);
+  }
+
+.tab-text ul li {
+    margin-bottom: 7px;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  
 }
 </style>

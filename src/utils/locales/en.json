@@ -1304,6 +1304,8 @@
     },
     "MovieGallerySection": {
         "movieGalleryTitle": "Video Gallery",
+        "movieGallerySubtitle1": "- Function Introduction Video -",
+        "movieGallerySubtitle2": "- Example Video -",
         "processGptMainTitle": "Process GPT - My Friend, My AI Agent",
         "autoKnowledgeManagementTitle": "Automatic Management of Agent Knowledge",
         "autoTeamProcessTitle": "Automated Human-Agent Team Process Definition for Achieving Organizational Goals",

@@ -157,7 +157,7 @@ export default {
         });
 
         // 운영용(help계정 연결) - mjkydzab / 테스트용 - mqapyyrq
-        const response = await fetch('https://formspree.io/f/mjkydzab', { 
+        const response = await fetch('https://formspree.io/f/mqapyyrq', { 
           method: 'POST',
           body: formData,
           headers: {
@@ -204,7 +204,7 @@ export default {
 <style scoped>
 .contact-form-container {
   position: absolute;
-  top: 250px;
+  top: 40px;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -267,9 +267,15 @@ button {
   transition: all 0.2s ease-in-out;
 }
 
-@media (max-width: 376px){
+@media (max-width: 768px) {
   .contact-form-container {
-    top: 315px;
+    top: 30px;
   }
 }
+
+/* @media (max-width: 376px){
+  .contact-form-container {
+    top: 115px;
+  }
+} */
 </style> 
