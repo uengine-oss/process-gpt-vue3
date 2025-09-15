@@ -13,6 +13,16 @@ export default class StorageBaseSupabase {
 
     async isConnection() {
         try {
+            // 먼저 현재 세션 상태를 확인
+            const { data: currentSession, error: sessionError } = await window.$supabase.auth.getSession();
+            
+            // 세션이 유효한 경우
+            if (!sessionError && currentSession.session && currentSession.session.user) {
+                this.writeUserData(currentSession);
+                return true;
+            }
+
+            // 세션이 없거나 만료된 경우, 저장된 토큰으로 복구 시도
             let accessToken = "";
             let refreshToken = "";
             
@@ -36,35 +46,37 @@ export default class StorageBaseSupabase {
                     refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token'))?.split('=')[1];
                 }
             }
-            
-            // 토큰이 있는 경우에만 세션 설정 시도
-            if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
-                const { error: sessionError } = await window.$supabase.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken
-                });
 
-                if (sessionError) {
-                    console.log('Session error, attempting refresh:', sessionError);
-                    // 세션 설정에 실패한 경우에만 refresh 시도
-                    const refreshResult = await this.refreshSession();
-                    if (!refreshResult) {
-                        return false;
+            // 저장된 토큰이 있는 경우 세션 복구 시도
+            if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
+                try {
+                    const { error: setSessionError } = await window.$supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    });
+
+                    if (setSessionError) {
+                        console.log('setSession failed, attempting refresh:', setSessionError.message);
+                        // setSession이 실패한 경우 refresh 시도
+                        await this.refreshSession();
                     }
+                } catch (setSessionErr) {
+                    console.log('setSession exception, attempting refresh:', setSessionErr.message);
+                    await this.refreshSession();
                 }
             } else {
-                // 토큰이 없는 경우 바로 false 반환 (refreshSession 호출하지 않음)
-                return false;
+                // 저장된 토큰이 없는 경우 refresh 시도
+                await this.refreshSession();                
             }
             
-            // getSession()을 사용하여 세션과 사용자 정보를 모두 가져옴
-            const { data, error } = await window.$supabase.auth.getSession();
-            if (error || !data.session) {
+            // 최종 세션 상태 확인
+            const { data: finalSession, error: finalError } = await window.$supabase.auth.getSession();
+            if (finalError || !finalSession.session) {
                 return false;
             }
 
-            if (data.session && data.session.user) {
-                this.writeUserData(data);
+            if (finalSession.session && finalSession.session.user) {
+                this.writeUserData(finalSession);
                 return true;
             }
             
@@ -77,35 +89,22 @@ export default class StorageBaseSupabase {
 
     async refreshSession() {
         try {
-            // 먼저 현재 세션이 있는지 확인
-            const { data: currentSession } = await window.$supabase.auth.getSession();
-            if (!currentSession.session) {
-                console.log('No current session to refresh');
-                return false;
-            }
-
             const { data: refreshData, error: refreshError } = await window.$supabase.auth.refreshSession();
 
             if (refreshError) {
                 console.error('Error refreshing session:', refreshError);
-                const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
                 
-                // Check if we're in webview mode
-                if (window.AndroidBridge) {
-                    window.AndroidBridge.clearSession();
-                } else {
-                    const baseDomain = getBaseDomain();
-                    if (baseDomain.includes('process-gpt')) {
-                        document.cookie = `access_token=; domain=.${baseDomain}; ${cookieOptionsBase}; Secure`;
-                        document.cookie = `refresh_token=; domain=.${baseDomain}; ${cookieOptionsBase}; Secure`;
-                    } else {
-                        document.cookie = `access_token=; ${cookieOptionsBase}`;
-                        document.cookie = `refresh_token=; ${cookieOptionsBase}`;
-                    }
+                // refresh_token_already_used 오류인 경우 특별 처리
+                if (refreshError.message && refreshError.message.includes('refresh_token_already_used')) {
+                    console.log('Refresh token already used, clearing session and redirecting to login');
+                    await this.clearSession();
+                    return;
                 }
-                window.localStorage.removeItem('accessToken');
-                return false;
-            } else {
+                
+                // 기타 refresh 오류인 경우 세션 클리어
+                await this.clearSession();
+            } else if (refreshData && refreshData.session) {
+                // Refresh 성공한 경우 새 토큰 저장
                 // Check if we're in webview mode
                 if (window.AndroidBridge) {
                     console.log("refreshSession - webview mode");
@@ -125,11 +124,34 @@ export default class StorageBaseSupabase {
                     }
                 }
                 window.localStorage.setItem('accessToken', refreshData.session.access_token);
-                return true;
             }
         } catch (e) {
             console.error('Error in refreshSession:', e);
-            return false;
+            // 예외 발생 시에도 세션 클리어
+            await this.clearSession();
+        }
+    }
+
+    async clearSession() {
+        try {
+            const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+            
+            // Check if we're in webview mode
+            if (window.AndroidBridge) {
+                window.AndroidBridge.clearSession();
+            } else {
+                const baseDomain = getBaseDomain();
+                if (baseDomain.includes('process-gpt')) {
+                    document.cookie = `access_token=; domain=.${baseDomain}; ${cookieOptionsBase}; Secure`;
+                    document.cookie = `refresh_token=; domain=.${baseDomain}; ${cookieOptionsBase}; Secure`;
+                } else {
+                    document.cookie = `access_token=; ${cookieOptionsBase}`;
+                    document.cookie = `refresh_token=; ${cookieOptionsBase}`;
+                }
+            }
+            window.localStorage.removeItem('accessToken');
+        } catch (e) {
+            console.error('Error clearing session:', e);
         }
     }
 
@@ -371,19 +393,11 @@ export default class StorageBaseSupabase {
                     return null;
                 }
                 
-                // 로그인 페이지가 아닌 경우에만 리다이렉션
                 if (window.location.pathname != '/auth/login') {
-                    // 무한 리다이렉션 방지를 위해 try-catch로 감싸기
-                    try {
-                        if (window.$app_ && window.$app_.try) {
-                            await window.$app_.try({
-                                action: () => Promise.reject(new Error()),
-                                // errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
-                            });
-                        }
-                    } catch (e) {
-                        console.log('Error in try block:', e);
-                    }
+                    await window.$app_.try({
+                        action: () => Promise.reject(new Error()),
+                        // errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
+                    });
                     window.location.href = '/auth/login';
                 }
             }
@@ -393,8 +407,7 @@ export default class StorageBaseSupabase {
             } else {
                 console.error('Unexpected error in getUserInfo:', e);
             }
-            // 오류 발생 시 null 반환하여 무한 리다이렉션 방지
-            return null;
+            throw new StorageBaseError('error in getUserInfo', e, arguments);
         }
     }
 
@@ -418,103 +431,57 @@ export default class StorageBaseSupabase {
 
     async getString(path, options) {
         try {
-            console.log('=== getString DEBUG START ===');
-            console.log('getString path:', path);
-            console.log('getString options:', options);
-            
             let obj = this.formatDataPath(path, options);
-            console.log('getString formatted obj:', obj);
-            
             const column = options.column ? options.column : "*";
-            console.log('getString column:', column);
-            
             if (options && options.match) {
-                console.log('getString using match query');
-                console.log('getString match conditions:', options.match);
-                
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select(column)
                     .match(options.match)
                     .maybeSingle()
 
-                console.log('getString match query result - data:', data);
-                console.log('getString match query result - error:', error);
-
                 if (error) {
-                    console.log('getString returning error:', error);
                     return error;
                 } else if (data) {
                     if (column != "*") {
-                        console.log('getString returning column value:', data[column]);
                         return data[column];
                     } else {
-                        console.log('getString returning full data:', data);
                         return data;
                     }
-                } else {
-                    console.log('getString no data found');
-                    return null;
                 }
             } else if (obj.searchVal) {
-                console.log('getString using searchVal query');
-                console.log('getString searchKey:', obj.searchKey);
-                console.log('getString searchVal:', obj.searchVal);
-                
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select(column)
                     .eq(obj.searchKey, obj.searchVal)
                     .maybeSingle()
 
-                console.log('getString searchVal query result - data:', data);
-                console.log('getString searchVal query result - error:', error);
-
                 if (error) {
-                    console.log('getString returning error:', error);
                     return error;
                 } else if (data) {
                     if (column != "*") {
-                        console.log('getString returning column value:', data[column]);
                         return data[column];
                     } else {
-                        console.log('getString returning full data:', data);
                         return data;
                     }
-                } else {
-                    console.log('getString no data found');
-                    return null;
                 }
             } else {
-                console.log('getString using simple query');
-                
                 const { data, error } = await window.$supabase
                     .from(obj.table)
                     .select(column)
                     .maybeSingle()
 
-                console.log('getString simple query result - data:', data);
-                console.log('getString simple query result - error:', error);
-
                 if (error) {
-                    console.log('getString returning error:', error);
                     return error;
                 } else if (data) {
                     if (column != "*") {
-                        console.log('getString returning column value:', data[column]);
                         return data[column];
                     } else {
-                        console.log('getString returning full data:', data);
                         return data;
                     }
-                } else {
-                    console.log('getString no data found');
-                    return null;
                 }
             }
-            console.log('=== getString DEBUG END ===');
         } catch (error) {
-            console.error('getString catch error:', error);
             if (error.code === 'PGRST116' || error.code === '42703') {
                 console.log(error.message);
                 return "";
@@ -994,7 +961,7 @@ export default class StorageBaseSupabase {
     
     async writeUserData(value, userInfo) {
         try {
-            if (value && value.session) {
+            if (value.session) {
                 window.localStorage.setItem('accessToken', value.session.access_token);
                 
                 // Check if we're in webview mode
@@ -1014,7 +981,7 @@ export default class StorageBaseSupabase {
                     }
                 }
             }
-            if (value && value.session && value.session.user) {
+            if (value.session.user) {
                 window.localStorage.setItem('author', value.session.user.email);
                 window.localStorage.setItem('uid', value.session.user.id);
 
@@ -1028,7 +995,7 @@ export default class StorageBaseSupabase {
                     .match(filter)
                     .maybeSingle();
 
-                if (!error && data) {
+                if (!error) {
                     window.localStorage.setItem('isAdmin', data.is_admin || false);
                     window.localStorage.setItem('picture', data.profile || '');
                     if (data.role && data.role !== '') {

@@ -276,12 +276,13 @@ export default {
         try {
             const isLogin = await backend.checkDBConnection();
             if(!isLogin) {
-                this.$router.push('/auth/login')
+                console.log('User not authenticated, redirecting to login');
+                this.$router.push('/auth/login');
                 return;
             }
         } catch (error) {
-            console.error('Error checking database connection:', error);
-            this.$router.push('/auth/login')
+            console.error('Error checking authentication:', error);
+            this.$router.push('/auth/login');
             return;
         }
         

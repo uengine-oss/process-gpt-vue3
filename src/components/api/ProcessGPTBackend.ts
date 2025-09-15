@@ -2109,27 +2109,14 @@ class ProcessGPTBackend implements Backend {
 
     async getTenants() {
         try {
-            console.log('=== getTenants DEBUG START ===');
             const uid: string = localStorage.getItem('uid') || '';
-            console.log('getTenants uid:', uid);
-            console.log('getTenants uid type:', typeof uid);
-            
             const tenants = await storage.list('tenants', {
                 match: {
                     owner: uid
                 }
             });
-            
-            console.log('getTenants result:', tenants);
-            console.log('getTenants result type:', typeof tenants);
-            console.log('getTenants result length:', Array.isArray(tenants) ? tenants.length : 'not array');
-            console.log('=== getTenants DEBUG END ===');
-            
             return tenants;
         } catch (error) {
-            console.error('getTenants error:', error);
-            console.error('getTenants error message:', error.message);
-            console.error('getTenants error stack:', error.stack);
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -2137,27 +2124,14 @@ class ProcessGPTBackend implements Backend {
 
     async getTenant(tenantId: string) {
         try {
-            console.log('=== getTenant DEBUG START ===');
-            console.log('getTenant input tenantId:', tenantId);
-            console.log('getTenant input type:', typeof tenantId);
-            
             const tenant = await storage.getString('tenants', { 
                 match: { 
                     id: tenantId 
                 },
                 column: 'id'
-            });
-            
-            console.log('getTenant storage result:', tenant);
-            console.log('getTenant result type:', typeof tenant);
-            console.log('getTenant result truthy:', !!tenant);
-            console.log('=== getTenant DEBUG END ===');
-            
+            });;
             return tenant;
         } catch (error) {
-            console.error('getTenant error:', error);
-            console.error('getTenant error message:', error.message);
-            console.error('getTenant error stack:', error.stack);
             //@ts-ignore
             throw new Error(error.message);
         }
