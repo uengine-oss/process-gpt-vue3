@@ -255,4 +255,11 @@ export default {
         margin-bottom: 3rem !important;
     }
 }
+
+@media only screen and (max-width: 768px) {
+    .user-invite-item-box {
+        height: calc(100vh - 220px);
+        overflow: auto;
+    }
+}
 </style>

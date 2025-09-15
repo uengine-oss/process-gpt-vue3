@@ -90,7 +90,7 @@ export default {
                 childrenSpacing: 50,
                 siblingSpacing: 20,
                 direction: 'top',
-                enableExpandCollapse: true,
+                enableExpandCollapse: false,
                 nodeTemplate: (content) => {
                     // 실제 사용자 데이터 가져오기
                     const userData = this.getUserData(content);
@@ -203,11 +203,15 @@ export default {
         transformForVerticalLayout(node) {
             if (!node) return node;
             
+            console.log('🔄 [transformForVerticalLayout] 처리 중인 노드:', node.id, node.data);
+            
             // 깊은 복사를 통해 원본 데이터 보존
             const clonedNode = JSON.parse(JSON.stringify(node));
             
             // 자식 노드들을 변환
             if (clonedNode.children && clonedNode.children.length > 0) {
+                console.log('👥 [transformForVerticalLayout] 자식 노드 수:', clonedNode.children.length);
+                
                 clonedNode.children = clonedNode.children.map(child => {
                     const transformedChild = this.transformForVerticalLayout(child);
                     
@@ -215,9 +219,13 @@ export default {
                     if (transformedChild.data && transformedChild.data.isTeam && 
                         transformedChild.children && transformedChild.children.length > 0) {
                         
+                        console.log('🏢 [transformForVerticalLayout] 팀 발견:', transformedChild.data.name, '팀원 수:', transformedChild.children.length);
+                        
                         // 팀원들을 체인 형태로 연결
                         const members = transformedChild.children;
                         if (members.length > 1) {
+                            console.log('🔗 [transformForVerticalLayout] 팀원들을 체인으로 연결:', members.map(m => m.data?.name || m.id));
+                            
                             // 첫 번째 팀원부터 시작하여 체인 연결
                             for (let i = 0; i < members.length - 1; i++) {
                                 members[i].children = [members[i + 1]];
@@ -227,6 +235,8 @@ export default {
                             
                             // 팀의 자식은 첫 번째 팀원만
                             transformedChild.children = [members[0]];
+                            
+                            console.log('✅ [transformForVerticalLayout] 체인 연결 완료');
                         }
                     }
                     
@@ -234,6 +244,7 @@ export default {
                 });
             }
             
+            console.log('✨ [transformForVerticalLayout] 변환 완료:', clonedNode.id);
             return clonedNode;
         },
         findNodeById(node, id) {
@@ -426,8 +437,8 @@ export default {
 
 <style scoped>
 #tree {
-    width: 100%;
-    height:100%;
+    width: 100% !important;
+    height: 99% !important;
 }
 @media screen and (max-width: 768px) {
     #tree {
