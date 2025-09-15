@@ -80,8 +80,6 @@
                     <v-spacer></v-spacer>
                     <v-btn v-if="type === 'createTenant'"
                         @click="skipInvitation"
-                        :loading="isInviteLoading"
-                        :disabled="hasInvalidEmails()"
                         color="grey"
                         variant="flat" 
                         class="rounded-pill mr-2"
@@ -255,6 +253,13 @@ export default {
 @media only screen and (max-width: 960px) {
     .mb-8 {
         margin-bottom: 3rem !important;
+    }
+}
+
+@media only screen and (max-width: 768px) {
+    .user-invite-item-box {
+        height: calc(100vh - 220px);
+        overflow: auto;
     }
 }
 </style>

@@ -361,7 +361,7 @@
         "changeTenant": "Tenant Settings",
         "save": "Save",
         "manageAccess": "Manage Users",
-        "addUser": "Add User",
+        "addUser": "Invite User",
         "drive": "Google Drive Settings",
         "clientId": "Client ID",
         "clientSecret": "Client Secret",
@@ -409,9 +409,14 @@
         "add": "Add",
         "addMCPServer": "Add New MCP Server",
         "addEnvironment": "Add Environment",
+        "editEnvironment": "Edit Environment",
         "addSecret": "Add Secret",
+        "editSecret": "Edit Secret",
+        "mcpServers": "MCP Servers",
+        "mcpEnvironments": "MCP Environments",
         "showSecretData": "Show Secret Data",
-        "indicatesRequiredField": "*indicates required field"
+        "indicatesRequiredField": "*Environment variable configuration is required.",
+        "billing": "Billing"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -1577,6 +1582,32 @@
     },
     "MCPServer": {
         "searchMCPServers": "Search MCP Servers"
+    },
+    "MCPEnvSecret": {
+        "mcpSecrets": "MCP Secrets",
+        "type": "Type",
+        "environmentName": "Environment Name",
+        "secretName": "Secret Name",
+        "nameRequired": "Name is required",
+        "loadingEnvironments": "Loading Environments...",
+        "loadingSecrets": "Loading Secrets...",
+        "environment": "Environment",
+        "secret": "Secret",
+        "name": "Name",
+        "data": "Data",
+        "actions": "Actions",
+        "environmentCreated": "Environment created successfully",
+        "environmentUpdated": "Environment updated successfully",
+        "secretCreated": "Secret created successfully",
+        "secretUpdated": "Secret updated successfully",
+        "environmentDeleted": "Environment deleted successfully",
+        "secretDeleted": "Secret deleted successfully",
+        "errorSavingEnvironment": "Error saving environment",
+        "errorSavingSecret": "Error saving secret",
+        "errorDeletingEnvironment": "Error deleting environment",
+        "errorDeletingSecret": "Error deleting secret",
+        "confirmDeleteEnvironment": "Are you sure you want to delete environment \"{name}\"?",
+        "confirmDeleteSecret": "Are you sure you want to delete secret \"{name}\"?"
     },
     "footer": {
         "BusinessNumber": "BusinessRegistration<br>No.",

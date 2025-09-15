@@ -23,7 +23,7 @@
                         :items="envItems"
                         class="elevation-1"
                         :loading="loading"
-                        loading-text="Loading Environments..."
+                        :loading-text="$t('MCPEnvSecret.loadingEnvironments')"
                     >
                         <template #item.actions="{ item }">
                             <v-icon size="small" class="me-2" @click="editItem(item, 'environment')"> mdi-pencil </v-icon>
@@ -38,7 +38,7 @@
             <v-card flat class="pa-1">
                 <v-card-item class="pa-0">
                     <v-row class="ma-0 pa-0 mb-4">
-                        <h5 class="text-h5">MCP Secrets</h5>
+                        <h5 class="text-h5">{{ $t('MCPEnvSecret.mcpSecrets') }}</h5>
                         <v-spacer></v-spacer>
                         <v-btn
                             color="primary" 
@@ -57,7 +57,7 @@
                         :items="secretItems"
                         class="elevation-1"
                         :loading="loading"
-                        loading-text="Loading Secrets..."
+                        :loading-text="$t('MCPEnvSecret.loadingSecrets')"
                     >
                         <template #item.actions="{ item }">
                             <v-icon size="small" class="me-2" @click="editItem(item, 'secret')"> mdi-pencil </v-icon>
@@ -70,28 +70,51 @@
     </v-row>
 
     <!-- Unified Dialog -->
-    <v-dialog v-model="dialog" max-width="800px" persistent>
-        <v-card>
-            <v-card-title class="headline">
-                <span class="text-h5">{{ editing ? 'Edit' : 'Add' }} {{ currentType === 'environment' ? 'Environment' : 'Secret' }}</span>
-            </v-card-title>
-            <v-card-text max-height="500" style="overflow-y: auto;">
-                <v-container>
-                    <v-row>
-                        <v-col cols="12" v-if="!editing">
-                            <v-select v-model="currentType" :items="typeOptions" label="Type*" required :disabled="editing"></v-select>
+    <v-dialog v-model="dialog"
+        max-width="800px"
+        persistent
+        :fullscreen="isMobile"
+    >
+        <v-card class="pa-4">
+            <v-row class="ma-0 pa-0 align-center">
+                <v-card-title class="pa-0"
+                >{{ editing ? (currentType === 'environment' ? $t('accountTab.editEnvironment') : $t('accountTab.editSecret')) : (currentType === 'environment' ? $t('accountTab.addEnvironment') : $t('accountTab.addSecret')) }}
+                </v-card-title>
+                <v-spacer></v-spacer>
+                <v-btn @click="closeDialog"
+                    class="ml-auto" 
+                    variant="text" 
+                    density="compact"
+                    icon
+                >
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </v-row>
+            <v-card-text class="ma-0 pa-0 pt-4">
+                <v-container class="ma-0 pa-0">
+                    <v-row class="ma-0 pa-0">
+                        <v-col v-if="!editing"
+                            cols="12"
+                            class="pa-0"
+                        >
+                            <v-select v-model="currentType" :items="typeOptions" :label="$t('MCPEnvSecret.type') + '*'" required :disabled="editing"></v-select>
                         </v-col>
-                        <v-col cols="12">
+                        <v-col cols="12"
+                            class="pa-0"
+                        >
                             <v-text-field
                                 v-model="form.name"
-                                :label="`${currentType === 'environment' ? 'Environment' : 'Secret'} Name*`"
+                                :label="`${currentType === 'environment' ? $t('MCPEnvSecret.environmentName') : $t('MCPEnvSecret.secretName')}*`"
                                 required
-                                :rules="[(v) => !!v || 'Name is required']"
+                                :rules="[(v) => !!v || $t('MCPEnvSecret.nameRequired')]"
                             ></v-text-field>
                         </v-col>
-                        <v-col cols="12">
+                        <h6 class="text-h6 pa-0 pt-2">{{ $t('accountTab.indicatesRequiredField') }}</h6>
+                        <v-col cols="12"
+                            class="pa-0 pt-4"
+                        >
                             <vue-monaco-editor
-                                height="400px"
+                                :class="currentType === 'environment' ? 'mcp-environment-monaco-editor' : 'mcp-secret-monaco-editor'"
                                 v-model:value="form.data"
                                 language="json"
                                 :options="MONACO_EDITOR_OPTIONS"
@@ -106,7 +129,6 @@
                         </v-col>
                     </v-row>
                 </v-container>
-                <small>{{ $t('accountTab.indicatesRequiredField') }}</small>
             </v-card-text>
             <!-- <v-card-actions>
                 <v-spacer></v-spacer> 
@@ -114,10 +136,16 @@
                 <v-btn color="blue-darken-1" variant="text" @click="saveItem" :loading="saving"> Save </v-btn>
             </v-card-actions>-->
 
-            <div class="d-flex justify-end mt-2 pb-4">
-                <v-btn @click="closeDialog" color="grey" variant="flat" rounded class="mr-2">{{ $t('accountTab.cancel') }}</v-btn>
-                <v-btn @click="saveItem" :loading="saving" color="primary" variant="flat" rounded class="mr-4">{{ $t('accountTab.save') }}</v-btn>
-            </div>
+            <v-row class="ma-0 pa-0 mt-4">
+                <v-spacer></v-spacer>
+                <v-btn @click="saveItem"
+                    :loading="saving"
+                    :disabled="!form.data || !form.name" 
+                    color="primary" 
+                    variant="flat" 
+                    rounded 
+                >{{ $t('accountTab.save') }}</v-btn>
+            </v-row>
         </v-card>
         
     </v-dialog>
@@ -128,38 +156,45 @@ import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
-    data: () => ({
-        headers: [
-            { title: 'Name', key: 'name' },
-            { title: 'Data', key: 'data' },
-            { title: 'Actions', key: 'actions' }
-        ],
-        envItems: [],
-        secretItems: [],
-        loading: false,
-        saving: false,
-        MONACO_EDITOR_OPTIONS: {
-            automaticLayout: true,
-            formatOnType: true,
-            formatOnPaste: true
-        },
-        // Unified Dialog
-        dialog: false,
-        editing: false,
-        currentType: 'environment',
-        typeOptions: [
-            { title: 'Environment', value: 'environment' },
-            { title: 'Secret', value: 'secret' }
-        ],
-        form: {
-            name: '',
-            data: ''
-        },
-        showPassword: false
-    }),
+    data() {
+        return {
+            headers: [
+                { title: this.$t('MCPEnvSecret.name'), key: 'name' },
+                { title: this.$t('MCPEnvSecret.data'), key: 'data' },
+                { title: this.$t('MCPEnvSecret.actions'), key: 'actions' }
+            ],
+            envItems: [],
+            secretItems: [],
+            loading: false,
+            saving: false,
+            MONACO_EDITOR_OPTIONS: {
+                automaticLayout: true,
+                formatOnType: true,
+                formatOnPaste: true
+            },
+            // Unified Dialog
+            dialog: false,
+            editing: false,
+            currentType: 'environment',
+            typeOptions: [
+                { title: this.$t('MCPEnvSecret.environment'), value: 'environment' },
+                { title: this.$t('MCPEnvSecret.secret'), value: 'secret' }
+            ],
+            form: {
+                name: '',
+                data: ''
+            },
+            showPassword: false
+        };
+    },
     async mounted() {
         this.getEnv();
         this.getSecrets();
+    },
+    computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        }
     },
     methods: {
         async getEnv() {
@@ -244,16 +279,16 @@ export default {
 
                 this.$emit('snackbar', {
                     show: true,
-                    text: `${this.currentType === 'environment' ? 'Environment' : 'Secret'} ${
-                        this.editing ? 'updated' : 'created'
-                    } successfully`,
+                    text: this.editing 
+                        ? (this.currentType === 'environment' ? this.$t('MCPEnvSecret.environmentUpdated') : this.$t('MCPEnvSecret.secretUpdated'))
+                        : (this.currentType === 'environment' ? this.$t('MCPEnvSecret.environmentCreated') : this.$t('MCPEnvSecret.secretCreated')),
                     color: 'success'
                 });
             } catch (error) {
                 console.error(`Error saving ${this.currentType}:`, error);
                 this.$emit('snackbar', {
                     show: true,
-                    text: `Error saving ${this.currentType}`,
+                    text: this.currentType === 'environment' ? this.$t('MCPEnvSecret.errorSavingEnvironment') : this.$t('MCPEnvSecret.errorSavingSecret'),
                     color: 'error'
                 });
             } finally {
@@ -262,8 +297,10 @@ export default {
         },
 
         async deleteItem(item, type) {
-            const typeName = type === 'environment' ? 'environment' : 'secret';
-            if (confirm(`Are you sure you want to delete ${typeName} "${item.name}"?`)) {
+            const confirmMessage = type === 'environment' 
+                ? this.$t('MCPEnvSecret.confirmDeleteEnvironment', { name: item.name })
+                : this.$t('MCPEnvSecret.confirmDeleteSecret', { name: item.name });
+            if (confirm(confirmMessage)) {
                 try {
                     if (type === 'environment') {
                         await backend.deleteEnvByTenant(item.name);
@@ -275,14 +312,14 @@ export default {
 
                     this.$emit('snackbar', {
                         show: true,
-                        text: `${typeName.charAt(0).toUpperCase() + typeName.slice(1)} deleted successfully`,
+                        text: type === 'environment' ? this.$t('MCPEnvSecret.environmentDeleted') : this.$t('MCPEnvSecret.secretDeleted'),
                         color: 'success'
                     });
                 } catch (error) {
-                    console.error(`Error deleting ${typeName}:`, error);
+                    console.error(`Error deleting ${type}:`, error);
                     this.$emit('snackbar', {
                         show: true,
-                        text: `Error deleting ${typeName}`,
+                        text: type === 'environment' ? this.$t('MCPEnvSecret.errorDeletingEnvironment') : this.$t('MCPEnvSecret.errorDeletingSecret'),
                         color: 'error'
                     });
                 }
