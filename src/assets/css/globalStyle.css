@@ -6,6 +6,16 @@ hr {
     opacity: 1 !important;
 }
 
+.organization-chart-search-container {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+}
+
+.organization-chart-search-container {
+
+}
+
 .mcp-secret-monaco-editor {
     height: calc(100vh - 550px) !important;
 }

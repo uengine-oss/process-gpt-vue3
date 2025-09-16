@@ -1615,5 +1615,8 @@
         "tel": "고객센터",
         "serviceTerms": "서비스 이용약관",
         "privacyPolicy": "개인정보처리방침"
+    },
+    "OrganizationChart": {
+        "searchByName": "이름으로 검색"
     }
 }

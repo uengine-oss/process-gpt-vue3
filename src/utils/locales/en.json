@@ -1615,5 +1615,8 @@
         "tel": "Customer Center",
         "serviceTerms": "Service Terms",
         "privacyPolicy": "Privacy Policy"
+    },
+    "OrganizationChart": {
+        "searchByName": "Search by Name"
     }
 }
