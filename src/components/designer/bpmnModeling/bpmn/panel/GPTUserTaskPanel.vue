@@ -115,7 +115,8 @@ export default {
                 { title: 'None', value: 'none' },
                 { title: 'Crewai Deep Research', value: 'crewai-deep-research' },
                 { title: 'Crewai Action', value: 'crewai-action' },
-                { title: 'OpenAI Deep Research', value: 'openai-deep-research' }
+                { title: 'OpenAI Deep Research', value: 'openai-deep-research' },
+                { title: 'Browser Use', value: 'browser-use' }
             ]
         };
     },
