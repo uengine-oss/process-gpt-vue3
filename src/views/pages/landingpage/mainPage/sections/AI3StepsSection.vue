@@ -132,7 +132,10 @@ export default {
 }
 
 @media (max-width: 768px) {
-.tbl-default td {
+  .ai3Steps {
+    padding: 80px 0 50px;
+  }
+  .tbl-default td {
     padding-left: 5px;
   }
 }
