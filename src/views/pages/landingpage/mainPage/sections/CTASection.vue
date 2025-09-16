@@ -3,8 +3,8 @@
     <div class="container">
       <div class="cta-content">
         <div>
-          <h2>{{ $t('CTASection.title') }}</h2>
-          <p>{{ $t('CTASection.subtitle') }}</p>
+          <!-- <h2>{{ $t('CTASection.title') }}</h2>
+          <p>{{ $t('CTASection.subtitle') }}</p> -->
           <!-- Vuetify3 버튼 컴포넌트로 변경, a 태그 사용하지 않음 -->
           <div class="cta-buttons">
               <!-- '시작하기' 버튼: 외부 링크 이동을 위해 Vuetify의 v-btn에 href 사용 -->
@@ -63,18 +63,16 @@ export default {
 
 <style scoped>
 .cta-box.form-open {
-  min-height: 950px;
+  min-height: 720px;
 }
 
 .cta-box {
-  padding: 80px 0;
+  padding: 40px 0 80px;
   background-color: #1976D2;
   /* background-color: rgb(37 99 235/var(--tw-bg-opacity,1)); */
   position: relative;
   overflow: hidden;
 }
-
-
 
 .cta-content {
  /* min-height: 600px;  문제해결되면 뺄것 */
@@ -140,11 +138,11 @@ export default {
 
 @media (max-width: 768px) {
   .cta-box.form-open {
-    min-height: 1100px;
+    min-height: 850px;
   }
 
   .cta-box {
-    padding: 60px 0;
+    padding: 30px 0 80px;
   }
   
   .cta-box h2 {
@@ -154,7 +152,7 @@ export default {
   .cta-buttons {
     flex-direction: column;
     width: 100%;
-    max-width: 300px;
+    max-width: 260px;
     margin: 0 auto;
   }
   
@@ -164,9 +162,9 @@ export default {
   }
 }
 
-@media (max-width: 376px){
+/* @media (max-width: 376px){
   .cta-box.form-open {
-    min-height: 1100px;
+    min-height: 900px;
   }
-}
+} */
 </style>

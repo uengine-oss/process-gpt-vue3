@@ -1309,6 +1309,8 @@
     },
     "MovieGallerySection": {
         "movieGalleryTitle": "영상 갤러리",
+        "movieGallerySubtitle1": "- 기능소개 영상 -",
+        "movieGallerySubtitle2": "- 예제 영상 -",
         "processGptMainTitle": "Process GPT - 나의 친구, 나의 AI 에이전트",
         "autoKnowledgeManagementTitle": "에이전트 지식의 자동 관리",
         "autoTeamProcessTitle": "조직 목표를 달성을 위한 자동화된 휴먼-에이전트 팀 프로세스 정의",

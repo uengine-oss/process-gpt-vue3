@@ -273,9 +273,17 @@ export default {
         confirmationTenantName: '',
     }),
     async created() {
-        const isLogin = await backend.checkDBConnection();
-        if(!isLogin) {
-            this.$router.push('/auth/login')
+        try {
+            const isLogin = await backend.checkDBConnection();
+            if(!isLogin) {
+                console.log('User not authenticated, redirecting to login');
+                this.$router.push('/auth/login');
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking authentication:', error);
+            this.$router.push('/auth/login');
+            return;
         }
         
         // URL 파라미터에서 clear=true인지 확인하고 로컬스토리지 클리어

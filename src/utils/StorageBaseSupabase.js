@@ -13,6 +13,16 @@ export default class StorageBaseSupabase {
 
     async isConnection() {
         try {
+            // 먼저 현재 세션 상태를 확인
+            const { data: currentSession, error: sessionError } = await window.$supabase.auth.getSession();
+            
+            // 세션이 유효한 경우
+            if (!sessionError && currentSession.session && currentSession.session.user) {
+                this.writeUserData(currentSession);
+                return true;
+            }
+
+            // 세션이 없거나 만료된 경우, 저장된 토큰으로 복구 시도
             let accessToken = "";
             let refreshToken = "";
             
@@ -36,27 +46,37 @@ export default class StorageBaseSupabase {
                     refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token'))?.split('=')[1];
                 }
             }
-            if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
-                const { error: sessionError } = await window.$supabase.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken
-                });
 
-                if (sessionError) {
+            // 저장된 토큰이 있는 경우 세션 복구 시도
+            if (accessToken && refreshToken && accessToken.length > 0 && refreshToken.length > 0) {
+                try {
+                    const { error: setSessionError } = await window.$supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    });
+
+                    if (setSessionError) {
+                        console.log('setSession failed, attempting refresh:', setSessionError.message);
+                        // setSession이 실패한 경우 refresh 시도
+                        await this.refreshSession();
+                    }
+                } catch (setSessionErr) {
+                    console.log('setSession exception, attempting refresh:', setSessionErr.message);
                     await this.refreshSession();
                 }
             } else {
+                // 저장된 토큰이 없는 경우 refresh 시도
                 await this.refreshSession();                
             }
             
-            // getSession()을 사용하여 세션과 사용자 정보를 모두 가져옴
-            const { data, error } = await window.$supabase.auth.getSession();
-            if (error || !data.session) {
+            // 최종 세션 상태 확인
+            const { data: finalSession, error: finalError } = await window.$supabase.auth.getSession();
+            if (finalError || !finalSession.session) {
                 return false;
             }
 
-            if (data.session && data.session.user) {
-                this.writeUserData(data);
+            if (finalSession.session && finalSession.session.user) {
+                this.writeUserData(finalSession);
                 return true;
             }
             
@@ -73,23 +93,18 @@ export default class StorageBaseSupabase {
 
             if (refreshError) {
                 console.error('Error refreshing session:', refreshError);
-                const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
                 
-                // Check if we're in webview mode
-                if (window.AndroidBridge) {
-                    window.AndroidBridge.clearSession();
-                } else {
-                    const baseDomain = getBaseDomain();
-                    if (baseDomain.includes('process-gpt')) {
-                        document.cookie = `access_token=; domain=.${baseDomain}; ${cookieOptionsBase}; Secure`;
-                        document.cookie = `refresh_token=; domain=.${baseDomain}; ${cookieOptionsBase}; Secure`;
-                    } else {
-                        document.cookie = `access_token=; ${cookieOptionsBase}`;
-                        document.cookie = `refresh_token=; ${cookieOptionsBase}`;
-                    }
+                // refresh_token_already_used 오류인 경우 특별 처리
+                if (refreshError.message && refreshError.message.includes('refresh_token_already_used')) {
+                    console.log('Refresh token already used, clearing session and redirecting to login');
+                    await this.clearSession();
+                    return;
                 }
-                window.localStorage.removeItem('accessToken');
-            } else {
+                
+                // 기타 refresh 오류인 경우 세션 클리어
+                await this.clearSession();
+            } else if (refreshData && refreshData.session) {
+                // Refresh 성공한 경우 새 토큰 저장
                 // Check if we're in webview mode
                 if (window.AndroidBridge) {
                     console.log("refreshSession - webview mode");
@@ -112,6 +127,31 @@ export default class StorageBaseSupabase {
             }
         } catch (e) {
             console.error('Error in refreshSession:', e);
+            // 예외 발생 시에도 세션 클리어
+            await this.clearSession();
+        }
+    }
+
+    async clearSession() {
+        try {
+            const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+            
+            // Check if we're in webview mode
+            if (window.AndroidBridge) {
+                window.AndroidBridge.clearSession();
+            } else {
+                const baseDomain = getBaseDomain();
+                if (baseDomain.includes('process-gpt')) {
+                    document.cookie = `access_token=; domain=.${baseDomain}; ${cookieOptionsBase}; Secure`;
+                    document.cookie = `refresh_token=; domain=.${baseDomain}; ${cookieOptionsBase}; Secure`;
+                } else {
+                    document.cookie = `access_token=; ${cookieOptionsBase}`;
+                    document.cookie = `refresh_token=; ${cookieOptionsBase}`;
+                }
+            }
+            window.localStorage.removeItem('accessToken');
+        } catch (e) {
+            console.error('Error clearing session:', e);
         }
     }
 
