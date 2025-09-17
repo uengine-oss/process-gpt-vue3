@@ -1,35 +1,33 @@
 <template>
     <v-card flat class="pa-4">
-        <div>
-            <v-row class="ma-0 pa-0">
-                <!-- 검색 -->
-                <v-row class="ma-0 pa-0 align-center border header-search rounded-pill px-5" style="background-color: #fff;">
-                    <Icons :icon="'magnifer-linear'" :size="22" />
-                    <v-text-field 
-                    v-model="search" 
-                    variant="plain" 
-                    density="compact"
-                    class="position-relative pt-0 ml-3 custom-placeholer-color" 
-                    :placeholder="$t('accountTab.search')"
-                    single-line 
-                    hide-details
-                    dense
-                    ></v-text-field>
-                </v-row>
-                <!-- <v-text-field v-model="search" label="Search User" hide-details prepend-inner-icon="mdi-magnify"></v-text-field> -->
-                <v-spacer></v-spacer>
-                <v-btn @click="openInviteUserCard = true"
-                    color="primary"
-                    variant="flat"
-                    rounded
-                >
-                    <v-icon style="padding-top: 3px;">mdi-account-plus</v-icon>
-                    <span class="ml-2">{{ $t('accountTab.addUser') }}</span>
-                </v-btn>
+        <v-row class="ma-0 pa-0">
+            <!-- 검색 -->
+            <v-row class="ma-0 pa-0 align-center border header-search rounded-pill px-5" style="background-color: #fff;">
+                <Icons :icon="'magnifer-linear'" :size="22" />
+                <v-text-field 
+                v-model="search" 
+                variant="plain" 
+                density="compact"
+                class="position-relative pt-0 ml-3 custom-placeholer-color" 
+                :placeholder="$t('accountTab.search')"
+                single-line 
+                hide-details
+                dense
+                ></v-text-field>
             </v-row>
-        </div>
+            <!-- <v-text-field v-model="search" label="Search User" hide-details prepend-inner-icon="mdi-magnify"></v-text-field> -->
+            <v-spacer></v-spacer>
+            <v-btn @click="openInviteUserCard = true"
+                color="primary"
+                variant="flat"
+                rounded
+            >
+                <v-icon style="padding-top: 3px;">mdi-account-plus</v-icon>
+                <span class="ml-2">{{ $t('accountTab.addUser') }}</span>
+            </v-btn>
+        </v-row>
 
-        <div>
+        <div class="manage-access-tab-table-box">
             <v-data-table :items="users" :search="search" :filter-keys="searchKey" :headers="headers" items-per-page="5">
                 <template v-slot:default="{ items }">
                     <div v-for="item in items" :key="item.id" 
@@ -52,7 +50,7 @@
                             <v-chip variant="elevated"
                                 :color="item.is_admin ? 'primary' : 'gray'"
                                 class="chip-select-wrapper"
-                                size="small"
+                                size="x-small"
                             >
                                 <v-select 
                                     v-model="item.is_admin" 
@@ -81,6 +79,7 @@
         v-model="openInviteUserCard"
         max-width="800px"
         persistent
+        :fullscreen="checkIfMobile"
     >
         <v-card class="pa-4">
             <v-row class="ma-0 pa-0 align-center">
@@ -248,16 +247,10 @@ export default {
     background-color: #f8f9fa;
 }
 
-.is-mobile {
-    display: none;
-}
-
 @media screen and (max-width: 768px) {
     .header-search {
-        max-width: 200px;
-    }
-    .is-mobile {
-        display: block;
+        max-width: 160px !important;
+        min-width: 160px !important;
     }
 }
 

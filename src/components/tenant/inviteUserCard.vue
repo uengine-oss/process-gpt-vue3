@@ -80,8 +80,6 @@
                     <v-spacer></v-spacer>
                     <v-btn v-if="type === 'createTenant'"
                         @click="skipInvitation"
-                        :loading="isInviteLoading"
-                        :disabled="hasInvalidEmails()"
                         color="grey"
                         variant="flat" 
                         class="rounded-pill mr-2"
@@ -108,6 +106,7 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { getTenantUrl } from '@/utils/domainUtils';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -197,7 +196,7 @@ export default {
                     }
                     this.isInviteLoading = false;
                     if(this.type === 'createTenant') {
-                        window.location.href = `https://${this.tenantInfo.id}.process-gpt.io/definition-map`
+                        window.location.href = getTenantUrl(this.tenantInfo.id, '/definition-map');
                     } else {
                         this.$emit('close', this.inviteUserlist);
                     }
@@ -210,7 +209,7 @@ export default {
             });
         },
         skipInvitation() {
-            window.location.href = `https://${this.tenantInfo.id}.process-gpt.io/definition-map`
+            window.location.href = getTenantUrl(this.tenantInfo.id, '/definition-map');
         }
     },
     computed: {
@@ -254,6 +253,13 @@ export default {
 @media only screen and (max-width: 960px) {
     .mb-8 {
         margin-bottom: 3rem !important;
+    }
+}
+
+@media only screen and (max-width: 768px) {
+    .user-invite-item-box {
+        height: calc(100vh - 220px);
+        overflow: auto;
     }
 }
 </style>

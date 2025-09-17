@@ -1,5 +1,22 @@
 <template>
-    <div style="height:100%;">
+    <div style="height:100%; position: relative;">
+        <!-- 검색 UI -->
+        <div class="organization-chart-search-container">
+            <v-row class="align-center flex-fill border border-borderColor header-search rounded-pill px-5 ma-0 pa-0">
+                <Icons :icon="'magnifer-linear'" :size="22" />
+                <v-text-field 
+                    v-model="searchQuery" 
+                    variant="plain" 
+                    density="compact"
+                    class="position-relative pt-0 ml-3 custom-placeholer-color" 
+                    :placeholder="$t('OrganizationChart.searchByName')"
+                    single-line 
+                    hide-details
+                    @input="onSearchInput"
+                ></v-text-field>
+            </v-row>
+        </div>
+        
         <!-- organization chart -->
         <div id="tree" ref="tree" style="width: 100% !important; height: 100% !important;"></div>
         
@@ -55,6 +72,8 @@ export default {
     data: () => ({
         tree: null,
         userList: [],
+        searchQuery: '',
+        searchResults: [],
         
         // dialog
         editNode: null,
@@ -90,7 +109,7 @@ export default {
                 childrenSpacing: 50,
                 siblingSpacing: 20,
                 direction: 'top',
-                enableExpandCollapse: true,
+                enableExpandCollapse: false,
                 nodeTemplate: (content) => {
                     // 실제 사용자 데이터 가져오기
                     const userData = this.getUserData(content);
@@ -108,7 +127,6 @@ export default {
                                     ${content.isAgent == true ? `<div class="node-content-btn edit-agent-btn"><img class="node-content-icon" src="/assets/images/icon/pencil.svg"></div>` : ''}
                                     ${content.isAgent == true ? `<div class="node-content-btn delete-agent-btn"><img class="node-content-icon" src="/assets/images/icon/trash.svg"></div>` : ''}
                                     ${!content.isAgent && !content.isTeam && content.id != 'root' ? `<div class="node-content-btn edit-member-btn"><img class="node-content-icon" src="/assets/images/icon/pencil.svg"></div>` : ''}
-
                                 </div>
                             </div>
                             <div class="node-content-title-box" data-node-id="${content.id}">
@@ -195,19 +213,52 @@ export default {
             // 사용자를 찾지 못한 경우 원본 데이터 사용
             return content;
         },
+        getUserDataById(nodeId) {
+            // 조직도 데이터에서 노드 찾기
+            const node = this.findNodeInTree(this.node, nodeId);
+            if (node) {
+                return this.getUserData(node.data || node);
+            }
+            
+            // 노드를 찾지 못한 경우 기본값 반환
+            return { name: nodeId };
+        },
+        findNodeInTree(node, targetId) {
+            if (!node) return null;
+            
+            if (node.id === targetId || node.data?.id === targetId) {
+                return node;
+            }
+            
+            if (node.children) {
+                for (let child of node.children) {
+                    const found = this.findNodeInTree(child, targetId);
+                    if (found) return found;
+                }
+            }
+            
+            return null;
+        },
         drawTree() {
             // 팀원들을 세로 배치하기 위한 데이터 변환
             const transformedNode = this.transformForVerticalLayout(this.node);
             this.tree.render(transformedNode);
+            
+            // 검색 결과가 있으면 하이라이트 적용
+            if (this.searchResults.length > 0) {
+                this.applySearchHighlight();
+            }
         },
         transformForVerticalLayout(node) {
             if (!node) return node;
+            
             
             // 깊은 복사를 통해 원본 데이터 보존
             const clonedNode = JSON.parse(JSON.stringify(node));
             
             // 자식 노드들을 변환
             if (clonedNode.children && clonedNode.children.length > 0) {
+                
                 clonedNode.children = clonedNode.children.map(child => {
                     const transformedChild = this.transformForVerticalLayout(child);
                     
@@ -215,9 +266,11 @@ export default {
                     if (transformedChild.data && transformedChild.data.isTeam && 
                         transformedChild.children && transformedChild.children.length > 0) {
                         
+                        
                         // 팀원들을 체인 형태로 연결
                         const members = transformedChild.children;
                         if (members.length > 1) {
+                            
                             // 첫 번째 팀원부터 시작하여 체인 연결
                             for (let i = 0; i < members.length - 1; i++) {
                                 members[i].children = [members[i + 1]];
@@ -227,6 +280,7 @@ export default {
                             
                             // 팀의 자식은 첫 번째 팀원만
                             transformedChild.children = [members[0]];
+                            
                         }
                     }
                     
@@ -235,6 +289,91 @@ export default {
             }
             
             return clonedNode;
+        },
+        onSearchInput() {
+            if (this.searchQuery.trim()) {
+                this.performSearch();
+            } else {
+                this.clearSearch();
+            }
+        },
+        performSearch() {
+            this.searchResults = [];
+            this.applySearchHighlight();
+        },
+        applySearchHighlight() {
+            // 검색어가 없으면 모든 하이라이트 제거
+            if (!this.searchQuery.trim()) {
+                this.clearSearch();
+                return;
+            }
+            
+            // 모든 노드 검사하여 이름 기반으로 하이라이팅
+            const allNodes = document.querySelectorAll('.node-content');
+            allNodes.forEach(nodeEl => {
+                const textBox = nodeEl.querySelector('.node-content-text-box');
+                if (textBox) {
+                    // 노드 ID로 사용자 데이터 찾기
+                    const nodeId = nodeEl.id;
+                    const userData = this.getUserDataById(nodeId);
+                    const name = userData.username || userData.name || nodeId;
+                    
+                    // 이름이 검색어를 포함하는지 확인
+                    if (name && name.toLowerCase().includes(this.searchQuery.toLowerCase())) {
+                        // 하이라이트 적용
+                        textBox.style.backgroundColor = 'rgb(var(--v-theme-primary))';
+                        textBox.style.color = 'white';
+                        // 모든 텍스트 요소를 흰색으로 변경
+                        const textElements = textBox.querySelectorAll('div');
+                        textElements.forEach(textEl => {
+                            textEl.style.color = 'white !important';
+                        });
+                        // 버튼들에 흰색 배경 적용
+                        const buttonElements = textBox.querySelectorAll('.node-content-btn');
+                        buttonElements.forEach(btnEl => {
+                            btnEl.style.backgroundColor = 'white';
+                        });
+                    } else {
+                        // 하이라이트 제거
+                        textBox.style.backgroundColor = '';
+                        textBox.style.color = '';
+                        // 텍스트 요소들도 색상 초기화
+                        const textElements = textBox.querySelectorAll('div');
+                        textElements.forEach(textEl => {
+                            textEl.style.color = '';
+                        });
+                        // 버튼 배경색 제거
+                        const buttonElements = textBox.querySelectorAll('.node-content-btn');
+                        buttonElements.forEach(btnEl => {
+                            btnEl.style.backgroundColor = '';
+                        });
+                    }
+                }
+            });
+        },
+        clearSearch() {
+            this.searchQuery = '';
+            this.searchResults = [];
+            
+            // 모든 하이라이트 제거
+            const allNodes = document.querySelectorAll('.node-content');
+            allNodes.forEach(nodeEl => {
+                const textBox = nodeEl.querySelector('.node-content-text-box');
+                if (textBox) {
+                    textBox.style.backgroundColor = '';
+                    textBox.style.color = '';
+                    // 텍스트 요소들도 색상 초기화
+                    const textElements = textBox.querySelectorAll('div');
+                    textElements.forEach(textEl => {
+                        textEl.style.color = '';
+                    });
+                    // 아이콘들도 원래 색상으로 복원
+                    const iconElements = textBox.querySelectorAll('.node-content-icon');
+                    iconElements.forEach(iconEl => {
+                        iconEl.style.filter = '';
+                    });
+                }
+            });
         },
         findNodeById(node, id) {
             if (node.id === id) {
@@ -425,10 +564,25 @@ export default {
 </script>
 
 <style scoped>
-#tree {
-    width: 100%;
-    height:100%;
+.organization-chart-search-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    width: 300px;
 }
+
+.header-search {
+    background-color: white !important;
+    min-height: 36px !important;
+    height: 36px !important;
+}
+
+#tree {
+    width: 100% !important;
+    height: 99% !important;
+}
+
 @media screen and (max-width: 768px) {
     #tree {
         height: calc(100vh - 40px) !important;

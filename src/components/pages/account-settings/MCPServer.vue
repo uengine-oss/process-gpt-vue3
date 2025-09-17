@@ -1,9 +1,7 @@
 <template>
     <v-row class="justify-center ma-0 pa-0">
         <!-- 좌측: 리스트 -->
-        <v-col cols="12" lg="6" style="overflow: auto;"
-            :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
-        >
+        <v-col cols="12" lg="6">
             <v-card flat class="pa-1">
                 <v-card-item class="pa-0">
                     <!-- <h5 class="text-h5 mb-4">MCP Servers</h5> -->
@@ -22,47 +20,49 @@
                             hide-details
                         ></v-text-field>
                     </v-row>
-                    <v-list>
-                        <v-list-item
-                            v-for="(server, key) in filteredMcpServers"
-                            :key="key"
-                            class="mb-2"
-                            :class="{ 'bg-grey-lighten-4': editingKey === key }"
-                        >
-                            <template v-slot:prepend>
-                                <v-icon :icon="getServerIcon(server)" :color="getServerColor(server)" size="24"></v-icon>
-                            </template>
+                    <div class="mcp-server-list-box">
+                        <v-list>
+                            <v-list-item
+                                v-for="(server, key) in filteredMcpServers"
+                                :key="key"
+                                class="mb-2"
+                                :class="{ 'bg-grey-lighten-4': editingKey === key }"
+                            >
+                                <template v-slot:prepend>
+                                    <v-icon :icon="getServerIcon(server)" :color="getServerColor(server)" size="24"></v-icon>
+                                </template>
 
-                            <v-list-item-title class="font-weight-medium">
-                                {{ formatServerName(key) }}
-                            </v-list-item-title>
+                                <v-list-item-title class="font-weight-medium">
+                                    {{ formatServerName(key) }}
+                                </v-list-item-title>
 
-                            <v-list-item-subtitle class="text-caption">
-                                {{ getServerDescription(server) }}
-                            </v-list-item-subtitle>
+                                <v-list-item-subtitle class="text-caption">
+                                    {{ getServerDescription(server) }}
+                                </v-list-item-subtitle>
 
-                            <template v-slot:append>
-                                <div class="d-flex align-center">
-                                    <v-btn icon="mdi-pencil" variant="text" size="small" class="mr-2" @click.stop="editJson(key)"></v-btn>
-                                    <v-switch
-                                        :model-value="server.enabled"
-                                        color="primary"
-                                        hide-details
-                                        density="compact"
-                                        @update:model-value="toggleServer(key, server.enabled)"
-                                    ></v-switch>
-                                </div>
-                            </template>
-                        </v-list-item>
+                                <template v-slot:append>
+                                    <div class="d-flex align-center">
+                                        <v-btn icon="mdi-pencil" variant="text" size="small" class="mr-2" @click.stop="editJson(key)"></v-btn>
+                                        <v-switch
+                                            :model-value="server.enabled"
+                                            color="primary"
+                                            hide-details
+                                            density="compact"
+                                            @update:model-value="toggleServer(key, server.enabled)"
+                                        ></v-switch>
+                                    </div>
+                                </template>
+                            </v-list-item>
 
-                        <!-- <v-list-item class="mt-4" @click="addNewMCP">
-                            <template v-slot:prepend>
-                                <v-icon icon="mdi-plus" color="primary" size="24"></v-icon>
-                            </template>
+                            <!-- <v-list-item class="mt-4" @click="addNewMCP">
+                                <template v-slot:prepend>
+                                    <v-icon icon="mdi-plus" color="primary" size="24"></v-icon>
+                                </template>
 
-                            <v-list-item-title class="font-weight-medium text-primary"> 새 MCP 서버 추가 </v-list-item-title>
-                        </v-list-item> -->
-                    </v-list>
+                                <v-list-item-title class="font-weight-medium text-primary"> 새 MCP 서버 추가 </v-list-item-title>
+                            </v-list-item> -->
+                        </v-list>
+                    </div>
                 </v-card-item>
             </v-card>
         </v-col>
@@ -525,7 +525,7 @@ export default {
 }
 
 .add-mcp-server {
-    height: 400px; 
+    height: calc(100vh - 236px);
     border: 3px dashed rgba(128, 128, 128, 0.5);
 }
 .add-mcp-server:hover {
