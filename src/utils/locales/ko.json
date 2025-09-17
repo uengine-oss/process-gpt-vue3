@@ -967,7 +967,7 @@
         "progress": "프로세스",
         "workItem": "워크 아이템",
         "activity": "액티비티",
-        "ganttChart": "간트 차트",
+        "ganttChart": "스케줄",
         "chat": "채팅",
         "kanbanBoard": "칸반보드",
         "sendEvent": "{event} 이벤트 보내기",
@@ -1617,5 +1617,8 @@
         "tel": "고객센터",
         "serviceTerms": "서비스 이용약관",
         "privacyPolicy": "개인정보처리방침"
+    },
+    "OrganizationChart": {
+        "searchByName": "이름으로 검색"
     }
 }

@@ -329,7 +329,7 @@
                             </template>
                             <template #form-work-item-action-btn>
                                 <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
-                                    class="work-item-form-btn-box align-center pr-3"
+                                    class="work-item-form-btn-box align-center"
                                 >
                                     <v-btn v-if="hasGeneratedContent"
                                         @click="resetGeneratedContent"
