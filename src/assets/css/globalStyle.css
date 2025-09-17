@@ -6,6 +6,19 @@ hr {
     opacity: 1 !important;
 }
 
+.connection-info-tab-headers {
+    height: calc(100vh - 500px);
+    overflow: auto;
+}
+
+.is-pc {
+    display: block;
+}
+
+.is-mobile {
+    display: none;
+}
+
 .organization-chart-search-container {
     position: absolute;
     top: 8px;
@@ -1161,6 +1174,21 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+    .connection-info-tab-headers {
+        height: calc(100vh - 315px);
+    }
+
+    .connection-info-tab:not(:last-child) {
+        margin-bottom: 8px;
+    }
+    
+    .is-pc {
+        display: none;
+    }
+
+    .is-mobile {
+        display: block;
+    }
     .mcp-environment-monaco-editor {
         height: calc(100vh - 330px) !important;
     }

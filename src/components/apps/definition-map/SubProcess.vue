@@ -20,7 +20,7 @@
                                 color="primary" 
                                 size="x-small" 
                                 @click="clickPlayBtn()" 
-                                class="ml-2 mr-2 rounded-pill"
+                                class="rounded-pill"
                             >
                                 {{ $t('SubProcess.execute') }}
                             </v-btn>

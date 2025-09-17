@@ -967,7 +967,7 @@
         "progress": "Progress",
         "workItem": "Work Item",
         "activity": "Activity",
-        "ganttChart": "Gantt Chart",
+        "ganttChart": "Schedule",
         "chat": "Chat",
         "kanbanBoard": "Kanban Board",
         "sendEvent": "Send {event} event",

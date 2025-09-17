@@ -967,7 +967,7 @@
         "progress": "프로세스",
         "workItem": "워크 아이템",
         "activity": "액티비티",
-        "ganttChart": "간트 차트",
+        "ganttChart": "스케줄",
         "chat": "채팅",
         "kanbanBoard": "칸반보드",
         "sendEvent": "{event} 이벤트 보내기",
