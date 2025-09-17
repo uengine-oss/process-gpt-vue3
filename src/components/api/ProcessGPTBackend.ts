@@ -3912,9 +3912,7 @@ class ProcessGPTBackend implements Backend {
                     .order('updated_at', { ascending: false })
                     .limit(1)
 
-                if(error) {
-                    throw new Error('workitem not found');
-                } else {
+                if(!error) {
                     workitem = data;
                 }
             }

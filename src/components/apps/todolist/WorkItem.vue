@@ -790,7 +790,6 @@ export default {
                 if (newVal && newVal.worklist && newVal.worklist.taskId) {
                     this.loadAssigneeInfo();
                     this.enableReworkButton = await backend.enableRework(newVal);
-                    console.log('enableReworkButton', this.enableReworkButton);
                 }
             },
             deep: true
@@ -1479,11 +1478,17 @@ export default {
             }
         },
         async submitRework(activities) {
-            await backend.reWorkItem({
-                instanceId: this.workItem.worklist.instId,
-                activities: activities
-            })
-            this.reworkDialog = false;
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    await backend.reWorkItem({
+                        instanceId: me.workItem.worklist.instId,
+                        activities: activities
+                    })
+                    me.reworkDialog = false;
+                }
+            });
         }
     }
 };
