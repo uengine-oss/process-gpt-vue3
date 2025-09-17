@@ -119,14 +119,16 @@ export default {
 }
 
 .hero h1 {
-  font-size: 2.5rem;
+  /* font-size: 2.5rem; */
+  font-size: 36px;
   font-weight: 700;
   color: var(--text-color-dark);
   line-height: 1.4;
 }
 
 .hero p {
-  font-size: 1.1rem;
+  /* font-size: 1.1rem; */
+  font-size: 17px;
   color: var(--text-color);
   line-height: 1.6;
 }
@@ -209,7 +211,8 @@ export default {
   }
   
   .hero h1 {
-    font-size: 1.8rem;
+    font-size: 28px;
+    /* font-size: 1.8rem; */
   }
   
   .hero-buttons {

@@ -217,20 +217,23 @@ export default {
 }
 
 .section-header h2 {
-  font-size: 2.2rem;
+  /* font-size: 2.2rem; */
+  font-size: 30px;
   font-weight: 700;
   color: var(--text-color-dark);
 }
 
 .section-header h3 {
-  font-size: 1.4rem;
+  /* font-size: 1.4rem; */
+  font-size: 22px;
   font-weight: 600;
   color: var(--text-color-dark);
   padding-top: 15px;
 }
 
 .section-header p {
-  font-size: 1.1rem;
+  /* font-size: 1.1rem; */
+  font-size: 17px;
   color: var(--text-color);
   max-width: 700px;
   margin: 0 auto;
@@ -252,7 +255,8 @@ export default {
   margin-right: 2%;
 }
 .movie-gallery-h3 {
-    font-size: 1.25rem;
+    /* font-size: 1.25rem; */
+    font-size: 20px;
     line-height: 1.75rem;
 }
 .movie-gallery-h3.txt-vertical-center {
@@ -261,8 +265,9 @@ export default {
 
 @media (max-width: 1279px) {
   .movie-gallery-h3 {
-    font-size: 1rem;
-    line-height: 1.5rem;
+    /* font-size: 1rem; */
+    font-size: 18px;
+    line-height: 1.6rem;
   }
 }
 
@@ -271,9 +276,10 @@ export default {
     padding: 60px 0;
   }
   .section-header h2 {
-    font-size: 1.8rem;
+    /* font-size: 1.8rem; */
+    font-size: 30px;
   }
-   
+
   .movie-gallery-box-3, .movie-gallery-box-2 {
     display: block;
   }
