@@ -591,12 +591,12 @@ export default {
     },
 
     isMarkdownType(crewType) {
-      return crewType === 'report' || crewType === 'action' || crewType === 'planning' || crewType === 'react'
+      return crewType === 'report' || crewType === 'action' || crewType === 'browser-use' || crewType === 'planning' || crewType === 'react'
     },
 
     shouldShowExpandControls(payload) {
         if (payload.crewType === 'slide') return false
-        if (payload.crewType === 'report' || payload.crewType === 'action' || payload.crewType === 'planning') {
+        if (payload.crewType === 'report' || payload.crewType === 'action' || payload.crewType === 'browser-use' || payload.crewType === 'planning') {
           return this.isContentLong(payload.content);
         }
         // JSON의 경우 표시용 컨텐츠를 문자열화해서 판단
