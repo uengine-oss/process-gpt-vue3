@@ -100,7 +100,7 @@
                         </div>
                         <v-tooltip v-if="isPending" location="right">
                             <template v-slot:activator="{ props }">
-                                <div class="d-flex align-center ml-auto" v-bind="props">
+                                <div class="d-flex align-center ml-2" v-bind="props">
                                     <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
                                     <span class="text-caption ml-1" style="color: #F44336;">{{ $t('kanbanColumnCard.error') }}</span>
                                 </div>

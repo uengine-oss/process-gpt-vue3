@@ -967,7 +967,7 @@
         "progress": "Progress",
         "workItem": "Work Item",
         "activity": "Activity",
-        "ganttChart": "Gantt Chart",
+        "ganttChart": "Schedule",
         "chat": "Chat",
         "kanbanBoard": "Kanban Board",
         "sendEvent": "Send {event} event",
@@ -1620,5 +1620,14 @@
     },
     "OrganizationChart": {
         "searchByName": "Search by Name"
+    },
+    "ProcessDefinitionVersionManager": {
+        "noVersionsAvailable": "No other saved versions available",
+        "versionManagement": "Version Management",
+        "description": "Description:",
+        "download": "Download",
+        "changeToVersion": "Change to this version",
+        "noXmlData": "No XML data available for the selected version.",
+        "copiedToClipboard": "Copied to clipboard."
     }
 }

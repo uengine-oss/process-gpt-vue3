@@ -1,7 +1,7 @@
 <template>
   <div class="pa-4">
     <!-- DataSource 사용 여부 토글 - 개선된 UI -->
-    <v-card flat class="mb-6 pa-1">
+    <v-card flat class="mb-4 pa-1">
       <v-row align="center" no-gutters>
         <v-col>
           <div class="d-flex align-center">
@@ -54,7 +54,7 @@
         <v-row class="ma-0 pa-0">
           <!-- <v-icon color="orange" class="mr-2">mdi-information-outline</v-icon> -->
           <span class="text-body-2">
-            <strong>{{ $t('accountTab.experimentalFeature') }}:</strong> {{ $t('accountTab.experimentalFeatureWarning') }}
+            <div>{{ $t('accountTab.experimentalFeature') }}:</div> {{ $t('accountTab.experimentalFeatureWarning') }}
           </span>
         </v-row>
       </v-alert>
@@ -76,21 +76,37 @@
     </v-row>
 
     <!-- 데이터소스 다이얼로그 -->
-    <v-dialog v-model="dialog" max-width="800" persistent>
-      <v-card>
-        <v-row class="ma-0 pa-0" align="center">
-          <v-card-title class="headline">
-            <!-- <v-icon left color="primary">mdi-database-plus</v-icon> -->
-            <h2 class="text-h4 text-grey-darken-2">{{ $t('accountTab.addConnectionInfo') }}</h2>
+    <v-dialog v-model="dialog" max-width="800" persistent
+      :fullscreen="isMobile"
+    >
+      <v-card class="ma-0 pa-0">
+        <v-row class="ma-0 pa-4 pb-0 align-center">
+            <v-card-title class="pa-0"
+            >{{ $t('accountTab.addConnectionInfo') }}
+            </v-card-title>
+            <v-chip density="compact"
+              color="orange"
+              text-color="white"
+              class="ma-0 ml-2"
+              style="font-size: 12px;"
+            >
+              <v-icon small left>mdi-flask</v-icon>
+              {{ $t('accountTab.experimentalFeature') }}
+            </v-chip>
             <v-spacer></v-spacer>
-          </v-card-title>
-          <v-chip small color="orange" text-color="white" class="ma-2">
-            <v-icon small left>mdi-flask</v-icon>
-            {{ $t('accountTab.experimentalFeature') }}
-          </v-chip>
+            <v-btn @click="dialog = false"
+                class="ml-auto" 
+                variant="text" 
+                density="compact"
+                icon
+            >
+                <v-icon>mdi-close</v-icon>
+            </v-btn>
         </v-row>
 
-        <v-card-text max-height="500" style="overflow-y: auto;">
+        <v-card-text max-height="500"
+          class="pa-4 pb-0"
+        >
           <v-text-field 
             v-model="newDataSource.name" 
             label="Name" 
@@ -112,60 +128,64 @@
 
           <!-- Headers -->
           <div class="mt-4">
-            <h4 class="text-subtitle-1 mb-2">
-              <v-icon left small>mdi-format-header-1</v-icon>
-              Headers:
-            </h4>
-            <v-row 
-              v-for="(header, idx) in newDataSource.headers" 
-              :key="'header-'+idx" 
-              align="center"
-              no-gutters
-            >
-              <v-col cols="5">
+            <v-row class="ma-0 pa-0 mb-2">
+              <h4 class="text-subtitle-1 align-center">
+                <v-icon left small>mdi-format-header-1</v-icon>
+                Headers:
+              </h4>
+              <v-spacer></v-spacer>
+              <v-btn @click="addHeader"
+                color="secondary"
+                variant="flat"
+                density="comfortable"
+                rounded
+                style="font-size: 14px;"
+              >
+                <v-icon class="mr-2">mdi-plus</v-icon>
+                {{ $t('accountTab.addHeader') }}
+              </v-btn>
+            </v-row>
+            <div class="connection-info-tab-headers pt-2">
+              <div 
+                v-for="(header, idx) in newDataSource.headers" 
+                :key="'header-'+idx" 
+                class="d-flex align-center mb-3"
+                style="gap: 12px;"
+              >
                 <v-text-field 
                   v-model="header.key" 
                   label="Header Name"
                   outlined
                   dense
+                  hide-details
+                  style="flex: 1;"
                 />
-              </v-col>
-              <v-col cols="5" class="ml-sm-2">
                 <v-text-field 
                   v-model="header.value" 
                   label="Header Value"
                   outlined
                   dense
+                  hide-details
+                  style="flex: 1;"
                 />
-              </v-col>
-              <v-col cols="2" sm="1" class="text-center pl-sm-2 mt-n5">
                 <v-btn
                   :disabled="newDataSource.headers.length === 1"
                   icon
+                  color="error"
                   variant="text"
                   class="text-medium-emphasis"
                   @click="removeHeader(idx)"
+                  style="flex-shrink: 0;"
                 >
-                  <TrashIcon size="24" style="color:#666;"/>
+                  <TrashIcon size="24"/>
                 </v-btn>
-              </v-col>
-            </v-row>
-            <v-btn 
-            color="secondary" 
-              variant="flat"
-              rounded
-              class="mt-2" 
-              @click="addHeader"
-            >
-              <v-icon class="mr-2" style="padding-top: 3px;">mdi-plus</v-icon>
-              {{ $t('accountTab.addHeader') }}
-            </v-btn>
+              </div>
+            </div>
           </div>
         </v-card-text>
         <v-row class="ma-0 pa-0 mt-2 pb-4">
-            <v-spacer></v-spacer>
-            <v-btn @click="dialog = false" color="grey" variant="flat" rounded class="mr-2">{{ $t('accountTab.cancel') }}</v-btn>
-            <v-btn @click="saveDataSource" :loading="saving" color="primary" variant="flat" rounded class="mr-4">{{ $t('accountTab.save') }}</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn @click="saveDataSource" :loading="saving" color="primary" variant="flat" rounded class="mr-4">{{ $t('accountTab.save') }}</v-btn>
         </v-row>
       </v-card>
     </v-dialog>
@@ -178,7 +198,7 @@
         v-for="(ds, index) in dataSources" 
         :key="index"
       >
-        <v-card-text class="pa-4">
+        <v-card-text class="pa-4 pb-0">
           <div class="d-flex align-center mb-3">
             <v-icon color="primary" class="mr-2">mdi-database</v-icon>
             <h4 class="text-h6">{{ ds.name }}</h4>
@@ -190,54 +210,52 @@
 
           <v-divider class="mb-3"></v-divider>
 
-          <div class="mb-2">
-            <strong class="text-subtitle-2">{{ $t('accountTab.url') }}:</strong>
-            <code class="ml-2 pa-1 grey lighten-4 rounded">{{ ds.endpoint }}</code>
+          <div class="mb-4">
+            <div class="text-subtitle-2">{{ $t('accountTab.url') }}: {{ ds.endpoint }}</div>
           </div>
 
-          <div class="mb-2" v-if="ds.headers && ds.headers.length > 0">
-            <strong class="text-subtitle-2">{{ $t('accountTab.key') }}:</strong>
-            <div class="ml-4 mt-1">
-              <v-chip 
-                v-for="(h, i) in ds.headers" 
-                :key="'h-'+i"
-                x-small
-                class="mr-1 mb-1"
-                outlined
-              >
-                {{ h.key }}: {{ '*'.repeat(h.value.length) }}
-              </v-chip>
-            </div>
-          </div>
+          <v-row class="ma-0 pa-0 mb-4 align-center" v-if="ds.headers && ds.headers.length > 0">
+            <div class="text-subtitle-2">{{ $t('accountTab.key') }}:</div>
+            <v-chip v-for="(h, i) in ds.headers" 
+              :key="'h-'+i"
+              x-small
+              class="ml-2 connection-info-tab"
+              outlined
+            >
+              {{ h.key }}: {{ '*'.repeat(h.value.length) }}
+            </v-chip>
+          </v-row>
 
-          <div v-if="ds.auth.enabled" class="mb-2">
-            <strong class="text-subtitle-2">{{ $t('accountTab.authentication') }}:</strong>
+          <v-row v-if="ds.auth.enabled"
+            class="ma-0 pa-0 mb-4 align-center"
+          >
+            <div class="text-subtitle-2">{{ $t('accountTab.authentication') }}:</div>
             <v-chip x-small color="orange" text-color="white" class="ml-2">
               <v-icon x-small left>mdi-lock</v-icon>
               {{ ds.auth.username }} / (•••)
             </v-chip>
-          </div>
+          </v-row>
         </v-card-text>
 
         <v-card-actions class="pa-4 pt-0">
-          <v-spacer></v-spacer>
+          <v-spacer class="is-pc"></v-spacer>
+          <v-btn @click="deleteDataSource(ds)" 
+            :disabled="!isUseDataSource"
+            icon
+            variant="text"
+            class="text-medium-emphasis"
+            color="error"
+          >
+              <TrashIcon size="24"/>
+          </v-btn>
+          <v-spacer class="is-mobile"></v-spacer>
           <v-btn 
             icon 
             small
             @click="editDataSource(ds)" 
             :disabled="!isUseDataSource"
-            color="primary"
           >
             <v-icon>mdi-pencil</v-icon>
-          </v-btn>
-          <v-btn 
-            icon 
-            small
-            @click="deleteDataSource(ds)" 
-            :disabled="!isUseDataSource"
-            color="error"
-          >
-            <v-icon>mdi-delete</v-icon>
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -269,12 +287,98 @@ export default {
           enabled: false
         }
       },
-      dataSources: []
+      dataSources: [
+        {
+          uuid: 'dummy-1',
+          name: 'User Management API',
+          method: 'GET',
+          endpoint: 'https://api.example.com/v1/users',
+          headers: [
+            { key: 'Authorization', value: 'Bearer abc123token' },
+            { key: 'Content-Type', value: 'application/json' }
+          ],
+          parameters: [],
+          auth: {
+            enabled: true,
+            username: 'admin',
+            password: 'password123'
+          }
+        },
+        {
+          uuid: 'dummy-2',
+          name: 'Product Catalog Service',
+          method: 'POST',
+          endpoint: 'https://catalog.shopify.com/api/products',
+          headers: [
+            { key: 'X-API-Key', value: 'sk_live_12345abcdef' },
+            { key: 'Accept', value: 'application/json' }
+          ],
+          parameters: [],
+          auth: {
+            enabled: false,
+            username: '',
+            password: ''
+          }
+        },
+        {
+          uuid: 'dummy-3',
+          name: 'Weather Data Provider',
+          method: 'GET',
+          endpoint: 'https://api.openweathermap.org/data/2.5/weather',
+          headers: [
+            { key: 'APPID', value: 'your_api_key_here' }
+          ],
+          parameters: [],
+          auth: {
+            enabled: false,
+            username: '',
+            password: ''
+          }
+        },
+        {
+          uuid: 'dummy-4',
+          name: 'Payment Gateway Integration',
+          method: 'POST',
+          endpoint: 'https://api.stripe.com/v1/charges',
+          headers: [
+            { key: 'Authorization', value: 'Bearer sk_test_xyz789' },
+            { key: 'Content-Type', value: 'application/x-www-form-urlencoded' },
+            { key: 'Stripe-Version', value: '2023-10-16' }
+          ],
+          parameters: [],
+          auth: {
+            enabled: true,
+            username: 'stripe_user',
+            password: 'secure_password'
+          }
+        },
+        {
+          uuid: 'dummy-5',
+          name: 'Internal Analytics Service',
+          method: 'GET',
+          endpoint: 'https://analytics.internal.company.com/api/v2/reports',
+          headers: [
+            { key: 'X-Internal-Token', value: 'internal_token_xyz' },
+            { key: 'User-Agent', value: 'ProcessGPT/1.0' }
+          ],
+          parameters: [],
+          auth: {
+            enabled: true,
+            username: 'analytics_user',
+            password: 'analytics_pass'
+          }
+        }
+      ]
     }
   },
   mounted() {
     this.loadDataSourceUsage();
     this.loadDataSourceList();
+  },
+  computed: {
+      isMobile() {
+          return window.innerWidth <= 768;
+      },
   },
   methods: {
     // ✅ localStorage에서 DataSource 사용 여부 로드
@@ -314,7 +418,8 @@ export default {
     async loadDataSourceList() {
       try {
         const res = await backend.getDataSourceList();
-        if (res && Array.isArray(res)) {
+        if (res && Array.isArray(res) && res.length > 0) {
+          // 백엔드에서 실제 데이터가 있을 때만 덮어쓰기
           this.dataSources = res.map(item => ({
             uuid: item.uuid,
             name: item.key,
@@ -329,8 +434,10 @@ export default {
             }
           }));
         }
+        // 백엔드에서 빈 배열이나 데이터가 없으면 더미 데이터 유지
       } catch (err) {
         console.error('데이터소스 목록 가져오기 실패:', err.message);
+        // 에러 발생 시에도 더미 데이터 유지
       }
     },
     openAddDialog() {

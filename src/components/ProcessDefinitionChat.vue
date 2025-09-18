@@ -8,6 +8,7 @@
             <div :key="chatRenderKey">
                 <div style="display: none;">
                     <process-definition
+                        ref="definitionComponent"    
                         class="process-definition-resize"
                         :bpmn="bpmn"
                         :isViewMode="true"
@@ -48,6 +49,7 @@
                 </h5>
                 <!-- 프로세스 정의 내부에 있는 ProcessDefinition.vue 컴포넌트 -->
                 <process-definition
+                    ref="definitionComponent"
                     class="process-definition-resize"
                     :bpmn="bpmn"
                     :isAIGenerated="isAIGenerated"
@@ -205,7 +207,9 @@
             </div>
         </v-dialog>
 
-        <v-dialog v-model="marketplaceDialog" max-width="400" persistent>
+        <v-dialog v-model="marketplaceDialog" max-width="400" persistent
+            :fullscreen="isMobile"
+        >
             <process-definition-market-place-dialog :processDefinition="processDefinition" 
                 :bpmn="bpmn" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
         </v-dialog>
@@ -859,7 +863,15 @@ export default {
         },
         toggleVerMangerDialog(open) {
             // Version Manager Dialog
-            this.verMangerDialog = open;
+            if (open) {
+                // 다이얼로그를 열 때는 먼저 false로 설정한 후 true로 설정하여 watch가 트리거되도록 함
+                this.verMangerDialog = false;
+                this.$nextTick(() => {
+                    this.verMangerDialog = true;
+                });
+            } else {
+                this.verMangerDialog = false;
+            }
         },
         async changeXML(info) {
             var me = this;

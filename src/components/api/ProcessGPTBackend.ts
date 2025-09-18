@@ -359,7 +359,6 @@ class ProcessGPTBackend implements Backend {
             });
 
             if (response && response.data) {
-                console.log(response.data);
                 return response.data;
             } else {
                 return null;
@@ -709,6 +708,111 @@ class ProcessGPTBackend implements Backend {
             return null;
         } catch (error) {
             
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getFormFields(formId?: string, activityId?: string, procDefId?: string) {
+        try {
+            let data = null;
+            if (formId) {
+                data = await storage.getObject('form_def', {
+                    match: {
+                        id: formId,
+                        tenant_id: window.$tenantName
+                    }
+                });
+            } else if (activityId && procDefId) {
+                data = await storage.getObject('form_def', {
+                    match: {
+                        proc_def_id: procDefId,
+                        activity_id: activityId,
+                        tenant_id: window.$tenantName
+                    }
+                });
+            } else {
+                console.error('formId or activityId and procDefId is required');
+                return null;
+            }
+            return data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    private getPreviousActivities(activityId: string, definition: any) {
+        if (!definition || !definition.sequences || !definition.activities) {
+            return [];
+        }
+
+        const sequences = definition.sequences;
+        const activities = definition.activities;
+        const previousActivities = new Set<string>();
+        const visited = new Set<string>();
+
+        // 특정 액티비티로 들어오는 시퀀스를 찾아서 이전 액티비티들을 재귀적으로 탐색
+        const findPreviousActivities = (targetId: string) => {
+            if (visited.has(targetId)) {
+                return; // 순환 참조 방지
+            }
+            visited.add(targetId);
+
+            // targetId로 들어오는 시퀀스들을 찾음
+            const incomingSequences = sequences.filter((seq: any) => seq.target === targetId);
+            
+            for (const sequence of incomingSequences) {
+                const sourceId = sequence.source;
+                
+                // 소스가 액티비티인지 확인 (events, gateways 제외)
+                const sourceActivity = activities.find((act: any) => act.id === sourceId);
+                if (sourceActivity) {
+                    previousActivities.add(sourceId);
+                    // 재귀적으로 더 이전 액티비티들을 찾음
+                    findPreviousActivities(sourceId);
+                } else {
+                    // 소스가 gateway나 event인 경우에도 재귀적으로 탐색
+                    findPreviousActivities(sourceId);
+                }
+            }
+        };
+
+        findPreviousActivities(activityId);
+
+        // Set을 배열로 변환하고 액티비티 객체들을 반환
+        return Array.from(previousActivities).map(actId => 
+            activities.find((act: any) => act.id === actId)
+        ).filter(act => act !== undefined);
+    }
+
+    async getPreviousForms(activityId: string, procDefId: string) {
+        try {
+            const defInfo = await this.getRawDefinition(procDefId, null);
+            const definition = defInfo.definition;
+            const prevActivities = this.getPreviousActivities(activityId, definition);
+            if (prevActivities.length > 0) {
+                const formPromises = prevActivities.map(async (activity: any) => {
+                    const formId = activity.tool.split('formHandler:')[1];
+                    const form = await storage.getObject('form_def', {
+                        match: {
+                            id: formId,
+                            tenant_id: window.$tenantName
+                        }
+                    });
+                    if (form) {
+                        form['title'] = activity.name;
+                        return form;
+                    }
+                    return null;
+                });
+                
+                const formResults = await Promise.all(formPromises);
+                const validForms = formResults.filter(form => form !== null);
+                return validForms;
+            }
+            return [];
+        } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -3896,8 +4000,8 @@ class ProcessGPTBackend implements Backend {
                 .limit(1)
 
             if (!error) { 
-                workitem = data;           
-            } 
+                workitem = data[0];
+            }
 
             if(!workitem) {
                 const instance = await this.getInstance(instanceId);
@@ -3912,10 +4016,8 @@ class ProcessGPTBackend implements Backend {
                     .order('updated_at', { ascending: false })
                     .limit(1)
 
-                if(error) {
-                    throw new Error('workitem not found');
-                } else {
-                    workitem = data;
+                if(!error) {
+                    workitem = data[0];
                 }
             }
 
@@ -3941,20 +4043,20 @@ class ProcessGPTBackend implements Backend {
             }
 
             if(workitems) {
-                let filedList = [];
+                let fieldList = [];
                 workitems.forEach((item: any, index: number) => {
                     workitem = item;
                     const output = item.output;
                     if(output && output[formId]) {
-                        let filed = output[formId][fieldId];
-                        if(filed) {
-                            filedList.push(workitem.execution_scope + ":" + filed);
+                        let field = output[formId][fieldId];
+                        if(field) {
+                            fieldList.push(workitem.execution_scope + ":" + field);
                         }
                     }
                 });
                 
                 fieldValue[formId] = {
-                    [fieldId]: filedList
+                    [fieldId]: fieldList
                 }
                 return fieldValue;
             }
@@ -4009,9 +4111,12 @@ class ProcessGPTBackend implements Backend {
                 const actual_value = fieldValues[key][form_id][field_id]
                 if (actual_value) {
                     formGroups[form_id][field_id] = actual_value
+                } else {
+                    formGroups[form_id][field_id] = ''
                 }
             }
         }
+
         return formGroups;
     }
 

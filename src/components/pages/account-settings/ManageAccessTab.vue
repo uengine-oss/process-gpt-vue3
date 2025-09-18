@@ -247,17 +247,10 @@ export default {
     background-color: #f8f9fa;
 }
 
-.is-mobile {
-    display: none;
-}
-
 @media screen and (max-width: 768px) {
     .header-search {
         max-width: 160px !important;
         min-width: 160px !important;
-    }
-    .is-mobile {
-        display: block;
     }
 }
 

@@ -18,11 +18,15 @@
             <div class="pa-3 mb-0 d-flex flex-wrap gap-2 justify-end">
                 <v-tooltip bottom>
                     <template v-slot:activator="{ props }">
-                        <v-btn color="primary" size="30" elevation="2" v-bind="props" @click="addDialog = true">
-                            <v-icon size="small">mdi-plus</v-icon>
+                        <v-btn size="30"
+                          elevation="2"
+                          v-bind="props"
+                          @click="deleteDialog = true"
+                        >
+                          <TrashIcon size="20" class="text-error" />
                         </v-btn>
                     </template>
-                    <span>{{ $t('BSCard.addStrategy') }}</span>
+                    <span>{{ $t('BSCard.deleteStrategy') }}</span>
                 </v-tooltip>
                 <v-tooltip bottom>
                     <template v-slot:activator="{ props }">
@@ -34,11 +38,11 @@
                 </v-tooltip>
                 <v-tooltip bottom>
                     <template v-slot:activator="{ props }">
-                        <v-btn size="30" elevation="2" v-bind="props" @click="deleteDialog = true">
-                            <v-icon size="small">mdi-delete</v-icon>
+                        <v-btn color="primary" size="30" elevation="2" v-bind="props" @click="addDialog = true">
+                            <v-icon size="small">mdi-plus</v-icon>
                         </v-btn>
                     </template>
-                    <span>{{ $t('BSCard.deleteStrategy') }}</span>
+                    <span>{{ $t('BSCard.addStrategy') }}</span>
                 </v-tooltip>
                 <!-- <v-tooltip bottom>
                     <template v-slot:activator="{ props }">
@@ -325,6 +329,14 @@
       Chat
     },
     computed: {
+      isMobile() {
+          const container = this.$refs.container;
+          if (!container) return false;
+
+          const { width, height } = container.getBoundingClientRect();
+
+          return width - 100 < height;
+      },
     },
     data() {
       return {
@@ -336,10 +348,10 @@
             text: "BSCard.description"
         },
         lanes: [
-            this.$t('BSCard.perspectiveFinance'),
-            this.$t('BSCard.perspectiveCustomer'),
-            this.$t('BSCard.perspectiveProcess'),
-            this.$t('BSCard.perspectiveLearning')
+            '재무',
+            '고객', 
+            '내부 프로세스',
+            '학습 및 성장'
         ],
         jsonData: {
           strategies: [
@@ -430,14 +442,6 @@
       this.initData();
     },
     methods: {
-      isMobile() {
-          const container = this.$refs.container;
-          if (!container) return;
-
-          const { width, height } = container.getBoundingClientRect();
-
-          return width - 100 < height;
-      },
       init() {
         this.initDiagram();
         
@@ -490,19 +494,26 @@
       initializeFromData(jsonData) {
         try {
           this.resetCanvas();
-          console.log(jsonData);
           if (!jsonData || !jsonData.strategies) return;
 
+          // 먼저 모든 전략 카드를 생성
           jsonData.strategies.forEach((strategy, index) => {
             this.addStrategy(strategy.name, strategy.perspective, strategy.id);
-            if(strategy.parents) {
-              strategy.parents.forEach(parent => {
-                this.addConnection(parent, strategy.id);
-              });
-            }
           });
+
+          // 그 다음에 연결선을 생성 (모든 카드가 생성된 후)
+          setTimeout(() => {
+            jsonData.strategies.forEach((strategy) => {
+              if(strategy.parents && strategy.parents.length > 0) {
+                strategy.parents.forEach(parent => {
+                  this.addConnection(parent, strategy.id);
+                });
+              }
+            });
+          }, 100); // 카드 생성 후 약간의 지연
+
         } catch (error) {
-          
+          console.error('데이터 초기화 오류:', error);
         }
       },
       addStrategy(name, perspective, id = null) {
@@ -510,11 +521,18 @@
         const canvas = this.diagram.get('canvas');
         const scale = this.isMobile ? 0.5 : 1;
 
-        const totalHeight = canvas._container.clientHeight - 134;
+        // 컨테이너 높이를 더 안전하게 계산
+        const containerHeight = canvas._container?.clientHeight || this.$refs.container?.clientHeight || 600;
+        const totalHeight = containerHeight - 134;
         const laneCount = 4;
-        const laneHeight = totalHeight / laneCount;
+        const laneHeight = Math.max(totalHeight / laneCount, 100); // 최소 높이 보장
 
         const perspectiveIndex = this.lanes.indexOf(perspective);
+        
+        // perspectiveIndex가 -1인 경우 처리
+        if (perspectiveIndex === -1) {
+          return;
+        }
 
         const strategiesInLane = this.jsonData.strategies.filter(s => s.perspective === perspective);
 
@@ -601,7 +619,9 @@
         const source = elementRegistry.get(sourceId);
         const target = elementRegistry.get(targetId);
 
-        if (!source || !target) return;
+        if (!source || !target) {
+          return;
+        }
 
         const srcCenter = {
           x: source.x + source.width / 2,
