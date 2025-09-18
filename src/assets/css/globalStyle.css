@@ -549,6 +549,11 @@ hr {
     margin: 4px !important;
 }
 
+.process-definition-version-dialog-textarea .v-field__field {
+    height: 25vh;
+    overflow-y: auto;
+}
+
 .agent-field-User-input-generator .user-input-generator-textarea .v-field__field {
     max-height: calc(100vh - 420px);
     overflow-y: auto;
@@ -1174,6 +1179,16 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+    .process-definition-version-dialog-textarea .v-field__field {
+        height: 25vh;
+        overflow-y: auto;
+    }
+
+    .add-marketplace-dialog-input-box {
+        max-height: calc(100vh - 122px);
+        overflow: auto;
+    }
+    
     .connection-info-tab-headers {
         height: calc(100vh - 315px);
     }

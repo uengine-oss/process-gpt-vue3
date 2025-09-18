@@ -2,18 +2,31 @@
     <v-dialog v-model="isOpen" max-width="100%" style="height: -webkit-fill-available;" persistent>
         <v-card flat>
             <v-card-title class="d-flex">
-                <div>
-                    <h5 class="text-h5">버전 관리 [{{ currentVersionName }} ({{ currentVersion }})]</h5>
-                    <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
-                        style="margin-left: 5px;"></v-progress-circular>
-                    <div v-if="currentVersionMessage" class="text-body-1 mt-1">
-                        설명: {{ currentVersionMessage }}
-                    </div>
-                </div>
+                <h5 class="text-h5">{{ $t('ProcessDefinitionVersionManager.versionManagement') }} [{{ currentVersionName }} ({{ currentVersion }})]</h5>
+                <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
+                    style="margin-left: 5px;"
+                ></v-progress-circular>
                 <v-btn icon class="ml-auto" variant="text" @click="close" density="compact">
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-card-title>
+            <div class="pa-4 pr-0 pt-0 pb-0"
+                style="max-height: 15vh;
+                overflow: auto;"
+            >
+                <v-alert density="compact"
+                    variant="tonal"
+                    color="gray"
+                >
+                    <template v-slot:title>
+                        <span style="color: black;">{{ $t('ProcessDefinitionVersionManager.description') }}</span>
+                    </template>
+                    <div v-if="currentVersionMessage"
+                        class="text-body-1 text-gray mt-1"
+                    >{{ currentVersionMessage }}
+                    </div>
+                </v-alert>
+            </div>
 
             <div class="d-flex px-5">
                 <div class="mx-2">
@@ -21,14 +34,16 @@
                         hide-details></v-switch>
                 </div>
                 <v-btn @click="downloadXML" variant="text" height="40" class="mx-2">
-                    다운로드
+                    {{ $t('ProcessDefinitionVersionManager.download') }}
                 </v-btn>
                 <v-btn @click="changeXML" variant="text" color="primary" :disabled="loading" height="40">
-                    해당 버전으로 변경
+                    {{ $t('ProcessDefinitionVersionManager.changeToVersion') }}
                 </v-btn>
             </div>
 
-            <v-card-text style="height: 100vh;">
+            <v-card-text class="pa-4"
+                style="height: 100vh;"
+            >
                 <div v-if="showXML" style="height: 100%; overflow-y: scroll;">
                     <div class="diff-titles">
                         <div class="diff-title" v-if="currentXML && beforeXML">Previous XML
@@ -50,23 +65,38 @@
                         <pre><code class="xml">{{ currentXML }}</code></pre>
                     </div>
                 </div>
-                <div v-else style="height: 100%; border-bottom: 1px solid #E0E0E0; display: flex;">
-                    <BpmnUengine
-                        :key="key + '_left'"
-                        :bpmn="currentSelectedXML"
-                        :options="options"
-                        :isViewMode="false"
-                        :diffActivities="leftDiffActivities"
-                        style="height: 100%; width: 50%;"
-                    ></BpmnUengine>
-                    <BpmnUengine
-                        :key="key + '_right'"
-                        :bpmn="currentXML"
-                        :options="options"
-                        :isViewMode="false"
-                        :diffActivities="rightDiffActivities"
-                        style="height: 100%; width: 50%;"
-                    ></BpmnUengine>
+                <div v-else style="height: 100%; display: flex; align-items: center; gap: 8px;">
+                    <v-card outlined
+                        style="width: 100%;
+                        height: 100%;"
+                        elevation="10"
+                    >
+                        <BpmnUengine
+                            :key="key + '_left'"
+                            :bpmn="currentSelectedXML"
+                            :options="options"
+                            :isViewMode="false"
+                            :diffActivities="leftDiffActivities"
+                            style="height: 100%; width: 100%;"
+                        ></BpmnUengine>
+                    </v-card>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                        <Icons :icon="'arrow-right'" />
+                    </div>
+                    <v-card outlined
+                        style="width: 100%;
+                        height: 100%;"
+                        elevation="10"
+                    >
+                        <BpmnUengine
+                            :key="key + '_right'"
+                            :bpmn="currentXML"
+                            :options="options"
+                            :isViewMode="false"
+                            :diffActivities="rightDiffActivities"
+                            style="height: 100%; width: 100%;"
+                        ></BpmnUengine>
+                    </v-card>
                 </div>
             </v-card-text>
             <v-card-actions>
@@ -166,13 +196,18 @@ export default {
                 orderBy: 'timeStamp',
                 type: me.type
             });
-            if(result){
+            if(result && result.length > 0){
                 me.lists = result.map(item => ({ ...item, xml: null }));
                 me.currentIndex = me.lists.length - 1;
                 me.lists[me.currentIndex].xml = await me.loadXMLOfVer(me.lists[me.currentIndex].version);
                 await me.setCurrentInfo(me.lists[me.currentIndex].xml);
+                me.isOpen = true;
+            } else {
+                me.$try({
+                    action: async () => {},
+                    warningMsg: me.$t('ProcessDefinitionVersionManager.noVersionsAvailable')
+                });
             }
-            me.isOpen = true;
             me.loading = false;
         },
         async handleBeforeChange(index) {
@@ -207,7 +242,7 @@ export default {
                 link.click();
                 document.body.removeChild(link);
             } else {
-                alert('선택된 버전의 XML 데이터가 없습니다.');
+                alert(me.$t('ProcessDefinitionVersionManager.noXmlData'));
             }
         },
         async setCurrentInfo(xml) {
@@ -243,7 +278,7 @@ export default {
         copyToClipboard(text) {
             if (navigator.clipboard) { // 최신 브라우저 API 지원 여부 확인
                 navigator.clipboard.writeText(text).then(() => {
-                    alert('클립보드에 복사되었습니다.'); // 성공 메시지
+                    alert(me.$t('ProcessDefinitionVersionManager.copiedToClipboard')); // 성공 메시지
                 }, (err) => {
                     console.error('클립보드 복사 실패:', err); // 실패 시 로그
                 });
@@ -255,7 +290,7 @@ export default {
                 textarea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
-                alert('클립보드에 복사되었습니다.'); // 성공 메시지
+                alert(me.$t('ProcessDefinitionVersionManager.copiedToClipboard')); // 성공 메시지
             }
         },
         close() {
