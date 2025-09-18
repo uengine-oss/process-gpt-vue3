@@ -234,14 +234,16 @@ export default {
 }
 
 .section-header h2 {
-  font-size: 2.2rem;
+  /* font-size: 2.2rem; */
+  font-size: 30px;
   font-weight: 700;
   color: var(--text-color-dark);
   margin-bottom: 15px;
 }
 
 .section-header p {
-  font-size: 1.1rem;
+  /* font-size: 1.1rem; */
+  font-size: 17px;
   color: var(--text-color);
   max-width: 700px;
   margin: 0 auto;
@@ -272,7 +274,8 @@ export default {
   max-width: 50%;
   border-bottom: 1px solid #333;
   padding-bottom: 15px;
-  font-size: 1.8rem;
+  /* font-size: 1.8rem; */
+  font-size: 30px;
   font-weight: 600;
   color: var(--text-color-dark);
   text-align: center;
@@ -288,7 +291,8 @@ export default {
   margin-bottom: 10px;
   color: var(--text-color);
   font-weight: 600;
-  font-size: 1.15rem;
+  /* font-size: 1.15rem; */
+  font-size: 19px;
   line-height: 1.6;
 }
 .tab-text ul li svg {
@@ -322,7 +326,8 @@ export default {
   }
   
   .section-header h2 {
-    font-size: 1.8rem;
+    /* font-size: 1.8rem; */
+    font-size: 30px;
   }
 
   .tab-wrap {
@@ -331,16 +336,27 @@ export default {
   }
   
   .tab-text h3 {
-    font-size: 1.4rem;
+    /* font-size: 1.4rem; */
+    max-width: 70%;
+    font-size: 26px;
     color: var(--text-color-dark);
   }
 
-.tab-text ul li {
+  .tab-text ul li {
     margin-bottom: 7px;
-    font-size: 1rem;
+    /* font-size: 1rem; */
+    font-size: 18px;
     line-height: 1.5;
   }
+}
 
-  
+@media (max-width: 376px){
+  .tab-text h3 {
+    font-size: 22px;
+  }
+
+  .tab-text ul li {
+    font-size: 16px;
+  }
 }
 </style>
