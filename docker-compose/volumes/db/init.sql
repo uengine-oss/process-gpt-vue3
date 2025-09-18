@@ -69,7 +69,7 @@ CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 
 -- 에이전트 모드 enum
 CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
 -- 오케스트레이션 방식 enum
-CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-use');
+CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser_automation_agent');
 -- 드래프트 상태 enum
 CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
 -- 이벤트 타입 enum
@@ -1713,7 +1713,7 @@ SET agent_orch_new = CASE
     WHEN agent_orch = 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
     WHEN agent_orch = 'crewai-action' THEN 'crewai-action'::agent_orch
     WHEN agent_orch = 'langchain-react' THEN 'langchain-react'::agent_orch
-    WHEN agent_orch = 'browser-use' THEN 'browser-use'::agent_orch
+    WHEN agent_orch = 'browser_automation_agent' THEN 'browser_automation_agent'::agent_orch
     ELSE NULL  -- 기본값을 NULL로 설정
 END;
 -- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
