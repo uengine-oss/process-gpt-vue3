@@ -58,6 +58,7 @@
 -- Enable required extensions
 create extension if not exists vector;
 create extension if not exists pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- ==========================================
 -- ENUM 타입 정의
@@ -1309,10 +1310,6 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA cron TO authenticated;
 -- ===============================================
 -- 테넌트 자동 삭제 기능 (deleted_at 기준 7일 후)
 -- ===============================================
-
--- pg_cron 확장 추가 (이미 있을 수 있지만 안전하게)
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
 -- 테넌트 정리 함수 (기존 start_process_scheduled 패턴과 동일)
 create or replace function public.cleanup_deleted_tenants_job(
   p_job_name text,
