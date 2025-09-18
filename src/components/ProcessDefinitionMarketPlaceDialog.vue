@@ -264,7 +264,6 @@ export default {
 }
 
 .no-image-placeholder {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     transition: all 0.3s ease;
 }
 

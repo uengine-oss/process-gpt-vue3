@@ -28,7 +28,7 @@
                         <template v-for="(textField, textFieldIndex) in item.textFields" :key="textFieldIndex">
                             <div v-if="textField.value" class="d-flex tenant-info-text-filed">
                                 <VTextField
-                                    :value="`https://${value.id}.process-gpt.io`" 
+                                    :value="getTenantUrl(value.id)" 
                                     type="text"
                                     readonly
                                 ></VTextField>
@@ -78,6 +78,7 @@
 // import secretCopy from '@/assets/images/tenant/help/6.png';
 // import databaseCopy from '@/assets/images/tenant/help/7.png';
 import siteUrl from '@/assets/images/tenant/help/8.png';
+import { getTenantUrl } from '@/utils/domainUtils';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -415,7 +416,7 @@ export default {
         },
 
         copyToClipboard() {
-            const textToCopy = `${this.value.id}.process-gpt.io`;
+            const textToCopy = getTenantUrl(this.value.id).replace(/^https?:\/\//, '');
             navigator.clipboard.writeText(textToCopy).then(() => {
                 this.$emit('showSnackbar', 'Copied to clipboard');
             }).catch(err => {

@@ -236,12 +236,12 @@ export default {
     async mounted() {
         var me = this;
         this.EventBus.on('form-values-updated', (formValues) => {
-                        if(formValues){
-                            Object.keys(formValues).forEach(function (key){
-                                me.formData[key] = formValues[key]
-                            })
-                        }
-                    });
+            if(formValues){
+                Object.keys(formValues).forEach(function (key){
+                    me.formData[key] = formValues[key]
+                })
+            }
+        });
                     
         // ReportField에서 저장 요청이 올 때 실제 저장 처리
         this.EventBus.on('form-save-request', async (data) => {
@@ -315,15 +315,6 @@ export default {
                     } else {
                         await me.loadInputData()
                     }
-                    
-
-                    // me.EventBus.on('form-values-updated', (formValues) => {
-                    //     if(formValues){
-                    //         Object.keys(formValues).forEach(function (key){
-                    //             me.formData[key] = formValues[key]
-                    //         })
-                    //     }
-                    // });
                     
                     me.isInitialized = true;
                 }
@@ -609,6 +600,21 @@ export default {
                     }
                 });
                 await Promise.all(fieldValuePromises);
+            } else {
+                const prevActivityId = definition.sequences.find(x => x.target == me.workItem.activity.tracingTag).source;
+                const formInfo = await backend.getFormFields(null, prevActivityId, procDefId);
+                if (formInfo && formInfo.fields_json) {
+                    const fieldValuePromises = formInfo.fields_json.map(async (field) => {
+                        const fieldInfo = `${formInfo.id}.${field.key}`;
+                        const fieldValue = await backend.getFieldValue(fieldInfo, procDefId, me.workItem.worklist.instId);
+                        if (fieldValue) {
+                            inputFields[fieldInfo] = fieldValue;
+                        } else {
+                            inputFields[fieldInfo] = '';
+                        }
+                    });
+                    await Promise.all(fieldValuePromises);
+                }
             }
             inputFields = await backend.groupFieldsByForm(inputFields);
             me.inputFields = [];

@@ -14,7 +14,10 @@
     </v-sheet>
     <perfect-scrollbar class="user-listing-lgScroll">
         <v-list>
-            <v-list-item v-for="user in filteredUsers" :key="user.id" class="text-no-wrap user-item" @click="selectedUser(user)">
+            <v-list-item v-for="user in filteredUsers" :key="user.id" 
+                class="text-no-wrap user-item" 
+                :class="{ 'user-item-selected': selectedUserInfo && selectedUserInfo.id === user.id }"
+                @click="selectedUser(user)">
                 <template v-slot:prepend>
                     <v-avatar color="#f0f5f9" size="large" style="width: 50px; height: 50px;">
                         <img :src="getProfile(user)" :alt="user.username" style="width: 100%; height: 100%; object-fit: cover;" />
@@ -129,6 +132,12 @@ export default {
     border-bottom: 1px solid rgb(var(--v-theme-inputBorder), 0.1);
 }
 
+.user-item-selected {
+    background-color: rgb(var(--v-theme-primary), 0.1) !important;
+    border-left: 4px solid rgb(var(--v-theme-primary)) !important;
+    margin-right: 8px !important;
+}
+
 .user-listing-lgScroll {
     height: calc(100vh - 330px);
 }
@@ -136,13 +145,13 @@ export default {
 
 @media only screen and (max-width: 1279px) {
     .user-listing-lgScroll {
-        height: calc(100vh - 314px);
+        height: calc(100vh - 214px)
     }
 }
 
 @media only screen and (max-width: 768px) {
     .user-listing-lgScroll {
-        height: calc(100vh - 262px);
+        height: calc(100vh - 200px);
     }
 }
 </style>

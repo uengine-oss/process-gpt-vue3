@@ -2,11 +2,11 @@
     <!-- 유저 초대 섹션 -->
     <v-row justify="center" max-width="800px" class="ma-0 pa-0">
         <v-col cols="12" md="10" lg="12" class="pa-0 ma-0">
-            <v-card flat>
-                <v-card-text class="pa-2">
+            <div class="pa-0">
+                <v-card-text class="pa-0 user-invite-item-box">
                     <div v-for="(user, index) in inviteUserlist" :key="index" class="user-invite-item">
-                        <v-card flat class="mb-0">
-                            <v-card-text class="pa-3">
+                        <v-card flat class="pa-0">
+                            <v-card-text class="pa-0 pa-2 pl-0 pr-0">
                                 <v-row align="center" no-gutters>
                                     <v-col cols="12" sm="8" class="pr-sm-3" :class="isMobile ? 'mb-2' : ''">
                                         <v-text-field
@@ -41,9 +41,10 @@
                                             icon
                                             variant="text"
                                             class="text-medium-emphasis"
+                                            color="error"
                                             @click="removeUser(index)"
                                         >
-                                            <TrashIcon size="24" style="color:#666;"/>
+                                            <TrashIcon size="24"/>
                                         </v-btn>
                                     </v-col>
                                 </v-row>
@@ -58,30 +59,27 @@
                             </v-card-text>
                         </v-card>
                     </div>
-                
-                    <div class="mb-4 pa-2">
-                        <v-card @click="addUser"
-                            elevation="10"
-                        >
-                            <v-row justify="center"
-                                class="my-4 align-center"
-                                style="font-size: 20px;"    
-                            >
-                                <v-icon class="mr-2" style="padding-top: 1px;">mdi-plus</v-icon>
-                                <div>{{ $t('accountTab.addUser') }}</div>
-                            </v-row>
-                        </v-card>
-                    </div>
                 </v-card-text>
+                
+                <v-card @click="addUser"
+                    class="pa-0"
+                    elevation="10"
+                >
+                    <v-row justify="center"
+                        class="my-4 align-center"
+                        style="font-size: 20px;"    
+                    >
+                        <v-icon class="mr-2" style="padding-top: 1px;">mdi-plus</v-icon>
+                        <div>{{ $t('accountTab.addUser') }}</div>
+                    </v-row>
+                </v-card>
 
                 <!-- <v-divider class="my-6"></v-divider> -->
 
-                <v-row class="ma-0 pa-0 mt-2 pb-4">
+                <v-row class="ma-0 pa-0 pt-4">
                     <v-spacer></v-spacer>
                     <v-btn v-if="type === 'createTenant'"
                         @click="skipInvitation"
-                        :loading="isInviteLoading"
-                        :disabled="hasInvalidEmails()"
                         color="grey"
                         variant="flat" 
                         class="rounded-pill mr-2"
@@ -95,19 +93,20 @@
                         :disabled="hasInvalidEmails()"
                         color="primary"
                         variant="flat" 
-                        class="rounded-pill mr-4"
+                        class="rounded-pill"
                     >
                         <v-icon class="mr-2" style="padding-top: 3px;">mdi-send</v-icon>
                         {{ $t('accountTab.sendInvitation') }}
                     </v-btn>
                 </v-row>
-            </v-card>
+            </div>
         </v-col>
     </v-row>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { getTenantUrl } from '@/utils/domainUtils';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -197,7 +196,7 @@ export default {
                     }
                     this.isInviteLoading = false;
                     if(this.type === 'createTenant') {
-                        window.location.href = `https://${this.tenantInfo.id}.process-gpt.io/definition-map`
+                        window.location.href = getTenantUrl(this.tenantInfo.id, '/definition-map');
                     } else {
                         this.$emit('close', this.inviteUserlist);
                     }
@@ -210,7 +209,7 @@ export default {
             });
         },
         skipInvitation() {
-            window.location.href = `https://${this.tenantInfo.id}.process-gpt.io/definition-map`
+            window.location.href = getTenantUrl(this.tenantInfo.id, '/definition-map');
         }
     },
     computed: {
@@ -238,6 +237,11 @@ export default {
     transition: all 0.3s ease;
 }
 
+.user-invite-item-box {
+    height: 50vh;
+    overflow: auto;
+}
+
 .delete-btn {
     transition: all 0.3s ease;
 }
@@ -249,6 +253,13 @@ export default {
 @media only screen and (max-width: 960px) {
     .mb-8 {
         margin-bottom: 3rem !important;
+    }
+}
+
+@media only screen and (max-width: 768px) {
+    .user-invite-item-box {
+        height: calc(100vh - 220px);
+        overflow: auto;
     }
 }
 </style>

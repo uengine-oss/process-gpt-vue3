@@ -13,7 +13,7 @@
                         <Icons :icon="'close'" :size="16" />
                     </v-btn>
                 </v-row>
-                <v-card-text class="ma-0 pa-4 pb-0 pt-0">
+                <v-card-text class="ma-0 pa-4 pb-4 pt-0">
                     <v-switch v-model="isVersion"
                         :label="`${$t('ProcessDefinitionVersionDialog.minorUpdate')}: ${newVersion}`"
                         hide-details
@@ -39,12 +39,12 @@
                                 class="pb-2"
                             ></v-text-field>
                         </div>
-                        <v-textarea
+                        <v-textarea class="process-definition-version-dialog-textarea"
                             v-if="isVersion"
                             v-model="information.message"
                             :label="$t('ProcessDefinitionVersionDialog.message')"
                             hide-details
-                            rows="3"
+                            auto-grows
                         ></v-textarea>
                     </div>
                     <div v-else>
@@ -78,7 +78,7 @@
                     class="ma-0 pa-4 pt-0 align-center text-body-2"
                 >
                     <v-icon class="mr-2">mdi-information</v-icon>
-                    <span>프로세스 정의 분석 중
+                    <span>프로세스 정의 최적화 중
                         <span class="loading-dots">
                             <span>.</span>
                             <span>.</span>

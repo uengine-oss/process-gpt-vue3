@@ -113,8 +113,9 @@ export default {
 
 <style scoped>
 .download {
-  padding: 80px 0;
-  background-color: var(--bg-color);
+  padding: 80px 0 0;
+  /* background-color: var(--bg-color); */
+  background-color: #1976D2;
 }
 
 .section-header {
@@ -125,13 +126,15 @@ export default {
 .section-header h2 {
   font-size: 2.2rem;
   font-weight: 700;
-  color: #333;
+  color: white;
+  /* color: #333; */
   margin-bottom: 15px;
 }
 
 .section-header p {
   font-size: 1.1rem;
-  color: #555;
+  color: white;
+  /* color: #555; */
   max-width: 700px;
   margin: 0 auto;
 }
@@ -152,7 +155,8 @@ export default {
 .download-text p {
   font-size: 1.1rem;
   line-height: 1.6;
-  color: #555;
+  color: white;
+  /* color: #555; */
 }
 
 .download-buttons {

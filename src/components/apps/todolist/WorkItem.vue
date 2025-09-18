@@ -64,6 +64,19 @@
                             </template>
                         </v-tooltip>
                     </v-row>
+                    <div v-else-if="enableReworkButton">
+                        <v-btn 
+                            @click="handleReworkDialog('open')"
+                            color="primary"
+                            density="compact"
+                            rounded 
+                            variant="flat"
+                            :disabled="isLoading"
+                            :loading="isLoading"
+                        >
+                            다시 수행하기
+                        </v-btn>
+                    </div>
                 </v-row>
                 <v-divider v-if="isMobile" class="my-2"></v-divider>
                 <!-- <v-row v-if="isSimulate == 'true'" class="pa-0 pt-1 pb-1 ma-0 align-center">
@@ -316,7 +329,7 @@
                             </template>
                             <template #form-work-item-action-btn>
                                 <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
-                                    class="work-item-form-btn-box align-center pr-3"
+                                    class="work-item-form-btn-box align-center"
                                 >
                                     <v-btn v-if="hasGeneratedContent"
                                         @click="resetGeneratedContent"
@@ -454,6 +467,14 @@
                 @close="closeDelegateTask"
             />
         </v-dialog>
+
+        <v-dialog v-model="reworkDialog" width="500">
+            <ReworkDialog
+                :reworkActivities="reworkActivities"
+                @submitRework="submitRework"
+                @close="handleReworkDialog('close')"
+            />
+        </v-dialog>
     </v-card>
 </template>
 
@@ -475,6 +496,8 @@ import DynamicForm from '@/components/designer/DynamicForm.vue';
 import AgentFeedback from './AgentFeedback.vue';
 import DelegateTaskForm from '@/components/apps/todolist/DelegateTaskForm.vue';
 import exampleGenerator from '@/components/ai/WorkItemAgentGenerator.js';
+import ReworkDialog from './ReworkDialog.vue';
+
 import JSON5 from 'json5';
 import partialParse from 'partial-json-parser';
 import axios from 'axios';
@@ -517,7 +540,8 @@ export default {
         InstanceOutput,
         AgentMonitor,
         AgentFeedback,
-        DelegateTaskForm
+        DelegateTaskForm,
+        ReworkDialog
     },
     data: () => ({    
         workItem: null,
@@ -575,6 +599,11 @@ export default {
         isLoading: false,
         delegateTaskDialog: false,
         inputData: null,
+
+        // rework
+        reworkDialog: false,
+        reworkActivities: [],
+        enableReworkButton: false,
     }),
     created() {
         // this.init();
@@ -757,13 +786,14 @@ export default {
             }
         },
         workItem: {
-            handler(newVal) {
+            async handler(newVal) {
                 if (newVal && newVal.worklist && newVal.worklist.taskId) {
                     this.loadAssigneeInfo();
+                    this.enableReworkButton = await backend.enableRework(newVal);
                 }
             },
             deep: true
-        }
+        },
     },
     methods: {
         onBpmnLoadStart() {
@@ -1411,6 +1441,54 @@ export default {
         },  
         loadInputData(data) {
             this.inputData = data;
+        },
+        handleReworkDialog(action) {
+            var me = this;
+            if(action == 'open') {
+                me.$try({
+                    context: me,
+                    action: async () => {
+                        await me.loadReworkActivities();
+                        me.reworkDialog = true;
+                    }
+                });
+            } else if(action == 'close') {
+                this.reworkDialog = false;
+            }
+        },
+        async loadReworkActivities() {
+            this.reworkActivities = {
+                current: [{
+                    id: this.workItem.activity.tracingTag,
+                    name: this.workItem.activity.name
+                }],
+                reference: [],
+                all: []
+            };
+            const options = {
+                instanceId: this.workItem.worklist.instId,
+                activityId: this.workItem.activity.tracingTag
+            }
+            const result = await backend.getReworkActivities(options);
+            if (result.reference) {
+                this.reworkActivities.reference = result.reference;
+            }
+            if (result.all) {
+                this.reworkActivities.all = result.all;
+            }
+        },
+        async submitRework(activities) {
+            var me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    await backend.reWorkItem({
+                        instanceId: me.workItem.worklist.instId,
+                        activities: activities
+                    })
+                    me.reworkDialog = false;
+                }
+            });
         }
     }
 };

@@ -81,7 +81,8 @@ export default {
 }
 
 .section-header h2 {
-  font-size: 2.2rem;
+  /* font-size: 2.2rem; */
+  font-size: 30px;
   font-weight: 700;
   color: var(--text-color-dark);
   margin-bottom: 15px;
@@ -132,7 +133,14 @@ export default {
 }
 
 @media (max-width: 768px) {
-.tbl-default td {
+  .section-header h2 {
+    /* font-size: 1.8rem; */
+    font-size: 30px;
+  }
+  .ai3Steps {
+    padding: 80px 0 50px;
+  }
+  .tbl-default td {
     padding-left: 5px;
   }
 }

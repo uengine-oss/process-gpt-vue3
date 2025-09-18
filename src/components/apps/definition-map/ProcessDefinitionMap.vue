@@ -234,7 +234,9 @@
             </v-card>
         </v-dialog>
 
-        <v-dialog v-model="openMarketplaceDialog" max-width="1200" persistent>
+        <v-dialog v-model="openMarketplaceDialog" max-width="1200" persistent
+            :fullscreen="isMobile"
+        >
             <process-definition-market-place @closeMarketplaceDialog="closeMarketplaceDialog" />
         </v-dialog>
     </div>

@@ -391,7 +391,11 @@ export default {
             this.loading = false
             try {
                 if (open) {
-                    this.analyzeDefinition(this.processDefinition);
+                    if (this.$refs.definitionComponent.copyProcessDefinition) {
+                        this.analyzeDefinition(this.$refs.definitionComponent.copyProcessDefinition);
+                    } else {
+                        this.analyzeDefinition(this.processDefinition);
+                    }
                 }
             } catch(e) {
                 console.log(e)

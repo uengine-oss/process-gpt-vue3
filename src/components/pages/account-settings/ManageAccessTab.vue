@@ -1,59 +1,74 @@
 <template>
     <v-card flat class="pa-4">
-        <div>
-            <v-row class="ma-0 pa-0">
-                <!-- 검색 -->
-                <v-row class="ma-0 pa-0 align-center border header-search rounded-pill px-5" style="background-color: #fff;">
-                    <Icons :icon="'magnifer-linear'" :size="22" />
-                    <v-text-field 
-                    v-model="search" 
-                    variant="plain" 
-                    density="compact"
-                    class="position-relative pt-0 ml-3 custom-placeholer-color" 
-                    :placeholder="$t('accountTab.search')"
-                    single-line 
-                    hide-details
-                    dense
-                    ></v-text-field>
-                </v-row>
-                <!-- <v-text-field v-model="search" label="Search User" hide-details prepend-inner-icon="mdi-magnify"></v-text-field> -->
-                <v-spacer></v-spacer>
-                <v-btn @click="openInviteUserCard = true"
-                    color="primary"
-                    variant="flat"
-                    rounded
-                >
-                    <v-icon style="padding-top: 3px;">mdi-account-plus</v-icon>
-                    <span class="ml-2">{{ $t('accountTab.addUser') }}</span>
-                </v-btn>
+        <v-row class="ma-0 pa-0">
+            <!-- 검색 -->
+            <v-row class="ma-0 pa-0 align-center border header-search rounded-pill px-5" style="background-color: #fff;">
+                <Icons :icon="'magnifer-linear'" :size="22" />
+                <v-text-field 
+                v-model="search" 
+                variant="plain" 
+                density="compact"
+                class="position-relative pt-0 ml-3 custom-placeholer-color" 
+                :placeholder="$t('accountTab.search')"
+                single-line 
+                hide-details
+                dense
+                ></v-text-field>
             </v-row>
-        </div>
+            <!-- <v-text-field v-model="search" label="Search User" hide-details prepend-inner-icon="mdi-magnify"></v-text-field> -->
+            <v-spacer></v-spacer>
+            <v-btn @click="openInviteUserCard = true"
+                color="primary"
+                variant="flat"
+                rounded
+            >
+                <v-icon style="padding-top: 3px;">mdi-account-plus</v-icon>
+                <span class="ml-2">{{ $t('accountTab.addUser') }}</span>
+            </v-btn>
+        </v-row>
 
-        <div class="mt-8">
+        <div class="manage-access-tab-table-box">
             <v-data-table :items="users" :search="search" :filter-keys="searchKey" :headers="headers" items-per-page="5">
                 <template v-slot:default="{ items }">
-                    <div class="overflow-hidden">
-                        <v-row v-for="item in items" :key="item.id">
-                            <v-col cols="9">
-                                <div class="d-flex align-center">
-                                    <div class="pl-5">
-                                        <v-img v-if="item.profile" :src="item.profile" width="45px" 
-                                            class="rounded-circle img-fluid" />
-                                        <v-avatar v-else>
-                                            <Icons :icon="'user-circle-bold'" :size="50" />
-                                        </v-avatar>
-                                    </div>
-                                    <div class="ml-5">
-                                        <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ item.name }}</h4>
-                                        <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ item.email }}</div>
-                                    </div>
-                                </div>
-                            </v-col>
-                            <v-col cols="3">
-                                <v-select v-model="item.is_admin" :items="adminItem" item-title="name" item-value="value"
-                                prefix="Role:" @update:model-value="updateUser(item)"></v-select>
-                            </v-col>
-                        </v-row>
+                    <div v-for="item in items" :key="item.id" 
+                        class="d-flex align-center justify-space-between pa-4 pr-0 pl-0 user-row"
+                    >
+                        <div class="d-flex align-center">
+                            <div>
+                                <v-img v-if="item.profile" :src="item.profile" width="45px" 
+                                    class="rounded-circle img-fluid" />
+                                <v-avatar v-else>
+                                    <Icons :icon="'user-circle-bold'" :size="50" />
+                                </v-avatar>
+                            </div>
+                            <div class="ml-5">
+                                <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ item.name }}</h4>
+                                <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ item.email }}</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-center">
+                            <v-chip variant="elevated"
+                                :color="item.is_admin ? 'primary' : 'gray'"
+                                class="chip-select-wrapper"
+                                size="x-small"
+                            >
+                                <v-select 
+                                    v-model="item.is_admin" 
+                                    :items="adminItem" 
+                                    item-title="name" 
+                                    item-value="value"
+                                    @update:model-value="updateUser(item)"
+                                    variant="plain"
+                                    density="compact"
+                                    hide-details
+                                    class="chip-select"
+                                >
+                                    <template v-slot:selection="{ item: selectedItem }">
+                                        {{ selectedItem.title }}
+                                    </template>
+                                </v-select>
+                            </v-chip>
+                        </div>
                     </div>
                 </template>
             </v-data-table>
@@ -64,33 +79,16 @@
         v-model="openInviteUserCard"
         max-width="800px"
         persistent
+        :fullscreen="checkIfMobile"
     >
-        <v-card>
-            <v-row v-if="isMobile" class="ma-0 pa-0">
-                <v-card-title class="headline">
-                    <h2 class="text-h4 text-grey-darken-2 mb-2">{{ $t('accountTab.inviteUser') }}</h2>
-                    <p class="text-subtitle-1 text-grey-darken-1">{{ $t('accountTab.inviteUserMessage') }}</p>
-                    <p class="text-caption text-grey-darken-1">{{ $t('accountTab.inviteUserMessage2') }}</p>
+        <v-card class="pa-4">
+            <v-row class="ma-0 pa-0 align-center">
+                <v-card-title class="pa-0"
+                >{{ $t('accountTab.inviteUser') }}
                 </v-card-title>
                 <v-spacer></v-spacer>
                 <v-btn @click="openInviteUserCard = false"
-                    variant="flat"
-                    rounded 
-                    density="compact"
-                    style="background-color: #808080;
-                    color: white;"
-                    class="ma-2 mr-4"
-                >{{ $t('accountTab.close') }}</v-btn>
-            </v-row>
-            <v-row v-else class="ma-0 pa-0">
-                <v-card-title class="headline">
-                    <h2 class="text-h4 text-grey-darken-2 mb-2">{{ $t('accountTab.inviteUser') }}</h2>
-                    <p class="text-subtitle-1 text-grey-darken-1">{{ $t('accountTab.inviteUserMessage') }}</p>
-                    <p class="text-caption text-grey-darken-1">{{ $t('accountTab.inviteUserMessage2') }}</p>
-                </v-card-title>
-                <v-spacer></v-spacer>
-                <v-btn @click="openInviteUserCard = false"
-                    class="ml-auto ma-2" 
+                    class="ml-auto" 
                     variant="text" 
                     density="compact"
                     icon
@@ -98,6 +96,10 @@
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>
+            <v-card-title class="headline pa-0">
+                <p class="text-subtitle-1 text-grey-darken-1">{{ $t('accountTab.inviteUserMessage') }}</p>
+                <p class="text-caption text-grey-darken-1">{{ $t('accountTab.inviteUserMessage2') }}</p>
+            </v-card-title>
             <v-card-text class="pa-0" max-height="500" style="overflow-y: auto;">
                 <InviteUserCard @close="closeInviteUserCard" type="manageAccess" :userList="users" />
             </v-card-text>
@@ -194,4 +196,63 @@ export default {
 .header-search {
     max-width: 280px;
 }
+
+.chip-select-wrapper {
+    cursor: pointer;
+}
+
+.chip-select {
+    width: 100%;
+}
+
+.chip-select .v-field {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+.chip-select .v-field__outline {
+    display: none !important;
+}
+
+.chip-select .v-field__input {
+    padding: 0 !important;
+    min-height: auto !important;
+    color: inherit !important;
+}
+
+.chip-select .v-field__field {
+    padding: 0 !important;
+}
+
+.chip-select .v-input__control {
+    min-height: auto !important;
+}
+
+.chip-select .v-field__append-inner {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.user-row {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+}
+
+.user-row:last-child {
+    border-bottom: none;
+}
+
+.user-row:hover {
+    background-color: #f8f9fa;
+}
+
+@media screen and (max-width: 768px) {
+    .header-search {
+        max-width: 160px !important;
+        min-width: 160px !important;
+    }
+}
+
+
 </style>
