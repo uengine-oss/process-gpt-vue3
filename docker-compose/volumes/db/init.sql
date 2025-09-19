@@ -58,6 +58,7 @@
 -- Enable required extensions
 create extension if not exists vector;
 create extension if not exists pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- ==========================================
 -- ENUM 타입 정의
@@ -69,7 +70,7 @@ CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 
 -- 에이전트 모드 enum
 CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
 -- 오케스트레이션 방식 enum
-CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-use');
+CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser_automation_agent');
 -- 드래프트 상태 enum
 CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
 -- 이벤트 타입 enum
@@ -1309,10 +1310,6 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA cron TO authenticated;
 -- ===============================================
 -- 테넌트 자동 삭제 기능 (deleted_at 기준 7일 후)
 -- ===============================================
-
--- pg_cron 확장 추가 (이미 있을 수 있지만 안전하게)
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
 -- 테넌트 정리 함수 (기존 start_process_scheduled 패턴과 동일)
 create or replace function public.cleanup_deleted_tenants_job(
   p_job_name text,
@@ -1713,7 +1710,7 @@ SET agent_orch_new = CASE
     WHEN agent_orch = 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
     WHEN agent_orch = 'crewai-action' THEN 'crewai-action'::agent_orch
     WHEN agent_orch = 'langchain-react' THEN 'langchain-react'::agent_orch
-    WHEN agent_orch = 'browser-use' THEN 'browser-use'::agent_orch
+    WHEN agent_orch = 'browser_automation_agent' THEN 'browser_automation_agent'::agent_orch
     ELSE NULL  -- 기본값을 NULL로 설정
 END;
 -- 3. 기존 컬럼 삭제 후 새 컬럼명 변경

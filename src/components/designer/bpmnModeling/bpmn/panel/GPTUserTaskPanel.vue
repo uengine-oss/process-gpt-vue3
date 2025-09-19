@@ -5,6 +5,7 @@
             class="pl-4 pr-4"
         >
             <v-tab value="setting">설정</v-tab>
+            <v-tab value="inputData">참조 정보</v-tab>
             <v-tab value="edit">폼 편집</v-tab>
             <v-tab value="preview">폼 미리보기</v-tab>
         </v-tabs>
@@ -46,8 +47,48 @@
                     <v-select v-model="activity.orchestration" :items="orchestrationItems" hide-details density="compact" label="에이전트 연구 방식">
                     </v-select>
                 </div>
-
             </v-window-item>
+
+            <!-- Input Data -->
+            <v-window-item value="inputData" class="pa-4">
+                <div class="my-4">
+                    <v-select
+                        v-model="selectedForms"
+                        :items="availableForms"
+                        item-title="title"
+                        item-value="formId"
+                        label="참조할 폼 선택"
+                        variant="outlined"
+                        density="compact"
+                        multiple
+                        chips
+                        closable-chips
+                    ></v-select>
+                </div>
+                <!-- Form Fields -->
+                <div v-if="selectedForms.length > 0">
+                    <v-card v-for="formId in selectedForms" :key="formId" class="mb-4" variant="outlined">
+                        <v-card-text class="pa-4">
+                            <div class="mb-3 text-subtitle-1">{{ getFormTitle(formId) }}</div>
+                            <v-row>
+                                <v-col cols="12" lg="6" md="6" sm="12" v-for="field in getFormFields(formId)" :key="`${formId}-${field.fieldId}`">
+                                    <v-checkbox
+                                        v-model="field.selected"
+                                        :label="field.fieldName"
+                                        density="compact"
+                                        hide-details
+                                    ></v-checkbox>
+                                </v-col>
+                            </v-row>
+                        </v-card-text>
+                    </v-card>
+                </div>
+                <!-- No form selected message -->
+                <div v-else class="text-center text-grey-500 py-8">
+                    폼을 선택해주세요
+                </div>
+            </v-window-item>
+
             <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
                 <FormDefinition
                     ref="formDefinition"
@@ -116,8 +157,12 @@ export default {
                 { title: 'Crewai Deep Research', value: 'crewai-deep-research' },
                 { title: 'Crewai Action', value: 'crewai-action' },
                 { title: 'OpenAI Deep Research', value: 'openai-deep-research' },
+                { title: 'Browser automation agent', value: 'browser-automation-agent' },
                 { title: 'Browser Use', value: 'browser-use' }
-            ]
+            ],
+            selectedForms: [],
+            availableForms: [],
+            formFields: {},
         };
     },
     created() {
@@ -129,7 +174,12 @@ export default {
                 if (!this.activity.agentMode) this.activity.agentMode = 'none';
                 if (!this.activity.orchestration) this.activity.orchestration = 'none';
                 if (this.activity.isDraft) delete this.activity.isDraft;
-                
+                if (this.activity.inputData) {
+                    const formIds = [...new Set(this.activity.inputData.map((item) => {
+                        return item.split(".")[0]
+                    }))]
+                    this.selectedForms = formIds;
+                }
             } else {
                 console.log('Activity not found');
             }
@@ -151,21 +201,54 @@ export default {
                 return this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
             }
             return null;
-        }
+        },
     },
     watch: {
         activity: {
             deep: true,
             handler(newVal, oldVal) {
-                console.log(this.processDefinition)
+                // console.log(this.processDefinition)
+                this.$emit('update:processDefinition', this.processDefinition);
                 this.EventBus.emit('process-definition-updated', this.processDefinition);
             }
         },
-        activeTab(newVal, oldVal) {
-            if (newVal !== oldVal) {
-                if (this.$refs.formDefinition && this.$refs.formDefinition[0]) {
-                    this.tempFormHtml = this.$refs.formDefinition[0].getFormHTML();
+        activeTab: {
+            deep: true,
+            async handler(newVal, oldVal) {
+                if (newVal !== oldVal) {
+                    if (this.$refs.formDefinition && this.$refs.formDefinition[0]) {
+                        this.tempFormHtml = this.$refs.formDefinition[0].getFormHTML();
+                    } else if (newVal == 'inputData') {
+                        await this.getPreviousForms();
+                    }
                 }
+            }
+        },
+        availableForms(newVal) {
+            if (newVal.length > 0) {
+                this.formFields = {};
+                newVal.forEach((form) => {
+                    this.formFields[form.formId] = [];
+                    form.fields.forEach((field) => {
+                        this.formFields[form.formId].push({
+                            fieldId: field.key,
+                            fieldName: field.text,
+                            selected: true
+                        });
+                    });
+                });
+            }
+        },
+        selectedForms:{
+            deep: true,
+            handler() {
+                this.updateInputData()
+            },
+        },
+        formFields: {
+            deep: true,
+            handler() {
+                this.updateInputData()
             }
         }
     },
@@ -273,6 +356,43 @@ export default {
         async openFile(path) {
             const downloadUrl = await this.backend.getFileUrl(path);
             window.open(downloadUrl, '_blank');
+        },
+
+        async getPreviousForms() {
+            const prevForms = await this.backend.getPreviousForms(this.element.id, this.processDefinition.processDefinitionId);
+            this.availableForms = prevForms.map((form) => {
+                return {
+                    formId: form.id,
+                    title: form.title,
+                    fields: form.fields_json || []
+                }
+            });
+        },
+        updateInputData() {
+            const inputData = []
+            this.selectedForms.forEach(formId => {
+                if (this.formFields[formId]) {
+                    this.formFields[formId].forEach(field => {
+                        if (field.selected) {
+                            inputData.push(`${formId}.${field.fieldId}`)
+                        }
+                    })
+                }
+            })
+            
+            this.activity.inputData = inputData
+        },
+        getFormTitle(formId) {
+            if (this.availableForms.length == 0) {
+                return formId;
+            }
+            return this.availableForms.find(form => form.formId === formId).title;
+        },
+        getFormFields(formId) {
+            if (this.formFields.length == 0) {
+                return [];
+            }
+            return this.formFields[formId];
         }
     }
 };

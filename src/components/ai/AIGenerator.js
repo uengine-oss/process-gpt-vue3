@@ -3,6 +3,27 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 
 export default class AIGenerator {
+    /**
+     * AIGenerator 생성자
+     * @param {Object} client - 클라이언트 객체
+     * @param {Object} options - 옵션 객체
+     * @param {string} options.provider - 'openai' 또는 'azure' (기본값: 'openai')
+     * @param {string} options.azureResource - Azure 리소스 이름 (Azure 사용시 필수)
+     * @param {string} options.azureDeployment - Azure 배포 이름 (Azure 사용시 필수)
+     * @param {string} options.azureApiVersion - Azure API 버전 (기본값: '2024-02-15-preview')
+     * 
+     * 사용 예시:
+     * // OpenAI 사용
+     * const generator = new AIGenerator(client, { provider: 'openai' });
+     * 
+     * // Azure OpenAI 사용
+     * const generator = new AIGenerator(client, { 
+     *   provider: 'azure',
+     *   azureResource: 'your-resource-name',
+     *   azureDeployment: 'your-deployment-name',
+     *   azureApiVersion: '2024-02-15-preview'
+     * });
+     */
     constructor(client, options) {
         this.client = client;
         this.finish_reason = null;
@@ -10,7 +31,12 @@ export default class AIGenerator {
         this.stopSignaled = false;
         this.gptResponseId = null;
         this.model = 'gpt-4o';
-
+        
+        // Provider 설정 (openai 또는 azure)
+        this.provider = 'openai'; // 기본값은 openai
+        this.azureEndpoint = "https://multiagent-openai-service.openai.azure.com";
+        this.azureDeployment = "gpt-4.1-mini";
+        this.azureApiVersion = "2024-02-15-preview";
         if (this.model.includes('vision')) {
             this.vision = true;
         }
@@ -254,25 +280,46 @@ export default class AIGenerator {
         // xhr.open('POST', url);
         // xhr.setRequestHeader('Content-Type', 'application/json');
         
+        // Provider에 따라 API 키 가져오기
+        const apiKeyName = this.provider === 'azure' ? 'azure' : 'openai';
         const response = await storage.getObject('api_key', {
             match: {
-                key: 'openai'
+                key: apiKeyName
             }
         }); 
-        const openaiToken = response?.value || null;
-        if(!openaiToken){
-            const errorMessage = "OpenAI API 키가 설정되지 않았습니다. 관리자에게 문의하세요.";
+        const apiToken = response?.value || null;
+        if(!apiToken){
+            const errorMessage = `${apiKeyName.toUpperCase()} API 키가 설정되지 않았습니다. 관리자에게 문의하세요.`;
             console.error(errorMessage);
             if (me.client.onError)
                 me.client.onError({ message: errorMessage });
             me.state = 'error';
             return;
         }
-        const url = "https://api.openai.com/v1/chat/completions";
+        // Provider에 따라 URL과 헤더 설정
+        let url, headers;
+        if (this.provider === 'azure') {
+            url = `${this.azureEndpoint}/openai/deployments/${this.azureDeployment}/chat/completions?api-version=${this.azureApiVersion}`;
+            headers = {
+                "Content-Type": "application/json",
+                "api-key": apiToken
+            };
+        } else {
+            // OpenAI 엔드포인트
+            url = "https://api.openai.com/v1/chat/completions";
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + apiToken
+            };
+        }
+        
         const xhr = new XMLHttpRequest();
         xhr.open("POST", url);
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.setRequestHeader("Authorization", "Bearer " + openaiToken);
+        
+        // 헤더 설정
+        Object.keys(headers).forEach(key => {
+            xhr.setRequestHeader(key, headers[key]);
+        });
         
         if(this.client.chatRoomId){
             xhr.originalChatRoomId = this.client.chatRoomId;
@@ -303,7 +350,7 @@ export default class AIGenerator {
                 if (!me.gptResponseId) {
                     me.gptResponseId = parsed.id;
                 }
-                if (parsed.choices[0].finish_reason == 'length') {
+                if (parsed.choices.length > 0 && parsed.choices[0].finish_reason == 'length') {
                     me.finish_reason = 'length';
                 }
                 
