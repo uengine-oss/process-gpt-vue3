@@ -31,12 +31,6 @@ export default class AIGenerator {
         this.stopSignaled = false;
         this.gptResponseId = null;
         this.model = 'gpt-4o';
-        
-        // Provider 설정 (openai 또는 azure)
-        this.provider = 'openai'; // 기본값은 openai
-        this.azureEndpoint = "https://multiagent-openai-service.openai.azure.com";
-        this.azureDeployment = "gpt-4.1-mini";
-        this.azureApiVersion = "2024-02-15-preview";
         if (this.model.includes('vision')) {
             this.vision = true;
         }
@@ -279,17 +273,23 @@ export default class AIGenerator {
         // const xhr = new XMLHttpRequest();
         // xhr.open('POST', url);
         // xhr.setRequestHeader('Content-Type', 'application/json');
+
+        const apiProvider = await storage.getObject('api_key', {
+            match: {
+                key: 'api_provider'
+            }
+        });
+
+        this.provider = apiProvider?.value || 'openai';
         
-        // Provider에 따라 API 키 가져오기
-        const apiKeyName = this.provider === 'azure' ? 'azure' : 'openai';
         const response = await storage.getObject('api_key', {
             match: {
-                key: apiKeyName
+                key: this.provider
             }
         }); 
         const apiToken = response?.value || null;
         if(!apiToken){
-            const errorMessage = `${apiKeyName.toUpperCase()} API 키가 설정되지 않았습니다. 관리자에게 문의하세요.`;
+            const errorMessage = `${this.provider.toUpperCase()} API 키가 설정되지 않았습니다. 관리자에게 문의하세요.`;
             console.error(errorMessage);
             if (me.client.onError)
                 me.client.onError({ message: errorMessage });
@@ -299,6 +299,11 @@ export default class AIGenerator {
         // Provider에 따라 URL과 헤더 설정
         let url, headers;
         if (this.provider === 'azure') {
+            
+            this.azureEndpoint = "https://multiagent-openai-service.openai.azure.com";
+            this.azureDeployment = "gpt-4.1-mini";
+            this.azureApiVersion = "2024-02-15-preview";
+
             url = `${this.azureEndpoint}/openai/deployments/${this.azureDeployment}/chat/completions?api-version=${this.azureApiVersion}`;
             headers = {
                 "Content-Type": "application/json",

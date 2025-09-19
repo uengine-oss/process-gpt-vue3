@@ -176,11 +176,10 @@
       <v-card-actions>
         <v-spacer />
           <v-btn @click="saveStrategy"
-              :disabled="!strategyForm.name || !strategyForm.perspective"
-              :color="themeColor"
-              variant="elevated" 
-              class="rounded-pill"
-              density="compact"
+            :disabled="!strategyForm.name || !strategyForm.perspective"
+            color="primary"
+            variant="flat"
+            rounded
           >{{ $t('BSCard.save') }}</v-btn>
       </v-card-actions>
     </v-card>
@@ -248,10 +247,9 @@
       <v-card-actions>
         <v-spacer />
           <v-btn @click="saveEditedStrategy"
-              :color="themeColor"
-              variant="elevated" 
-              class="rounded-pill"
-              density="compact"
+            color="primary"
+            variant="flat"
+            rounded
           >{{ $t('BSCard.save') }}</v-btn>
       </v-card-actions>
     </v-card>
