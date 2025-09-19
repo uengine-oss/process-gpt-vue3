@@ -78,7 +78,7 @@
                 </v-card>
                 <v-icon v-if="delegateUser"
                     class="mx-auto d-block"
-                    size="48" color="primary"
+                    size="48"
                 >mdi-arrow-down-bold
                 </v-icon>
                 <div>

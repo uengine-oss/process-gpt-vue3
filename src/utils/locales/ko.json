@@ -1626,7 +1626,7 @@
         "versionManagement": "버전 관리",
         "description": "설명:",
         "download": "다운로드",
-        "changeToVersion": "해당 버전으로 변경",
+        "changeToVersion": "버전으로 변경",
         "noXmlData": "선택된 버전의 XML 데이터가 없습니다.",
         "copiedToClipboard": "클립보드에 복사되었습니다."
     }
