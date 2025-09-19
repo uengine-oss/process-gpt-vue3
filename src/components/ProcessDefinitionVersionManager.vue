@@ -253,7 +253,11 @@ export default {
             me.key++
         },
         changeXML() {
-            this.$emit('changeXML', { "id": this.process.processDefinitionId, "name": this.currentVersionName, "xml": this.currentXML })
+            this.$emit('changeXML', {
+                "id": this.process.processDefinitionId,
+                "name": this.currentSelectedVersionName,
+                "xml": this.currentSelectedXML
+            });
         },
         downloadXML() {
             var me = this;

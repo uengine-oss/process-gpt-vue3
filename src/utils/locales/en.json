@@ -327,6 +327,7 @@
         "unlock": "Click the pencil icon to edit.",
         "processDefinitionSave": "Save",
         "history": "history button",
+        "historyDisabled": "history button : Available in edit mode.",
         "import": "Import BPMN File",
         "addImage": "Add Image",
         "fileUpLoad": "File Up Load",
