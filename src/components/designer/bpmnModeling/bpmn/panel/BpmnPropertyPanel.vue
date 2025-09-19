@@ -42,6 +42,9 @@
             <v-btn @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
                 <v-icon>mdi-content-save</v-icon>
             </v-btn>
+            <v-btn @click="closePanel" icon variant="text" density="comfortable" class="panel-close-btn">
+                <v-icon>mdi-close</v-icon>
+            </v-btn>
         </v-row>
         <v-card-text class="delete-input-details pa-0 pr-4 pl-4" style="overflow: auto; width: 50vw; min-width: 370px; height:calc(100% - 80px);">
             <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="pa-4 pb-0">
@@ -427,6 +430,9 @@ export default {
             } catch (error) {
                 console.error('템플릿 적용 중 오류 발생:', error);
             }
+        },
+        closePanel() {
+            this.$emit('close');
         }
     }
 };

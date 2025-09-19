@@ -327,6 +327,7 @@
         "unlock": "편집하려면 연필 아이콘을 누르세요.",
         "processDefinitionSave": "저장",
         "history": "버전 히스토리",
+        "historyDisabled": "버전 히스토리 : 편집모드에서 확인 가능합니다.",
         "import": "BPMN 파일 불러오기",
         "addImage": "이미지 추가",
         "fileUpLoad": "파일 업로드",

@@ -6,13 +6,13 @@ hr {
     opacity: 1 !important;
 }
 
-.version-manager-vuediff-box .vue-diff-viewer  {
-    font-size: 14px !important;
-}
-
 .version-manager-vuediff-box {
     height: 100% !important;
     overflow-y: auto !important;
+}
+
+.version-manager-vuediff-box .vue-diff-viewer  {
+    font-size: 14px !important;
 }
 
 .version-manager-vuediff-box .vue-diff-viewer{
@@ -1196,6 +1196,23 @@ hr {
 }
 
 @media only screen and (max-width: 768px) {
+    .version-manager-vuediff-box .vue-diff-viewer {
+        font-size: 11px !important;
+    }
+
+    .version-manager-vuediff-box pre {
+        padding-left: 0px !important;
+    }
+    
+    .version-manager-vuediff-box .vue-diff-viewer .vue-diff-row .lineNum {
+        width: 26px !important;
+        padding-left: 0px !important;
+    }
+    .version-manager-vuediff-box .vue-diff-viewer .vue-diff-row.vue-diff-row-split .code {
+        width: calc(50% - 16px) !important;
+        padding-right: 0px !important;
+    }
+    
     .process-definition-version-dialog-textarea .v-field__field {
         height: 25vh;
         overflow-y: auto;

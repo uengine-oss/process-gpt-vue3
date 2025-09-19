@@ -878,15 +878,16 @@ export default {
             if(me.mode == 'ProcessGPT') {
                 if (!info) return;
                 if (!info.id) return;
-                if (info.xml) {
-                    me.processDefinition = await me.convertXMLToJSON(info.xml);
-                }
-                await me.backend.putObject('proc_def', {
-                    id: info.id,
+                if (!info.xml) return;
+
+                // processDefinition 변환
+                me.processDefinition = await me.convertXMLToJSON(info.xml);
+
+                // 기존 putRawDefinition 메서드를 사용해서 안전하게 업데이트
+                await me.backend.putRawDefinition(info.xml, info.id, {
                     name: info.name,
-                    bpmn: info.xml,
                     definition: me.processDefinition
-                }); 
+                });
             } else {
                 
             }

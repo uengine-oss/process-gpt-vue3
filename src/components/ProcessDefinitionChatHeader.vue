@@ -114,12 +114,16 @@
                             <!-- 히스토리 아이콘 -->
                             <v-tooltip v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map'" location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                        density="comfortable" @click="toggleVerMangerDialog">
-                                        <HistoryIcon size="24" />
-                                    </v-btn>
+                                    <div v-bind="props" style="display: inline-block;">
+                                        <v-btn icon variant="text" type="file" class="text-medium-emphasis" 
+                                            density="comfortable" @click="toggleVerMangerDialog"
+                                            :disabled="lock"    
+                                        >
+                                            <HistoryIcon size="24" />
+                                        </v-btn>
+                                    </div>
                                 </template>
-                                <span>{{ $t('chat.history') }}</span>
+                                <span>{{ lock ? $t('chat.historyDisabled') : $t('chat.history') }}</span>
                             </v-tooltip>
                             <!-- xml보기 아이콘 -->
                             <v-tooltip location="bottom">

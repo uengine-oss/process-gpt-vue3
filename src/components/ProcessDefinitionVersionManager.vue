@@ -30,7 +30,7 @@
                 </v-alert>
             </div>
 
-            <div class="d-flex pa-4 pt-2"
+            <div class="d-flex pa-4 pt-2 align-center"
                 :class="showXML ? '' : 'pb-0'"
             >
                 <div class="mx-2">
@@ -55,7 +55,7 @@
             >
                 <div v-if="showXML" style="height: 100%; position: relative;">
                     <div class="version-manager-version-number" style="left: 0px; top: -32px;">버전: {{ currentSelectedVersion }}</div>
-                    <div class="version-manager-version-number" style="right: 45%; top: -32px; left: auto;">버전: {{ latestVersion }}</div>
+                    <div class="version-manager-version-number" style="left: 50%; top: -32px;">버전: {{ latestVersion }}</div>
                     <vuediff :prev="currentSelectedXML || ''" :current="currentXML || ''" mode="split" theme="light"
                         class="version-manager-vuediff-box"
                         language="xml"
@@ -105,7 +105,7 @@
             <v-card-actions class="pa-0 pt-2">
                 <v-slider v-model="currentIndex" step="1" min="0" :max="lists.length - 1" show-ticks="always"
                     tick-size="4" @end="handleBeforeChange" :hide-details="true"
-                    style="padding: 0; margin-right: 20px; margin-left: 30px;"></v-slider>
+                    style="padding: 0; margin-right: 16px; margin-left: 16px;"></v-slider>
             </v-card-actions>
         </v-card>
     </v-dialog>
@@ -253,7 +253,11 @@ export default {
             me.key++
         },
         changeXML() {
-            this.$emit('changeXML', { "id": this.process.processDefinitionId, "name": this.currentVersionName, "xml": this.currentXML })
+            this.$emit('changeXML', {
+                "id": this.process.processDefinitionId,
+                "name": this.currentSelectedVersionName,
+                "xml": this.currentSelectedXML
+            });
         },
         downloadXML() {
             var me = this;
@@ -329,6 +333,8 @@ export default {
             
             const currentActivities = me.currentInfo.activities || [];
             const lastActivities = me.lastProcessInfo.activities || [];
+            const currentSequences = me.currentInfo.sequences || [];
+            const lastSequences = me.lastProcessInfo.sequences || [];
             
             // 현재 액티비티 ID 목록
             const currentActivityIds = currentActivities.map(act => act.id);
@@ -360,6 +366,46 @@ export default {
                     if (currentJson !== lastJson) {
                         me.leftDiffActivities[currentActivity.id] = 'modified';
                         me.rightDiffActivities[lastActivity.id] = 'modified';
+                    }
+                }
+            });
+
+            // === 연결선(Sequences) 비교 로직 추가 ===
+            
+            // 현재 연결선 ID 목록 (source-target 조합으로 고유 식별)
+            const currentSequenceKeys = currentSequences.map(seq => `${seq.source}-${seq.target}`);
+            const lastSequenceKeys = lastSequences.map(seq => `${seq.source}-${seq.target}`);
+            
+            // 삭제된 연결선 찾기 (현재에는 있지만 다음에는 없는 것)
+            currentSequences.forEach(sequence => {
+                const sequenceKey = `${sequence.source}-${sequence.target}`;
+                if (!lastSequenceKeys.includes(sequenceKey)) {
+                    me.leftDiffActivities[sequence.id] = 'deleted';
+                }
+            });
+            
+            // 추가된 연결선 찾기 (다음에는 있지만 현재에는 없는 것)
+            lastSequences.forEach(sequence => {
+                const sequenceKey = `${sequence.source}-${sequence.target}`;
+                if (!currentSequenceKeys.includes(sequenceKey)) {
+                    me.rightDiffActivities[sequence.id] = 'added';
+                }
+            });
+            
+            // 수정된 연결선 찾기 (양쪽 다 있지만 내용이 변경된 것)
+            currentSequences.forEach(currentSequence => {
+                const sequenceKey = `${currentSequence.source}-${currentSequence.target}`;
+                const lastSequence = lastSequences.find(seq => 
+                    `${seq.source}-${seq.target}` === sequenceKey
+                );
+                if (lastSequence) {
+                    // 속성 비교를 위해 JSON 문자열로 변환하여 비교
+                    const currentJson = JSON.stringify(currentSequence);
+                    const lastJson = JSON.stringify(lastSequence);
+                    
+                    if (currentJson !== lastJson) {
+                        me.leftDiffActivities[currentSequence.id] = 'modified';
+                        me.rightDiffActivities[lastSequence.id] = 'modified';
                     }
                 }
             });
@@ -422,5 +468,9 @@ export default {
     font-weight: bold;
     z-index: 10;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* 모바일에서 더 컴팩트하게 */
+@media (max-width: 768px) {
 }
 </style>
