@@ -6,6 +6,23 @@ hr {
     opacity: 1 !important;
 }
 
+.version-manager-vuediff-box .vue-diff-viewer  {
+    font-size: 14px !important;
+}
+
+.version-manager-vuediff-box {
+    height: 100% !important;
+    overflow-y: auto !important;
+}
+
+.version-manager-vuediff-box .vue-diff-viewer{
+    padding-top: 0px !important;
+}
+
+.version-history-switch .v-label {
+    font-size: 14px !important;
+}
+
 .connection-info-tab-headers {
     height: calc(100vh - 500px);
     overflow: auto;
@@ -801,7 +818,7 @@ hr {
 }
 
 .process-consulting-ai-first-screen .chat-view-box-col {
-    max-height: calc(100vh - 450px) !important;   /* shrink 허용! */
+    height: calc(100vh - 250px) !important;   /* shrink 허용! */
     overflow-y: auto;
 }
 

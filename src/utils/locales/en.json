@@ -1626,7 +1626,7 @@
         "versionManagement": "Version Management",
         "description": "Description:",
         "download": "Download",
-        "changeToVersion": "Change to this version",
+        "changeToVersion": "Change to Version",
         "noXmlData": "No XML data available for the selected version.",
         "copiedToClipboard": "Copied to clipboard."
     }
