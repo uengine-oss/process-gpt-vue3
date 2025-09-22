@@ -161,8 +161,8 @@ export default {
                 },
                 { 
                     value: 'browser-use', 
-                    label: 'Browser Use', 
-                    startLabel: 'Browser Use', 
+                    label: 'Browser Automation Agent', 
+                    startLabel: 'Browser Automation Agent', 
                     icon: 'browser'
                 }
             ]
