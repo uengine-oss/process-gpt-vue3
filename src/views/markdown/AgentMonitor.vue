@@ -441,7 +441,7 @@ export default {
         { value: 'crewai-action', label: this.$t('agentMonitor.crewaiAction'), startLabel: 'CrewAI Action', icon: 'flowchart' },
         { value: 'openai-deep-research', label: this.$t('agentMonitor.openaiDeepResearch'), startLabel: 'OpenAI Deep Research', icon: 'playoff' },
         { value: 'langchain-react', label: this.$t('agentMonitor.langchainReact'), startLabel: 'LangChain Research', icon: 'playoff' },
-        { value: 'browser-automation-agent', label: 'Browser Use', startLabel: 'Browser Use', icon: 'browser' }
+        { value: 'browser-automation-agent', label: 'Browser Automation Agent', startLabel: 'Browser Automation Agent', icon: 'browser' }
       ]
     }
   },
