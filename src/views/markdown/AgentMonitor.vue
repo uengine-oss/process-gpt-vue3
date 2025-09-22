@@ -1,6 +1,6 @@
 <template>
-    <BrowserAgent v-if="openBrowserAgent" :html="html" :workItem="workItem" :doneWorkItemList="doneWorkItemList" />
-    <div v-else class="agent-monitor" :class="{ 'actions-mode': isActionsMode }">
+    <!-- <BrowserAgent v-if="openBrowserAgent" :html="html" :workItem="workItem" :doneWorkItemList="doneWorkItemList" /> -->
+    <div class="agent-monitor" :class="{ 'actions-mode': isActionsMode }">
         <div class="task-area" ref="taskArea">
             <div v-if="errorMessage" class="error-banner">{{ errorMessage }}</div>
           
@@ -78,6 +78,25 @@
                 </template>
             </Chat>
         </div>
+
+        <v-dialog v-model="browserDialog" max-width="70%" persistent>
+            <v-card class="browser-dialog">
+                <v-card-title class="browser-dialog-header">
+                    <span>브라우저 자동화 결과</span>
+                    <v-btn icon @click="closeBrowserDialog" class="close-btn">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="browser-dialog-content">
+                    <iframe 
+                        :src="browserIframeUrl" 
+                        class="browser-dialog-iframe" 
+                        frameborder="0" 
+                        allowfullscreen>
+                    </iframe>
+                </v-card-text>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -160,12 +179,18 @@ export default {
                     icon: 'playoff'
                 },
                 { 
-                    value: 'browser-use', 
+                    value: 'browser-automation-agent', 
                     label: 'Browser Automation Agent', 
                     startLabel: 'Browser Automation Agent', 
                     icon: 'browser'
                 }
-            ]
+            ],
+
+            todolistChannel: null,
+            // 브라우저 자동화 에이전트 관련
+            showBrowserIframe: false,
+            browserIframeUrl: '',
+            browserDialog: false,
         }
     },
     computed: {
@@ -256,7 +281,7 @@ export default {
             return allTasks.sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
         },
         showDownloadButton() {
-            return this.selectedOrchestrationMethod === 'browser-use' && !this.downloadedBrowserAgent
+            return this.selectedOrchestrationMethod === 'browser-automation-agent' && !this.downloadedBrowserAgent
         },
         toolUsageStatusByTask() {
             const usageMap = {}
@@ -713,6 +738,38 @@ export default {
                             this.handleError(null, '실시간 이벤트 구독에 실패했습니다');
                         }
                     });
+
+                    // Todolist 테이블 구독 (특정 todo ID만)
+                    const taskId = this.getTaskIdFromWorkItem();
+                    if (taskId) {
+                        this.todolistChannel = window.$supabase
+                            .channel(`todolist-${taskId}`)
+                            .on('postgres_changes', { 
+                                event: 'UPDATE', 
+                                schema: 'public', 
+                                table: 'todolist',
+                                filter: `id=eq.${taskId}`
+                            }, ({ new: row, old: oldRow }) => {
+                                // consumer 값이 변경된 경우에만 처리
+                                if (row.consumer !== oldRow.consumer) {
+                                    this.todoStatus = { ...this.todoStatus, ...row };
+                                    
+                                    // 브라우저 자동화 에이전트 iframe 처리
+                                    if (row.agent_orch === 'browser-automation-agent' && row.consumer) {
+                                    this.browserIframeUrl = `http://34.64.39.223:6080/vnc/${row.consumer}/vnc.html`;
+                                    this.showBrowserIframe = true;
+                                    } else if (row.agent_orch === 'browser-automation-agent' && !row.consumer) {
+                                    this.showBrowserIframe = false;
+                                    this.browserIframeUrl = '';
+                                    }
+                                }
+                            })
+                            .subscribe((status) => {
+                                if (status === 'SUBSCRIPTION_ERROR') {
+                                    this.handleError(null, '실시간 todolist 구독에 실패했습니다');
+                                }
+                            });
+                    }
             } catch (error) {
                 this.handleError(error, '실시간 구독 중 오류가 발생했습니다');
             }
@@ -803,6 +860,9 @@ export default {
             if (this.channel) {
                 window.$supabase.removeChannel(this.channel)
             }
+            if (this.todolistChannel) {
+                window.$supabase.removeChannel(this.todolistChannel)
+            }
         },
 
         // ========================================
@@ -817,19 +877,19 @@ export default {
         // ========================================
         async startTask() {
             // Browser Use 특별 처리
-            if (this.selectedOrchestrationMethod === 'browser-use') {
-                try {
-                    const workItemList = await backend.getWorkListByInstId(this.workItem.worklist.instId);
-                    if (workItemList) {
-                        this.doneWorkItemList = workItemList
-                            .filter(item => item.status === 'DONE' && item.task?.content)
-                            .map(item => ({ name: item.name, output: item.task.content }));
-                    }
-                    this.openBrowserAgent = true;
-                } catch (error) {
-                    this.handleError(error, 'Browser Agent 준비 중 오류가 발생했습니다');
-                }
-                return;
+            if (this.selectedOrchestrationMethod === 'browser-automation-agent') {
+                // try {
+                //     const workItemList = await backend.getWorkListByInstId(this.workItem.worklist.instId);
+                //     if (workItemList) {
+                //         this.doneWorkItemList = workItemList
+                //             .filter(item => item.status === 'DONE' && item.task?.content)
+                //             .map(item => ({ name: item.name, output: item.task.content }));
+                //     }
+                //     this.openBrowserAgent = true;
+                // } catch (error) {
+                //     this.handleError(error, 'Browser Agent 준비 중 오류가 발생했습니다');
+                // }
+                // return;
             }
 
             const taskId = this.validateTaskId();
@@ -866,7 +926,7 @@ export default {
             try {
                 const { data, error } = await window.$supabase
                     .from('todolist')
-                    .select('status, agent_mode, draft_status, feedback, agent_orch')
+                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer')
                     .eq('id', taskId)
                     .single();
 
@@ -875,6 +935,15 @@ export default {
                 this.todoStatus = data;
                 this.isLoading = ['STARTED', 'FB_REQUESTED'].includes(data.draft_status);
                 this.isCancelled = data.draft_status === 'CANCELLED';
+
+                // 브라우저 자동화 에이전트 iframe 초기 설정
+                if (data.agent_orch === 'browser-automation-agent' && data.consumer) {
+                    this.browserIframeUrl = `http://34.64.39.223:6080/vnc/${data.consumer}/vnc.html`;
+                    this.showBrowserIframe = true;
+                } else if (data.agent_orch === 'browser-automation-agent' && !data.consumer) {
+                    this.showBrowserIframe = false;
+                    this.browserIframeUrl = '';
+                }
 
                 // 피드백 데이터 처리
                 const feedbackArr = this.safeArrayParse(data.feedback);
@@ -1017,6 +1086,16 @@ export default {
                 const results = await Promise.all(eventPromises);
                 this.events = results.flat();
             }
+        },
+
+        // ========================================
+        // 🔧 Browser Dialog 메서드들
+        // ========================================
+        openBrowserDialog(taskId) {
+            this.browserDialog = true;
+        },
+        closeBrowserDialog() {
+            this.browserDialog = false;
         },
     },
     async created() {
@@ -1217,4 +1296,108 @@ export default {
     .option-icon { font-size: 14px; }
 }
 
+/* 브라우저 자동화 에이전트 iframe 스타일 */
+.browser-iframe-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
+}
+
+.iframe-header {
+  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+  color: white;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.iframe-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.iframe-header p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.browser-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto -800px auto; /* 하단 마진 제거 */
+  position: relative;
+  overflow: hidden; /* 여백 숨김 */
+}
+
+.browser-iframe {
+  width: 100%;
+  height: 500px; /* 높이 대폭 줄임 */
+  border: none;
+  background: white;
+  transform: scale(0.3); /* 30% 축소 */
+  transform-origin: top left;
+  width: 333%; /* 축소된 만큼 너비 조정 */
+  height: 1200px; /* 축소된 만큼 높이 조정 */
+}
+
+/* Browser Preview Styles */
+.browser-preview {
+  position: relative;
+  cursor: pointer;
+}
+
+.expand-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+}
+
+.expand-btn {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.expand-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+/* Browser Dialog Styles */
+.browser-dialog {
+  height: 80vh;
+}
+
+.browser-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.close-btn {
+  margin-left: auto;
+}
+
+.browser-dialog-content {
+  padding: 0;
+  height: calc(80vh - 80px);
+  overflow: hidden;
+}
+
+.browser-dialog-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: white;
+}
 </style>

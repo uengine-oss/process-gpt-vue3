@@ -31,6 +31,22 @@
                     </div>
                 </div>
 
+                <div v-if="item.payload.crewType === 'browser-use' && !item.payload.isCompleted" class="browser-container">
+                    <div class="browser-preview" @click="openBrowserDialog(item.id)">
+                        <iframe 
+                            :src="browserIframeUrl" 
+                            class="browser-iframe" 
+                            frameborder="0" 
+                            allowfullscreen>
+                        </iframe>
+                        <div class="expand-overlay">
+                            <v-btn icon class="expand-btn">
+                                <v-icon size="large">mdi-fullscreen</v-icon>
+                            </v-btn>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Human Asked 응답 영역 -->
                 <div v-if="item.payload.isHumanAsked" class="human-query-input">
                     <div class="query-header">
@@ -124,16 +140,70 @@
                             </div>
                         </div>
                         
+                        <!-- Browser-use 결과 -->
+                        <div v-else-if="item.payload.crewType === 'browser-use'" class="pa-4 browser-result">
+                            <div class="browser-result-header">
+                                <h5>브라우저 자동화 결과</h5>
+                                <div class="browser-status" :class="{ 'success': item.payload.outputRaw?.success }">
+                                {{ item.payload.outputRaw?.success ? '✅ 완료' : '❌ 실패' }}
+                                </div>
+                            </div>
+                            
+                            <div v-if="item.payload.outputRaw?.result_summary" class="browser-summary">
+                                <h6>작업 요약</h6>
+                                <div class="summary-text">{{ item.payload.outputRaw.result_summary }}</div>
+                            </div>
+                            
+                            <div v-if="item.payload.outputRaw?.tools_found?.length" class="browser-tools">
+                                <h6>발견된 도구</h6>
+                                <div class="tools-list">
+                                    <span v-for="tool in item.payload.outputRaw.tools_found" :key="tool" class="tool-tag">
+                                        {{ tool }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div v-if="item.payload.outputRaw?.search_engines_used?.length" class="browser-engines">
+                                <h6>사용된 검색 엔진</h6>
+                                <div class="engines-list">
+                                    <span v-for="engine in item.payload.outputRaw.search_engines_used" :key="engine" class="engine-tag">
+                                        {{ engine }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div v-if="item.payload.outputRaw?.completed_at" class="browser-time">
+                                <h6>완료 시간</h6>
+                                <div class="time-text">{{ formatDateTime(item.payload.outputRaw.completed_at) }}</div>
+                            </div>
+
+                            <!-- 생성된 파일들 -->
+                            <div v-if="item.payload.outputRaw?.generated_files" class="browser-files">
+                                <h6>생성된 파일</h6>
+                                <div class="files-list">
+                                    <div v-for="(file, fileName) in item.payload.outputRaw.generated_files" :key="fileName" class="file-item">
+                                        <div class="file-header">
+                                            <span class="file-name">{{ fileName }}</span>
+                                            <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                                        </div>
+                                        <div v-if="file.content" class="file-content">
+                                            <div class="markdown-container" v-html="formatMarkdownContent(file.content)"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- 마크다운 결과 -->
                         <div v-else-if="isMarkdownType(item.payload.crewType)" 
-                                :class="['markdown-container', { 
-                                    expanded: isTaskExpanded(item.payload.id),
-                                    'has-expand-controls': shouldShowExpandControls(item.payload)
-                                }]"
-                                @dblclick="toggleTaskExpansion(item.payload.id)"
-                                v-html="getMarkdownContent(item.payload)"
+                            :class="['markdown-container', { 
+                            expanded: isTaskExpanded(item.payload.id),
+                            'has-expand-controls': shouldShowExpandControls(item.payload)
+                            }]"
+                            @dblclick="toggleTaskExpansion(item.payload.id)"
+                            v-html="getMarkdownContent(item.payload)"
                         ></div>
-                        
+
                         <!-- JSON 결과 -->
                         <div v-else class="pa-4"
                             :class="['json-container', { 
@@ -249,7 +319,7 @@ export default {
                         this.todoStatus?.agent_mode === 'DRAFT'
         },
         isMarkdownType(crewType) {
-            return crewType === 'report' || crewType === 'action' || crewType === 'planning' || crewType === 'react'
+            return crewType === 'report' || crewType === 'action' || crewType === 'planning' || crewType === 'react' || crewType === 'browser-automation-agent'
         },
         shouldShowExpandControls(payload) {
             if (payload.crewType === 'slide') return false
@@ -260,6 +330,35 @@ export default {
                 ? payload.content 
                 : JSON.stringify(payload.content, null, 2);
             return this.isContentLong(rawJson);
+        },
+        formatFileSize(bytes) {
+            if (!bytes) return '';
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0 Bytes';
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+        },
+        formatMarkdownContent(content) {
+            if (!content) return '';
+            
+            // URL을 링크로 변환 (http/https로 시작하는 URL)
+            let formatted = content.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="content-link">$1</a>');
+            
+            // 마크다운을 HTML로 변환
+            formatted = formatted
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
+                .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
+                .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                .replace(/\n/g, '<br>');
+            
+            return formatted;
         },
         getToolUsageList(jobId) {
             return (!jobId || !this.toolUsageStatusByTask[jobId]) ? [] : this.toolUsageStatusByTask[jobId]
@@ -467,7 +566,19 @@ export default {
             } catch {
                 return fallback;
             }
-        }
+        },
+        formatDateTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        },
     }
 }
 </script>
@@ -1206,5 +1317,243 @@ export default {
     .slide-inner :deep(h1) { font-size: 1.8rem; }
     .slide-inner :deep(h2) { font-size: 1.4rem; }
     .slide-inner :deep(p) { font-size: 1rem; }
+}
+
+/* Browser Result Styles */
+.browser-result {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.browser-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.browser-result-header h5 {
+  margin: 0;
+  color: #495057;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.browser-status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.browser-status.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.browser-summary,
+.browser-tools,
+.browser-engines,
+.browser-time,
+.browser-files {
+  margin-bottom: 16px;
+}
+
+.browser-summary h6,
+.browser-tools h6,
+.browser-engines h6,
+.browser-time h6,
+.browser-files h6 {
+  margin: 0 0 8px 0;
+  color: #6c757d;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.summary-text {
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  white-space: pre-line;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tools-list,
+.engines-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tool-tag,
+.engine-tag {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #bbdefb;
+}
+
+.time-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d2129;
+}
+
+/* 파일 관련 스타일 */
+.files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.file-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  transition: box-shadow 0.2s ease;
+}
+
+.file-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.file-name {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.file-size {
+  font-size: 12px;
+  color: #6c757d;
+  background: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.file-content {
+  margin-top: 12px;
+}
+
+.file-content .markdown-container {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.file-content .markdown-container h1,
+.file-content .markdown-container h2,
+.file-content .markdown-container h3,
+.file-content .markdown-container h4,
+.file-content .markdown-container h5,
+.file-content .markdown-container h6 {
+  margin: 8px 0 4px 0;
+  color: #495057;
+}
+
+.file-content .markdown-container h1 { font-size: 18px; }
+.file-content .markdown-container h2 { font-size: 16px; }
+.file-content .markdown-container h3 { font-size: 15px; }
+.file-content .markdown-container h4 { font-size: 14px; }
+.file-content .markdown-container h5 { font-size: 13px; }
+.file-content .markdown-container h6 { font-size: 12px; }
+
+.file-content .markdown-container strong {
+  font-weight: 600;
+  color: #495057;
+}
+
+.file-content .markdown-container em {
+  font-style: italic;
+  color: #6c757d;
+}
+
+.file-content .markdown-container code {
+  background: #e9ecef;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.file-content .markdown-container pre {
+  background: #f1f3f4;
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.file-content .markdown-container pre code {
+  background: none;
+  padding: 0;
+}
+
+/* 링크 스타일 */
+.content-link {
+  color: #007bff;
+  text-decoration: none;
+  word-break: break-all;
+  border-bottom: 1px solid transparent;
+  transition: border-bottom-color 0.2s ease;
+}
+
+.content-link:hover {
+  color: #0056b3;
+  text-decoration: none;
+  border-bottom-color: #0056b3;
+}
+
+/* 스크롤바 스타일 */
+.file-content .markdown-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.file-content .markdown-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.file-content .markdown-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.file-content .markdown-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Firefox 스크롤바 스타일 */
+.file-content .markdown-container {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
 }
 </style>

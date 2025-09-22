@@ -36,15 +36,15 @@
                                     </v-icon>
                                 </v-card-text>
                                 <v-card-actions class="justify-end pa-4 pb-4 pr-4 mt-auto">
-                                    <v-btn v-if="showDownloadButton" 
+                                    <!-- <v-btn v-if="showDownloadButton" 
                                             @click="downloadBrowserAgent" 
                                             :disabled="selectedOrchestrationMethod !== option.value"
                                             :color="selectedOrchestrationMethod === option.value ? '' : 'primary'"
                                             variant="elevated" 
                                             class="rounded-pill"
                                             density="compact"
-                                    >{{ $t('agentMonitor.download') }}</v-btn>
-                                    <v-btn v-else 
+                                    >{{ $t('agentMonitor.download') }}</v-btn> -->
+                                    <v-btn 
                                             @click="startTask" 
                                             :disabled="selectedOrchestrationMethod !== option.value"
                                             :color="selectedOrchestrationMethod === option.value ? '' : 'primary'"
