@@ -519,9 +519,16 @@ class ProcessGPTBackend implements Backend {
                 })
             }
 
+            let currentActivities = [];
+            if (instance && instance.currentActivityIds) {
+                currentActivities = instance.currentActivityIds;
+            } else if (activityInfo && activityInfo.id && !workitem.adhoc) {
+                currentActivities = [ activityInfo.id ];
+            }
+
             const newWorkItem = {
                 worklist: {
-                    defId: workitem.proc_def_id,
+                    defId: workitem.proc_def_id || "",
                     endpoint: workitem.user_id,
                     instId: workitem.proc_inst_id,
                     rootInstId: null,
@@ -533,13 +540,13 @@ class ProcessGPTBackend implements Backend {
                     description: workitem.description || "",
                     tool: workitem.tool || "",
                     adhoc: workitem.adhoc || false,
-                    currentActivities: workitem.adhoc ? [] : (instance && instance.currentActivityIds ? instance.currentActivityIds : [ activityInfo.id ]),
+                    currentActivities: currentActivities,
                     defVerId: instance && instance.defVersion ? instance.defVersion : null,
                     output: workitem.output || "",
                     log: workitem.log || ""
                 },
                 activity: {
-                    name: workitem.activity_name,
+                    name: workitem.activity_name || "",
                     tracingTag: workitem.activity_id || '',
                     parameters: parameters || [],
                     outParameterContext: outParameterContext || {},
@@ -1645,6 +1652,16 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async fetchEventList(options?: any) {
+        try {
+            const response = await storage.list('events', options);
+            return response;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async fireMessage(instanceId: string, event: any) {
         throw new Error("Method not implemented.");
     }
@@ -1733,7 +1750,7 @@ class ProcessGPTBackend implements Backend {
                 role_bindings: instItem.roleBindings || [],
                 variables_data: instItem.variablesData || [],
                 status: instItem.status,
-                tenant_id: instItem.tenantId || 'localhost',
+                tenant_id: instItem.tenantId || window.$tenantName,
                 start_date: instItem.startDate,
                 end_date: instItem.endDate,
                 due_date: instItem.dueDate,
@@ -4411,6 +4428,15 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             console.error('Error checking rework enable:', error);
             return false;
+        }
+    }
+
+    async watchData(table: string, channel: string, callback: (payload: any) => void, options?: any) {
+        try {
+            const subscription = await storage.watch(table, channel, callback, options);
+            return subscription;
+        } catch (error) {
+            throw new Error(error.message);
         }
     }
 }

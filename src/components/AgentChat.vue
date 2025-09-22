@@ -17,6 +17,11 @@
                     ></Chat>
                 </div>
                 
+                <!-- Action Mode Tab Content -->
+                <div v-else-if="activeTab === 'actions'" style="height: 100%; width: 100%;">
+                    <AgentActions :instId="chatRoomId"></AgentActions>
+                </div>
+
                 <!-- Knowledge Management Tab Content -->
                 <div v-else-if="activeTab === 'knowledge'">
                     <AgentKnowledgeManagement 
@@ -47,6 +52,7 @@ import ChatModule from "@/components/ChatModule.vue";
 import Chat from "@/components/ui/Chat.vue";
 import AgentKnowledgeManagement from "@/components/AgentKnowledgeManagement.vue";
 import AgentChatInfo from "@/components/AgentChatInfo.vue";
+import AgentActions from "@/components/AgentActions.vue";
 
 import AgentChatGenerator from "@/components/ai/AgentChatGenerator.js";
 
@@ -56,7 +62,8 @@ export default {
         AppBaseCard,
         Chat,
         AgentKnowledgeManagement,
-        AgentChatInfo
+        AgentChatInfo,
+        AgentActions
     },
     data: () => ({
         agentInfo: {
@@ -71,7 +78,10 @@ export default {
 
         // knowledge management
         knowledges: [],
-        isLoading: false
+        isLoading: false,
+
+        // action mode
+        workItem: null,
     }),
     computed: {
         id() {
@@ -87,12 +97,15 @@ export default {
         },
         activeTab: {
             async handler(newVal) {
-                if(newVal === 'knowledge') {
+                if (newVal === 'knowledge') {
                     await this.getKnowledge();
-                } else if(newVal === 'question') {
+                } else if (newVal === 'question') {
                     this.isAgentLearning = false;
                     this.chatRoomId = `${this.agentInfo.id}-question`;
                     await this.getMessages(this.chatRoomId);
+                } else if (newVal === 'actions') {
+                    this.isAgentLearning = false;
+                    this.chatRoomId = `${this.agentInfo.id}-actions`;
                 } else {
                     this.isAgentLearning = true;
                     this.chatRoomId = `${this.agentInfo.id}-learning`;

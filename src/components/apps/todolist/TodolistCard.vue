@@ -43,8 +43,6 @@ export default {
         TodoDialog
     },
     data: () => ({
-        mode: window.$mode,
-        userInfo: null,
         todolist: [
             {
                 id: 'IN_PROGRESS',
@@ -95,9 +93,6 @@ export default {
         }
     },
     async mounted() {
-        this.mode = window.$mode;
-        this.userInfo = await backend.getUserInfo();
-
         await Promise.all([
             this.loadToDo(),
             this.loadCompletedWorkList(),
@@ -122,7 +117,8 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    let worklist = await backend.getWorkList({userId: this.userInfo.id})
+                    const userId = localStorage.getItem('uid');
+                    let worklist = await backend.getWorkList({userId: userId})
                     if(!worklist) worklist = []
                     worklist.forEach(function(item) {
                         if (item.status == 'TODO' || item.status == 'NEW' || item.status == 'DRAFT') {

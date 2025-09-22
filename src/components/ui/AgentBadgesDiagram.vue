@@ -124,7 +124,6 @@ export default {
         }
     },
     mounted() {
-        console.log(this.agentData);
         this.checkMobile();
         window.addEventListener('resize', this.handleResize);
     },
