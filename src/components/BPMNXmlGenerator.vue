@@ -34,6 +34,7 @@ export default {
         START_EVENT: 'StartEvent',
         END_EVENT: 'EndEvent',
         USER_TASK: 'bpmn:userTask',
+        MANUAL_TASK: 'bpmn:manualTask',
         SCRIPT_TASK: 'bpmn:scriptTask',
         SEND_TASK: 'bpmn:sendTask',
         SEQUENCE_FLOW: 'bpmn:sequenceFlow',
@@ -94,6 +95,8 @@ export default {
           return this.ELEMENT_TYPES.SEND_TASK;
         case 'CallActivity':
           return this.ELEMENT_TYPES.CALL_ACTIVITY;
+        case 'ManualActivity':
+          return this.ELEMENT_TYPES.MANUAL_TASK;
         default:
           return this.ELEMENT_TYPES.USER_TASK;
       }
@@ -1874,6 +1877,7 @@ export default {
         'ServiceActivity': 'bpmn:ServiceTask',
         'ScriptActivity': 'bpmn:ScriptTask',
         'EmailActivity': 'bpmn:SendTask',
+        'ManualActivity': 'bpmn:ManualTask',
         'ExclusiveGateway': 'bpmn:ExclusiveGateway',
         'ParallelGateway': 'bpmn:ParallelGateway',
         'Event': 'bpmn:IntermediateThrowEvent',

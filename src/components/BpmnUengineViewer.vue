@@ -212,16 +212,17 @@ export default {
                 const canvas = this.bpmnViewer.get('canvas');
                 // 이전 마커 제거 (선택 사항)
                 Object.keys(newVal).forEach(activityId => {
-                    canvas.removeMarker(activityId, 'added');
-                    canvas.removeMarker(activityId, 'deleted');
-                    canvas.removeMarker(activityId, 'modified');
+                    canvas.removeMarker(activityId, 'bpmn-diff-added');
+                    canvas.removeMarker(activityId, 'bpmn-diff-deleted');
+                    canvas.removeMarker(activityId, 'bpmn-diff-modified');
                 });
                 
                 // 새 마커 추가
                 Object.keys(newVal).forEach(activityId => {
                     const changeType = newVal[activityId];
                     if (activityId && changeType) {
-                        canvas.addMarker(activityId, changeType);
+                        const markerClass = `bpmn-diff-${changeType}`;
+                        canvas.addMarker(activityId, markerClass);
                     }
                 });
             }
@@ -531,7 +532,8 @@ export default {
                     Object.keys(self.diffActivities).forEach(activityId => {
                         const changeType = self.diffActivities[activityId];
                         if (activityId && changeType) {
-                            canvas.addMarker(activityId, changeType);
+                            const markerClass = `bpmn-diff-${changeType}`;
+                            canvas.addMarker(activityId, markerClass);
                         }
                     });
                 }
@@ -924,21 +926,72 @@ export default {
     background-color: rgba(255, 255, 255, 0.6); /* 반투명 백그라운드 0.6 적용 */
 }
 
-/* 변경점 표시를 위한 스타일 */
-.added .djs-visual > :nth-child(1) {
+/* BPMN 버전 비교를 위한 스타일 */
+/* 액티비티(Task, Gateway, Event 등)를 위한 스타일 */
+.bpmn-diff-added .djs-visual > :nth-child(1) {
     stroke: #2ecc71 !important; /* 초록색 - 추가된 항목 */
     stroke-width: 3px !important;
 }
 
-.deleted .djs-visual > :nth-child(1) {
+.bpmn-diff-deleted .djs-visual > :nth-child(1) {
     stroke: #e74c3c !important; /* 빨간색 - 삭제된 항목 */
     stroke-width: 3px !important;
 }
 
-.modified .djs-visual > :nth-child(1) {
-    stroke: #2ecc71 !important; /* 초록색 - 추가된 항목 */
+.bpmn-diff-modified .djs-visual > :nth-child(1) {
+    stroke: #2ecc71 !important; /* 초록색 - 수정된 항목 */
     /* stroke: #3498db !important; 파란색 - 수정된 항목 */
     stroke-width: 3px !important;
+}
+
+/* 연결선(Sequence Flow)만을 위한 스타일 - 추가/삭제만 */
+[data-element-id*="SequenceFlow"].bpmn-diff-added .djs-visual > path {
+    stroke: #2ecc71 !important; /* 초록색 - 추가된 연결선 */
+    stroke-width: 3px !important;
+}
+
+[data-element-id*="SequenceFlow"].bpmn-diff-deleted .djs-visual > path {
+    stroke: #e74c3c !important; /* 빨간색 - 삭제된 연결선 */
+    stroke-width: 3px !important;
+}
+
+/* 연결선의 화살표 마커 - 추가/삭제만 */
+[data-element-id*="SequenceFlow"].bpmn-diff-added .djs-visual > path[marker-end] {
+    stroke: #2ecc71 !important;
+    stroke-width: 3px !important;
+}
+
+[data-element-id*="SequenceFlow"].bpmn-diff-deleted .djs-visual > path[marker-end] {
+    stroke: #e74c3c !important;
+    stroke-width: 3px !important;
+}
+
+/* 화살표 마커 자체에 대한 스타일 */
+[data-element-id*="SequenceFlow"].bpmn-diff-added .djs-visual marker path {
+    fill: #2ecc71 !important;
+    stroke: #2ecc71 !important;
+}
+
+[data-element-id*="SequenceFlow"].bpmn-diff-deleted .djs-visual marker path {
+    fill: #e74c3c !important;
+    stroke: #e74c3c !important;
+}
+
+/* SVG 마커 정의에 대한 글로벌 스타일 */
+svg defs marker[id*="sequenceflow-end"] path {
+    transition: fill 0.2s, stroke 0.2s;
+}
+
+.bpmn-diff-added ~ svg defs marker[id*="sequenceflow-end"] path,
+svg .bpmn-diff-added marker[id*="sequenceflow-end"] path {
+    fill: #2ecc71 !important;
+    stroke: #2ecc71 !important;
+}
+
+.bpmn-diff-deleted ~ svg defs marker[id*="sequenceflow-end"] path,
+svg .bpmn-diff-deleted marker[id*="sequenceflow-end"] path {
+    fill: #e74c3c !important;
+    stroke: #e74c3c !important;
 }
 
 .view-mode .djs-palette {

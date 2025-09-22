@@ -1,8 +1,10 @@
 <template>
-    <v-dialog v-model="isOpen" max-width="100%" style="height: -webkit-fill-available;" persistent>
+    <v-dialog v-model="isOpen" max-width="100%" style="height: -webkit-fill-available;" persistent
+        :fullscreen="isMobile"
+    >
         <v-card flat>
-            <v-card-title class="d-flex">
-                <h5 class="text-h5">{{ $t('ProcessDefinitionVersionManager.versionManagement') }} [{{ currentVersionName }} ({{ currentVersion }})]</h5>
+            <v-card-title class="d-flex pa-4 pb-0">
+                 <h5 class="text-h5" :class="{ 'text-truncate': isMobile }" :style="{ maxWidth: isMobile ? '280px' : 'none' }">{{ currentVersionName }}</h5>
                 <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
                     style="margin-left: 5px;"
                 ></v-progress-circular>
@@ -10,8 +12,8 @@
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-card-title>
-            <div class="pa-4 pr-0 pt-0 pb-0"
-                style="max-height: 15vh;
+            <div class="pa-4 pt-0 pb-0"
+                style="height: 10vh;
                 overflow: auto;"
             >
                 <v-alert density="compact"
@@ -28,81 +30,82 @@
                 </v-alert>
             </div>
 
-            <div class="d-flex px-5">
+            <div class="d-flex pa-4 pt-2 align-center"
+                :class="showXML ? '' : 'pb-0'"
+            >
                 <div class="mx-2">
-                    <v-switch v-model="showXML" :label="showXML ? 'XML' : 'BPMN'" density="compact" color="primary" 
-                        hide-details></v-switch>
+                    <v-switch v-model="showXML" 
+                        class="version-history-switch"
+                        :label="showXML ? 'XML' : 'BPMN'"
+                        density="compact"
+                        color="primary" 
+                        hide-details
+                    ></v-switch>
                 </div>
-                <v-btn @click="downloadXML" variant="text" height="40" class="mx-2">
+                <v-btn @click="downloadXML" variant="text" class="mx-2">
                     {{ $t('ProcessDefinitionVersionManager.download') }}
                 </v-btn>
-                <v-btn @click="changeXML" variant="text" color="primary" :disabled="loading" height="40">
-                    {{ $t('ProcessDefinitionVersionManager.changeToVersion') }}
+                <v-btn @click="changeXML" variant="text" color="primary" :disabled="loading">
+                    {{ currentSelectedVersion }} 버전으로 변경
                 </v-btn>
             </div>
 
-            <v-card-text class="pa-4"
-                style="height: 100vh;"
+            <v-card-text :class="showXML ? 'pa-4 pt-6 pb-0' : 'pa-4'"
+                :style="showXML ? 'height: calc(100vh - 280px);' : 'height: 100vh;'"
             >
-                <div v-if="showXML" style="height: 100%; overflow-y: scroll;">
-                    <div class="diff-titles">
-                        <div class="diff-title" v-if="currentXML && beforeXML">Previous XML
-                            <v-btn size="x-small" @click="copyToClipboard(beforeXML)">
-                                <v-icon x-small>mdi-content-copy</v-icon>
-                            </v-btn>
-                        </div>
-                        <div class="diff-title current-xml-title">Current XML
-                            <v-btn size="x-small" @click="copyToClipboard(currentXML)">
-                                <v-icon x-small>mdi-content-copy</v-icon>
-                            </v-btn>
-                        </div>
-                    </div>
-                    <div v-if="currentXML && beforeXML">
-                        <vuediff :prev="beforeXML" :current="currentXML" mode="split" theme="light"
-                            language="xml" />
-                    </div>
-                    <div v-else style="margin-top: 15px;">
-                        <pre><code class="xml">{{ currentXML }}</code></pre>
-                    </div>
+                <div v-if="showXML" style="height: 100%; position: relative;">
+                    <div class="version-manager-version-number" style="left: 0px; top: -32px;">버전: {{ currentSelectedVersion }}</div>
+                    <div class="version-manager-version-number" style="left: 50%; top: -32px;">버전: {{ latestVersion }}</div>
+                    <vuediff :prev="currentSelectedXML || ''" :current="currentXML || ''" mode="split" theme="light"
+                        class="version-manager-vuediff-box"
+                        language="xml"
+                        style="height: 100%;"
+                    />
                 </div>
-                <div v-else style="height: 100%; display: flex; align-items: center; gap: 8px;">
+                <div v-else style="height: 100%; display: flex; align-items: center; gap: 8px;" :class="{ 'flex-column': isMobile }">
                     <v-card outlined
-                        style="width: 100%;
-                        height: 100%;"
+                        style="width: 100%; position: relative;"
+                        :style="{ height: isMobile ? '50%' : '100%' }"
                         elevation="10"
                     >
+                        <div class="version-manager-version-number">버전: {{ currentSelectedVersion }}</div>
                         <BpmnUengine
                             :key="key + '_left'"
                             :bpmn="currentSelectedXML"
                             :options="options"
                             :isViewMode="false"
                             :diffActivities="leftDiffActivities"
+                            :onLoadStart="() => {}"
+                            :onLoadEnd="() => {}"
                             style="height: 100%; width: 100%;"
                         ></BpmnUengine>
                     </v-card>
                     <div style="display: flex; align-items: center; justify-content: center;">
-                        <Icons :icon="'arrow-right'" />
+                        <v-icon :size="isMobile ? '24' : '48'">{{ isMobile ? 'mdi-arrow-down-bold' : 'mdi-arrow-right-bold' }}</v-icon>
                     </div>
                     <v-card outlined
-                        style="width: 100%;
-                        height: 100%;"
+                        style="width: 100%; position: relative;"
+                        :style="{ height: isMobile ? '50%' : '100%' }"
                         elevation="10"
                     >
+                        <div class="version-manager-version-number">버전: {{ latestVersion }}</div>
                         <BpmnUengine
                             :key="key + '_right'"
                             :bpmn="currentXML"
                             :options="options"
                             :isViewMode="false"
                             :diffActivities="rightDiffActivities"
+                            :onLoadStart="() => {}"
+                            :onLoadEnd="() => {}"
                             style="height: 100%; width: 100%;"
                         ></BpmnUengine>
                     </v-card>
                 </div>
             </v-card-text>
-            <v-card-actions>
+            <v-card-actions class="pa-0 pt-2">
                 <v-slider v-model="currentIndex" step="1" min="0" :max="lists.length - 1" show-ticks="always"
                     tick-size="4" @end="handleBeforeChange" :hide-details="true"
-                    style="padding: 0; margin-right: 20px; margin-left: 30px;"></v-slider>
+                    style="padding: 0; margin-right: 16px; margin-left: 16px;"></v-slider>
             </v-card-actions>
         </v-card>
     </v-dialog>
@@ -173,6 +176,27 @@ export default {
             }
             return null;
         },
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
+        beforeVersion() {
+            if (this.lists.length > 0 && this.lists[this.currentIndex - 1]) {
+                return this.lists[this.currentIndex - 1].version
+            }
+            return null;
+        },
+        currentSelectedVersion() {
+            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
+                return this.lists[this.currentIndex].version
+            }
+            return null;
+        },
+        latestVersion() {
+            if (this.lists.length > 0) {
+                return this.lists[this.lists.length - 1].version
+            }
+            return null;
+        },
     },
     watch: {
         "open": function (newVal) {
@@ -229,7 +253,11 @@ export default {
             me.key++
         },
         changeXML() {
-            this.$emit('changeXML', { "id": this.process.processDefinitionId, "name": this.currentVersionName, "xml": this.currentXML })
+            this.$emit('changeXML', {
+                "id": this.process.processDefinitionId,
+                "name": this.currentSelectedVersionName,
+                "xml": this.currentSelectedXML
+            });
         },
         downloadXML() {
             var me = this;
@@ -305,6 +333,8 @@ export default {
             
             const currentActivities = me.currentInfo.activities || [];
             const lastActivities = me.lastProcessInfo.activities || [];
+            const currentSequences = me.currentInfo.sequences || [];
+            const lastSequences = me.lastProcessInfo.sequences || [];
             
             // 현재 액티비티 ID 목록
             const currentActivityIds = currentActivities.map(act => act.id);
@@ -336,6 +366,46 @@ export default {
                     if (currentJson !== lastJson) {
                         me.leftDiffActivities[currentActivity.id] = 'modified';
                         me.rightDiffActivities[lastActivity.id] = 'modified';
+                    }
+                }
+            });
+
+            // === 연결선(Sequences) 비교 로직 추가 ===
+            
+            // 현재 연결선 ID 목록 (source-target 조합으로 고유 식별)
+            const currentSequenceKeys = currentSequences.map(seq => `${seq.source}-${seq.target}`);
+            const lastSequenceKeys = lastSequences.map(seq => `${seq.source}-${seq.target}`);
+            
+            // 삭제된 연결선 찾기 (현재에는 있지만 다음에는 없는 것)
+            currentSequences.forEach(sequence => {
+                const sequenceKey = `${sequence.source}-${sequence.target}`;
+                if (!lastSequenceKeys.includes(sequenceKey)) {
+                    me.leftDiffActivities[sequence.id] = 'deleted';
+                }
+            });
+            
+            // 추가된 연결선 찾기 (다음에는 있지만 현재에는 없는 것)
+            lastSequences.forEach(sequence => {
+                const sequenceKey = `${sequence.source}-${sequence.target}`;
+                if (!currentSequenceKeys.includes(sequenceKey)) {
+                    me.rightDiffActivities[sequence.id] = 'added';
+                }
+            });
+            
+            // 수정된 연결선 찾기 (양쪽 다 있지만 내용이 변경된 것)
+            currentSequences.forEach(currentSequence => {
+                const sequenceKey = `${currentSequence.source}-${currentSequence.target}`;
+                const lastSequence = lastSequences.find(seq => 
+                    `${seq.source}-${seq.target}` === sequenceKey
+                );
+                if (lastSequence) {
+                    // 속성 비교를 위해 JSON 문자열로 변환하여 비교
+                    const currentJson = JSON.stringify(currentSequence);
+                    const lastJson = JSON.stringify(lastSequence);
+                    
+                    if (currentJson !== lastJson) {
+                        me.leftDiffActivities[currentSequence.id] = 'modified';
+                        me.rightDiffActivities[lastSequence.id] = 'modified';
                     }
                 }
             });
@@ -372,5 +442,35 @@ export default {
     /* 텍스트를 좌측 정렬 */
     width: 50%;
     /* 부모 요소의 전체 너비를 차지하도록 설정 */
+}
+
+.flex-column {
+    flex-direction: column !important;
+}
+
+.custom-small-switch {
+    transform: scale(0.8);
+    transform-origin: left center;
+}
+
+.custom-small-switch .v-label {
+    font-size: 14px !important;
+}
+
+.version-manager-version-number {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 10;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* 모바일에서 더 컴팩트하게 */
+@media (max-width: 768px) {
 }
 </style>

@@ -93,6 +93,19 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
     - 각 액티비티의 담당자 역할
     - 프로세스에서 사용되는 데이터 변수
     - 서브프로세스가 필요한 경우: 반복되는 작업이나 독립적인 프로세스 단위로 분리할 수 있는 부분을 서브프로세스로 정의
+
+    액티비티 타입별 설명:
+    - UserActivity (사용자 태스크)**: 사람이 소프트웨어 애플리케이션을 통해 수행하는 작업
+      - 예시: 폼 작성, 승인, 검토, 의사결정, 데이터 입력 등
+      - 특징: 사용자 인터페이스를 통해 사람이 직접 처리하는 작업
+      
+    - EmailActivity (발송 태스크)**: 다른 풀(Pool)에 메시지를 전송하는 작업
+      - 예시: 알림 발송, 공지사항 전달, 승인 결과 통보 등
+      - 특징: 메시지가 전송되면 작업이 완료됨
+      
+    - ManualActivity (수동 태스크)**: 비즈니스 프로세스 실행 엔진이나 애플리케이션의 도움 없이 수행되는 작업
+      - 예시: 물리적 배송, 수동 검사, 전화 통화, 문서 스캔, 현장 작업 등
+      - 특징: 시스템이 자동화할 수 없는 사람의 직접적인 물리적 작업
     - 서브(하위)프로세스가 필요하다고 판단되는 경우:
       - 하나의 단계 자체가 Task 가 아닌 "subProcesses" 항목이 된다. 
         - 예를 들어 사용자의 요청이 
@@ -270,7 +283,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
             ],
             "elements": [
               {
-                "elementType": "Event",
+                "elementType": "Event || Sequence || Activity || Gateway", // 아래의 타입별 예시를 보고 생성할 것. 시작, 종료 이벤트와 시퀀스는 필수로 항시 생성되어야함.
                 "id": "event_id(영문)",
                 "name": "이벤트명(한글)",
                 "role": "역할명",
@@ -279,6 +292,58 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                 "description": "이벤트 설명(한글)",
                 "trigger": "트리거 조건"
               }
+              // 타입별 예시:
+              # Event
+                  {
+                    "elementType": "Event",
+                    "id": "event_id(영문)",
+                    "name": "이벤트명(한글)",
+                    "role": "역할명",
+                    "source": "이전_컴포넌트_id",
+                    "type": "StartEvent" | "EndEvent" | "IntermediateCatchEvent",
+                    "eventType": "Timer" | "Signal" | "Message" | "Conditional",
+                    "expression": "타이머 설정(cron 표현식) eventType이 Timer 인 경우에만 사용",
+                    "description": "이벤트 설명(한글)",
+                    "trigger": "트리거 조건"
+                  }
+              # Sequence
+                  {
+                    "elementType": "Sequence",
+                    "id": "sequence_id(영문)",
+                    "name": "시퀀스명(한글)",
+                    "source": "시작_컴포넌트_id",
+                    "target": "도착_컴포넌트_id",
+                    "condition": ${window.$mode !== 'ProcessGPT' ? `{
+                      "key": "데이터변수명",
+                      "condition": "==", // ==, !=, >, <, >=, <= 중 하나
+                      "value": "비교값"
+                    }` : '"조건문(한글)"'}
+                  }
+              # Activity
+                  {
+                    "elementType": "Activity",
+                    "id": "activity_id(영문, lowercase)",
+                    "name": "액티비티명(한글)",
+                    "type": "UserActivity" | "EmailActivity" | "ManualActivity",
+                    "source": "이전_컴포넌트_id",
+                    "description": "액티비티 설명(한글)",
+                    "instruction": "사용자 지침(한글)",
+                    "role": "역할명",
+                    "inputData": ["입력 데이터명"],
+                    "outputData": ["출력 데이터명"],
+                    "checkpoints": ["체크포인트1", "체크포인트2"],
+                    "duration": "5"
+                  }
+              # Gateway
+                  {
+                    "elementType": "Gateway",
+                    "id": "gateway_id(영문)",
+                    "name": "게이트웨이명(한글)",
+                    "role": "역할명",
+                    "source": "이전_컴포넌트_id",
+                    "type": "ExclusiveGateway" | "ParallelGateway" | "InclusiveGateway",
+                    "description": "게이트웨이 설명(한글)"
+                  }
             ],
             "subProcesses": [
               {
@@ -330,7 +395,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                       "name": "액티비티명(한글)",
                       "role": "역할명",
                       "tool": "formHandler:form_name",
-                      "type": "userTask" | "emailTask",
+                      "type": "userTask" | "emailTask" | "manualTask",
                       "process": "subprocess_id",
                       "duration": 5,
                       "inputData": [],
@@ -348,60 +413,6 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
               }
             ]
           }
-
-          ## 템플릿 elements
-
-          # 이벤트
-              {
-                "elementType": "Event",
-                "id": "event_id(영문)",
-                "name": "이벤트명(한글)",
-                "role": "역할명",
-                "source": "이전_컴포넌트_id",
-                "type": "StartEvent" | "EndEvent" | "IntermediateCatchEvent",
-                "eventType": "Timer" | "Signal" | "Message" | "Conditional",
-                "expression": "타이머 설정(cron 표현식) eventType이 Timer 인 경우에만 사용",
-                "description": "이벤트 설명(한글)",
-                "trigger": "트리거 조건"
-              }
-          # 시퀀스
-              {
-                "elementType": "Sequence",
-                "id": "sequence_id(영문)",
-                "name": "시퀀스명(한글)",
-                "source": "시작_컴포넌트_id",
-                "target": "도착_컴포넌트_id",
-                "condition": ${window.$mode !== 'ProcessGPT' ? `{
-                  "key": "데이터변수명",
-                  "condition": "==", // ==, !=, >, <, >=, <= 중 하나
-                  "value": "비교값"
-                }` : '"조건문(한글)"'}
-              }
-          # 액티비티
-              {
-                "elementType": "Activity",
-                "id": "activity_id(영문, lowercase)",
-                "name": "액티비티명(한글)",
-                "type": "UserActivity" | "EmailActivity",
-                "source": "이전_컴포넌트_id",
-                "description": "액티비티 설명(한글)",
-                "instruction": "사용자 지침(한글)",
-                "role": "역할명",
-                "inputData": ["입력 데이터명"],
-                "outputData": ["출력 데이터명"],
-                "checkpoints": ["체크포인트1", "체크포인트2"],
-                "duration": "5"
-              }
-          # 게이트웨이
-              {
-                "elementType": "Gateway",
-                "id": "gateway_id(영문)",
-                "name": "게이트웨이명(한글)",
-                "role": "역할명",
-                "source": "이전_컴포넌트_id",
-                "type": "ExclusiveGateway" | "ParallelGateway" | "InclusiveGateway",
-                "description": "게이트웨이 설명(한글)"
-              }
         `
     return baseStructure;
   }
