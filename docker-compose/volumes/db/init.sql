@@ -68,9 +68,9 @@ CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
 -- 할일 항목 상태 enum
 CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
 -- 에이전트 모드 enum
-CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
+CREATE TYPE agent_mode AS ENUM ('DRAFT', 'COMPLETE');
 -- 오케스트레이션 방식 enum
-CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-automation-agent');
+CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-automation-agent', 'a2a');
 -- 드래프트 상태 enum
 CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
 -- 이벤트 타입 enum
@@ -129,7 +129,7 @@ create table if not exists public.users (
     device_token text null,
     goal text null,
     persona text null,
-    url text null,
+    endpoint text null,
     description text null,
     tools text null,
     skills text null,
@@ -1689,11 +1689,9 @@ ALTER TABLE public.todolist ADD COLUMN agent_mode_new agent_mode;
 -- 2. 기존 데이터를 새 enum 타입으로 변환
 UPDATE public.todolist 
 SET agent_mode_new = CASE 
-    WHEN agent_mode = 'NONE' THEN 'NONE'::agent_mode
-    WHEN agent_mode = 'A2A' THEN 'A2A'::agent_mode
     WHEN agent_mode = 'DRAFT' THEN 'DRAFT'::agent_mode
     WHEN agent_mode = 'COMPLETE' THEN 'COMPLETE'::agent_mode
-    ELSE 'NONE'::agent_mode  -- 기본값 설정
+    ELSE NULL  -- 기본값 설정
 END;
 -- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
 ALTER TABLE public.todolist DROP COLUMN agent_mode;

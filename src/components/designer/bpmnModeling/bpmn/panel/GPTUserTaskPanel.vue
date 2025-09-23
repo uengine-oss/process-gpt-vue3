@@ -157,7 +157,8 @@ export default {
                 { title: 'Crewai Deep Research', value: 'crewai-deep-research' },
                 { title: 'Crewai Action', value: 'crewai-action' },
                 { title: 'OpenAI Deep Research', value: 'openai-deep-research' },
-                { title: 'Browser automation agent', value: 'browser-automation-agent' }
+                { title: 'Browser automation agent', value: 'browser-automation-agent' },
+                { title: 'Agent To Agent', value: 'a2a' }
             ],
             selectedForms: [],
             availableForms: [],
