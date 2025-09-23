@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-textarea v-model="instruction" label="지침" rows="3"></v-textarea>
+        <v-textarea v-model="description" label="설명" rows="3"></v-textarea>
     </div>
 </template>
 
@@ -11,12 +11,12 @@ export default {
     },
     data() {
         return {
-            instruction: this.modelValue ? JSON.parse(JSON.stringify(this.modelValue)) : '',            
+            description: this.modelValue ? JSON.parse(JSON.stringify(this.modelValue)) : '',            
         };
     },
 
     watch: {
-        instruction: {
+        description: {
             deep: true,
             handler(newValue) {
                 this.$emit('update:modelValue', newValue);

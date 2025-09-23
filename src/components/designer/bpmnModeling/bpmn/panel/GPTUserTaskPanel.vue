@@ -17,6 +17,8 @@
                 <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
                 <!-- Instruction -->
                 <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
+                <!-- Description -->
+                <Description v-model="activity.description" class="mb-4"></Description>
                 <!-- Checkpoints -->
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
                 <!-- Attachments -->
@@ -104,6 +106,7 @@
 <script>
 import Instruction from '@/components/designer/InstructionField.vue';
 import Checkpoints from '@/components/designer/CheckpointsField.vue';
+import Description from '@/components/designer/DescriptionField.vue';
 
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
@@ -115,6 +118,7 @@ export default {
     components: {
         Instruction,
         Checkpoints,
+        Description,
         FormDefinition
     },
     props: {
@@ -139,6 +143,7 @@ export default {
                 duration: 5,
                 attachments: [],
                 instruction: '',
+                description: '',
                 checkpoints: [''],
                 agentMode: 'none',
                 orchestration: 'none'
