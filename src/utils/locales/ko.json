@@ -305,7 +305,8 @@
         "restore": "복구",
         "restoreProcessMessage": "프로세스를 복구하시겠습니까?",
         "webFormUrl": "웹 폼 URL",
-        "isReadOnlyMode": "읽기 모드입니다."
+        "isReadOnlyMode": "읽기 모드입니다.",
+        "isReadOnlyModeWarningMsg": "읽기 모드입니다. 연필버튼을 클릭하여 수정하십시오."
     },
     "ProcessVariable": {
         "name": "이름",

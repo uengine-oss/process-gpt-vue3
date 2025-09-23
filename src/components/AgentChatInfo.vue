@@ -54,6 +54,10 @@
                     <v-icon start class="mr-2">mdi-chat</v-icon>
                     질의 모드
                 </v-tab>
+                <v-tab value="actions" class="text-left justify-start">
+                    <v-icon start class="mr-2">mdi-tools</v-icon>
+                    액션 모드
+                </v-tab>
                 <v-tab value="knowledge" class="text-left justify-start">
                     <v-icon start class="mr-2">mdi-database</v-icon>
                     지식 관리
