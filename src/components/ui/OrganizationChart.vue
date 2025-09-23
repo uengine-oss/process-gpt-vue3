@@ -25,6 +25,7 @@
             :show="showBadgesDiagram" 
             :agentData="selectedAgent" 
             @close="closeBadgesDiagram"
+            @openEditDialog="handleAgentEditFromBadges"
         />
         
         <!-- dialogs -->
@@ -449,6 +450,18 @@ export default {
         closeBadgesDiagram() {
             this.showBadgesDiagram = false;
             this.selectedAgent = null;
+        },
+        handleAgentEditFromBadges(agentData) {
+            // AgentBadgesDiagram에서 수정 버튼 클릭 시 호출
+            // selectedAgent를 editNode로 설정하고 수정 다이얼로그 열기
+            if (agentData) {
+                // 조직도에서 해당 에이전트 노드 찾기
+                const foundNode = this.findOriginalNodeById(this.node, agentData.id);
+                if (foundNode) {
+                    this.editNode = foundNode;
+                    this.openEditDialog('edit-agent');
+                }
+            }
         },
         openTeamDialog(type) {
             this.teamDialog = true;

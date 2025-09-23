@@ -185,7 +185,7 @@ export default {
         this.bpmnModeler = store.getModeler;
 
         // BPMN 모델 변경 이벤트 리스너 추가
-        this.setupModelChangeListener();
+        // this.setupModelChangeListener();
 
         // 템플릿 목록 불러오기
         if (this.isPALMode) {
