@@ -232,6 +232,26 @@ export default {
                     task.isCompleted = true
                     task.outputRaw = data || null
                     task.content = this.resolvePrimaryValue(data || null, task.crewType)
+                } else if (event_type === 'error') {
+                    // job_id 매칭 없이 독립 태스크 생성
+                    const message = (data && (data.message || data.msg)) || '오류가 발생했습니다'
+                    const key = id
+                    taskMap.set(key, {
+                        id,
+                        jobId: key,
+                        goal: data?.goal,
+                        name: data?.name,
+                        role: data?.role,
+                        crewType: 'text',
+                        startTime: timestamp,
+                        isCompleted: true,
+                        outputRaw: data || null,
+                        content: message,
+                        isCrewCompleted: false,
+                        agentProfile: data,
+                        isHumanAsked: false,
+                        isError: true
+                    })
                 } else if (event_type === 'human_asked') {
                     // human_asked 이벤트를 별도 작업으로 추가 (블루톤 카드용 텍스트 구성)
                     const baseDescription = this.$t('agentMonitor.humanApprovalDescription')
@@ -644,7 +664,7 @@ export default {
                     .from('events')
                     .select('*')
                     .eq('todo_id', taskId)
-                    .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked', 'human_response'])
+                    .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked', 'human_response', 'error'])
                     .order('timestamp', { ascending: true });
 
                 if (error) throw error;
@@ -675,7 +695,8 @@ export default {
                     'crew_completed',
                     'tool_usage_started',
                     'tool_usage_finished',
-                    'human_asked'
+                    'human_asked',
+                    'error'
                 ];
 
                 this.channel = window.$supabase
@@ -725,7 +746,8 @@ export default {
                                 }
                             }
 
-                            if (event_type === 'crew_completed') {
+                            // error 또는 crew_completed 수신 시: 로딩 해제
+                            if (event_type === 'error' || event_type === 'crew_completed') {
                                 this.isLoading = false;
                             }
 
@@ -785,7 +807,7 @@ export default {
 
             this.$nextTick(() => {
                 const task = this.tasks.find(t => t.jobId === jobId || t.id === row.id);
-                if (task && task.isCompleted && this.isSubmittableTask(task)) {
+                if (task && task.isCompleted) {
                     console.log('[AgentMonitor] submitTask 감지', task);
                     this.submitTask(task);
                 }
@@ -935,6 +957,27 @@ export default {
                 this.todoStatus = data;
                 this.isLoading = ['STARTED', 'FB_REQUESTED'].includes(data.draft_status);
                 this.isCancelled = data.draft_status === 'CANCELLED';
+
+                // FAILED 상태 시: 실패 알림 카드를 즉시 추가 (중복 방지)
+                if (String(data.draft_status).toUpperCase() === 'FAILED') {
+                    const hasAnyError = this.events.some(e => e.event_type === 'error');
+                    if (!hasAnyError) {
+                        this.events = [...this.events, {
+                            id: `failed-${taskId}`,
+                            event_type: 'error',
+                            crew_type: 'text',
+                            data: {
+                                message: '처리에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+                                name: '시스템 오류 알림',
+                                goal: '오류 원인과 대처 안내를 전달합니다.',
+                                agent_profile: '/images/chat-icon.png'
+                            },
+                            timestamp: new Date().toISOString(),
+                            todo_id: taskId
+                        }];
+                    }
+                    this.isLoading = false;
+                }
 
                 // 브라우저 자동화 에이전트 iframe 초기 설정
                 if (data.agent_orch === 'browser-automation-agent' && data.consumer) {
