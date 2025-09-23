@@ -110,6 +110,7 @@
             <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
                 <v-card elevation="1">
                     <bpmn-property-panel
+                        ref="bpmnPropertyPanel"
                         :element="element"
                         @close="closePanel"
                         :roles="roles"
@@ -133,6 +134,7 @@
             <div v-else-if="panel && isPal && isViewMode" style="position: fixed; z-index: 999; right: 0; top:123px; height: 100%">
                 <v-card elevation="1">
                     <bpmn-property-panel
+                        ref="bpmnPropertyPanel"
                         :element="element"
                         @close="closePanel"
                         :roles="roles"
@@ -934,11 +936,17 @@ export default {
         updateElement(element) {
             this.$emit('update');
         },
-        openPanel(id) {
+        async openPanel(id) {
             console.log(id);
             
             // 배경 요소 클릭 시 패널을 열지 않음
             if (id && (id.startsWith('Collaboration_') || id.startsWith('Process_'))) {
+                // 패널이 열려있는 상태에서 배경 클릭 시 저장 후 패널 닫기
+                if (this.panel && this.$refs.bpmnPropertyPanel) {
+                    this.$refs.bpmnPropertyPanel.save();
+                    return;
+                }
+                
                 if (this.isViewMode) {
                     this.$try({
                         action: async () => {
@@ -948,6 +956,14 @@ export default {
                     });
                 }
                 return;
+            }
+            
+            // 다른 요소 클릭 시 현재 패널이 열려있으면 저장 후 새 패널 열기
+            if (this.panel && this.$refs.bpmnPropertyPanel) {
+                // 현재 패널 저장
+                await this.$refs.bpmnPropertyPanel.save();
+                // save() 메서드에서 이미 패널을 닫으므로 잠시 기다린 후 새 패널 열기
+                await this.$nextTick();
             }
             
             this.element = this.findElement(this.definitions, 'id', id);
