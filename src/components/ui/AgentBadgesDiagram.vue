@@ -7,6 +7,13 @@
                     class="ml-2"
                 >
                     <div class="learning-buttons-item">
+                        <v-btn @click="openEditDialog"
+                            color="grey"
+                            variant="elevated" 
+                            class="rounded-pill mr-2"
+                            density="compact"
+                        >수정
+                        </v-btn>
                         <v-btn @click="goToLearning"
                             color="primary"
                             variant="elevated" 
@@ -17,14 +24,19 @@
                     </div>
                 </div>
                 <v-spacer></v-spacer>
-                <div class="header-controls">
-                    <div v-if="!isMobile" class="zoom-controls">
-                        <button @click="zoomOut" class="zoom-btn" :disabled="zoomLevel <= 0.5">-</button>
-                        <span class="zoom-level">{{ Math.round(zoomLevel * 100) }}%</span>
-                        <button @click="zoomIn" class="zoom-btn" :disabled="zoomLevel >= 2">+</button>
-                    </div>
-                    <button @click="close" class="close-btn">✕</button>
-                </div>
+                <v-row v-if="!isMobile" class="align-center">
+                    <button @click="zoomOut" class="zoom-btn" :disabled="zoomLevel <= 0.5">-</button>
+                    <span class="zoom-level">{{ Math.round(zoomLevel * 100) }}%</span>
+                    <button @click="zoomIn" class="zoom-btn" :disabled="zoomLevel >= 2">+</button>
+                </v-row>
+                <v-btn @click="close"
+                    class="ml-auto" 
+                    variant="text" 
+                    density="compact"
+                    icon
+                >
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
             </v-row>
             <div class="diagram-container" v-if="!isMobile">
                 <svg ref="profileDiagram" :width="svgWidth" :height="svgHeight" class="profile-svg">
@@ -653,6 +665,11 @@ export default {
 
         goToLearning() {
             this.$router.push(`/agent-chat/${this.agentData.id}`)
+        },
+
+        openEditDialog() {
+            // 부모 컴포넌트로 수정 이벤트 전달
+            this.$emit('openEditDialog', this.agentData);
         }
     }
 }
@@ -790,16 +807,15 @@ export default {
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 8px;
 }
 
 .zoom-controls {
-    display: flex;
     align-items: center;
     gap: 8px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 20px;
-    padding: 4px 12px;
+    padding: 4px 8px;
 }
 
 .zoom-btn {

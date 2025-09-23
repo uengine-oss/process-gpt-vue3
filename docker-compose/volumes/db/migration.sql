@@ -475,11 +475,21 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event_type_enum') THEN
         CREATE TYPE event_type_enum AS ENUM (
             'task_started','task_completed','tool_usage_started',
-            'tool_usage_finished','crew_completed','human_asked', 'human_response'
+            'tool_usage_finished','crew_completed','human_asked', 'human_response', 'error'
         );
         RAISE NOTICE 'Created event_type_enum enum type';
     ELSE
-        RAISE NOTICE 'event_type_enum enum type already exists';
+        -- 기존 enum에 error 값 추가
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_enum 
+            WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'event_type_enum')
+            AND enumlabel = 'error'
+        ) THEN
+            ALTER TYPE event_type_enum ADD VALUE 'error';
+            RAISE NOTICE 'Added error value to event_type_enum enum type';
+        ELSE
+            RAISE NOTICE 'error value already exists in event_type_enum enum type';
+        END IF;
     END IF;
 
     -- 드래프트 상태 enum
@@ -687,10 +697,12 @@ IF EXISTS (
     WHEN event_type = 'crew_completed' THEN 'crew_completed'::event_type_enum
     WHEN event_type = 'human_asked' THEN 'human_asked'::event_type_enum
     WHEN event_type = 'human_response' THEN 'human_response'::event_type_enum
+    WHEN event_type = 'error' THEN 'error'::event_type_enum
     ELSE NULL  -- 기본값을 NULL로 설정
     END;
     
     ALTER TYPE event_type_enum ADD VALUE IF NOT EXISTS 'human_response';
+    ALTER TYPE event_type_enum ADD VALUE IF NOT EXISTS 'error';
     ALTER TABLE public.events DROP COLUMN event_type;
     ALTER TABLE public.events RENAME COLUMN event_type_new TO event_type;
     

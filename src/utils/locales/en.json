@@ -305,7 +305,8 @@
         "restore": "Restore",
         "restoreProcessMessage": "Do you want to restore the process?",
         "webFormUrl": "Web Form URL",
-        "isReadOnlyMode": "Read-only mode."
+        "isReadOnlyMode": "Read-only mode.",
+        "isReadOnlyModeWarningMsg": "읽기 모드입니다. 연필버튼을 클릭하여 수정하십시오."
     },
     "ProcessVariable": {
         "name": "Name",

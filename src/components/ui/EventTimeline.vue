@@ -154,24 +154,6 @@
                                 <div class="summary-text">{{ item.payload.outputRaw.result_summary }}</div>
                             </div>
                             
-                            <div v-if="item.payload.outputRaw?.tools_found?.length" class="browser-tools">
-                                <h6>발견된 도구</h6>
-                                <div class="tools-list">
-                                    <span v-for="tool in item.payload.outputRaw.tools_found" :key="tool" class="tool-tag">
-                                        {{ tool }}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div v-if="item.payload.outputRaw?.search_engines_used?.length" class="browser-engines">
-                                <h6>사용된 검색 엔진</h6>
-                                <div class="engines-list">
-                                    <span v-for="engine in item.payload.outputRaw.search_engines_used" :key="engine" class="engine-tag">
-                                        {{ engine }}
-                                    </span>
-                                </div>
-                            </div>
-                            
                             <div v-if="item.payload.outputRaw?.completed_at" class="browser-time">
                                 <h6>완료 시간</h6>
                                 <div class="time-text">{{ formatDateTime(item.payload.outputRaw.completed_at) }}</div>
@@ -293,6 +275,7 @@ export default {
         },
         getTaskStatusClass(payload) {
             const baseClass = 'task-status'
+            if (payload.isError) return [baseClass, 'error']
             if (!payload.isCompleted) return [baseClass, 'running']
             return [baseClass, payload.isCrewCompleted ? 'crew-completed' : 'completed']
         },
@@ -396,6 +379,7 @@ export default {
         },
         getStatusText(task) {
             if (!task.isCompleted) return '진행중';
+            if (task.isError) return '작업실패';
             return task.isCrewCompleted ? '전체완료' : '작업완료';
         },
         formatTime(timestamp) {
@@ -501,7 +485,10 @@ export default {
             Object.keys(obj).forEach(key => {
                 const value = obj[key];
                 
-                if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                if (Array.isArray(value)) {
+                    // 배열은 JSON 문자열로 그대로 표현 (객체 배열도 가독성 유지)
+                    lines.push(`${indent}${key} : ${JSON.stringify(value, null, 2)}`);
+                } else if (typeof value === 'object' && value !== null) {
                     lines.push(`${indent}${key} :`);
                     Object.keys(value).forEach(subKey => {
                         const subValue = value[subKey];
@@ -703,6 +690,12 @@ export default {
 .task-status.running {
     background: #fff3e0;
     color: #f57c00;
+}
+
+.task-status.error {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
 }
 
 .status-dot {
