@@ -1299,8 +1299,16 @@ hr {
         overflow: auto;
     }
 
+    .process-consulting-ai-third-screen {
+        height: 100%;
+    }
+
+    .process-definition-map-chat .process-consulting-ai-third-screen {
+        max-height: calc(100vh - 200px) !important;
+        height: calc(100vh - 200px) !important;
+    }
+
     .app-base-card-is-mobile-height,
-    .process-consulting-ai-third-screen,
     .instance-card-process-box {
         max-height: calc(100vh - 200px);
         height: calc(100vh - 200px);

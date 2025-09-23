@@ -197,11 +197,30 @@ export default {
                 return [];
             }
             
-            return item.participants.map(email => {
-                const user = this.userList.find(u => u.email === email);
-                return user || { 
-                    email: email, 
-                    username: email.split('@')[0], 
+            return item.participants.map(participantId => {
+                // 이메일로 찾기
+                let user = this.userList.find(u => u.email === participantId);
+                if (user) {
+                    return user;
+                }
+                
+                // ID로 찾기 (UUID인 경우)
+                user = this.userList.find(u => u.id === participantId);
+                if (user) {
+                    return user;
+                }
+                
+                // username으로 찾기
+                user = this.userList.find(u => u.username === participantId);
+                if (user) {
+                    return user;
+                }
+                
+                // 찾지 못한 경우 fallback
+                return { 
+                    id: participantId,
+                    email: participantId.includes('@') ? participantId : `${participantId}@unknown.com`, 
+                    username: participantId.includes('@') ? participantId.split('@')[0] : participantId, 
                     profile: null 
                 };
             }).filter(Boolean);

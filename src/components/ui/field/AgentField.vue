@@ -1,9 +1,9 @@
 <template>
     <div>
-        <!-- 편집 모드가 아닐 때는 항상 생성 기능 표시 -->
+        <!-- 편집 모드가 아니고 A2A 타입이 아닐 때만 생성 기능 표시 -->
         <UserInputGenerator
             class="agent-field-User-input-generator pb-2"
-            v-if="!isEdit"
+            v-if="!isEdit && type !== 'a2a'"
             :teamInfo="teamInfo"
             :type="type"
             :reset="resetGenerator"
@@ -13,8 +13,8 @@
             @generation-finished="onGenerationFinished"
         />
         
-        <!-- 생성 중일 때 스켈레톤 표시 -->
-        <div v-if="isGenerating && !isEdit" class="agent-field-skeleton">
+        <!-- 생성 중일 때 스켈레톤 표시 (A2A 타입이 아닐 때만) -->
+        <div v-if="isGenerating && !isEdit && type !== 'a2a'" class="agent-field-skeleton">
             <v-skeleton-loader
                 type="image"
                 class="mx-auto"
@@ -280,6 +280,11 @@ export default {
     },
     computed: {
         showDetailFields() {
+            // A2A 타입일 때는 바로 필드를 표시
+            if (this.type === 'a2a') {
+                return true;
+            }
+            // 일반 agent 타입일 때는 기존 로직 사용
             return (this.isEdit || this.isDataGenerated) && !this.isGenerating;
         }
     },

@@ -944,7 +944,7 @@ export default {
                         action: async () => {
                             // 아무것도 하지 않음
                         },
-                        warningMsg: '읽기 모드입니다.'
+                        warningMsg: this.$t('processDefinition.isReadOnlyModeWarningMsg')
                     });
                 }
                 return;
