@@ -210,6 +210,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
     }
   });
   if(isSubprocessImported) {
+    onLoadEnd();
     return;
   }
   const lanes = childElements
@@ -413,6 +414,7 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
     }
   });
   if(isSubprocessImported) {
+    onLoadEnd();
     return;
   }
   const lanes = childElements
