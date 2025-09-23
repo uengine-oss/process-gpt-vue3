@@ -154,27 +154,6 @@
                                 <div class="summary-text">{{ item.payload.outputRaw.result_summary }}</div>
                             </div>
                             
-<<<<<<< HEAD
-=======
-                            <div v-if="item.payload.outputRaw?.tools_found?.length" class="browser-tools">
-                                <h6>발견된 도구</h6>
-                                <div class="tools-list">
-                                    <span v-for="tool in item.payload.outputRaw.tools_found" :key="tool" class="tool-tag">
-                                        {{ tool }}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <!-- <div v-if="item.payload.outputRaw?.search_engines_used?.length" class="browser-engines">
-                                <h6>사용된 검색 엔진</h6>
-                                <div class="engines-list">
-                                    <span v-for="engine in item.payload.outputRaw.search_engines_used" :key="engine" class="engine-tag">
-                                        {{ engine }}
-                                    </span>
-                                </div>
-                            </div> -->
-                            
->>>>>>> 5aac56451953b4ed84258f9510c9547091a67d5b
                             <div v-if="item.payload.outputRaw?.completed_at" class="browser-time">
                                 <h6>완료 시간</h6>
                                 <div class="time-text">{{ formatDateTime(item.payload.outputRaw.completed_at) }}</div>
