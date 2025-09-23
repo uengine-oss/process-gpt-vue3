@@ -92,7 +92,7 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tenant_id text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS device_token text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS goal text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS persona text;
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS url text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS endpoint text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS description text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tools text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS skills text;
@@ -100,6 +100,7 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_agent boolean DEFAULT false
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS model text;
 ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials;
 ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials_updated_at;
+ALTER TABLE public.users DROP COLUMN IF EXISTS url;
 
 
 -- configuration table
@@ -447,7 +448,7 @@ BEGIN
 
     -- 에이전트 모드 enum
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'agent_mode') THEN
-        CREATE TYPE agent_mode AS ENUM ('NONE', 'A2A', 'DRAFT', 'COMPLETE');
+        CREATE TYPE agent_mode AS ENUM ('DRAFT', 'COMPLETE');
         RAISE NOTICE 'Created agent_mode enum type';
     ELSE
         RAISE NOTICE 'agent_mode enum type already exists';
@@ -455,7 +456,7 @@ BEGIN
 
     -- 오케스트레이션 방식 enum
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'agent_orch') THEN
-        CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react');
+        CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-automation-agent', 'a2a');
         RAISE NOTICE 'Created agent_orch enum type';
     ELSE
         -- 기존 enum에 langchain-react 값 추가

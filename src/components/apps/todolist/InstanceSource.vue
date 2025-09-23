@@ -98,7 +98,7 @@
             ref="fileInput"
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx"
+            accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,.ppt,.pptx"
             style="display: none"
             @change="onFileSelect"
         >
@@ -274,7 +274,7 @@ export default {
         },
 
         validateFile(file) {
-            const allowedTypes = ['.pdf', '.doc', '.docx', '.txt', '.csv', '.xls', '.xlsx'];
+            const allowedTypes = ['.pdf', '.doc', '.docx', '.txt', '.csv', '.xls', '.xlsx', '.ppt', '.pptx'];
             const fileExtension = this.getFileExtension(file.name);
             
             if (!allowedTypes.includes(fileExtension)) {
@@ -302,7 +302,9 @@ export default {
                 '.txt': 'mdi-file-document',
                 '.csv': 'mdi-file-delimited',
                 '.xls': 'mdi-file-excel-box',
-                '.xlsx': 'mdi-file-excel-box'
+                '.xlsx': 'mdi-file-excel-box',
+                '.ppt': 'mdi-file-powerpoint-box',
+                '.pptx': 'mdi-file-powerpoint-box'
             };
             return iconMap[fileType] || 'mdi-file-document';
         },
@@ -315,7 +317,9 @@ export default {
                 '.txt': 'grey',
                 '.csv': 'green',
                 '.xls': 'green',
-                '.xlsx': 'green'
+                '.xlsx': 'green',
+                '.ppt': 'blue',
+                '.pptx': 'blue'
             };
             return colorMap[fileType] || 'grey';
         },

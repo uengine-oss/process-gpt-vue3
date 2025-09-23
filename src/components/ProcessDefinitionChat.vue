@@ -89,21 +89,30 @@
                     @changeXML="changeXML"
                 ></ProcessDefinitionVersionManager>
                 <v-dialog v-model="deleteDialog" max-width="500">
-                    <v-card class="pa-4">
-                        <v-row class="ma-0 pa-0 mb-8">
-                            <v-card-text class="ma-0 pa-0" style="font-size:24px;">
+                    <v-card class="pa-0">
+                        <v-row class="ma-0 pa-4 pb-0 align-center">
+                            <v-card-title class="pa-0">
                                 {{ $t('processDefinition.deleteProcessMessage') }}
-                            </v-card-text>
+                            </v-card-title>
                             <v-spacer></v-spacer>
-                            <v-btn @click="deleteDialog = false" icon variant="text" density="comfortable"
-                                style="margin-top:-8px;"
+                            <v-btn @click="deleteDialog = false"
+                                class="ml-auto" 
+                                variant="text" 
+                                density="compact"
+                                icon
                             >
-                                <Icons :icon="'close'" :size="16" />
+                                <v-icon>mdi-close</v-icon>
                             </v-btn>
                         </v-row>
-                        <v-row class="ma-0 pa-0">
+                        <v-row class="ma-0 pa-4">
                             <v-spacer></v-spacer>
-                            <v-btn color="error" rounded variant="flat" @click="deleteProcess">{{ $t('processDefinition.delete') }}</v-btn>
+                            <v-btn @click="deleteProcess"
+                                color="error" 
+                                rounded 
+                                variant="flat" 
+                            >
+                                {{ $t('processDefinition.delete') }}
+                            </v-btn>
                         </v-row>
                     </v-card>
                 </v-dialog>
