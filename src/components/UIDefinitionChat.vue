@@ -142,14 +142,31 @@
     </v-dialog>
 
     <v-dialog v-model="isOpenDeleteDialog" max-width="500">
-        <v-card>
-            <v-card-text>
-                {{ $t('uiDefinition.deleteFormMessage') }}
-            </v-card-text>
-            <v-card-actions class="justify-center pt-0">
-                <v-btn color="primary" variant="flat" @click="deleteForm">{{ $t('uiDefinition.delete') }}</v-btn>
-                <v-btn color="error" variant="flat" @click="isOpenDeleteDialog = false">{{ $t('uiDefinition.cancel') }}</v-btn>
-            </v-card-actions>
+        <v-card class="pa-0">
+            <v-row class="ma-0 pa-4 pb-0 align-center">
+                <v-card-title class="pa-0">
+                    {{ $t('uiDefinition.deleteFormMessage') }}
+                </v-card-title>
+                <v-spacer></v-spacer>
+                <v-btn @click="isOpenDeleteDialog = false"
+                    class="ml-auto" 
+                    variant="text" 
+                    density="compact"
+                    icon
+                >
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </v-row>
+            <v-row class="ma-0 pa-4">
+                <v-spacer></v-spacer>
+                <v-btn @click="deleteForm"
+                    color="error"
+                    rounded 
+                    variant="flat" 
+                >
+                    {{ $t('uiDefinition.delete') }}
+                </v-btn>
+            </v-row>
         </v-card>
     </v-dialog>
 </template>

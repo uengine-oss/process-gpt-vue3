@@ -974,7 +974,20 @@
         "kanbanBoard": "칸반보드",
         "sendEvent": "{event} 이벤트 보내기",
         "output": "산출물",
-        "source": "소스"
+        "source": "소스",
+        "deleteInstance": "인스턴스 삭제",
+        "deleteInstanceMessage": "인스턴스를 삭제하시겠습니까?",
+        "warning": "경고",
+        "warningMessage1": "삭제 요청은 7일 이내 취소할 수 있습니다.",
+        "warningMessage2": "삭제 요청 7일 이후 관련 데이터는 완전히 삭제되며 복구는 불가능합니다.",
+        "warningMessage3": "당사는 삭제된 데이터에 대해 어떠한 책임도 지지 않습니다.",
+        "cancel": "취소",
+        "delete": "삭제",
+        "deleteCancel": "삭제 취소",
+        "starterInfo": "시작자: 정보 불러오는 중",
+        "startDateInfo": "시작일시: 정보 불러오는 중",
+        "starter": "시작자",
+        "startDate": "시작일시"
     },
     "ProjectCard": {
         "managment": "스케줄",
