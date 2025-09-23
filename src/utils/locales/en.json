@@ -973,7 +973,20 @@
         "kanbanBoard": "Kanban Board",
         "sendEvent": "Send {event} event",
         "output": "Output",
-        "source": "Source"
+        "source": "Source",
+        "deleteInstance": "Instance Delete",
+        "deleteInstanceMessage": "Are you sure you want to delete this instance?",
+        "warning": "Warning",
+        "warningMessage1": "The deletion request can be canceled within 7 days.",
+        "warningMessage2": "The related data will be completely deleted after 7 days, and recovery is not possible.",
+        "warningMessage3": "We are not responsible for any data deletion.",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "deleteCancel": "Delete Cancel",
+        "starterInfo": "Starter: Loading information...",
+        "startDateInfo": "Start Date: Loading information...",
+        "starter": "Starter",
+        "startDate": "Start Date"
     },
     "ProjectCard": {
         "managment": "Schedule",

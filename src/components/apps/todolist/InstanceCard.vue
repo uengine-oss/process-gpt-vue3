@@ -47,33 +47,43 @@
                             <div class="text-caption">
                                 {{ getRemainingTime(instance.deleted_at) }}
                             </div>
-                            <v-btn @click="restoreInstance" color="error" rounded>
-                                삭제 취소
+                            <v-btn @click="restoreInstance" 
+                                rounded size="small" 
+                                color="error" 
+                                variant="flat"
+                            >
+                                {{ $t('InstanceCard.deleteCancel') }}
                             </v-btn>
                         </div>
-                        <v-btn v-else @click="openDeleteDialog" rounded size="small" color="error" class="ml-auto" :style="isMobile ? '' : ''">
-                            삭제
+                        <v-btn v-else @click="openDeleteDialog" 
+                            :style="isMobile ? '' : ''"
+                            rounded size="small" 
+                            variant="flat"
+                            color="error" 
+                            class="ml-auto" 
+                        >
+                            {{ $t('InstanceCard.delete') }}
                         </v-btn>
                     </div>
                 </v-row>
                 <div v-if="instance.instId && !isMobile" class="font-weight-medium pl-4 pr-4" style="color:gray; font-size:14px;">
-                    <span v-if="!getStarterName()">시작자: 정보 불러오는 중
+                    <span v-if="!getStarterName()">{{ $t('InstanceCard.starterInfo') }}
                         <span class="loading-dots">
                             <span>.</span>
                             <span>.</span>
                             <span>.</span>
                         </span>
                     </span>
-                    <span v-else>시작자: {{ getStarterName() }}</span>
+                    <span v-else>{{ $t('InstanceCard.starter') }}: {{ getStarterName() }}</span>
                     <span> | </span>
-                    <span v-if="!getFormattedStartDate()">시작일시: 정보 불러오는 중
+                    <span v-if="!getFormattedStartDate()">{{ $t('InstanceCard.startDateInfo') }}
                         <span class="loading-dots">
                             <span>.</span>
                             <span>.</span>
                             <span>.</span>
                         </span>
                     </span>
-                    <span v-else>시작일시: {{ getFormattedStartDate() }}</span>
+                    <span v-else>{{ $t('InstanceCard.startDate') }}: {{ getFormattedStartDate() }}</span>
                 </div>
             </div>
         </div>
@@ -242,32 +252,42 @@
         width="90vw"
         max-width="500px"
     >
-        <v-card>
-            <v-card-title class="d-flex justify-space-between align-center">
-                <span>인스턴스 삭제</span>
-                <v-btn icon variant="plain" @click="deleteDialog = false">
+        <v-card class="pa-0">
+            <v-row class="ma-0 pa-4 pb-0 align-center">
+                <v-card-title class="pa-0">
+                    {{ $t('InstanceCard.deleteInstance') }}
+                </v-card-title>
+                <v-spacer></v-spacer>
+                <v-btn @click="deleteDialog = false"
+                    class="ml-auto" 
+                    variant="text" 
+                    density="compact"
+                    icon
+                >
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
-            </v-card-title>
-            <v-card-text>
+            </v-row>
+            <v-card-text class="ma-0 pa-4 pb-0">
                 <div class="mb-4">
-                    <strong>{{ instanceName }}</strong> 인스턴스를 삭제하시겠습니까?
+                    <strong>{{ instanceName }}</strong> {{ $t('InstanceCard.deleteInstanceMessage') }}
                 </div>
-                <div class="mb-4 pa-3" style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px;">
-                    <p class="mb-2" style="color: #721c24;"><strong>⚠️ 경고</strong></p>
-                    <p class="mb-2" style="color: #721c24;">• 삭제 요청은 7일 이내 취소할 수 있습니다.</p>
-                    <p class="mb-2" style="color: #721c24;">• 삭제 요청 7일 이후 관련 데이터는 완전히 삭제되며 복구는 불가능합니다.</p>
-                    <p class="mb-0" style="color: #721c24;">• 당사는 삭제된 데이터에 대해 어떠한 책임도 지지 않습니다.</p>
+                <div class="mb-2 pa-3" style="background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px;">
+                    <p class="mb-2" style="color: #721c24;"><strong>⚠️ {{ $t('InstanceCard.warning') }}</strong></p>
+                    <p class="mb-2" style="color: #721c24;">• {{ $t('InstanceCard.warningMessage1') }}</p>
+                    <p class="mb-2" style="color: #721c24;">• {{ $t('InstanceCard.warningMessage2') }}</p>
+                    <p class="mb-0" style="color: #721c24;">• {{ $t('InstanceCard.warningMessage3') }}</p>
                 </div>
             </v-card-text>
-            <v-card-actions class="justify-end">
-                <v-btn @click="deleteDialog = false" variant="text">
-                    취소
+            <v-row class="ma-0 pa-4">
+                <v-spacer></v-spacer>
+                <v-btn @click="deleteInstance"
+                    color="error" 
+                    rounded 
+                    variant="flat" 
+                >
+                    {{ $t('InstanceCard.delete') }}
                 </v-btn>
-                <v-btn @click="deleteInstance" color="error" variant="flat">
-                    삭제
-                </v-btn>
-            </v-card-actions>
+            </v-row>
         </v-card>
     </v-dialog>
 </template>
