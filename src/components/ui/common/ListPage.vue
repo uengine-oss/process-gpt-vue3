@@ -78,6 +78,7 @@
                           v-model="showEndFilter"
                           :close-on-content-click="false"
                           transition="scale-transition"
+                          location="end"
                           offset-y
                           min-width="290px"
                         >
