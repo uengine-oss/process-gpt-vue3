@@ -154,24 +154,6 @@
                                 <div class="summary-text">{{ item.payload.outputRaw.result_summary }}</div>
                             </div>
                             
-                            <div v-if="item.payload.outputRaw?.tools_found?.length" class="browser-tools">
-                                <h6>발견된 도구</h6>
-                                <div class="tools-list">
-                                    <span v-for="tool in item.payload.outputRaw.tools_found" :key="tool" class="tool-tag">
-                                        {{ tool }}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <!-- <div v-if="item.payload.outputRaw?.search_engines_used?.length" class="browser-engines">
-                                <h6>사용된 검색 엔진</h6>
-                                <div class="engines-list">
-                                    <span v-for="engine in item.payload.outputRaw.search_engines_used" :key="engine" class="engine-tag">
-                                        {{ engine }}
-                                    </span>
-                                </div>
-                            </div> -->
-                            
                             <div v-if="item.payload.outputRaw?.completed_at" class="browser-time">
                                 <h6>완료 시간</h6>
                                 <div class="time-text">{{ formatDateTime(item.payload.outputRaw.completed_at) }}</div>
@@ -284,6 +266,10 @@ export default {
         todoStatus: {
             type: Object,
             default: null
+        },
+        browserIframeUrl: {
+            type: String,
+            default: ''
         }
     },
     emits: ['update:humanQueryAnswers', 'update:expandedTasks', 'update:slideIndexes', 'onCancelHumanQuery', 'onConfirmHumanQuery', 'submitTask', 'previousSlide', 'nextSlide', 'goToSlide', 'toggleTaskExpansion'],
@@ -342,8 +328,8 @@ export default {
         formatMarkdownContent(content) {
             if (!content) return '';
             
-            // URL을 링크로 변환 (http/https로 시작하는 URL)
-            let formatted = content.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="content-link">$1</a>');
+            // URL을 링크로 변환 (http/https로 시작하는 URL, 더 정확한 패턴)
+            let formatted = content.replace(/(https?:\/\/[^\s<>"']+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="content-link">$1</a>');
             
             // 마크다운을 HTML로 변환
             formatted = formatted
@@ -583,6 +569,9 @@ export default {
                 minute: '2-digit',
                 second: '2-digit'
             });
+        },
+        openBrowserDialog(taskId) {
+            this.$emit('open-browser-dialog', taskId);
         },
     }
 }
@@ -1528,16 +1517,30 @@ export default {
 }
 
 /* 링크 스타일 */
-.content-link {
-  color: #007bff;
+.file-content .markdown-container .content-link {
+  color: #007bff !important;
   text-decoration: none;
   word-break: break-all;
   border-bottom: 1px solid transparent;
   transition: border-bottom-color 0.2s ease;
 }
 
-.content-link:hover {
-  color: #0056b3;
+.file-content .markdown-container .content-link:hover {
+  color: #0056b3 !important;
+  text-decoration: none;
+  border-bottom-color: #0056b3;
+}
+
+.file-content .markdown-container a {
+  color: #007bff !important;
+  text-decoration: none;
+  word-break: break-all;
+  border-bottom: 1px solid transparent;
+  transition: border-bottom-color 0.2s ease;
+}
+
+.file-content .markdown-container a:hover {
+  color: #0056b3 !important;
   text-decoration: none;
   border-bottom-color: #0056b3;
 }
@@ -1566,5 +1569,110 @@ export default {
 .file-content .markdown-container {
   scrollbar-width: thin;
   scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+/* 브라우저 자동화 에이전트 iframe 스타일 */
+.browser-iframe-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
+}
+
+.iframe-header {
+  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+  color: white;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.iframe-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.iframe-header p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.browser-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto -800px auto; /* 하단 마진 제거 */
+  position: relative;
+  overflow: hidden; /* 여백 숨김 */
+}
+
+.browser-iframe {
+  width: 100%;
+  height: 500px; /* 높이 대폭 줄임 */
+  border: none;
+  background: white;
+  transform: scale(0.3); /* 30% 축소 */
+  transform-origin: top left;
+  width: 333%; /* 축소된 만큼 너비 조정 */
+  height: 1200px; /* 축소된 만큼 높이 조정 */
+}
+
+/* Browser Preview Styles */
+.browser-preview {
+  position: relative;
+  cursor: pointer;
+}
+
+.expand-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+}
+
+.expand-btn {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.expand-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+/* Browser Dialog Styles */
+.browser-dialog {
+  height: 80vh;
+}
+
+.browser-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.close-btn {
+  margin-left: auto;
+}
+
+.browser-dialog-content {
+  padding: 0;
+  height: calc(80vh - 80px);
+  overflow: hidden;
+}
+
+.browser-dialog-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: white;
 }
 </style>

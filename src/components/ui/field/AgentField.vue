@@ -27,7 +27,7 @@
 
             <div v-if="type === 'a2a'">
                 <v-text-field 
-                    v-model="agent.url" 
+                    v-model="agent.endpoint" 
                     :label="$t('agentField.agentUrl')"
                     class="mb-2"
                     @click:append-inner="fetchAgentData"
@@ -36,7 +36,7 @@
                         <v-btn
                             :icon="true"
                             :loading="isLoading"
-                            :disabled="!agent.url"
+                            :disabled="!agent.endpoint"
                             @click="fetchAgentData"
                             size="small"
                             variant="text"
@@ -160,7 +160,7 @@ export default {
                 role: '',
                 goal: '',
                 persona: '',
-                url: '',
+                endpoint: '',
                 description: '',
                 skills: '',
                 model: ''
@@ -203,7 +203,7 @@ export default {
                 goal: '',
                 persona: '',
                 isAgent: true,
-                url: '',
+                endpoint: '',
                 img: '',
                 description: '',
                 skills: '',
@@ -412,15 +412,15 @@ export default {
             }
         },
         async fetchAgentData() {
-            if (!this.agent.url) {
-                this.$toast?.error('URL을 입력해주세요');
+            if (!this.agent.endpoint) {
+                this.$toast?.error('Endpoint을 입력해주세요');
                 return;
             }
 
             this.isLoading = true;
             try {
                 const backend = BackendFactory.createBackend();
-                const data = await backend.fetchAgentData(this.agent.url);
+                const data = await backend.fetchAgentData(this.agent.endpoint);
                 console.log(data);
 
                 if (data.name) this.agent.name = data.name;
