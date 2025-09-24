@@ -520,7 +520,18 @@
         "mapperDescriptionSubTitle1": "1. Variables : 변수항목에 추가한 값들 \n2. Roles : 스윔 레인에 등록한 역할(이름) \n3. Instance : 다음 실행될 task 작업의 종료일 등을 저장하는 곳 \n4. Activities : task에 등록한 역할(이름) \n5. Arguments : 속성에 등록한 이름(값)",
         "mapperDescriptionSubTitle2": "사용 방법 \n- 마우스를 누른 상태로 연결할 곳에 끌어다 놓으면 연결\n- 선을 클릭하면 삭제",
         "printDocument": "PDF로 내려받기",
-        "pdfPreview": "PDF 미리보기"
+        "pdfPreview": "PDF 미리보기",
+        "ruleGenerator": "확정된 규칙 생성",
+        "ruleGenerating": "확정된 규칙 생성 중...",
+        "view": "보기",
+        "copyInputJson": "입력 JSON 복사",
+        "clearExamples": "예시 비우기",
+        "exampleDetail": "예시 상세",
+        "result": "결과",
+        "inputPreview": "입력 미리보기",
+        "ioExamples": "입출력 예시",
+        "close": "닫기",
+        "mismatch": "맞지 않음"
     },
     "PDFPreviewer": {
         "saveDocument": "PDF 저장",
@@ -1180,7 +1191,8 @@
         "projectName": "프로젝트 명",
         "startDate": "시작일",
         "dueDate": "마감일",
-        "create": "생성"
+        "create": "생성",
+        "yyyy-mm-dd": "연도-월-일"
     },
     "AppBaseCard": {
         "friends": "친구",

@@ -520,7 +520,18 @@
         "mapperDescriptionSubTitle1": "1. Variables: Values added to the variable section \n2. Roles: Roles (names) registered in the swimlane \n3. Instance: Stores the end date of the next task to be executed \n4. Activities: Roles (names) registered in the task \n5. Arguments: Names (values) registered in the attributes",
         "mapperDescriptionSubTitle2": "How to use \n- Drag and drop while holding the mouse to connect\n- Click the line to delete",
         "printDocument": "Download PDF",
-        "pdfPreview": "PDF Preview"
+        "pdfPreview": "PDF Preview",
+        "ruleGenerator": "Rule Generator",
+        "ruleGenerating": "Rule Generating...",
+        "view": "View",
+        "copyInputJson": "Copy Input JSON",
+        "clearExamples": "Clear Examples",
+        "exampleDetail": "Example Detail",
+        "result": "Result",
+        "inputPreview": "Input Preview",
+        "ioExamples": "IO Examples",
+        "close": "Close",
+        "mismatch": "Mismatch"
     },
     "PDFPreviewer": {
         "saveDocument": "Save PDF",
@@ -1180,7 +1191,8 @@
         "projectName": "Project Name",
         "startDate": "Start Date",
         "dueDate": "Due Date",
-        "create": "Create"
+        "create": "Create",
+        "yyyy-mm-dd": "YYYY-MM-DD"
     },
     "AppBaseCard": {
         "friends": "Friends",
