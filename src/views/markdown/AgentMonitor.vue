@@ -60,7 +60,7 @@
         <template #custom-input-tools>
           <div class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
             <div class="dropdown-trigger">
-              <span class="dropdown-label">{{ $t('agentMonitor.researchMethod') }}</span>
+              <span class="dropdown-label">{{ ($t('agentMonitor.researchMethod')) }}: {{ selectedOrchestrationLabel }}</span>
             </div>
             <div v-if="isDropdownOpen" class="dropdown-menu">
               <div v-for="option in orchestrationOptions" :key="option.value"
