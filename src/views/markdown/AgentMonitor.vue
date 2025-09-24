@@ -58,7 +58,7 @@
               <template #custom-input-tools>
                   <div class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
                       <div class="dropdown-trigger">
-                          <span class="dropdown-label">{{ $t('agentMonitor.researchMethod') }}</span>
+                          <span class="dropdown-label">{{ ($t('agentMonitor.researchMethod')) }}: {{ selectedOrchestrationLabel }}</span>
                       </div>
                       <div v-if="isDropdownOpen" class="dropdown-menu">
                           <div v-for="option in orchestrationOptions" :key="option.value"
@@ -349,6 +349,13 @@ export default {
           const chatItems = this.chatMessages.map(msg => ({ type: 'chat', time: msg.time, payload: msg }));
           const result = [...taskItems, ...chatItems].sort((a, b) => new Date(a.time) - new Date(b.time));
           return result;
+      },
+      selectedOrchestrationLabel() {
+          if (!this.selectedOrchestrationMethod) {
+              return this.$t('agentMonitor.researchMethod');
+          }
+          const selectedOption = this.orchestrationOptions.find(option => option.value === this.selectedOrchestrationMethod);
+          return selectedOption ? selectedOption.label : this.$t('agentMonitor.researchMethod');
       },
   },
   watch: {
