@@ -2106,7 +2106,7 @@ class ProcessGPTBackend implements Backend {
                 role: newAgent.role,
                 goal: newAgent.goal,
                 persona: newAgent.persona,
-                url: newAgent.url,
+                endpoint: newAgent.endpoint,
                 description: newAgent.description,
                 tools: newAgent.tools,
                 profile: newAgent.img,
@@ -2131,9 +2131,9 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async fetchAgentData(url: string) {
+    async fetchAgentData(endpoint: string) {
         try {
-            const response = await axios.get(`/execution/multi-agent/fetch-data?agent_url=${encodeURIComponent(url)}`);
+            const response = await axios.get(`/execution/multi-agent/fetch-data?agent_url=${encodeURIComponent(endpoint)}`);
             return response.data;
         } catch (error) {
             //@ts-ignore

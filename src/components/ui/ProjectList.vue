@@ -1,8 +1,38 @@
 <template>
     <div>
-        <template v-for="item in projectLists" :key="item.title">
+        <template v-for="item in displayedProjectList" :key="item.title">
             <NavItem class="leftPadding pl-2" :item="item" :use-i18n="false" />
         </template>
+        
+        <!-- 더보기/접기 버튼 -->
+        <div v-if="hasMoreProjects" class="mt-2">
+            <v-card @click="showMoreProjects"
+                v-if="!showAllProjects" 
+                class="text-center cursor-pointer pa-2"
+                elevation="10"
+                rounded="10"
+            >
+                <v-card-text class="pa-0">
+                    <span class="text-caption text-primary">
+                        {{ $t('VerticalSidebar.showMore') }} ({{ projectLists.length - 10 }})
+                    </span>
+                    <v-icon size="small" class="ml-1" color="primary">mdi-chevron-down</v-icon>
+                </v-card-text>
+            </v-card>
+            <v-card @click="showLessProjects"
+                v-else 
+                class="text-center cursor-pointer pa-2"
+                elevation="10"
+                rounded="10"
+            >
+                <v-card-text class="pa-0">
+                    <span class="text-caption text-primary">
+                        {{ $t('VerticalSidebar.showLess') }}
+                    </span>
+                    <v-icon size="small" class="ml-1" color="primary">mdi-chevron-up</v-icon>
+                </v-card-text>
+            </v-card>
+        </div>
     </div>
 </template>
 
@@ -18,7 +48,8 @@ export default {
     },
     data: () => ({
         projectLists: [],
-        watchRef: null
+        watchRef: null,
+        showAllProjects: false // 프로젝트 더보기 상태 관리
     }),
     async created() {
         await this.init();
@@ -60,6 +91,18 @@ export default {
             // }
         }));
     },
+    computed: {
+        displayedProjectList() {
+            if (!this.projectLists || this.projectLists.length === 0) return [];
+            if (this.showAllProjects || this.projectLists.length <= 10) {
+                return this.projectLists;
+            }
+            return this.projectLists.slice(0, 10);
+        },
+        hasMoreProjects() {
+            return this.projectLists && this.projectLists.length > 10;
+        }
+    },
     methods: {
         async init() {
             await this.loadProjectList();
@@ -82,6 +125,12 @@ export default {
                 return item;
             });
         },
+        showMoreProjects() {
+            this.showAllProjects = true;
+        },
+        showLessProjects() {
+            this.showAllProjects = false;
+        }
         
     }
 };

@@ -163,7 +163,7 @@
                     />
                 </v-col>
               
-               <!-- 정의관리 타이틀 + 목록 -->
+                <!-- 정의관리 타이틀 + 목록 -->
                 <v-col class="pa-0">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
@@ -196,15 +196,46 @@
                     </template>
                 </v-col>
                 <v-col class="pa-0">
-                    <template v-if="definitionList">
+                    
+                    <template v-if="displayedDefinitionList">
                         <!-- 정의 목록 리스트 -->
-                        <NavCollapse v-for="(definition, i) in definitionList" :key="i"
+                        <NavCollapse v-for="(definition, i) in displayedDefinitionList" :key="i"
                             :item="definition" 
                             class="leftPadding"
-                            @update:item="(def) => (definitionList[i] = def)" 
+                            @update:item="(def) => (displayedDefinitionList[i] = def)" 
                             :level="0" 
                             :type="'definition-list'" 
                         />
+                        
+                        <!-- 더보기/접기 버튼 -->
+                        <div v-if="hasMoreDefinitions" class="mt-2">
+                            <v-card @click="showMoreDefinitions"
+                                v-if="!showAllDefinitions" 
+                                class="text-center cursor-pointer pa-2"
+                                elevation="10"
+                                rounded="10"
+                            >
+                                <v-card-text class="pa-0">
+                                    <span class="text-caption text-primary">
+                                        {{ $t('VerticalSidebar.showMore') }} ({{ (Array.isArray(definitionList) ? definitionList.length : (definitionList && definitionList.children ? definitionList.children.length : 0)) - 10 }})
+                                    </span>
+                                    <v-icon size="small" class="ml-1" color="primary">mdi-chevron-down</v-icon>
+                                </v-card-text>
+                            </v-card>
+                            <v-card @click="showLessDefinitions"
+                                v-else 
+                                class="text-center cursor-pointer pa-2"
+                                elevation="10"
+                                rounded="10"
+                            >
+                                <v-card-text class="pa-0">
+                                    <span class="text-caption text-primary">
+                                        {{ $t('VerticalSidebar.showLess') }}
+                                    </span>
+                                    <v-icon size="small" class="ml-1" color="primary">mdi-chevron-up</v-icon>
+                                </v-card-text>
+                            </v-card>
+                        </div>
                     </template>
                 </v-col>
                 <!-- <v-col class="pa-0" style="flex: 1 1; overflow: auto;">
@@ -220,7 +251,7 @@
                         </template>
                 </v-col> -->
             </v-list>
-            <Footer />
+            <Footer class="mt-2" />
         </div>
         <div class="pa-4 px-4 bg-containerBg">
             <ExtraBox />
@@ -312,6 +343,7 @@ export default {
         isNewProjectOpen: false,
         deletedDefinitionList: [],
         notiCount: 0,
+        showAllDefinitions: false, // 정의 목록 더보기 상태 관리
     }),
     computed: {
         JMS() {
@@ -332,6 +364,22 @@ export default {
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') == 'true';
             return isAdmin;
+        },
+        displayedDefinitionList() {
+            // definitionList가 배열인 경우와 객체인 경우 모두 처리
+            const list = Array.isArray(this.definitionList) ? this.definitionList : 
+                         (this.definitionList && this.definitionList.children ? this.definitionList.children : []);
+            
+            if (!list || list.length === 0) return null;
+            if (this.showAllDefinitions || list.length <= 10) {
+                return list;
+            }
+            return list.slice(0, 10);
+        },
+        hasMoreDefinitions() {
+            const list = Array.isArray(this.definitionList) ? this.definitionList : 
+                         (this.definitionList && this.definitionList.children ? this.definitionList.children : []);
+            return list && list.length > 10;
         },
     },
     created() {
@@ -663,6 +711,7 @@ export default {
                         }
                     }
                 });
+                
                 this.definitionList = this.sortProjectList(menu);
                 this.deletedDefinitionList = this.sortProjectList(deletedMenu);
             }
@@ -698,6 +747,12 @@ export default {
         },
         handleInstanceListUpdate(instanceList) {
             this.instanceLists = instanceList;
+        },
+        showMoreDefinitions() {
+            this.showAllDefinitions = true;
+        },
+        showLessDefinitions() {
+            this.showAllDefinitions = false;
         }
     }
 };
