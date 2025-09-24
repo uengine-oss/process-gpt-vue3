@@ -133,6 +133,88 @@ spring:
                       - RewritePath=/voice/?(?<segment>.*), /$\{segment}
                   order: 40
 
+                # VNC 라우팅 (Consumer ID 기반)
+                - id: vnc-0
+                  uri: http://vnc-0.dev.svc.cluster.local:6080
+                  predicates:
+                      - Path=/vnc/processgpt-browser-server-0/**
+                  filters:
+                      - RewritePath=/vnc/processgpt-browser-server-0/(?<remaining>.*), /$\{remaining}
+                  order: 50
+
+                - id: vnc-1
+                  uri: http://vnc-1.dev.svc.cluster.local:6080
+                  predicates:
+                      - Path=/vnc/processgpt-browser-server-1/**
+                  filters:
+                      - RewritePath=/vnc/processgpt-browser-server-1/(?<remaining>.*), /$\{remaining}
+                  order: 51
+
+                - id: vnc-2
+                  uri: http://vnc-2.dev.svc.cluster.local:6080
+                  predicates:
+                      - Path=/vnc/processgpt-browser-server-2/**
+                  filters:
+                      - RewritePath=/vnc/processgpt-browser-server-2/(?<remaining>.*), /$\{remaining}
+                  order: 52
+
+                - id: vnc-3
+                  uri: http://vnc-3.dev.svc.cluster.local:6080
+                  predicates:
+                      - Path=/vnc/processgpt-browser-server-3/**
+                  filters:
+                      - RewritePath=/vnc/processgpt-browser-server-3/(?<remaining>.*), /$\{remaining}
+                  order: 53
+
+                - id: vnc-4
+                  uri: http://vnc-4.dev.svc.cluster.local:6080
+                  predicates:
+                      - Path=/vnc/processgpt-browser-server-4/**
+                  filters:
+                      - RewritePath=/vnc/processgpt-browser-server-4/(?<remaining>.*), /$\{remaining}
+                  order: 54
+
+                # API 라우팅 (Consumer ID 기반)
+                - id: api-0
+                  uri: http://processgpt-api-0.dev.svc.cluster.local:5001
+                  predicates:
+                      - Path=/api/processgpt-browser-server-0/**
+                  filters:
+                      - RewritePath=/api/processgpt-browser-server-0/(?<remaining>.*), /$\{remaining}
+                  order: 60
+
+                - id: api-1
+                  uri: http://processgpt-api-1.dev.svc.cluster.local:5001
+                  predicates:
+                      - Path=/api/processgpt-browser-server-1/**
+                  filters:
+                      - RewritePath=/api/processgpt-browser-server-1/(?<remaining>.*), /$\{remaining}
+                  order: 61
+
+                - id: api-2
+                  uri: http://processgpt-api-2.dev.svc.cluster.local:5001
+                  predicates:
+                      - Path=/api/processgpt-browser-server-2/**
+                  filters:
+                      - RewritePath=/api/processgpt-browser-server-2/(?<remaining>.*), /$\{remaining}
+                  order: 62
+
+                - id: api-3
+                  uri: http://processgpt-api-3.dev.svc.cluster.local:5001
+                  predicates:
+                      - Path=/api/processgpt-browser-server-3/**
+                  filters:
+                      - RewritePath=/api/processgpt-browser-server-3/(?<remaining>.*), /$\{remaining}
+                  order: 63
+
+                - id: api-4
+                  uri: http://processgpt-api-4.dev.svc.cluster.local:5001
+                  predicates:
+                      - Path=/api/processgpt-browser-server-4/**
+                  filters:
+                      - RewritePath=/api/processgpt-browser-server-4/(?<remaining>.*), /$\{remaining}
+                  order: 64
+
                 # Frontend 서비스 (catch-all)
                 - id: frontend
                   uri: http://frontend-service:5173
