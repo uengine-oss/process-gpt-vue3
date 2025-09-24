@@ -1180,7 +1180,8 @@
         "projectName": "Project Name",
         "startDate": "Start Date",
         "dueDate": "Due Date",
-        "create": "Create"
+        "create": "Create",
+        "yyyy-mm-dd": "YYYY-MM-DD"
     },
     "AppBaseCard": {
         "friends": "Friends",
