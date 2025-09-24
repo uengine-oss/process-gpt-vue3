@@ -1178,7 +1178,8 @@
         "projectName": "프로젝트 명",
         "startDate": "시작일",
         "dueDate": "마감일",
-        "create": "생성"
+        "create": "생성",
+        "yyyy-mm-dd": "연도-월-일"
     },
     "AppBaseCard": {
         "friends": "친구",
