@@ -780,7 +780,7 @@ export default {
                                 
                                 // 브라우저 자동화 에이전트 iframe 처리
                                 if (row.agent_orch === 'browser-automation-agent' && row.consumer) {
-                                    this.browserIframeUrl = `https://${row.tenant_id}.process-gpt.io/vnc/${row.consumer}/vnc.html`;
+                                    this.browserIframeUrl = `https://${window.$tenantName}.process-gpt.io/vnc/${row.consumer}/vnc.html`;
                                     this.showBrowserIframe = true;
                                 } else if (row.agent_orch === 'browser-automation-agent' && !row.consumer) {
                                     this.showBrowserIframe = false;
@@ -983,7 +983,7 @@ export default {
 
                 // 브라우저 자동화 에이전트 iframe 초기 설정 
                 if (data.agent_orch === 'browser-automation-agent' && data.consumer) {
-                    this.browserIframeUrl = `https://${row.tenant_id}.process-gpt.io/vnc/${row.consumer}/vnc.html`;
+                    this.browserIframeUrl = `https://${window.$tenantName}.process-gpt.io/vnc/${data.consumer}/vnc.html`;
                     this.showBrowserIframe = true;
                 } else if (data.agent_orch === 'browser-automation-agent' && !data.consumer) {
                     this.showBrowserIframe = false;
