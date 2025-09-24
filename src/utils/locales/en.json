@@ -952,7 +952,9 @@
         "downloadDefinitionList": "Definition Export",
         "save": "Save",
         "trash": "Trash",
-        "newProject": "Create New Project"
+        "newProject": "Create New Project",
+        "showMore": "Show More",
+        "showLess": "Show Less"
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "Process Execution Performance",
