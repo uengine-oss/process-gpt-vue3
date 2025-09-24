@@ -981,7 +981,7 @@ export default {
                     this.isLoading = false;
                 }
 
-                // 브라우저 자동화 에이전트 iframe 초기 설정
+                // 브라우저 자동화 에이전트 iframe 초기 설정 
                 if (data.agent_orch === 'browser-automation-agent' && data.consumer) {
                     this.browserIframeUrl = `https://${row.tenant_id}.process-gpt.io/vnc/${row.consumer}/vnc.html`;
                     this.showBrowserIframe = true;
