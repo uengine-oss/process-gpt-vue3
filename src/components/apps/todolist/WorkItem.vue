@@ -789,7 +789,7 @@ export default {
             async handler(newVal) {
                 if (newVal && newVal.worklist && newVal.worklist.taskId) {
                     this.loadAssigneeInfo();
-                    this.enableReworkButton = await backend.enableRework(newVal);
+                    // this.enableReworkButton = await backend.enableRework(newVal);
                 }
             },
             deep: true

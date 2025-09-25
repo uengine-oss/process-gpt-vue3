@@ -194,7 +194,7 @@ export default {
             img: '/images/chat-icon.png',
             isAgent: true,
             type: 'agent',
-            url: '',
+            endpoint: '',
             description: '',
             tools: ''
         },
@@ -253,7 +253,24 @@ export default {
                     }
                 }
             } else {
-                if ('persona' in member && member.persona !== '') {
+                if (member.agent_type == 'a2a') {
+                    return {
+                        id: member.id,
+                        name: member.username,
+                        data: {
+                            id: member.id,
+                            name: member.username,
+                            img: member.profile || '/images/chat-icon.png',
+                            role: member.role || '',
+                            endpoint: member.endpoint || '',
+                            description: member.description || '',
+                            skills: member.skills || '',
+                            isAgent: member.is_agent || true,
+                            type: member.agent_type,
+                            pid: this.teamInfo.id || ''
+                        }
+                    }
+                } else {
                     return {
                         id: member.id,
                         name: member.username,
@@ -265,25 +282,8 @@ export default {
                             goal: member.goal || '',
                             persona: member.persona || '',
                             tools: member.tools || '',
-                            isAgent: true,
-                            type: 'agent',
-                            pid: this.teamInfo.id || ''
-                        }
-                    }
-                } else if ('url' in member && member.url !== '') {
-                    return {
-                        id: member.id,
-                        name: member.username,
-                        data: {
-                            id: member.id,
-                            name: member.username,
-                            img: member.profile || '/images/chat-icon.png',
-                            role: member.role || '',
-                            url: member.url || '',
-                            description: member.description || '',
-                            skills: member.skills || '',
-                            isAgent: true,
-                            type: 'a2a',
+                            isAgent: member.is_agent || true,
+                            type: member.agent_type || 'agent',
                             pid: this.teamInfo.id || ''
                         }
                     }

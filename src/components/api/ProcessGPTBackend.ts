@@ -543,7 +543,8 @@ class ProcessGPTBackend implements Backend {
                     currentActivities: currentActivities,
                     defVerId: instance && instance.defVersion ? instance.defVersion : null,
                     output: workitem.output || "",
-                    log: workitem.log || ""
+                    log: workitem.log || "",
+                    orchestration: workitem.agent_orch || ""
                 },
                 activity: {
                     name: workitem.activity_name || "",

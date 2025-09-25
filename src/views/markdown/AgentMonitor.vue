@@ -58,7 +58,7 @@
                 @stopMessage="stopTask"
             >
                 <template #custom-input-tools>
-                    <div class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
+                    <div v-if="!isA2A" class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
                         <div class="dropdown-trigger">
                             <span class="dropdown-label">{{ ($t('agentMonitor.researchMethod')) }}: {{ selectedOrchestrationLabel }}</span>
                         </div>
@@ -131,6 +131,10 @@ export default {
         isActionsMode: {
             type: Boolean,
             default: false
+        },
+        chatOrch: {
+            type: String,
+            default: ''
         }
     },
     data() {
@@ -352,11 +356,17 @@ export default {
             const result = [...taskItems, ...chatItems].sort((a, b) => new Date(a.time) - new Date(b.time));
             return result;
         },
+        isA2A() {
+            return this.selectedOrchestrationMethod === 'a2a' || this.chatOrch == 'a2a';
+        }
     },
     watch: {
         workItem: {
             deep: true,
             async handler(newVal) {
+                if (newVal.worklist.orchestration) {
+                    this.selectedOrchestrationMethod = newVal.worklist.orchestration;
+                }
                 if (this.isActionsMode) {
                     await this.loadActionsModeData()
                 } else {
@@ -1156,7 +1166,7 @@ export default {
             const taskId = this.getTaskIdFromWorkItem();
             this.setupRealtimeSubscription(taskId)
         } else {
-            this.selectedOrchestrationMethod = 'crewai-action'
+            this.selectedOrchestrationMethod = 'crewai-action';
         }
     },
     async mounted() {
@@ -1167,6 +1177,10 @@ export default {
             await this.loadActionsModeData()
             const taskId = this.getTaskIdFromWorkItem();
             this.setupRealtimeSubscription(taskId)
+        }
+
+        if (this.workItem && this.workItem.worklist && this.workItem.worklist.orchestration) {
+            this.selectedOrchestrationMethod = this.workItem.worklist.orchestration;
         }
     },
     beforeUnmount() {
