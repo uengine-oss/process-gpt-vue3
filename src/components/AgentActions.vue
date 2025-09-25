@@ -1,6 +1,6 @@
 <template>
     <div class="agent-actions">
-        <AgentMonitor :workItem="workItem" :isActionsMode="true" />
+        <AgentMonitor :workItem="workItem" :isActionsMode="true" :chatOrch="agentType" />
     </div>
 </template>
 
@@ -18,11 +18,16 @@ export default {
         instId: {
             type: String,
             required: true
+        },
+        agentInfo: {
+            type: Object,
+            required: true
         }
     },
     data: () => ({
         instance: null,
         workItem: null,
+        agentType: ''
     }),
     computed: {
         id() {
@@ -33,6 +38,9 @@ export default {
     },
     async mounted() {
         await this.init();
+        if (this.agentInfo.agent_type) {
+            this.agentType = this.agentInfo.agent_type;
+        }
     },
     methods: {
         uuid() {

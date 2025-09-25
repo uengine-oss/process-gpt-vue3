@@ -1,13 +1,31 @@
 <template>
     <div>
-        <v-text-field v-model="condition" />
+        <v-text-field v-if="mode == 'text'"  v-model="condition" >
+            <div class="mb-0 ma-0">
+                <v-btn class="mb-0 ma-0 pa-0 pb-0" icon="mdi-comment-text-outline" @click="modeChange('function')" />
+            </div>
+        </v-text-field>
+        <v-text-field v-if="mode == 'function'" v-model="conditionFunction" >
+            <div class="mb-0 ma-0">
+                <v-btn class="mb-0 ma-0 pa-0 pb-0" icon="mdi-function" @click="modeChange('text')" />
+            </div>
+        </v-text-field>
+        
     </div>
 </template>
 
 <script>
 export default {
     props: {
-        value: String
+        value: String,
+        mode: {
+            type: String,
+            default: 'text'
+        },
+        conditionFunction: {
+            type: String,
+            default: ''
+        }
     },
     data() {
         return {
@@ -31,6 +49,9 @@ export default {
         }
     },
     methods: {
+        modeChange(mode) {
+            this.$emit('update:mode', mode);
+        }
     }
 };
 </script>

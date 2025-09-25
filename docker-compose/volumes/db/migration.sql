@@ -98,6 +98,7 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tools text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS skills text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_agent boolean DEFAULT false;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS model text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS agent_type text;
 ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials;
 ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials_updated_at;
 ALTER TABLE public.users DROP COLUMN IF EXISTS url;

@@ -14,12 +14,12 @@
                             density="compact"
                         >수정
                         </v-btn>
-                        <v-btn @click="goToLearning"
+                        <v-btn @click="goToAgentChat"
                             color="primary"
                             variant="elevated" 
                             class="rounded-pill"
                             density="compact"
-                        >학습 시키기
+                        >{{ agentType == 'a2a' ? '에이전트와 채팅' : '학습 시키기' }}
                         </v-btn>
                     </div>
                 </div>
@@ -97,6 +97,9 @@ export default {
     computed: {
         agentName() {
             return this.agentData?.name || 'Agent';
+        },
+        agentType() {
+            return this.agentData?.type || 'agent';
         },
         centerX() {
             return this.svgWidth / 2;
@@ -663,7 +666,7 @@ export default {
             }
         },
 
-        goToLearning() {
+        goToAgentChat() {
             this.$router.push(`/agent-chat/${this.agentData.id}`)
         },
 
