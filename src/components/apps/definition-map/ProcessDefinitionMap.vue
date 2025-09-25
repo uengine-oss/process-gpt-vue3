@@ -206,27 +206,42 @@
             </v-card>
         </v-dialog>
         <v-dialog v-model="alertDialog" max-width="500" persistent>
-            <v-card>
-                <v-card-text class="mt-2 alert-message">
-                    {{ alertMessage }}
-                </v-card-text>
-                    <v-row  class="ma-0 pa-4 pr-2 align-center">
+            <v-card class="pa-0">
+                <v-row class="ma-0 pa-4 pb-0 flex-start">
+                    <v-card-title class="pa-0 alert-message">
+                        {{ alertMessage }}
+                    </v-card-title>
                     <v-spacer></v-spacer>
-                    <v-btn @click="alertDialog = false"
-                        variant="elevated" 
-                        class="rounded-pill mr-2"
-                        density="compact"
+                    <v-tooltip :text="(userName && userName === editUser) ? $t('processDefinitionMap.close') : $t('processDefinitionMap.cancel')">
+                        <template v-slot:activator="{ props }">
+                            <v-btn @click="alertDialog = false"
+                                v-bind="props"
+                                class="ml-auto" 
+                                variant="text" 
+                                density="compact"
+                                icon
+                            >
+                                <v-icon>mdi-close</v-icon>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+                </v-row>
+                <v-row  class="ma-0 pa-4">
+                    <v-spacer></v-spacer>
+                    <!-- <v-btn @click="alertDialog = false"
+                        class="mr-1"
                         color="gray"
+                        rounded 
+                        variant="flat" 
                     >{{ (userName && userName === editUser) ? $t('processDefinitionMap.close') : $t('processDefinitionMap.cancel') }}
-                    </v-btn>
+                    </v-btn> -->
                     <div v-for="(btn, index) in actionButtons" :key="index">
                         <v-btn v-if="btn.show" 
                             @click="btn.action"
                             :class="btn.class + (index > 0 ? ' ml-2' : '')" 
                             :color="btn.color ? btn.color : 'gray'"
-                            variant="elevated" 
-                            class="rounded-pill"
-                            density="compact"
+                            rounded 
+                            variant="flat" 
                         >{{ btn.text }}
                         </v-btn>
                     </div>
