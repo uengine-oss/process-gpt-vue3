@@ -1,5 +1,6 @@
 <template>
     <div>
+        <!-- 위임하기 다이얼로그 내부 -->
         <v-card elevation="10">
             <v-row class="ma-0 pa-4 pb-0 align-center">
                 <v-card-title class="pa-0">
@@ -16,7 +17,7 @@
                 </v-btn>
             </v-row>
             <v-card-text class="pa-4 pb-0"
-                :style="isMobile ? 'height: calc(100vh - 100px);' : ''"
+                :style="isMobile ? 'height: calc(100vh - 100px);' : 'height: calc(100vh - 150px);'"
                 style="overflow: auto;"
             >
                 <v-card  elevation="10">
@@ -48,9 +49,11 @@
                             <div v-if="!assigneeUserInfo || assigneeUserInfo.length == 0">
                                 {{ $t('DelegateTask.noAssignee') }}
                             </div>
-                            <div v-else>
+                            <v-row v-else
+                                :class="isMobile ? 'ma-0 pa-0 flex-column align-center' : 'ma-0 pa-0 align-center'"
+                            >
                                 <!-- 현 담당자 표시 부분 -->
-                                <div v-for="user in assigneeUserInfo" :key="user.id || user.email">
+                                <div v-for="user in assigneeUserInfo" :key="user.id || user.email" :class="isMobile ? 'mb-3' : ''">
                                     <div class="d-flex align-center">
                                         <div>
                                             <v-img v-if="user.profile" :src="user.profile" width="45px" 
@@ -60,9 +63,9 @@
                                             </v-avatar>
                                         </div>
                                         <div class="ml-5">
-                                            <p>{{ $t('DelegateTask.assignee') }}</p>
+                                            <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ user.username }}</h4>
                                             <div class="d-flex align-center">
-                                                <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ user.username }}</h4>
+                                                <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ user.email }}</div>
                                                 <v-chip v-if="user.id === currentUserUid" 
                                                     color="primary"
                                                     size="small" variant="outlined"
@@ -72,113 +75,111 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+
+                                <v-icon v-if="delegateUser"
+                                    size="48"
+                                    :class="isMobile ? 'my-2' : 'ml-4 mr-4'"
+                                >{{ isMobile ? 'mdi-arrow-down-bold' : 'mdi-arrow-right-bold' }}
+                                </v-icon>
+
+                                <!-- 위임 대상자 표시 부분 -->
+                                <div v-if="delegateUser" elevation="10" class="pa-0 ma-0">
+                                    <v-card-text 
+                                        class="ma-0 pa-0"
+                                    >
+                                        <div class="d-flex align-center">
+                                            <div class="mr-2">
+                                                <v-img v-if="delegateUser.profile && delegateUser.profile.trim() !== ''" 
+                                                    :src="delegateUser.profile" 
+                                                    width="45px" 
+                                                    class="rounded-circle img-fluid"
+                                                    :key="delegateUser.id || delegateUser.email"
+                                                />
+                                                <v-avatar v-else>
+                                                    <Icons :icon="'user-circle-bold'" :size="50" />
+                                                </v-avatar>
+                                            </div>
+                                            <div>
+                                                <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ delegateUser.username }}</h4> 
+                                                <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ delegateUser.email }}</div>
+                                            </div>
+                                        </div>
+                                    </v-card-text>
+                                </div>
+                            </v-row>
                         </div>
                     </v-card-text>
                 </v-card>
-                <v-icon v-if="delegateUser"
-                    class="mx-auto d-block"
-                    size="48"
-                >mdi-arrow-down-bold
-                </v-icon>
-                <div>
-                    <v-card elevation="10" class="pa-0 ma-0 mb-2">
-                        <v-card-title v-if="delegateUser"
-                            class="ma-0 pa-4"
-                        >{{ $t('DelegateTask.delegateTitle') }}</v-card-title>
-                        <v-card-text v-if="delegateUser"
-                            class="ma-0 pa-4 pt-0"
+                <v-card-text class="pa-0">
+                    <!-- 데스크탑 버전: v-data-table -->
+                    <div class="mb-1">
+                        <v-data-table
+                            :headers="tableHeaders"
+                            :items="filteredUserList"
+                            :loading="isUserLoading"
+                            item-value="email"
+                            density="compact"
+                            :items-per-page="10"
+                            :items-per-page-options="[5, 10, 25]"
+                            @click:row="handleUserRowClick"
+                            class="elevation-1"
+                            style="border-radius: 20px;"
+                            fixed-header
                         >
-                            <div class="d-flex align-center">
-                                <div class="mr-2">
-                                    <v-img v-if="delegateUser.profile && delegateUser.profile.trim() !== ''" 
-                                        :src="delegateUser.profile" 
-                                        width="45px" 
-                                        class="rounded-circle img-fluid"
-                                        :key="delegateUser.id || delegateUser.email"
-                                    />
-                                    <v-avatar v-else>
-                                        <Icons :icon="'user-circle-bold'" :size="50" />
-                                    </v-avatar>
-                                </div>
-                                <div>
-                                    <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ delegateUser.username }}</h4>
-                                    <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ delegateUser.email }}</div>
-                                </div>
-                            </div>
-                        </v-card-text>
-                    </v-card>
-                    <v-card-text class="pa-0">
-                        <!-- 데스크탑 버전: v-data-table -->
-                        <div class="mb-1">
-                            <v-data-table
-                                :headers="tableHeaders"
-                                :items="filteredUserList"
-                                :loading="isUserLoading"
-                                item-value="email"
-                                density="compact"
-                                :items-per-page="10"
-                                :items-per-page-options="[5, 10, 25]"
-                                @click:row="handleUserRowClick"
-                                class="elevation-1"
-                                style="height: 400px; border-radius: 20px;"
-                                fixed-header
-                            >
-                                <template v-slot:top>
-                                    <div class="d-flex align-center justify-end pa-3 pb-0">
-                                        <div class="d-flex align-center border border-borderColor rounded-pill px-3"
-                                            style="width: 100%;"
-                                        >
-                                            <Icons :icon="'magnifer-linear'" :size="18" />
-                                            <v-text-field v-model="searchText"
-                                                @input="debounceSearch"
-                                                @click:clear="handleClearSearch"
-                                                variant="plain"
-                                                density="compact"
-                                                class="position-relative pt-0 ml-2 custom-placeholer-color delegate-task-form-search"
-                                                :placeholder="$t('DelegateTask.searchUser')"
-                                                single-line hide-details
-                                            ></v-text-field>
-                                        </div>
+                            <template v-slot:top>
+                                <div class="d-flex align-center justify-end pa-3 pb-0">
+                                    <div class="d-flex align-center border border-borderColor rounded-pill px-3"
+                                        style="width: 100%;"
+                                    >
+                                        <Icons :icon="'magnifer-linear'" :size="18" />
+                                        <v-text-field v-model="searchText"
+                                            @input="debounceSearch"
+                                            @click:clear="handleClearSearch"
+                                            variant="plain"
+                                            density="compact"
+                                            class="position-relative pt-0 ml-2 custom-placeholer-color delegate-task-form-search"
+                                            :placeholder="$t('DelegateTask.searchUser')"
+                                            single-line hide-details
+                                        ></v-text-field>
                                     </div>
-                                </template>
-                                <template v-slot:item="{ item }">
-                                    <tr :class="['cursor-pointer', 'user-table-row']">
-                                        <td class="text-center">
-                                            <div class="d-flex justify-center align-center">
-                                                <v-avatar size="32">
-                                                    <v-img v-if="item.profile" :src="item.profile" width="32px" height="32px" 
-                                                        class="rounded-circle img-fluid"
-                                                    />
-                                                    <Icons v-else :icon="'user-circle-bold'" :size="32" />
-                                                </v-avatar>
-                                            </div>
-                                        </td>
-                                        <td @click="selectUserFromTable(item)">
-                                            <div class="font-weight-medium">{{ item.username }}</div>
-                                            <div class="text-caption text-medium-emphasis">{{ item.email }}</div>
-                                        </td>
-                                        <td class="text-center">
-                                            <v-btn v-if="item.id === currentUserUid"
-                                                @click.stop="selectMyself(item)"
-                                                variant="elevated" 
-                                                class="rounded-pill default-greay-btn"
-                                                density="compact"
-                                                prepend-icon="mdi-account"
-                                            >{{ $t('DelegateTask.delegateToMyself') }}
-                                            </v-btn>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </v-data-table>
-                        </div>
-                        
-                        <!-- 모바일 버전: 기존 UserListPage -->
-                        <!-- <div v-else>
-                            <UserListPage :config="{itemsPerPage: 1, height: 200}" @selected-user="selectedUser"></UserListPage>
-                        </div> -->
-                    </v-card-text>
-                </div>
+                                </div>
+                            </template>
+                            <template v-slot:item="{ item }">
+                                <tr :class="['cursor-pointer', 'user-table-row']">
+                                    <td class="text-center">
+                                        <div class="d-flex justify-center align-center">
+                                            <v-avatar size="32">
+                                                <v-img v-if="item.profile" :src="item.profile" width="32px" height="32px" 
+                                                    class="rounded-circle img-fluid"
+                                                />
+                                                <Icons v-else :icon="'user-circle-bold'" :size="32" />
+                                            </v-avatar>
+                                        </div>
+                                    </td>
+                                    <td @click="selectUserFromTable(item)">
+                                        <div class="font-weight-medium">{{ item.username }}</div>
+                                        <div class="text-caption text-medium-emphasis">{{ item.email }}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <v-btn v-if="item.id === currentUserUid"
+                                            @click.stop="selectMyself(item)"
+                                            variant="elevated" 
+                                            class="rounded-pill default-greay-btn"
+                                            density="compact"
+                                            prepend-icon="mdi-account"
+                                        >{{ $t('DelegateTask.delegateToMyself') }}
+                                        </v-btn>
+                                    </td>
+                                </tr>
+                            </template>
+                        </v-data-table>
+                    </div>
+                    
+                    <!-- 모바일 버전: 기존 UserListPage -->
+                    <!-- <div v-else>
+                        <UserListPage :config="{itemsPerPage: 1, height: 200}" @selected-user="selectedUser"></UserListPage>
+                    </div> -->
+                </v-card-text>
             </v-card-text>
             <v-row class="ma-0 pa-4 pr-2 align-center">
                 <v-spacer></v-spacer>
@@ -190,7 +191,6 @@
                     density="compact"
                     :disabled="isDisabled"
                 >{{ $t('DelegateTask.delegate') }}</v-btn>
-              
             </v-row>
         </v-card>
     </div>
