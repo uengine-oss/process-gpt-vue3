@@ -1184,7 +1184,8 @@
         "s1description": "전년도 대비 전체 매출을 20% 성장시키는 것이 목표",
         "s2description": "NPS 기준 고객 만족도를 90점 이상으로 유지",
         "s3description": "내부 업무 프로세스 중 50% 이상을 자동화 시스템으로 전환",
-        "s4description": "전 직원 대상 연 2회 이상 역량 강화 교육 진행"
+        "s4description": "전 직원 대상 연 2회 이상 역량 강화 교육 진행",
+        "aspect": " 관점"
     },
     "ProjectCreationForm": {
         "title": "프로젝트 생성",
