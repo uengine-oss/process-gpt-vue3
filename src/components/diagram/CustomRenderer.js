@@ -204,10 +204,10 @@ class CustomRenderer extends BaseRenderer {
 
   _getLaneColor(perspective) {
     switch (perspective) {
-      case '재무': return '#FA896B';
-      case '고객': return '#0074BA';
-      case '내부 프로세스': return '#01C0C8';
-      case '학습 및 성장': return '#763EBD';
+      case 'financial': return '#FA896B';
+      case 'customer': return '#0074BA';
+      case 'internal_process': return '#01C0C8';
+      case 'learning_growth': return '#763EBD';
       default: return '#757575';
     }
   }

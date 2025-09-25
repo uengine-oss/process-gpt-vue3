@@ -1,6 +1,6 @@
 <template>
     <div class="agent-actions">
-        <AgentMonitor :workItem="workItem" :isActionsMode="true" :chatOrch="agentType" />
+        <AgentMonitor :workItem="workItem" :isActionsMode="true" />
     </div>
 </template>
 
@@ -26,8 +26,11 @@ export default {
     },
     data: () => ({
         instance: null,
-        workItem: null,
-        agentType: ''
+        workItem: {
+            worklist: {
+                orchestration: 'crewai-action'
+            }
+        },
     }),
     computed: {
         id() {
@@ -39,7 +42,7 @@ export default {
     async mounted() {
         await this.init();
         if (this.agentInfo.agent_type) {
-            this.agentType = this.agentInfo.agent_type;
+            this.workItem.worklist.orchestration = this.agentInfo.agent_type;
         }
     },
     methods: {
@@ -81,6 +84,7 @@ export default {
         // 새로운 workItem 생성
         async createWorkItem(data) {
             try {
+                const agentOrch = data.agentOrch || 'crewai-action';
                 const taskId = this.uuid();
                 const newMessage = {
                     name: localStorage.getItem('userName'),
@@ -96,6 +100,7 @@ export default {
                     proc_inst_id: this.instId,
                     user_id: this.id,
                     description: data.message,
+                    query: data.message,
                     tool: "formHandler:",
                     status: 'IN_PROGRESS',
                     agent_mode: 'DRAFT',

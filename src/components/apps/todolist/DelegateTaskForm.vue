@@ -234,12 +234,7 @@ export default {
         },
         description(){
             if(!this.task) return '';
-            // TODO: description -> query 로 변경 후 수정 예정
-            const description = this.task.worklist.description;
-            if (description && description.includes('[input_data]')) {
-                return description.split('[input_data]')[0];
-            }
-            return description;
+            return this.task.worklist.description;
         },
         status(){
             if(!this.task) return '';

@@ -111,7 +111,7 @@
                 </div>
                 <div class="pa-0">
                     <div class="text-subtitle-2">
-                        {{ description }}
+                        {{ task.description }}
                     </div>
                 </div>
                 <div v-if="currentDraftStatus"
@@ -226,14 +226,6 @@ export default {
         }
     },
     computed: {
-        // TODO: description -> query 로 변경 후 수정 예정
-        description() {
-            if (this.task.description && this.task.description.includes('[input_data]')) {
-                const description = this.task.description.split('[input_data]')[0];
-                return description;
-            }
-            return this.task.description
-        },
         mode() {
             return window.$mode;
         },

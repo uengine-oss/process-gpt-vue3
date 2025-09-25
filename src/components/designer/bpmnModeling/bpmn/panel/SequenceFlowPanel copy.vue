@@ -34,8 +34,101 @@
                 </span>
             </v-btn>
         </div>
+        <!-- IO Examples Table -->
+        <div v-if="mode == 'ProcessGPT' && copyUengineProperties?.io_examples?.length" class="mt-4">
+            <div class="mb-1">{{ $t('BpmnPropertyPanel.ioExamples') }}</div>
+            <v-table density="comfortable" class="elevation-1">
+                <thead>
+                    <tr>
+                        <th style="width: 56px; text-align:center;">#</th>
+                        <th style="width: 96px;">{{ $t('BpmnPropertyPanel.result') }}</th>
+                        <th>{{ $t('BpmnPropertyPanel.inputPreview') }}</th>
+                        <th style="width: 110px;">{{ $t('BpmnPropertyPanel.mismatch') }}</th>
+                        <th style="width: 120px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(ex, idx) in copyUengineProperties.io_examples" :key="idx">
+                        <td style="text-align:center;">{{ idx + 1 }}</td>
+                        <td>
+                            <v-chip
+                            size="small"
+                            :color="ex.output === true ? 'success' : 'error'"
+                            variant="flat"
+                            >
+                            {{ ex.output === true ? 'true' : 'false' }}
+                            </v-chip>
+                        </td>
+                        <td>
+                            <div class="one-line-json">
+                            {{ formatJsonOneLine(ex.input) }}
+                            </div>
+                        </td>
+                        <td>
+                            <v-checkbox
+                            density="compact"
+                            hide-details
+                            :model-value="!!ex.mismatch"
+                            @update:modelValue="val => updateMismatch(idx, val)"
+                            >
+                            </v-checkbox>
+                        </td>
+                        <td class="text-right">
+                            <v-btn
+                            size="x-small"
+                            variant="text"
+                            color="secondary"
+                            @click="openIoDialog(ex, idx)"
+                            >
+                            {{ $t('BpmnPropertyPanel.view') }}
+                            </v-btn>
+                        </td>
+                    </tr>
+                </tbody>
+            </v-table>
 
+            <div class="d-flex justify-end mt-2">
+                <v-btn size="small" variant="text" color="warning" @click="clearIoExamples">
+                {{ $t('BpmnPropertyPanel.clearExamples') }}
+                </v-btn>
+            </div>
+        </div>
 
+        <v-dialog v-model="ioDialog" max-width="720">
+        <v-card>
+            <v-card-text>
+                <div class="mb-2 text-caption opacity-70">{{ $t('BpmnPropertyPanel.result') }}:
+                    <v-chip
+                    size="small"
+                    class="ml-1"
+                    :color="selectedExample?.output === true ? 'success' : 'error'"
+                    variant="flat"
+                    >
+                    {{ selectedExample?.output === true ? 'true' : 'false' }}
+                    </v-chip>
+                </div>
+                <v-textarea
+                    readonly
+                    auto-grow
+                    :model-value="selectedExample ? formatJson(selectedExample.input) : ''"
+                    density="comfortable"
+                />
+                <div class="mt-2">
+                    <v-checkbox
+                    :label="$t('BpmnPropertyPanel.mismatch')"
+                    hide-details
+                    :model-value="!!selectedExample?.mismatch"
+                    @update:modelValue="toggleDialogMismatch"
+                    />
+                </div>
+                </v-card-text>
+                <v-card-actions class="justify-end">
+                <v-btn color="primary" @click="ioDialog = false">
+                    {{ $t('BpmnPropertyPanel.close') }}
+                </v-btn>
+            </v-card-actions>
+        </v-card>
+        </v-dialog>
 
         <!-- Generation Result Dialog -->
         <v-dialog v-model="generationDialog" max-width="960" persistent>
@@ -64,29 +157,27 @@
                 />
 
                 <div v-if="copyUengineProperties?.io_examples?.length" class="mt-6">
+                    <!-- 좋은 예시 섹션 -->
                     <div class="d-flex justify-space-between align-center">
                         <div class="mb-1 mt-4">
-                            <v-icon icon="mdi-format-list-bulleted" size="small" color="primary" />
-                            <span class="ml-2">{{ $t('BpmnPropertyPanel.expectedOutput') }}</span>
+                            <v-icon icon="mdi-check-circle-outline" size="small" color="success" />
+                            <span class="ml-2">좋은 예시</span>
                         </div>
                     </div>
                     <v-table density="comfortable" class="elevation-1">
                         <thead>
                             <tr>
-                                <th>{{ $t('BpmnPropertyPanel.conditionWhen') }}</th>
-                                <th>{{ $t('BpmnPropertyPanel.resultThen') }}</th>
-                                <th>{{ $t('BpmnPropertyPanel.mismatch') }}</th>
+                                <th style="width: 56px; text-align:center;">#</th>
+                                <th>{{ $t('BpmnPropertyPanel.inputPreview') }}</th>
+                                <th style="width: 110px;">{{ $t('BpmnPropertyPanel.mismatch') }}</th>
+                                <th style="width: 120px;"></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(ex, idx) in copyUengineProperties.io_examples" :key="'io-'+idx">
+                            <tr v-for="(ex, idx) in ioExamplesGood" :key="'good-'+idx">
+                                <td style="text-align:center;">{{ idx + 1 }}</td>
                                 <td>
                                     <div class="one-line-json">{{ formatJsonOneLine(ex.input) }}</div>
-                                </td>
-                                <td>
-                                    <v-chip size="small" :color="ex.output === true ? 'success' : 'error'" variant="flat">
-                                        {{ ex.output === true ? 'true' : 'false' }}
-                                    </v-chip>
                                 </td>
                                 <td>
                                     <v-checkbox
@@ -96,14 +187,68 @@
                                         @update:modelValue="val => updateMismatchItem(ex, val)"
                                     />
                                 </td>
+                                <td class="text-right">
+                                    <v-btn
+                                        size="x-small"
+                                        variant="text"
+                                        color="secondary"
+                                        @click="openIoDialog(ex)"
+                                    >
+                                        {{ $t('BpmnPropertyPanel.view') }}
+                                    </v-btn>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </v-table>
+
+                    <!-- 나쁜 예시 섹션 -->
+                    <div class="d-flex justify-space-between align-center">
+                        <div class="mb-1 mt-4">
+                            <v-icon icon="mdi-cancel" size="small" color="error" />
+                            <span class="ml-2">나쁜 예시</span>
+                        </div>
+                    </div>
+                    <v-table density="comfortable" class="elevation-1">
+                        <thead>
+                            <tr>
+                                <th style="width: 56px; text-align:center;">#</th>
+                                <th>{{ $t('BpmnPropertyPanel.inputPreview') }}</th>
+                                <th style="width: 110px;">{{ $t('BpmnPropertyPanel.mismatch') }}</th>
+                                <th style="width: 120px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(ex, idx) in ioExamplesBad" :key="'bad-'+idx">
+                                <td style="text-align:center;">{{ idx + 1 }}</td>
+                                <td>
+                                    <div class="one-line-json">{{ formatJsonOneLine(ex.input) }}</div>
+                                </td>
+                                <td>
+                                    <v-checkbox
+                                        density="compact"
+                                        hide-details
+                                        :model-value="!!ex.mismatch"
+                                        @update:modelValue="val => updateMismatchItem(ex, val)"
+                                    />
+                                </td>
+                                <td class="text-right">
+                                    <v-btn
+                                        size="x-small"
+                                        variant="text"
+                                        color="secondary"
+                                        @click="openIoDialog(ex)"
+                                    >
+                                        {{ $t('BpmnPropertyPanel.view') }}
+                                    </v-btn>
+                                </td>
                             </tr>
                         </tbody>
                     </v-table>
                 </div>
             </v-card-text>
             <v-card-actions class="justify-end">
-                <v-btn variant="text" color="grey" @click="cancelGeneration">{{ $t('BpmnPropertyPanel.cancel') }}</v-btn>
-                <v-btn color="primary" variant="flat" @click="applyGeneratedRule">{{ $t('BpmnPropertyPanel.confirm') }}</v-btn>
+                <v-btn variant="text" color="grey" @click="generationDialog = false">{{ $t('BpmnPropertyPanel.cancel') }}</v-btn>
+                <v-btn color="primary" variant="flat" @click="generationDialog = false">{{ $t('BpmnPropertyPanel.confirm') }}</v-btn>
             </v-card-actions>
         </v-card>
         </v-dialog>
@@ -157,15 +302,12 @@ export default {
             },
             copyUengineProperties: this.uengineProperties,
             isRuleGenerating: false,
+            ioDialog: false,
             generationDialog: false,
-            
+            selectedExample: null,
             formDefs: [],
             ioExamplesGood: [],
-            ioExamplesBad: [],
-            previousConditionFunction: null,
-            lastSingleFieldTarget: null,
-            lastHasMismatch: false,
-            lastIsInitial: true
+            ioExamplesBad: []
         };
     },
     async mounted() {
@@ -217,18 +359,6 @@ export default {
     watch: {
     },
     methods: {
-        cancelGeneration() {
-            this.copyUengineProperties.conditionFunction = this.previousConditionFunction;
-            this.generationDialog = false;
-        },
-        applyGeneratedRule() {
-            // Ensure latest io_examples overwrite is applied and notify parent
-            this.copyUengineProperties.io_examples = Array.isArray(this.copyUengineProperties.io_examples)
-                ? [...this.copyUengineProperties.io_examples]
-                : [];
-            this.$emit('update:uengineProperties', this.copyUengineProperties);
-            this.generationDialog = false;
-        },
         ensureKeyExists(obj, key, defaultValue) {
             if (!obj.hasOwnProperty(key)) {
                 obj[key] = defaultValue;
@@ -256,82 +386,27 @@ export default {
                     } else {
                         jsonData = null;
                     }
- 
-                     if (jsonData) {
-                         // Client-side fallback: if regenerating with mismatches and single-field target exists,
-                         // enforce a minimal membership/equality expression so python_expr actually changes.
-                         if (!this.lastIsInitial && this.lastHasMismatch && this.lastSingleFieldTarget && Array.isArray(this.lastSingleFieldTarget.trueValues) && this.lastSingleFieldTarget.trueValues.length > 0) {
-                             const { fieldKey, trueValues } = this.lastSingleFieldTarget;
-                             const encoded = trueValues.map(v => JSON.stringify(v));
-                             const expr = encoded.length === 1
-                                 ? `${fieldKey} == ${encoded[0]}`
-                                 : `${fieldKey} in (${encoded.join(',')})`;
-                             jsonData.python_expr = expr;
-                             // ensure io_examples reflect TARGETS (invert where mismatch=true)
-                             const expected = Array.isArray(this.copyUengineProperties.io_examples) ? this.copyUengineProperties.io_examples : [];
-                             jsonData.io_examples = expected.map(ex => ({ input: ex.input, output: ex.mismatch ? !ex.output : ex.output }));
-                         }
-                         this.copyUengineProperties.conditionFunction = jsonData.python_expr;
-                         const raw = Array.isArray(jsonData.io_examples) ? jsonData.io_examples : [];
-                         this.copyUengineProperties.io_examples = raw;
-                         this.ioExamplesGood = raw.filter(ex => ex.output === true);
-                         this.ioExamplesBad = raw.filter(ex => ex.output === false);
-                         this.$emit('update:uengineProperties', this.copyUengineProperties);
-                         // Open the generation result dialog
-                         this.generationDialog = true;
-                     }
- 
-                     this.isRuleGenerating = false;
-                 }
-             };
- 
-            // Build single-field target hint (with mismatch inversion)
-            const buildSingleFieldTarget = (examples) => {
-                if (!Array.isArray(examples) || examples.length === 0) return null;
-                const inputs = examples.map(e => e?.input || {});
-                const allKeys = Array.from(new Set(inputs.flatMap(obj => Object.keys(obj))));
-                if (allKeys.length !== 1) return null;
-                const key = allKeys[0];
-                // Ensure every example has scalar value for the key
-                const allScalar = inputs.every(i => i && (typeof i[key] === 'string' || typeof i[key] === 'number' || typeof i[key] === 'boolean'));
-                if (!allScalar) return null;
-                // Determine target (respect mismatch inversion)
-                const targets = examples.map(e => ({
-                    value: e.input[key],
-                    target: e.mismatch ? !e.output : e.output
-                }));
-                const trueValues = Array.from(new Set(targets.filter(t => t.target === true).map(t => t.value)));
-                return { fieldKey: key, trueValues };
+
+                    if (jsonData) {
+                        this.copyUengineProperties.conditionFunction = jsonData.python_expr;
+                        const raw = Array.isArray(jsonData.io_examples) ? jsonData.io_examples : [];
+                        this.copyUengineProperties.io_examples = raw;
+                        this.ioExamplesGood = raw.filter(ex => ex.output === true);
+                        this.ioExamplesBad = raw.filter(ex => ex.output === false);
+                        this.$emit('update:uengineProperties', this.copyUengineProperties);
+                        // Open the generation result dialog
+                        this.generationDialog = true;
+                    }
+
+                    this.isRuleGenerating = false;
+                }
             };
 
-            const singleFieldTarget = buildSingleFieldTarget(this.copyUengineProperties.io_examples || []);
-
-            // Backup previous function before generation
-            this.previousConditionFunction = this.copyUengineProperties.conditionFunction;
-
-            const isInitial = !this.copyUengineProperties.conditionFunction;
-            this.lastIsInitial = isInitial;
-            const generatorOptions = {
+            const generator = new ConditionRuleGenerator(conditionRuleClient, {
+                condition: this.copyUengineProperties.condition,
                 conditionExample: this.copyUengineProperties.examples,
                 formDefs: this.formDefs
-            };
-            if (isInitial) {
-                generatorOptions.condition = this.copyUengineProperties.condition;
-            }
-            if (!isInitial) {
-                generatorOptions.expectedIoExamples = Array.isArray(this.copyUengineProperties.io_examples)
-                    ? this.copyUengineProperties.io_examples.map(ex => ({ input: ex.input, output: ex.output, mismatch: !!ex.mismatch }))
-                    : [];
-                generatorOptions.singleFieldTarget = singleFieldTarget;
-                const hasAnyMismatch = (this.copyUengineProperties.io_examples || []).some(ex => !!ex.mismatch);
-                if (!hasAnyMismatch) {
-                    generatorOptions.previousExpr = this.copyUengineProperties.conditionFunction || '';
-                }
-                this.lastHasMismatch = hasAnyMismatch;
-            }
-            this.lastSingleFieldTarget = singleFieldTarget;
-
-            const generator = new ConditionRuleGenerator(conditionRuleClient, generatorOptions);
+            });
             this.isRuleGenerating = true;
             generator.generate();
         },
@@ -405,7 +480,10 @@ export default {
             this.copyUengineProperties.io_examples = [];
             this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
-        
+        openIoDialog(example) {
+            this.selectedExample = example;
+            this.ioDialog = true;
+        },
         updateMismatchItem(example, val) {
             example.mismatch = !!val;
             this.$emit('update:uengineProperties', this.copyUengineProperties);
