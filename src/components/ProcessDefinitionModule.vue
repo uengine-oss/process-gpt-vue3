@@ -630,7 +630,7 @@ export default {
                 } else {
                     processDefinitionId = this.$route?.params?.id || 'Unknown';
                 }
-                if (processDefinitionId === 'chat') {
+                if (processDefinitionId === 'chat' || processDefinitionId === 'definition-map') {
                     processDefinitionId = this.processDefinition.processDefinitionId;
                 }
 
@@ -1330,7 +1330,8 @@ export default {
                                 me.processDefinition.activities.forEach(async (activity) => {
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
                                         let formHtml = null;    
-                                        let formId = activity.tool.replace('formHandler:', '');
+                                        // let formId = activity.tool.replace('formHandler:', '');
+                                        let formId = `${me.processDefinition.processDefinitionId}_${activity.id}_form`;
                                         const currentFormHtml = localStorage.getItem(formId);
                                         if (currentFormHtml) {
                                             formHtml = currentFormHtml;
