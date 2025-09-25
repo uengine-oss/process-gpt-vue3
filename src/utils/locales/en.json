@@ -531,7 +531,15 @@
         "inputPreview": "Input Preview",
         "ioExamples": "IO Examples",
         "close": "Close",
-        "mismatch": "Mismatch"
+        "mismatch": "Mismatch",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "regenerate": "Regenerate",
+        "generatedFunction": "Generated Function",
+        "generatedRulePreview": "Generated Rule Preview",
+        "expectedOutput": "Expected Output",
+        "conditionWhen": "Condition(When)",
+        "resultThen": "Result(Then)"
     },
     "PDFPreviewer": {
         "saveDocument": "Save PDF",
@@ -1184,7 +1192,8 @@
         "s1description": "Increase total sales by 20% compared to last year",
         "s2description": "Maintain customer satisfaction at 90 points or higher based on NPS",
         "s3description": "Convert 50% or more of internal business processes to automated systems",
-        "s4description": "Conduct capability enhancement training for all employees twice a year or more"
+        "s4description": "Conduct capability enhancement training for all employees twice a year or more",
+        "aspect": " Aspect"
     },
     "ProjectCreationForm": {
         "title": "Create Project",

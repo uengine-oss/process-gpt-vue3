@@ -260,6 +260,7 @@ create table if not exists public.todolist (
     start_date timestamp without time zone null,
     end_date timestamp without time zone null,
     status todo_status null,
+    query text null,
     description text null,
     tool text null,
     due_date timestamp without time zone null,
