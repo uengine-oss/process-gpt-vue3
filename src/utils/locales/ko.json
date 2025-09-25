@@ -218,7 +218,7 @@
         "agentRole": "역할",
         "agentGoal": "목표",
         "agentPersona": "페르소나",
-        "agentUrl": "URL",
+        "agentEndpoint": "엔드포인트",
         "agentDescription": "설명",
         "agentTools": "도구",
         "agentSkills": "기술"

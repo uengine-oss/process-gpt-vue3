@@ -46,21 +46,9 @@
                 class="agent-tabs"
                 @update:model-value="handleTabChange"
             >
-                <v-tab value="learning" class="text-left justify-start">
-                    <v-icon start class="mr-2">mdi-school</v-icon>
-                    학습 모드
-                </v-tab>
-                <v-tab value="question" class="text-left justify-start">
-                    <v-icon start class="mr-2">mdi-chat</v-icon>
-                    질의 모드
-                </v-tab>
-                <v-tab value="actions" class="text-left justify-start">
-                    <v-icon start class="mr-2">mdi-tools</v-icon>
-                    액션 모드
-                </v-tab>
-                <v-tab value="knowledge" class="text-left justify-start">
-                    <v-icon start class="mr-2">mdi-database</v-icon>
-                    지식 관리
+                <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value" class="text-left justify-start">
+                    <v-icon start class="mr-2">{{ tab.icon }}</v-icon>
+                    {{ tab.label }}
                 </v-tab>
             </v-tabs>
         </div>
@@ -97,6 +85,22 @@ export default {
     },
     mounted() {
         this.initializeImage();
+    },
+    computed: {
+        tabList() {
+            if (this.agentInfo.agent_type == 'a2a') {
+                return [
+                    { label: '액션 모드', value: 'actions', icon: 'mdi-tools' }
+                ]
+            } else {
+                return [
+                    { label: '학습 모드', value: 'learning', icon: 'mdi-school' },
+                    { label: '질의 모드', value: 'question', icon: 'mdi-chat' },
+                    { label: '액션 모드', value: 'actions', icon: 'mdi-tools' },
+                    { label: '지식 관리', value: 'knowledge', icon: 'mdi-database' },
+                ]
+            }
+        }
     },
     watch: {
         agentInfo: {

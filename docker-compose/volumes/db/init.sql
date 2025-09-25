@@ -136,6 +136,7 @@ create table if not exists public.users (
     skills text null,
     is_agent boolean not null default false,
     model text null,
+    agent_type text null,
     constraint users_pkey primary key (id, tenant_id),
     constraint users_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;

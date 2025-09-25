@@ -218,7 +218,7 @@
         "agentRole": "Role",
         "agentGoal": "Goal",
         "agentPersona": "Persona",
-        "agentUrl": "URL",
+        "agentEndpoint": "Endpoint",
         "agentDescription": "Description",
         "agentTools": "Tools",
         "agentSkills": "Skills"
