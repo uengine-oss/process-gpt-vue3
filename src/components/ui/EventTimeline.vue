@@ -272,7 +272,28 @@ export default {
             default: ''
         }
     },
-    emits: ['update:humanQueryAnswers', 'update:expandedTasks', 'update:slideIndexes', 'onCancelHumanQuery', 'onConfirmHumanQuery', 'submitTask', 'previousSlide', 'nextSlide', 'goToSlide', 'toggleTaskExpansion'],
+    emits: ['update:humanQueryAnswers', 'update:expandedTasks', 'update:slideIndexes', 'onCancelHumanQuery', 'onConfirmHumanQuery', 'submitTask', 'previousSlide', 'nextSlide', 'goToSlide', 'toggleTaskExpansion', 'browserUseCompleted'],
+    watch: {
+        timeline: {
+            handler(newTimeline) {
+                // browser-use 완료된 작업 감지
+                newTimeline.forEach(item => {
+                    if (item.type === 'task' && 
+                        item.payload.crewType === 'browser-use' && 
+                        item.payload.isCompleted &&
+                        item.payload.outputRaw?.generated_files) {
+                        this.$emit('browserUseCompleted', {
+                            taskId: item.payload.id,
+                            generatedFiles: item.payload.outputRaw.generated_files,
+                            resultSummary: item.payload.outputRaw.result_summary
+                        });
+                    }
+                });
+            },
+            deep: true,
+            immediate: true
+        }
+    },
     methods: {
         getTimelineKey(item, index) {
             return item.type + '-' + (item.type === 'task' ? item.payload.id : 'chat-' + index)
