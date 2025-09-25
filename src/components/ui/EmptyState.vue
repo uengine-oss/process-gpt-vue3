@@ -2,7 +2,7 @@
     <div class="empty-state">
         <h3>{{ isQueued ? $t('agentMonitor.workQueued') : $t('agentMonitor.noWorkInProgress') }}</h3>
         <p>{{ $t('agentMonitor.workStarted') }}</p>
-        <div v-if="!isQueued" class="start-controls">
+        <div v-if="!isQueued && !isA2A" class="start-controls">
             <v-container>
                 <v-row justify="center">
                     <v-col cols="12" class="text-center mb-4">
@@ -85,6 +85,10 @@ export default {
             default: null
         },
         showDownloadButton: {
+            type: Boolean,
+            default: false
+        },
+        isA2A: {
             type: Boolean,
             default: false
         }
