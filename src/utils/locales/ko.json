@@ -531,7 +531,15 @@
         "inputPreview": "입력 미리보기",
         "ioExamples": "입출력 예시",
         "close": "닫기",
-        "mismatch": "맞지 않음"
+        "mismatch": "부적합",
+        "cancel": "취소",
+        "confirm": "확인",
+        "regenerate": "재생성",
+        "generatedFunction": "생성된 규칙",
+        "generatedRulePreview": "생성된 규칙 미리보기",
+        "expectedOutput": "예상 출력 결과",
+        "conditionWhen": "조건(When)",
+        "resultThen": "결과(Then)"
     },
     "PDFPreviewer": {
         "saveDocument": "PDF 저장",
