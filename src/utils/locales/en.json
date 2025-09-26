@@ -531,7 +531,15 @@
         "inputPreview": "Input Preview",
         "ioExamples": "IO Examples",
         "close": "Close",
-        "mismatch": "Mismatch"
+        "mismatch": "Mismatch",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "regenerate": "Regenerate",
+        "generatedFunction": "Generated Function",
+        "generatedRulePreview": "Generated Rule Preview",
+        "expectedOutput": "Expected Output",
+        "conditionWhen": "Condition(When)",
+        "resultThen": "Result(Then)"
     },
     "PDFPreviewer": {
         "saveDocument": "Save PDF",

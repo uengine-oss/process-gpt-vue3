@@ -13,35 +13,62 @@
                 <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
-        <!-- 담당자 정보 표시 UI -->
-        <div v-if="laneAssignments.length > 0"
-            class=" pa-0 pl-4 pt-2 bpmn-uengine-viewer-ssignments-box"
-        >
-            <v-row class="ma-0 pa-0">
-                <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="mr-4">
-                    <div class="d-flex align-center">
-                        <v-avatar size="24" class="mr-2">
-                            <v-img 
-                                :src="assignment.profileImage" 
-                                :alt="assignment.assignee"
-                                cover
-                            >
-                                <template v-slot:error>
-                                    <v-img src="/images/defaultUser.png" cover>
+        <!-- 참여자 보기 버튼 -->
+        <div v-if="laneAssignments.length > 0" class="pa-0">
+            <v-menu 
+                v-model="showParticipantsMenu"
+                :close-on-content-click="false"
+                location="bottom"
+                offset="4"
+            >
+                <template v-slot:activator="{ props }">
+                    <v-btn
+                        v-bind="props"
+                        size="small"
+                        variant="outlined"
+                        class="rounded-pill"
+                    >
+                        <v-icon size="small" class="mr-1">mdi-account-group</v-icon>
+                        참여자 보기 ({{ laneAssignments.length }})
+                    </v-btn>
+                </template>
+
+                <!-- 참여자 정보 카드 -->
+                <v-card class="pa-0" elevation="8" rounded="12">
+                    <v-row class="pa-2 ma-0 align-center">
+                        <v-icon class="mr-2">mdi-account-group</v-icon>
+                        <v-card-title class="text-subtitle-1 pa-0 align-center"
+                        >참여자 목록
+                        </v-card-title>
+                    </v-row>
+                    <v-divider class="mb-3"></v-divider>
+                    <div class="participants-grid pa-2" style="max-height: 300px; overflow-y: auto;">
+                        <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="mr-4">
+                            <div class="d-flex align-center">
+                                <v-avatar size="32" class="mr-3">
+                                    <v-img 
+                                        :src="assignment.profileImage" 
+                                        :alt="assignment.assignee"
+                                        cover
+                                    >
                                         <template v-slot:error>
-                                            <v-icon size="small" style="color: #666;">mdi-account</v-icon>
+                                            <v-img src="/images/defaultUser.png" cover>
+                                                <template v-slot:error>
+                                                    <v-icon size="small" style="color: #666;">mdi-account</v-icon>
+                                                </template>
+                                            </v-img>
                                         </template>
                                     </v-img>
-                                </template>
-                            </v-img>
-                        </v-avatar>
-                        <div class="flex-grow-1">
-                            <div class="text-body-2 font-weight-medium" style="color: #444;">{{ assignment.laneName }}</div>
-                            <div class="text-caption" style="color: #666;">{{ assignment.assignee }}</div>
+                                </v-avatar>
+                                <div class="flex-grow-1">
+                                    <div class="text-body-2 font-weight-medium" style="color: #444;">{{ assignment.laneName }}</div>
+                                    <div class="text-caption" style="color: #666;">{{ assignment.assignee }}</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </v-row>
+                </v-card>
+            </v-menu>
         </div>
         <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 0px; left: 20px; pointer-events: auto; z-index: 10;">
             <v-row class="ma-0 pa-0">
@@ -149,7 +176,8 @@ export default {
             resizeTimeout: null,
             panStart: { x: 0, y: 0 },
             pinchStartZoom: 1,
-            laneAssignments: []
+            laneAssignments: [],
+            showParticipantsMenu: false
         };
     },
     computed: {
@@ -287,12 +315,15 @@ export default {
             });
 
             // Map을 배열로 변환하여 laneAssignments에 저장하고 레인 ID 순서로 정렬
-            self.laneAssignments = Array.from(assignmentMap.values()).sort((a, b) => {
+            const sortedAssignments = Array.from(assignmentMap.values()).sort((a, b) => {
                 // Lane_0, Lane_1, Lane_2 순서로 정렬
                 const aNum = parseInt(a.laneId.replace('Lane_', ''));
                 const bNum = parseInt(b.laneId.replace('Lane_', ''));
                 return aNum - bNum;
             });
+            
+            // Map을 배열로 변환하여 laneAssignments에 저장
+            self.laneAssignments = sortedAssignments;
         },
         async getVariables(instanceId) {
             const variables = await backend.getProcessVariables(instanceId);

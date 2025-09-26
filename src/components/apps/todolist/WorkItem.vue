@@ -180,7 +180,7 @@
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 260px); color: black; overflow: auto'"
 
                             >
-                                <div class="pa-0 pl-2" style="height:100%;" :key="updatedDefKey">
+                                <div class="pa-0" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%;">
                                         <div v-show="isBpmnLoading">
                                             <v-skeleton-loader
@@ -261,7 +261,7 @@
                             </v-card>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-3" style="height: 100%;">
-                            <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey"/>
+                            <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey" @browser-use-completed="handleBrowserUseCompleted"/>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
                             <v-card elevation="10" class="pa-4">
@@ -1489,6 +1489,22 @@ export default {
                     me.reworkDialog = false;
                 }
             });
+        },
+        handleBrowserUseCompleted(data) {
+            if(this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE") return;
+            
+            console.log('[WorkItem] Browser-use completed:', data);
+            
+            // generated_files 데이터를 inputData로 설정
+            if (data.generatedFiles) {
+                this.inputData = data.generatedFiles;
+                console.log('[WorkItem] inputData 설정됨:', this.inputData);
+                
+                // generateExample 함수 자동 실행
+                this.$nextTick(() => {
+                    this.beforeGenerateExample();
+                });
+            }
         }
     }
 };

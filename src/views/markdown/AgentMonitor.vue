@@ -24,6 +24,7 @@
                 @go-to-slide="goToSlide"
                 @toggle-task-expansion="toggleTaskExpansion"
                 @open-browser-dialog="openBrowserDialog"
+                @browser-use-completed="handleBrowserUseCompleted"
             />
 
             <!-- 빈 상태 -->
@@ -1157,6 +1158,10 @@ export default {
         },
         closeBrowserDialog() {
             this.browserDialog = false;
+        },
+        handleBrowserUseCompleted(data) {
+            // WorkItem 컴포넌트로 이벤트 전달
+            this.$emit('browser-use-completed', data);
         },
     },
     async created() {
