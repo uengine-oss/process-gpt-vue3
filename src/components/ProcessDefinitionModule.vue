@@ -90,13 +90,16 @@ export default {
                         if (inputs)
                         generateMsg += ` Fields to enter: ${inputs}.`;
 
-                        generateMsg += `
-                        Please place all fields in one area and arrange them vertically.
+                        const isUseDataSource = localStorage.getItem('isUseDataSource');
+                        if(isUseDataSource == 'true') {
+                            generateMsg += `
+                            Please place all fields in one area and arrange them vertically.
 
-                        If any field label matches a column in the available dataSources, 
-                        generate the field using select-field, checkbox-field, or radio-field 
-                        with dynamic URL binding accordingly.
-                        `;
+                            If any field label matches a column in the available dataSources, 
+                            generate the field using select-field, checkbox-field, or radio-field 
+                            with dynamic URL binding accordingly.
+                            `;
+                        }
 
                         const formHtml = await this.generateForm(generateMsg, activity);
                         // 완료 메세지
