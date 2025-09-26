@@ -24,6 +24,7 @@
                 @go-to-slide="goToSlide"
                 @toggle-task-expansion="toggleTaskExpansion"
                 @open-browser-dialog="openBrowserDialog"
+                @browser-use-completed="handleBrowserUseCompleted"
             />
 
             <!-- 빈 상태 -->
@@ -33,6 +34,7 @@
                 :orchestration-options="orchestrationOptions"
                 :selected-orchestration-method="selectedOrchestrationMethod"
                 :show-download-button="showDownloadButton"
+                :isA2A="isA2A"
                 @select-orchestration-method="selectOrchestrationMethod"
                 @start-task="startTask"
                 @download-browser-agent="downloadBrowserAgent"
@@ -58,7 +60,7 @@
                 @stopMessage="stopTask"
             >
                 <template #custom-input-tools>
-                    <div class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
+                    <div v-if="!isA2A" class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
                         <div class="dropdown-trigger">
                             <span class="dropdown-label">{{ ($t('agentMonitor.researchMethod')) }}: {{ selectedOrchestrationLabel }}</span>
                         </div>
@@ -131,7 +133,7 @@ export default {
         isActionsMode: {
             type: Boolean,
             default: false
-        }
+        },
     },
     data() {
         return {
@@ -352,11 +354,24 @@ export default {
             const result = [...taskItems, ...chatItems].sort((a, b) => new Date(a.time) - new Date(b.time));
             return result;
         },
+        selectedOrchestrationLabel() {
+            if (!this.selectedOrchestrationMethod) {
+                return this.$t('agentMonitor.researchMethod');
+            }
+            const selectedOption = this.orchestrationOptions.find(option => option.value === this.selectedOrchestrationMethod);
+            return selectedOption ? selectedOption.label : this.$t('agentMonitor.researchMethod');
+        },
+        isA2A() {
+            return this.selectedOrchestrationMethod === 'a2a';
+        }
     },
     watch: {
         workItem: {
             deep: true,
             async handler(newVal) {
+                if (newVal.worklist.orchestration) {
+                    this.selectedOrchestrationMethod = newVal.worklist.orchestration;
+                }
                 if (this.isActionsMode) {
                     await this.loadActionsModeData()
                 } else {
@@ -1003,6 +1018,8 @@ export default {
                 const validOrchs = this.orchestrationOptions.map(o => o.value);
                 if (data.agent_orch && validOrchs.includes(data.agent_orch)) {
                     this.selectedOrchestrationMethod = data.agent_orch;
+                } else if (data.agent_orch && data.agent_orch === 'a2a') {
+                    this.selectedOrchestrationMethod = 'a2a';
                 }
             } catch (error) {
                 this.handleError(error, 'todolist 상태 조회 실패');
@@ -1142,6 +1159,10 @@ export default {
         closeBrowserDialog() {
             this.browserDialog = false;
         },
+        handleBrowserUseCompleted(data) {
+            // WorkItem 컴포넌트로 이벤트 전달
+            this.$emit('browser-use-completed', data);
+        },
     },
     async created() {
         try {
@@ -1155,8 +1176,6 @@ export default {
             await this.fetchTodoStatus()
             const taskId = this.getTaskIdFromWorkItem();
             this.setupRealtimeSubscription(taskId)
-        } else {
-            this.selectedOrchestrationMethod = 'crewai-action'
         }
     },
     async mounted() {
@@ -1167,6 +1186,9 @@ export default {
             await this.loadActionsModeData()
             const taskId = this.getTaskIdFromWorkItem();
             this.setupRealtimeSubscription(taskId)
+            if (this.workItem.worklist) {
+                this.selectedOrchestrationMethod = this.workItem.worklist.orchestration || 'crewai-action';
+            }
         }
     },
     beforeUnmount() {

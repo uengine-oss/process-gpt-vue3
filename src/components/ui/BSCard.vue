@@ -58,16 +58,16 @@
             </div>
             <div v-if="isMobile" class="pa-2 d-flex flex-wrap gap-2 align-center">
               <div class="d-flex align-center gap-1">
-                <div class="legend-color" style="background: #FA896B"></div> 재무
+                <div class="legend-color" style="background: #FA896B"></div> {{$t('BSCard.finance')}}
               </div>
               <div class="d-flex align-center gap-1">
-                <div class="legend-color" style="background: #0074BA"></div> 고객
+                <div class="legend-color" style="background: #0074BA"></div> {{$t('BSCard.customer')}}
               </div>
               <div class="d-flex align-center gap-1">
-                <div class="legend-color" style="background: #01C0C8"></div> 내부 프로세스
+                <div class="legend-color" style="background: #01C0C8"></div> {{$t('BSCard.process')}}
               </div>
               <div class="d-flex align-center gap-1">
-                <div class="legend-color" style="background: #763EBD"></div> 학습 및 성장
+                <div class="legend-color" style="background: #763EBD"></div> {{$t('BSCard.learning')}}
               </div>
             </div>
             <div class="d-flex flex-wrap gap-2" style="width: 100%; height: 100%;">
@@ -134,7 +134,9 @@
       <v-card-text class="pa-4 pb-0">
         <v-select
           v-model="strategyForm.perspective"
-          :items="lanes"
+          :items="perspectives"
+          item-title="label"
+          item-value="id"
           :label="$t('BSCard.perspective')"
           variant="outlined"
           dense
@@ -345,40 +347,35 @@
             title: "BSCard.cardTitle",
             text: "BSCard.description"
         },
-        lanes: [
-            '재무',
-            '고객', 
-            '내부 프로세스',
-            '학습 및 성장'
-        ],
+        perspectives: [],
         jsonData: {
           strategies: [
             {
               "id": "s1",
               "name": "매출 20% 성장",
               "description": "전년도 대비 전체 매출을 20% 성장시키는 것이 목표",
-              "perspective": "재무",
+              "perspective": "financial",
               "parents": []
             },
             {
               "id": "s2",
               "name": "고객 만족도 90점 이상 달성",
               "description": "NPS 기준 고객 만족도를 90점 이상으로 유지",
-              "perspective": "고객",
+              "perspective": "customer",
               "parents": ["s1"]
             },
             {
               "id": "s3",
               "name": "프로세스 자동화율 50% 달성",
               "description": "내부 업무 프로세스 중 50% 이상을 자동화 시스템으로 전환",
-              "perspective": "내부 프로세스",
+              "perspective": "internal_process",
               "parents": ["s2"]
             },
             {
               "id": "s4",
               "name": "직원 역량 강화 프로그램 운영",
               "description": "전 직원 대상 연 2회 이상 역량 강화 교육 진행",
-              "perspective": "학습 및 성장",
+              "perspective": "learning_growth",
               "parents": ["s3"]
             }
           ],
@@ -436,6 +433,12 @@
           isStream: true,
           preferredLanguage: "Korean"
       });
+      this.perspectives = [
+        { id: 'financial', label: this.$t('BSCard.finance'), color: '#FA896B' },
+        { id: 'customer', label: this.$t('BSCard.customer'), color: '#0074BA' },
+        { id: 'internal_process', label: this.$t('BSCard.process'), color: '#01C0C8' },
+        { id: 'learning_growth', label: this.$t('BSCard.learning'), color: '#763EBD' }
+      ];
       this.init();
       this.initData();
     },
@@ -449,22 +452,49 @@
           const eventBus = this.diagram.get('eventBus');
           const canvas = this.diagram.get('canvas');
           
-          const lanes = [
-            { name: '재무 관점', perspective: '재무' },
-            { name: '고객 관점', perspective: '고객' },
-            { name: '내부 프로세스', perspective: '내부 프로세스' },
-            { name: '학습 및 성장', perspective: '학습 및 성장' }
-          ];
+          const lanes = this.perspectives.map(p => ({ name: p.label + this.$t('BSCard.aspect'), perspective: p.id }));
 
           lanes.forEach((lane, index) => {
             this.addStrategyLane(lane.name, lane.perspective, index, lanes.length);
           });
         });
       },
+      // Perspective helpers
+      getPerspectiveMetaById(id) {
+        const key = typeof id === 'string' ? this.toPerspectiveKey(id) : id;
+        return this.perspectives.find(p => p.id === key);
+      },
+      getPerspectiveLabelById(id) {
+        const meta = this.getPerspectiveMetaById(id);
+        return meta ? meta.label : id;
+      },
+      toPerspectiveKey(labelOrKey) {
+        if (!labelOrKey) return labelOrKey;
+        const value = String(labelOrKey).trim();
+        // Only convert when Hangul exists
+        const hasHangul = /[\u3131-\uD79D]/.test(value);
+        if (!hasHangul) return value;
+        const compact = value.replace(/\s+/g, '');
+        if (compact.includes('재무')) return 'financial';
+        if (compact.includes('고객')) return 'customer';
+        if (compact.includes('내부') || compact.includes('프로세스')) return 'internal_process';
+        if (compact.includes('학습') || compact.includes('성장')) return 'learning_growth';
+        return value;
+      },
+      normalizeJsonData(data) {
+        if (!data || !Array.isArray(data.strategies)) return data;
+        return {
+          ...data,
+          strategies: data.strategies.map(s => ({
+            ...s,
+            perspective: this.toPerspectiveKey(s.perspective)
+          }))
+        };
+      },
       async initData() {
         const card = await backend.getBSCard();
         if (card) {
-          this.jsonData = card.value;
+          this.jsonData = this.normalizeJsonData(card.value);
           this.initializeFromData(this.jsonData);
         }
       },
@@ -514,7 +544,7 @@
           console.error('데이터 초기화 오류:', error);
         }
       },
-      addStrategy(name, perspective, id = null) {
+      addStrategy(name, perspectiveKey, id = null) {
         const elementFactory = this.diagram.get('elementFactory');
         const canvas = this.diagram.get('canvas');
         const scale = this.isMobile ? 0.5 : 1;
@@ -525,14 +555,15 @@
         const laneCount = 4;
         const laneHeight = Math.max(totalHeight / laneCount, 100); // 최소 높이 보장
 
-        const perspectiveIndex = this.lanes.indexOf(perspective);
+        const key = this.toPerspectiveKey(perspectiveKey);
+        const perspectiveIndex = this.perspectives.findIndex(p => p.id === key);
         
         // perspectiveIndex가 -1인 경우 처리
         if (perspectiveIndex === -1) {
           return;
         }
 
-        const strategiesInLane = this.jsonData.strategies.filter(s => s.perspective === perspective);
+        const strategiesInLane = this.jsonData.strategies.filter(s => s.perspective === key);
 
         const indexInLane = strategiesInLane.findIndex(s => s.id === id || s.name === name);
         const safeIndex = indexInLane >= 0 ? indexInLane : strategiesInLane.length;
@@ -547,7 +578,7 @@
           x,
           y,
           name,
-          perspective,
+          perspective: key,
           type: 'custom:strategy',
           di: {
             bounds: {
@@ -599,7 +630,7 @@
           width: 100,
           height: 40,
           name,
-          perspective,
+          perspective: perspective,
           type: 'custom:strategyLane',
           di: {
             bounds: { x: 0, y, width: 120, height: laneHeight }
@@ -732,7 +763,7 @@
         this.jsonData.strategies.push({
           id: newId,
           name,
-          perspective,
+          perspective: this.toPerspectiveKey(perspective),
           description,
           parents: parents
         });
@@ -838,10 +869,11 @@
                         });
                     }*/
                     
-                    this.jsonData = unknown;
-                    this.initializeFromData(unknown);
+                    const normalized = this.normalizeJsonData(unknown);
+                    this.jsonData = normalized;
+                    this.initializeFromData(normalized);
 
-                    await backend.putBSCard(unknown);
+                    await backend.putBSCard(normalized);
                     
                 }
 
@@ -865,20 +897,16 @@
           };
           this.putObject("chats", putObj);
       },
-      getUpperStrategies(id, perspective) {
-        if(this.jsonData.strategies.length == 0) return [];
-        const strategy = this.jsonData.strategies.find(s => s.id === id);
-        const strategyPerspective = perspective? perspective : strategy.perspective;
-        let upperPerspective = null;
-        if(strategyPerspective == '고객') {
-          upperPerspective = '재무';
-        } else if(strategyPerspective == '내부 프로세스') {
-          upperPerspective = '고객';
-        } else if(strategyPerspective == '학습 및 성장') {
-          upperPerspective = '내부 프로세스';
-        }
-        if (!upperPerspective) return [];
-        return this.jsonData.strategies.filter(s => s.perspective == upperPerspective);
+      getUpperStrategies(id, perspectiveKey) {
+        if (this.jsonData.strategies.length === 0) return [];
+        const currentPerspective = perspectiveKey
+          ? perspectiveKey
+          : (this.jsonData.strategies.find(s => s.id === id)?.perspective);
+        if (!currentPerspective) return [];
+        const idx = this.perspectives.findIndex(p => p.id === currentPerspective);
+        if (idx <= 0) return [];
+        const upperKey = this.perspectives[idx - 1].id;
+        return this.jsonData.strategies.filter(s => s.perspective === upperKey);
       },
       upperStrategyOptions(strategy, perspective) {
         if(!strategy && !perspective) return [];
@@ -890,29 +918,21 @@
         }));
       },
       getItemProps(item) {
-        const colorMap = {
-          '재무': '#FA896B',
-          '고객': '#0074BA',
-          '내부 프로세스': '#01C0C8',
-          '학습 및 성장': '#763EBD'
-        };
+        const id = item?.perspective ? item.perspective : (item?.id || item);
+        const meta = this.getPerspectiveMetaById(id);
         return {
           style: {
-            color: colorMap[item.perspective] || 'black',
+            color: meta?.color || 'black',
             fontWeight: 'bold'
           }
         };
       },
-      getPerspectiveProps(perspective) {
-        const colorMap = {
-          '재무': '#FA896B',
-          '고객': '#0074BA',
-          '내부 프로세스': '#01C0C8',
-          '학습 및 성장': '#763EBD'
-        };
+      getPerspectiveProps(item) {
+        const id = typeof item === 'string' ? this.toPerspectiveKey(item) : (item?.id || item?.perspective || item);
+        const meta = this.getPerspectiveMetaById(id);
         return {
           style: {
-            color: colorMap[perspective] || 'black',
+            color: meta?.color || 'black',
             fontWeight: 'bold'
           }
         };

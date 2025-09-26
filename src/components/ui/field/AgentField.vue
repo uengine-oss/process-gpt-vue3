@@ -28,7 +28,7 @@
             <div v-if="type === 'a2a'">
                 <v-text-field 
                     v-model="agent.endpoint" 
-                    :label="$t('agentField.agentUrl')"
+                    :label="$t('agentField.agentEndpoint')"
                     class="mb-2"
                     @click:append-inner="fetchAgentData"
                 >

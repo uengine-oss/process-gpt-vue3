@@ -19,7 +19,7 @@
                 
                 <!-- Action Mode Tab Content -->
                 <div v-else-if="activeTab === 'actions'" style="height: 100%; width: 100%;">
-                    <AgentActions :instId="chatRoomId"></AgentActions>
+                    <AgentActions :instId="chatRoomId" :agentInfo="agentInfo"></AgentActions>
                 </div>
 
                 <!-- Knowledge Management Tab Content -->
@@ -71,9 +71,10 @@ export default {
             profile: '/images/chat-icon.png',
             username: 'Agent',
             goal: '에이전트의 목표가 설정되지 않았습니다.',
+            agent_type: 'agent',
         },
         isAgentLearning: true,
-        activeTab: 'learning', // 기본값은 학습 모드
+        activeTab: '',
         chatRoomId: '',
 
         // knowledge management
@@ -129,6 +130,7 @@ export default {
     methods: {
         async init() {
             this.agentInfo = await this.backend.getUserById(this.id);
+            this.activeTab = this.agentInfo.agent_type == 'a2a' ? 'actions' : 'learning';
 
             if (this.isAgentLearning) {
                 this.chatRoomId = `${this.agentInfo.id}-learning`;

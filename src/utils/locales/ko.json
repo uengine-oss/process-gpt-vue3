@@ -218,7 +218,7 @@
         "agentRole": "역할",
         "agentGoal": "목표",
         "agentPersona": "페르소나",
-        "agentUrl": "URL",
+        "agentEndpoint": "엔드포인트",
         "agentDescription": "설명",
         "agentTools": "도구",
         "agentSkills": "기술"
@@ -531,7 +531,15 @@
         "inputPreview": "입력 미리보기",
         "ioExamples": "입출력 예시",
         "close": "닫기",
-        "mismatch": "맞지 않음"
+        "mismatch": "부적합",
+        "cancel": "취소",
+        "confirm": "확인",
+        "regenerate": "재생성",
+        "generatedFunction": "생성된 규칙",
+        "generatedRulePreview": "생성된 규칙 미리보기",
+        "expectedOutput": "예상 출력 결과",
+        "conditionWhen": "조건(When)",
+        "resultThen": "결과(Then)"
     },
     "PDFPreviewer": {
         "saveDocument": "PDF 저장",
@@ -1184,7 +1192,8 @@
         "s1description": "전년도 대비 전체 매출을 20% 성장시키는 것이 목표",
         "s2description": "NPS 기준 고객 만족도를 90점 이상으로 유지",
         "s3description": "내부 업무 프로세스 중 50% 이상을 자동화 시스템으로 전환",
-        "s4description": "전 직원 대상 연 2회 이상 역량 강화 교육 진행"
+        "s4description": "전 직원 대상 연 2회 이상 역량 강화 교육 진행",
+        "aspect": " 관점"
     },
     "ProjectCreationForm": {
         "title": "프로젝트 생성",
