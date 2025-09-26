@@ -137,7 +137,7 @@ export default {
         idRules() {
             return [
                 (v) => !!v || this.$t('ProcessDefinitionVersionDialog.idRequired'),
-                (v) => (v ? /^[a-z0-9_]+$/.test(v) : false) || this.$t('ProcessDefinitionVersionDialog.idRules')
+                (v) => (v ? /^[a-z0-9_-]+$/.test(v) : false) || this.$t('ProcessDefinitionVersionDialog.idRules')
             ];
         },
         newVersion() {
