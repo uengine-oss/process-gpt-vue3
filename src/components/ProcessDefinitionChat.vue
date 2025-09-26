@@ -72,12 +72,12 @@
                 ></process-definition>
                 <process-definition-version-dialog
                     :process="processDefinition"
-                    :loading="loading"
                     :open="versionDialog"
                     :definitionPath="fullPath"
                     :processName="projectName"
                     :type="'bpmn'"
-                    :analysisResult="analysisResult"
+                    :useOptimize="useOptimize"
+                    @update:useOptimize="useOptimize = $event"
                     @close="toggleVersionDialog"
                     @save="beforeSaveDefinition"
                 ></process-definition-version-dialog>
@@ -702,7 +702,10 @@ export default {
             if(this.chatMode == 'consulting'){
                 await this.$emit("createdBPMN", this.processDefinition)
                 info.skipSaveProcMap = true
-            } 
+            }
+            if (this.useOptimize) {
+                this.optimizeDefinition(info.definition);
+            }
             if(window.$pal){
                 await this.beforeSavePALUserTasks(info);
             }

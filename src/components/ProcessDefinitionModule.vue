@@ -3,7 +3,7 @@ import xml2js from 'xml2js';
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import FormGenerator from './ai/FormDesignGenerator';
-import DefinitionAnalyzer from './ai/DefinitionAnalyzer';
+import DefinitionOptimizer from './ai/DefinitionOptimizer';
 import FormDefinitionModule from './FormDefinitionModule.vue';
 import BPMNXmlGenerator from './BPMNXmlGenerator.vue';
 import partialParse from "partial-json-parser";
@@ -32,8 +32,8 @@ export default {
         userInputs: null,
         datasourceURL: null,
         datasourceSchema: null,
-        definitionAnalyzer: null,
-        analysisResult: null,
+        definitionOptimizer: null,
+        useOptimize: false,
     }),
     computed: {
         lastPath() {
@@ -389,17 +389,17 @@ export default {
             // Version Dialog
             this.versionDialog = open;
             this.loading = false
-            try {
-                if (open) {
-                    if (this.$refs.definitionComponent.copyProcessDefinition) {
-                        this.analyzeDefinition(this.$refs.definitionComponent.copyProcessDefinition);
-                    } else {
-                        this.analyzeDefinition(this.processDefinition);
-                    }
-                }
-            } catch(e) {
-                console.log(e)
-            }
+            // try {
+            //     if (open) {
+            //         if (this.$refs.definitionComponent.copyProcessDefinition) {
+            //             this.optimizeDefinition(this.$refs.definitionComponent.copyProcessDefinition);
+            //         } else {
+            //             this.optimizeDefinition(this.processDefinition);
+            //         }
+            //     }
+            // } catch(e) {
+            //     console.log(e)
+            // }
         },
         saveDefinition(info) {
             var me = this;
@@ -1447,8 +1447,8 @@ export default {
             }
         },
         
-        async analyzeDefinition(processDefinition) {
-            if (!processDefinition.activities) {
+        async optimizeDefinition(processDefinition) {
+            if (!processDefinition || !processDefinition.activities) {
                 processDefinition = await this.convertXMLToJSON(this.bpmn);
                 processDefinition = this.checkDefinitionSync(processDefinition, this.processDefinition);
             }
@@ -1466,7 +1466,7 @@ export default {
                             return obj;
                         });
 
-                        const definitionAnalyzerClient = {
+                        const definitionOptimizerClient = {
                             onGenerationFinished: (response) => {
                                 let jsonData = this.extractJSON(response);
                                 if (jsonData && jsonData.includes('{')){
@@ -1505,28 +1505,36 @@ export default {
                                     });
                                 }
 
-                                this.analysisResult = null;
-                                this.loading = false;
+                                const options = {
+                                    name: processDefinition.processDefinitionName,
+                                    definition: processDefinition
+                                }
+                                backend.putRawDefinition(this.bpmn, processDefinition.processDefinitionId, options);
+                                this.$try({
+                                    context: this,
+                                    action: () => {
+                                        this.useOptimize = false;
+                                        this.optimization = null;
+                                    },
+                                    successMsg: '프로세스 정의 최적화가 완료되었습니다.'
+                                });
                                 resolve();
                             },
                             onModelCreated: (response) => {
-                                this.analysisResult = response;
+                                this.optimization = response;
                             }
                         }
 
-                        this.definitionAnalyzer = new DefinitionAnalyzer(definitionAnalyzerClient, {
+                        this.definitionOptimizer = new DefinitionOptimizer(definitionOptimizerClient, {
                             isStream: true,
                             preferredLanguage: "Korean",
                             processDefinition: processDefinition,
                             formFields: formFields
                         });
 
-                        this.analysisResult = "START";
-                        this.loading = true;
-                        this.definitionAnalyzer.generate();
+                        this.definitionOptimizer.generate();
                     }).catch(error => {
                         console.error('Form list retrieval failed:', error);
-                        this.analysisResult = null;
                         reject(error);
                     });
                 } else {

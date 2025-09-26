@@ -2114,7 +2114,8 @@ class ProcessGPTBackend implements Backend {
                 skills: newAgent.skills,
                 model: newAgent.model,
                 tenant_id: window.$tenantName,
-                is_agent: true
+                is_agent: true,
+                agent_type: newAgent.endpoint === '' ? null : 'a2a'
             }
             await storage.putObject('users', putObj);
         } catch (error) {

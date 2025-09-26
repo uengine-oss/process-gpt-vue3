@@ -73,20 +73,16 @@
                             ></v-textarea>
                         </div>
                     </div>
+                    <div v-if="mode == 'ProcessGPT'">
+                        <v-checkbox
+                            v-model="checkOptimize"
+                            label="프로세스 정의 최적화 사용"
+                            hide-details
+                            color="primary"
+                        ></v-checkbox>
+                    </div>
                 </v-card-text>
-                <v-row v-if="loading"
-                    class="ma-0 pa-4 pt-0 align-center text-body-2"
-                >
-                    <v-icon class="mr-2">mdi-information</v-icon>
-                    <span>프로세스 정의 최적화 중
-                        <span class="loading-dots">
-                            <span>.</span>
-                            <span>.</span>
-                            <span>.</span>
-                        </span>
-                    </span>
-                </v-row>
-                <v-row v-else class="ma-0 pa-4 pt-0">
+                <v-row class="ma-0 pa-4 pt-0">
                     <v-spacer></v-spacer>
                     <!-- <v-progress-circular v-if="!loading" color="primary" :size="25" indeterminate style="margin: 5px"></v-progress-circular> -->
                     <v-btn @click="save()"
@@ -115,9 +111,8 @@ export default {
         open: Boolean,
         process: Object,
         definition: Object,
-        loading: Boolean,
         processName: String,
-        analysisResult: String
+        useOptimize: Boolean
     },
     data: () => ({
         isVersion: false,
@@ -135,7 +130,8 @@ export default {
             message: null,
             releaseName: null
         },
-        isOpen: false // inner var
+        isOpen: false, // inner var
+        checkOptimize: false
     }),
     computed: {
         idRules() {
@@ -168,6 +164,16 @@ export default {
         },
     },
     watch: {
+        useOptimize: {
+            handler(newVal) {
+                this.checkOptimize = newVal;
+            },
+        },
+        checkOptimize: {
+            handler(newVal) {
+                this.$emit('update:useOptimize', newVal);
+            },
+        },
         open: {
             async handler(newVal) {
                 if (newVal) {
@@ -184,7 +190,9 @@ export default {
             }
         }
     },
-    async mounted() {},
+    mounted() {
+        this.checkOptimize = this.useOptimize;
+    },
     methods: {
         async load() {
             var me = this;

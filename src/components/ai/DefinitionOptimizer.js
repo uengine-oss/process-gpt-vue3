@@ -1,6 +1,6 @@
 import AIGenerator from "./AIGenerator";
 
-export default class DefinitionAnalyzer extends AIGenerator {
+export default class DefinitionOptimizer extends AIGenerator {
 
     constructor(client, options) {
         super(client, options);
