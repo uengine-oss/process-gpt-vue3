@@ -794,13 +794,113 @@ class ProcessGPTBackend implements Backend {
         ).filter(act => act !== undefined);
     }
 
+    // 액티비티가 속한 서브프로세스를 찾는 헬퍼 함수
+    private findSubProcessContainingActivity(activityId: string, definition: any): any {
+        if (!definition.subProcesses || definition.subProcesses.length === 0) {
+            return null;
+        }
+
+        for (const subProcess of definition.subProcesses) {
+            if (subProcess.children && subProcess.children.activities) {
+                const foundActivity = subProcess.children.activities.find((act: any) => act.id === activityId);
+                if (foundActivity) {
+                    return subProcess;
+                }
+                // 중첩된 서브프로세스도 확인
+                const nestedSubProcess = this.findSubProcessContainingActivity(activityId, subProcess.children);
+                if (nestedSubProcess) {
+                    return nestedSubProcess;
+                }
+            }
+        }
+        return null;
+    }
+
+    // 서브프로세스를 고려하여 이전 액티비티들을 찾는 함수
+    private getPreviousActivitiesWithSubProcess(activityId: string, definition: any) {
+        const allPreviousActivities = [];
+
+        // 1. 액티비티가 루트 프로세스에 있는지 서브프로세스에 있는지 확인
+        const subProcess = this.findSubProcessContainingActivity(activityId, definition);
+
+        if (subProcess) {
+            // 2. 서브프로세스 내부에서 이전 액티비티들을 찾음
+            const subProcessActivities = this.getPreviousActivities(activityId, subProcess.children);
+            allPreviousActivities.push(...subProcessActivities);
+
+            // 3. 루트 프로세스에서 해당 서브프로세스 이전의 액티비티들을 찾음
+            const rootPreviousActivities = this.getPreviousActivities(subProcess.id, definition);
+            allPreviousActivities.push(...rootPreviousActivities);
+
+            // 4. 루트 프로세스의 이전 액티비티들 중에 서브프로세스가 있다면, 
+            //    그 서브프로세스 내부의 모든 액티비티들도 포함
+            for (const rootActivity of rootPreviousActivities) {
+                if (rootActivity.type === 'subProcess' && rootActivity.children) {
+                    const subProcessAllActivities = this.getAllActivitiesFromDefinition(rootActivity.children);
+                    allPreviousActivities.push(...subProcessAllActivities);
+                }
+            }
+        } else {
+            // 루트 프로세스의 액티비티인 경우 기존 로직 사용
+            const rootActivities = this.getPreviousActivities(activityId, definition);
+            allPreviousActivities.push(...rootActivities);
+
+            // 이전 액티비티들 중에 서브프로세스가 있다면, 
+            // 그 서브프로세스 내부의 모든 액티비티들도 포함
+            for (const activity of rootActivities) {
+                if (activity.type === 'subProcess' && activity.children) {
+                    const subProcessAllActivities = this.getAllActivitiesFromDefinition(activity.children);
+                    allPreviousActivities.push(...subProcessAllActivities);
+                }
+            }
+        }
+
+        // 중복 제거 (id 기준)
+        const uniqueActivities = [];
+        const activityIds = new Set();
+        for (const activity of allPreviousActivities) {
+            if (!activityIds.has(activity.id)) {
+                activityIds.add(activity.id);
+                uniqueActivities.push(activity);
+            }
+        }
+
+        return uniqueActivities;
+    }
+
+    // Definition에서 모든 액티비티들을 추출하는 헬퍼 함수
+    private getAllActivitiesFromDefinition(definition: any): any[] {
+        const allActivities = [];
+        
+        if (definition.activities) {
+            allActivities.push(...definition.activities);
+        }
+
+        if (definition.subProcesses) {
+            for (const subProcess of definition.subProcesses) {
+                if (subProcess.children) {
+                    const subActivities = this.getAllActivitiesFromDefinition(subProcess.children);
+                    allActivities.push(...subActivities);
+                }
+            }
+        }
+
+        return allActivities;
+    }
+
     async getPreviousForms(activityId: string, procDefId: string) {
         try {
             const defInfo = await this.getRawDefinition(procDefId, null);
             const definition = defInfo.definition;
-            const prevActivities = this.getPreviousActivities(activityId, definition);
+            const prevActivities = this.getPreviousActivitiesWithSubProcess(activityId, definition);
+            
             if (prevActivities.length > 0) {
                 const formPromises = prevActivities.map(async (activity: any) => {
+                    // tool이 formHandler로 시작하는 경우만 처리
+                    if (!activity.tool || !activity.tool.startsWith('formHandler:')) {
+                        return null;
+                    }
+                    
                     const formId = activity.tool.split('formHandler:')[1];
                     const form = await storage.getObject('form_def', {
                         match: {
@@ -4362,7 +4462,11 @@ class ProcessGPTBackend implements Backend {
                 throw new Error('instance Id and activities are required');
             }
             const response = await axios.post('/execution/rework-complete', item);
-            return response;
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data.message);
+            }
         } catch (error) {
             throw new Error(error.message);
         }
