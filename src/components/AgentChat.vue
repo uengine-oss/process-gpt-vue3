@@ -6,6 +6,7 @@
                     :agentInfo="agentInfo" 
                     :activeTab="activeTab"
                     @update:activeTab="activeTab = $event"
+                    @agentUpdated="handleAgentUpdated"
                 />
             </template>
             <template v-slot:rightpart>
@@ -39,6 +40,7 @@
                     :activeTab="activeTab"
                     :isMobile="true"
                     @update:activeTab="activeTab = $event"
+                    @agentUpdated="handleAgentUpdated"
                 />
             </template>
         </AppBaseCard>
@@ -55,9 +57,10 @@ import AgentChatInfo from "@/components/AgentChatInfo.vue";
 import AgentActions from "@/components/AgentActions.vue";
 
 import AgentChatGenerator from "@/components/ai/AgentChatGenerator.js";
+import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
 
 export default {
-    mixins: [ChatModule],
+    mixins: [ChatModule, AgentCrudMixin],
     components: {
         AppBaseCard,
         Chat,
@@ -200,6 +203,26 @@ export default {
             await this.getMessages(this.chatRoomId);
         },
 
+        // agent update handler
+        async handleAgentUpdated(updatedData) {
+            try {
+                // 믹스인의 updateAgent 메서드 호출하여 DB 업데이트
+                await this.updateAgent(updatedData, 'edit-agent');
+                
+                // 로컬 agentInfo 업데이트 (실시간 반영)
+                this.agentInfo = {
+                    ...this.agentInfo,
+                    ...updatedData,
+                    // 필드명 매핑 (백엔드에서 온 데이터를 UI에서 사용하는 형태로)
+                    username: updatedData.username || updatedData.name,
+                    profile: updatedData.profile || updatedData.img
+                };
+                
+            } catch (error) {
+                console.error('에이전트 수정 실패:', error);
+            }
+        },
+
         // knowledge management
         async getKnowledge() {
             this.isLoading = true;
@@ -216,6 +239,3 @@ export default {
     }
 }
 </script>
-
-<style scoped>
-</style>

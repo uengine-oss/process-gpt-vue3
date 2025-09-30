@@ -125,8 +125,6 @@ export default {
                                     ${content.isTeam == true ? `<div class="node-content-btn add-member-btn"><img class="node-content-icon" src="/assets/images/icon/plus.svg"></div>` : ''}
                                     ${content.isTeam == true ? `<div class="node-content-btn edit-team-btn"><img class="node-content-icon" src="/assets/images/icon/pencil.svg"></div>` : ''}
                                     ${content.isTeam == true ? `<div class="node-content-btn delete-team-btn"><img class="node-content-icon" src="/assets/images/icon/trash.svg"></div>` : ''}
-                                    ${content.isAgent == true ? `<div class="node-content-btn edit-agent-btn"><img class="node-content-icon" src="/assets/images/icon/pencil.svg"></div>` : ''}
-                                    ${content.isAgent == true ? `<div class="node-content-btn delete-agent-btn"><img class="node-content-icon" src="/assets/images/icon/trash.svg"></div>` : ''}
                                     ${!content.isAgent && !content.isTeam && content.id != 'root' ? `<div class="node-content-btn edit-member-btn"><img class="node-content-icon" src="/assets/images/icon/pencil.svg"></div>` : ''}
                                 </div>
                             </div>
@@ -160,10 +158,6 @@ export default {
                         this.$emit('addMember', this.editNode);
                     } else if (button.classList.contains('edit-member-btn')) {
                         this.openEditDialog('edit-user');
-                    } else if (button.classList.contains('edit-agent-btn')) {
-                        this.openEditDialog('edit-agent');
-                    } else if (button.classList.contains('delete-agent-btn')) {
-                        this.openEditDialog('delete');
 
                     }
                 }
@@ -200,19 +194,40 @@ export default {
                 return content;
             }
             
-            // 사용자 ID로 실제 사용자 데이터 찾기
+            // 사용자 ID로 users 테이블에서 실제 최신 데이터 찾기
             const user = this.userList.find(u => u.id === content.id);
             if (user) {
                 return {
+                    // users 테이블의 최신 데이터 사용
                     username: user.username,
+                    name: user.username || user.name, // AgentBadgesDiagram에서 사용
                     email: user.email,
                     role: user.role,
-                    profile: user.profile
+                    profile: user.profile,
+                    // 에이전트 관련 추가 필드들
+                    goal: user.goal,
+                    persona: user.persona,
+                    tools: user.tools,
+                    skills: user.skills,
+                    agent_type: user.agent_type,
+                    is_agent: user.is_agent
                 };
             }
             
-            // 사용자를 찾지 못한 경우 원본 데이터 사용
-            return content;
+            // 사용자를 찾지 못한 경우 조직도 데이터 사용 (fallback)
+            return {
+                username: content.username || content.name,
+                name: content.username || content.name,
+                email: content.email,
+                role: content.role,
+                profile: content.profile || content.img,
+                goal: content.goal,
+                persona: content.persona,
+                tools: content.tools,
+                skills: content.skills,
+                agent_type: content.agent_type,
+                is_agent: content.is_agent || content.isAgent
+            };
         },
         getUserDataById(nodeId) {
             // 조직도 데이터에서 노드 찾기
@@ -426,8 +441,13 @@ export default {
                         if (this.showBadgesDiagram && this.selectedAgent && this.selectedAgent.id === foundNode.data.id) {
                             this.closeBadgesDiagram();
                         } else {
-                            // 새로운 Agent이거나 다이어그램이 닫혀있으면 열기
-                            this.selectedAgent = foundNode.data;
+                            // users 테이블에서 최신 데이터 가져와서 AgentBadgesDiagram에 전달
+                            const latestAgentData = this.getUserData(foundNode.data);
+                            this.selectedAgent = {
+                                ...foundNode.data,
+                                ...latestAgentData,
+                                id: foundNode.data.id // ID는 유지
+                            };
                             this.showBadgesDiagram = true;
                         }
                     } else {
@@ -511,17 +531,21 @@ export default {
             this.editDialog = false;
             this.editDialogType = '';
         },
+        
         async updateNode(type, editNode) {
-            if (type == 'edit') {
+            if (type == 'edit' || type == 'edit-agent') {
                 this.node.children.forEach(team => {
                     if (team.id == editNode.id) {
                         team = editNode
                     }
                 })
+                // 에이전트 수정인 경우 정확한 타입으로 emit
+                const emitType = type === 'edit-agent' ? 'edit-agent' : 'edit';
+                this.$emit('updateAgent', emitType, editNode);
             } else if (type == 'delete') {
                 this.node.children = await this.deleteNode(editNode, this.node.children);
+                this.$emit('updateAgent', type, editNode);
             }
-            this.$emit('updateAgent', type, editNode);
             await this.drawTree();
             this.$emit('updateNode');
             this.closeEditDialog();
