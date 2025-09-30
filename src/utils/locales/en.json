@@ -964,9 +964,9 @@
         "delete": "Delete"
     },
     "VerticalSidebar": {
-        "instanceList": "Instance List",
-        "projectList": "Project List",
-        "agentList": "Agent List",
+        "instanceList": "Instance",
+        "projectList": "Project",
+        "agentList": "Agent",
         "instanceMyGroup": "My Group Instance",
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Definition Export",
@@ -1674,5 +1674,24 @@
         "loading": "Loading agents...",
         "empty": "No registered agents",
         "loadFailed": "Failed to load agent list"
+    },
+    "AgentChatInfo": {
+        "expand": "Show more",
+        "collapse": "Show less",
+        "defaultAgentName": "Agent",
+        "labels": {
+            "goal": "Goal",
+            "persona": "Persona",
+            "tools": "Tools"
+        },
+        "fallback": {
+            "goal": "Agent goal is not configured yet."
+        },
+        "tabs": {
+            "learning": "Learning Mode",
+            "question": "Question Mode",
+            "actions": "Action Mode",
+            "knowledge": "Knowledge Management"
+        }
     }
 }

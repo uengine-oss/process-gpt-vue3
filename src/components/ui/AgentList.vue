@@ -10,40 +10,54 @@
             <span class="text-caption text-grey">{{ $t('AgentList.empty') }}</span>
         </div>
         
-        <div v-else class="agent-items">
-            <div 
-                v-for="agent in agentList" 
-                :key="agent.id"
-                class="agent-item"
-                @click="goToAgentChat(agent.id)"
-            >
-                <div class="agent-avatar">
-                    <img 
-                        v-if="agent.img" 
-                        :src="agent.img" 
-                        :alt="agent.name"
-                        class="agent-image"
-                        @error="handleImageError"
-                    />
-                    <div v-else class="agent-emoji">🤖</div>
+        <ExpandableList 
+            v-else
+            :items="agentList" 
+            :limit="5"
+            @expanded="onExpanded"
+            @collapsed="onCollapsed"
+        >
+            <template #items="{ displayedItems }">
+                <div class="agent-items">
+                    <div 
+                        v-for="agent in displayedItems" 
+                        :key="agent.id"
+                        class="agent-item"
+                        @click="goToAgentChat(agent.id)"
+                    >
+                        <div class="agent-avatar">
+                            <img 
+                                v-if="agent.img" 
+                                :src="agent.img" 
+                                :alt="agent.name"
+                                class="agent-image"
+                                @error="handleImageError"
+                            />
+                            <div v-else class="agent-emoji">🤖</div>
+                        </div>
+                        <div class="agent-info">
+                            <span class="agent-name">{{ agent.name || 'Unnamed Agent' }}</span>
+                            <span v-if="agent.role" class="agent-role">{{ agent.role }}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="agent-info">
-                    <span class="agent-name">{{ agent.name || 'Unnamed Agent' }}</span>
-                    <span v-if="agent.role" class="agent-role">{{ agent.role }}</span>
-                </div>
-            </div>
-        </div>
+            </template>
+        </ExpandableList>
     </div>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
+import ExpandableList from '@/components/ui/ExpandableList.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'AgentList',
+    components: {
+        ExpandableList
+    },
     mixins: [AgentCrudMixin],
     data() {
         return {
@@ -54,15 +68,15 @@ export default {
     async mounted() {
         await this.loadAgentList();
         // 에이전트 업데이트 이벤트 리스너 등록
-        this.$root.$on('agentUpdated', this.handleAgentUpdate);
-        this.$root.$on('agentAdded', this.handleAgentUpdate);
-        this.$root.$on('agentDeleted', this.handleAgentUpdate);
+        this.EventBus.on('agentUpdated', this.handleAgentUpdate);
+        this.EventBus.on('agentAdded', this.handleAgentUpdate);
+        this.EventBus.on('agentDeleted', this.handleAgentUpdate);
     },
-    beforeDestroy() {
+    beforeUnmount() {
         // 이벤트 리스너 제거
-        this.$root.$off('agentUpdated', this.handleAgentUpdate);
-        this.$root.$off('agentAdded', this.handleAgentUpdate);
-        this.$root.$off('agentDeleted', this.handleAgentUpdate);
+        this.EventBus.off('agentUpdated', this.handleAgentUpdate);
+        this.EventBus.off('agentAdded', this.handleAgentUpdate);
+        this.EventBus.off('agentDeleted', this.handleAgentUpdate);
     },
     methods: {
         async loadAgentList() {
@@ -73,13 +87,15 @@ export default {
                 
                 // 에이전트 데이터 가공
                 if (Array.isArray(agentList)) {
-                    this.agentList = agentList.map(agent => ({
+                    const processedAgents = agentList.map(agent => ({
                         id: agent.id,
                         name: agent.username || agent.name,
                         role: agent.role,
                         img: agent.profile || agent.img,
                         type: agent.agent_type || 'agent'
                     }));
+                    
+                    this.agentList = processedAgents;
                 } else {
                     this.agentList = [];
                 }
@@ -143,6 +159,14 @@ export default {
                 };
                 this.agentList.push(newAgent);
             }
+        },
+
+        onExpanded() {
+            // 확장 시 필요한 로직이 있다면 여기에 추가
+        },
+        
+        onCollapsed() {
+            // 축소 시 필요한 로직이 있다면 여기에 추가
         }
     }
 };
@@ -220,7 +244,7 @@ export default {
 }
 
 .agent-name {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
     color: #2d3436;
     white-space: nowrap;
@@ -236,6 +260,7 @@ export default {
     text-overflow: ellipsis;
     margin-top: 2px;
 }
+
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {

@@ -1,42 +1,21 @@
 <template>
     <div>
-        <template v-for="item in displayedInstanceList" :key="item.title">
-            <div v-if="item.isNew" class="d-flex">
-                <v-progress-circular indeterminate class="mt-2" color="primary" :size="20"></v-progress-circular>
-                <NavItem v-if="!JMS" class="leftPadding pl-2" :item="item" :use-i18n="false" />
-            </div>
-            <NavItem v-else-if="!JMS && !item.isNew" class="leftPadding pl-2" :item="item" :use-i18n="false" />
-        </template>
-        
-        <!-- 더보기/접기 버튼 -->
-        <div v-if="hasMoreInstances" class="mt-2">
-            <v-card @click="showMoreInstances"
-                v-if="!showAllInstances" 
-                class="text-center cursor-pointer pa-2"
-                elevation="10"
-                rounded="10"
-            >
-                <v-card-text class="pa-0">
-                    <span class="text-caption text-primary">
-                        {{ $t('VerticalSidebar.showMore') }} ({{ instanceList.length - 10 }})
-                    </span>
-                    <v-icon size="small" class="ml-1" color="primary">mdi-chevron-down</v-icon>
-                </v-card-text>
-            </v-card>
-            <v-card @click="showLessInstances"
-                v-else 
-                class="text-center cursor-pointer pa-2"
-                elevation="10"
-                rounded="10"
-            >
-                <v-card-text class="pa-0">
-                    <span class="text-caption text-primary">
-                        {{ $t('VerticalSidebar.showLess') }}
-                    </span>
-                    <v-icon size="small" class="ml-1" color="primary">mdi-chevron-up</v-icon>
-                </v-card-text>
-            </v-card>
-        </div>
+        <ExpandableList 
+            :items="instanceList" 
+            :limit="10"
+            @expanded="onInstancesExpanded"
+            @collapsed="onInstancesCollapsed"
+        >
+            <template #items="{ displayedItems }">
+                <template v-for="item in displayedItems" :key="item.title">
+                    <div v-if="item.isNew" class="d-flex">
+                        <v-progress-circular indeterminate class="mt-2" color="primary" :size="20"></v-progress-circular>
+                        <NavItem v-if="!JMS" class="leftPadding pl-2" :item="item" :use-i18n="false" />
+                    </div>
+                    <NavItem v-else-if="!JMS && !item.isNew" class="leftPadding pl-2" :item="item" :use-i18n="false" />
+                </template>
+            </template>
+        </ExpandableList>
     </div>
     <div v-if="myGroupInstanceList.length > 0"
                 style="font-size:14px;"
@@ -52,11 +31,14 @@
 <script>
 import NavItem from '@/layouts/full/vertical-sidebar/NavItem/index.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import ExpandableList from '@/components/ui/ExpandableList.vue';
+
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
-        NavItem
+        NavItem,
+        ExpandableList
     },
     data: () => ({
         instanceList: [],
@@ -67,7 +49,6 @@ export default {
             header: 'runningInstance.title',
         },
         watchRef: null,
-        showAllInstances: false, // 더보기 상태 관리
         
     }),
     async created() {
@@ -90,15 +71,6 @@ export default {
         JMS() {
             return window.$jms;
         },
-        displayedInstanceList() {
-            if (this.showAllInstances || this.instanceList.length <= 10) {
-                return this.instanceList;
-            }
-            return this.instanceList.slice(0, 10);
-        },
-        hasMoreInstances() {
-            return this.instanceList.length > 10;
-        }
     },
     methods: {
         async init() {
@@ -112,7 +84,7 @@ export default {
         async loadInstances() {
             let result = await backend.getInstanceListByStatus(["NEW", "RUNNING"]);
             if (!result) result = [];
-            this.instanceList = result.map((item) => {
+            const processedInstances = result.map((item) => {
                 const title = item.name;
                 item = {
                     // icon: 'ph:cube',
@@ -127,6 +99,8 @@ export default {
                 };
                 return item;
             });
+            
+            this.instanceList = processedInstances;
             
             // isDeleted 항목을 마지막으로 정렬하고, 삭제된 항목들은 삭제일자 기준 내림차순 정렬
             this.instanceList.sort((a, b) => {
@@ -168,11 +142,11 @@ export default {
                 };
             });
         },
-        showMoreInstances() {
-            this.showAllInstances = true;
+        onInstancesExpanded() {
+            // 확장 시 필요한 로직이 있다면 여기에 추가
         },
-        showLessInstances() {
-            this.showAllInstances = false;
+        onInstancesCollapsed() {
+            // 축소 시 필요한 로직이 있다면 여기에 추가
         }
         
         

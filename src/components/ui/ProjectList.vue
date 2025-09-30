@@ -1,55 +1,35 @@
 <template>
     <div>
-        <template v-for="item in displayedProjectList" :key="item.title">
-            <NavItem class="leftPadding pl-2" :item="item" :use-i18n="false" />
-        </template>
-        
-        <!-- 더보기/접기 버튼 -->
-        <div v-if="hasMoreProjects" class="mt-2">
-            <v-card @click="showMoreProjects"
-                v-if="!showAllProjects" 
-                class="text-center cursor-pointer pa-2"
-                elevation="10"
-                rounded="10"
-            >
-                <v-card-text class="pa-0">
-                    <span class="text-caption text-primary">
-                        {{ $t('VerticalSidebar.showMore') }} ({{ projectLists.length - 10 }})
-                    </span>
-                    <v-icon size="small" class="ml-1" color="primary">mdi-chevron-down</v-icon>
-                </v-card-text>
-            </v-card>
-            <v-card @click="showLessProjects"
-                v-else 
-                class="text-center cursor-pointer pa-2"
-                elevation="10"
-                rounded="10"
-            >
-                <v-card-text class="pa-0">
-                    <span class="text-caption text-primary">
-                        {{ $t('VerticalSidebar.showLess') }}
-                    </span>
-                    <v-icon size="small" class="ml-1" color="primary">mdi-chevron-up</v-icon>
-                </v-card-text>
-            </v-card>
-        </div>
+        <ExpandableList 
+            :items="projectLists" 
+            :limit="10"
+            @expanded="onProjectsExpanded"
+            @collapsed="onProjectsCollapsed"
+        >
+            <template #items="{ displayedItems }">
+                <template v-for="item in displayedItems" :key="item.title">
+                    <NavItem class="leftPadding pl-2" :item="item" :use-i18n="false" />
+                </template>
+            </template>
+        </ExpandableList>
     </div>
 </template>
 
 <script>
 import NavItem from '@/layouts/full/vertical-sidebar/NavItem/index.vue';
-
 import BackendFactory from '@/components/api/BackendFactory';
+import ExpandableList from '@/components/ui/ExpandableList.vue';
+
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
-        NavItem
+        NavItem,
+        ExpandableList
     },
     data: () => ({
         projectLists: [],
         watchRef: null,
-        showAllProjects: false // 프로젝트 더보기 상태 관리
     }),
     async created() {
         await this.init();
@@ -91,18 +71,6 @@ export default {
             // }
         }));
     },
-    computed: {
-        displayedProjectList() {
-            if (!this.projectLists || this.projectLists.length === 0) return [];
-            if (this.showAllProjects || this.projectLists.length <= 10) {
-                return this.projectLists;
-            }
-            return this.projectLists.slice(0, 10);
-        },
-        hasMoreProjects() {
-            return this.projectLists && this.projectLists.length > 10;
-        }
-    },
     methods: {
         async init() {
             await this.loadProjectList();
@@ -110,7 +78,7 @@ export default {
         async loadProjectList() {
             let result = await backend.getProjectListByStatus(["NEW", "RUNNING"]);
             if (!result) result = [];
-            this.projectLists = result.map((item) => {
+            const processedProjects = result.map((item) => {
                 const title = item.name;
                 item = {
                     // icon: 'ph:cube',
@@ -124,12 +92,14 @@ export default {
                 };
                 return item;
             });
+            
+            this.projectLists = processedProjects;
         },
-        showMoreProjects() {
-            this.showAllProjects = true;
+        onProjectsExpanded() {
+            // 확장 시 필요한 로직이 있다면 여기에 추가
         },
-        showLessProjects() {
-            this.showAllProjects = false;
+        onProjectsCollapsed() {
+            // 축소 시 필요한 로직이 있다면 여기에 추가
         }
         
     }

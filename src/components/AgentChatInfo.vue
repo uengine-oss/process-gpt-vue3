@@ -1,14 +1,15 @@
 <template>
-    <div class="no-scrollbar">
-        <div class="pa-4">
+    <div>
+        <div v-if="!editDialog" class="pa-4">
+            <!-- 편집 모드가 아닐 때만 일반 화면 표시 -->
             <div class="text-left mb-4">
-                <div class="text-center">
-                    <v-avatar :size="isMobile ? 60 : 80" class="mb-3">
+                <v-row class="align-center ma-0 pa-0 mb-4">
+                    <v-avatar size="24" class="mr-2">
                         <!-- 프로필 이미지가 있고 로딩 성공했을 때만 표시 -->
                         <v-img 
                             v-if="agentInfo.profile && imageLoaded && !isDefaultImage(agentInfo.profile)"
                             :src="agentInfo.profile" 
-                            :alt="agentInfo.username || 'Agent'"
+                            :alt="agentInfo.username || $t('AgentChatInfo.defaultAgentName')"
                             cover
                             @error="handleImageError"
                             @load="handleImageLoad"
@@ -18,7 +19,7 @@
                         <v-img 
                             v-else
                             src="/images/chat-icon.png" 
-                            :alt="agentInfo.username || 'Agent'"
+                            :alt="agentInfo.username || $t('AgentChatInfo.defaultAgentName')"
                             cover
                         >
                             <template v-slot:error>
@@ -26,33 +27,71 @@
                             </template>
                         </v-img>
                     </v-avatar>
-                    <h5 v-if="!isMobile" class="text-h6 font-weight-bold mb-1">{{ agentInfo.username || 'Agent' }}</h5>
-                    <h6 v-else class="text-subtitle-1 font-weight-bold mb-1">{{ agentInfo.username || 'Agent' }}</h6>
-                </div>
+                    <h5 v-if="!isMobile" class="text-h6 font-weight-bold">{{ agentInfo.username || $t('AgentChatInfo.defaultAgentName') }}</h5>
+                    <h6 v-else class="text-subtitle-1 font-weight-bold">{{ agentInfo.username || $t('AgentChatInfo.defaultAgentName') }}</h6>
+                    
+                    <v-spacer></v-spacer>
+                    <!-- 수정 버튼 -->
+                    <v-btn 
+                        @click="openEditDialog"
+                        variant="text"
+                        :size="20"
+                        icon
+                        class="rounded-pill"
+                    >
+                        <Icons :icon="'pencil'" :size="14"/>
+                    </v-btn>
+                </v-row>
                 
                 <!-- Goal Section - 모든 버전에서 표시 -->
                 <div class="pa-0 mb-1">
                     <v-icon size="small" class="mr-1">mdi-target</v-icon>
-                    <span class="text-body-2 font-weight-medium">목표</span>
+                    <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.goal') }}</span>
                 </div>
-                <p class="text-body-2 text-medium-emphasis mb-3">{{ agentInfo.goal || '에이전트의 목표가 설정되지 않았습니다.' }}</p>
+                <p class="text-body-2 text-medium-emphasis mb-3">
+                    {{ getDisplayText(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 'goal', 50) }}
+                    <v-btn
+                        v-if="shouldShowToggleButton(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 50)"
+                        @click="toggleTextExpansion('goal')"
+                        variant="text"
+                        size="small"
+                        color="primary"
+                        class="pa-0 text-caption ml-1"
+                        style="min-width: auto; height: auto; vertical-align: baseline;"
+                    >
+                        {{ expandedTexts.goal ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                    </v-btn>
+                </p>
                 
                 <!-- Persona Section -->
                 <div v-if="agentInfo.persona" class="pa-0 mb-1">
                     <v-icon size="small" class="mr-1">mdi-account-tie</v-icon>
-                    <span class="text-body-2 font-weight-medium">페르소나</span>
+                    <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.persona') }}</span>
                 </div>
-                <p v-if="agentInfo.persona" class="text-body-2 text-medium-emphasis mb-3">{{ agentInfo.persona }}</p>
+                <p v-if="agentInfo.persona" class="text-body-2 text-medium-emphasis mb-3">
+                    {{ getDisplayText(agentInfo.persona, 'persona', 50) }}
+                    <v-btn
+                        v-if="shouldShowToggleButton(agentInfo.persona, 50)"
+                        @click="toggleTextExpansion('persona')"
+                        variant="text"
+                        size="small"
+                        color="primary"
+                        class="pa-0 text-caption ml-1"
+                        style="min-width: auto; height: auto; vertical-align: baseline;"
+                    >
+                        {{ expandedTexts.persona ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                    </v-btn>
+                </p>
                 
                 <!-- Tools Section -->
                 <div v-if="agentInfo.tools && agentInfo.tools.length > 0" class="pa-0 mb-1">
                     <v-icon size="small" class="mr-1">mdi-tools</v-icon>
-                    <span class="text-body-2 font-weight-medium">도구 목록</span>
+                    <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.tools') }}</span>
                 </div>
                 <div v-if="agentInfo.tools && agentInfo.tools.length > 0" class="mb-3">
                     <v-chip-group class="tools-chips">
                         <v-chip 
-                            v-for="tool in parsedTools" 
+                            v-for="tool in getDisplayTools()" 
                             :key="tool"
                             size="small"
                             color="success"
@@ -61,27 +100,26 @@
                         >
                             {{ tool }}
                         </v-chip>
+                        <v-btn
+                            v-if="shouldShowToolsToggle()"
+                            @click="toggleTextExpansion('tools')"
+                            variant="text"
+                            size="small"
+                            color="primary"
+                            class="pa-0 text-caption ma-1"
+                            style="min-width: auto; height: auto; vertical-align: middle;"
+                        >
+                            {{ expandedTexts.tools ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                        </v-btn>
                     </v-chip-group>
                 </div>
             </div>
-
-            <v-row class="ma-0 pa-0 pb-4">
-                <v-spacer></v-spacer>
-                <!-- 수정 버튼 -->
-                <v-btn 
-                    @click="openEditDialog"
-                    color="primary"
-                    variant="elevated" 
-                    class="rounded-pill"
-                >
-                    {{ $t('organizationChartDefinition.edit') }}
-                </v-btn>
-            </v-row>
             
-            <v-divider class="mb-4"></v-divider>
+            <v-divider v-if="!editDialog" class="mb-4"></v-divider>
             
-            <!-- Tab Navigation - 모든 버전에서 동일하게 표시 -->
+            <!-- Tab Navigation - 편집 모드가 아닐 때만 표시 -->
             <v-tabs
+                v-if="!editDialog"
                 v-model="activeTab"
                 direction="vertical"
                 color="primary"
@@ -94,20 +132,16 @@
                 </v-tab>
             </v-tabs>
         </div>
-
-        <!-- 에이전트 수정 다이얼로그 -->
-        <v-dialog 
-            v-model="editDialog" 
-            :max-width="isMobile ? '100vw' : 500"
-            :fullscreen="isMobile"
-        >
-            <OrganizationEditDialog
+            
+        <!-- 편집 모드일 때 OrganizationEditDialog 표시 -->
+        <div v-else>
+            <OrganizationEditDialog class="agent-chat-info-organization-edit-dialog"
                 :dialogType="'edit-agent'"
                 :editNode="editNode"
                 @updateNode="updateAgent"
                 @closeDialog="closeEditDialog"
             />
-        </v-dialog>
+        </div>
     </div>
 </template>
 
@@ -125,8 +159,8 @@ export default {
             default: () => ({
                 id: '',
                 profile: '/images/chat-icon.png',
-                username: 'Agent',
-                goal: '에이전트의 목표가 설정되지 않았습니다.'
+                        username: '',
+                        goal: ''
             })
         },
         activeTab: {
@@ -145,6 +179,11 @@ export default {
             editDialog: false,
             editNode: {
                 data: {}
+            },
+            expandedTexts: {
+                goal: false,
+                persona: false,
+                tools: false
             }
         }
     },
@@ -155,14 +194,14 @@ export default {
         tabList() {
             if (this.agentInfo.agent_type == 'a2a') {
                 return [
-                    { label: '액션 모드', value: 'actions', icon: 'mdi-tools' }
+                    { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }
                 ]
             } else {
                 return [
-                    { label: '학습 모드', value: 'learning', icon: 'mdi-school' },
-                    { label: '질의 모드', value: 'question', icon: 'mdi-chat' },
-                    { label: '액션 모드', value: 'actions', icon: 'mdi-tools' },
-                    { label: '지식 관리', value: 'knowledge', icon: 'mdi-database' },
+                    { label: this.$t('AgentChatInfo.tabs.learning'), value: 'learning', icon: 'mdi-school' },
+                    { label: this.$t('AgentChatInfo.tabs.question'), value: 'question', icon: 'mdi-chat' },
+                    { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' },
+                    { label: this.$t('AgentChatInfo.tabs.knowledge'), value: 'knowledge', icon: 'mdi-database' },
                 ]
             }
         },
@@ -255,7 +294,7 @@ export default {
             this.editNode = {
                 data: {
                     id: this.agentInfo.id || '',
-                    name: this.agentInfo.username || this.agentInfo.name || 'Agent',
+                    name: this.agentInfo.username || this.agentInfo.name || this.$t('AgentChatInfo.defaultAgentName'),
                     email: this.agentInfo.email || '',
                     role: this.agentInfo.role || '',
                     goal: this.agentInfo.goal || '',
@@ -282,6 +321,37 @@ export default {
             // 부모 컴포넌트로 수정 이벤트 전달
             this.$emit('agentUpdated', editNode.data);
             this.closeEditDialog();
+        },
+
+        getTruncatedText(text, maxLength) {
+            if (!text || text.length <= maxLength) {
+                return text;
+            }
+            return text.substring(0, maxLength) + '...';
+        },
+
+        shouldShowToggleButton(text, maxLength) {
+            return text && text.length > maxLength;
+        },
+
+        toggleTextExpansion(textType) {
+            this.expandedTexts[textType] = !this.expandedTexts[textType];
+        },
+
+        getDisplayText(text, textType, maxLength) {
+            if (!text) return '';
+            
+            const isExpanded = this.expandedTexts[textType];
+            return isExpanded ? text : this.getTruncatedText(text, maxLength);
+        },
+
+        getDisplayTools() {
+            const isExpanded = this.expandedTexts.tools;
+            return isExpanded ? this.parsedTools : this.parsedTools.slice(0, 4);
+        },
+
+        shouldShowToolsToggle() {
+            return this.parsedTools && this.parsedTools.length > 4;
         }
     }
 }
@@ -302,11 +372,6 @@ export default {
     display: none;
 }
 
-.tools-chips {
-    max-height: 120px;
-    overflow-y: auto;
-}
-
 .tools-chips .v-chip {
     margin: 2px !important;
     font-size: 11px !important;
@@ -315,10 +380,6 @@ export default {
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-    .tools-chips {
-        max-height: 100px;
-    }
-    
     .tools-chips .v-chip {
         font-size: 10px !important;
         height: 22px !important;

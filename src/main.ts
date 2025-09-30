@@ -11,6 +11,7 @@ import PerfectScrollbar from 'vue3-perfect-scrollbar';
 import App from './App.vue';
 import vuetify from './plugins/vuetify';
 import hammerDirective from '@/components/directive/hammerDirective';
+import i18nDirective from './plugins/i18nDirective';
 import { router } from './router';
 import store from './store';
 import axios from 'axios';
@@ -339,6 +340,7 @@ async function initializeApp() {
         alterDomain: false // default: false
     });
     app.use(i18n);
+    app.use(i18nDirective);
     app.use(Maska);
     app.use(VueApexCharts);
     app.use(vuetify).mount('#app');

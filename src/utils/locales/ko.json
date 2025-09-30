@@ -964,9 +964,9 @@
         "delete": "삭제"
     },
     "VerticalSidebar": {
-        "instanceList": "인스턴스 목록",
-        "projectList": "프로젝트 목록",
-        "agentList": "에이전트 목록",
+        "instanceList": "인스턴스",
+        "projectList": "프로젝트",
+        "agentList": "에이전트",
         "instanceMyGroup": "내 그룹 인스턴스",
         "saveFileName": "저장될 파일명",
         "downloadDefinitionList": "정의 내보내기",
@@ -1674,5 +1674,24 @@
         "loading": "에이전트 로딩 중...",
         "empty": "등록된 에이전트가 없습니다",
         "loadFailed": "에이전트 목록 로딩 실패"
+    },
+    "AgentChatInfo": {
+        "expand": "더보기",
+        "collapse": "접기",
+        "defaultAgentName": "에이전트",
+        "labels": {
+            "goal": "목표",
+            "persona": "페르소나",
+            "tools": "도구 목록"
+        },
+        "fallback": {
+            "goal": "에이전트의 목표가 설정되지 않았습니다."
+        },
+        "tabs": {
+            "learning": "학습 모드",
+            "question": "질의 모드",
+            "actions": "액션 모드",
+            "knowledge": "지식 관리"
+        }
     }
 }

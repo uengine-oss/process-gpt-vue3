@@ -105,18 +105,6 @@
                         <ProjectList/>
                     </v-col>
                 </div>
-
-                <!-- 에이전트 타이틀 + 목록 -->
-                <div v-if="isShowAgentList" class="mb-4">
-                    <div class="d-flex align-center justify-between">
-                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
-                            {{ $t('VerticalSidebar.agentList') }}
-                        </div>
-                    </div>
-                    <v-col class="pa-0">
-                        <AgentList/>
-                    </v-col>
-                </div>
                 
                 <!-- 인스턴스 타이틀 + 목록 -->
                 <v-col  class="pa-0 mb-4">
@@ -174,6 +162,19 @@
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
                 </v-col>
+
+
+                <!-- 에이전트 타이틀 + 목록 -->
+                <div v-if="isShowAgentList" class="mb-4">
+                    <div class="d-flex align-center justify-between">
+                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                            {{ $t('VerticalSidebar.agentList') }}
+                        </div>
+                    </div>
+                    <v-col class="pa-0">
+                        <AgentList/>
+                    </v-col>
+                </div>
               
                 <!-- 정의관리 타이틀 + 목록 -->
                 <v-col class="pa-0">
@@ -208,47 +209,23 @@
                     </template>
                 </v-col>
                 <v-col class="pa-0">
-                    
-                    <template v-if="displayedDefinitionList">
-                        <!-- 정의 목록 리스트 -->
-                        <NavCollapse v-for="(definition, i) in displayedDefinitionList" :key="i"
-                            :item="definition" 
-                            class="leftPadding"
-                            @update:item="(def) => (displayedDefinitionList[i] = def)" 
-                            :level="0" 
-                            :type="'definition-list'" 
-                        />
-                        
-                        <!-- 더보기/접기 버튼 -->
-                        <div v-if="hasMoreDefinitions" class="mt-2">
-                            <v-card @click="showMoreDefinitions"
-                                v-if="!showAllDefinitions" 
-                                class="text-center cursor-pointer pa-2"
-                                elevation="10"
-                                rounded="10"
-                            >
-                                <v-card-text class="pa-0">
-                                    <span class="text-caption text-primary">
-                                        {{ $t('VerticalSidebar.showMore') }} ({{ (Array.isArray(definitionList) ? definitionList.length : (definitionList && definitionList.children ? definitionList.children.length : 0)) - 10 }})
-                                    </span>
-                                    <v-icon size="small" class="ml-1" color="primary">mdi-chevron-down</v-icon>
-                                </v-card-text>
-                            </v-card>
-                            <v-card @click="showLessDefinitions"
-                                v-else 
-                                class="text-center cursor-pointer pa-2"
-                                elevation="10"
-                                rounded="10"
-                            >
-                                <v-card-text class="pa-0">
-                                    <span class="text-caption text-primary">
-                                        {{ $t('VerticalSidebar.showLess') }}
-                                    </span>
-                                    <v-icon size="small" class="ml-1" color="primary">mdi-chevron-up</v-icon>
-                                </v-card-text>
-                            </v-card>
-                        </div>
-                    </template>
+                    <ExpandableList 
+                        v-if="definitionList && definitionList.children"
+                        :items="definitionList.children" 
+                        :limit="10"
+                        @expanded="onDefinitionsExpanded"
+                        @collapsed="onDefinitionsCollapsed"
+                    >
+                        <template #items="{ displayedItems }">
+                            <NavCollapse v-for="(definition, i) in displayedItems" :key="i"
+                                :item="definition" 
+                                class="leftPadding"
+                                @update:item="(def) => (displayedItems[i] = def)" 
+                                :level="0" 
+                                :type="'definition-list'" 
+                            />
+                        </template>
+                    </ExpandableList>
                 </v-col>
                 <!-- <v-col class="pa-0" style="flex: 1 1; overflow: auto;">
                     <div class="text-medium-emphasis cp-menu mt-3 ml-2">{{ $t('VerticalSidebar.trash') }}</div>
@@ -303,6 +280,7 @@ import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import ProjectList from '@/components/ui/ProjectList.vue';
 import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.vue';
 import AgentList from '@/components/ui/AgentList.vue';
+import ExpandableList from '@/components/ui/ExpandableList.vue';
 
 import { useCustomizerStore } from '@/stores/customizer';
 
@@ -325,6 +303,7 @@ export default {
         ProjectList,
         ProjectCreationForm,
         AgentList,
+        ExpandableList,
         Logo,
         NavCollapse,
         NavGroup,
@@ -357,7 +336,6 @@ export default {
         isNewProjectOpen: false,
         deletedDefinitionList: [],
         notiCount: 0,
-        showAllDefinitions: false, // 정의 목록 더보기 상태 관리
     }),
     computed: {
         JMS() {
@@ -381,22 +359,6 @@ export default {
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') == 'true';
             return isAdmin;
-        },
-        displayedDefinitionList() {
-            // definitionList가 배열인 경우와 객체인 경우 모두 처리
-            const list = Array.isArray(this.definitionList) ? this.definitionList : 
-                         (this.definitionList && this.definitionList.children ? this.definitionList.children : []);
-            
-            if (!list || list.length === 0) return null;
-            if (this.showAllDefinitions || list.length <= 10) {
-                return list;
-            }
-            return list.slice(0, 10);
-        },
-        hasMoreDefinitions() {
-            const list = Array.isArray(this.definitionList) ? this.definitionList : 
-                         (this.definitionList && this.definitionList.children ? this.definitionList.children : []);
-            return list && list.length > 10;
         },
     },
     created() {
@@ -741,7 +703,8 @@ export default {
                 return 4; // 기타
             };
 
-            return list.children.sort((a, b) => {
+            // children 배열을 정렬하고 원본 객체 구조를 유지
+            list.children.sort((a, b) => {
                 const titleA = a.title.charAt(0);
                 const titleB = b.title.charAt(0);
                 
@@ -754,6 +717,9 @@ export default {
                 
                 return a.title.localeCompare(b.title, 'ko-KR');
             });
+            
+            // 원본 list 객체를 반환 (children이 정렬된 상태)
+            return list;
         },
         navigateTo(path) {
             if (typeof path === 'function') {
@@ -765,11 +731,11 @@ export default {
         handleInstanceListUpdate(instanceList) {
             this.instanceLists = instanceList;
         },
-        showMoreDefinitions() {
-            this.showAllDefinitions = true;
+        onDefinitionsExpanded() {
+            // 확장 시 필요한 로직이 있다면 여기에 추가
         },
-        showLessDefinitions() {
-            this.showAllDefinitions = false;
+        onDefinitionsCollapsed() {
+            // 축소 시 필요한 로직이 있다면 여기에 추가
         }
     }
 };

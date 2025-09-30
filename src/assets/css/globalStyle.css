@@ -1031,6 +1031,9 @@ hr {
     max-height: 60vh;
     overflow: auto;
 }
+.agent-chat-info-organization-edit-dialog .organization-edit-dialog-contents {
+    height: 100%;
+}
 
 .organization-edit-dialog-contents {
     height: calc(-300px + 100vh);
@@ -1414,6 +1417,10 @@ hr {
     .organization-edit-dialog-contents {
         height: calc(100vh - 100px);
         overflow: auto;
+    }
+
+    .agent-chat-info-organization-edit-dialog .organization-edit-dialog-contents {
+        height: 100%;
     }
 
     .list-page-completed-box {

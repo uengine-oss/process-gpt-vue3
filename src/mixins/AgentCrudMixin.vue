@@ -27,8 +27,8 @@ export default {
                 }
                 
                 // 글로벌 이벤트 발생 (AgentList 등에서 감지)
-                if (this.$root) {
-                    this.$root.$emit('agentAdded', newAgent);
+                if (this.EventBus) {
+                    this.EventBus.emit('agentAdded', newAgent);
                 }
                 
                 // 성공 메시지 표시
@@ -84,8 +84,8 @@ export default {
                     }
                     
                     // 글로벌 이벤트 발생 (AgentList 등에서 감지)
-                    if (this.$root) {
-                        this.$root.$emit('agentUpdated', mappedAgentData);
+                    if (this.EventBus) {
+                        this.EventBus.emit('agentUpdated', mappedAgentData);
                     }
                     
                     // 추가 작업이 필요한 경우 (하위 컴포넌트에서 오버라이드 가능)
@@ -128,8 +128,8 @@ export default {
                 }
                 
                 // 글로벌 이벤트 발생 (AgentList 등에서 감지)
-                if (this.$root) {
-                    this.$root.$emit('agentDeleted', { id });
+                if (this.EventBus) {
+                    this.EventBus.emit('agentDeleted', { id });
                 }
                 
                 // 성공 메시지 표시
