@@ -105,11 +105,23 @@
                         <ProjectList/>
                     </v-col>
                 </div>
+
+                <!-- 에이전트 타이틀 + 목록 -->
+                <div v-if="isShowAgentList" class="mb-4">
+                    <div class="d-flex align-center justify-between">
+                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                            {{ $t('VerticalSidebar.agentList') }}
+                        </div>
+                    </div>
+                    <v-col class="pa-0">
+                        <AgentList/>
+                    </v-col>
+                </div>
                 
                 <!-- 인스턴스 타이틀 + 목록 -->
                 <v-col  class="pa-0 mb-4">
                     <div v-if="!pal" class="d-flex align-center justify-between">
-                        <div v-for="(item, index) in instanceItem" :key="item.title"
+                        <div v-for="item in instanceItem" :key="item.title"
                             style="height: 24px;"
                         >
                             <div v-if="!item.icon"
@@ -290,6 +302,7 @@
 import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import ProjectList from '@/components/ui/ProjectList.vue';
 import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.vue';
+import AgentList from '@/components/ui/AgentList.vue';
 
 import { useCustomizerStore } from '@/stores/customizer';
 
@@ -311,6 +324,7 @@ export default {
         ProcessInstanceList,
         ProjectList,
         ProjectCreationForm,
+        AgentList,
         Logo,
         NavCollapse,
         NavGroup,
@@ -360,6 +374,9 @@ export default {
         },
         isShowProject(){
             return true;
+        },
+        isShowAgentList(){
+            return this.isAdmin; // 관리자만 에이전트 목록을 볼 수 있도록 설정
         },
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') == 'true';

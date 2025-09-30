@@ -1,40 +1,82 @@
 <template>
     <div class="no-scrollbar">
         <div class="pa-4">
-            <div class="text-center mb-4">
-                <v-avatar :size="isMobile ? 60 : 80" class="mb-3">
-                    <!-- 프로필 이미지가 있고 로딩 성공했을 때만 표시 -->
-                    <v-img 
-                        v-if="agentInfo.profile && imageLoaded && !isDefaultImage(agentInfo.profile)"
-                        :src="agentInfo.profile" 
-                        :alt="agentInfo.username || 'Agent'"
-                        cover
-                        @error="handleImageError"
-                        @load="handleImageLoad"
-                    />
-                    
-                    <!-- 기본 이미지 (프로필 이미지가 없거나 로딩 실패 시) -->
-                    <v-img 
-                        v-else
-                        src="/images/chat-icon.png" 
-                        :alt="agentInfo.username || 'Agent'"
-                        cover
-                    >
-                        <template v-slot:error>
-                            <v-icon size="large" style="color: #666;">mdi-account</v-icon>
-                        </template>
-                    </v-img>
-                </v-avatar>
-                <h5 v-if="!isMobile" class="text-h6 font-weight-bold mb-1">{{ agentInfo.username || 'Agent' }}</h5>
-                <h6 v-else class="text-subtitle-1 font-weight-bold mb-1">{{ agentInfo.username || 'Agent' }}</h6>
+            <div class="text-left mb-4">
+                <div class="text-center">
+                    <v-avatar :size="isMobile ? 60 : 80" class="mb-3">
+                        <!-- 프로필 이미지가 있고 로딩 성공했을 때만 표시 -->
+                        <v-img 
+                            v-if="agentInfo.profile && imageLoaded && !isDefaultImage(agentInfo.profile)"
+                            :src="agentInfo.profile" 
+                            :alt="agentInfo.username || 'Agent'"
+                            cover
+                            @error="handleImageError"
+                            @load="handleImageLoad"
+                        />
+                        
+                        <!-- 기본 이미지 (프로필 이미지가 없거나 로딩 실패 시) -->
+                        <v-img 
+                            v-else
+                            src="/images/chat-icon.png" 
+                            :alt="agentInfo.username || 'Agent'"
+                            cover
+                        >
+                            <template v-slot:error>
+                                <v-icon size="large" style="color: #666;">mdi-account</v-icon>
+                            </template>
+                        </v-img>
+                    </v-avatar>
+                    <h5 v-if="!isMobile" class="text-h6 font-weight-bold mb-1">{{ agentInfo.username || 'Agent' }}</h5>
+                    <h6 v-else class="text-subtitle-1 font-weight-bold mb-1">{{ agentInfo.username || 'Agent' }}</h6>
+                </div>
                 
                 <!-- Goal Section - 모든 버전에서 표시 -->
                 <div class="pa-0 mb-1">
-                    <v-icon size="small" color="primary" class="mr-1">mdi-target</v-icon>
+                    <v-icon size="small" class="mr-1">mdi-target</v-icon>
                     <span class="text-body-2 font-weight-medium">목표</span>
                 </div>
                 <p class="text-body-2 text-medium-emphasis mb-3">{{ agentInfo.goal || '에이전트의 목표가 설정되지 않았습니다.' }}</p>
+                
+                <!-- Persona Section -->
+                <div v-if="agentInfo.persona" class="pa-0 mb-1">
+                    <v-icon size="small" class="mr-1">mdi-account-tie</v-icon>
+                    <span class="text-body-2 font-weight-medium">페르소나</span>
+                </div>
+                <p v-if="agentInfo.persona" class="text-body-2 text-medium-emphasis mb-3">{{ agentInfo.persona }}</p>
+                
+                <!-- Tools Section -->
+                <div v-if="agentInfo.tools && agentInfo.tools.length > 0" class="pa-0 mb-1">
+                    <v-icon size="small" class="mr-1">mdi-tools</v-icon>
+                    <span class="text-body-2 font-weight-medium">도구 목록</span>
+                </div>
+                <div v-if="agentInfo.tools && agentInfo.tools.length > 0" class="mb-3">
+                    <v-chip-group class="tools-chips">
+                        <v-chip 
+                            v-for="tool in parsedTools" 
+                            :key="tool"
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                            class="ma-1"
+                        >
+                            {{ tool }}
+                        </v-chip>
+                    </v-chip-group>
+                </div>
             </div>
+
+            <v-row class="ma-0 pa-0 pb-4">
+                <v-spacer></v-spacer>
+                <!-- 수정 버튼 -->
+                <v-btn 
+                    @click="openEditDialog"
+                    color="primary"
+                    variant="elevated" 
+                    class="rounded-pill"
+                >
+                    {{ $t('organizationChartDefinition.edit') }}
+                </v-btn>
+            </v-row>
             
             <v-divider class="mb-4"></v-divider>
             
@@ -52,12 +94,31 @@
                 </v-tab>
             </v-tabs>
         </div>
+
+        <!-- 에이전트 수정 다이얼로그 -->
+        <v-dialog 
+            v-model="editDialog" 
+            :max-width="isMobile ? '100vw' : 500"
+            :fullscreen="isMobile"
+        >
+            <OrganizationEditDialog
+                :dialogType="'edit-agent'"
+                :editNode="editNode"
+                @updateNode="updateAgent"
+                @closeDialog="closeEditDialog"
+            />
+        </v-dialog>
     </div>
 </template>
 
 <script>
+import OrganizationEditDialog from '@/components/ui/OrganizationEditDialog.vue';
+
 export default {
     name: 'AgentChatInfo',
+    components: {
+        OrganizationEditDialog
+    },
     props: {
         agentInfo: {
             type: Object,
@@ -80,7 +141,11 @@ export default {
     data() {
         return {
             imageLoaded: false,
-            currentProfileUrl: ''
+            currentProfileUrl: '',
+            editDialog: false,
+            editNode: {
+                data: {}
+            }
         }
     },
     mounted() {
@@ -100,6 +165,25 @@ export default {
                     { label: '지식 관리', value: 'knowledge', icon: 'mdi-database' },
                 ]
             }
+        },
+        
+        parsedTools() {
+            if (!this.agentInfo.tools) return [];
+            
+            // tools가 문자열인 경우 (쉼표로 구분된 값들)
+            if (typeof this.agentInfo.tools === 'string') {
+                return this.agentInfo.tools
+                    .split(',')
+                    .map(tool => tool.trim())
+                    .filter(tool => tool.length > 0);
+            }
+            
+            // tools가 배열인 경우
+            if (Array.isArray(this.agentInfo.tools)) {
+                return this.agentInfo.tools.filter(tool => tool && tool.trim().length > 0);
+            }
+            
+            return [];
         }
     },
     watch: {
@@ -147,12 +231,10 @@ export default {
             const img = new Image();
             
             img.onload = () => {
-                console.log('Image loaded successfully:', url);
                 this.imageLoaded = true;
             };
             
             img.onerror = () => {
-                console.log('Image failed to load:', url);
                 this.imageLoaded = false;
             };
             
@@ -161,13 +243,45 @@ export default {
         },
         
         handleImageError() {
-            console.log('v-img error event triggered');
             this.imageLoaded = false;
         },
         
         handleImageLoad() {
-            console.log('v-img load event triggered');
             this.imageLoaded = true;
+        },
+
+        openEditDialog() {
+            // agentInfo 데이터를 editNode 형태로 변환 (AgentField가 기대하는 구조에 맞춤)
+            this.editNode = {
+                data: {
+                    id: this.agentInfo.id || '',
+                    name: this.agentInfo.username || this.agentInfo.name || 'Agent',
+                    email: this.agentInfo.email || '',
+                    role: this.agentInfo.role || '',
+                    goal: this.agentInfo.goal || '',
+                    persona: this.agentInfo.persona || '',
+                    endpoint: this.agentInfo.endpoint || '',
+                    description: this.agentInfo.description || '',
+                    skills: this.agentInfo.skills || '',
+                    img: this.agentInfo.profile || this.agentInfo.img || '',
+                    model: this.agentInfo.model || '',
+                    type: this.agentInfo.agent_type || this.agentInfo.type || 'agent',
+                    isAgent: true,
+                    tools: this.agentInfo.tools || ''
+                }
+            };
+            
+            this.editDialog = true;
+        },
+
+        closeEditDialog() {
+            this.editDialog = false;
+        },
+
+        updateAgent(dialogType, editNode) {
+            // 부모 컴포넌트로 수정 이벤트 전달
+            this.$emit('agentUpdated', editNode.data);
+            this.closeEditDialog();
         }
     }
 }
@@ -186,5 +300,28 @@ export default {
 
 .no-scrollbar::-webkit-scrollbar {
     display: none;
+}
+
+.tools-chips {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.tools-chips .v-chip {
+    margin: 2px !important;
+    font-size: 11px !important;
+    height: 24px !important;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .tools-chips {
+        max-height: 100px;
+    }
+    
+    .tools-chips .v-chip {
+        font-size: 10px !important;
+        height: 22px !important;
+    }
 }
 </style>

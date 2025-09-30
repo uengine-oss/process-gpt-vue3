@@ -966,6 +966,7 @@
     "VerticalSidebar": {
         "instanceList": "Instance List",
         "projectList": "Project List",
+        "agentList": "Agent List",
         "instanceMyGroup": "My Group Instance",
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Definition Export",
@@ -1667,5 +1668,11 @@
         "changeToVersion": "Change to Version",
         "noXmlData": "No XML data available for the selected version.",
         "copiedToClipboard": "Copied to clipboard."
+    },
+    "AgentList": {
+        "title": "Agent List",
+        "loading": "Loading agents...",
+        "empty": "No registered agents",
+        "loadFailed": "Failed to load agent list"
     }
 }
