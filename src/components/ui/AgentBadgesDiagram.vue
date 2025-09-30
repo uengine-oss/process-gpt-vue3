@@ -7,13 +7,6 @@
                     class="ml-2"
                 >
                     <div class="learning-buttons-item">
-                        <v-btn @click="openEditDialog"
-                            color="grey"
-                            variant="elevated" 
-                            class="rounded-pill mr-2"
-                            density="compact"
-                        >수정
-                        </v-btn>
                         <v-btn @click="goToAgentChat"
                             color="primary"
                             variant="elevated" 
@@ -669,11 +662,6 @@ export default {
         goToAgentChat() {
             this.$router.push(`/agent-chat/${this.agentData.id}`)
         },
-
-        openEditDialog() {
-            // 부모 컴포넌트로 수정 이벤트 전달
-            this.$emit('openEditDialog', this.agentData);
-        }
     }
 }
 </script>

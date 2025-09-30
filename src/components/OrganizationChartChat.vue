@@ -19,7 +19,6 @@
                         :key="organizationChart.id"
                         :userList="userList"
                         @updateNode="updateNode"
-                        @updateAgent="updateAgent"
                         @addMember="openAddDialog"
                         ref="organizationChart"
                 ></OrganizationChart>
@@ -58,6 +57,8 @@ import partialParse from "partial-json-parser";
 
 import ChatGenerator from "@/components/ai/OrganizationChartGenerator";
 import ChatModule from "@/components/ChatModule.vue";
+import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
+import BackendFactory from '@/components/api/BackendFactory';
 
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
@@ -66,7 +67,7 @@ import OrganizationChart from "@/components/ui/OrganizationChart.vue";
 import OrganizationAddDialog from "@/components/ui/OrganizationAddDialog.vue";
 
 export default {
-    mixins: [ChatModule],
+    mixins: [ChatModule, AgentCrudMixin],
     components: {
         AppBaseCard,
         Chat,
@@ -312,13 +313,6 @@ export default {
             await this.backend.putAgent(newAgent);
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
-        },
-        async updateAgent(type, editAgent) {
-            if (type == 'edit-agent') {
-                await this.backend.putAgent(editAgent.data);
-            } else if (type == 'delete') {
-                await this.backend.deleteAgent(editAgent.id);
-            }
         },
     }
 }

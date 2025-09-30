@@ -94,7 +94,8 @@ export default {
         },
         isValid() {
             if (this.dialogType.includes('edit')) {
-                return this.nameRules.every(rule => rule(this.editNode.name) === true);
+                const name = this.editNode.data?.name || this.editNode.name;
+                return this.nameRules.every(rule => rule(name) === true);
             } else {
                 return true
             }
@@ -141,7 +142,10 @@ export default {
         },
         update() {
             if (this.dialogType.includes('edit')) {
-                this.editNode.name = this.editNode.data.name
+                // editNode.name을 data.name과 동기화
+                if (this.editNode.data?.name) {
+                    this.editNode.name = this.editNode.data.name;
+                }
             }
             this.$emit('updateNode', this.dialogType, this.editNode)
         },
