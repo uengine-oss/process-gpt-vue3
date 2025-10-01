@@ -198,6 +198,7 @@
         "close": "Close",
         "addNewUser": "Add New User(Team Member)",
         "addNewAgent": "Add New Agent",
+        "addNewA2A": "Add A2A Agent",
         "userName": "Name",
         "userEmail": "Email",
         "idRequired": "Please enter your ID.",

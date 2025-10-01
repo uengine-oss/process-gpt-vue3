@@ -198,6 +198,7 @@
         "close": "닫기",
         "addNewUser": "신규 사용자(팀원) 추가",
         "addNewAgent": "신규 에이전트 추가",
+        "addNewA2A": "A2A 에이전트 추가",
         "userName": "이름",
         "userEmail": "이메일",
         "idRequired": "ID를 입력해주세요.",

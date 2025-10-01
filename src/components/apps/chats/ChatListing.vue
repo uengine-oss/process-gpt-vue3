@@ -174,7 +174,7 @@
                                         <v-icon>mdi-dots-vertical</v-icon>
                                     </v-btn>
                                 </template>
-                                <v-list style="width: 70px; text-align-last: center;">
+                                <v-list :style="{ width: $i18n.locale === 'ko' ? '70px' : '90px'}" style="text-align-last: center;">
                                     <v-list-item @click="openEditDialog(chat)">
                                         <v-list-item-title>{{ $t('chatListing.setting') }}</v-list-item-title>
                                     </v-list-item>

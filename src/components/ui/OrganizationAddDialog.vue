@@ -7,7 +7,7 @@
             <v-spacer></v-spacer>
             <v-btn @click="closeDialog"
                 class="ml-auto" 
-                variant="text" 
+                variant="text"
                 density="compact"
                 icon
             >
@@ -122,15 +122,16 @@
             </v-window>
         </v-card-text>
 
-        <v-row class="ma-0 pa-4 pr-2 pt-0 align-center">
+        <v-row class="ma-0 pa-4 pt-2">
             <v-spacer></v-spacer>
             <v-btn @click="save"
                 :disabled="!isValid"
-                color="primary"
-                variant="elevated" 
-                class="rounded-pill"
-                density="compact"
-            >{{ $t('organizationChartDefinition.save') }}</v-btn>
+                color="primary" 
+                rounded 
+                variant="flat" 
+            >
+                {{ $t('organizationChartDefinition.save') }}
+            </v-btn>
         </v-row>
     </v-card>
 </template>
@@ -164,8 +165,8 @@ export default {
                 value: 'agent',
             },
             {
-                // text: 'organizationChartDefinition.addNewA2A',
-                text: 'A2A 에이전트 추가',
+                text: 'organizationChartDefinition.addNewA2A',
+                // text: 'A2A 에이전트 추가',
                 value: 'a2a',
             },
         ],
