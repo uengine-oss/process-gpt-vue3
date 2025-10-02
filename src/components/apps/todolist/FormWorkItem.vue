@@ -32,7 +32,7 @@
                     rounded variant="flat"
                     :disabled="isLoading"
                     :loading="isLoading"
-                >제출 완료
+                >{{ $t('FormWorkItem.submitComplete') }}
                 </v-btn>
             </div>
         </v-row>
@@ -108,7 +108,7 @@
                                 rounded variant="flat"
                                 :disabled="isLoading"
                                 :loading="isLoading"
-                            >제출 완료</v-btn>
+                            >{{ $t('FormWorkItem.submitComplete') }}</v-btn>
                         </v-row>
                     </div>
                 </v-card-text>
@@ -425,7 +425,7 @@ export default {
                 }
                 
                 backend.putWorkItemComplete(me.$route.params.taskId, workItem, me.isSimulate);
-                me.$router.push(`/instancelist/${me.workItem.worklist.instId.replace(/\./g, '_DOT_')}?submitted=true`);
+                me.$router.push(`/instancelist/${me.workItem.worklist.instId.replace(/\./g, '_DOT_')}`);
             } else {
                 // 추후 로직 변경 . 않좋은 패턴. -> 아래 코드
                 me.$try({

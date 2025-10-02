@@ -9,14 +9,14 @@
             auto-grow
         ></v-textarea>
         
-        <v-row class="ma-0 pa-0 pt-4 pb-4 pr-1">
+        <v-row class="ma-0 pa-0 pt-2 pb-2 pr-1">
             <v-spacer></v-spacer>
             <v-btn
                 @click="generateAgent"
                 :loading="isGenerating"
                 :disabled="!userInput"
                 color="primary"
-                variant="elevated"
+                variant="flat"
                 class="rounded-pill"
                 density="compact"
             >

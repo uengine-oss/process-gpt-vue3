@@ -64,20 +64,20 @@
                 <!-- feedback -->
                 <div v-if="useFeedback" class="bottom-0 end-0 ml-2 mr-2">
                     <span class="text-body-2">{{ $t('ProcessInstanceChat.feedback') }}</span>
-                    <v-btn icon size="x-small" variant="text" color="success" @click="selectFeedback('good')">
-                        <v-icon>mdi-thumb-up</v-icon>
-                    </v-btn>
                     <v-btn icon size="x-small" variant="text" color="error" @click="selectFeedback('bad')">
                         <v-icon>mdi-thumb-down</v-icon>
+                    </v-btn>
+                    <v-btn icon size="x-small" variant="text" color="success" @click="selectFeedback('good')">
+                        <v-icon>mdi-thumb-up</v-icon>
                     </v-btn>
                 </div>
                 <div v-else-if="!useFeedback && showAcceptFeedback && !showFeedback" class="bottom-0 end-0 ml-2">
                     <span class="text-body-2">{{ $t('ProcessInstanceChat.feedbackDescription') }}</span>
-                    <v-btn icon size="x-small" variant="text" color="success" @click="showFeedback = true">
-                        <v-icon>mdi-check</v-icon>
-                    </v-btn>
                     <v-btn icon size="x-small" variant="text" color="error" @click="cancelAppliedFeedback">
                         <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                    <v-btn icon size="x-small" variant="text" color="success" @click="showFeedback = true">
+                        <v-icon>mdi-check</v-icon>
                     </v-btn>
                 </div>
                 <div class="pr-4">

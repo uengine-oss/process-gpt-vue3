@@ -21,8 +21,8 @@
                 >
                     <div class="text-center">
                         <v-icon size="48" color="grey" class="add-file-icon">mdi-plus</v-icon>
-                        <p class="text-body-1 text-grey add-file-text">파일 추가</p>
-                        <p class="text-caption text-grey-darken-1">클릭하거나 파일을 드래그하세요</p>
+                        <p class="text-body-1 text-grey add-file-text">{{ $t('InstanceSource.addFile') }}</p>
+                        <p class="text-caption text-grey-darken-1">{{ $t('InstanceSource.dragAndDrop') }}</p>
                     </div>
                 </v-card>
             </v-col>

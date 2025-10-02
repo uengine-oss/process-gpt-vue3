@@ -120,7 +120,7 @@
                                 </v-tab>
                             </template>
                             <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
-                                {{ tab.label }} 
+                                {{ tab.label }}
                                 <v-icon
                                     v-if="tab.value == 'agent' && isAddedNewForm"
                                     class="bouncing-arrow-horizontal-left" 
@@ -233,7 +233,8 @@
                             </div>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('history')" value="history" class="pa-2">
-                            <v-card elevation="10" class="pa-4">
+                            <!-- 워크아이템 액티비티 -->
+                            <v-card elevation="10" class="pa-0">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
                                         <component class="work-item-activity-box"
@@ -261,9 +262,11 @@
                             </v-card>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-3" style="height: 100%;">
+                            <!-- 워크아이템 에이전트 맡기기 -->
                             <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey" @browser-use-completed="handleBrowserUseCompleted"/>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
+                            <!-- 워크아이템 에이전트 학습 -->
                             <v-card elevation="10" class="pa-4">
                                 <AgentFeedback :workItem="workItem"/>
                             </v-card>
@@ -280,6 +283,7 @@
                             </DynamicForm>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('output')" value="output" class="pa-2">
+                            666
                             <InstanceOutput :instance="processInstance" :isInWorkItem="true" />
                         </v-window-item>
                     </v-window>
@@ -325,7 +329,7 @@
                             :processDefinition="processDefinition"
                         >   
                             <template #form-work-item-action-label>
-                                <div class="text-h5 font-weight-semibold">결과 입력</div>
+                                <div class="text-h5 font-weight-semibold">{{ $t('WorkItem.resultInput') }}</div>
                             </template>
                             <template #form-work-item-action-btn>
                                 <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
@@ -343,7 +347,7 @@
                                         :style="isMobile ? 'border-color: #e0e0e0 !important;' : 'background-color: #808080; color: white;'"
                                     >
                                         <v-icon>mdi-delete-outline</v-icon>
-                                        <span v-if="!isMobile" class="ms-1">내용 초기화</span>
+                                        <span v-if="!isMobile" class="ms-1">{{ $t('WorkItem.resetContent') }}</span>
                                     </v-btn>
                                     <v-btn class="mr-1"
                                         v-if="!isMobile"
@@ -357,11 +361,11 @@
                                         <template v-if="!isGeneratingExample">
                                             <v-row v-if="generator" class="ma-0 pa-0">
                                                 <v-icon>mdi-refresh</v-icon>
-                                                <span class="ms-2">예시 재생성</span>
+                                                <span class="ms-2">{{ $t('WorkItem.generateExample') }}</span>
                                             </v-row>
                                             <v-row v-else class="ma-0 pa-0" >
                                                 <Icons :icon="'sparkles'" :size="20"/>
-                                                <div class="ms-1">빠른 예시 생성</div>
+                                                <div class="ms-1">{{ $t('WorkItem.quickGenerateExample') }}</div>
                                             </v-row>
                                         </template>
                                     </v-btn>
@@ -789,7 +793,7 @@ export default {
             async handler(newVal) {
                 if (newVal && newVal.worklist && newVal.worklist.taskId) {
                     this.loadAssigneeInfo();
-                    // this.enableReworkButton = await backend.enableRework(newVal);
+                    this.enableReworkButton = await backend.enableRework(newVal);
                 }
             },
             deep: true
@@ -1477,17 +1481,27 @@ export default {
                 this.reworkActivities.all = result.all;
             }
         },
-        async submitRework(activities) {
+        submitRework(activities) {
             var me = this;
+            
+            backend.reWorkItem({
+                instanceId: me.workItem.worklist.instId,
+                activities: activities
+            }).then(data => {
+                if (data) {
+                    const workItemIds = Object.keys(data);
+                    me.$router.push(`/todolist/${workItemIds[0]}`);
+                }
+            }).catch(err => {
+                console.error('재작업 요청 중 오류:', err);
+            })
+
             me.$try({
                 context: me,
-                action: async () => {
-                    await backend.reWorkItem({
-                        instanceId: me.workItem.worklist.instId,
-                        activities: activities
-                    })
+                action: () => {
                     me.reworkDialog = false;
-                }
+                },
+                successMsg: '재작업이 요청되었습니다.'
             });
         },
         handleBrowserUseCompleted(data) {
