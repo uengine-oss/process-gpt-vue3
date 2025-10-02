@@ -1619,6 +1619,9 @@
         "feedback": "Is the process execution normal?",
         "feedbackDescription": "Is the process execution normal?"
     },
+    "ActivityInputData": {
+        "previousInput": "Previous Input"
+    },
     "MCPServer": {
         "searchMCPServers": "Search MCP Servers"
     },

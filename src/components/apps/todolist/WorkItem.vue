@@ -120,7 +120,7 @@
                                 </v-tab>
                             </template>
                             <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value">
-                                {{ tab.label }} 
+                                {{ tab.label }}
                                 <v-icon
                                     v-if="tab.value == 'agent' && isAddedNewForm"
                                     class="bouncing-arrow-horizontal-left" 
@@ -233,7 +233,8 @@
                             </div>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('history')" value="history" class="pa-2">
-                            <v-card elevation="10" class="pa-4">
+                            <!-- 워크아이템 액티비티 -->
+                            <v-card elevation="10" class="pa-0">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
                                         <component class="work-item-activity-box"
@@ -261,9 +262,11 @@
                             </v-card>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-3" style="height: 100%;">
+                            <!-- 워크아이템 에이전트 맡기기 -->
                             <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey" @browser-use-completed="handleBrowserUseCompleted"/>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
+                            <!-- 워크아이템 에이전트 학습 -->
                             <v-card elevation="10" class="pa-4">
                                 <AgentFeedback :workItem="workItem"/>
                             </v-card>
@@ -280,6 +283,7 @@
                             </DynamicForm>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('output')" value="output" class="pa-2">
+                            666
                             <InstanceOutput :instance="processInstance" :isInWorkItem="true" />
                         </v-window-item>
                     </v-window>

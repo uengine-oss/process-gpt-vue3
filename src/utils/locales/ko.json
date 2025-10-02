@@ -1619,6 +1619,9 @@
         "feedback": "프로세스 실행이 정상인가요?",
         "feedbackDescription": "프로세스 실행이 정상인가요?"
     },
+    "ActivityInputData": {
+        "previousInput": "이전 입력값"
+    },
     "MCPServer": {
         "searchMCPServers": "MCP 서버 검색"
     },
