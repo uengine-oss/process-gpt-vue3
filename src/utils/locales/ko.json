@@ -583,7 +583,8 @@
         "versionDescriptionTitle": "체크하면 버전을 한단계 올려서 저장하고 그렇지 않으면 현 버전에 저장합니다.",
         "idRequired": "ID는 필수 항목입니다.",
         "idRules": "소문자, 숫자, 언더바만 사용할 수 있습니다. (예: new_process_id)",
-        "nameRequired": "이름은 필수 항목입니다."
+        "nameRequired": "이름은 필수 항목입니다.",
+        "optimize": "프로세스 정의 최적화 사용"
     },
     "FormDefinitionPanel": {
         "editForm": "폼 속성 수정",
@@ -705,7 +706,19 @@
         "forEachVariableDescriptionSubTitle1": "1. 화면 정의 관리에서 편집모드를 통해 다중 데이터 모드 체크",
         "forEachVariableDescriptionSubTitle2": "2. sub 프로세스가 실행될 이전 Task 패널에서 데이터 매핑 진행",
         "forEachRoleDescriptionTitle" : "선택된 역할(role)을 가진 모든 사람에게 Sub Process 생성",
-        "forEachRoleDescriptionSubTitle1" : "적용 시나리오: \n다수의 팀원이 동일한 작업을 수행해야 하는 경우, 역할 기반 다중 생성을 통해 각 팀원에게 서브 프로세스를 개별적으로 할당할 수 있습니다. \n이를 통해 각 팀원이 독립적으로 작업을 진행하면서도 전체 프로세스는 중앙에서 관리될 수 있습니다. \n\n아래는 이미지의 강조된 박스 부분이 역할(role)에 해당합니다."
+        "forEachRoleDescriptionSubTitle1" : "적용 시나리오: \n다수의 팀원이 동일한 작업을 수행해야 하는 경우, 역할 기반 다중 생성을 통해 각 팀원에게 서브 프로세스를 개별적으로 할당할 수 있습니다. \n이를 통해 각 팀원이 독립적으로 작업을 진행하면서도 전체 프로세스는 중앙에서 관리될 수 있습니다. \n\n아래는 이미지의 강조된 박스 부분이 역할(role)에 해당합니다.",
+        "subProcessNamePattern": "서브프로세스명 패턴",
+        "ruleGenerator": "결정론적 규칙화",
+        "ruleGenerating": "결정론적 규칙화 중...",
+        "generatedRulePreview": "결정론적 규칙 미리보기",
+        "generatedFunction": "결정론적 규칙",
+        "expectedOutput": "예상 출력 결과",
+        "conditionWhen": "조건(When)",
+        "resultThen": "결과(Then)",
+        "mismatch": "부적합",
+        "cancel": "취소",
+        "confirm": "확인",
+        "regenerate": "재생성"
     },
     "ParticipantPanel" : {
         "apiUrl" : "API URL",
@@ -937,7 +950,8 @@
         "delegate": "위임하기",
         "resetContent": "내용 초기화",
         "generateExample": "예시 재생성",
-        "quickGenerateExample": "빠른 예시 생성"
+        "quickGenerateExample": "빠른 예시 생성",
+        "resultInput": "결과 입력"
     },
     "TestProcess": {
         "title": "테스트 프로세스",
@@ -1620,6 +1634,9 @@
         "feedback": "프로세스 실행이 정상인가요?",
         "feedbackDescription": "프로세스 실행이 정상인가요?"
     },
+    "ActivityInputData": {
+        "previousInput": "이전 입력값"
+    },
     "MCPServer": {
         "searchMCPServers": "MCP 서버 검색"
     },
@@ -1694,5 +1711,25 @@
             "actions": "액션 모드",
             "knowledge": "지식 관리"
         }
+    },
+    "FormWorkItem": {
+        "previous": "이전 단계",
+        "save": "중간 저장",
+        "submitComplete": "제출 완료",
+        "noFormData": "등록된 폼 정보가 없습니다",
+        "noFormDataDescription": "현재 작업에 대한 폼 데이터를 찾을 수 없습니다."
+    },
+    "InstanceSource": {
+        "addFile": "파일 추가",
+        "dragAndDrop": "클릭하거나 파일을 드래그하세요",
+        "download": "다운로드",
+        "delete": "삭제",
+        "uploadComplete": "업로드 완료",
+        "uploading": "업로드 중",
+        "close": "닫기",
+        "uploadSuccess": "파일이 업로드되었습니다.",
+        "unsupportedFileType": "은 지원되지 않는 파일 형식입니다.",
+        "fileTooLarge": "파일이 너무 큽니다. (최대 50MB)",
+        "fileDeleted": "파일이 삭제되었습니다."
     }
 }

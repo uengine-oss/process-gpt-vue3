@@ -76,7 +76,7 @@
                     <div v-if="mode == 'ProcessGPT'">
                         <v-checkbox
                             v-model="checkOptimize"
-                            label="프로세스 정의 최적화 사용"
+                            :label="$t('ProcessDefinitionVersionDialog.optimize')"
                             hide-details
                             color="primary"
                         ></v-checkbox>
@@ -88,9 +88,8 @@
                     <v-btn @click="save()"
                         :disabled="!validate()"
                         color="primary"
-                        variant="elevated" 
-                        class="rounded-pill"
-                        density="compact"
+                        variant="flat" 
+                        rounded 
                     >{{ $t('ProcessDefinitionVersionDialog.save') }}
                     </v-btn>
                 </v-row>

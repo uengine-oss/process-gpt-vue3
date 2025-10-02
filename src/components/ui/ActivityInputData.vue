@@ -1,14 +1,42 @@
 <template>
     <div>
         <v-card flat class="mb-4 bg-lightprimary">
-            <v-card-title class="text-h6 cursor-pointer d-flex align-center justify-space-between" @click="toggleExpanded">
-                <div class="d-flex align-center">
-                    <v-icon class="mr-2">mdi-information-outline</v-icon>
-                    참고 정보
-                </div>
-                <v-icon :icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"></v-icon>
-            </v-card-title>
-            <v-expand-transition>
+            <!-- SummaryButton 전용 폼 데이터 표시 -->
+            <div v-for="field in inputFields" :key="field.formId">
+                <v-row class="ma-0 pa-4 pb-0">
+                    <div>
+                        <v-card-title class="text-h6 cursor-pointer d-flex align-center justify-space-between pa-0 mb-2" @click="toggleExpanded">
+                            <div class="d-flex align-center">
+                                {{ $t('ActivityInputData.previousInput') }}
+                            </div>
+                            <!-- <v-icon :icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"></v-icon> -->
+                        </v-card-title>
+                        <div class="text-subtitle-1 font-weight-medium mb-2">
+                            <v-icon class="mr-2" size="small">mdi-form-select</v-icon>
+                            {{ getActivityName(field.formId) }}
+                        </div>
+                    </div>
+                    <v-spacer></v-spacer>
+                     <div
+                         v-if="formHtmlData[field.formId]"
+                         :class="['summary-container', { 'w-100': isSummaryExpanded[field.formId] }]"
+                     >
+                         <SummaryButton 
+                             class="activity-input-data-summary-button"
+                             @expanded="handleSummaryExpanded(field.formId, $event)"
+                         >
+                            <DynamicForm 
+                                :formHTML="formHtmlData[field.formId]" 
+                                v-model="field.formValue"
+                                :readonly="true"
+                            ></DynamicForm>
+                        </SummaryButton>
+                    </div>
+                </v-row>
+            </div>
+
+            <!-- 기존 일반 텍스트 표시 방식 (더 이상 사용하지 않음 - 혹시 몰라서 주석 유지) -->
+            <!-- <v-expand-transition>
                 <v-card-text v-show="expanded" class="pa-4 pt-0">
                     <div v-for="field in inputFields" :key="field.formId" class="mb-4">
                         <div>
@@ -34,15 +62,21 @@
                         </div>
                     </div>
                 </v-card-text>
-            </v-expand-transition>
+            </v-expand-transition> -->
         </v-card>
     </div>
 </template>
 
 <script>
 import BackendFactory from "@/components/api/BackendFactory";
+import DynamicForm from '@/components/designer/DynamicForm.vue';
+import SummaryButton from '@/components/ui/SummaryButton.vue';
 
 export default {
+    components: {
+        DynamicForm,
+        SummaryButton
+    },
     props: {
         inputFields: Array,
         workItem: Object, // workItem에서 procDefId 추출용
@@ -53,6 +87,8 @@ export default {
             backend: null,
             fieldMetadata: {}, // 폼별 필드 메타데이터 저장 (레이지 로딩)
             activityMetadata: null, // proc_def의 activities 정보 (레이지 로딩)
+            formHtmlData: {}, // 폼별 HTML 데이터 저장
+            isSummaryExpanded: {}
         }
     },
     async mounted() {
@@ -65,6 +101,7 @@ export default {
             // 비동기로 로딩하여 UI 블로킹하지 않음
             formIds.forEach(formId => {
                 this.fetchFieldsMetadata(formId);
+                this.fetchFormHtml(formId);
             });
         }
         
@@ -83,6 +120,9 @@ export default {
                 formIds.forEach(formId => {
                     if (!this.fieldMetadata[formId]) {
                         this.fetchFieldsMetadata(formId);
+                    }
+                    if (!this.formHtmlData[formId]) {
+                        this.fetchFormHtml(formId);
                     }
                 });
             }
@@ -120,7 +160,31 @@ export default {
                     this.fieldMetadata[formDefId] = [];
                 }
             } catch (error) {
+                console.warn('필드 메타데이터를 가져오는 중 오류:', error);
                 this.fieldMetadata[formDefId] = [];
+            }
+        },
+        // formId를 통해 HTML 폼 데이터를 백그라운드에서 가져오는 함수
+        async fetchFormHtml(formDefId) {
+            // 이미 로딩중이거나 로딩완료된 경우 중복 요청 방지
+            if (this.formHtmlData[formDefId] !== undefined) {
+                return;
+            }
+
+            // 로딩 중임을 표시
+            this.formHtmlData[formDefId] = null;
+
+            try {
+                const html = await this.backend.getRawDefinition(formDefId, { type: 'form' });
+                
+                if (html) {
+                    this.formHtmlData[formDefId] = html;
+                } else {
+                    this.formHtmlData[formDefId] = null;
+                }
+            } catch (error) {
+                console.warn('폼 HTML 데이터를 가져오는 중 오류:', error);
+                this.formHtmlData[formDefId] = null;
             }
         },
         // proc_def에서 activities 정보를 백그라운드에서 가져오는 함수
@@ -143,6 +207,7 @@ export default {
                     this.activityMetadata = [];
                 }
             } catch (error) {
+                console.warn('액티비티 메타데이터를 가져오는 중 오류:', error);
                 this.activityMetadata = [];
             }
         },
@@ -165,51 +230,58 @@ export default {
             // 찾을 수 없는 경우 원래 formId 반환
             return formId;
         },
+        // 일반 텍스트 표시용 헬퍼 함수들 (더 이상 사용하지 않음 - 혹시 몰라서 주석 유지)
         // key 값으로 해당하는 text를 찾는 헬퍼 함수 (레이지 방식)
-        getFieldText(key, formDefId) {
-            const metadata = this.fieldMetadata[formDefId];
-            
-            // 메타데이터가 아직 로딩되지 않았거나 로딩 중인 경우 key 반환
-            if (!metadata || !Array.isArray(metadata) || metadata.length === 0) {
-                return key;
-            }
-            
-            // 메타데이터에서 해당 key의 text 찾기
-            const field = metadata.find(item => item.key === key);
-            if (field && field.text) {
-                return field.text;
-            }
-            
-            // 해당 키를 찾을 수 없는 경우 원래 key 값 반환
-            return key;
-        },
-        formatValue(value) {
-            if (value === null || value === undefined) {
-                return '';
-            }
-            if (typeof value === 'string') {
-                return value;
-            }
-            if (typeof value === 'object') {
-                if (Array.isArray(value)) {
-                    const isObject = value.some(item => {
-                        return typeof item === 'object';
-                    });
-                    if (isObject) {
-                        return JSON.stringify(value, null, 2);
-                    } else {
-                        return value.join(', ');
-                    }
-                }
-                // 객체인 경우 JSON.stringify로 변환하되, 너무 길면 잘라서 표시
-                const jsonString = JSON.stringify(value, null, 2);
-                if (jsonString.length > 100) {
-                    return jsonString.substring(0, 100) + '...';
-                }
-                return jsonString;
-            }
-            return String(value);
-        },
+        // getFieldText(key, formDefId) {
+        //     const metadata = this.fieldMetadata[formDefId];
+        //     
+        //     // 메타데이터가 아직 로딩되지 않았거나 로딩 중인 경우 key 반환
+        //     if (!metadata || !Array.isArray(metadata) || metadata.length === 0) {
+        //         return key;
+        //     }
+        //     
+        //     // 메타데이터에서 해당 key의 text 찾기
+        //     const field = metadata.find(item => item.key === key);
+        //     if (field && field.text) {
+        //         return field.text;
+        //     }
+        //     
+        //     // 해당 키를 찾을 수 없는 경우 원래 key 값 반환
+        //     return key;
+        // },
+        // formatValue(value) {
+        //     if (value === null || value === undefined) {
+        //         return '';
+        //     }
+        //     if (typeof value === 'string') {
+        //         return value;
+        //     }
+        //     if (typeof value === 'object') {
+        //         if (Array.isArray(value)) {
+        //             const isObject = value.some(item => {
+        //                 return typeof item === 'object';
+        //             });
+        //             if (isObject) {
+        //                 return JSON.stringify(value, null, 2);
+        //             } else {
+        //                 return value.join(', ');
+        //             }
+        //         }
+        //         // 객체인 경우 JSON.stringify로 변환하되, 너무 길면 잘라서 표시
+        //         const jsonString = JSON.stringify(value, null, 2);
+        //         if (jsonString.length > 100) {
+        //             return jsonString.substring(0, 100) + '...';
+        //         }
+        //         return jsonString;
+        //     }
+        //     return String(value);
+        // },
+        handleSummaryExpanded(formId, expanded) {
+            this.isSummaryExpanded = {
+                ...this.isSummaryExpanded,
+                [formId]: expanded
+            };
+        }
     }
 }
 </script>

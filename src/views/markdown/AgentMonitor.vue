@@ -238,7 +238,8 @@ export default {
                     task.content = this.resolvePrimaryValue(data || null, task.crewType)
                 } else if (event_type === 'error') {
                     // job_id 매칭 없이 독립 태스크 생성
-                    const message = (data && (data.message || data.msg)) || '오류가 발생했습니다'
+                    const friendlyText = data && (data.friendly || data.message || data.msg || data.raw_error)
+                    const message = friendlyText || '오류가 발생했습니다'
                     const key = id
                     taskMap.set(key, {
                         id,
@@ -252,7 +253,7 @@ export default {
                         outputRaw: data || null,
                         content: message,
                         isCrewCompleted: false,
-                        agentProfile: data,
+                        agentProfile: data?.agent_profile || null,
                         isHumanAsked: false,
                         isError: true
                     })
