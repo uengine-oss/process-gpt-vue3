@@ -3,14 +3,14 @@
         <h3>{{ isQueued ? $t('agentMonitor.workQueued') : $t('agentMonitor.noWorkInProgress') }}</h3>
         <p>{{ $t('agentMonitor.workStarted') }}</p>
         <div v-if="!isQueued && !isA2A" class="start-controls">
-            <v-container>
+            <v-container class="pa-0">
                 <v-row justify="center">
                     <v-col cols="12" class="text-center mb-4">
                         <h3>{{ $t('agentMonitor.selectResearchMethod') }}</h3>
                     </v-col>
                 </v-row>
                 
-                <v-row>
+                <v-row class="ma-0 pa-0">
                     <v-col v-for="option in orchestrationOptions" :key="option.value" 
                         cols="12" sm="12" md="6" class="d-flex"
                     >
@@ -121,7 +121,7 @@ export default {
 <style scoped>
 .empty-state {
     text-align: center;
-    padding: 16px;
+    padding: 0px;
     background: white;
     margin-top: 12px;
     overflow: auto;

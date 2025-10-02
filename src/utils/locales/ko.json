@@ -522,8 +522,8 @@
         "mapperDescriptionSubTitle2": "사용 방법 \n- 마우스를 누른 상태로 연결할 곳에 끌어다 놓으면 연결\n- 선을 클릭하면 삭제",
         "printDocument": "PDF로 내려받기",
         "pdfPreview": "PDF 미리보기",
-        "ruleGenerator": "확정된 규칙 생성",
-        "ruleGenerating": "확정된 규칙 생성 중...",
+        "ruleGenerator": "결정론적 규칙화",
+        "ruleGenerating": "결정론적 규칙화 중...",
         "view": "보기",
         "copyInputJson": "입력 JSON 복사",
         "clearExamples": "예시 비우기",
@@ -536,8 +536,8 @@
         "cancel": "취소",
         "confirm": "확인",
         "regenerate": "재생성",
-        "generatedFunction": "생성된 규칙",
-        "generatedRulePreview": "생성된 규칙 미리보기",
+        "generatedFunction": "결정론적 규칙",
+        "generatedRulePreview": "결정론적 규칙 미리보기",
         "expectedOutput": "예상 출력 결과",
         "conditionWhen": "조건(When)",
         "resultThen": "결과(Then)"
@@ -706,7 +706,19 @@
         "forEachVariableDescriptionSubTitle1": "1. 화면 정의 관리에서 편집모드를 통해 다중 데이터 모드 체크",
         "forEachVariableDescriptionSubTitle2": "2. sub 프로세스가 실행될 이전 Task 패널에서 데이터 매핑 진행",
         "forEachRoleDescriptionTitle" : "선택된 역할(role)을 가진 모든 사람에게 Sub Process 생성",
-        "forEachRoleDescriptionSubTitle1" : "적용 시나리오: \n다수의 팀원이 동일한 작업을 수행해야 하는 경우, 역할 기반 다중 생성을 통해 각 팀원에게 서브 프로세스를 개별적으로 할당할 수 있습니다. \n이를 통해 각 팀원이 독립적으로 작업을 진행하면서도 전체 프로세스는 중앙에서 관리될 수 있습니다. \n\n아래는 이미지의 강조된 박스 부분이 역할(role)에 해당합니다."
+        "forEachRoleDescriptionSubTitle1" : "적용 시나리오: \n다수의 팀원이 동일한 작업을 수행해야 하는 경우, 역할 기반 다중 생성을 통해 각 팀원에게 서브 프로세스를 개별적으로 할당할 수 있습니다. \n이를 통해 각 팀원이 독립적으로 작업을 진행하면서도 전체 프로세스는 중앙에서 관리될 수 있습니다. \n\n아래는 이미지의 강조된 박스 부분이 역할(role)에 해당합니다.",
+        "subProcessNamePattern": "서브프로세스명 패턴",
+        "ruleGenerator": "결정론적 규칙화",
+        "ruleGenerating": "결정론적 규칙화 중...",
+        "generatedRulePreview": "결정론적 규칙 미리보기",
+        "generatedFunction": "결정론적 규칙",
+        "expectedOutput": "예상 출력 결과",
+        "conditionWhen": "조건(When)",
+        "resultThen": "결과(Then)",
+        "mismatch": "부적합",
+        "cancel": "취소",
+        "confirm": "확인",
+        "regenerate": "재생성"
     },
     "ParticipantPanel" : {
         "apiUrl" : "API URL",
@@ -1621,6 +1633,9 @@
         "subprocessCreating": "서브프로세스 생성 중입니다...",
         "feedback": "프로세스 실행이 정상인가요?",
         "feedbackDescription": "프로세스 실행이 정상인가요?"
+    },
+    "ActivityInputData": {
+        "previousInput": "이전 입력값"
     },
     "MCPServer": {
         "searchMCPServers": "MCP 서버 검색"
