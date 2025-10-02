@@ -352,7 +352,7 @@ export default {
                 (task.crewType === 'report' && task.jobId.includes('final_report_merge')) ||
                 task.crewType === 'slide' ||
                 task.crewType === 'text' ||
-                (task.crewType === 'result' && task.jobId.includes('action'))
+                task.crewType === 'result'
             )
         },
         shouldShowSubmitButton(payload) {
