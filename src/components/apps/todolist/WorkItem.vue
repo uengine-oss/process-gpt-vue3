@@ -789,7 +789,7 @@ export default {
             async handler(newVal) {
                 if (newVal && newVal.worklist && newVal.worklist.taskId) {
                     this.loadAssigneeInfo();
-                    // this.enableReworkButton = await backend.enableRework(newVal);
+                    this.enableReworkButton = await backend.enableRework(newVal);
                 }
             },
             deep: true
@@ -1477,17 +1477,27 @@ export default {
                 this.reworkActivities.all = result.all;
             }
         },
-        async submitRework(activities) {
+        submitRework(activities) {
             var me = this;
+            
+            backend.reWorkItem({
+                instanceId: me.workItem.worklist.instId,
+                activities: activities
+            }).then(data => {
+                if (data) {
+                    const workItemIds = Object.keys(data);
+                    me.$router.push(`/todolist/${workItemIds[0]}`);
+                }
+            }).catch(err => {
+                console.error('재작업 요청 중 오류:', err);
+            })
+
             me.$try({
                 context: me,
-                action: async () => {
-                    await backend.reWorkItem({
-                        instanceId: me.workItem.worklist.instId,
-                        activities: activities
-                    })
+                action: () => {
                     me.reworkDialog = false;
-                }
+                },
+                successMsg: '재작업이 요청되었습니다.'
             });
         },
         handleBrowserUseCompleted(data) {
