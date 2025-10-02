@@ -162,18 +162,49 @@
                             <!-- 생성된 파일들 -->
                             <div v-if="item.payload.outputRaw?.generated_files" class="browser-files">
                                 <h6>생성된 파일</h6>
+                                
+                                <!-- 일반 파일들 -->
                                 <div class="files-list">
-                                    <div v-for="[fileName, file] in sortedFiles(item.payload.outputRaw.generated_files)" :key="fileName" class="file-item">
+                                    <div v-for="[fileName, file] in filteredFiles(item.payload.outputRaw.generated_files)" :key="fileName" class="file-item">
                                         <div class="file-header">
                                             <span class="file-name">{{ fileName }}</span>
                                             <span class="file-size">{{ formatFileSize(file.size) }}</span>
                                         </div>
                                         <div v-if="file.content" class="file-content">
-                                            <div v-if="isImageFile(fileName)" class="image-container">
-                                                <img :src="getImageSrc(file.content, fileName)" :alt="fileName" class="file-image" />
-                                            </div>
-                                            <div v-else class="markdown-container" v-html="formatMarkdownContent(file.content)"></div>
+                                            <div class="markdown-container" v-html="formatMarkdownContent(file.content)"></div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <!-- 이미지 슬라이드 -->
+                                <div v-if="getImageSlides(item.payload.outputRaw.generated_files).length > 0" class="image-slides-container">
+                                    <div class="image-slides-header">
+                                        <div class="header-info">
+                                            <h5>이미지 갤러리</h5>
+                                            <span class="slide-hint">{{ getImageSlides(item.payload.outputRaw.generated_files).length }}개의 이미지</span>
+                                        </div>
+                                        <div class="slide-navigation">
+                                            <button @click="previousImageSlide()" :disabled="imageIndex === 0" class="nav-btn">←</button>
+                                            <span class="slide-counter">{{ imageIndex + 1 }} / {{ images.length }}</span>
+                                            <button @click="nextImageSlide()" :disabled="imageIndex === images.length - 1" class="nav-btn">→</button>
+                                        </div>
+                                    </div>
+                                    <div class="image-slide-content">
+                                        <div class="image-wrapper">
+                                            <img v-if="images[imageIndex]" 
+                                                 :src="images[imageIndex].src" 
+                                                 :alt="images[imageIndex].alt" 
+                                                 class="image-slide-image" />
+                                            <button @click="openImageDialog(item.payload.outputRaw.generated_files)" 
+                                                    class="expand-image-btn">
+                                                <v-icon size="large">mdi-magnify-plus</v-icon>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="image-slide-indicators">
+                                        <span v-for="(slide, index) in images" :key="index"
+                                              :class="['indicator', { active: index === imageIndex }]"
+                                              @click="goToImageSlide(index)"></span>
                                     </div>
                                 </div>
                             </div>
@@ -239,6 +270,50 @@
             </div>
         </div>
     </div>
+
+    <!-- 이미지 확대 다이얼로그 -->
+    <v-dialog v-model="imageDialog.show" max-width="90vw" max-height="90vh" persistent>
+        <v-card class="image-dialog-card">
+            <v-card-title class="image-dialog-header">
+                <div class="dialog-title">
+                    <h3>이미지 갤러리</h3>
+                    <span class="dialog-counter">{{ imageIndex + 1 }} / {{ images.length }}</span>
+                </div>
+                <v-btn icon @click="closeImageDialog">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </v-card-title>
+            
+            <v-card-text class="image-dialog-content">
+                <div class="dialog-image-container">
+                    <button @click="previousImageSlide()" 
+                            :disabled="imageIndex === 0" 
+                            class="dialog-nav-btn dialog-nav-left">
+                        <v-icon>mdi-chevron-left</v-icon>
+                    </button>
+                    
+                    <div class="dialog-image-wrapper">
+                        <img v-if="images[imageIndex]" 
+                             :src="images[imageIndex].src" 
+                             :alt="images[imageIndex].alt" 
+                             class="dialog-image" />
+                    </div>
+                    
+                    <button @click="nextImageSlide()" 
+                            :disabled="imageIndex === images.length - 1" 
+                            class="dialog-nav-btn dialog-nav-right">
+                        <v-icon>mdi-chevron-right</v-icon>
+                    </button>
+                </div>
+                
+                <div class="dialog-indicators">
+                    <span v-for="(slide, index) in images" :key="index"
+                          :class="['dialog-indicator', { active: index === imageIndex }]"
+                          @click="goToImageSlide(index)"></span>
+                </div>
+            </v-card-text>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
@@ -276,25 +351,32 @@ export default {
         }
     },
     emits: ['update:humanQueryAnswers', 'update:expandedTasks', 'update:slideIndexes', 'onCancelHumanQuery', 'onConfirmHumanQuery', 'submitTask', 'previousSlide', 'nextSlide', 'goToSlide', 'toggleTaskExpansion', 'browserUseCompleted'],
+    data() {
+        return {
+            imageIndex: 0,
+            imageDialog: {
+                show: false,
+                files: null
+            },
+            images: []
+        };
+    },
     computed: {
-        sortedFiles() {
+        filteredFiles() {
             return (files) => {
                 if (!files) return [];
                 
                 const fileEntries = Object.entries(files);
                 const nonImageFiles = [];
-                const imageFiles = [];
                 
                 fileEntries.forEach(([fileName, fileData]) => {
-                    if (this.isImageFile(fileName)) {
-                        imageFiles.push([fileName, fileData]);
-                    } else {
+                    if (!this.isImageFile(fileName)) {
                         nonImageFiles.push([fileName, fileData]);
                     }
                 });
                 
-                // 이미지가 아닌 파일들을 먼저, 이미지 파일들을 나중에 배치
-                return [...nonImageFiles, ...imageFiles];
+                // 이미지가 아닌 파일들만 반환
+                return nonImageFiles;
             };
         }
     },
@@ -323,6 +405,19 @@ export default {
                         });
                     }
                 });
+                
+                // 이미지 슬라이드가 표시될 때 이미지들 로드
+                const browserUseTask = newTimeline.find(item => 
+                    item.type === 'task' && 
+                    item.payload.crewType === 'browser-use' && 
+                    item.payload.isCompleted &&
+                    item.payload.outputRaw?.generated_files
+                );
+                
+                if (browserUseTask) {
+                    this.images = this.getImageSlides(browserUseTask.payload.outputRaw.generated_files);
+                    this.imageIndex = 0; // 첫 번째 이미지부터 시작
+                }
             },
             deep: true,
             immediate: true
@@ -484,6 +579,37 @@ export default {
         },
         goToSlide(taskId, index) {
             this.$emit('goToSlide', taskId, index)
+        },
+        getImageSlides(files) {
+            if (!files) return [];
+            return Object.entries(files)
+                .filter(([fileName]) => this.isImageFile(fileName))
+                .map(([fileName, fileData]) => ({
+                    fileName,
+                    src: this.getImageSrc(fileData.content, fileName),
+                    alt: fileName
+                }));
+        },
+        previousImageSlide() {
+            if (this.images.length === 0) return;
+            this.imageIndex = this.imageIndex > 0 ? this.imageIndex - 1 : this.images.length - 1;
+        },
+        nextImageSlide() {
+            if (this.images.length === 0) return;
+            this.imageIndex = this.imageIndex < this.images.length - 1 ? this.imageIndex + 1 : 0;
+        },
+        goToImageSlide(index) {
+            if (index >= 0 && index < this.images.length) {
+                this.imageIndex = index;
+            }
+        },
+        openImageDialog(files) {
+            this.imageDialog.show = true;
+            this.imageDialog.files = files;
+        },
+        closeImageDialog() {
+            this.imageDialog.show = false;
+            this.imageDialog.files = null;
         },
         onCancelHumanQuery(task) {
             this.$emit('onCancelHumanQuery', task)
@@ -1513,6 +1639,226 @@ export default {
   object-fit: contain;
   background: #f8f9fa;
   padding: 8px;
+}
+
+/* 이미지 슬라이드 스타일 */
+.image-slides-container {
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e4e6ea;
+  margin-top: 16px;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+.image-slides-header {
+  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.image-slides-header .header-info h5 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.image-slides-header .slide-hint {
+  font-size: 12px;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+.image-slide-content {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  min-height: 250px;
+  position: relative;
+}
+
+.image-slide-image {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  object-fit: contain;
+  background: white;
+  padding: 8px;
+  animation: slideIn 0.4s ease-out;
+}
+
+.image-slide-indicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  background: #ffffff;
+  border-top: 1px solid #e9ecef;
+  gap: 8px;
+}
+
+/* 이미지 확대 버튼 스타일 */
+.image-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.expand-image-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.expand-image-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+/* 이미지 다이얼로그 스타일 */
+.image-dialog-card {
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.image-dialog-header {
+  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+  color: white;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dialog-title h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dialog-counter {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-left: 12px;
+}
+
+
+.image-dialog-content {
+  padding: 0;
+  background: #f8f9fa;
+}
+
+.dialog-image-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  background: #000;
+}
+
+.dialog-image-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.dialog-image {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.dialog-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.dialog-nav-btn:hover:not(:disabled) {
+  background: white;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dialog-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.dialog-nav-left {
+  left: 20px;
+}
+
+.dialog-nav-right {
+  right: 20px;
+}
+
+.dialog-indicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: #ffffff;
+  gap: 12px;
+}
+
+.dialog-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #dee2e6;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dialog-indicator:hover {
+  background: #adb5bd;
+  transform: scale(1.2);
+}
+
+.dialog-indicator.active {
+  background: #60A5FA;
+  transform: scale(1.3);
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
 }
 
 .file-item {
