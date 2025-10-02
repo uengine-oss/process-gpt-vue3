@@ -325,7 +325,7 @@
                             :processDefinition="processDefinition"
                         >   
                             <template #form-work-item-action-label>
-                                <div class="text-h5 font-weight-semibold">결과 입력</div>
+                                <div class="text-h5 font-weight-semibold">{{ $t('WorkItem.resultInput') }}</div>
                             </template>
                             <template #form-work-item-action-btn>
                                 <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
@@ -343,7 +343,7 @@
                                         :style="isMobile ? 'border-color: #e0e0e0 !important;' : 'background-color: #808080; color: white;'"
                                     >
                                         <v-icon>mdi-delete-outline</v-icon>
-                                        <span v-if="!isMobile" class="ms-1">내용 초기화</span>
+                                        <span v-if="!isMobile" class="ms-1">{{ $t('WorkItem.resetContent') }}</span>
                                     </v-btn>
                                     <v-btn class="mr-1"
                                         v-if="!isMobile"
@@ -357,11 +357,11 @@
                                         <template v-if="!isGeneratingExample">
                                             <v-row v-if="generator" class="ma-0 pa-0">
                                                 <v-icon>mdi-refresh</v-icon>
-                                                <span class="ms-2">예시 재생성</span>
+                                                <span class="ms-2">{{ $t('WorkItem.generateExample') }}</span>
                                             </v-row>
                                             <v-row v-else class="ma-0 pa-0" >
                                                 <Icons :icon="'sparkles'" :size="20"/>
-                                                <div class="ms-1">빠른 예시 생성</div>
+                                                <div class="ms-1">{{ $t('WorkItem.quickGenerateExample') }}</div>
                                             </v-row>
                                         </template>
                                     </v-btn>

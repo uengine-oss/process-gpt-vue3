@@ -583,7 +583,8 @@
         "versionDescriptionTitle": "If checked, it will save by incrementing the version by one step, otherwise it will save in the current version.",
         "idRequired": "ID is required.",
         "idRules": "Use lowercase letters, numbers, and underscores only (e.g., new_process_id)",
-        "nameRequired": "Name is required."
+        "nameRequired": "Name is required.",
+        "optimize": "Use Process Definition Optimization"
     },
     "FormDefinitionPanel": {
         "editForm": "Edit Form Attribute",
@@ -937,7 +938,8 @@
         "delegate": "Delegate",
         "resetContent": "Reset Content",
         "generateExample": "Generate Example",
-        "quickGenerateExample": "Quick Generate Example"
+        "quickGenerateExample": "Quick Generate Example",
+        "resultInput": "Result Input"
     },
     "TestProcess": {
         "title": "Testing Process",
@@ -1694,5 +1696,25 @@
             "actions": "Action Mode",
             "knowledge": "Knowledge Management"
         }
+    },
+    "FormWorkItem": {
+        "previous": "Previous Step",
+        "save": "Save",
+        "submitComplete": "Submit Complete",
+        "noFormData": "No form data registered",
+        "noFormDataDescription": "No form data found for the current work."
+    },
+    "InstanceSource": {
+        "addFile": "Add File",
+        "dragAndDrop": "Click or drag and drop files",
+        "download": "Download",
+        "delete": "Delete",
+        "uploadComplete": "Upload Complete",
+        "uploading": "Uploading",
+        "close": "Close",
+        "uploadSuccess": "File uploaded successfully.",
+        "unsupportedFileType": " is an unsupported file type.",
+        "fileTooLarge": "File is too large. (Maximum 50MB)",
+        "fileDeleted": "File deleted successfully."
     }
 }
