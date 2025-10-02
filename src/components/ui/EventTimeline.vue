@@ -307,9 +307,18 @@ export default {
                         item.payload.crewType === 'browser-use' && 
                         item.payload.isCompleted &&
                         item.payload.outputRaw?.generated_files) {
+                        
+                        // 이미지가 아닌 파일들만 필터링
+                        const nonImageFiles = {};
+                        Object.entries(item.payload.outputRaw.generated_files).forEach(([fileName, fileData]) => {
+                            if (!this.isImageFile(fileName)) {
+                                nonImageFiles[fileName] = fileData;
+                            }
+                        });
+                        
                         this.$emit('browserUseCompleted', {
                             taskId: item.payload.id,
-                            generatedFiles: item.payload.outputRaw.generated_files,
+                            generatedFiles: nonImageFiles,
                             resultSummary: item.payload.outputRaw.result_summary
                         });
                     }
