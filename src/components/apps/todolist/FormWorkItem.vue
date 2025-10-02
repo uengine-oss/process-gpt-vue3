@@ -71,13 +71,53 @@
                     </div>
                     <!-- 기존 폼 컨텐츠 -->
                     <div v-else>
-                        <!-- 슬랏으로 버튼 추가 영역  -->
-                        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem"></DynamicForm>
-                        <!-- <div v-if="!isCompleted" class="mb-4">
-                            <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
-                            <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
-                        </div> -->
-                        <Checkpoints v-if="workItem.activity.checkpoints.length > 0" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
+                        <!-- 탭 구조 추가 -->
+                        <!-- <v-card class="form-tabs-card" elevation="0">
+                            <v-tabs
+                                v-model="activeTab"
+                                class="form-tabs"
+                                color="primary"
+                                align-tabs="start"
+                            >
+                                <v-tab value="direct-input">
+                                    <v-icon class="me-2">mdi-form-textbox</v-icon>
+                                    직접 입력
+                                </v-tab>
+                                <v-tab value="chat">
+                                    <v-icon class="me-2">mdi-chat</v-icon>
+                                    채팅
+                                </v-tab>
+                            </v-tabs>
+
+                            <v-card-text class="pa-0">
+                                <v-window v-model="activeTab"> -->
+                                    <!-- 직접 입력 탭 -->
+                                    <!-- <v-window-item value="direct-input"> -->
+                                        <!-- 슬랏으로 버튼 추가 영역  -->
+                                        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem"></DynamicForm>
+                                        <!-- <div v-if="!isCompleted" class="mb-4">
+                                            <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
+                                            <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
+                                        </div> -->
+                                        <Checkpoints v-if="workItem.activity.checkpoints.length > 0" ref="checkpoints" :workItem="workItem" @update-checkpoints="updateCheckpoints" />
+                                    <!-- </v-window-item> -->
+
+                                    <!-- 채팅 탭 -->
+                                    <!-- <v-window-item value="chat">
+                                        <FormInterviewChat
+                                            :workItem="workItem"
+                                            :definitionId="definitionId"
+                                            :processDefinition="processDefinition"
+                                            :formData="formData"
+                                            :formHTML="html"
+                                            :formDefId="formDefId"
+                                            class="form-chat-component"
+                                        />
+                                    </v-window-item>
+                                </v-window>
+                            </v-card-text>
+                        </v-card> -->
+
                         <!-- 모바일 상태에서 나오는 버튼 -->
                         <v-row v-if="!isCompleted && isOwnWorkItem && isMobile && (html || workItem.activity.checkpoints.length > 0)" class="ma-0 pa-0 mt-4">
                             <v-spacer></v-spacer>
@@ -132,6 +172,7 @@
 <script>
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ActivityInputData from '@/components/ui/ActivityInputData.vue';
+// import FormInterviewChat from './FormInterviewChat.vue';
 
 import Instruction from '@/components/ui/Instruction.vue';
 import AudioTextarea from '@/components/ui/AudioTextarea.vue';
@@ -143,6 +184,7 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         DynamicForm,
+        // FormInterviewChat,
         Instruction,
         AudioTextarea,
         Checkpoints,
@@ -197,6 +239,7 @@ export default {
         delegateTaskDialog: false,
         inputFields: null,
         isInitialized: false,
+        // activeTab: 'direct-input', // 'direct-input' 또는 'chat'
     }),
     computed: {
         simulate() {
@@ -670,6 +713,46 @@ export default {
 @media only screen and (max-width:768px) {
     .submit-complete-pc {
         display: none;
+    }
+}
+
+/* 폼 탭 관련 스타일 */
+.form-tabs-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-tabs {
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+}
+
+.form-tabs .v-tab {
+    text-transform: none;
+    font-weight: 500;
+    min-width: 120px;
+}
+
+.form-tabs .v-tab--selected {
+    color: rgb(var(--v-theme-primary));
+}
+
+.form-chat-component {
+    height: 400px;
+    min-height: 300px;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+    .form-tabs .v-tab {
+        min-width: 100px;
+        font-size: 0.875rem;
+    }
+    
+    .form-chat-component {
+        height: 300px;
+        min-height: 250px;
     }
 }
 </style>
