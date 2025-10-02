@@ -35,6 +35,7 @@
             <div v-else> 
                 <v-row class="ma-0 pa-0">
                     <v-autocomplete
+                        v-if="mode == 'uEngine'"
                         :items="processVariables"
                         :item-props="true"
                         item-value
@@ -43,7 +44,17 @@
                         v-model="selectedVariable"
                         :label="$t('SubProcessPanel.variable')"
                         variant="outlined"
+                        :disabled="typeof copyUengineProperties.forEachVariable === 'string'"
                     ></v-autocomplete>
+                    <v-text-field
+                        v-if="mode == 'ProcessGPT'"
+                        color="primary"
+                        v-model="copyUengineProperties.forEachVariable"
+                        :label="$t('SubProcessPanel.variable')"
+                        hint="<formKey>:<expr>"
+                        persistent-hint
+                        variant="outlined"
+                    ></v-text-field>
                     <!-- <bpmn-parameter-contexts
                         :for-sub-process="true"
                         :definition-variables="definitionVariables"
@@ -60,9 +71,92 @@
 
             <div>
                 <v-row class="ma-0 pa-0">
-                    <v-text-field v-model="pattern" :label="$t('BpmnPropertyPanel.subProcessNamePattern')"></v-text-field>
+                    <v-text-field v-model="pattern" :label="$t('SubProcessPanel.subProcessNamePattern')"></v-text-field>
                 </v-row>
             </div>
+
+            <!-- ProcessGPT 전용 결정론적 규칙화 버튼 -->
+            <div v-if="mode == 'ProcessGPT'" class="mt-4 d-flex justify-end">
+                <v-btn @click="generateFinalizeRule" color="primary" density="compact">
+                    <span v-if="isFinalizeRuleGenerating" class="thinking-wave-text">
+                        <span v-for="(char, index) in $t('SubProcessPanel.ruleGenerating')" :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
+                            {{ char === ' ' ? '\u00A0' : char }}
+                        </span>
+                    </span>
+                    <span v-else>
+                        {{ $t('SubProcessPanel.ruleGenerator') }}
+                    </span>
+                </v-btn>
+            </div>
+
+            <!-- 결정론적 규칙화 결과 다이얼로그 -->
+            <v-dialog v-model="finalizeGenerationDialog" max-width="960" persistent>
+                <v-card>
+                    <v-card-title class="d-flex align-center">
+                        <span>{{ $t('SubProcessPanel.generatedRulePreview') }}</span>
+                        <v-spacer></v-spacer>
+                        <v-btn color="primary" density="comfortable" @click="generateFinalizeRule" :disabled="isFinalizeRuleGenerating">
+                            <span v-if="isFinalizeRuleGenerating" class="thinking-wave-text">
+                                <span v-for="(char, index) in $t('SubProcessPanel.ruleGenerating') " :key="index" :style="{ animationDelay: (index * 0.1) + 's' }" class="thinking-char">
+                                    {{ char === ' ' ? '\u00A0' : char }}
+                                </span>
+                            </span>
+                            <span v-else>
+                                {{  $t('SubProcessPanel.regenerate') }}
+                            </span>
+                        </v-btn>
+                    </v-card-title>
+                    <v-card-text>
+                        <div class="mb-2">{{ $t('SubProcessPanel.generatedFunction') }}</div>
+                        <v-textarea
+                            readonly
+                            auto-grow
+                            :model-value="copyUengineProperties?.finalizeFunction || ''"
+                            density="comfortable"
+                        />
+
+                        <div v-if="copyUengineProperties?.finalize_io_examples?.length" class="mt-6">
+                            <div class="d-flex justify-space-between align-center">
+                                <div class="mb-1 mt-4">
+                                    <v-icon icon="mdi-format-list-bulleted" size="small" color="primary" />
+                                    <span class="ml-2">{{ $t('SubProcessPanel.expectedOutput') }}</span>
+                                </div>
+                            </div>
+                            <v-table density="comfortable" class="elevation-1">
+                                <thead>
+                                    <tr>
+                                        <th>{{ $t('SubProcessPanel.conditionWhen') }}</th>
+                                        <th>{{ $t('SubProcessPanel.resultThen') }}</th>
+                                        <th>{{ $t('SubProcessPanel.mismatch') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(ex, idx) in copyUengineProperties.finalize_io_examples" :key="'fio-'+idx">
+                                        <td>
+                                            <div class="one-line-json">{{ formatJsonOneLine(ex.input) }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="one-line-json">{{ ex.output }}</div>
+                                        </td>
+                                        <td>
+                                            <v-checkbox
+                                                density="compact"
+                                                hide-details
+                                                :model-value="!!ex.mismatch"
+                                                @update:modelValue="val => updateFinalizeMismatchItem(ex, val)"
+                                            />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </v-table>
+                        </div>
+                    </v-card-text>
+                    <v-card-actions class="justify-end">
+                        <v-btn variant="text" color="grey" @click="cancelFinalizeGeneration">{{ $t('SubProcessPanel.cancel') }}</v-btn>
+                        <v-btn color="primary" variant="flat" @click="applyGeneratedFinalizeRule">{{ $t('SubProcessPanel.confirm') }}</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
         </div>
     </div>
 </template>
@@ -70,6 +164,7 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
+import SubprocessRuleGenerator from '@/components/ai/SubprocessRuleGenerator.js';
 
 export default {
     name: 'sub-process-panel',
@@ -78,7 +173,8 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         roles: Array,
-        processVariables: Array
+        processVariables: Array,
+        element: Object
     },
     created() {
         // console.log(this.element)
@@ -136,6 +232,16 @@ export default {
                     image: "forEachRoleDescriptionSubTitle1.png"
                 }
             ],
+            // 결정론적 규칙화 관련 상태
+            isFinalizeRuleGenerating: false,
+            finalizeGenerationDialog: false,
+            previousFinalizeFunction: null,
+            finalizeIoExamplesGood: [],
+            finalizeIoExamplesBad: [],
+            lastSingleFieldTargetFinalize: null,
+            lastHasMismatchFinalize: false,
+            lastIsInitialFinalize: true,
+            formDefs: []
         };
     },
     async mounted() {
@@ -160,7 +266,8 @@ export default {
         });
 
         if (this.copyUengineProperties.forEachVariable) {
-            this.selectedVariable = this.copyUengineProperties.forEachVariable.name;
+            const fv = this.copyUengineProperties.forEachVariable;
+            this.selectedVariable = typeof fv === 'string' ? '' : fv.name;
             this.isForEachRole = false;
         }
         if (this.copyUengineProperties.forEachRole) {
@@ -170,8 +277,32 @@ export default {
         if (this.copyUengineProperties.subProcessNamePattern) {
             this.pattern = this.copyUengineProperties.subProcessNamePattern;
         }
+
+        // formDefs 로딩 (ProcessGPT 규칙 생성에 사용)
+        try {
+            const backend = BackendFactory.createBackend();
+            let formDefs = await backend.listDefinition('form_def', {
+                match: {
+                    tenant_id: window.$tenantName,
+                    proc_def_id: this.processDefinitionId
+                }
+            });
+            this.formDefs = formDefs.map((item) => {
+                return {
+                    id: item.id,
+                    name: item.name,
+                    fields: item.fields_json,
+                    html: item.html
+                }
+            });
+        } catch(e) {
+            console.warn('Failed to load formDefs for finalize rule generation', e);
+        }
     },
     computed: {
+        mode() {
+            return window.$mode;
+        },
         // inputData() {
         //     let params = this.copyUengineProperties.variableBindings;
         //     let result = [];
@@ -207,6 +338,7 @@ export default {
         },
         selectedVariable(after, before) {
             if (after) {
+                if (typeof this.copyUengineProperties.forEachVariable === 'string') return;
                 const variableObject = this.processVariables.find((variable) => variable.name === after);
                 if (variableObject) {
                     let DuplicateVo = JSON.parse(JSON.stringify(variableObject));
@@ -214,6 +346,7 @@ export default {
                     this.copyUengineProperties.forEachVariable = DuplicateVo;
                 }
             } else {
+                if (typeof this.copyUengineProperties.forEachVariable === 'string') return;
                 delete this.copyUengineProperties.forEachVariable;
             }
         },
@@ -308,6 +441,163 @@ export default {
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
+        },
+
+        // 결정론적 규칙화: SequenceFlowPanel의 generateRule 패턴을 준용
+        cancelFinalizeGeneration() {
+            this.copyUengineProperties.finalizeFunction = this.previousFinalizeFunction;
+            this.finalizeGenerationDialog = false;
+        },
+        applyGeneratedFinalizeRule() {
+            // Ensure latest finalize_io_examples overwrite is applied and notify parent
+            this.copyUengineProperties.finalize_io_examples = Array.isArray(this.copyUengineProperties.finalize_io_examples)
+                ? [...this.copyUengineProperties.finalize_io_examples]
+                : [];
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
+            this.finalizeGenerationDialog = false;
+        },
+        generateFinalizeRule() {
+            const subprocessRuleClient = {
+                onGenerationFinished: (response) => {
+                    let jsonData = this.extractJSON(response);
+                    if (jsonData && jsonData.includes('{')) {
+                        try {
+                            jsonData = JSON.parse(jsonData);
+                        } catch(e) {
+                            try {
+                                jsonData = partialParse(jsonData);
+                            } catch(e) {
+                                console.log(e);
+                            }
+                        }
+                    } else {
+                        jsonData = null;
+                    }
+
+                    if (jsonData) {
+                        // Client-side fallback similar to SequenceFlowPanel
+                        if (!this.lastIsInitialFinalize && this.lastHasMismatchFinalize && this.lastSingleFieldTargetFinalize && Array.isArray(this.lastSingleFieldTargetFinalize.trueValues) && this.lastSingleFieldTargetFinalize.trueValues.length > 0) {
+                            const { fieldKey, trueValues } = this.lastSingleFieldTargetFinalize;
+                            const encoded = trueValues.map(v => JSON.stringify(v));
+                            const expr = encoded.length === 1
+                                ? `${fieldKey} == ${encoded[0]}`
+                                : `${fieldKey} in (${encoded.join(',')})`;
+                            jsonData.python_expr = expr;
+                            const expected = Array.isArray(this.copyUengineProperties.finalize_io_examples) ? this.copyUengineProperties.finalize_io_examples : [];
+                            jsonData.io_examples = expected.map(ex => ({ input: ex.input, output: ex.mismatch ? !ex.output : ex.output }));
+                        }
+                        this.copyUengineProperties.finalizeFunction = jsonData.python_expr;
+                        if (!this.copyUengineProperties.forEachVariable) this.copyUengineProperties.forEachVariable = {};
+                        this.copyUengineProperties.forEachVariable = jsonData.python_expr;
+                        const raw = Array.isArray(jsonData.io_examples) ? jsonData.io_examples : [];
+                        this.copyUengineProperties.finalize_io_examples = raw;
+                        this.finalizeIoExamplesGood = raw.filter(ex => (typeof ex.output === 'number') && ex.output > 0);
+                        this.finalizeIoExamplesBad = raw.filter(ex => (typeof ex.output === 'number') && ex.output === 0);
+                        this.$emit('update:uengineProperties', this.copyUengineProperties);
+                        this.finalizeGenerationDialog = true;
+                    }
+
+                    this.isFinalizeRuleGenerating = false;
+                }
+            };
+
+            // Build single-field target hint (with mismatch inversion) from finalize_io_examples
+            const buildSingleFieldTarget = (examples) => {
+                if (!Array.isArray(examples) || examples.length === 0) return null;
+                const inputs = examples.map(e => e?.input || {});
+                const allKeys = Array.from(new Set(inputs.flatMap(obj => Object.keys(obj))));
+                if (allKeys.length !== 1) return null;
+                const key = allKeys[0];
+                const allScalar = inputs.every(i => i && (typeof i[key] === 'string' || typeof i[key] === 'number' || typeof i[key] === 'boolean'));
+                if (!allScalar) return null;
+                const targets = examples.map(e => ({
+                    value: e.input[key],
+                    target: e.mismatch ? !e.output : e.output
+                }));
+                const trueValues = Array.from(new Set(targets.filter(t => t.target === true).map(t => t.value)));
+                return { fieldKey: key, trueValues };
+            };
+
+            const singleFieldTarget = buildSingleFieldTarget(this.copyUengineProperties.finalize_io_examples || []);
+
+            // Backup previous function before generation
+            this.previousFinalizeFunction = this.copyUengineProperties.finalizeFunction;
+
+            const isInitial = !this.copyUengineProperties.finalizeFunction;
+            this.lastIsInitialFinalize = isInitial;
+            const generatorOptions = {
+                name: this.element.name,
+                formDefs: this.formDefs
+            };
+            if (!isInitial) {
+                generatorOptions.expectedIoExamples = Array.isArray(this.copyUengineProperties.finalize_io_examples)
+                    ? this.copyUengineProperties.finalize_io_examples.map(ex => ({ input: ex.input, output: ex.output, mismatch: !!ex.mismatch }))
+                    : [];
+                generatorOptions.singleFieldTarget = singleFieldTarget;
+                const hasAnyMismatch = (this.copyUengineProperties.finalize_io_examples || []).some(ex => !!ex.mismatch);
+                if (!hasAnyMismatch) {
+                    generatorOptions.previousExpr = this.copyUengineProperties.finalizeFunction || '';
+                }
+                this.lastHasMismatchFinalize = hasAnyMismatch;
+            }
+            this.lastSingleFieldTargetFinalize = singleFieldTarget;
+
+            const generator = new SubprocessRuleGenerator(subprocessRuleClient, generatorOptions);
+            this.isFinalizeRuleGenerating = true;
+            generator.generate();
+        },
+        updateFinalizeMismatchItem(example, val) {
+            example.mismatch = !!val;
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
+        },
+        hasUnclosedTripleBackticks(inputString) {
+            const regex = /`{3}/g;
+            let match;
+            let isOpen = false;
+
+            while ((match = regex.exec(inputString)) !== null) {
+                isOpen = !isOpen;
+            }
+
+            return isOpen;
+        },
+        extractJSON(inputString, checkFunction) {
+            try {
+                JSON5.parse(inputString);
+                return inputString;
+            } catch (e) {}
+
+            if (this.hasUnclosedTripleBackticks(inputString)) {
+                inputString = inputString + '\n```';
+            }
+
+            let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+            
+            let match = inputString.match(regex);
+            if (match) {
+                if (checkFunction)
+                    match.forEach((shouldBeJson) => {
+                        const lastIndex = shouldBeJson.lastIndexOf('}');
+                        const result = shouldBeJson.slice(0, lastIndex + 1);
+                        if (checkFunction(result)) return result;
+                    });
+                else return match[1];
+            } else {
+                regex = /\{[\s\S]*\}/
+                match = inputString.match(regex);
+                return match && match[0] ? match[0] : null;
+            }
+
+            return null;
+        },
+        formatJsonOneLine(obj) {
+            try {
+                const str = JSON.stringify(obj ?? {});
+                return str.length > 160 ? str.slice(0, 157) + '...' : str;
+            } catch {
+                const s = String(obj ?? '');
+                return s.length > 160 ? s.slice(0, 157) + '...' : s;
+            }
         }
     }
 };

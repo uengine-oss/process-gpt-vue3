@@ -705,7 +705,19 @@
         "forEachVariableDescriptionSubTitle1": "1. Check multi-data mode through edit mode in screen definition management",
         "forEachVariableDescriptionSubTitle2": "2. Perform data mapping in the panel of the previous task to be executed",
         "forEachRoleDescriptionTitle": "Create a Sub Process for every person with the selected role",
-        "forEachRoleDescriptionSubTitle1": "Use Case: \nWhen multiple team members need to perform the same task, you can assign Sub Processes individually to each team member through role-based multi-instance generation. \nThis allows each team member to work independently while the overall process is centrally managed. \n\nBelow, the box in the image corresponds to the role field."
+        "forEachRoleDescriptionSubTitle1": "Use Case: \nWhen multiple team members need to perform the same task, you can assign Sub Processes individually to each team member through role-based multi-instance generation. \nThis allows each team member to work independently while the overall process is centrally managed. \n\nBelow, the box in the image corresponds to the role field.",
+        "subProcessNamePattern": "Sub-Process Name Pattern",
+        "ruleGenerator": "Deterministic Rule Generation",
+        "ruleGenerating": "Deterministic Rule Generation...",
+        "generatedRulePreview": "Deterministic Rule Preview",
+        "generatedFunction": "Deterministic Rule",
+        "expectedOutput": "Expected Output",
+        "conditionWhen": "Condition(When)",
+        "resultThen": "Result(Then)",
+        "mismatch": "Mismatch",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "regenerate": "Regenerate"
     },
     "ParticipantPanel": {
         "apiUrl": "API URL",

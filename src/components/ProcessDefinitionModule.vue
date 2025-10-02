@@ -293,6 +293,44 @@ export default {
 
             businessObject.set('extensionElements', extensionElements);
         },
+        upsertElementJsonProperties(modeler, elementId, jsonString) {
+            try {
+                const elementRegistry = modeler.get('elementRegistry');
+                const bpmnFactory = modeler.get('bpmnFactory');
+                const el = elementRegistry.get(elementId);
+                if (!el || !el.businessObject) return;
+
+                let ext = el.businessObject.get('extensionElements');
+                if (!ext) {
+                    ext = bpmnFactory.create('bpmn:ExtensionElements');
+                    el.businessObject.set('extensionElements', ext);
+                }
+                let values = ext.get('values');
+                if (!values) {
+                    values = [];
+                    ext.set('values', values);
+                }
+                let uprops = values.find(v => v.$type === 'uengine:Properties');
+                if (!uprops) {
+                    uprops = bpmnFactory.create('uengine:Properties', { json: '' });
+                    values.push(uprops);
+                }
+                uprops.json = jsonString || '{}';
+            } catch (e) {
+                console.warn('Failed to upsert element properties for', elementId, e);
+            }
+        },
+        applySubprocessProperties(modeler, subProcesses) {
+            const list = Array.isArray(subProcesses) ? subProcesses : [];
+            list.forEach(sp => {
+                if (sp && sp.id && typeof sp.properties === 'string') {
+                    this.upsertElementJsonProperties(modeler, sp.id, sp.properties);
+                }
+                if (sp && sp.children && Array.isArray(sp.children?.subProcesses)) {
+                    this.applySubprocessProperties(modeler, sp.children.subProcesses);
+                }
+            });
+        },
         modificationElement(modification, modeler) {
             console.log(modification);
             const moddle = modeler.get('bpmnFactory');
@@ -506,6 +544,14 @@ export default {
                         info.definition = me.processDefinition;
                     }
                     
+                    // ensure subprocess properties are written back into BPMN before saving
+                    try {
+                        const modeler = store.getModeler;
+                        this.applySubprocessProperties(modeler, me.processDefinition?.subProcesses || []);
+                    } catch (e) {
+                        console.warn('applySubprocessProperties failed', e);
+                    }
+
                     await me.saveModel(info, xmlObj.xml);
                     me.bpmn = xmlObj.xml;
 
