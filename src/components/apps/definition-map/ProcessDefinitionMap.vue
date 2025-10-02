@@ -131,7 +131,7 @@
                                     <Icons :icon="'magic'" :size="24" color="white" />
                                 </v-avatar>
                                 <div>
-                                    <v-card-title class="text-primary font-weight-bold pb-1">
+                                    <v-card-title class="text-primary font-weight-bold pb-1" style="white-space: normal; line-height: 1.2;">
                                         {{ $t('processDefinitionMap.consultingButton') }}
                                     </v-card-title>
                                     <div class="text-subtitle-2 text-grey-darken-1">

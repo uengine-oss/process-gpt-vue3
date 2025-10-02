@@ -163,13 +163,16 @@
                             <div v-if="item.payload.outputRaw?.generated_files" class="browser-files">
                                 <h6>생성된 파일</h6>
                                 <div class="files-list">
-                                    <div v-for="(file, fileName) in item.payload.outputRaw.generated_files" :key="fileName" class="file-item">
+                                    <div v-for="[fileName, file] in sortedFiles(item.payload.outputRaw.generated_files)" :key="fileName" class="file-item">
                                         <div class="file-header">
                                             <span class="file-name">{{ fileName }}</span>
                                             <span class="file-size">{{ formatFileSize(file.size) }}</span>
                                         </div>
                                         <div v-if="file.content" class="file-content">
-                                            <div class="markdown-container" v-html="formatMarkdownContent(file.content)"></div>
+                                            <div v-if="isImageFile(fileName)" class="image-container">
+                                                <img :src="getImageSrc(file.content, fileName)" :alt="fileName" class="file-image" />
+                                            </div>
+                                            <div v-else class="markdown-container" v-html="formatMarkdownContent(file.content)"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -273,6 +276,28 @@ export default {
         }
     },
     emits: ['update:humanQueryAnswers', 'update:expandedTasks', 'update:slideIndexes', 'onCancelHumanQuery', 'onConfirmHumanQuery', 'submitTask', 'previousSlide', 'nextSlide', 'goToSlide', 'toggleTaskExpansion', 'browserUseCompleted'],
+    computed: {
+        sortedFiles() {
+            return (files) => {
+                if (!files) return [];
+                
+                const fileEntries = Object.entries(files);
+                const nonImageFiles = [];
+                const imageFiles = [];
+                
+                fileEntries.forEach(([fileName, fileData]) => {
+                    if (this.isImageFile(fileName)) {
+                        imageFiles.push([fileName, fileData]);
+                    } else {
+                        nonImageFiles.push([fileName, fileData]);
+                    }
+                });
+                
+                // 이미지가 아닌 파일들을 먼저, 이미지 파일들을 나중에 배치
+                return [...nonImageFiles, ...imageFiles];
+            };
+        }
+    },
     watch: {
         timeline: {
             handler(newTimeline) {
@@ -282,9 +307,18 @@ export default {
                         item.payload.crewType === 'browser-use' && 
                         item.payload.isCompleted &&
                         item.payload.outputRaw?.generated_files) {
+                        
+                        // 이미지가 아닌 파일들만 필터링
+                        const nonImageFiles = {};
+                        Object.entries(item.payload.outputRaw.generated_files).forEach(([fileName, fileData]) => {
+                            if (!this.isImageFile(fileName)) {
+                                nonImageFiles[fileName] = fileData;
+                            }
+                        });
+                        
                         this.$emit('browserUseCompleted', {
                             taskId: item.payload.id,
-                            generatedFiles: item.payload.outputRaw.generated_files,
+                            generatedFiles: nonImageFiles,
                             resultSummary: item.payload.outputRaw.result_summary
                         });
                     }
@@ -318,7 +352,7 @@ export default {
                 (task.crewType === 'report' && task.jobId.includes('final_report_merge')) ||
                 task.crewType === 'slide' ||
                 task.crewType === 'text' ||
-                (task.crewType === 'result' && task.jobId.includes('action'))
+                task.crewType === 'result'
             )
         },
         shouldShowSubmitButton(payload) {
@@ -593,6 +627,34 @@ export default {
         },
         openBrowserDialog(taskId) {
             this.$emit('open-browser-dialog', taskId);
+        },
+        isImageFile(fileName) {
+            if (!fileName) return false;
+            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.svg'];
+            const lowerFileName = fileName.toLowerCase();
+            return imageExtensions.some(ext => lowerFileName.endsWith(ext));
+        },
+        getImageSrc(content, fileName) {
+            if (!content) return '';
+            // 이미 data URL인 경우 그대로 반환
+            if (content.startsWith('data:image/')) {
+                return content;
+            }
+            // 파일 확장자에 따라 MIME 타입 결정
+            const mimeType = this.getMimeTypeFromFileName(fileName);
+            return `data:${mimeType};base64,${content}`;
+        },
+        getMimeTypeFromFileName(fileName) {
+            if (!fileName) return 'image/png';
+            const lowerFileName = fileName.toLowerCase();
+            if (lowerFileName.endsWith('.png')) return 'image/png';
+            if (lowerFileName.endsWith('.jpg') || lowerFileName.endsWith('.jpeg')) return 'image/jpeg';
+            if (lowerFileName.endsWith('.gif')) return 'image/gif';
+            if (lowerFileName.endsWith('.webp')) return 'image/webp';
+            if (lowerFileName.endsWith('.bmp')) return 'image/bmp';
+            if (lowerFileName.endsWith('.svg')) return 'image/svg+xml';
+            // 기본값은 PNG
+            return 'image/png';
         },
     }
 }
@@ -1435,6 +1497,22 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* 이미지 파일 스타일 */
+.image-container {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.file-image {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  object-fit: contain;
+  background: #f8f9fa;
+  padding: 8px;
 }
 
 .file-item {

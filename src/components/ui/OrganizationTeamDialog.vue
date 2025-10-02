@@ -54,12 +54,12 @@
 
         <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn @click="update"
+            <v-btn 
+                @click="update"
                 :disabled="!isValid"
-                color="primary"
-                variant="elevated" 
-                class="rounded-pill"
-                density="compact"
+                :color="(buttonText === 'Delete' || buttonText === '삭제') ? 'error' : 'primary'"
+                rounded 
+                variant="flat" 
             >{{ buttonText }}</v-btn>
         </v-card-actions>
     </v-card>

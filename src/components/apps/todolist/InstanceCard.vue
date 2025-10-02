@@ -346,9 +346,7 @@ export default {
         $route: {
             deep: true,
             async handler(newVal, oldVal) {
-                if (newVal && newVal.query && newVal.query.submitted) {
-                    this.tab = "workhistory";
-                } else if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
+                if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
                     // localStorage에 저장된 탭이 있으면 그것을 사용, 없으면 기본값
                     const lastTab = localStorage.getItem('instanceCard-lastTab');
                     this.tab = lastTab || "progress";
@@ -381,13 +379,9 @@ export default {
             immediate: true,
             handler(newVal) {
                 if (!newVal) {
-                    if (this.$route.query && this.$route.query.submitted) {
-                        this.tab = "workhistory";
-                    } else {
-                        // localStorage에 저장된 탭이 있으면 그것을 사용, 없으면 기본값
-                        const lastTab = localStorage.getItem('instanceCard-lastTab');
-                        this.tab = lastTab || "workhistory";
-                    }
+                    // localStorage에 저장된 탭이 있으면 그것을 사용, 없으면 기본값
+                    const lastTab = localStorage.getItem('instanceCard-lastTab');
+                    this.tab = lastTab || "workhistory";
                 }
             }
         },
