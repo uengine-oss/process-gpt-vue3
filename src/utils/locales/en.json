@@ -540,7 +540,19 @@
         "generatedRulePreview": "Deterministic Rule Preview",
         "expectedOutput": "Expected Output",
         "conditionWhen": "Condition(When)",
-        "resultThen": "Result(Then)"
+        "resultThen": "Result(Then)",
+        "setting": "Setting",
+        "referenceInfo": "Reference Information",
+        "edit": "Edit",
+        "preview": "Preview",
+        "duration": "Duration",
+        "attachments": "Attachments",
+        "agentMode": "Agent Mode",
+        "orchestration": "Orchestration",
+        "days": "days",
+        "selectForm": "Select Form to Reference",
+        "noFormSelected": "Sel  ect a form to reference",
+        "instruction": "Instruction"
     },
     "PDFPreviewer": {
         "saveDocument": "Save PDF",
@@ -1731,5 +1743,13 @@
         "unsupportedFileType": " is an unsupported file type.",
         "fileTooLarge": "File is too large. (Maximum 50MB)",
         "fileDeleted": "File deleted successfully."
+    },
+    "processDialog": {
+        "editProcess": "Edit Process",
+        "processDefinition": "Process Definition",
+        "newProcessDefinition": "New Process Definition",
+        "processName": "Process Name",
+        "save": "Save",
+        "close": "Close"
     }
 }

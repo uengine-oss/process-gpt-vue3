@@ -540,7 +540,19 @@
         "generatedRulePreview": "결정론적 규칙 미리보기",
         "expectedOutput": "예상 출력 결과",
         "conditionWhen": "조건(When)",
-        "resultThen": "결과(Then)"
+        "resultThen": "결과(Then)",
+        "setting": "설정",
+        "referenceInfo": "참조 정보",
+        "edit": "폼 편집",
+        "preview": "폼 미리보기",
+        "duration": "소요시간",
+        "attachments": "첨부파일",
+        "agentMode": "에이전트 모드 사용",
+        "orchestration": "에이전트 연구 방식",
+        "days": "일",
+        "selectForm": "참조할 폼 선택",
+        "noFormSelected": "폼을 선택해주세요",
+        "instruction": "지침"
     },
     "PDFPreviewer": {
         "saveDocument": "PDF 저장",
@@ -1731,5 +1743,13 @@
         "unsupportedFileType": "은 지원되지 않는 파일 형식입니다.",
         "fileTooLarge": "파일이 너무 큽니다. (최대 50MB)",
         "fileDeleted": "파일이 삭제되었습니다."
+    },
+    "processDialog": {
+        "editProcess": "프로세스 수정",
+        "processDefinition": "프로세스 정의",
+        "newProcessDefinition": "새로운 프로세스 정의 추가",
+        "processName": "프로세스명",
+        "save": "저장",
+        "close": "닫기"
     }
 }

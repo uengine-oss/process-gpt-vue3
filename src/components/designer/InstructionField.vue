@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-textarea v-model="instruction" label="지침" rows="3"></v-textarea>
+        <v-textarea v-model="instruction" :label="$t('BpmnPropertyPanel.instruction')" rows="3"></v-textarea>
     </div>
 </template>
 

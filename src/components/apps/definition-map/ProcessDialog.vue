@@ -3,7 +3,12 @@
         <v-dialog v-model="subProcessDialogStauts" max-width="500">
             <v-card>
                 <v-card-title>
-                    {{ addType.toUpperCase() }} 프로세스 추가
+                    <template v-if="$i18n.locale === 'ko'">
+                        {{ addType.toUpperCase() }} 프로세스 추가
+                    </template>
+                    <template v-else>
+                        Add {{ addType.toUpperCase() }} Process
+                    </template>
                 </v-card-title>
 
                 <v-card-text>
@@ -12,7 +17,7 @@
                         v-model="newProcess"
                         :file-extensions="['.bpmn']"
                         :options="{
-                            label: '프로세스 정의',
+                            label: $t('processDialog.processDefinition'),
                             returnObject: true
                         }"
                     ></ProcessDefinitionDisplay>
@@ -21,7 +26,7 @@
                         v-if="addType == 'sub'"
                         v-model="isNewDef"
                         class="cp-custom-sub"
-                        label="새로운 프로세스 정의 추가"
+                        :label="$t('processDialog.newProcessDefinition')"
                         color="primary"
                         density="compact"
                     ></v-checkbox>
@@ -30,7 +35,7 @@
                         v-if="addType != 'sub' || isNewDef"
                         v-model="newProcess.name"
                         class="cp-process-name"
-                        label="프로세스명"
+                        :label="$t('processDialog.processName')"
                     ></v-text-field>
                 </v-card-text>
                 
@@ -40,11 +45,11 @@
                         class="cp-process-save"
                         :disabled="isNewDef ? newProcess.id == '' && newProcess.name == '' : false"
                         @click="addProcess()"
-                    >저장</v-btn>
+                    >{{ $t('processDialog.save') }}</v-btn>
                     <v-btn color="error" 
                         variant="flat" 
                         @click="closeDialog()"
-                    >닫기</v-btn>
+                    >{{ $t('processDialog.close') }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -52,7 +57,7 @@
             <v-row class="ma-0 pa-0" align="center">
                 <v-col class="ma-0 pa-0" cols="12">
                     <v-row v-if="addType == 'sub' && !isNewDef" justify="end" class="ma-0 pa-0">
-                        <v-tooltip text="닫기">
+                        <v-tooltip :text="$t('processDialog.Close')">
                             <template v-slot:activator="{ props }">
                                 <v-btn @click="closeDialog()"
                                     icon v-bind="props"
@@ -68,7 +73,7 @@
             </v-row>
             <v-row v-if="isNewDef || addType === 'mega' || addType === 'major'" justify="end" class="ma-0 pa-0" style="margin-top: -22px !important;">
                 <v-spacer></v-spacer>
-                <v-tooltip text="닫기">
+                <v-tooltip :text="$t('processDialog.close')">
                     <template v-slot:activator="{ props }">
                         <v-btn @click="closeDialog()"
                             icon v-bind="props"
@@ -83,7 +88,7 @@
                     <v-text-field
                         class="cp-process-id"
                         v-model="newProcess.name"
-                        :label="`${addType.toUpperCase()} 프로세스 추가`"
+                        :label="$i18n.locale === 'ko' ? `${addType.toUpperCase()} 프로세스 추가` : `Add ${addType.toUpperCase()} Process`"
                         autofocus
                         @keypress.enter="addProcess()"
                         @click.stop
@@ -93,7 +98,7 @@
         </div>
         <v-row v-if="processType === 'update'" justify="end" class="ma-0 pa-0">
             <v-spacer></v-spacer>
-            <v-tooltip text="닫기">
+            <v-tooltip :text="$t('processDialog.Close')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="closeDialog()"
                         icon v-bind="props"
@@ -110,7 +115,7 @@
                         class="delete-input-details"
                         v-model="newProcess.name"
                         autofocus
-                        label="프로세스 수정"
+                        :label="$t('processDialog.editProcess')"
                         @keypress.enter="updateProcess"
                         @click.stop
                     ></v-text-field>

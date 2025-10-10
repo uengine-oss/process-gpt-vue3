@@ -3,7 +3,7 @@
         <!-- 편집 모드 -->
         <div v-if="!isViewMode">
             <v-row class="ma-0 pa-0 align-center">
-                <h6 class="text-body-1">체크포인트</h6>
+                <h6 class="text-body-1">{{ $t('BpmnPropertyPanel.checkPoints') }}</h6>
                 <v-spacer></v-spacer>
                 <v-btn icon density="compact" variant="text">
                     <v-icon @click="addCheckpoint()">mdi-plus</v-icon>
@@ -32,7 +32,7 @@
         <!-- 보기모드  -->
         <div v-else>
             <v-row class="ma-0 pa-0 align-center">
-                <h6 class="text-body-1">체크포인트</h6>
+                <h6 class="text-body-1">{{ $t('BpmnPropertyPanel.checkPoints') }}</h6>
             </v-row>
             <div class="check-points-field-box pa-2"
                 style="border: 1px solid lightgray; border-radius: 10px;"

@@ -4,17 +4,17 @@
         <v-tabs v-model="activeTab"
             class="pl-4 pr-4"
         >
-            <v-tab value="setting">설정</v-tab>
-            <v-tab value="inputData">참조 정보</v-tab>
-            <v-tab value="edit">폼 편집</v-tab>
-            <v-tab value="preview">폼 미리보기</v-tab>
+            <v-tab value="setting">{{ $t('BpmnPropertyPanel.setting') }}</v-tab>
+            <v-tab value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
+            <v-tab value="edit">{{ $t('BpmnPropertyPanel.edit') }}</v-tab>
+            <v-tab value="preview">{{ $t('BpmnPropertyPanel.preview') }}</v-tab>
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
                 <div class="mb-4">{{ $t('BpmnPropertyPanel.role') }}: {{ copyUengineProperties.role ? copyUengineProperties.role.name : '' }}</div>
                 <!-- <v-text-field v-model="name" label="이름" autofocus class="mb-4"></v-text-field> -->
                 <!-- Duration -->
-                <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
+                <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="mb-4"></v-text-field>
                 <!-- Instruction -->
                 <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <!-- Description -->
@@ -24,7 +24,7 @@
                 <!-- Attachments -->
                 <div>
                     <v-file-input
-                        label="첨부파일"
+                        :label="$t('BpmnPropertyPanel.attachments')"
                         multiple
                         class="mb-4"
                         @update:modelValue="onFileChange"
@@ -41,12 +41,12 @@
                 </div>
                 <!-- Draft -->
                 <div class="mt-4">
-                    <v-select v-model="activity.agentMode" :items="agentModeItems" hide-details density="compact" label="에이전트 모드 사용">
+                    <v-select v-model="activity.agentMode" :items="agentModeItems" hide-details density="compact" :label="$t('BpmnPropertyPanel.agentMode')">
                     </v-select>
                 </div>
                 <!-- Orchestration -->
                 <div v-if="activity.agentMode === 'draft' || activity.agentMode === 'complete'" class="mt-4">
-                    <v-select v-model="activity.orchestration" :items="orchestrationItems" hide-details density="compact" label="에이전트 연구 방식">
+                    <v-select v-model="activity.orchestration" :items="orchestrationItems" hide-details density="compact" :label="$t('BpmnPropertyPanel.orchestration')">
                     </v-select>
                 </div>
             </v-window-item>
@@ -59,7 +59,7 @@
                         :items="availableForms"
                         item-title="title"
                         item-value="formId"
-                        label="참조할 폼 선택"
+                        :label="$t('BpmnPropertyPanel.selectForm')"
                         variant="outlined"
                         density="compact"
                         multiple
@@ -87,7 +87,7 @@
                 </div>
                 <!-- No form selected message -->
                 <div v-else class="text-center text-grey-500 py-8">
-                    폼을 선택해주세요
+                    {{ $t('BpmnPropertyPanel.noFormSelected') }}
                 </div>
             </v-window-item>
 
