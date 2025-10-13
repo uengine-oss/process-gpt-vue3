@@ -34,7 +34,7 @@
             <!-- 드래그 기능 제거된 단순 구조 -->
             <div class="list-group">
                 <transition-group>
-                    <div v-for="task in column.tasks" :key="task.taskId" class="todo-task-item-card-style">
+                    <div v-for="task in sortedTasks" :key="task.taskId" class="todo-task-item-card-style">
                         <KanbanColumnCard :task="task" @deleteTask="deleteTask" :userList="users" />
                     </div>
                 </transition-group>
@@ -75,6 +75,29 @@ export default {
         dialog: false,
         originColumnId: null,
     }),
+    computed: {
+        sortedTasks() {
+            if (!this.column.tasks || this.column.tasks.length === 0) {
+                return [];
+            }
+            // startDate 기준으로 내림차순 정렬 (최신 날짜가 위로)
+            // 동일한 날짜라면 updatedAt 기준으로 최근 것이 위로
+            return [...this.column.tasks].sort((a, b) => {
+                const dateA = new Date(a.startDate);
+                const dateB = new Date(b.startDate);
+                
+                // 1차 정렬: startDate 내림차순
+                if (dateB.getTime() !== dateA.getTime()) {
+                    return dateB - dateA;
+                }
+                
+                // 2차 정렬: 동일한 날짜라면 updatedAt 내림차순 (최근 추가된 것이 위로)
+                const updatedA = new Date(a.updatedAt || a.startDate);
+                const updatedB = new Date(b.updatedAt || b.startDate);
+                return updatedB - updatedA;
+            });
+        }
+    },
     async mounted() {
         if(this.$refs.section) this.$refs.section.addEventListener('scroll', this.checkScrollBottom);
     },

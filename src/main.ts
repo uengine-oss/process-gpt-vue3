@@ -125,7 +125,7 @@ async function detectLanguage(): Promise<'ko' | 'en'> {
 
 // i18n 설정을 기본값으로 초기화
 const i18n = createI18n({
-    locale: 'ko', // 기본값으로 초기화
+    locale: localStorage.getItem('locale') || 'ko', // localStorage에 저장된 언어 또는 기본값 ko
     fallbackLocale: 'en',
     messages
 });
@@ -269,9 +269,15 @@ async function initializeApp() {
     await setupSupabase();
     await setupTenant();
     
-    // 동적 언어 설정
-    const detectedLocale = await detectLanguage();
-    (i18n.global as any).locale = detectedLocale;
+    // 동적 언어 설정 (localStorage에 저장된 언어 우선, 없으면 자동 감지)
+    const savedLocale = localStorage.getItem('locale');
+    if (!savedLocale) {
+        const detectedLocale = await detectLanguage();
+        (i18n.global as any).locale = detectedLocale;
+        localStorage.setItem('locale', detectedLocale);
+    } else {
+        (i18n.global as any).locale = savedLocale;
+    }
     
     const app = createApp(App);
     

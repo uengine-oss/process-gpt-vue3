@@ -16,7 +16,8 @@
         "savedMarketplace": "Saved to marketplace."
     },
     "errorMsg": {
-        "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational."
+        "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
+        "languageChangeFailed": "Failed to change language settings."
     },
     "App": {
         "view": "Read more"

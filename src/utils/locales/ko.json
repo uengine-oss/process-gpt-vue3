@@ -16,7 +16,8 @@
         "savedMarketplace": "마켓플레이스에 등록되었습니다."
     },
     "errorMsg": {
-        "isBackendConnected" : "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요."
+        "isBackendConnected" : "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요.",
+        "languageChangeFailed": "언어 설정 변경에 실패했습니다."
     },
     "App": {
         "view": "자세히 보기"
