@@ -970,7 +970,7 @@ export default {
                         gateway['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
                     });
 
-                    const buildSequence = (flow) => {
+                const buildSequence = (flow) => {
                     let condition = '';
                     if (window.$mode == 'ProcessGPT') {
                         condition = flow.condition || '';
@@ -980,6 +980,7 @@ export default {
                     }
                     return {
                         id: flow.id,
+                        name: flow.name,
                         source: flow.sourceRef || flow.source,
                         target: flow.targetRef || flow.target,
                         condition,
