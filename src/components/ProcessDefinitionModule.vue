@@ -48,8 +48,11 @@ export default {
     mounted() {},
     beforeUnmount() {},
     async created() {
-        this.datasourceSchema = await backend.extractDatasourceSchema();
-        this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+        const isUseDataSource = localStorage.getItem('isUseDataSource');
+        if(isUseDataSource == 'true') {
+            this.datasourceSchema = await backend.extractDatasourceSchema();
+            this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+        }
     },
     methods: {
         async checkedFormData() {

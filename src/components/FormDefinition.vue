@@ -147,8 +147,12 @@ export default {
         if (this.modelValue != '') {
             this.kEditorInput = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);
         }
-        this.datasourceSchema = await backend.extractDatasourceSchema();
-        this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+
+        const isUseDataSource = localStorage.getItem('isUseDataSource');
+        if(isUseDataSource == 'true') {
+            this.datasourceSchema = await backend.extractDatasourceSchema();
+            this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+        }
 
         this.generator = new ChatGenerator(this, {
             isStream: true,
