@@ -45,15 +45,6 @@ export default {
             return null;
         }
     },
-    mounted() {},
-    beforeUnmount() {},
-    async created() {
-        const isUseDataSource = localStorage.getItem('isUseDataSource');
-        if(isUseDataSource == 'true') {
-            this.datasourceSchema = await backend.extractDatasourceSchema();
-            this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
-        }
-    },
     methods: {
         async checkedFormData() {
             if (this.processDefinition && this.processDefinition.elements) {

@@ -150,8 +150,14 @@ export default {
 
         const isUseDataSource = localStorage.getItem('isUseDataSource');
         if(isUseDataSource == 'true') {
-            this.datasourceSchema = await backend.extractDatasourceSchema();
-            this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+            this.$try({
+                context: this,
+                action: async () => {
+                    this.datasourceSchema = await backend.extractDatasourceSchema();
+                    this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+                },
+                errorMsg: '데이터소스 스키마 연동 실패'
+            });
         }
 
         this.generator = new ChatGenerator(this, {
