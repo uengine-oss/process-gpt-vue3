@@ -1,6 +1,5 @@
 import '@/scss/style.scss';
 import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
-import { fakeBackend } from '@/utils/helpers/fake-backend';
 import { createClient } from '@supabase/supabase-js';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
@@ -329,7 +328,6 @@ async function initializeApp() {
     loadOpengraphComponents(app);
     loadbpmnComponents(app);
 
-    fakeBackend();
     app.use(router);
     // app.component('EasyDataTable', Vue3EasyDataTable);
     app.use(PerfectScrollbar);

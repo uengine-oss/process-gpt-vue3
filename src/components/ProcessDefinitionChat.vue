@@ -329,8 +329,6 @@ export default {
         organizationChart: [],
         strategy: null,
         isHorizontal: false,
-        datasourceURL: null,
-        datasourceSchema: null,
         // CrewAI 서비스 연동 관련
         useCrewAI: false, // 테스트용 플래그
         crewAIBaseURL: 'http://localhost:8000',
@@ -377,8 +375,17 @@ export default {
             } else {
                 await this.init();
 
-                this.datasourceSchema = await backend.extractDatasourceSchema();
-                this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+                const isUseDataSource = localStorage.getItem('isUseDataSource');
+                if(isUseDataSource == 'true') {
+                    this.$try({
+                        context: this,
+                        action: async () => {
+                            this.datasourceSchema = await backend.extractDatasourceSchema();
+                            this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+                        },
+                        errorMsg: '데이터소스 스키마 연동 실패'
+                    });
+                }
 
                 this.generator = new ChatGenerator(this, {
                     isStream: true,

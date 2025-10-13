@@ -45,12 +45,6 @@ export default {
             return null;
         }
     },
-    mounted() {},
-    beforeUnmount() {},
-    async created() {
-        this.datasourceSchema = await backend.extractDatasourceSchema();
-        this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
-    },
     methods: {
         async checkedFormData() {
             if (this.processDefinition && this.processDefinition.elements) {
@@ -976,7 +970,7 @@ export default {
                         gateway['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
                     });
 
-                    const buildSequence = (flow) => {
+                const buildSequence = (flow) => {
                     let condition = '';
                     if (window.$mode == 'ProcessGPT') {
                         condition = flow.condition || '';
@@ -986,6 +980,7 @@ export default {
                     }
                     return {
                         id: flow.id,
+                        name: flow.name,
                         source: flow.sourceRef || flow.source,
                         target: flow.targetRef || flow.target,
                         condition,
