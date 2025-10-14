@@ -239,7 +239,7 @@
 
         <v-card-actions class="pa-4 pt-0">
           <v-spacer class="is-pc"></v-spacer>
-          <v-btn @click="deleteDataSource(ds)" 
+          <v-btn @click="requestDeleteDataSource(ds)" 
             :disabled="!isUseDataSource"
             icon
             variant="text"
@@ -260,6 +260,28 @@
         </v-card-actions>
       </v-card>
     </div>
+
+    <!-- 삭제 확인 다이얼로그 -->
+    <v-dialog v-model="deleteDialog" max-width="420">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <span>{{ $t('accountTab.confirmDeleteConnectionTitle') }}</span>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" density="compact" icon @click="cancelDelete">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-card-text>
+          <div class="text-body-2">
+            {{ $t('accountTab.confirmDeleteConnectionText', { name: pendingDelete && pendingDelete.name }) }}
+          </div>
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" color="grey" @click="cancelDelete">{{ $t('accountTab.cancel') }}</v-btn>
+          <v-btn color="primary" variant="flat" @click="confirmDelete">{{ $t('accountTab.delete') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -274,6 +296,8 @@ export default {
       dialog: false,
       isEditMode: false,
       isUseDataSource: false, // ✅ DataSource 사용 여부
+      deleteDialog: false,
+      pendingDelete: null,
       newDataSource: {
         uuid: null,  // ✅ uuid 저장
         name: '',
@@ -527,6 +551,21 @@ export default {
       this.isEditMode = true;  // ✅ 수정모드 ON
       this.newDataSource = JSON.parse(JSON.stringify(ds));
       this.dialog = true;
+    },
+    requestDeleteDataSource(ds) {
+      this.pendingDelete = ds;
+      this.deleteDialog = true;
+    },
+    confirmDelete() {
+      if (this.pendingDelete) {
+        this.deleteDataSource(this.pendingDelete);
+      }
+      this.deleteDialog = false;
+      this.pendingDelete = null;
+    },
+    cancelDelete() {
+      this.deleteDialog = false;
+      this.pendingDelete = null;
     },
     deleteDataSource(ds) {
       const idx = this.dataSources.indexOf(ds);
