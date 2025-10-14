@@ -420,7 +420,9 @@
         "mcpEnvironments": "MCP Environments",
         "showSecretData": "Show Secret Data",
         "indicatesRequiredField": "*Environment variable configuration is required.",
-        "billing": "Billing"
+        "billing": "Billing",
+        "confirmDeleteConnectionTitle": "Delete Connection Info",
+        "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",

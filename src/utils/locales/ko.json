@@ -420,7 +420,9 @@
         "mcpEnvironments": "MCP 환경변수",
         "showSecretData": "시크릿 데이터 보기",
         "indicatesRequiredField": "*환경변수 설정은 필수 항목입니다.",
-        "billing": "청구"
+        "billing": "청구",
+        "confirmDeleteConnectionTitle": "접속 정보 삭제",
+        "confirmDeleteConnectionText": "\"{name}\"을(를) 삭제하시겠습니까?"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
