@@ -38,6 +38,14 @@
                         <KanbanColumnCard :task="task" @deleteTask="deleteTask" :userList="users" />
                     </div>
                 </transition-group>
+                
+                <!-- 마지막 페이지 표시 (스크롤을 통해 추가 로딩이 발생한 경우에만) -->
+                <div v-if="!hasMore && currentPage > 0 && column.tasks.length > 0">
+                    <div class="d-flex align-center justify-center pa-2" style="color: #999; font-size: 12px;">
+                        <v-icon size="small" color="grey-lighten-1" class="mr-1">mdi-checkbox-marked-circle-outline</v-icon>
+                        <span>{{ $t('todoList.endOfList') }}</span>
+                    </div>
+                </div>
             </div>
         </div>
          <!-- workItem dialog -->
@@ -61,6 +69,14 @@ export default {
     props: {
         column: Object,
         loading: Boolean,
+        hasMore: {
+            type: Boolean,
+            default: true
+        },
+        currentPage: {
+            type: Number,
+            default: 0
+        },
         isNotAll: {
             type: Boolean, 
             default: false
@@ -68,6 +84,10 @@ export default {
         users: {
             type: Array,
             default: () => []
+        },
+        sortOption: {
+            type: String,
+            default: 'startDate'
         }
     },
     data: () => ({
@@ -80,22 +100,36 @@ export default {
             if (!this.column.tasks || this.column.tasks.length === 0) {
                 return [];
             }
-            // startDate 기준으로 내림차순 정렬 (최신 날짜가 위로)
-            // 동일한 날짜라면 updatedAt 기준으로 최근 것이 위로
-            return [...this.column.tasks].sort((a, b) => {
-                const dateA = new Date(a.startDate);
-                const dateB = new Date(b.startDate);
-                
-                // 1차 정렬: startDate 내림차순
-                if (dateB.getTime() !== dateA.getTime()) {
-                    return dateB - dateA;
-                }
-                
-                // 2차 정렬: 동일한 날짜라면 updatedAt 내림차순 (최근 추가된 것이 위로)
-                const updatedA = new Date(a.updatedAt || a.startDate);
-                const updatedB = new Date(b.updatedAt || b.startDate);
-                return updatedB - updatedA;
-            });
+            
+            const sortedTasks = [...this.column.tasks];
+            
+            if (this.sortOption === 'dueDate') {
+                // 마감일이 가까운 순 (오름차순)
+                sortedTasks.sort((a, b) => {
+                    const dateA = a.dueDate || a.endDate;
+                    const dateB = b.dueDate || b.endDate;
+                    
+                    if (!dateA && !dateB) return 0;
+                    if (!dateA) return 1;  // dateA가 없으면 뒤로
+                    if (!dateB) return -1; // dateB가 없으면 뒤로
+                    
+                    return new Date(dateA) - new Date(dateB);
+                });
+            } else {
+                // 시작일이 최근인 순 (내림차순)
+                sortedTasks.sort((a, b) => {
+                    const dateA = a.startDate || a.createdDate || a.startedDate;
+                    const dateB = b.startDate || b.createdDate || b.startedDate;
+                    
+                    if (!dateA && !dateB) return 0;
+                    if (!dateA) return 1;  // dateA가 없으면 뒤로
+                    if (!dateB) return -1; // dateB가 없으면 뒤로
+                    
+                    return new Date(dateB) - new Date(dateA);
+                });
+            }
+            
+            return sortedTasks;
         }
     },
     async mounted() {
@@ -113,9 +147,9 @@ export default {
         checkScrollBottom(){
             const section = this.$refs.section;
             const isAtBottom = section.scrollTop + section.clientHeight >= section.scrollHeight - 1;
-            if (isAtBottom && this.column.id == 'DONE') {
-                // console.log("!! RUN")
-                if(!this.loading) this.$emit('scrollBottom')
+            
+            if (isAtBottom && !this.loading && this.hasMore) {
+                this.$emit('scrollBottom', this.column.id);
             }
         },
         checkDraggable(event) {
@@ -171,9 +205,3 @@ export default {
     }
 }
 </script>
-<style>
-    .todo-task-item-card-style:not(:first-of-type) {
-        margin-top:8px;
-    }
-
-</style>

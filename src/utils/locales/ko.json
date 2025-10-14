@@ -71,7 +71,11 @@
         "inProgress": "진행 중",
         "pending": "보류/반송",
         "done": "완료됨",
-        "addTask": "업무 등록"
+        "addTask": "업무 등록",
+        "sort": "정렬",
+        "sortByDueDate": "마감일 가까운 순",
+        "sortByStartDate": "시작일 최근 순",
+        "endOfList": "모든 업무를 확인했습니다"
     },
     "calendar": {
         "title": "달력",
@@ -506,7 +510,7 @@
         "subProcessNamePattern": "서브프로세스명 패턴",
         "condition": "조건",
         "priority": "우선순위",
-        "description": "설명",
+        "description": "개요",
         "inputData": "입력 데이터",
         "outputData": "출력 데이터",
         "checkPoints": "체크포인트",

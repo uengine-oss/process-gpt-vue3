@@ -15,10 +15,11 @@
                 <!-- <v-text-field v-model="name" label="이름" autofocus class="mb-4"></v-text-field> -->
                 <!-- Duration -->
                 <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="mb-4"></v-text-field>
-                <!-- Instruction -->
-                <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <!-- Description -->
                 <Description v-model="activity.description" class="mb-4"></Description>
+                
+                <!-- Instruction -->
+                <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <!-- Checkpoints -->
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
                 <!-- Attachments -->

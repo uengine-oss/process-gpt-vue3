@@ -6,6 +6,15 @@ hr {
     opacity: 1 !important;
 }
 
+
+.todo-task-item-card-style:not(:first-of-type) {
+    margin-top: 8px;
+}
+
+.todo-task-item-card-style:last-child {
+    margin-bottom: 8px;
+}
+
 .version-manager-vuediff-box {
     height: 100% !important;
     overflow-y: auto !important;
@@ -62,6 +71,19 @@ hr {
     height: calc(100vh - 250px) !important;
     overflow: auto;
 }
+
+.sort-chip-select-wrapper .v-field__input {
+    padding: 4px 0px 0px 0px !important;
+}
+
+.sort-chip-select-wrapper .v-field__append-inner {
+    padding: 5px 0px 0px 0px !important;
+}
+
+.sort-chip-select-wrapper  .v-field__append-inner {
+    width: 24px !important;
+}
+
 .language-chip-select-wrapper,
 .chip-select-wrapper {
     padding-right: 0px !important;

@@ -7,10 +7,13 @@
             >
                 <KanbanColumn 
                     :column="column" 
-                    :loading="loading" 
+                    :loading="loading[column.id]"
+                    :hasMore="hasMore[column.id]"
+                    :currentPage="pages[column.id] || 0"
                     :isNotAll="false"
                     :showAddButton="false"
                     :users="users"
+                    :sortOption="sortOption"
                     @scrollBottom="handleScrollBottom"
                     @todoTaskColumnFold="todoTaskColumnFold"
                     @todoTaskColumnunfold="todoTaskColumnUnfold"
@@ -30,6 +33,22 @@ export default {
     props: {
         columns: Array,
         users: Array,
+        hasMore: {
+            type: Object,
+            default: () => ({})
+        },
+        loading: {
+            type: Object,
+            default: () => ({})
+        },
+        pages: {
+            type: Object,
+            default: () => ({})
+        },
+        sortOption: {
+            type: String,
+            default: 'startDate'
+        }
     },
     computed: {
         columnCols() {
@@ -37,12 +56,15 @@ export default {
         }
     },
     methods: {
-        
+        handleScrollBottom(columnId) {
+            this.$emit('loadMore', columnId);
+        },
+        todoTaskColumnFold() {
+            // 컬럼 접기 기능 (필요시 구현)
+        },
+        todoTaskColumnUnfold() {
+            // 컬럼 펼치기 기능 (필요시 구현)
+        }
     }
 }
 </script>
-<style>
-    .todo-task-item-card-style:not(:first-of-type) {
-        margin-top:8px;
-    }
-</style>

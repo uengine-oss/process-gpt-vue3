@@ -601,8 +601,18 @@ class ProcessGPTBackend implements Backend {
             } else {
                 list = list.filter((item: any) => item.tool !== null && item.tool !== undefined && item.tool !== '');
             }
+            
+            // 페이지네이션 처리
+            let paginatedList = list;
+            if (options && options.page !== undefined && options.size) {
+                const page = options.page || 0;
+                const size = options.size || 20;
+                const startIndex = page * size;
+                const endIndex = startIndex + size;
+                paginatedList = list.slice(startIndex, endIndex);
+            }
 
-            return list.map((item: any) => {
+            return paginatedList.map((item: any) => {
                 return this.returnWorkItemObject(item);
                 // return {
                 //     taskId: item.id,
