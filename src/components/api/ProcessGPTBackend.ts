@@ -3895,11 +3895,6 @@ class ProcessGPTBackend implements Backend {
 
     async deleteDataSource(dataSource: any) {
         try {
-            const tenant_id = window.$tenantName;
-            // tenant_id 확인 후 삭제
-            if (dataSource.tenant_id !== tenant_id) {
-                throw new Error('권한이 없습니다.');
-            }
             return await storage.delete('data_source', { match: { uuid: dataSource.uuid } });
         } catch (error) {
             throw new Error(error.message);
