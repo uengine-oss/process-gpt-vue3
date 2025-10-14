@@ -5,7 +5,7 @@
                 <v-btn class="mb-0 ma-0 pa-0 pb-0" icon="mdi-comment-text-outline" @click="modeChange('function')" />
             </div>
         </v-text-field>
-        <v-text-field v-if="mode == 'function'" v-model="conditionFunction" >
+        <v-text-field v-if="mode == 'function'" v-model="conditionFunctionLocal" >
             <div class="mb-0 ma-0">
                 <v-btn class="mb-0 ma-0 pa-0 pb-0" icon="mdi-function" @click="modeChange('text')" />
             </div>
@@ -29,7 +29,8 @@ export default {
     },
     data() {
         return {
-            condition: ''
+            condition: '',
+            conditionFunctionLocal: ''
         };
     },
     watch: {
@@ -39,6 +40,18 @@ export default {
                 console.log(val);
                 this.$emit('update:value', val);
             }
+        },
+        conditionFunctionLocal: {
+            deep: true,
+            handler(val) {
+                this.$emit('update:conditionFunction', val);
+            }
+        },
+        value(val) {
+            this.condition = val || '';
+        },
+        conditionFunction(val) {
+            this.conditionFunctionLocal = val || '';
         }
     },
     created() {
@@ -46,6 +59,11 @@ export default {
             this.condition = this.value;
         } else {
             this.condition = '';
+        }
+        if (this.conditionFunction) {
+            this.conditionFunctionLocal = this.conditionFunction;
+        } else {
+            this.conditionFunctionLocal = '';
         }
     },
     methods: {
