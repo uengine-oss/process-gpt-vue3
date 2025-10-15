@@ -13,62 +13,46 @@
                 <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
-        <!-- 참여자 보기 버튼 -->
-        <div v-if="laneAssignments.length > 0" class="pa-0">
-            <v-menu 
-                v-model="showParticipantsMenu"
-                :close-on-content-click="false"
-                location="bottom"
-                offset="4"
-            >
-                <template v-slot:activator="{ props }">
-                    <v-btn
-                        v-bind="props"
-                        size="small"
-                        variant="outlined"
-                        class="rounded-pill"
-                    >
-                        <v-icon size="small" class="mr-1">mdi-account-group</v-icon>
-                        참여자 보기 ({{ laneAssignments.length }})
-                    </v-btn>
-                </template>
-
-                <!-- 참여자 정보 카드 -->
-                <v-card class="pa-0" elevation="8" rounded="12">
-                    <v-row class="pa-2 ma-0 align-center">
-                        <v-icon class="mr-2">mdi-account-group</v-icon>
-                        <v-card-title class="text-subtitle-1 pa-0 align-center"
-                        >참여자 목록
-                        </v-card-title>
-                    </v-row>
-                    <v-divider class="mb-3"></v-divider>
-                    <div class="participants-grid pa-2" style="max-height: 300px; overflow-y: auto;">
-                        <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="mr-4">
-                            <div class="d-flex align-center">
-                                <v-avatar size="32" class="mr-3">
-                                    <v-img 
-                                        :src="assignment.profileImage" 
-                                        :alt="assignment.assignee"
-                                        cover
-                                    >
-                                        <template v-slot:error>
-                                            <v-img src="/images/defaultUser.png" cover>
-                                                <template v-slot:error>
-                                                    <v-icon size="small" style="color: #666;">mdi-account</v-icon>
-                                                </template>
-                                            </v-img>
-                                        </template>
-                                    </v-img>
-                                </v-avatar>
-                                <div class="flex-grow-1">
-                                    <div class="text-body-2 font-weight-medium" style="color: #444;">{{ assignment.laneName }}</div>
-                                    <div class="text-caption" style="color: #666;">{{ assignment.assignee }}</div>
+        <!-- 참여자 보기 확장 패널 -->
+        <div v-if="laneAssignments.length > 0" class="participants-panel-wrapper">
+            <v-expansion-panels v-model="participantsPanelOpen" class="participants-expansion-panel">
+                <v-expansion-panel elevation="10">
+                    <v-expansion-panel-title class="participants-panel-title pa-4">
+                        <div class="d-flex align-center">
+                            <v-icon size="small" class="mr-2">mdi-account-group</v-icon>
+                            <span class="text-body-2 font-weight-medium">참여자 보기</span>
+                            <v-chip size="x-small" class="ml-2">{{ laneAssignments.length }}</v-chip>
+                        </div>
+                    </v-expansion-panel-title>
+                    <v-expansion-panel-text class="bpmn-uengine-viewer-laneAssignments">
+                        <div class="participants-list" style="max-height: 300px; overflow-y: auto;">
+                            <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="participant-item pa-4 pt-2 pb-2">
+                                <div class="d-flex align-center">
+                                    <v-avatar size="32" class="mr-3">
+                                        <v-img 
+                                            :src="assignment.profileImage" 
+                                            :alt="assignment.assignee"
+                                            cover
+                                        >
+                                            <template v-slot:error>
+                                                <v-img src="/images/defaultUser.png" cover>
+                                                    <template v-slot:error>
+                                                        <v-icon size="small" style="color: #666;">mdi-account</v-icon>
+                                                    </template>
+                                                </v-img>
+                                            </template>
+                                        </v-img>
+                                    </v-avatar>
+                                    <div class="flex-grow-1">
+                                        <div class="text-body-2 font-weight-medium" style="color: #444;">{{ assignment.laneName }}</div>
+                                        <div class="text-caption" style="color: #666;">{{ assignment.assignee }}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </v-card>
-            </v-menu>
+                    </v-expansion-panel-text>
+                </v-expansion-panel>
+            </v-expansion-panels>
         </div>
         <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 0px; left: 20px; pointer-events: auto; z-index: 10;">
             <v-row class="ma-0 pa-0">
@@ -177,7 +161,7 @@ export default {
             panStart: { x: 0, y: 0 },
             pinchStartZoom: 1,
             laneAssignments: [],
-            showParticipantsMenu: false
+            participantsPanelOpen: undefined
         };
     },
     computed: {
@@ -1051,5 +1035,45 @@ svg .bpmn-diff-deleted marker[id*="sequenceflow-end"] path {
 
 .view-mode .djs-element * {
   pointer-events: none !important;
+}
+
+/* 참여자 패널 스타일 */
+.participants-panel-wrapper {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.participants-expansion-panel {
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.participants-panel-title {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  min-height: 36px !important;
+}
+
+.participant-item {
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.participant-item:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.participants-list {
+  padding-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .participants-panel-wrapper {
+    width: calc(100vw - 32px);
+    max-width: 280px;
+  }
 }
 </style>

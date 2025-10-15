@@ -6,6 +6,9 @@ hr {
     opacity: 1 !important;
 }
 
+.bpmn-uengine-viewer-laneAssignments .v-expansion-panel-text__wrapper {
+    padding: 0px !important;
+}
 
 .todo-task-item-card-style:not(:first-of-type) {
     margin-top: 8px;
