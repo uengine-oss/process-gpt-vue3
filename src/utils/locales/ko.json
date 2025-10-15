@@ -16,7 +16,8 @@
         "savedMarketplace": "마켓플레이스에 등록되었습니다."
     },
     "errorMsg": {
-        "isBackendConnected" : "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요."
+        "isBackendConnected" : "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요.",
+        "languageChangeFailed": "언어 설정 변경에 실패했습니다."
     },
     "App": {
         "view": "자세히 보기"
@@ -70,7 +71,11 @@
         "inProgress": "진행 중",
         "pending": "보류/반송",
         "done": "완료됨",
-        "addTask": "업무 등록"
+        "addTask": "업무 등록",
+        "sort": "정렬",
+        "sortByDueDate": "마감일 가까운 순",
+        "sortByStartDate": "시작일 최근 순",
+        "endOfList": "모든 업무를 확인했습니다"
     },
     "calendar": {
         "title": "달력",
@@ -419,7 +424,9 @@
         "mcpEnvironments": "MCP 환경변수",
         "showSecretData": "시크릿 데이터 보기",
         "indicatesRequiredField": "*환경변수 설정은 필수 항목입니다.",
-        "billing": "청구"
+        "billing": "청구",
+        "confirmDeleteConnectionTitle": "접속 정보 삭제",
+        "confirmDeleteConnectionText": "\"{name}\"을(를) 삭제하시겠습니까?"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -505,7 +512,7 @@
         "subProcessNamePattern": "서브프로세스명 패턴",
         "condition": "조건",
         "priority": "우선순위",
-        "description": "설명",
+        "description": "개요",
         "inputData": "입력 데이터",
         "outputData": "출력 데이터",
         "checkPoints": "체크포인트",

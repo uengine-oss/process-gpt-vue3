@@ -601,8 +601,18 @@ class ProcessGPTBackend implements Backend {
             } else {
                 list = list.filter((item: any) => item.tool !== null && item.tool !== undefined && item.tool !== '');
             }
+            
+            // 페이지네이션 처리
+            let paginatedList = list;
+            if (options && options.page !== undefined && options.size) {
+                const page = options.page || 0;
+                const size = options.size || 20;
+                const startIndex = page * size;
+                const endIndex = startIndex + size;
+                paginatedList = list.slice(startIndex, endIndex);
+            }
 
-            return list.map((item: any) => {
+            return paginatedList.map((item: any) => {
                 return this.returnWorkItemObject(item);
                 // return {
                 //     taskId: item.id,
@@ -3895,11 +3905,6 @@ class ProcessGPTBackend implements Backend {
 
     async deleteDataSource(dataSource: any) {
         try {
-            const tenant_id = window.$tenantName;
-            // tenant_id 확인 후 삭제
-            if (dataSource.tenant_id !== tenant_id) {
-                throw new Error('권한이 없습니다.');
-            }
             return await storage.delete('data_source', { match: { uuid: dataSource.uuid } });
         } catch (error) {
             throw new Error(error.message);

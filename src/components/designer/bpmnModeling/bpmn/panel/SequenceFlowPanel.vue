@@ -7,6 +7,7 @@
                 :mode="copyUengineProperties.conditionMode"
                 :conditionFunction="copyUengineProperties.conditionFunction"
                 @update:mode="updateConditionMode"
+                @update:conditionFunction="updateConditionFunction"
             />
             <ConditionExampleField 
                 :value="copyUengineProperties.examples" 
@@ -63,7 +64,7 @@
                     density="comfortable"
                 />
 
-                <div v-if="copyUengineProperties?.io_examples?.length" class="mt-6">
+                <div v-if="ioExamples?.length" class="mt-6">
                     <div class="d-flex justify-space-between align-center">
                         <div class="mb-1 mt-4">
                             <v-icon icon="mdi-format-list-bulleted" size="small" color="primary" />
@@ -79,7 +80,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(ex, idx) in copyUengineProperties.io_examples" :key="'io-'+idx">
+                            <tr v-for="(ex, idx) in ioExamples" :key="'io-'+idx">
                                 <td>
                                     <div class="one-line-json">{{ formatJsonOneLine(ex.input) }}</div>
                                 </td>
@@ -162,6 +163,7 @@ export default {
             formDefs: [],
             ioExamplesGood: [],
             ioExamplesBad: [],
+            ioExamples: [],
             previousConditionFunction: null,
             lastSingleFieldTarget: null,
             lastHasMismatch: false,
@@ -208,6 +210,15 @@ export default {
         if (!this.copyUengineProperties.conditionMode) {
             this.copyUengineProperties.conditionMode = 'text';
         }
+
+        // Ensure io_examples are stored locally, not in copyUengineProperties
+        try {
+            if (Array.isArray(this.copyUengineProperties?.io_examples)) {
+                this.ioExamples = [...this.copyUengineProperties.io_examples];
+                delete this.copyUengineProperties.io_examples;
+                this.$emit('update:uengineProperties', this.copyUengineProperties);
+            }
+        } catch (e) {}
     },
     computed: {
         mode() {
@@ -223,9 +234,11 @@ export default {
         },
         applyGeneratedRule() {
             // Ensure latest io_examples overwrite is applied and notify parent
-            this.copyUengineProperties.io_examples = Array.isArray(this.copyUengineProperties.io_examples)
-                ? [...this.copyUengineProperties.io_examples]
+            this.ioExamples = Array.isArray(this.ioExamples)
+                ? [...this.ioExamples]
                 : [];
+            // Do not persist io_examples into copyUengineProperties
+            if (this.copyUengineProperties.hasOwnProperty('io_examples')) delete this.copyUengineProperties.io_examples;
             this.$emit('update:uengineProperties', this.copyUengineProperties);
             this.generationDialog = false;
         },
@@ -258,8 +271,6 @@ export default {
                     }
  
                      if (jsonData) {
-                         // Client-side fallback: if regenerating with mismatches and single-field target exists,
-                         // enforce a minimal membership/equality expression so python_expr actually changes.
                          if (!this.lastIsInitial && this.lastHasMismatch && this.lastSingleFieldTarget && Array.isArray(this.lastSingleFieldTarget.trueValues) && this.lastSingleFieldTarget.trueValues.length > 0) {
                              const { fieldKey, trueValues } = this.lastSingleFieldTarget;
                              const encoded = trueValues.map(v => JSON.stringify(v));
@@ -267,17 +278,16 @@ export default {
                                  ? `${fieldKey} == ${encoded[0]}`
                                  : `${fieldKey} in (${encoded.join(',')})`;
                              jsonData.python_expr = expr;
-                             // ensure io_examples reflect TARGETS (invert where mismatch=true)
                              const expected = Array.isArray(this.copyUengineProperties.io_examples) ? this.copyUengineProperties.io_examples : [];
                              jsonData.io_examples = expected.map(ex => ({ input: ex.input, output: ex.mismatch ? !ex.output : ex.output }));
                          }
                          this.copyUengineProperties.conditionFunction = jsonData.python_expr;
                          const raw = Array.isArray(jsonData.io_examples) ? jsonData.io_examples : [];
-                         this.copyUengineProperties.io_examples = raw;
+                         this.ioExamples = raw;
                          this.ioExamplesGood = raw.filter(ex => ex.output === true);
                          this.ioExamplesBad = raw.filter(ex => ex.output === false);
+                         if (this.copyUengineProperties.hasOwnProperty('io_examples')) delete this.copyUengineProperties.io_examples;
                          this.$emit('update:uengineProperties', this.copyUengineProperties);
-                         // Open the generation result dialog
                          this.generationDialog = true;
                      }
  
@@ -304,7 +314,7 @@ export default {
                 return { fieldKey: key, trueValues };
             };
 
-            const singleFieldTarget = buildSingleFieldTarget(this.copyUengineProperties.io_examples || []);
+            const singleFieldTarget = buildSingleFieldTarget(this.ioExamples || []);
 
             // Backup previous function before generation
             this.previousConditionFunction = this.copyUengineProperties.conditionFunction;
@@ -319,11 +329,11 @@ export default {
                 generatorOptions.condition = this.copyUengineProperties.condition;
             }
             if (!isInitial) {
-                generatorOptions.expectedIoExamples = Array.isArray(this.copyUengineProperties.io_examples)
-                    ? this.copyUengineProperties.io_examples.map(ex => ({ input: ex.input, output: ex.output, mismatch: !!ex.mismatch }))
+                generatorOptions.expectedIoExamples = Array.isArray(this.ioExamples)
+                    ? this.ioExamples.map(ex => ({ input: ex.input, output: ex.output, mismatch: !!ex.mismatch }))
                     : [];
                 generatorOptions.singleFieldTarget = singleFieldTarget;
-                const hasAnyMismatch = (this.copyUengineProperties.io_examples || []).some(ex => !!ex.mismatch);
+                const hasAnyMismatch = (this.ioExamples || []).some(ex => !!ex.mismatch);
                 if (!hasAnyMismatch) {
                     generatorOptions.previousExpr = this.copyUengineProperties.conditionFunction || '';
                 }
@@ -402,12 +412,14 @@ export default {
             }
         },
         clearIoExamples() {
-            this.copyUengineProperties.io_examples = [];
+            this.ioExamples = [];
+            if (this.copyUengineProperties.hasOwnProperty('io_examples')) delete this.copyUengineProperties.io_examples;
             this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
         
         updateMismatchItem(example, val) {
             example.mismatch = !!val;
+            if (this.copyUengineProperties.hasOwnProperty('io_examples')) delete this.copyUengineProperties.io_examples;
             this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
         // addCondition() {
@@ -441,6 +453,10 @@ export default {
                 delete this.copyUengineProperties.priority;
             }
         },
+        updateConditionFunction(fn) {
+            this.copyUengineProperties.conditionFunction = fn || '';
+            this.$emit('update:uengineProperties', this.copyUengineProperties)
+        },
         updateExamples(examples) {
             this.copyUengineProperties.examples = examples;
             this.$emit('update:uengineProperties', this.copyUengineProperties)
@@ -453,6 +469,11 @@ export default {
                 return;
             }
             
+            // Ensure io_examples are not persisted into uengineProperties
+            if (this.copyUengineProperties && this.copyUengineProperties.hasOwnProperty('io_examples')) {
+                delete this.copyUengineProperties.io_examples;
+            }
+
             if (!this.name || this.name == '') {
                 if (this.mode !== 'ProcessGPT') {
                     let name = 'condition'

@@ -166,11 +166,24 @@
 
                 <!-- 에이전트 타이틀 + 목록 -->
                 <div v-if="isShowAgentList" class="mb-4">
-                    <div class="d-flex align-center justify-between">
+                    <v-row class="align-center justify-between pa-0 ma-0">
                         <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}
                         </div>
-                    </div>
+                        <div v-for="item in organizationItem" :key="item.title">
+                            <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
+                                <template v-slot:activator="{ props }">
+                                    <Icons @click="navigateTo(item.to)" v-bind="props"
+                                        class="ml-2"
+                                        :icon="item.icon"
+                                        :size="item.size || 20"
+                                        :color="'#808080'"
+                                        style="cursor: pointer;"
+                                    />
+                                </template>
+                            </v-tooltip>
+                        </div>
+                    </v-row>
                     <v-col class="pa-0">
                         <AgentList/>
                     </v-col>
@@ -321,6 +334,7 @@ export default {
     data: () => ({
         sidebarItem: [],
         instanceItem: [],
+        organizationItem: [],
         definitionItem: [],
         definitionList: null,
         logoPadding: '',
@@ -382,6 +396,7 @@ export default {
                     this.loadSidebar();
                 } else {
                     this.instanceItem = [];
+                    this.organizationItem = [];
                     this.definitionItem = [];
                     this.definitionList = [];
                 }
@@ -410,13 +425,6 @@ export default {
                     icon: 'document',
                     BgColor: 'primary',
                     to: '/ui-definitions/chat',
-                    disable: true
-                },
-                {
-                    title: 'organizationChartDefinition.title',
-                    icon: 'users-group-rounded-line-duotone',
-                    BgColor: 'primary',
-                    to: '/organization',
                     disable: true
                 },
                 {
@@ -481,6 +489,16 @@ export default {
                     to: '/list-pages/completed',
                     size: 20
                 },
+            ],
+            this.organizationItem = [
+                {
+                    title: 'organizationChartDefinition.title',
+                    icon: 'users-group-rounded-line-duotone',
+                    BgColor: 'primary',
+                    to: '/organization',
+                    disable: false,
+                    size: 20
+                },
             ]
             if (this.mode === 'ProcessGPT') {
                 this.definitionItem = this.definitionItem.filter((item) => 
@@ -499,6 +517,11 @@ export default {
                     }
                 });
                 this.instanceItem.forEach((item) => {
+                    if (item.disable) {
+                        item.disable = false;
+                    }
+                });
+                this.organizationItem.forEach((item) => {
                     if (item.disable) {
                         item.disable = false;
                     }

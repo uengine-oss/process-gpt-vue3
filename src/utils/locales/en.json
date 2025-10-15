@@ -16,7 +16,8 @@
         "savedMarketplace": "Saved to marketplace."
     },
     "errorMsg": {
-        "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational."
+        "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
+        "languageChangeFailed": "Failed to change language settings."
     },
     "App": {
         "view": "Read more"
@@ -70,7 +71,11 @@
         "inProgress": "In Progress",
         "pending": "Pending/Returned",
         "done": "Done",
-        "addTask": "Add Task"
+        "addTask": "Add Task",
+        "sort": "Sort",
+        "sortByDueDate": "Due Date (Nearest)",
+        "sortByStartDate": "Start Date (Recent)",
+        "endOfList": "All tasks have been reviewed"
     },
     "calendar": {
         "title": "Calendar",
@@ -419,7 +424,9 @@
         "mcpEnvironments": "MCP Environments",
         "showSecretData": "Show Secret Data",
         "indicatesRequiredField": "*Environment variable configuration is required.",
-        "billing": "Billing"
+        "billing": "Billing",
+        "confirmDeleteConnectionTitle": "Delete Connection Info",
+        "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -505,7 +512,7 @@
         "subProcessNamePattern": "Sub-Process Name Pattern",
         "condition": "Condition",
         "priority": "Priority",
-        "description": "Description",
+        "description": "Overview",
         "inputData": "Input Data",
         "outputData": "Output Data",
         "checkPoints": "Checkpoints",

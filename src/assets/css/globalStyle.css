@@ -6,6 +6,15 @@ hr {
     opacity: 1 !important;
 }
 
+
+.todo-task-item-card-style:not(:first-of-type) {
+    margin-top: 8px;
+}
+
+.todo-task-item-card-style:last-child {
+    margin-bottom: 8px;
+}
+
 .version-manager-vuediff-box {
     height: 100% !important;
     overflow-y: auto !important;
@@ -63,8 +72,29 @@ hr {
     overflow: auto;
 }
 
+.sort-chip-select-wrapper .v-field__input {
+    padding: 4px 0px 0px 0px !important;
+}
+
+.sort-chip-select-wrapper .v-field__append-inner {
+    padding: 5px 0px 0px 0px !important;
+}
+
+.sort-chip-select-wrapper  .v-field__append-inner {
+    width: 24px !important;
+}
+
+.language-chip-select-wrapper,
 .chip-select-wrapper {
     padding-right: 0px !important;
+}
+.language-chip-select-wrapper .v-field__input {
+    padding: 0px !important;
+    font-size: 14px;
+}
+
+.language-chip-select-wrapper .v-field__append-inner {
+    padding-top: 4px !important;
 }
 
 .chip-select-wrapper .v-field__input {
@@ -696,10 +726,11 @@ hr {
 }
 
 .node-content-icon {
-    width: 10px;
-    height: 10px;
-    object-fit: contain;
-    filter: invert(30%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(100%);
+    font-size: 14px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 /* skeleton 관련 style */
 .tutorial-main-skeleton .v-skeleton-loader__heading {

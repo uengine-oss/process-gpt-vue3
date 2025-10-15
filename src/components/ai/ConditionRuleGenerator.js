@@ -82,6 +82,7 @@ HARD CONSTRAINTS
 REGENERATION RULE
 - If ANY item in expected_io_examples has mismatch == true, you MUST MODIFY the expression. Do not return the same expression as before.
 - If previous_expr is provided, the returned python_expr MUST be textually different from previous_expr, while using minimal edits necessary to satisfy all targets.
+ - Regardless of previous_expr content, the returned python_expr MUST include the '<form_key>:' prefix per 1b. If previous_expr lacks this prefix, still return with the correct prefix (use target_form_key if provided; otherwise resolve per 1a) and ensure the boolean part references only bare field keys.
  
 PRIORITY / CONFLICT RESOLUTION
 - When sources conflict, follow this priority order:
