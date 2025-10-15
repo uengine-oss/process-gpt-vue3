@@ -3,20 +3,38 @@
         <div class="pa-4" :class="this.globalIsMobile.value ? 'todolist-card-box-is-mobile' : 'todolist-card-box'">
             <div class="d-flex align-center justify-space-between ml-2">
                 <h5 class="text-h5 font-weight-semibold">{{ ($t('todoList.title')) }}</h5>
-
-                <!-- '나의 업무'에서 기존 TODO였던 '예정 업무' 부분에 업무를 등록하던 버튼은 '예정 업무'가 제거되면서 주석 처리됨 -->
-                <!-- <v-avatar v-if="mode === 'ProcessGPT'"
-                    size="24" elevation="10" class="bg-surface d-flex align-center cursor-pointer"
-                    @click="openDialog"
+                <v-spacer></v-spacer>
+                
+                <!-- 정렬 옵션 -->
+                <v-chip
+                    variant="outlined"
+                    color="gray"
+                    class="sort-chip-select-wrapper mr-3"
+                    size="small"
                 >
-                    <v-tooltip activator="parent" location="left">{{ ($t('todoList.addTask')) }}</v-tooltip>
-                    <PlusIcon size="24" stroke-width="2" />
-                </v-avatar> -->
+                    <v-select
+                        v-model="sortOption"
+                        :items="sortOptions"
+                        item-title="label"
+                        item-value="value"
+                        variant="plain"
+                        density="compact"
+                        hide-details
+                    >
+                        <template v-slot:selection="{ item }">
+                            <span style="font-size: 13px;">{{ item.raw.label }}</span>
+                        </template>
+                    </v-select>
+                </v-chip>
             </div>
             <KanbanBoard
                 :columns="filteredTodolist"
+                :hasMore="hasMore"
+                :loading="loading"
+                :pages="pages"
                 :isNotAll="false"
                 :showAddButton="false"
+                :sortOption="sortOption"
                 @loadMore="handleLoadMore"
                 @updateStatus="updateStatus"
             />
@@ -42,40 +60,67 @@ export default {
         KanbanBoard,
         TodoDialog
     },
-    data: () => ({
-        todolist: [
-            {
-                id: 'IN_PROGRESS',
-                title: 'todoList.inProgress',
-                cardbg: 'lightsecondary',
-                tasks: []
+    data() {
+        return {
+            todolist: [
+                {
+                    id: 'IN_PROGRESS',
+                    title: 'todoList.inProgress',
+                    cardbg: 'lightsecondary',
+                    tasks: []
+                },
+                {
+                    id: 'PENDING',
+                    title: 'todoList.pending',
+                    cardbg: 'lightinfo',
+                    tasks: []
+                },
+                {
+                    id: 'TODO',
+                    title: 'todoList.todo',
+                    cardbg: 'background',
+                    tasks: []
+                },
+                {
+                    id: 'DONE',
+                    title: 'todoList.done',
+                    cardbg: 'lightsuccess',
+                    tasks: []
+                }
+            ],
+            dialog: false,
+            pages: {
+                IN_PROGRESS: 0,
+                PENDING: 0,
+                TODO: 0,
+                DONE: 0
             },
-            {
-                id: 'PENDING',
-                title: 'todoList.pending',
-                cardbg: 'lightinfo',
-                tasks: []
+            hasMore: {
+                IN_PROGRESS: true,
+                PENDING: true,
+                TODO: true,
+                DONE: true
             },
-            {
-                id: 'TODO',
-                title: 'todoList.todo',
-                cardbg: 'background',
-                tasks: []
+            loading: {
+                IN_PROGRESS: false,
+                PENDING: false,
+                TODO: false,
+                DONE: false
             },
-            {
-                id: 'DONE',
-                title: 'todoList.done',
-                cardbg: 'lightsuccess',
-                tasks: []
-            }
-        ],
-        dialog: false,
-        currentPage: 0,
-        deletedInstances: null
-    }),
+            deletedInstances: null,
+            sortOption: 'startDate',
+            pageSize: 10
+        };
+    },
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        sortOptions() {
+            return [
+                { value: 'startDate', label: this.$t('todoList.sortByStartDate') },
+                { value: 'dueDate', label: this.$t('todoList.sortByDueDate') }
+            ];
         },
         filteredTodolist() {
             // 삭제된 인스턴스들의 proc_inst_id 배열 생성
@@ -93,10 +138,12 @@ export default {
         }
     },
     async mounted() {
+        await this.loadDeletedInstance();
         await Promise.all([
-            this.loadToDo(),
-            this.loadCompletedWorkList(),
-            this.loadDeletedInstance()
+            this.loadWorkListByStatus('IN_PROGRESS'),
+            this.loadWorkListByStatus('PENDING'),
+            this.loadWorkListByStatus('TODO'),
+            this.loadWorkListByStatus('DONE')
         ]);
     },
     methods: {
@@ -109,47 +156,92 @@ export default {
                 }
             })
         },
-        handleLoadMore(page) {
-            this.loadCompletedWorkList();
+        handleLoadMore(columnId) {
+            if (this.loading[columnId]) {
+                return;
+            }
+            
+            if (!this.hasMore[columnId]) {
+                return;
+            }
+            
+            this.pages[columnId]++;
+            this.loadWorkListByStatus(columnId);
         },
-        loadToDo() {
-            var me = this
+        async loadWorkListByStatus(status) {
+            var me = this;
+            
+            // 로딩 시작
+            me.loading[status] = true;
+            
             me.$try({
                 context: me,
                 action: async () => {
                     const userId = localStorage.getItem('uid');
-                    let worklist = await backend.getWorkList({userId: userId})
-                    if(!worklist) worklist = []
+                    let requestOptions = {
+                        page: me.pages[status],
+                        size: me.pageSize
+                    };
+
+                    // status별로 다른 API 호출
+                    let worklist;
+                    if (status === 'DONE') {
+                        worklist = await backend.getCompletedList(requestOptions);
+                    } else if (status === 'IN_PROGRESS') {
+                        requestOptions.status = 'IN_PROGRESS';
+                        requestOptions.userId = userId;
+                        worklist = await backend.getWorkList(requestOptions);
+                    } else if (status === 'PENDING') {
+                        requestOptions.status = 'PENDING';
+                        requestOptions.userId = userId;
+                        worklist = await backend.getWorkList(requestOptions);
+                    } else if (status === 'TODO') {
+                        // TODO는 여러 상태를 포함 (TODO, NEW, DRAFT)
+                        requestOptions.userId = userId;
+                        let allWorklist = await backend.getWorkList(requestOptions);
+                        worklist = allWorklist.filter(item => 
+                            item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT'
+                        );
+                    }
+                    
+                    if (!worklist) worklist = [];
+                    
+                    // 더 이상 데이터가 없는지 확인
+                    if (worklist.length < me.pageSize) {
+                        me.hasMore[status] = false;
+                    }
+                    
+                    const column = me.todolist.find(x => x.id === status);
+                    
                     worklist.forEach(function(item) {
-                        if (item.status == 'TODO' || item.status == 'NEW' || item.status == 'DRAFT') {
-                            me.todolist.find(x => x.id == 'TODO').tasks.push(item);
-                        } else if (item.status == 'IN_PROGRESS' || item.status == 'SUBMITTED') {
-                            me.todolist.find(x => x.id == 'IN_PROGRESS').tasks.push(item);
-                        } else if (item.status == 'PENDING') {
-                            me.todolist.find(x => x.id == 'PENDING').tasks.push(item);
-                        } 
-                    })
-                }
-            })
-        },
-        loadCompletedWorkList() {
-            var me = this
-            me.$try({
-                context: me,
-                action: async () => {
-                    let worklist = await backend.getCompletedList({page: me.currentPage, size: 10});
-                    if(!worklist) worklist = []
-                    worklist.forEach(function(item) {
-                        if (item.status == 'DONE' || item.status == 'COMPLETED') {
-                            var tasks = me.todolist.find(x => x.id == 'DONE').tasks
-                            var taskExist = tasks.find(task => task.taskId == item.taskId)
-                            if(!taskExist) {
-                                tasks.push(item);
+                        // 상태별 매칭 (IN_PROGRESS는 SUBMITTED도 포함)
+                        let shouldAdd = false;
+                        if (status === 'IN_PROGRESS' && (item.status === 'IN_PROGRESS' || item.status === 'SUBMITTED')) {
+                            shouldAdd = true;
+                        } else if (status === 'TODO' && (item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT')) {
+                            shouldAdd = true;
+                        } else if (status === 'DONE' && (item.status === 'DONE' || item.status === 'COMPLETED')) {
+                            shouldAdd = true;
+                        } else if (item.status === status) {
+                            shouldAdd = true;
+                        }
+
+                        if (shouldAdd) {
+                            const taskExist = column.tasks.find(task => task.taskId === item.taskId);
+                            if (!taskExist) {
+                                column.tasks.push(item);
                             }
                         }
-                    })
+                    });
+                    
+                    // 로딩 완료
+                    me.loading[status] = false;
+                },
+                onFail: () => {
+                    // 에러 발생 시에도 로딩 상태 해제
+                    me.loading[status] = false;
                 }
-            })
+            });
         },
         updateStatus(taskId, originColumnId) {
             let task;

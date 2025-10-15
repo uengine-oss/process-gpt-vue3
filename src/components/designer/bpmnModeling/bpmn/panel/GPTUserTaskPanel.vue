@@ -12,11 +12,12 @@
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
                 <!-- Duration -->
-                <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="my-4"></v-text-field>
-                <!-- Instruction -->
-                <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
+                <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="mb-4"></v-text-field>
                 <!-- Description -->
                 <Description v-model="activity.description" class="mb-4"></Description>
+                
+                <!-- Instruction -->
+                <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <!-- Checkpoints -->
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
                 <!-- Attachments -->

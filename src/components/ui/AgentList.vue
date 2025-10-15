@@ -79,6 +79,80 @@ export default {
         this.EventBus.off('agentDeleted', this.handleAgentUpdate);
     },
     methods: {
+        // 로컬스토리지에서 최근 열람 정보 가져오기
+        getRecentlyViewedAgents() {
+            try {
+                const stored = localStorage.getItem('recentlyViewedAgents');
+                return stored ? JSON.parse(stored) : [];
+            } catch (error) {
+                console.error('Failed to load recently viewed agents:', error);
+                return [];
+            }
+        },
+
+        // 로컬스토리지에 최근 열람 정보 저장
+        saveRecentlyViewedAgent(agentId) {
+            try {
+                let recentAgents = this.getRecentlyViewedAgents();
+                
+                // 기존 항목 제거 (중복 방지)
+                recentAgents = recentAgents.filter(item => item.id !== agentId);
+                
+                // 새 항목을 맨 앞에 추가
+                recentAgents.unshift({
+                    id: agentId,
+                    timestamp: Date.now()
+                });
+                
+                // 최대 50개까지만 저장 (오래된 항목 제거)
+                if (recentAgents.length > 50) {
+                    recentAgents = recentAgents.slice(0, 50);
+                }
+                
+                localStorage.setItem('recentlyViewedAgents', JSON.stringify(recentAgents));
+            } catch (error) {
+                console.error('Failed to save recently viewed agent:', error);
+            }
+        },
+
+        // 에이전트 목록을 최근 열람 순으로 정렬
+        sortAgentsByRecentlyViewed(agents) {
+            const recentlyViewed = this.getRecentlyViewedAgents();
+            
+            // 최근 열람 정보를 Map으로 변환 (빠른 검색을 위해)
+            const viewedMap = new Map();
+            recentlyViewed.forEach((viewedAgent, index) => {
+                viewedMap.set(viewedAgent.id, {
+                    timestamp: viewedAgent.timestamp,
+                    order: index
+                });
+            });
+            
+            // 에이전트 정렬
+            return agents.sort((currentAgent, compareAgent) => {
+                const currentAgentViewInfo = viewedMap.get(currentAgent.id);
+                const compareAgentViewInfo = viewedMap.get(compareAgent.id);
+                
+                // 둘 다 최근 열람 기록이 있는 경우 - 더 최근에 본 것을 앞으로
+                if (currentAgentViewInfo && compareAgentViewInfo) {
+                    return currentAgentViewInfo.order - compareAgentViewInfo.order;
+                }
+                
+                // 현재 에이전트만 최근 열람 기록이 있는 경우 - 앞으로 배치
+                if (currentAgentViewInfo) {
+                    return -1;
+                }
+                
+                // 비교 에이전트만 최근 열람 기록이 있는 경우 - 뒤로 배치
+                if (compareAgentViewInfo) {
+                    return 1;
+                }
+                
+                // 둘 다 열람 기록이 없는 경우 - 이름순으로 정렬
+                return (currentAgent.name || '').localeCompare(compareAgent.name || '');
+            });
+        },
+
         async loadAgentList() {
             this.isLoading = true;
             try {
@@ -95,7 +169,8 @@ export default {
                         type: agent.agent_type || 'agent'
                     }));
                     
-                    this.agentList = processedAgents;
+                    // 최근 열람 순으로 정렬
+                    this.agentList = this.sortAgentsByRecentlyViewed(processedAgents);
                 } else {
                     this.agentList = [];
                 }
@@ -110,6 +185,12 @@ export default {
         },
         
         goToAgentChat(agentId) {
+            // 로컬스토리지에 최근 열람 정보 저장
+            this.saveRecentlyViewedAgent(agentId);
+            
+            // 에이전트 목록 재정렬
+            this.agentList = this.sortAgentsByRecentlyViewed([...this.agentList]);
+            
             // AgentBadgesDiagram.vue의 goToAgentChat 메서드와 동일한 방식으로 라우터 이동
             this.$router.push(`/agent-chat/${agentId}`);
         },
@@ -159,6 +240,9 @@ export default {
                 };
                 this.agentList.push(newAgent);
             }
+            
+            // 업데이트 후 최근 열람 순으로 재정렬
+            this.agentList = this.sortAgentsByRecentlyViewed([...this.agentList]);
         },
 
         onExpanded() {

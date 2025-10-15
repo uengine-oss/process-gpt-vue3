@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="enableEdit" class="proc-menu-btn-box text-right">
-            <v-tooltip text="권한 설정">
+            <v-tooltip :text="$t('ProcessMenu.setPermission')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="setPermission"
                         icon v-bind="props"
@@ -12,7 +12,7 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip v-if="type == 'sub'" text="프로세스 편집">
+            <v-tooltip v-if="type == 'sub'" :text="$t('ProcessMenu.editProcess')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="editProcess"
                         icon v-bind="props"
@@ -23,7 +23,7 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip v-if="type != 'map'" text="수정">
+            <v-tooltip v-if="type != 'map'" :text="$t('ProcessMenu.edit')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="openEditDialog('update')"
                         icon v-bind="props"
@@ -34,7 +34,7 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip v-if="type != 'map'" text="삭제">
+            <v-tooltip v-if="type != 'map'" :text="$t('ProcessMenu.delete')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="deleteProcess"
                         icon v-bind="props"

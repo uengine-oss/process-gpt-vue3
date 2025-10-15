@@ -71,7 +71,11 @@
         "inProgress": "In Progress",
         "pending": "Pending/Returned",
         "done": "Done",
-        "addTask": "Add Task"
+        "addTask": "Add Task",
+        "sort": "Sort",
+        "sortByDueDate": "Due Date (Nearest)",
+        "sortByStartDate": "Start Date (Recent)",
+        "endOfList": "All tasks have been reviewed"
     },
     "calendar": {
         "title": "Calendar",
@@ -508,7 +512,7 @@
         "subProcessNamePattern": "Sub-Process Name Pattern",
         "condition": "Condition",
         "priority": "Priority",
-        "description": "Description",
+        "description": "Overview",
         "inputData": "Input Data",
         "outputData": "Output Data",
         "checkPoints": "Checkpoints",
@@ -1754,5 +1758,11 @@
         "processName": "Process Name",
         "save": "Save",
         "close": "Close"
+    },
+    "ProcessMenu": {
+        "setPermission": "Set Permission",
+        "editProcess": "Edit Process",
+        "edit": "Edit",
+        "delete": "Delete"
     }
 }
