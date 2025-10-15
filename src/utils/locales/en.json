@@ -1751,5 +1751,11 @@
         "processName": "Process Name",
         "save": "Save",
         "close": "Close"
+    },
+    "ProcessMenu": {
+        "setPermission": "Set Permission",
+        "editProcess": "Edit Process",
+        "edit": "Edit",
+        "delete": "Delete"
     }
 }

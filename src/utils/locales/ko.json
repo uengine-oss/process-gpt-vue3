@@ -1751,5 +1751,11 @@
         "processName": "프로세스명",
         "save": "저장",
         "close": "닫기"
+    },
+    "ProcessMenu": {
+        "setPermission": "권한 설정",
+        "editProcess": "프로세스 편집",
+        "edit": "수정",
+        "delete": "삭제"
     }
 }
