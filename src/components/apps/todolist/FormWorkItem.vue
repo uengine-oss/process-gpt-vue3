@@ -323,7 +323,7 @@ export default {
                     
                     if(!me.formDefId) {
                         if (me.mode == 'ProcessGPT') {
-                            me.formDefId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.workItem.worklist.defId}_${me.workItem.activity.tracingTag}_form`
+                            me.formDefId = 'defaultform';
                         } else {
                             return;
                         }

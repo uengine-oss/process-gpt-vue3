@@ -11,10 +11,8 @@
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
-                <div class="mb-4">{{ $t('BpmnPropertyPanel.role') }}: {{ copyUengineProperties.role ? copyUengineProperties.role.name : '' }}</div>
-                <!-- <v-text-field v-model="name" label="이름" autofocus class="mb-4"></v-text-field> -->
                 <!-- Duration -->
-                <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="mb-4"></v-text-field>
+                <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="my-4"></v-text-field>
                 <!-- Instruction -->
                 <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <!-- Description -->
@@ -146,7 +144,8 @@ export default {
                 description: '',
                 checkpoints: [''],
                 agentMode: 'none',
-                orchestration: 'none'
+                orchestration: 'none',
+                tool: ''
             },
             formId: '',
             tempFormHtml: '',
@@ -172,6 +171,14 @@ export default {
     },
     created() {
         this.backend = BackendFactory.createBackend();
+        if (this.copyUengineProperties) {
+            this.activity.duration = this.copyUengineProperties.duration || 5;
+            this.activity.description = this.copyUengineProperties.description || '';
+            this.activity.instruction = this.copyUengineProperties.instruction || '';
+            this.activity.checkpoints = this.copyUengineProperties.checkpoints || [];
+            this.activity.tool = this.copyUengineProperties.tool || '';
+        }
+
         if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
             const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
             if (activity) {
@@ -263,7 +270,7 @@ export default {
             if(me.isPreviewMode){
                 me.activeTab = 'preview'
             }
-            me.formId = me.copyUengineProperties.variableForHtmlFormContext? me.copyUengineProperties.variableForHtmlFormContext.name : '';
+            me.formId = me.activity.tool != '' && me.activity.tool.includes('formHandler:') ? me.activity.tool.replace('formHandler:', '') : '';
             if (!me.formId || me.formId == '') {
                 let formId = '';
                 if (!me.processDefinition || !me.processDefinition.processDefinitionId) {
@@ -271,10 +278,10 @@ export default {
                 } else {
                     formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
                 }
-                formId = formId.toLowerCase();
-                formId = formId.replace(/[/.]/g, "_");
+                formId = formId.toLowerCase().replace(/[/.]/g, "_");
                 me.formId = formId;
             }
+
             const options = {
                 type: 'form',
                 match: {
@@ -296,29 +303,11 @@ export default {
                 me.tempFormHtml = await me.backend.getRawDefinition('defaultform', { type: 'form' });
             }
             
-            me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-            me.copyUengineProperties.role = {'name': me.role || ''};
-            me.copyUengineProperties.variableForHtmlFormContext = {name: me.formId};
-            // me.copyUengineProperties.parameters = [];
             me.copyDefinition = me.definition;
         },
         async beforeSave() {
             var me = this;
-            if (me.formId == '' || me.formId == null || me.formId.includes('undefined')) {
-                let formId = '';
-                if (!me.processDefinition || !me.processDefinition.processDefinitionId) {
-                    formId = me.element.id + '_form';
-                } else {
-                    formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
-                }
-                formId = formId.toLowerCase();
-                formId = formId.replace(/[/.]/g, "_");
-                me.formId = formId;
-            }
             
-            me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-            me.copyUengineProperties.variableForHtmlFormContext = {name: me.formId};
-
             const options = {
                 type: 'form',
                 proc_def_id: me.processDefinition.processDefinitionId,
@@ -340,7 +329,16 @@ export default {
                     localStorage.setItem(me.formId, me.tempFormHtml);
                 }
             }
-            
+            me.activity.tool = `formHandler:${me.formId}`;
+
+            me.copyUengineProperties = {
+                duration: me.activity.duration,
+                instruction: me.activity.instruction,
+                description: me.activity.description,
+                checkpoints: me.activity.checkpoints,
+                tool: me.activity.tool
+            };
+            me.activity.properties = JSON.stringify(me.copyUengineProperties);
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },
         onFileChange(files) {
@@ -365,6 +363,7 @@ export default {
 
         async getPreviousForms() {
             const prevForms = await this.backend.getPreviousForms(this.element.id, this.processDefinition.processDefinitionId);
+            console.log(prevForms);
             this.availableForms = prevForms.map((form) => {
                 return {
                     formId: form.id,

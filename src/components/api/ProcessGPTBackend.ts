@@ -507,8 +507,8 @@ class ProcessGPTBackend implements Backend {
                             item.variable.defaultValue = instance[item.variable.name.toLowerCase().replace(/ /g, '_')] || "";
                         })
                     }
-                    if (properties.variableForHtmlFormContext && properties.variableForHtmlFormContext.name) {
-                        outParameterContext.variable.name = properties.variableForHtmlFormContext.name;
+                    if (activityInfo.tool && activityInfo.tool.includes('formHandler:')) {
+                        outParameterContext.variable.name = activityInfo.tool.replace('formHandler:', '');
                     }
                 }
             }
@@ -893,7 +893,7 @@ class ProcessGPTBackend implements Backend {
             const defInfo = await this.getRawDefinition(procDefId, null);
             const definition = defInfo.definition;
             const prevActivities = this.getPreviousActivitiesWithSubProcess(activityId, definition);
-            
+            console.log(prevActivities);
             if (prevActivities.length > 0) {
                 const formPromises = prevActivities.map(async (activity: any) => {
                     // tool이 formHandler로 시작하는 경우만 처리
