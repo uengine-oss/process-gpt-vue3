@@ -179,21 +179,26 @@ class ProcessGPTBackend implements Backend {
                         tenant_id: window.$tenantName
                     }
                 });
+
+                let putObj = {}
                 if(formDef) {
-                    formDef.html = xml;
-                    if (fieldsJson) {
-                        formDef.fields_json = fieldsJson;
+                    putObj = {
+                        id: formDef.id,
+                        html: xml,
+                        proc_def_id: formDef.proc_def_id,
+                        activity_id: formDef.activity_id,
+                        fields_json: fieldsJson
                     }
-                    await storage.putObject('form_def', formDef);
                 } else {
-                    await storage.putObject('form_def', {
+                    putObj = {
                         id: defId.replace(/\//g, "#"),
                         html: xml,
                         proc_def_id: defId == 'defaultform' ? 'default' : options.proc_def_id,
                         activity_id: defId == 'defaultform' ? 'default' : options.activity_id,
                         fields_json: fieldsJson
-                    });
+                    }
                 }
+                await storage.putObject('form_def', putObj);
                 return
             }
 
@@ -902,7 +907,7 @@ class ProcessGPTBackend implements Backend {
         try {
             if (definition) {
                 const prevActivities = this.getPreviousActivitiesWithSubProcess(activityId, definition);
-                console.log(prevActivities);
+
                 if (prevActivities.length > 0) {
                     const formPromises = prevActivities.map(async (activity: any) => {
                         // tool이 formHandler로 시작하는 경우만 처리
