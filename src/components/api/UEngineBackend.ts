@@ -1013,6 +1013,23 @@ class UEngineBackend implements Backend {
         console.warn("method is not implemented only use Process-GPT Mode");
     }
 
+    async getBrowserUseSecretByTenant(): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
+    }
+
+    async createBrowserUseSecretByTenant(data: any): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+    }
+
+    async updateBrowserUseSecretByTenant(data: any): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+    }
+
+    async deleteBrowserUseSecretByTenant(name: string): Promise<any> {
+        console.warn("method is not implemented only use Process-GPT Mode");
+    }
+
     async getMCPLists(): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
         return null;

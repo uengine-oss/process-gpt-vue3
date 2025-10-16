@@ -99,12 +99,16 @@ export interface Backend {
     callDataSource(dataSource: any, bodyData: any): Promise<any>;
     getEnvByTenant(): Promise<any>;
     getSecretByTenant(): Promise<any>;
+    getBrowserUseSecretByTenant(): Promise<any>;
     deleteEnvByTenant(name: string): Promise<any>;
     deleteSecretByTenant(name: string): Promise<any>;
+    deleteBrowserUseSecretByTenant(name: string): Promise<any>;
     createEnvByTenant(data: any): Promise<any>;
     createSecretByTenant(data: any): Promise<any>;
+    createBrowserUseSecretByTenant(data: any): Promise<any>;
     updateEnvByTenant(data: any): Promise<any>;
     updateSecretByTenant(data: any): Promise<any>;
+    updateBrowserUseSecretByTenant(data: any): Promise<any>;
     getMCPLists(): Promise<any>;
 }
 
