@@ -46,9 +46,12 @@ export default {
         }
     },
     mounted() {
-        this.EventBus.on('get-process-definition', async() => {
+        // 최신 XML 반영된 processDefinition을 콜백으로 전달
+        this.EventBus.on('get-process-definition', async(callback) => {
             const processDefinition = await this.convertXMLToJSON(this.bpmn);
-            this.processDefinition = processDefinition;
+            if (callback && typeof callback === 'function') {
+                callback(processDefinition);
+            }
         });
     },
     methods: {

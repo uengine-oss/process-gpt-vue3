@@ -380,16 +380,29 @@ export default {
             this.$try({
                 context: me,
                 action: async () => {
-                    // processDefinition 객체를 직접 전달로 변경
-                    me.EventBus.emit('get-process-definition');
-                    let definition = me.processDefinition;
-                    const prevForms = await me.backend.getPreviousForms(me.element.id, definition);
-                    me.availableForms = prevForms.map((form) => {
-                        return {
-                            formId: form.id,
-                            title: form.title,
-                            fields: form.fields_json || []
+                    console.log('[GPTUserTaskPanel] get-process-definition 이벤트 발생');
+                    
+                    // EventBus를 통해 최신 processDefinition을 가져와서 바로 처리
+                    me.EventBus.emit('get-process-definition', async (processDefinition) => {
+                        console.log('[GPTUserTaskPanel] 콜백 수신:', processDefinition);
+                        console.log('[GPTUserTaskPanel] processDefinition 타입:', typeof processDefinition);
+                        console.log('[GPTUserTaskPanel] activities:', processDefinition?.activities);
+                        
+                        if (!processDefinition || !processDefinition.activities) {
+                            console.error('[GPTUserTaskPanel] processDefinition이 비어있거나 activities가 없습니다.');
+                            return;
                         }
+                        
+                        const prevForms = await me.backend.getPreviousForms(me.element.id, processDefinition);
+                        console.log('[GPTUserTaskPanel] 조회된 이전 폼:', prevForms);
+                        
+                        me.availableForms = prevForms.map((form) => {
+                            return {
+                                formId: form.id,
+                                title: form.title,
+                                fields: form.fields_json || []
+                            }
+                        });
                     });
                 }
             });
