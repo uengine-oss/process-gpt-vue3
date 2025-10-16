@@ -180,23 +180,18 @@ class ProcessGPTBackend implements Backend {
                     }
                 });
 
-                let putObj = {}
+                let putObj: any = {
+                    html: xml,
+                    fields_json: fieldsJson
+                }
                 if(formDef) {
-                    putObj = {
-                        id: formDef.id,
-                        html: xml,
-                        proc_def_id: formDef.proc_def_id,
-                        activity_id: formDef.activity_id,
-                        fields_json: fieldsJson
+                    if (!formDef.id) {
+                        putObj.id = defId.replace(/\//g, "#");
                     }
                 } else {
-                    putObj = {
-                        id: defId.replace(/\//g, "#"),
-                        html: xml,
-                        proc_def_id: defId == 'defaultform' ? 'default' : options.proc_def_id,
-                        activity_id: defId == 'defaultform' ? 'default' : options.activity_id,
-                        fields_json: fieldsJson
-                    }
+                    putObj.id = defId.replace(/\//g, "#");
+                    putObj.proc_def_id = options.proc_def_id;
+                    putObj.activity_id = options.activity_id;
                 }
                 await storage.putObject('form_def', putObj);
                 return
