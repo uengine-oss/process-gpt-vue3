@@ -1,6 +1,7 @@
 <template>
     <!-- <BrowserAgent v-if="openBrowserAgent" :html="html" :workItem="workItem" :doneWorkItemList="doneWorkItemList" /> -->
     <div class="agent-monitor" :class="{ 'actions-mode': isActionsMode }">
+        <InfoAlert :howToUseInfo="howToUseInfo" />
         <div class="task-area" ref="taskArea">
             <div v-if="errorMessage" class="error-banner">{{ errorMessage }}</div>
             
@@ -110,6 +111,7 @@ import BrowserAgent from '@/components/BrowserAgent.vue'
 import Chat from '@/components/ui/Chat.vue'
 import EventTimeline from '@/components/ui/EventTimeline.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import InfoAlert from '@/components/ui/InfoAlert.vue'
 
 import BackendFactory from '@/components/api/BackendFactory'
 const backend = BackendFactory.createBackend()
@@ -120,7 +122,8 @@ export default {
         Chat,
         BrowserAgent,
         EventTimeline,
-        EmptyState
+        EmptyState,
+        InfoAlert
     },
     props: {
         html: {
@@ -195,6 +198,11 @@ export default {
             showBrowserIframe: false,
             browserIframeUrl: '',
             browserDialog: false,
+
+            // chat인포 관련
+            // howToUseInfo : {
+            //     text: '액션 모드'
+            // }
         }
     },
     computed: {
