@@ -127,7 +127,6 @@ export default {
         element: Object,
         isViewMode: Boolean,
         isPreviewMode: Boolean,
-        role: String,
         roles: Array,
         variableForHtmlFormContext: Object,
         definition: Object,
@@ -139,6 +138,7 @@ export default {
             copyDefinition: null,
             backend: null,
             activity: {
+                role: '',
                 duration: 5,
                 attachments: [],
                 instruction: '',
@@ -146,7 +146,8 @@ export default {
                 checkpoints: [''],
                 agentMode: 'none',
                 orchestration: 'none',
-                tool: ''
+                tool: '',
+                inputData: []
             },
             formId: '',
             tempFormHtml: '',
@@ -172,30 +173,37 @@ export default {
     },
     created() {
         this.backend = BackendFactory.createBackend();
-        if (this.copyUengineProperties) {
-            this.activity.duration = this.copyUengineProperties.duration || 5;
-            this.activity.description = this.copyUengineProperties.description || '';
-            this.activity.instruction = this.copyUengineProperties.instruction || '';
-            this.activity.checkpoints = this.copyUengineProperties.checkpoints || [];
-            this.activity.tool = this.copyUengineProperties.tool || '';
+
+        if (this.element.lanes?.length > 0) {
+            this.activity.role = this.element.lanes[0].name;
         }
 
+        // processDefinition에서 기본값 설정 (편집 내용이 사라진 경우 폴백 처리)
         if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
             const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
             if (activity) {
-                this.activity = activity;
-                if (!this.activity.agentMode) this.activity.agentMode = 'none';
-                if (!this.activity.orchestration) this.activity.orchestration = 'none';
-                if (this.activity.isDraft) delete this.activity.isDraft;
-                if (this.activity.inputData) {
-                    const formIds = [...new Set(this.activity.inputData.map((item) => {
-                        return item.split(".")[0]
-                    }))]
-                    this.selectedForms = formIds;
-                }
-            } else {
-                console.log('Activity not found');
+                this.activity = { ...this.activity, ...activity };
             }
+        }
+
+        // copyUengineProperties로 덮어쓰기 (편집된 최신 내용)
+        if (this.copyUengineProperties) {
+            if (this.copyUengineProperties.duration !== undefined) this.activity.duration = this.copyUengineProperties.duration;
+            if (this.copyUengineProperties.description !== undefined) this.activity.description = this.copyUengineProperties.description;
+            if (this.copyUengineProperties.instruction !== undefined) this.activity.instruction = this.copyUengineProperties.instruction;
+            if (this.copyUengineProperties.checkpoints !== undefined) this.activity.checkpoints = this.copyUengineProperties.checkpoints;
+            if (this.copyUengineProperties.agentMode !== undefined) this.activity.agentMode = this.copyUengineProperties.agentMode;
+            if (this.copyUengineProperties.orchestration !== undefined) this.activity.orchestration = this.copyUengineProperties.orchestration;
+            if (this.copyUengineProperties.attachments !== undefined) this.activity.attachments = this.copyUengineProperties.attachments;
+            if (this.copyUengineProperties.inputData !== undefined) this.activity.inputData = this.copyUengineProperties.inputData;
+            if (this.copyUengineProperties.tool !== undefined) this.activity.tool = this.copyUengineProperties.tool;
+        }
+
+        if (this.activity.inputData) {
+            const formIds = [...new Set(this.activity.inputData.map((item) => {
+                return item.split(".")[0]
+            }))]
+            this.selectedForms = formIds;
         }
     },
     async mounted() {
@@ -217,14 +225,6 @@ export default {
         },
     },
     watch: {
-        activity: {
-            deep: true,
-            handler(newVal, oldVal) {
-                // console.log(this.processDefinition)
-                this.$emit('update:processDefinition', this.processDefinition);
-                this.EventBus.emit('process-definition-updated', this.processDefinition);
-            }
-        },
         activeTab: {
             deep: true,
             async handler(newVal, oldVal) {
@@ -243,10 +243,14 @@ export default {
                 newVal.forEach((form) => {
                     this.formFields[form.formId] = [];
                     form.fields.forEach((field) => {
+                        if (!this.activity.inputData) {
+                            this.activity.inputData = [];
+                        }
+                        const selected = this.activity.inputData.includes(`${form.formId}.${field.key}`);
                         this.formFields[form.formId].push({
                             fieldId: field.key,
                             fieldName: field.text,
-                            selected: true
+                            selected: selected
                         });
                     });
                 });
@@ -331,15 +335,24 @@ export default {
                 }
             }
             me.activity.tool = `formHandler:${me.formId}`;
+            if (me.activity.checkpoints.join() == "") {
+                me.activity.checkpoints = [];
+            }
 
+            // 편집 내용을 uengineProperties로 전달
             me.copyUengineProperties = {
+                role: me.activity.role,
                 duration: me.activity.duration,
                 instruction: me.activity.instruction,
                 description: me.activity.description,
                 checkpoints: me.activity.checkpoints,
+                agentMode: me.activity.agentMode,
+                orchestration: me.activity.orchestration,
+                attachments: me.activity.attachments,
+                inputData: me.activity.inputData,
                 tool: me.activity.tool
             };
-            me.activity.properties = JSON.stringify(me.copyUengineProperties);
+
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },
         onFileChange(files) {
@@ -362,18 +375,30 @@ export default {
             window.open(downloadUrl, '_blank');
         },
 
-        async getPreviousForms() {
-            const prevForms = await this.backend.getPreviousForms(this.element.id, this.processDefinition.processDefinitionId);
-            console.log(prevForms);
-            this.availableForms = prevForms.map((form) => {
-                return {
-                    formId: form.id,
-                    title: form.title,
-                    fields: form.fields_json || []
+        getPreviousForms() {
+            var me = this;
+            this.$try({
+                context: me,
+                action: async () => {
+                    // processDefinition 객체를 직접 전달로 변경
+                    me.EventBus.emit('get-process-definition');
+                    let definition = me.processDefinition;
+                    const prevForms = await me.backend.getPreviousForms(me.element.id, definition);
+                    me.availableForms = prevForms.map((form) => {
+                        return {
+                            formId: form.id,
+                            title: form.title,
+                            fields: form.fields_json || []
+                        }
+                    });
                 }
             });
         },
         updateInputData() {
+            if (this.availableForms.length == 0) {
+                return;
+            }
+
             const inputData = []
             this.selectedForms.forEach(formId => {
                 if (this.formFields[formId]) {

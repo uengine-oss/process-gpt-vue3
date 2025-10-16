@@ -45,6 +45,12 @@ export default {
             return null;
         }
     },
+    mounted() {
+        this.EventBus.on('get-process-definition', async() => {
+            const processDefinition = await this.convertXMLToJSON(this.bpmn);
+            this.processDefinition = processDefinition;
+        });
+    },
     methods: {
         async checkedFormData() {
             if (this.processDefinition && this.processDefinition.elements) {
@@ -529,7 +535,7 @@ export default {
                             //     });
                             // }
 
-                            newProcessDefinition = me.checkDefinitionSync(newProcessDefinition, me.processDefinition);
+                            // newProcessDefinition = me.checkDefinitionSync(newProcessDefinition, me.processDefinition);
                             me.processDefinition = newProcessDefinition;
                         }
 
@@ -918,8 +924,8 @@ export default {
                     task.name = activity.name;
                     task.id = activity.id;
                     task.type = activity.type;
-                    task.description = `${activity.name} description`;
-                    task.instruction = `${activity.name} instruction`;
+                    task.description = '' //`${activity.name} description`;
+                    task.instruction = '' //`${activity.name} instruction`;
                     task.process = activity.process;
                     task.attachedEvents = activity.attachedEvents || null;
 
@@ -927,11 +933,16 @@ export default {
 
                     const propsJson = getPropsJson(activity) || {};
                     if (propsJson) {
-                        task.properties = activity['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}';
+                        // task.properties = activity['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}';
+                        task.role = propsJson.role || task.role;
                         task.duration = propsJson.duration || 5;
                         task.description = propsJson.description || task.description;
                         task.instruction = propsJson.instruction || task.instruction;
                         task.checkpoints = propsJson.checkpoints || task.checkpoints;
+                        task.agentMode = propsJson.agentMode || task.agentMode;
+                        task.orchestration = propsJson.orchestration || task.orchestration;
+                        task.attachments = propsJson.attachments || task.attachments;
+                        task.inputData = propsJson.inputData || task.inputData;
                         task.tool = propsJson.tool || task.tool;
                     } else {
                         task.tool = 'formHandler:defaultform';
@@ -1465,7 +1476,7 @@ export default {
         async optimizeDefinition(processDefinition) {
             if (!processDefinition || !processDefinition.activities) {
                 processDefinition = await this.convertXMLToJSON(this.bpmn);
-                processDefinition = this.checkDefinitionSync(processDefinition, this.processDefinition);
+                // processDefinition = this.checkDefinitionSync(processDefinition, this.processDefinition);
             }
 
             return new Promise((resolve, reject) => {
