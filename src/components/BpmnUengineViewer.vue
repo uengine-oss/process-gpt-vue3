@@ -1049,7 +1049,7 @@ svg .bpmn-diff-deleted marker[id*="sequenceflow-end"] path {
 .participants-expansion-panel {
   border-radius: 12px !important;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
 }
 
 .participants-panel-title {
