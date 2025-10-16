@@ -4108,6 +4108,73 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getBrowserUseSecretByTenant() {
+        try {
+            return await storage.getObject('env', {
+                match: {
+                    key: 'browser_use',
+                    tenant_id: window.$tenantName
+                }
+            });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async createBrowserUseSecretByTenant(data: any) {
+        try {
+            const secretData = {
+                key: 'browser_use',
+                value: JSON.stringify(data),
+                tenant_id: window.$tenantName
+            };
+            const options = {
+                match: {
+                    key: 'browser_use',
+                    tenant_id: window.$tenantName
+                }
+            };
+            return await storage.putObject('env', secretData, options);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async updateBrowserUseSecretByTenant(data: any) {
+        try {
+            const secretData = {
+                key: 'browser_use',
+                value: JSON.stringify(data),
+                tenant_id: window.$tenantName
+            };
+            return await storage.putObject('env', secretData, {
+                match: {
+                    key: 'browser_use',
+                    tenant_id: window.$tenantName
+                }
+            });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteBrowserUseSecretByTenant(name: string) {
+        try {
+            return await storage.delete('env', {
+                match: {
+                    key: 'browser_use',
+                    tenant_id: window.$tenantName
+                }
+            });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getMCPLists(){
         try {
             const response = await axios.get('/mcp/tools');
