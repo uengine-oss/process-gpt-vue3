@@ -37,8 +37,10 @@
                         <div class="d-flex w-100"
                             :style="$globalState.state.isRightZoomed ? 'height:100vh;' : ''"
                         >
-                            <v-col class="chat-view-box-col">
-                                <InfoAlert :howToUseInfo="chatInfo" />
+                            <v-col class="chat-view-box-col pa-0">
+                                <InfoAlert :howToUseInfo="howToUseInfo"
+                                    :chatInfo="chatInfo"
+                                />
 
                                 <!-- 참여자 현황 UI -->
                                 <div v-if="participantUsers.length > 0"
@@ -1152,6 +1154,10 @@ export default {
         participantUsers: {
             type: Array,
             default: () => []
+        },
+        howToUseInfo: {
+            type: Object,
+            default: null
         }
     },
     emits: [

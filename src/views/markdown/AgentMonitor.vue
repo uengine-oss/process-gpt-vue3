@@ -137,6 +137,11 @@ export default {
             type: Boolean,
             default: false
         },
+        // chat인포 관련
+        howToUseInfo: {
+            type: Object,
+            default: null
+        }
     },
     data() {
         return {
@@ -198,11 +203,6 @@ export default {
             showBrowserIframe: false,
             browserIframeUrl: '',
             browserDialog: false,
-
-            // chat인포 관련
-            // howToUseInfo : {
-            //     text: '액션 모드'
-            // }
         }
     },
     computed: {

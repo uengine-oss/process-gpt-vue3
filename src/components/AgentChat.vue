@@ -14,13 +14,17 @@
                 <div v-if="activeTab === 'learning' || activeTab === 'question'" class="chat-info-view-wrapper-chats">
                     <Chat :messages="messages" :agentInfo="agentInfo"
                         :userInfo="userInfo" :chatRoomId="chatRoomId"
+                        :howToUseInfo="howToUseInfo"
                         @sendMessage="beforeSendMessage" @stopMessage="stopMessage"
                     ></Chat>
                 </div>
                 
                 <!-- Action Mode Tab Content -->
                 <div v-else-if="activeTab === 'actions'" style="height: 100%; width: 100%;">
-                    <AgentActions :instId="chatRoomId" :agentInfo="agentInfo"></AgentActions>
+                    <AgentActions :instId="chatRoomId"
+                        :agentInfo="agentInfo"
+                        :howToUseInfo="howToUseInfo"
+                    ></AgentActions>
                 </div>
 
                 <!-- Knowledge Management Tab Content -->
@@ -90,6 +94,23 @@ export default {
     computed: {
         id() {
             return this.$route.params.id;
+        },
+        howToUseInfo() {
+            // activeTab에 따라 다른 설명 반환
+            if (this.activeTab === 'learning') {
+                return {
+                    text: 'agentChat.learningModeInfo'
+                };
+            } else if (this.activeTab === 'question') {
+                return {
+                    text: 'agentChat.questionModeInfo'
+                };
+            } else if (this.activeTab === 'actions') {
+                return {
+                    text: 'agentChat.actionsModeInfo'
+                };
+            }
+            return null;
         }
     },
     watch: {
