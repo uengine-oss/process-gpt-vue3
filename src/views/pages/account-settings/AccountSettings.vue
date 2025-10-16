@@ -29,6 +29,31 @@
                         >
                             <Icons :icon="'office'"  :size="20" class="mr-2" />{{ $t('accountTab.tenantManage') }}
                         </div>
+                        <v-spacer></v-spacer>
+                        
+                        <!-- 언어 선택 -->
+                        <v-chip 
+                            variant="outlined"
+                            class="language-chip-select-wrapper"
+                            style="margin-right: 16px;"
+                            color="gray"
+                        >
+                            <v-select
+                                v-model="selectedLanguage"
+                                :items="languageOptions"
+                                item-title="displayLabel"
+                                item-value="value"
+                                @update:model-value="changeLanguage"
+                                variant="plain"
+                                density="compact"
+                                hide-details
+                            >
+                                <template v-slot:selection="{ item }">
+                                    <span style="font-size: 18px; margin-right: 6px;">{{ item.raw.flag }}</span>
+                                    <span>{{ item.raw.label }}</span>
+                                </template>
+                            </v-select>
+                        </v-chip>
                     </v-row>
                 </div>
 
@@ -105,6 +130,31 @@
                             <Icons :icon="'office'"  :size="16" class="mr-2" />{{ $t('accountTab.tenantManage') }}
                             </v-btn>
                         </template>
+                    </div>
+                    <!-- 모바일 언어 선택 -->
+                    <div class="d-flex justify-end mb-2">
+                        <v-chip 
+                            variant="outlined"
+                            class="language-chip-select-wrapper"
+                            size="small"
+                            color="gray"
+                        >
+                            <v-select
+                                v-model="selectedLanguage"
+                                :items="languageOptions"
+                                item-title="displayLabel"
+                                item-value="value"
+                                @update:model-value="changeLanguage"
+                                variant="plain"
+                                density="compact"
+                                hide-details
+                            >
+                                <template v-slot:selection="{ item }">
+                                    <span style="font-size: 16px; margin-right: 4px;">{{ item.raw.flag }}</span>
+                                    <span style="font-size: 13px;">{{ item.raw.label }}</span>
+                                </template>
+                            </v-select>
+                        </v-chip>
                     </div>
                 </div>
 
@@ -212,7 +262,12 @@ export default {
                 { value: 'MCP', label: 'MCP Servers' },
                 { value: 'ConnectionInfo', label: 'Connection Info' }
             ],
-            admin: localStorage.getItem('isAdmin') === 'true'
+            admin: localStorage.getItem('isAdmin') === 'true',
+            selectedLanguage: this.$i18n.locale || 'ko',
+            languageOptions: [
+                { value: 'ko', label: '한국어', flag: '🇰🇷', displayLabel: '🇰🇷 한국어' },
+                { value: 'en', label: 'English', flag: '🇺🇸', displayLabel: '🇺🇸 English' }
+            ]
         };
     },
     mounted() {
@@ -240,6 +295,23 @@ export default {
             
             // www로 이동하면서 로컬스토리지 클리어 파라미터 추가 (기존 changeTenant 로직)
             location.href = getMainDomainUrl('/tenant/manage?clear=true');
+        },
+        changeLanguage(locale) {
+            this.$try({
+                action: async () => {
+                    // i18n locale 변경
+                    this.$i18n.locale = locale;
+                    
+                    // localStorage에 저장하여 다음 접속 시에도 유지
+                    localStorage.setItem('locale', locale);
+                    
+                    // 전역 i18n 인스턴스 업데이트
+                    if (window.$i18n) {
+                        window.$i18n.global.locale = locale;
+                    }
+                },
+                errorMsg: this.$t('errorMsg.languageChangeFailed')
+            });
         }
     }
 };
@@ -286,3 +358,4 @@ export default {
     transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>
+

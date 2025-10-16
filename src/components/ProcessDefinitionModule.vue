@@ -45,11 +45,14 @@ export default {
             return null;
         }
     },
-    mounted() {},
-    beforeUnmount() {},
-    async created() {
-        this.datasourceSchema = await backend.extractDatasourceSchema();
-        this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+    mounted() {
+        // 최신 XML 반영된 processDefinition을 콜백으로 전달
+        this.EventBus.on('get-process-definition', async(callback) => {
+            const processDefinition = await this.convertXMLToJSON(this.bpmn);
+            if (callback && typeof callback === 'function') {
+                callback(processDefinition);
+            }
+        });
     },
     methods: {
         async checkedFormData() {
@@ -192,8 +195,10 @@ export default {
                         let jsonData = this.extractLastJSON(response);
                         if (jsonData.htmlOutput) {
                             const html = await me.keditorContentHTMLToDynamicFormHTML(jsonData.htmlOutput)
-                            formHtml = await me.saveFormData(html, activity.id);
-                            if (formHtml) {
+                            const info = await me.saveFormData(html, activity.id);
+                            if (info && info.id && info.html) {
+                                formHtml = info.html;
+                                activity.tool = `formHandler:${info.id}`;
                                 me.generateFormTask[activity.id] = 'finished';
                             }
                             resolve(formHtml);
@@ -251,8 +256,7 @@ export default {
                 activity_id: activityId
             };
             let formId = `${options.proc_def_id}_${options.activity_id}_form`;
-            formId = formId.toLowerCase();
-            formId = formId.replace(/[/.]/g, "_");
+            formId = formId.toLowerCase().replace(/[/.]/g, "_");
             if (this.lastPath) {
                 if (this.lastPath == 'chat' || this.lastPath == 'definition-map') {
                     localStorage.setItem(formId, html);
@@ -262,7 +266,7 @@ export default {
             } else {
                 localStorage.setItem(formId, html);
             }
-            return html;
+            return { id: formId, html: html };
         },
         extractPropertyNameAndIndex(jsonPath) {
             let match;
@@ -534,7 +538,7 @@ export default {
                             //     });
                             // }
 
-                            newProcessDefinition = me.checkDefinitionSync(newProcessDefinition, me.processDefinition);
+                            // newProcessDefinition = me.checkDefinitionSync(newProcessDefinition, me.processDefinition);
                             me.processDefinition = newProcessDefinition;
                         }
 
@@ -919,46 +923,39 @@ export default {
                 };
 
                 const buildActivity = (activity, lanesForRole, parentLanes) => {
-                const task = {};
-                task.name = activity.name;
-                task.id = activity.id;
-                task.type = activity.type;
-                task.description = `${activity.name} description`;
-                task.instruction = `${activity.name} instruction`;
-                task.process = activity.process;
-                task.attachedEvents = activity.attachedEvents || null;
+                    const task = {};
+                    task.name = activity.name;
+                    task.id = activity.id;
+                    task.type = activity.type;
+                    task.description = '' //`${activity.name} description`;
+                    task.instruction = '' //`${activity.name} instruction`;
+                    task.process = activity.process;
+                    task.attachedEvents = activity.attachedEvents || null;
 
-                task.role = resolveRole(activity.id, lanesForRole, parentLanes);
+                    task.role = resolveRole(activity.id, lanesForRole, parentLanes);
 
-                const propsJson = getPropsJson(activity) || {};
-                if (propsJson) {
-                    task.inputData = (propsJson?.parameters || []).filter(p => p.direction === 'IN').map(p => p.variable.name);
-                    task.outputData = (propsJson?.parameters || []).filter(p => p.direction === 'OUT').map(p => p.variable.name);
-                    task.properties =
-                    activity['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}';
-                    task.duration = (propsJson && propsJson.duration) ? propsJson.duration : 5;
-                    task.description = propsJson.description || task.description;
-                } else {
-                    task.inputData = [];
-                    task.outputData = [];
-                }
-
-                if (window.$mode == 'ProcessGPT') {
-                    let formId = '';
-                    if (!processDefinitionId) {
-                        formId = `${task.id}_form`.toLowerCase().replace(/[/.]/g, "_");
+                    const propsJson = getPropsJson(activity) || {};
+                    if (propsJson) {
+                        // task.properties = activity['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}';
+                        task.role = propsJson.role || task.role;
+                        task.duration = propsJson.duration || 5;
+                        task.description = propsJson.description || task.description;
+                        task.instruction = propsJson.instruction || task.instruction;
+                        task.checkpoints = propsJson.checkpoints || task.checkpoints;
+                        task.agentMode = propsJson.agentMode || task.agentMode;
+                        task.orchestration = propsJson.orchestration || task.orchestration;
+                        task.attachments = propsJson.attachments || task.attachments;
+                        task.inputData = propsJson.inputData || task.inputData;
+                        task.tool = propsJson.tool || task.tool;
                     } else {
-                        formId = `${processDefinitionId}_${task.id}_form`.toLowerCase().replace(/[/.]/g, "_");
+                        task.tool = 'formHandler:defaultform';
                     }
-                    task.tool = `formHandler:${formId}`;
-                } else {
+                    
                     if (propsJson && propsJson.variableForHtmlFormContext && propsJson.variableForHtmlFormContext.name) {
-                    task.tool = `formHandler:${propsJson.variableForHtmlFormContext.name}`;
-                    } else {
-                    task.tool = '';
+                        task.tool = `formHandler:${propsJson.variableForHtmlFormContext.name}`;
                     }
-                }
-                return task;
+                    
+                    return task;
                 };
 
                 const buildGateway = (gateway, lanesForRole, parentLanes) => ({
@@ -976,7 +973,7 @@ export default {
                         gateway['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
                     });
 
-                    const buildSequence = (flow) => {
+                const buildSequence = (flow) => {
                     let condition = '';
                     if (window.$mode == 'ProcessGPT') {
                         condition = flow.condition || '';
@@ -986,6 +983,7 @@ export default {
                     }
                     return {
                         id: flow.id,
+                        name: flow.name,
                         source: flow.sourceRef || flow.source,
                         target: flow.targetRef || flow.target,
                         condition,
@@ -1378,28 +1376,9 @@ export default {
                                 me.processDefinition.data = [];
                                 me.processDefinition.activities.forEach(async (activity) => {
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
-                                        let formHtml = null;    
-                                        // let formId = activity.tool.replace('formHandler:', '');
-                                        let formId = `${me.processDefinition.processDefinitionId}_${activity.id}_form`;
-                                        const currentFormHtml = localStorage.getItem(formId);
-                                        if (currentFormHtml) {
-                                            formHtml = currentFormHtml;
-                                        } else {
-                                            if (me.oldProcDefId && me.oldProcDefId !== info.proc_def_id) {
-                                                let oldFormId = `${me.oldProcDefId}_${activity.id}_form`;
-                                                oldFormId = oldFormId.toLowerCase();
-                                                oldFormId = oldFormId.replace(/[/.]/g, "_");
-                                                const oldFormHtml = localStorage.getItem(oldFormId);
-                                                if (oldFormHtml) {
-                                                    formHtml = oldFormHtml;
-                                                } 
-                                            }
-                                        }
-                                        const oldFormId = formId;
+                                        let formId = activity.tool.replace('formHandler:', '');
+                                        let formHtml = localStorage.getItem(formId);
                                         if (formHtml) {
-                                            formId = `${info.proc_def_id}_${activity.id}_form`;
-                                            formId = formId.toLowerCase();
-                                            activity.tool = `formHandler:${formId}`;
                                             const options = {
                                                 type: 'form',
                                                 proc_def_id: info.proc_def_id,
@@ -1407,7 +1386,7 @@ export default {
                                             }
                                             await backend.putRawDefinition(formHtml, formId, options);
                                         }
-                                        localStorage.removeItem(oldFormId);
+                                        localStorage.removeItem(formId);
                                     }
                                 });
                             }
@@ -1475,6 +1454,7 @@ export default {
                                 newActivity.properties = oldActivity.properties;
                                 newActivity.inputData = oldActivity.inputData;
                                 newActivity.outputData = oldActivity.outputData;
+                                newActivity.tool = oldActivity.tool;
                             }
                             return newActivity;
                         });
@@ -1499,7 +1479,7 @@ export default {
         async optimizeDefinition(processDefinition) {
             if (!processDefinition || !processDefinition.activities) {
                 processDefinition = await this.convertXMLToJSON(this.bpmn);
-                processDefinition = this.checkDefinitionSync(processDefinition, this.processDefinition);
+                // processDefinition = this.checkDefinitionSync(processDefinition, this.processDefinition);
             }
 
             return new Promise((resolve, reject) => {

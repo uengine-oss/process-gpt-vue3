@@ -16,7 +16,8 @@
         "savedMarketplace": "Saved to marketplace."
     },
     "errorMsg": {
-        "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational."
+        "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
+        "languageChangeFailed": "Failed to change language settings."
     },
     "App": {
         "view": "Read more"
@@ -70,7 +71,11 @@
         "inProgress": "In Progress",
         "pending": "Pending/Returned",
         "done": "Done",
-        "addTask": "Add Task"
+        "addTask": "Add Task",
+        "sort": "Sort",
+        "sortByDueDate": "Due Date (Nearest)",
+        "sortByStartDate": "Start Date (Recent)",
+        "endOfList": "All tasks have been reviewed"
     },
     "calendar": {
         "title": "Calendar",
@@ -420,7 +425,9 @@
         "environments": "Environments",
         "showSecretData": "Show Secret Data",
         "indicatesRequiredField": "*Environment variable configuration is required.",
-        "billing": "Billing"
+        "billing": "Billing",
+        "confirmDeleteConnectionTitle": "Delete Connection Info",
+        "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -506,7 +513,7 @@
         "subProcessNamePattern": "Sub-Process Name Pattern",
         "condition": "Condition",
         "priority": "Priority",
-        "description": "Description",
+        "description": "Overview",
         "inputData": "Input Data",
         "outputData": "Output Data",
         "checkPoints": "Checkpoints",
@@ -963,8 +970,18 @@
         "delegate": "Delegate",
         "resetContent": "Reset Content",
         "generateExample": "Generate Example",
-        "quickGenerateExample": "Quick Generate Example",
-        "resultInput": "Result Input"
+        "quickGenerateExample": "Quick Generation",
+        "quickGenerateExampleDescription": "Quick draft generation using the default AI model. ex) Basic document writing, simple analysis (1~3 minutes)",
+        "resultInput": "Result Input",
+        "researchMethod": "Agent Delegation",
+        "crewaiDeepResearch": "CrewAI Deep Research",
+        "crewaiAction": "CrewAI Action",
+        "openaiDeepResearch": "OpenAI Deep Research",
+        "langchainReact": "LangChain Research",
+        "crewaiDeepResearchDescription": "Multi-agent collaboration for deep research and analysis. ex) Document analysis, data collection, report writing (5~15 minutes)",
+        "crewaiActionDescription": "Optimal path call various tools to achieve the goal. ex) MCP, A2A (1~5 minutes)",
+        "openaiDeepResearchDescription": "Advanced reasoning and systematic analysis based on GPT-4. ex) Logical thinking, creative problem solving (3~10 minutes)",
+        "langchainReactDescription": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)"
     },
     "TestProcess": {
         "title": "Testing Process",
@@ -1752,5 +1769,16 @@
         "processName": "Process Name",
         "save": "Save",
         "close": "Close"
+    },
+    "ProcessMenu": {
+        "setPermission": "Set Permission",
+        "editProcess": "Edit Process",
+        "edit": "Edit",
+        "delete": "Delete"
+    },
+    "agentChat": {
+        "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations.",
+        "questionModeInfo": "Question Mode: You can ask questions to the agent and receive answers.",
+        "actionsModeInfo": "Actions Mode: The agent performs actual tasks and you can check the results."
     }
 }

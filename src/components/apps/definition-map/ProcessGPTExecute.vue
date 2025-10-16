@@ -182,7 +182,6 @@ export default {
             }
             if (startActivity) {
                 let parameters = [];
-                let variableForHtmlFormContext = {};
                 if (startActivity.properties) {
                     const properties = JSON.parse(startActivity.properties);
                     if (properties.parameters) {
@@ -190,9 +189,6 @@ export default {
                         parameters.forEach((item) => {
                             item.variable.defaultValue = "";
                         })
-                    }
-                    if (properties.variableForHtmlFormContext) {
-                        variableForHtmlFormContext = properties.variableForHtmlFormContext;
                     }
                 }
                 
@@ -225,7 +221,6 @@ export default {
                         name: startActivity.name,
                         tracingTag: startActivity.id || '',
                         parameters: parameters || [],
-                        variableForHtmlFormContext: variableForHtmlFormContext || {},
                         tool: startActivity.tool || "",
                         type: startActivity.type || "",
                         instruction: startActivity.instruction ? startActivity.instruction : "",

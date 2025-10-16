@@ -21,7 +21,7 @@
                                 </v-avatar>
                                 <div>
                                     <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
-                                    <small class="textPrimary"> {{ filteredAlert.subtitle }} </small>
+                                    <small class="textPrimary"> {{ chatInfo.subtitle }} </small>
                                 </div>
                             </div>
                             <slot name="custom-tools"></slot>
@@ -37,15 +37,10 @@
                         <div class="d-flex w-100"
                             :style="$globalState.state.isRightZoomed ? 'height:100vh;' : ''"
                         >
-                            <v-col class="chat-view-box-col">
-                                <v-alert v-if="filteredAlert.detail" color="#2196F3" variant="outlined">
-                                    <template v-slot:title>
-                                        <Icons style="padding-left:-5px;" :icon="'info-line'" :size="32" :color="'#2196F3'"/>
-                                    </template>
-                                    <small style="white-space: pre-line; font-size:14px;">
-                                        {{ filteredAlert.detail }}
-                                    </small>
-                                </v-alert>
+                            <v-col class="chat-view-box-col pa-0">
+                                <InfoAlert :howToUseInfo="howToUseInfo"
+                                    :chatInfo="chatInfo"
+                                />
 
                                 <!-- 참여자 현황 UI -->
                                 <div v-if="participantUsers.length > 0"
@@ -1104,6 +1099,7 @@ import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ChatRoomNameGenerator from "@/components/ai/ChatRoomNameGenerator.js";
 import ProcessWorkResult from './ProcessWorkResult.vue';
+import InfoAlert from './InfoAlert.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -1116,7 +1112,8 @@ export default {
         Record,
         DynamicForm,
         SummaryButton,
-        ProcessWorkResult
+        ProcessWorkResult,
+        InfoAlert
     },
     mixins: [
         ProgressAnimated,
@@ -1157,6 +1154,10 @@ export default {
         participantUsers: {
             type: Array,
             default: () => []
+        },
+        howToUseInfo: {
+            type: Object,
+            default: null
         }
     },
     emits: [
@@ -1313,17 +1314,6 @@ export default {
             const query = this.newMessage.substring(this.mentionStartIndex + 1).toLowerCase();
             // 이미 mention된 유저는 리스트에서 제외
             return userList.filter(user => user.username.toLowerCase().includes(query) && !this.mentionedUsers.some(mentionedUser => mentionedUser.id === user.id));
-        },
-        filteredAlert() {
-            const textObj = {
-                subtitle: '',
-                detail: ''
-            };
-            // 국제화된 문자열을 가져옵니다.
-            if(this.chatInfo){
-                textObj.detail = this.$t(this.chatInfo.text);
-            }
-            return textObj;
         },
         filteredMessages() {
             var list = [];

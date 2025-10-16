@@ -157,9 +157,3 @@ export default {
     }
 }
 </script>
-<style>
-    .todo-task-item-card-style:not(:first-of-type) {
-        margin-top:8px;
-    }
-
-</style>

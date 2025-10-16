@@ -11,14 +11,13 @@
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
-                <div class="mb-4">{{ $t('BpmnPropertyPanel.role') }}: {{ copyUengineProperties.role ? copyUengineProperties.role.name : '' }}</div>
-                <!-- <v-text-field v-model="name" label="이름" autofocus class="mb-4"></v-text-field> -->
                 <!-- Duration -->
                 <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="mb-4"></v-text-field>
-                <!-- Instruction -->
-                <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <!-- Description -->
                 <Description v-model="activity.description" class="mb-4"></Description>
+                
+                <!-- Instruction -->
+                <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
                 <!-- Checkpoints -->
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
                 <!-- Attachments -->
@@ -128,7 +127,6 @@ export default {
         element: Object,
         isViewMode: Boolean,
         isPreviewMode: Boolean,
-        role: String,
         roles: Array,
         variableForHtmlFormContext: Object,
         definition: Object,
@@ -140,13 +138,16 @@ export default {
             copyDefinition: null,
             backend: null,
             activity: {
+                role: '',
                 duration: 5,
                 attachments: [],
                 instruction: '',
                 description: '',
                 checkpoints: [''],
                 agentMode: 'none',
-                orchestration: 'none'
+                orchestration: 'none',
+                tool: '',
+                inputData: []
             },
             formId: '',
             tempFormHtml: '',
@@ -172,22 +173,37 @@ export default {
     },
     created() {
         this.backend = BackendFactory.createBackend();
+
+        if (this.element.lanes?.length > 0) {
+            this.activity.role = this.element.lanes[0].name;
+        }
+
+        // processDefinition에서 기본값 설정 (편집 내용이 사라진 경우 폴백 처리)
         if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
             const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
             if (activity) {
-                this.activity = activity;
-                if (!this.activity.agentMode) this.activity.agentMode = 'none';
-                if (!this.activity.orchestration) this.activity.orchestration = 'none';
-                if (this.activity.isDraft) delete this.activity.isDraft;
-                if (this.activity.inputData) {
-                    const formIds = [...new Set(this.activity.inputData.map((item) => {
-                        return item.split(".")[0]
-                    }))]
-                    this.selectedForms = formIds;
-                }
-            } else {
-                console.log('Activity not found');
+                this.activity = { ...this.activity, ...activity };
             }
+        }
+
+        // copyUengineProperties로 덮어쓰기 (편집된 최신 내용)
+        if (this.copyUengineProperties) {
+            if (this.copyUengineProperties.duration !== undefined) this.activity.duration = this.copyUengineProperties.duration;
+            if (this.copyUengineProperties.description !== undefined) this.activity.description = this.copyUengineProperties.description;
+            if (this.copyUengineProperties.instruction !== undefined) this.activity.instruction = this.copyUengineProperties.instruction;
+            if (this.copyUengineProperties.checkpoints !== undefined) this.activity.checkpoints = this.copyUengineProperties.checkpoints;
+            if (this.copyUengineProperties.agentMode !== undefined) this.activity.agentMode = this.copyUengineProperties.agentMode;
+            if (this.copyUengineProperties.orchestration !== undefined) this.activity.orchestration = this.copyUengineProperties.orchestration;
+            if (this.copyUengineProperties.attachments !== undefined) this.activity.attachments = this.copyUengineProperties.attachments;
+            if (this.copyUengineProperties.inputData !== undefined) this.activity.inputData = this.copyUengineProperties.inputData;
+            if (this.copyUengineProperties.tool !== undefined) this.activity.tool = this.copyUengineProperties.tool;
+        }
+
+        if (this.activity.inputData) {
+            const formIds = [...new Set(this.activity.inputData.map((item) => {
+                return item.split(".")[0]
+            }))]
+            this.selectedForms = formIds;
         }
     },
     async mounted() {
@@ -209,14 +225,6 @@ export default {
         },
     },
     watch: {
-        activity: {
-            deep: true,
-            handler(newVal, oldVal) {
-                // console.log(this.processDefinition)
-                this.$emit('update:processDefinition', this.processDefinition);
-                this.EventBus.emit('process-definition-updated', this.processDefinition);
-            }
-        },
         activeTab: {
             deep: true,
             async handler(newVal, oldVal) {
@@ -235,10 +243,14 @@ export default {
                 newVal.forEach((form) => {
                     this.formFields[form.formId] = [];
                     form.fields.forEach((field) => {
+                        if (!this.activity.inputData) {
+                            this.activity.inputData = [];
+                        }
+                        const selected = this.activity.inputData.includes(`${form.formId}.${field.key}`);
                         this.formFields[form.formId].push({
                             fieldId: field.key,
                             fieldName: field.text,
-                            selected: true
+                            selected: selected
                         });
                     });
                 });
@@ -263,7 +275,7 @@ export default {
             if(me.isPreviewMode){
                 me.activeTab = 'preview'
             }
-            me.formId = me.copyUengineProperties.variableForHtmlFormContext? me.copyUengineProperties.variableForHtmlFormContext.name : '';
+            me.formId = me.activity.tool != '' && me.activity.tool.includes('formHandler:') ? me.activity.tool.replace('formHandler:', '') : '';
             if (!me.formId || me.formId == '') {
                 let formId = '';
                 if (!me.processDefinition || !me.processDefinition.processDefinitionId) {
@@ -271,10 +283,10 @@ export default {
                 } else {
                     formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
                 }
-                formId = formId.toLowerCase();
-                formId = formId.replace(/[/.]/g, "_");
+                formId = formId.toLowerCase().replace(/[/.]/g, "_");
                 me.formId = formId;
             }
+
             const options = {
                 type: 'form',
                 match: {
@@ -296,29 +308,11 @@ export default {
                 me.tempFormHtml = await me.backend.getRawDefinition('defaultform', { type: 'form' });
             }
             
-            me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-            me.copyUengineProperties.role = {'name': me.role || ''};
-            me.copyUengineProperties.variableForHtmlFormContext = {name: me.formId};
-            // me.copyUengineProperties.parameters = [];
             me.copyDefinition = me.definition;
         },
         async beforeSave() {
             var me = this;
-            if (me.formId == '' || me.formId == null || me.formId.includes('undefined')) {
-                let formId = '';
-                if (!me.processDefinition || !me.processDefinition.processDefinitionId) {
-                    formId = me.element.id + '_form';
-                } else {
-                    formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
-                }
-                formId = formId.toLowerCase();
-                formId = formId.replace(/[/.]/g, "_");
-                me.formId = formId;
-            }
             
-            me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-            me.copyUengineProperties.variableForHtmlFormContext = {name: me.formId};
-
             const options = {
                 type: 'form',
                 proc_def_id: me.processDefinition.processDefinitionId,
@@ -340,7 +334,25 @@ export default {
                     localStorage.setItem(me.formId, me.tempFormHtml);
                 }
             }
-            
+            me.activity.tool = `formHandler:${me.formId}`;
+            if (me.activity.checkpoints.join() == "") {
+                me.activity.checkpoints = [];
+            }
+
+            // 편집 내용을 uengineProperties로 전달
+            me.copyUengineProperties = {
+                role: me.activity.role,
+                duration: me.activity.duration,
+                instruction: me.activity.instruction,
+                description: me.activity.description,
+                checkpoints: me.activity.checkpoints,
+                agentMode: me.activity.agentMode,
+                orchestration: me.activity.orchestration,
+                attachments: me.activity.attachments,
+                inputData: me.activity.inputData,
+                tool: me.activity.tool
+            };
+
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },
         onFileChange(files) {
@@ -363,17 +375,43 @@ export default {
             window.open(downloadUrl, '_blank');
         },
 
-        async getPreviousForms() {
-            const prevForms = await this.backend.getPreviousForms(this.element.id, this.processDefinition.processDefinitionId);
-            this.availableForms = prevForms.map((form) => {
-                return {
-                    formId: form.id,
-                    title: form.title,
-                    fields: form.fields_json || []
+        getPreviousForms() {
+            var me = this;
+            this.$try({
+                context: me,
+                action: async () => {
+                    console.log('[GPTUserTaskPanel] get-process-definition 이벤트 발생');
+                    
+                    // EventBus를 통해 최신 processDefinition을 가져와서 바로 처리
+                    me.EventBus.emit('get-process-definition', async (processDefinition) => {
+                        console.log('[GPTUserTaskPanel] 콜백 수신:', processDefinition);
+                        console.log('[GPTUserTaskPanel] processDefinition 타입:', typeof processDefinition);
+                        console.log('[GPTUserTaskPanel] activities:', processDefinition?.activities);
+                        
+                        if (!processDefinition || !processDefinition.activities) {
+                            console.error('[GPTUserTaskPanel] processDefinition이 비어있거나 activities가 없습니다.');
+                            return;
+                        }
+                        
+                        const prevForms = await me.backend.getPreviousForms(me.element.id, processDefinition);
+                        console.log('[GPTUserTaskPanel] 조회된 이전 폼:', prevForms);
+                        
+                        me.availableForms = prevForms.map((form) => {
+                            return {
+                                formId: form.id,
+                                title: form.title,
+                                fields: form.fields_json || []
+                            }
+                        });
+                    });
                 }
             });
         },
         updateInputData() {
+            if (this.availableForms.length == 0) {
+                return;
+            }
+
             const inputData = []
             this.selectedForms.forEach(formId => {
                 if (this.formFields[formId]) {

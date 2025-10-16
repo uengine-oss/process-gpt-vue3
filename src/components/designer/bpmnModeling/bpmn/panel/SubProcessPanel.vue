@@ -77,7 +77,7 @@
 
             <!-- ProcessGPT 전용 결정론적 규칙화 버튼 -->
             <div v-if="mode == 'ProcessGPT'" class="mt-4 d-flex justify-end">
-                <v-btn @click="generateFinalizeRule" color="primary" density="compact">
+                <v-btn @click="generateFinalizeRule" color="primary" density="compact" variant="flat" rounded>
                     <span v-if="isFinalizeRuleGenerating" class="thinking-wave-text">
                         <span v-for="(char, index) in $t('SubProcessPanel.ruleGenerating')" :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
                             {{ char === ' ' ? '\u00A0' : char }}

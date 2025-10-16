@@ -1,6 +1,9 @@
 <template>
     <div class="agent-actions">
-        <AgentMonitor :workItem="workItem" :isActionsMode="true" />
+        <AgentMonitor :workItem="workItem"
+            :isActionsMode="true"
+            :howToUseInfo="howToUseInfo"
+        />
     </div>
 </template>
 
@@ -22,6 +25,10 @@ export default {
         agentInfo: {
             type: Object,
             required: true
+        },
+        howToUseInfo: {
+            type: Object,
+            default: null
         }
     },
     data: () => ({
