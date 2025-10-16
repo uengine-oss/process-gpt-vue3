@@ -898,36 +898,50 @@ class ProcessGPTBackend implements Backend {
         return allActivities;
     }
 
-    async getPreviousForms(activityId: string, procDefId: string) {
+    async getPreviousForms(activityId: string, definition?: any) {
         try {
-            const defInfo = await this.getRawDefinition(procDefId, null);
-            const definition = defInfo.definition;
-            const prevActivities = this.getPreviousActivitiesWithSubProcess(activityId, definition);
-            console.log(prevActivities);
-            if (prevActivities.length > 0) {
-                const formPromises = prevActivities.map(async (activity: any) => {
-                    // tool이 formHandler로 시작하는 경우만 처리
-                    if (!activity.tool || !activity.tool.startsWith('formHandler:')) {
-                        return null;
-                    }
-                    
-                    const formId = activity.tool.split('formHandler:')[1];
-                    const form = await storage.getObject('form_def', {
-                        match: {
-                            id: formId,
-                            tenant_id: window.$tenantName
+            if (definition) {
+                const prevActivities = this.getPreviousActivitiesWithSubProcess(activityId, definition);
+                console.log(prevActivities);
+                if (prevActivities.length > 0) {
+                    const formPromises = prevActivities.map(async (activity: any) => {
+                        // tool이 formHandler로 시작하는 경우만 처리
+                        if (!activity.tool || !activity.tool.startsWith('formHandler:')) {
+                            return null;
                         }
+                        
+                        const formId = activity.tool.split('formHandler:')[1];
+                        const form = await storage.getObject('form_def', {
+                            match: {
+                                id: formId,
+                                tenant_id: window.$tenantName
+                            }
+                        });
+
+                        if (form) {
+                            // DB에 저장된 경우
+                            form['title'] = activity.name;
+                            return form;
+                        } else {
+                            // DB에 저장 전인 경우 > 로컬스토리지에서 조회
+                            const formHtml = localStorage.getItem(formId);
+                            if (formHtml) {
+                                const fields = this.extractFields(formHtml);
+                                return {
+                                    id: formId,
+                                    title: activity.name || activity.id,
+                                    html: formHtml,
+                                    fields_json: fields
+                                };
+                            }
+                        }
+                        return null;
                     });
-                    if (form) {
-                        form['title'] = activity.name;
-                        return form;
-                    }
-                    return null;
-                });
-                
-                const formResults = await Promise.all(formPromises);
-                const validForms = formResults.filter(form => form !== null);
-                return validForms;
+                    
+                    const formResults = await Promise.all(formPromises);
+                    const validForms = formResults.filter(form => form !== null);
+                    return validForms;
+                }
             }
             return [];
         } catch (error) {
