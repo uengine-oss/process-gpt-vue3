@@ -121,8 +121,9 @@ export default {
                             }
                             return;
                         } else {
-                            // 루트 페이지인 경우 로그인 체크 건너뛰기 옵션 추가
-                            const skipLoginCheck = window.location.pathname === '/';
+                            // 루트 페이지 및 인증 관련 페이지인 경우 로그인 체크 건너뛰기
+                            const skipLoginCheck = window.location.pathname === '/' || 
+                                                  window.location.pathname.startsWith('/auth/');
                             const userInfo = await this.backend.getUserInfo();
                             if(!skipLoginCheck) {
                                 if(userInfo) {
