@@ -2336,7 +2336,8 @@ class ProcessGPTBackend implements Backend {
         try {
             var putObj: any = { 
                 id: lockObj.id, 
-                user_id: lockObj.user_id 
+                user_id: lockObj.user_id,
+                tenant_id: window.$tenantName
             };
             const lock = await this.getLock(lockObj.id);
             if(lock && lock.tenant_id === window.$tenantName) {
@@ -2356,6 +2357,7 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 match: {
                     id: id,
+                    tenant_id: window.$tenantName
                 }
             }
             await storage.delete('lock', options);
