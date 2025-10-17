@@ -636,6 +636,10 @@ export default {
         
         // Agent 상태 추적
         isAgentBusy: false,
+        
+        // 순차적 폼 채우기를 위한 변수
+        appliedFormFields: {},
+        
         delegateTaskDialog: false,
         inputData: null,
 
@@ -1179,6 +1183,9 @@ export default {
             var me = this
             this.isVisionMode = false
             
+            // 순차적 폼 채우기를 위한 초기화
+            this.appliedFormFields = {};
+            
             this.generator = new exampleGenerator(this, {
                 isStream: true,
                 preferredLanguage: 'Korean'
@@ -1277,6 +1284,51 @@ export default {
         onModelCreated(response) {
             //
         },
+        onReceived(partialResponse) {
+            // 스트리밍 중 부분적으로 받은 데이터를 실시간으로 처리
+            const me = this;
+            me.$try({
+                action: async () => {
+                    // JSON 추출 시도
+                    let jsonStr = me.extractJSON(partialResponse);
+                    if (!jsonStr || !jsonStr.includes('{')) return;
+                    
+                    // 부분적인 JSON 파싱
+                    let partialData;
+                    try {
+                        partialData = partialParse(jsonStr);
+                    } catch (e) {
+                        // 파싱 실패 시 무시
+                        return;
+                    }
+                    
+                    // formValues가 있는지 확인
+                    if (partialData && partialData.formValues && typeof partialData.formValues === 'object') {
+                        const formValues = partialData.formValues;
+                        const newFields = {};
+                        
+                        // 새로 완성된 필드만 추출
+                        for (const key in formValues) {
+                            const value = formValues[key];
+                            
+                            // 값이 문자열이고, 이전에 적용되지 않았거나 값이 변경된 경우
+                            if (typeof value === 'string' && value.length > 0) {
+                                if (!me.appliedFormFields[key] || me.appliedFormFields[key] !== value) {
+                                    newFields[key] = value;
+                                    me.appliedFormFields[key] = value;
+                                }
+                            }
+                        }
+                        
+                        // 새로운 필드가 있으면 폼에 적용
+                        if (Object.keys(newFields).length > 0) {
+                            me.EventBus.emit('form-values-updated', newFields);
+                        }
+                    }
+                }
+                // 스트리밍 중에는 메시지를 표시하지 않음 (너무 자주 호출되므로)
+            });
+        },
         onGenerationFinished(response) {
             var me = this
             me.$try({
@@ -1298,20 +1350,38 @@ export default {
                             }
                         }
                         if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
-                            console.log('[WorkItem] form-values-updated', jsonData['formValues']);
-                            me.EventBus.emit('form-values-updated', jsonData['formValues']);
+                            // 순차적 업데이트에서 아직 적용되지 않은 필드만 최종 적용
+                            const formValues = jsonData['formValues'];
+                            const remainingFields = {};
+                            
+                            for (const key in formValues) {
+                                if (!me.appliedFormFields[key]) {
+                                    remainingFields[key] = formValues[key];
+                                }
+                            }
+                            
+                            // 남은 필드가 있으면 적용
+                            if (Object.keys(remainingFields).length > 0) {
+                                me.EventBus.emit('form-values-updated', remainingFields);
+                            }
+                            
                             me.agentGenerationFinished(jsonData);
                         } else {
                             me.agentGenerationFinished(null);
                         }
                         me.isGeneratingExample = false;
                         me.newMessage = null;
+                        
+                        // 순차적 폼 채우기 상태 초기화
+                        me.appliedFormFields = {};
                     }
                 },
+                successMsg: '빠른 생성이 완료되었습니다.',
                 errorMsg: '초안 생성을 실패하였습니다. 잠시 후 다시 시도해주세요.',
                 finalAction: () => {
                     me.isGeneratingExample = false;
                     me.newMessage = null;
+                    me.appliedFormFields = {};
                 }
             });
             
