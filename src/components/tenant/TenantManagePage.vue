@@ -72,46 +72,48 @@
                                     {{ getRemainingTime(tenantInfo.isDeletedAt) }}
                                 </div>
                             </div>
-                            
-                            <!-- 일반 테넌트 버튼들 -->
+
                             <div v-else>
-                                <v-tooltip text="수정" class="mr-2">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn @click.stop="!isNavigating ? toEditTenantPage(tenantInfo.id) : null"
-                                            class="mr-2"
-                                            :disabled="!tenantInfo.isOwned || isNavigating"
-                                            icon v-bind="props"
-                                            :size="24"
-                                        >
-                                            <v-icon size="24">mdi-pencil</v-icon>
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
-                                <v-tooltip text="삭제" class="mr-2">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn @click.stop="!isNavigating ? (deleteDialog = true, tenantIdToDelete = tenantInfo.id, confirmationTenantName = '') : null"
-                                            :disabled="!tenantInfo.isOwned || isNavigating"
-                                            icon v-bind="props"
-                                            :size="24"
-                                        >
-                                            <Icons :icon="'trash'" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
-                            </div>
-                            
-                            <!-- 삭제된 테넌트 삭제 취소 버튼 -->
-                            <div v-if="tenantInfo.isDeleted && tenantInfo.isOwned">
-                                <v-btn @click.stop="restoreTenant(tenantInfo.id)"
-                                    v-bind="props"
-                                    color="error"
-                                    variant="outlined"
-                                    size="small"
-                                    class="text-caption"
-                                    style="text-transform: none;"
-                                >
-                                    삭제 취소
-                                </v-btn>
+                                <!-- 일반 테넌트 버튼들 -->
+                                <div v-if="superAdmin && admin">
+                                    <v-tooltip text="수정" class="mr-2">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn @click.stop="!isNavigating ? toEditTenantPage(tenantInfo.id) : null"
+                                                class="mr-2"
+                                                :disabled="!tenantInfo.isOwned || isNavigating"
+                                                icon v-bind="props"
+                                                :size="24"
+                                            >
+                                                <v-icon size="24">mdi-pencil</v-icon>
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                    <v-tooltip text="삭제" class="mr-2">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn @click.stop="!isNavigating ? (deleteDialog = true, tenantIdToDelete = tenantInfo.id, confirmationTenantName = '') : null"
+                                                :disabled="!tenantInfo.isOwned || isNavigating"
+                                                icon v-bind="props"
+                                                :size="24"
+                                            >
+                                                <Icons :icon="'trash'" />
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                </div>
+                                
+                                <!-- 삭제된 테넌트 삭제 취소 버튼 -->
+                                <div v-if="tenantInfo.isDeleted && tenantInfo.isOwned">
+                                    <v-btn @click.stop="restoreTenant(tenantInfo.id)"
+                                        v-bind="props"
+                                        color="error"
+                                        variant="outlined"
+                                        size="small"
+                                        class="text-caption"
+                                        style="text-transform: none;"
+                                    >
+                                        삭제 취소
+                                    </v-btn>
+                                </div>
                             </div>
                         </v-row>
                     </v-card>
@@ -271,6 +273,9 @@ export default {
         isNavigating: false,
         selectedTenantId: null,
         confirmationTenantName: '',
+
+        admin: localStorage.getItem('isAdmin') === 'true',
+        superAdmin: localStorage.getItem('role') === 'superAdmin',
     }),
     async created() {
         try {
