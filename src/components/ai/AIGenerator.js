@@ -310,8 +310,10 @@ export default class AIGenerator {
                 "api-key": apiToken
             };
         } else {
-            // OpenAI 엔드포인트 (Gateway를 통한 LiteLLM Proxy)
-            url = "/litellm/v1/chat/completions";
+            // // OpenAI 엔드포인트 (Gateway를 통한 LiteLLM Proxy)
+            // url = "/litellm/v1/chat/completions";
+            // OpenAI 엔드포인트
+            url = "https://api.openai.com/v1/chat/completions";
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": "Bearer " + apiToken
