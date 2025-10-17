@@ -163,6 +163,20 @@ ALTER TABLE public.lock ADD COLUMN IF NOT EXISTS id text;
 ALTER TABLE public.lock ADD COLUMN IF NOT EXISTS user_id text;
 ALTER TABLE public.lock ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
 ALTER TABLE public.lock ADD COLUMN IF NOT EXISTS uuid uuid DEFAULT gen_random_uuid();
+DO $$ 
+BEGIN
+    -- tenant_id와 id 조합 유니크 제약조건
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE constraint_name = 'lock_tenant_id_id_unique' 
+        AND table_name = 'lock'
+    ) THEN
+        ALTER TABLE public.lock ADD CONSTRAINT lock_tenant_id_id_unique UNIQUE (tenant_id, id);
+        RAISE NOTICE 'Added lock_tenant_id_id_unique constraint';
+    ELSE
+        RAISE NOTICE 'lock_tenant_id_id_unique constraint already exists';
+    END IF;
+END $$;
 
 -- bpm_proc_inst table
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS proc_def_id text;
