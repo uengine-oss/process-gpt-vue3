@@ -2707,3 +2707,10 @@ $$ LANGUAGE plpgsql VOLATILE;
 -- 익명(anon) 역할에 실행 권한 부여
 GRANT EXECUTE ON FUNCTION public.fetch_pending_task(text, text, integer) TO anon;
 GRANT EXECUTE ON FUNCTION public.fetch_pending_task_dev(text, text, integer, text) TO anon;
+
+
+CREATE TABLE env (
+    key VARCHAR(255) NOT NULL,        -- 'browser_use'
+    value TEXT,                       -- 시크릿 데이터 (JSON)
+    tenant_id VARCHAR(255) PRIMARY KEY  -- 테넌트 ID
+);

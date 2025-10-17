@@ -7,6 +7,12 @@ spring:
         gateway:
             #<<< API Gateway / Routes
             routes:
+                - id: litellm
+                  uri: http://localhost:4000
+                  predicates:
+                      - Path=/litellm/**,
+                  filters:
+                      - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
                 - id: execution
                   uri: http://localhost:8000
                   predicates:
@@ -62,7 +68,16 @@ spring:
 
             # 라우트별 설정
             routes:
-                # 1. MCP SSE 라우트: 무제한 타임아웃
+                # LiteLLM Proxy 라우트
+                - id: litellm
+                  uri: http://litellm-proxy:4000
+                  predicates:
+                      - Path=/litellm/**
+                  filters:
+                      - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
+                  order: 1
+
+                # 2. MCP SSE 라우트: 무제한 타임아웃
                 - id: mcp-sse
                   uri: http://mcp-proxy-service:80
                   predicates:
@@ -72,10 +87,10 @@ spring:
                   filters:
                       - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
-                  order: 1
+                  order: 2
 
                 # ===================================================================
-                # 2. MCP 서버 생성/상태 확인 라우트 (중간 우선순위)
+                # 3. MCP 서버 생성/상태 확인 라우트 (중간 우선순위)
                 # ===================================================================
                 - id: mcp-control
                   uri: http://mcp-proxy-service:80
@@ -86,16 +101,16 @@ spring:
                       response-timeout: 300000 # 300초 = 5분
                   filters:
                       - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
-                  order: 2
+                  order: 3
 
-                # 3. MCP 일반 API 라우트: 기본 타임아웃(60초) 사용
+                # 4. MCP 일반 API 라우트: 기본 타임아웃(60초) 사용
                 - id: mcp-api
                   uri: http://mcp-proxy-service:80
                   predicates:
                       - Path=/mcp/**
                   filters:
                       - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
-                  order: 3
+                  order: 4
 
                 # Execution 서비스
                 - id: execution

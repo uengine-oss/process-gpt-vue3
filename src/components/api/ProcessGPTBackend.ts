@@ -179,21 +179,32 @@ class ProcessGPTBackend implements Backend {
                         tenant_id: window.$tenantName
                     }
                 });
+
+                let putObj: any = {}
                 if(formDef) {
-                    formDef.html = xml;
-                    if (fieldsJson) {
-                        formDef.fields_json = fieldsJson;
+                    if (!formDef.id) {
+                        formDef.id = defId.replace(/\//g, "#");
                     }
-                    await storage.putObject('form_def', formDef);
+                    putObj = {
+                        uuid: formDef.uuid,
+                        id: formDef.id,
+                        html: xml,
+                        proc_def_id: formDef.proc_def_id,
+                        activity_id: formDef.activity_id,
+                        fields_json: fieldsJson,
+                        tenant_id: formDef.tenant_id
+                    }
                 } else {
-                    await storage.putObject('form_def', {
+                    putObj = {
                         id: defId.replace(/\//g, "#"),
                         html: xml,
-                        proc_def_id: defId == 'defaultform' ? 'default' : options.proc_def_id,
-                        activity_id: defId == 'defaultform' ? 'default' : options.activity_id,
-                        fields_json: fieldsJson
-                    });
+                        proc_def_id: options.proc_def_id,
+                        activity_id: options.activity_id,
+                        fields_json: fieldsJson,
+                        tenant_id: window.$tenantName
+                    }
                 }
+                await storage.putObject('form_def', putObj);
                 return
             }
 
@@ -902,7 +913,7 @@ class ProcessGPTBackend implements Backend {
         try {
             if (definition) {
                 const prevActivities = this.getPreviousActivitiesWithSubProcess(activityId, definition);
-                console.log(prevActivities);
+
                 if (prevActivities.length > 0) {
                     const formPromises = prevActivities.map(async (activity: any) => {
                         // tool이 formHandler로 시작하는 경우만 처리
@@ -4097,6 +4108,73 @@ class ProcessGPTBackend implements Backend {
         try {
             const response = await axios.put(`/mcp/secrets`, data);
             return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async getBrowserUseSecretByTenant() {
+        try {
+            return await storage.getObject('env', {
+                match: {
+                    key: 'browser_use',
+                    tenant_id: window.$tenantName
+                }
+            });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async createBrowserUseSecretByTenant(data: any) {
+        try {
+            const secretData = {
+                key: 'browser_use',
+                value: JSON.stringify(data),
+                tenant_id: window.$tenantName
+            };
+            const options = {
+                match: {
+                    key: 'browser_use',
+                    tenant_id: window.$tenantName
+                }
+            };
+            return await storage.putObject('env', secretData, options);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async updateBrowserUseSecretByTenant(data: any) {
+        try {
+            const secretData = {
+                key: 'browser_use',
+                value: JSON.stringify(data),
+                tenant_id: window.$tenantName
+            };
+            return await storage.putObject('env', secretData, {
+                match: {
+                    key: 'browser_use',
+                    tenant_id: window.$tenantName
+                }
+            });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteBrowserUseSecretByTenant(name: string) {
+        try {
+            return await storage.delete('env', {
+                match: {
+                    key: 'browser_use',
+                    tenant_id: window.$tenantName
+                }
+            });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

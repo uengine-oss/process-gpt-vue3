@@ -422,6 +422,7 @@
         "editSecret": "Edit Secret",
         "mcpServers": "MCP Servers",
         "mcpEnvironments": "MCP Environments",
+        "environments": "Environments",
         "showSecretData": "Show Secret Data",
         "indicatesRequiredField": "*Environment variable configuration is required.",
         "billing": "Billing",

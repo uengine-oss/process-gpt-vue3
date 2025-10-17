@@ -14,7 +14,7 @@
                                 <v-tab v-if="superAdmin" value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
                                 <v-tab v-if="superAdmin" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
                                 <v-tab value="MCP-Servers"> {{ $t('accountTab.mcpServers') }} </v-tab>
-                                <v-tab value="MCP-Environments"> {{ $t('accountTab.mcpEnvironments') }} </v-tab>
+                                <v-tab value="MCP-Environments"> {{ $t('accountTab.environments') }} </v-tab>
                                 <v-tab value="ConnectionInfo">
                                     <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                 </v-tab>
@@ -109,7 +109,7 @@
                                 @click="tab = 'MCP-Environments'"
                                 :class="{ 'selected-tab': tab === 'MCP-Environments' }"
                             >
-                                {{ $t('accountTab.mcpEnvironments') }}
+                                {{ $t('accountTab.environments') }}
                             </v-btn>
                             <v-btn
                                 variant="text"
