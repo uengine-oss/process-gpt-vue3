@@ -335,7 +335,7 @@ export default {
                 }
             }
             me.activity.tool = `formHandler:${me.formId}`;
-            if (me.activity.checkpoints.join() == "") {
+            if (me.activity.checkpoints && me.activity.checkpoints.join() == "") {
                 me.activity.checkpoints = [];
             }
 
@@ -380,13 +380,9 @@ export default {
             this.$try({
                 context: me,
                 action: async () => {
-                    console.log('[GPTUserTaskPanel] get-process-definition 이벤트 발생');
-                    
                     // EventBus를 통해 최신 processDefinition을 가져와서 바로 처리
                     me.EventBus.emit('get-process-definition', async (processDefinition) => {
                         console.log('[GPTUserTaskPanel] 콜백 수신:', processDefinition);
-                        console.log('[GPTUserTaskPanel] processDefinition 타입:', typeof processDefinition);
-                        console.log('[GPTUserTaskPanel] activities:', processDefinition?.activities);
                         
                         if (!processDefinition || !processDefinition.activities) {
                             console.error('[GPTUserTaskPanel] processDefinition이 비어있거나 activities가 없습니다.');
