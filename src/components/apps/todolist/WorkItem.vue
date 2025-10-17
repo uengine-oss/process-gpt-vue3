@@ -263,7 +263,7 @@
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-3" style="height: 100%;">
                             <!-- 워크아이템 에이전트 맡기기 -->
-                            <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey" @browser-use-completed="handleBrowserUseCompleted"/>
+                            <AgentMonitor ref="agentMonitor" :html="html" :workItem="workItem" :key="updatedDefKey" @browser-use-completed="handleBrowserUseCompleted"/>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
                             <!-- 워크아이템 에이전트 학습 -->
@@ -335,7 +335,7 @@
                                 <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
                                     class="work-item-form-btn-box align-center"
                                 >
-                                    <v-btn v-if="hasGeneratedContent"
+                                    <v-btn v-if="hasGeneratedContent && (!selectedResearchMethod || selectedResearchMethod === 'default')"
                                         @click="resetGeneratedContent"
                                         :disabled="isGeneratingExample"
                                         :class="isMobile ? 'mr-1 text-medium-emphasis' : 'mr-1'"
@@ -349,26 +349,48 @@
                                         <v-icon>mdi-delete-outline</v-icon>
                                         <span v-if="!isMobile" class="ms-1">{{ $t('WorkItem.resetContent') }}</span>
                                     </v-btn>
-                                    <v-btn class="mr-1"
+                                    <v-menu
                                         v-if="!isMobile"
-                                        density="comfortable"
-                                        rounded
-                                        style="background-color: #808080; color: white;"
-                                        @click="beforeGenerateExample"
-                                        :loading="isGeneratingExample"
-                                        :disabled="isGeneratingExample"
+                                        v-model="researchMethodMenu"
+                                        :close-on-content-click="false"
+                                        location="bottom"
                                     >
-                                        <template v-if="!isGeneratingExample">
-                                            <v-row v-if="generator" class="ma-0 pa-0">
-                                                <v-icon>mdi-refresh</v-icon>
-                                                <span class="ms-2">{{ $t('WorkItem.generateExample') }}</span>
-                                            </v-row>
-                                            <v-row v-else class="ma-0 pa-0" >
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn class="mr-1"
+                                                density="comfortable"
+                                                rounded
+                                                style="background-color: #808080; color: white;"
+                                                v-bind="props"
+                                                :loading="isGeneratingExample"
+                                                :disabled="isGeneratingExample"
+                                            >
                                                 <Icons :icon="'sparkles'" :size="20"/>
-                                                <div class="ms-1">{{ $t('WorkItem.quickGenerateExample') }}</div>
-                                            </v-row>
+                                                <span class="ms-2">{{ $t('WorkItem.researchMethod') }}</span>
+                                                <v-icon 
+                                                    :icon="researchMethodMenu ? 'mdi-chevron-up' : 'mdi-chevron-down'" 
+                                                    size="16" 
+                                                    class="ms-1"
+                                                />
+                                            </v-btn>
                                         </template>
-                                    </v-btn>
+                                        
+                                        <v-card min-width="400">
+                                            <v-list>
+                                                <v-list-item
+                                                    v-for="method in researchMethods"
+                                                    :key="method.value"
+                                                    @click="!isMethodDisabled(method) && selectResearchMethod(method.value)"
+                                                    :disabled="isMethodDisabled(method)"
+                                                    class="research-method-item"
+                                                >
+                                                    <v-list-item-title>{{ $t(`WorkItem.${method.label}`) }}</v-list-item-title>
+                                                    <v-list-item-subtitle class="text-wrap">
+                                                        {{ $t(`WorkItem.${method.description}`) }}
+                                                    </v-list-item-subtitle>
+                                                </v-list-item>
+                                            </v-list>
+                                        </v-card>
+                                    </v-menu>
                                     <!-- 피드백 버튼만 유지 -->
                                     <v-btn v-if="isSimulate == 'true' && !isMobile"
                                         class="feedback-btn rounded-pill mr-1" 
@@ -530,6 +552,10 @@ export default {
             type: Boolean,
             default: false
         },
+        disableAdvancedResearch: {
+            type: Boolean,
+            default: false
+        },
     },
     components: {
         // ProcessDefinition,
@@ -568,7 +594,7 @@ export default {
         updatedDefKey: 0,
 
         // WorkItem Tabs
-        selectedTab: 'history',
+        selectedTab: 'progress',
         
         eventList: [],
 
@@ -608,6 +634,17 @@ export default {
         reworkDialog: false,
         reworkActivities: [],
         enableReworkButton: false,
+
+        // research method dropdown
+        researchMethodMenu: false,
+        selectedResearchMethod: null,
+        researchMethods: [
+            { value: 'default', label: 'quickGenerateExample', description: 'quickGenerateExampleDescription', advanced: false },
+            { value: 'crewaiDeepResearch', label: 'crewaiDeepResearch', description: 'crewaiDeepResearchDescription', advanced: true },
+            { value: 'crewaiAction', label: 'crewaiAction', description: 'crewaiActionDescription', advanced: true },
+            { value: 'openaiDeepResearch', label: 'openaiDeepResearch', description: 'openaiDeepResearchDescription', advanced: true },
+            { value: 'langchainReact', label: 'langchainReact', description: 'langchainReactDescription', advanced: true },
+        ]
     }),
     created() {
         // this.init();
@@ -728,8 +765,8 @@ export default {
                     ]
                 } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
                     return [
-                        { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
+                        { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
                         { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
@@ -744,8 +781,8 @@ export default {
                 
             } else {
                 return[
-                    { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                     { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
+                    { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                     { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                 ]
 
@@ -929,13 +966,65 @@ export default {
                 };
             });
         },
-        async beforeGenerateExample() {
+        isMethodDisabled(method) {
+            // disableAdvancedResearch가 true이고 해당 메서드가 고급 연구 방식이면 disabled
+            return method.advanced && this.disableAdvancedResearch;
+        },
+        // 연구 방식 value를 orchestration method로 변환
+        convertToOrchestrationMethod(researchMethod) {
+            const mapping = {
+                'crewaiDeepResearch': 'crewai-deep-research',
+                'crewaiAction': 'crewai-action',
+                'openaiDeepResearch': 'openai-deep-research',
+                'langchainReact': 'langchain-react'
+            };
+            return mapping[researchMethod] || researchMethod;
+        },
+        async selectResearchMethod(method) {
+            this.selectedResearchMethod = method;
+            this.researchMethodMenu = false;
+            
+            // 'default'인 경우 기본 동작 수행
+            if (method === 'default') {
+                this.beforeGenerateExample(null);
+                return;
+            }
+            
+            // 고급 연구 방식인 경우 AgentMonitor를 통해 처리
+            const researchMethodObj = this.researchMethods.find(m => m.value === method);
+            if (researchMethodObj && researchMethodObj.advanced) {
+                // 탭을 agent-monitor로 변경
+                this.selectedTab = 'agent-monitor';
+                
+                // AgentMonitor가 렌더링될 때까지 대기
+                await this.$nextTick();
+                
+                // AgentMonitor의 메서드 호출
+                if (this.$refs.agentMonitor) {
+                    const orchestrationMethod = this.convertToOrchestrationMethod(method);
+                    this.$refs.agentMonitor.selectOrchestrationMethod(orchestrationMethod);
+                    
+                    // startTask 호출
+                    await this.$refs.agentMonitor.startTask();
+                }
+            }
+        },
+        async beforeGenerateExample(researchMethod = null) {
+            // 빠른 생성 실행 시 selectedResearchMethod 설정
+            if (!researchMethod) {
+                this.selectedResearchMethod = 'default';
+            }
+            
             if(!this.generator) {
                 this.generator = new exampleGenerator(this, {
                     isStream: true,
-                    preferredLanguage: 'Korean'
+                    preferredLanguage: 'Korean',
+                    researchMethod: researchMethod
                 });
-            }            
+            } else if (researchMethod) {
+                // 이미 generator가 있어도 researchMethod는 업데이트
+                this.generator.researchMethod = researchMethod;
+            }
             
 
             this.isGeneratingExample = true;
@@ -1535,5 +1624,20 @@ export default {
     display: flex;
     align-items: flex-end;
     z-index: 100;
+}
+
+.research-method-item {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.research-method-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.research-method-item .v-list-item-subtitle {
+    white-space: normal;
+    line-height: 1.4;
+    margin-top: 4px;
 }
 </style>
