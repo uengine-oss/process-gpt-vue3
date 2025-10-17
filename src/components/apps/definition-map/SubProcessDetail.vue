@@ -179,6 +179,7 @@
                 :processDefinition="processDefinitionData"    
                 :definition="processDefinition"
                 :isSimulate="isSimulate"
+                :disableAdvancedResearch="true"
                 @close="executeDialog = false"
             ></process-gpt-execute>
             <div v-else>

@@ -23,7 +23,7 @@
                             <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
                             <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
                         </v-tabs>
-                        <div v-if="superAdmin" @click="goToTenantManage"
+                        <div @click="goToTenantManage"
                             class="settings-tenant-manage-btn v-tab-style text-none"
                             style="letter-spacing: 0;"
                         >
@@ -120,16 +120,16 @@
                             >
                                 <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.dataSource') }}
                             </v-btn>
-
-                            <v-btn
-                                variant="text"
-                                color="default"
-                                size="small"
-                                @click="goToTenantManage"
-                            >
-                            <Icons :icon="'office'"  :size="16" class="mr-2" />{{ $t('accountTab.tenantManage') }}
-                            </v-btn>
                         </template>
+
+                        <v-btn
+                            variant="text"
+                            color="default"
+                            size="small"
+                            @click="goToTenantManage"
+                        >
+                            <Icons :icon="'office'"  :size="16" class="mr-2" />{{ $t('accountTab.tenantManage') }}
+                        </v-btn>
                     </div>
                     <!-- 모바일 언어 선택 -->
                     <div class="d-flex justify-end mb-2">

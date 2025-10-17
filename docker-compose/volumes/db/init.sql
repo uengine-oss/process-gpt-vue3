@@ -218,7 +218,8 @@ create table if not exists public.lock (
     tenant_id text null default public.tenant_id(),
     uuid uuid not null default gen_random_uuid (),
     constraint lock_pkey primary key (uuid),
-    constraint lock_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
+    constraint lock_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade,
+    constraint lock_tenant_id_id_unique unique (tenant_id, id)
 ) tablespace pg_default;
 
 create table if not exists public.bpm_proc_inst (

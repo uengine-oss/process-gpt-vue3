@@ -69,6 +69,7 @@
                             :activityIndex="activityIndex"
                             :processDefinition="processDefinition"
                             :isStarted="true"
+                            :disableAdvancedResearch="disableAdvancedResearch"
                             @close="closeDialog"
                             @executeProcess="executeProcess"
                             @backToPrevStep="backToPrevStep"
@@ -119,6 +120,11 @@ export default {
         bpmn: String,
         processDefinition: Object,
         isExecutionByProject: {
+            type: Boolean,
+            default: false
+        },
+        // 최초 제출화면에서 고급 연구방식 disabled 처리
+        disableAdvancedResearch: {
             type: Boolean,
             default: false
         },

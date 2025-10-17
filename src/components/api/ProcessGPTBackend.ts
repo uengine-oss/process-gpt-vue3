@@ -180,18 +180,29 @@ class ProcessGPTBackend implements Backend {
                     }
                 });
 
-                let putObj: any = {
-                    html: xml,
-                    fields_json: fieldsJson
-                }
+                let putObj: any = {}
                 if(formDef) {
                     if (!formDef.id) {
-                        putObj.id = defId.replace(/\//g, "#");
+                        formDef.id = defId.replace(/\//g, "#");
+                    }
+                    putObj = {
+                        uuid: formDef.uuid,
+                        id: formDef.id,
+                        html: xml,
+                        proc_def_id: formDef.proc_def_id,
+                        activity_id: formDef.activity_id,
+                        fields_json: fieldsJson,
+                        tenant_id: formDef.tenant_id
                     }
                 } else {
-                    putObj.id = defId.replace(/\//g, "#");
-                    putObj.proc_def_id = options.proc_def_id;
-                    putObj.activity_id = options.activity_id;
+                    putObj = {
+                        id: defId.replace(/\//g, "#"),
+                        html: xml,
+                        proc_def_id: options.proc_def_id,
+                        activity_id: options.activity_id,
+                        fields_json: fieldsJson,
+                        tenant_id: window.$tenantName
+                    }
                 }
                 await storage.putObject('form_def', putObj);
                 return
@@ -2325,7 +2336,8 @@ class ProcessGPTBackend implements Backend {
         try {
             var putObj: any = { 
                 id: lockObj.id, 
-                user_id: lockObj.user_id 
+                user_id: lockObj.user_id,
+                tenant_id: window.$tenantName
             };
             const lock = await this.getLock(lockObj.id);
             if(lock && lock.tenant_id === window.$tenantName) {
@@ -2345,6 +2357,7 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 match: {
                     id: id,
+                    tenant_id: window.$tenantName
                 }
             }
             await storage.delete('lock', options);

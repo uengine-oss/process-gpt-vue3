@@ -372,9 +372,19 @@ export default {
         },
         isA2A() {
             return this.selectedOrchestrationMethod === 'a2a';
+        },
+        // 에이전트가 진행 중이거나 대기열에 있는 상태
+        isAgentBusy() {
+            return this.isQueued || this.timeline.length > 0 || this.isLoading;
         }
     },
     watch: {
+        isAgentBusy: {
+            handler(newVal) {
+                this.$emit('update:agent-busy', newVal);
+            },
+            immediate: true
+        },
         workItem: {
             deep: true,
             async handler(newVal) {

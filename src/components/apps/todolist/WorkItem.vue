@@ -263,7 +263,7 @@
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-3" style="height: 100%;">
                             <!-- 워크아이템 에이전트 맡기기 -->
-                            <AgentMonitor :html="html" :workItem="workItem" :key="updatedDefKey" @browser-use-completed="handleBrowserUseCompleted"/>
+                            <AgentMonitor ref="agentMonitor" :html="html" :workItem="workItem" :key="updatedDefKey" @browser-use-completed="handleBrowserUseCompleted" @update:agent-busy="updateAgentBusyState"/>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
                             <!-- 워크아이템 에이전트 학습 -->
@@ -335,7 +335,7 @@
                                 <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
                                     class="work-item-form-btn-box align-center"
                                 >
-                                    <v-btn v-if="hasGeneratedContent"
+                                    <v-btn v-if="hasGeneratedContent && (!selectedResearchMethod || selectedResearchMethod === 'default')"
                                         @click="resetGeneratedContent"
                                         :disabled="isGeneratingExample"
                                         :class="isMobile ? 'mr-1 text-medium-emphasis' : 'mr-1'"
@@ -349,26 +349,54 @@
                                         <v-icon>mdi-delete-outline</v-icon>
                                         <span v-if="!isMobile" class="ms-1">{{ $t('WorkItem.resetContent') }}</span>
                                     </v-btn>
-                                    <v-btn class="mr-1"
+                                    <v-menu
                                         v-if="!isMobile"
-                                        density="comfortable"
-                                        rounded
-                                        style="background-color: #808080; color: white;"
-                                        @click="beforeGenerateExample"
-                                        :loading="isGeneratingExample"
-                                        :disabled="isGeneratingExample"
+                                        v-model="researchMethodMenu"
+                                        :close-on-content-click="false"
+                                        location="bottom"
                                     >
-                                        <template v-if="!isGeneratingExample">
-                                            <v-row v-if="generator" class="ma-0 pa-0">
-                                                <v-icon>mdi-refresh</v-icon>
-                                                <span class="ms-2">{{ $t('WorkItem.generateExample') }}</span>
-                                            </v-row>
-                                            <v-row v-else class="ma-0 pa-0" >
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn class="mr-1"
+                                                density="comfortable"
+                                                rounded
+                                                style="background-color: #808080; color: white;"
+                                                v-bind="props"
+                                                :loading="isGeneratingExample"
+                                                :disabled="isGeneratingExample"
+                                            >
                                                 <Icons :icon="'sparkles'" :size="20"/>
-                                                <div class="ms-1">{{ $t('WorkItem.quickGenerateExample') }}</div>
-                                            </v-row>
+                                                <span class="ms-2">{{ $t('WorkItem.researchMethod') }}</span>
+                                                <v-icon 
+                                                    :icon="researchMethodMenu ? 'mdi-chevron-up' : 'mdi-chevron-down'" 
+                                                    size="16" 
+                                                    class="ms-1"
+                                                />
+                                            </v-btn>
                                         </template>
-                                    </v-btn>
+                                        
+                                        <v-card min-width="400">
+                                            <!-- 진행 중인 연구 방식 표시 -->
+                                            <v-card-title v-if="currentRunningResearchMethod" class="text-subtitle-2 pa-3 bg-blue-grey-lighten-5">
+                                                <v-icon icon="mdi-circle-medium" color="primary" size="small" class="mr-1"></v-icon>
+                                                {{ $t('WorkItem.runningResearchMethod') }}: <strong class="ml-1">{{ currentRunningResearchMethod }}</strong>
+                                            </v-card-title>
+                                            
+                                            <v-list>
+                                                <v-list-item
+                                                    v-for="method in researchMethods"
+                                                    :key="method.value"
+                                                    @click="!isMethodDisabled(method) && selectResearchMethod(method.value)"
+                                                    :disabled="isMethodDisabled(method)"
+                                                    class="research-method-item"
+                                                >
+                                                    <v-list-item-title>{{ $t(`WorkItem.${method.label}`) }}</v-list-item-title>
+                                                    <v-list-item-subtitle class="text-wrap">
+                                                        {{ $t(`WorkItem.${method.description}`) }}
+                                                    </v-list-item-subtitle>
+                                                </v-list-item>
+                                            </v-list>
+                                        </v-card>
+                                    </v-menu>
                                     <!-- 피드백 버튼만 유지 -->
                                     <v-btn v-if="isSimulate == 'true' && !isMobile"
                                         class="feedback-btn rounded-pill mr-1" 
@@ -530,6 +558,10 @@ export default {
             type: Boolean,
             default: false
         },
+        disableAdvancedResearch: {
+            type: Boolean,
+            default: false
+        },
     },
     components: {
         // ProcessDefinition,
@@ -568,7 +600,7 @@ export default {
         updatedDefKey: 0,
 
         // WorkItem Tabs
-        selectedTab: 'history',
+        selectedTab: 'progress',
         
         eventList: [],
 
@@ -601,6 +633,13 @@ export default {
 
         assigneeUserInfo: null,
         isLoading: false,
+        
+        // Agent 상태 추적
+        isAgentBusy: false,
+        
+        // 순차적 폼 채우기를 위한 변수
+        appliedFormFields: {},
+        
         delegateTaskDialog: false,
         inputData: null,
 
@@ -608,6 +647,17 @@ export default {
         reworkDialog: false,
         reworkActivities: [],
         enableReworkButton: false,
+
+        // research method dropdown
+        researchMethodMenu: false,
+        selectedResearchMethod: null,
+        researchMethods: [
+            { value: 'default', label: 'quickGenerateExample', description: 'quickGenerateExampleDescription', advanced: false },
+            { value: 'crewaiDeepResearch', label: 'crewaiDeepResearch', description: 'crewaiDeepResearchDescription', advanced: true },
+            { value: 'crewaiAction', label: 'crewaiAction', description: 'crewaiActionDescription', advanced: true },
+            { value: 'openaiDeepResearch', label: 'openaiDeepResearch', description: 'openaiDeepResearchDescription', advanced: true },
+            { value: 'langchainReact', label: 'langchainReact', description: 'langchainReactDescription', advanced: true },
+        ],
     }),
     created() {
         // this.init();
@@ -636,6 +686,21 @@ export default {
         window.removeEventListener('resize', this.handleResize);
     },
     computed: {
+        currentRunningResearchMethod() {
+            // 에이전트가 진행 중이고 workItem에 orchestration 정보가 있는 경우
+            if (this.isAgentBusy && this.workItem && this.workItem.worklist && this.workItem.worklist.orchestration) {
+                const orch = this.workItem.worklist.orchestration;
+                const mapping = {
+                    'crewai-deep-research': this.$t('agentMonitor.crewaiDeepResearch'),
+                    'crewai-action': this.$t('agentMonitor.crewaiAction'),
+                    'openai-deep-research': this.$t('agentMonitor.openaiDeepResearch'),
+                    'langchain-react': this.$t('agentMonitor.langchainReact'),
+                    'browser-automation-agent': 'Browser Automation Agent'
+                };
+                return mapping[orch] || orch;
+            }
+            return null;
+        },
         hasGeneratedContent() {
             // 생성 중인 경우
             if (this.isGeneratingExample) return true;
@@ -728,8 +793,8 @@ export default {
                     ]
                 } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
                     return [
-                        { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
+                        { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
                         { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
@@ -744,8 +809,8 @@ export default {
                 
             } else {
                 return[
-                    { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                     { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
+                    { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                     { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                 ]
 
@@ -794,6 +859,8 @@ export default {
                 if (newVal && newVal.worklist && newVal.worklist.taskId) {
                     this.loadAssigneeInfo();
                     this.enableReworkButton = await backend.enableRework(newVal);
+                    // 에이전트 상태 초기화
+                    this.checkInitialAgentBusyState();
                 }
             },
             deep: true
@@ -929,13 +996,118 @@ export default {
                 };
             });
         },
-        async beforeGenerateExample() {
+        isMethodDisabled(method) {
+            // 빠른 생성(default)은 항상 활성화
+            if (method.value === 'default') {
+                return false;
+            }
+            
+            // disableAdvancedResearch가 true이고 해당 메서드가 고급 연구 방식이면 disabled
+            if (method.advanced && this.disableAdvancedResearch) {
+                return true;
+            }
+            
+            // 에이전트가 진행중이거나 대기열에 있으면 고급 연구 방식만 비활성화
+            if (this.isAgentBusy) {
+                return true;
+            }
+            
+            return false;
+        },
+        updateAgentBusyState(isBusy) {
+            this.isAgentBusy = isBusy;
+        },
+        async checkInitialAgentBusyState() {
+            // workItem의 상태를 기반으로 에이전트가 진행 중인지 확인
+            if (!this.workItem || !this.workItem.worklist) {
+                this.isAgentBusy = false;
+                return;
+            }
+            
+            const worklist = this.workItem.worklist;
+            const taskId = worklist.taskId;
+            
+            // todolist 테이블에서 현재 상태 조회
+            try {
+                const { data, error } = await window.$supabase
+                    .from('todolist')
+                    .select('status, agent_mode, draft_status, agent_orch')
+                    .eq('id', taskId)
+                    .single();
+                
+                if (error) {
+                    console.error('Error fetching todolist status:', error);
+                    this.isAgentBusy = false;
+                    return;
+                }
+                
+                // agent_mode가 DRAFT 또는 COMPLETE이고, status가 IN_PROGRESS이며, 
+                // agent_orch가 설정되어 있으면 에이전트가 진행 중인 것으로 판단
+                const validOrchs = ['crewai-deep-research', 'crewai-action', 'openai-deep-research', 'langchain-react', 'browser-automation-agent'];
+                this.isAgentBusy = data.status === 'IN_PROGRESS' && 
+                                   (data.agent_mode === 'DRAFT' || data.agent_mode === 'COMPLETE') && 
+                                   validOrchs.includes(data.agent_orch);
+                
+            } catch (error) {
+                console.error('Error checking agent busy state:', error);
+                this.isAgentBusy = false;
+            }
+        },
+        // 연구 방식 value를 orchestration method로 변환
+        convertToOrchestrationMethod(researchMethod) {
+            const mapping = {
+                'crewaiDeepResearch': 'crewai-deep-research',
+                'crewaiAction': 'crewai-action',
+                'openaiDeepResearch': 'openai-deep-research',
+                'langchainReact': 'langchain-react'
+            };
+            return mapping[researchMethod] || researchMethod;
+        },
+        async selectResearchMethod(method) {
+            this.selectedResearchMethod = method;
+            this.researchMethodMenu = false;
+            
+            // 'default'인 경우 기본 동작 수행
+            if (method === 'default') {
+                this.beforeGenerateExample(null);
+                return;
+            }
+            
+            // 고급 연구 방식인 경우 AgentMonitor를 통해 처리
+            const researchMethodObj = this.researchMethods.find(m => m.value === method);
+            if (researchMethodObj && researchMethodObj.advanced) {
+                // 탭을 agent-monitor로 변경
+                this.selectedTab = 'agent-monitor';
+                
+                // AgentMonitor가 렌더링될 때까지 대기
+                await this.$nextTick();
+                
+                // AgentMonitor의 메서드 호출
+                if (this.$refs.agentMonitor) {
+                    const orchestrationMethod = this.convertToOrchestrationMethod(method);
+                    this.$refs.agentMonitor.selectOrchestrationMethod(orchestrationMethod);
+                    
+                    // startTask 호출
+                    await this.$refs.agentMonitor.startTask();
+                }
+            }
+        },
+        async beforeGenerateExample(researchMethod = null) {
+            // 빠른 생성 실행 시 selectedResearchMethod 설정
+            if (!researchMethod) {
+                this.selectedResearchMethod = 'default';
+            }
+            
             if(!this.generator) {
                 this.generator = new exampleGenerator(this, {
                     isStream: true,
-                    preferredLanguage: 'Korean'
+                    preferredLanguage: 'Korean',
+                    researchMethod: researchMethod
                 });
-            }            
+            } else if (researchMethod) {
+                // 이미 generator가 있어도 researchMethod는 업데이트
+                this.generator.researchMethod = researchMethod;
+            }
             
 
             this.isGeneratingExample = true;
@@ -1010,6 +1182,9 @@ export default {
         async generateExample(response, type){
             var me = this
             this.isVisionMode = false
+            
+            // 순차적 폼 채우기를 위한 초기화
+            this.appliedFormFields = {};
             
             this.generator = new exampleGenerator(this, {
                 isStream: true,
@@ -1109,6 +1284,51 @@ export default {
         onModelCreated(response) {
             //
         },
+        onReceived(partialResponse) {
+            // 스트리밍 중 부분적으로 받은 데이터를 실시간으로 처리
+            const me = this;
+            me.$try({
+                action: async () => {
+                    // JSON 추출 시도
+                    let jsonStr = me.extractJSON(partialResponse);
+                    if (!jsonStr || !jsonStr.includes('{')) return;
+                    
+                    // 부분적인 JSON 파싱
+                    let partialData;
+                    try {
+                        partialData = partialParse(jsonStr);
+                    } catch (e) {
+                        // 파싱 실패 시 무시
+                        return;
+                    }
+                    
+                    // formValues가 있는지 확인
+                    if (partialData && partialData.formValues && typeof partialData.formValues === 'object') {
+                        const formValues = partialData.formValues;
+                        const newFields = {};
+                        
+                        // 새로 완성된 필드만 추출
+                        for (const key in formValues) {
+                            const value = formValues[key];
+                            
+                            // 값이 문자열이고, 이전에 적용되지 않았거나 값이 변경된 경우
+                            if (typeof value === 'string' && value.length > 0) {
+                                if (!me.appliedFormFields[key] || me.appliedFormFields[key] !== value) {
+                                    newFields[key] = value;
+                                    me.appliedFormFields[key] = value;
+                                }
+                            }
+                        }
+                        
+                        // 새로운 필드가 있으면 폼에 적용
+                        if (Object.keys(newFields).length > 0) {
+                            me.EventBus.emit('form-values-updated', newFields);
+                        }
+                    }
+                }
+                // 스트리밍 중에는 메시지를 표시하지 않음 (너무 자주 호출되므로)
+            });
+        },
         onGenerationFinished(response) {
             var me = this
             me.$try({
@@ -1130,20 +1350,38 @@ export default {
                             }
                         }
                         if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
-                            console.log('[WorkItem] form-values-updated', jsonData['formValues']);
-                            me.EventBus.emit('form-values-updated', jsonData['formValues']);
+                            // 순차적 업데이트에서 아직 적용되지 않은 필드만 최종 적용
+                            const formValues = jsonData['formValues'];
+                            const remainingFields = {};
+                            
+                            for (const key in formValues) {
+                                if (!me.appliedFormFields[key]) {
+                                    remainingFields[key] = formValues[key];
+                                }
+                            }
+                            
+                            // 남은 필드가 있으면 적용
+                            if (Object.keys(remainingFields).length > 0) {
+                                me.EventBus.emit('form-values-updated', remainingFields);
+                            }
+                            
                             me.agentGenerationFinished(jsonData);
                         } else {
                             me.agentGenerationFinished(null);
                         }
                         me.isGeneratingExample = false;
                         me.newMessage = null;
+                        
+                        // 순차적 폼 채우기 상태 초기화
+                        me.appliedFormFields = {};
                     }
                 },
+                successMsg: '빠른 생성이 완료되었습니다.',
                 errorMsg: '초안 생성을 실패하였습니다. 잠시 후 다시 시도해주세요.',
                 finalAction: () => {
                     me.isGeneratingExample = false;
                     me.newMessage = null;
+                    me.appliedFormFields = {};
                 }
             });
             
@@ -1535,5 +1773,20 @@ export default {
     display: flex;
     align-items: flex-end;
     z-index: 100;
+}
+
+.research-method-item {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.research-method-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.research-method-item .v-list-item-subtitle {
+    white-space: normal;
+    line-height: 1.4;
+    margin-top: 4px;
 }
 </style>

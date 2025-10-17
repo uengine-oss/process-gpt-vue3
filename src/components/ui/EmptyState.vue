@@ -1,7 +1,19 @@
 <template>
     <div class="empty-state">
-        <h3>{{ isQueued ? $t('agentMonitor.workQueued') : $t('agentMonitor.noWorkInProgress') }}</h3>
-        <p>{{ $t('agentMonitor.workStarted') }}</p>
+        <div v-if="isQueued" class="queued-state">
+            <div class="thinking-wave-text">
+                <div v-for="(char, index) in $t('agentMonitor.workQueued')" :key="index" 
+                    :style="{ animationDelay: `${index * 0.1}s` }"
+                    class="thinking-char"
+                >{{ char === ' ' ? '\u00A0' : char }}
+                </div>
+                <p>{{ $t('agentMonitor.workStarted') }}</p>
+            </div>
+        </div>
+        <div v-else>
+            <h3>{{ $t('agentMonitor.noWorkInProgress') }}</h3>
+            <p>{{ $t('agentMonitor.workStarted') }}</p>
+        </div>
         <div v-if="!isQueued && !isA2A" class="start-controls">
             <v-container class="pa-0">
                 <v-row justify="center">
