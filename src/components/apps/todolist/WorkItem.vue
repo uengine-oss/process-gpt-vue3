@@ -263,7 +263,7 @@
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-3" style="height: 100%;">
                             <!-- 워크아이템 에이전트 맡기기 -->
-                            <AgentMonitor ref="agentMonitor" :html="html" :workItem="workItem" :key="updatedDefKey" @browser-use-completed="handleBrowserUseCompleted"/>
+                            <AgentMonitor ref="agentMonitor" :html="html" :workItem="workItem" :key="updatedDefKey" @browser-use-completed="handleBrowserUseCompleted" @update:agent-busy="updateAgentBusyState"/>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
                             <!-- 워크아이템 에이전트 학습 -->
@@ -375,6 +375,12 @@
                                         </template>
                                         
                                         <v-card min-width="400">
+                                            <!-- 진행 중인 연구 방식 표시 -->
+                                            <v-card-title v-if="currentRunningResearchMethod" class="text-subtitle-2 pa-3 bg-blue-grey-lighten-5">
+                                                <v-icon icon="mdi-circle-medium" color="primary" size="small" class="mr-1"></v-icon>
+                                                {{ $t('WorkItem.runningResearchMethod') }}: <strong class="ml-1">{{ currentRunningResearchMethod }}</strong>
+                                            </v-card-title>
+                                            
                                             <v-list>
                                                 <v-list-item
                                                     v-for="method in researchMethods"
@@ -627,6 +633,13 @@ export default {
 
         assigneeUserInfo: null,
         isLoading: false,
+        
+        // Agent 상태 추적
+        isAgentBusy: false,
+        
+        // 순차적 폼 채우기를 위한 변수
+        appliedFormFields: {},
+        
         delegateTaskDialog: false,
         inputData: null,
 
@@ -644,7 +657,7 @@ export default {
             { value: 'crewaiAction', label: 'crewaiAction', description: 'crewaiActionDescription', advanced: true },
             { value: 'openaiDeepResearch', label: 'openaiDeepResearch', description: 'openaiDeepResearchDescription', advanced: true },
             { value: 'langchainReact', label: 'langchainReact', description: 'langchainReactDescription', advanced: true },
-        ]
+        ],
     }),
     created() {
         // this.init();
@@ -673,6 +686,21 @@ export default {
         window.removeEventListener('resize', this.handleResize);
     },
     computed: {
+        currentRunningResearchMethod() {
+            // 에이전트가 진행 중이고 workItem에 orchestration 정보가 있는 경우
+            if (this.isAgentBusy && this.workItem && this.workItem.worklist && this.workItem.worklist.orchestration) {
+                const orch = this.workItem.worklist.orchestration;
+                const mapping = {
+                    'crewai-deep-research': this.$t('agentMonitor.crewaiDeepResearch'),
+                    'crewai-action': this.$t('agentMonitor.crewaiAction'),
+                    'openai-deep-research': this.$t('agentMonitor.openaiDeepResearch'),
+                    'langchain-react': this.$t('agentMonitor.langchainReact'),
+                    'browser-automation-agent': 'Browser Automation Agent'
+                };
+                return mapping[orch] || orch;
+            }
+            return null;
+        },
         hasGeneratedContent() {
             // 생성 중인 경우
             if (this.isGeneratingExample) return true;
@@ -831,6 +859,8 @@ export default {
                 if (newVal && newVal.worklist && newVal.worklist.taskId) {
                     this.loadAssigneeInfo();
                     this.enableReworkButton = await backend.enableRework(newVal);
+                    // 에이전트 상태 초기화
+                    this.checkInitialAgentBusyState();
                 }
             },
             deep: true
@@ -967,8 +997,61 @@ export default {
             });
         },
         isMethodDisabled(method) {
+            // 빠른 생성(default)은 항상 활성화
+            if (method.value === 'default') {
+                return false;
+            }
+            
             // disableAdvancedResearch가 true이고 해당 메서드가 고급 연구 방식이면 disabled
-            return method.advanced && this.disableAdvancedResearch;
+            if (method.advanced && this.disableAdvancedResearch) {
+                return true;
+            }
+            
+            // 에이전트가 진행중이거나 대기열에 있으면 고급 연구 방식만 비활성화
+            if (this.isAgentBusy) {
+                return true;
+            }
+            
+            return false;
+        },
+        updateAgentBusyState(isBusy) {
+            this.isAgentBusy = isBusy;
+        },
+        async checkInitialAgentBusyState() {
+            // workItem의 상태를 기반으로 에이전트가 진행 중인지 확인
+            if (!this.workItem || !this.workItem.worklist) {
+                this.isAgentBusy = false;
+                return;
+            }
+            
+            const worklist = this.workItem.worklist;
+            const taskId = worklist.taskId;
+            
+            // todolist 테이블에서 현재 상태 조회
+            try {
+                const { data, error } = await window.$supabase
+                    .from('todolist')
+                    .select('status, agent_mode, draft_status, agent_orch')
+                    .eq('id', taskId)
+                    .single();
+                
+                if (error) {
+                    console.error('Error fetching todolist status:', error);
+                    this.isAgentBusy = false;
+                    return;
+                }
+                
+                // agent_mode가 DRAFT 또는 COMPLETE이고, status가 IN_PROGRESS이며, 
+                // agent_orch가 설정되어 있으면 에이전트가 진행 중인 것으로 판단
+                const validOrchs = ['crewai-deep-research', 'crewai-action', 'openai-deep-research', 'langchain-react', 'browser-automation-agent'];
+                this.isAgentBusy = data.status === 'IN_PROGRESS' && 
+                                   (data.agent_mode === 'DRAFT' || data.agent_mode === 'COMPLETE') && 
+                                   validOrchs.includes(data.agent_orch);
+                
+            } catch (error) {
+                console.error('Error checking agent busy state:', error);
+                this.isAgentBusy = false;
+            }
         },
         // 연구 방식 value를 orchestration method로 변환
         convertToOrchestrationMethod(researchMethod) {
@@ -1100,6 +1183,9 @@ export default {
             var me = this
             this.isVisionMode = false
             
+            // 순차적 폼 채우기를 위한 초기화
+            this.appliedFormFields = {};
+            
             this.generator = new exampleGenerator(this, {
                 isStream: true,
                 preferredLanguage: 'Korean'
@@ -1198,6 +1284,51 @@ export default {
         onModelCreated(response) {
             //
         },
+        onReceived(partialResponse) {
+            // 스트리밍 중 부분적으로 받은 데이터를 실시간으로 처리
+            const me = this;
+            me.$try({
+                action: async () => {
+                    // JSON 추출 시도
+                    let jsonStr = me.extractJSON(partialResponse);
+                    if (!jsonStr || !jsonStr.includes('{')) return;
+                    
+                    // 부분적인 JSON 파싱
+                    let partialData;
+                    try {
+                        partialData = partialParse(jsonStr);
+                    } catch (e) {
+                        // 파싱 실패 시 무시
+                        return;
+                    }
+                    
+                    // formValues가 있는지 확인
+                    if (partialData && partialData.formValues && typeof partialData.formValues === 'object') {
+                        const formValues = partialData.formValues;
+                        const newFields = {};
+                        
+                        // 새로 완성된 필드만 추출
+                        for (const key in formValues) {
+                            const value = formValues[key];
+                            
+                            // 값이 문자열이고, 이전에 적용되지 않았거나 값이 변경된 경우
+                            if (typeof value === 'string' && value.length > 0) {
+                                if (!me.appliedFormFields[key] || me.appliedFormFields[key] !== value) {
+                                    newFields[key] = value;
+                                    me.appliedFormFields[key] = value;
+                                }
+                            }
+                        }
+                        
+                        // 새로운 필드가 있으면 폼에 적용
+                        if (Object.keys(newFields).length > 0) {
+                            me.EventBus.emit('form-values-updated', newFields);
+                        }
+                    }
+                }
+                // 스트리밍 중에는 메시지를 표시하지 않음 (너무 자주 호출되므로)
+            });
+        },
         onGenerationFinished(response) {
             var me = this
             me.$try({
@@ -1219,20 +1350,38 @@ export default {
                             }
                         }
                         if(jsonData && jsonData['formValues'] && Object.keys(jsonData['formValues']).length > 0){
-                            console.log('[WorkItem] form-values-updated', jsonData['formValues']);
-                            me.EventBus.emit('form-values-updated', jsonData['formValues']);
+                            // 순차적 업데이트에서 아직 적용되지 않은 필드만 최종 적용
+                            const formValues = jsonData['formValues'];
+                            const remainingFields = {};
+                            
+                            for (const key in formValues) {
+                                if (!me.appliedFormFields[key]) {
+                                    remainingFields[key] = formValues[key];
+                                }
+                            }
+                            
+                            // 남은 필드가 있으면 적용
+                            if (Object.keys(remainingFields).length > 0) {
+                                me.EventBus.emit('form-values-updated', remainingFields);
+                            }
+                            
                             me.agentGenerationFinished(jsonData);
                         } else {
                             me.agentGenerationFinished(null);
                         }
                         me.isGeneratingExample = false;
                         me.newMessage = null;
+                        
+                        // 순차적 폼 채우기 상태 초기화
+                        me.appliedFormFields = {};
                     }
                 },
+                successMsg: '빠른 생성이 완료되었습니다.',
                 errorMsg: '초안 생성을 실패하였습니다. 잠시 후 다시 시도해주세요.',
                 finalAction: () => {
                     me.isGeneratingExample = false;
                     me.newMessage = null;
+                    me.appliedFormFields = {};
                 }
             });
             
