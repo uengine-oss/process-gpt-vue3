@@ -1,7 +1,6 @@
 <template>
-    <v-card elevation="10" class="mb-2">
-        <v-card-item>
-            <h5 class="text-h5">{{ $t('accountTab.profileImageChange') }}</h5>
+    <div class="mb-2">
+        <v-card-item class="pa-0">
             <div class="text-center mt-6 mb-6">
                 <v-avatar size="120">
                     <img :src="profile || ''" height="120" alt="image" />
@@ -10,8 +9,8 @@
             <div class="d-flex justify-center">
                 <v-dialog width="650" v-model="imageDialog">
                     <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" color="primary" class="mx-2" rounded="pill" text="이미지 선택">
-                            {{ $t('accountTab.imageSelect') }}
+                        <v-btn v-bind="props" color="primary" class="mt-0 mb-4" rounded="pill" text="이미지 선택">
+                            {{ $t('accountTab.profileImageChange') }}
                         </v-btn>
                     </template>
 
@@ -30,7 +29,7 @@
                 </v-dialog>
             </div>
         </v-card-item>
-    </v-card>    
+    </div>    
 </template>
 
 <script>
