@@ -227,7 +227,9 @@
         "agentEndpoint": "Endpoint",
         "agentDescription": "Description",
         "agentTools": "Tools",
-        "agentSkills": "Skills"
+        "agentSkills": "Skills",
+        "aiProvider": "AI Provider",
+        "aiModel": "AI Model"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
@@ -1781,5 +1783,11 @@
         "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n ‘Use the color that matches each company’s CI when writing a proposal.’ \n ‘Proposals for government and public institutions must be written in Korean (HWP) format.’ \n ‘For B2C proposals, prioritize visual materials to help customers understand.’ \n You can train such guides.",
         "questionModeInfo": "Question Mode: You can ask questions to the agent and receive answers. \n For example, \n ‘Show me only the assessment items for regional evaluation from last week’s learning.’ \n ‘Summarize the rules related to CI color in the proposal writing guidelines.’ \n ‘Explain only the procedure for quality inspection in the learned manual.’ \n You can verify learning content or check only the necessary parts through such questions.",
         "actionsModeInfo": "Actions Mode: The agent performs actual tasks and you can check the results. \n For example, \n ‘Calculate the premium based on the input customer data.’ \n ‘Summarize the recent quarterly sales results and visualize them as a graph.’ \n ‘Automatically write a proposal according to the specified format.’ \n You can execute such commands."
+    },
+    "AgentKnowledgeManagement": {
+        "title": "Knowledge Management",
+        "description": "You can manage the agent's knowledge and learning data.",
+        "noMemory": "No memories available",
+        "addFirstMemory": "Add your first memory."
     }
 }

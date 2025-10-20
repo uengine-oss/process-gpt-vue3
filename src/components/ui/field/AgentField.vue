@@ -113,7 +113,7 @@
                             :items="providers"
                             item-title="name"
                             item-value="key"
-                            label="AI 제공사"
+                            :label="$t('agentField.aiProvider')"
                             outlined
                             dense
                             @update:model-value="onProviderChange"
@@ -127,7 +127,7 @@
                             :items="getModelsForProvider(selectedProvider)"
                             item-title="name"
                             item-value="key"
-                            label="AI 모델"
+                            :label="$t('agentField.aiModel')"
                             outlined
                             dense
                             :disabled="!selectedProvider"
