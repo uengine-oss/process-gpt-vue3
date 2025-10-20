@@ -124,6 +124,7 @@ export default {
                             // 루트 페이지 및 인증 관련 페이지인 경우 로그인 체크 건너뛰기
                             const skipLoginCheck = window.location.pathname === '/' || 
                                                   window.location.pathname.startsWith('/auth/');
+                                                //   || window.location.port === '8088';
                             const userInfo = await this.backend.getUserInfo();
                             if(!skipLoginCheck) {
                                 if(userInfo) {

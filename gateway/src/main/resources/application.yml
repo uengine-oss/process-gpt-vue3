@@ -82,8 +82,8 @@ spring:
                   uri: http://mcp-proxy-service:80
                   predicates:
                       - Path=/mcp/*/sse/**
-                  #   metadata:
-                  #       response-timeout: 0 # 무제한
+                  metadata:
+                      response-timeout: 0 # 무제한
                   filters:
                       - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
@@ -117,8 +117,12 @@ spring:
                   uri: http://execution-service:8000
                   predicates:
                       - Path=/execution/**
+                  metadata:
+                      response-timeout: 0 # 무제한 타임아웃 (OpenAI 스트리밍)
                   filters:
                       - RewritePath=/execution/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
+                      - AddResponseHeader=Cache-Control, no-cache
                   order: 10
 
                 # Autonomous 서비스
