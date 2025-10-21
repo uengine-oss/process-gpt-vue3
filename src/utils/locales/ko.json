@@ -939,6 +939,7 @@
         "replace-with-event-based-gateway": "이벤트 기반 게이트웨이로 변경",
         "replace-with-inclusive-gateway": "포괄적 게이트웨이로 변경",
         "replace-with-parallel-gateway": "병렬 게이트웨이로 변경",
+        "replace-with-exclusive-gateway": "배타적 게이트웨이로 변경",
         "replace-with-data-object-reference": "데이터 객체 참조로 변경",
         "replace-with-event-subprocess": "이벤트 하위 프로세스로 변경",
         "replace-with-transaction": "트랜잭션으로 변경",
