@@ -59,6 +59,10 @@
         "dateAndTime": "Date and Time",
         "category": "Category"
     },
+    "DefaultWorkItem": {
+        "intermediateSave": "Intermediate Save",
+        "complete": "Complete"
+    },
     "dashboard": {
         "title": "Dashboard",
         "startProcess": "Start Process",
@@ -136,6 +140,9 @@
     "runningInstance": {
         "title": "Running Instance",
         "running": "Starting..."
+    },
+    "ProcessInstanceRunning": {
+        "generating": "Generating"
     },
     "admin": {
         "title": "Administrator Menu",
@@ -986,6 +993,8 @@
         "crewaiActionDescription": "Optimal path call various tools to achieve the goal. ex) MCP, A2A (1~5 minutes)",
         "openaiDeepResearchDescription": "Advanced reasoning and systematic analysis based on GPT-4. ex) Logical thinking, creative problem solving (3~10 minutes)",
         "langchainReactDescription": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)",
+        "delegateMessage": "Task '{taskName}' has been delegated to {username}.",
+        "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {username}.",
         "runAgain": "Run Again"
     },
     "TestProcess": {
@@ -1624,6 +1633,30 @@
         "langchainReactDescription": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)",
         "browserUseDescription": "Perform real-time web information collection and tasks by manipulating the actual browser. ex) Search, form filling, scraping (2~8 minutes)"
     },
+    "EventTimeline": {
+        "browserAutomationResult": "Browser Automation Result",
+        "completed": "Completed",
+        "failed": "Failed",
+        "taskSummary": "Task Summary",
+        "completedTime": "Completed Time",
+        "generatedFiles": "Generated Files",
+        "imageGallery": "Image Gallery",
+        "images": "images",
+        "doubleClickHint": "Double-click to",
+        "expandCollapse": "expand/collapse",
+        "startTime": "Start Time",
+        "requestType": "Request Type",
+        "toolUsageComplete": "completed",
+        "toolUsageInProgress": "in progress",
+        "tool": "tool",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "processed": "Processed",
+        "inProgress": "In Progress",
+        "taskFailed": "Task Failed",
+        "allCompleted": "All Completed",
+        "taskCompleted": "Task Completed"
+    },
     "agentFeedback": {
         "learningInProgress": "Agent is learning from feedback...",
         "agent": "Agent",
@@ -1757,7 +1790,11 @@
         "save": "Save Draft",
         "submitComplete": "Submit Complete",
         "noFormData": "No form data registered",
-        "noFormDataDescription": "No form data found for the current work."
+        "noFormDataDescription": "No form data found for the current work.",
+        "previousStep": "Previous Step",
+        "intermediateSave": "Intermediate Save",
+        "delegateMessage": "Task '{taskName}' has been delegated to {email}({username}).",
+        "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {email}({username})."
     },
     "InstanceSource": {
         "addFile": "Add File",
@@ -1787,9 +1824,21 @@
         "delete": "Delete"
     },
     "agentChat": {
-        "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n ‘Use the color that matches each company’s CI when writing a proposal.’ \n ‘Proposals for government and public institutions must be written in Korean (HWP) format.’ \n ‘For B2C proposals, prioritize visual materials to help customers understand.’ \n You can train such guides.",
-        "questionModeInfo": "Question Mode: You can ask questions to the agent and receive answers. \n For example, \n ‘Show me only the assessment items for regional evaluation from last week’s learning.’ \n ‘Summarize the rules related to CI color in the proposal writing guidelines.’ \n ‘Explain only the procedure for quality inspection in the learned manual.’ \n You can verify learning content or check only the necessary parts through such questions.",
-        "actionsModeInfo": "Actions Mode: The agent performs actual tasks and you can check the results. \n For example, \n ‘Calculate the premium based on the input customer data.’ \n ‘Summarize the recent quarterly sales results and visualize them as a graph.’ \n ‘Automatically write a proposal according to the specified format.’ \n You can execute such commands."
+        "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n 'Use the color that matches each company's CI when writing a proposal.' \n 'Proposals for government and public institutions must be written in Korean (HWP) format.' \n 'For B2C proposals, prioritize visual materials to help customers understand.' \n You can train such guides.",
+        "questionModeInfo": "Question Mode: You can ask questions to the agent and receive answers. \n For example, \n 'Show me only the assessment items for regional evaluation from last week's learning.' \n 'Summarize the rules related to CI color in the proposal writing guidelines.' \n 'Explain only the procedure for quality inspection in the learned manual.' \n You can verify learning content or check only the necessary parts through such questions.",
+        "actionsModeInfo": "Actions Mode: The agent performs actual tasks and you can check the results. \n For example, \n 'Calculate the premium based on the input customer data.' \n 'Summarize the recent quarterly sales results and visualize them as a graph.' \n 'Automatically write a proposal according to the specified format.' \n You can execute such commands."
+    },
+    "ReworkDialog": {
+        "title": "Rework Scope Setting",
+        "warning": "Only completed items can be reworked.",
+        "currentOnly": "Current Stage Only",
+        "currentOnlyDesc": "Re-executes only the current stage of the selected task. Does not affect other stages.",
+        "includeReference": "Include Next Stages Referencing Current",
+        "includeReferenceDesc": "Re-executes the current stage and all subsequent stages that reference it. Only related tasks will be affected.",
+        "includeAll": "Include All Next Stages",
+        "includeAllDesc": "Re-executes all subsequent stages starting from the current stage.",
+        "submit": "Submit",
+        "close": "Close"
     },
     "AgentKnowledgeManagement": {
         "title": "Knowledge Management",
@@ -1798,6 +1847,6 @@
         "addFirstMemory": "Add your first memory."
     },
     "BpmnUengineViewer": {
-        "participantView": "View Participants"
+        "viewParticipants": "View Participants"
     }
 }

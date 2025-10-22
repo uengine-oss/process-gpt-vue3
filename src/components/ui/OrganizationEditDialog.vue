@@ -1,5 +1,5 @@
 <template>
-    <v-card>
+    <div>
         <v-row class="ma-0 pa-4">
             <v-card-title class="text-h6 pa-0">{{ dialogTitle }}</v-card-title>
             <v-spacer></v-spacer>
@@ -62,7 +62,7 @@
                 rounded
             >{{ buttonText }}</v-btn>
         </v-card-actions>
-    </v-card>
+    </div>
 </template>
 
 <script>

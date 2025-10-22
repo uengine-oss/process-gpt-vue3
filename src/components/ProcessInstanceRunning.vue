@@ -30,7 +30,7 @@
                                 <div class="w-100 pb-3">
                                     <div class="progress-border">
                                         <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message">
-                                            <div v-if="!detailContent">생성중입니다
+                                            <div v-if="!detailContent">{{ $t('ProcessInstanceRunning.generating') }}
                                                 <span class="loading-dots">
                                                     <span>.</span>
                                                     <span>.</span>
