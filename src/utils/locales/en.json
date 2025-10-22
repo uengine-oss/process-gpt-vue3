@@ -985,7 +985,8 @@
         "crewaiDeepResearchDescription": "Multi-agent collaboration for deep research and analysis. ex) Document analysis, data collection, report writing (5~15 minutes)",
         "crewaiActionDescription": "Optimal path call various tools to achieve the goal. ex) MCP, A2A (1~5 minutes)",
         "openaiDeepResearchDescription": "Advanced reasoning and systematic analysis based on GPT-4. ex) Logical thinking, creative problem solving (3~10 minutes)",
-        "langchainReactDescription": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)"
+        "langchainReactDescription": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)",
+        "runAgain": "Run Again"
     },
     "TestProcess": {
         "title": "Testing Process",
@@ -1078,7 +1079,12 @@
         "statusInProgress": "In Progress",
         "statusPendingCancelled": "Pending/Cancelled",
         "statusDone": "Done",
-        "executeProcess": "Execute Process"
+        "executeProcess": "Execute Process",
+        "taskName": "Task Name",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "duration": "Duration",
+        "assignees": "Assignees"
     },
     "DryRunProcess": {
         "notFound": "Work item not found."
@@ -1748,7 +1754,7 @@
     },
     "FormWorkItem": {
         "previous": "Previous Step",
-        "save": "Save",
+        "save": "Save Draft",
         "submitComplete": "Submit Complete",
         "noFormData": "No form data registered",
         "noFormDataDescription": "No form data found for the current work."
@@ -1790,5 +1796,8 @@
         "description": "You can manage the agent's knowledge and learning data.",
         "noMemory": "No memories available",
         "addFirstMemory": "Add your first memory."
+    },
+    "BpmnUengineViewer": {
+        "participantView": "View Participants"
     }
 }
