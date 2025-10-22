@@ -74,7 +74,7 @@
                             :disabled="isLoading"
                             :loading="isLoading"
                         >
-                            다시 수행하기
+                            {{ $t('WorkItem.runAgain') }}
                         </v-btn>
                     </div>
                 </v-row>
