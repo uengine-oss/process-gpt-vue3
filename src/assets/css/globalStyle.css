@@ -1322,10 +1322,10 @@ hr {
         display: block !important;
     }
 
-    #apexTreeWrapper > svg {
+    /* #apexTreeWrapper > svg {
         height: 96% !important;
         width: 100% !important;
-    }
+    } */
 
     .node-info-btn {
         display: flex !important;

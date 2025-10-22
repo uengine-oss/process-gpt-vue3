@@ -1,14 +1,25 @@
 <template>
     <v-card>
-        <v-card-title>
-            재작업 범위 설정
-        </v-card-title>
-        <v-card-subtitle class="mt-2">
+        <v-row class="ma-0 pa-4 pb-0 align-center">
+            <v-card-title class="pa-0">
+                {{ $t('ReworkDialog.title') }}
+            </v-card-title>
+            <v-spacer></v-spacer>
+            <v-btn @click="close"
+                class="ml-auto" 
+                variant="text" 
+                density="compact"
+                icon
+            >
+                <v-icon>mdi-close</v-icon>
+            </v-btn>
+        </v-row>
+        <v-card-subtitle class="pa-4">
             <v-alert type="warning" density="compact" variant="tonal">
-                완료된 항목만 재작업 가능합니다.
+                {{ $t('ReworkDialog.warning') }}
             </v-alert>
         </v-card-subtitle>
-        <v-card-text class="">
+        <v-card-text class="pa-4 pt-0 pb-0">
             <v-radio-group v-model="reworkType">
                 <div v-for="(item, index) in reworkItems" :key="item.id" :class="index !== 0 ? 'mt-5' : ''">
                     <v-radio
@@ -40,22 +51,17 @@
                 </div>
             </v-radio-group>
         </v-card-text>
-        <v-card-actions>
+
+        <v-row class="ma-0 pa-4">
             <v-spacer></v-spacer>
-            <v-btn
-                @click="close"
-                color="error"
-            >
-                취소
-            </v-btn>
-            <v-btn
+            <v-btn @click="submitRework"
                 :disabled="reworkType === ''"
-                @click="submitRework"
                 color="primary"
-            >
-                제출
+                variant="flat" 
+                class="rounded-pill"
+            >{{ $t('ReworkDialog.submit') }}
             </v-btn>
-        </v-card-actions>
+        </v-row>
     </v-card>
 </template>
 
@@ -80,20 +86,20 @@ export default {
             reworkItems: [
                 {
                     id: 'current',
-                    label: '현재 단계만', 
-                    description: '선택된 작업 항목의 현재 단계만 다시 수행합니다. 다른 단계에는 영향을 주지 않습니다.',
+                    label: this.$t('ReworkDialog.currentOnly'), 
+                    description: this.$t('ReworkDialog.currentOnlyDesc'),
                     activities: []
                 },
                 {
                     id: 'reference',
-                    label: '현재 단계를 참조하는 다음 단계 포함', 
-                    description: '현재 단계와 이를 참조하는 다음 단계들을 함께 다시 수행합니다. 연관된 작업들만 영향을 받습니다.',
+                    label: this.$t('ReworkDialog.includeReference'), 
+                    description: this.$t('ReworkDialog.includeReferenceDesc'),
                     activities: []
                 },
                 {
                     id: 'all',
-                    label: '모든 다음 단계 포함', 
-                    description: '현재 단계부터 시작하여 모든 후속 단계들을 다시 수행합니다.',
+                    label: this.$t('ReworkDialog.includeAll'), 
+                    description: this.$t('ReworkDialog.includeAllDesc'),
                     activities: []
                 }
             ],

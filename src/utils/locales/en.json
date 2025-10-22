@@ -1778,8 +1778,20 @@
         "delete": "Delete"
     },
     "agentChat": {
-        "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n ‘Use the color that matches each company’s CI when writing a proposal.’ \n ‘Proposals for government and public institutions must be written in Korean (HWP) format.’ \n ‘For B2C proposals, prioritize visual materials to help customers understand.’ \n You can train such guides.",
-        "questionModeInfo": "Question Mode: You can ask questions to the agent and receive answers. \n For example, \n ‘Show me only the assessment items for regional evaluation from last week’s learning.’ \n ‘Summarize the rules related to CI color in the proposal writing guidelines.’ \n ‘Explain only the procedure for quality inspection in the learned manual.’ \n You can verify learning content or check only the necessary parts through such questions.",
-        "actionsModeInfo": "Actions Mode: The agent performs actual tasks and you can check the results. \n For example, \n ‘Calculate the premium based on the input customer data.’ \n ‘Summarize the recent quarterly sales results and visualize them as a graph.’ \n ‘Automatically write a proposal according to the specified format.’ \n You can execute such commands."
+        "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n 'Use the color that matches each company's CI when writing a proposal.' \n 'Proposals for government and public institutions must be written in Korean (HWP) format.' \n 'For B2C proposals, prioritize visual materials to help customers understand.' \n You can train such guides.",
+        "questionModeInfo": "Question Mode: You can ask questions to the agent and receive answers. \n For example, \n 'Show me only the assessment items for regional evaluation from last week's learning.' \n 'Summarize the rules related to CI color in the proposal writing guidelines.' \n 'Explain only the procedure for quality inspection in the learned manual.' \n You can verify learning content or check only the necessary parts through such questions.",
+        "actionsModeInfo": "Actions Mode: The agent performs actual tasks and you can check the results. \n For example, \n 'Calculate the premium based on the input customer data.' \n 'Summarize the recent quarterly sales results and visualize them as a graph.' \n 'Automatically write a proposal according to the specified format.' \n You can execute such commands."
+    },
+    "ReworkDialog": {
+        "title": "Rework Scope Setting",
+        "warning": "Only completed items can be reworked.",
+        "currentOnly": "Current Stage Only",
+        "currentOnlyDesc": "Re-executes only the current stage of the selected task. Does not affect other stages.",
+        "includeReference": "Include Next Stages Referencing Current",
+        "includeReferenceDesc": "Re-executes the current stage and all subsequent stages that reference it. Only related tasks will be affected.",
+        "includeAll": "Include All Next Stages",
+        "includeAllDesc": "Re-executes all subsequent stages starting from the current stage.",
+        "submit": "Submit",
+        "close": "Close"
     }
 }
