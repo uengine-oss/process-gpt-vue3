@@ -59,6 +59,10 @@
         "dateAndTime": "일시",
         "category": "구분"
     },
+    "DefaultWorkItem": {
+        "intermediateSave": "중간 저장",
+        "complete": "완료"
+    },
     "dashboard": {
         "title": "대시보드",
         "startProcess": "프로세스 시작",
@@ -136,6 +140,9 @@
     "runningInstance": {
         "title": "시작 중인 인스턴스",
         "running": " 시작 중..."
+    },
+    "ProcessInstanceRunning": {
+        "generating": "생성중입니다"
     },
     "admin": {
         "title": "관리자 메뉴",
@@ -987,7 +994,9 @@
         "crewaiDeepResearchDescription": "다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 (5~15분 소요)",
         "crewaiActionDescription": "최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A (1~5분 소요)",
         "openaiDeepResearchDescription": "GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 (3~10분 소요)",
-        "langchainReactDescription": "LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 (3~5분 소요)"
+        "langchainReactDescription": "LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 (3~5분 소요)",
+        "delegateMessage": "'{taskName}'업무를 {username}에게 위임하였습니다.",
+        "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {username}으로 위임하였습니다."
     },
     "TestProcess": {
         "title": "테스트 프로세스",
@@ -1620,6 +1629,30 @@
         "langchainReactDescription": "LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 (3~5분 소요)",
         "browserUseDescription": "실제 브라우저를 조작하여 실시간 웹 정보 수집 및 작업 수행. ex) 검색, 폼 작성, 스크래핑 (2~8분 소요)"
     },
+    "EventTimeline": {
+        "browserAutomationResult": "브라우저 자동화 결과",
+        "completed": "완료",
+        "failed": "실패",
+        "taskSummary": "작업 요약",
+        "completedTime": "완료 시간",
+        "generatedFiles": "생성된 파일",
+        "imageGallery": "이미지 갤러리",
+        "images": "개의 이미지",
+        "doubleClickHint": "더블클릭으로도",
+        "expandCollapse": "접기/펼치기가 가능합니다",
+        "startTime": "시작시간",
+        "requestType": "요청 유형",
+        "toolUsageComplete": "사용 완료",
+        "toolUsageInProgress": "사용 중입니다",
+        "tool": "도구",
+        "approved": "승인됨",
+        "rejected": "거절됨",
+        "processed": "처리됨",
+        "inProgress": "진행중",
+        "taskFailed": "작업실패",
+        "allCompleted": "전체완료",
+        "taskCompleted": "작업완료"
+    },
     "agentFeedback": {
         "learningInProgress": "에이전트가 피드백을 기반으로 학습중입니다...",
         "agent": "에이전트",
@@ -1764,7 +1797,11 @@
         "save": "중간 저장",
         "submitComplete": "제출 완료",
         "noFormData": "등록된 폼 정보가 없습니다",
-        "noFormDataDescription": "현재 작업에 대한 폼 데이터를 찾을 수 없습니다."
+        "noFormDataDescription": "현재 작업에 대한 폼 데이터를 찾을 수 없습니다.",
+        "previousStep": "이전 단계",
+        "intermediateSave": "중간 저장",
+        "delegateMessage": "'{taskName}'업무를 {email}({username})에게 위임하였습니다.",
+        "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {email}({username})으로 위임하였습니다."
     },
     "InstanceSource": {
         "addFile": "파일 추가",
@@ -1815,5 +1852,8 @@
         "description": "에이전트의 지식과 학습 데이터를 관리할 수 있습니다.",
         "noMemory": "메모리가 없습니다",
         "addFirstMemory": "첫 번째 메모리를 추가해보세요."
+    },
+    "BpmnUengineViewer": {
+        "viewParticipants": "참여자 보기"
     }
 }

@@ -1600,10 +1600,17 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    let notificationMessage = `'${me.workItem.activity.name}'업무를 ${delegateUser.username}에게 위임하였습니다.`;
+                    let notificationMessage = me.$t('WorkItem.delegateMessage', {
+                        taskName: me.workItem.activity.name,
+                        username: delegateUser.username
+                    });
                     if(assigneeUserInfo){
                         const formattedAssigneeInfo = assigneeUserInfo.map(user => user.username).join(',');
-                        notificationMessage = `'${me.workItem.activity.name}'업무의 담당자를 [${formattedAssigneeInfo}]에서 ${delegateUser.username}으로 위임하였습니다.`;
+                        notificationMessage = me.$t('WorkItem.delegateMessageWithAssignee', {
+                            taskName: me.workItem.activity.name,
+                            assigneeInfo: formattedAssigneeInfo,
+                            username: delegateUser.username
+                        });
                     }
                     
                     // uid 값을 백엔드로 전송

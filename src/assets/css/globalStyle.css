@@ -1066,7 +1066,8 @@ hr {
     overflow: auto;
 }
 .agent-chat-info-organization-edit-dialog .organization-edit-dialog-contents {
-    height: 100%;
+    height: calc(-252px + 100vh);
+    overflow: auto;
 }
 
 .organization-edit-dialog-contents {

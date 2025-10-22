@@ -40,7 +40,7 @@
                 rel="noopener"
                 style="width: fit-content; display: block; color: #1976D2;"
             >
-              <v-row>
+              <v-row class="ma-0 pa-0 align-center">
                 <div>{{ $t('HeroSection.technicalReportLink') }}</div>
                 <v-icon class="ml-1" style="margin-top: 1px;" size="18" color="#1976D2">mdi-open-in-new</v-icon>
               </v-row>
