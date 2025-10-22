@@ -53,14 +53,13 @@
                 <div>'{{ editNode.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }}</div>
             </div>
         </v-card-text>
-        <v-card-actions>
+        <v-card-actions class="ma-0 pa-4 pt-2">
             <v-spacer></v-spacer>
             <v-btn @click="update"
                 :disabled="!isValid"
                 color="primary"
-                variant="elevated" 
-                class="rounded-pill"
-                density="compact"
+                variant="flat" 
+                rounded
             >{{ buttonText }}</v-btn>
         </v-card-actions>
     </v-card>

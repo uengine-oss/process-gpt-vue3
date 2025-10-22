@@ -227,7 +227,9 @@
         "agentEndpoint": "Endpoint",
         "agentDescription": "Description",
         "agentTools": "Tools",
-        "agentSkills": "Skills"
+        "agentSkills": "Skills",
+        "aiProvider": "AI Provider",
+        "aiModel": "AI Model"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
@@ -935,6 +937,7 @@
         "replace-with-event-based-gateway": "Replace with event-based gateway",
         "replace-with-inclusive-gateway": "Replace with inclusive gateway",
         "replace-with-parallel-gateway": "Replace with parallel gateway",
+        "replace-with-exclusive-gateway": "Replace with exclusive gateway",
         "replace-with-data-object-reference": "Replace With Data Object Reference",
         "replace-with-event-subprocess": "Replace with event subprocess",
         "replace-with-transaction": "Replace with transaction",
@@ -1793,5 +1796,11 @@
         "includeAllDesc": "Re-executes all subsequent stages starting from the current stage.",
         "submit": "Submit",
         "close": "Close"
+    },
+    "AgentKnowledgeManagement": {
+        "title": "Knowledge Management",
+        "description": "You can manage the agent's knowledge and learning data.",
+        "noMemory": "No memories available",
+        "addFirstMemory": "Add your first memory."
     }
 }

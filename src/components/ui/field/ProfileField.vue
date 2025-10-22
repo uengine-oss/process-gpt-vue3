@@ -9,8 +9,8 @@
             <div class="d-flex justify-center">
                 <v-dialog width="650" v-model="imageDialog">
                     <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props" color="primary" class="mt-0 mb-4" rounded="pill" text="이미지 선택">
-                            {{ $t('accountTab.profileImageChange') }}
+                        <v-btn v-bind="props" color="primary" class="mx-2" rounded="pill" variant="flat" text="이미지 선택">
+                            {{ $t('accountTab.imageSelect') }}
                         </v-btn>
                     </template>
 

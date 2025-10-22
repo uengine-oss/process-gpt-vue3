@@ -1,16 +1,16 @@
 <template>
     <div class="knowledge-management">
         <div class="d-flex justify-start align-center pa-4">
-            <h4 class="text-h5">지식 관리</h4>
+            <h4 class="text-h5">{{ $t('AgentKnowledgeManagement.title') }}</h4>
             <p class="text-body-1 text-medium-emphasis ml-4">
-                에이전트의 지식과 학습 데이터를 관리할 수 있습니다.
+                {{ $t('AgentKnowledgeManagement.description') }}
             </p>
         </div>
         <div class="px-4">
             <div v-if="knowledges.length === 0 && !isLoading" class="text-center py-8">
                 <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-database-off</v-icon>
-                <h6 class="text-h6 text-grey">메모리가 없습니다</h6>
-                <p class="text-body-2 text-grey">첫 번째 메모리를 추가해보세요.</p>
+                <h6 class="text-h6 text-grey">{{ $t('AgentKnowledgeManagement.noMemory') }}</h6>
+                <p class="text-body-2 text-grey">{{ $t('AgentKnowledgeManagement.addFirstMemory') }}</p>
             </div>
 
             <div v-else-if="knowledges.length === 0 && isLoading">
