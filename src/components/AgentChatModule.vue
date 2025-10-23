@@ -10,9 +10,24 @@ export default {
             chatSubscription: null
         }
     },
+    computed: {
+        id() {
+            return this.$route.params.id;
+        }
+    },
     watch: {
+        async id(newId, oldId) {
+            if (newId && newId !== oldId) {
+                console.log('AgentChatModule id changed', oldId, '->', newId);
+                if (this.backend && this.backend.getUserById) {
+                    this.agentInfo = await this.backend.getUserById(newId);
+                }
+                this.chatRoomId = `${newId}-${this.type}`;
+            }
+        },
         chatRoomId: {
             async handler(newVal) {
+                console.log('AgentChatModule chatRoomId changed', newVal);
                 if (newVal && newVal != '') {
                     await this.getMessages(newVal);
                 }

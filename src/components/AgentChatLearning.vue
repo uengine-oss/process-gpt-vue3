@@ -31,11 +31,6 @@ export default {
             }
         }
     },
-    computed: {
-        id() {
-            return this.$route.params.id;
-        }
-    },
     created() {
         this.generator = new AgentChatGenerator(this, {
             isStream: false,
@@ -43,6 +38,7 @@ export default {
         });
     },
     async mounted() {
+        console.log('AgentChatLearning mounted');
         this.agentInfo = await this.backend.getUserById(this.id);
         this.chatRoomId = `${this.id}-${this.type}`;
         await this.getMessages(this.chatRoomId);
