@@ -1848,5 +1848,17 @@
     },
     "BpmnUengineViewer": {
         "viewParticipants": "View Participants"
+    },
+    "ProcessWorkResult": {
+        "completedActivities": "Completed Activities",
+        "loadingCompletedUserInfo": "Loading completed user information...",
+        "activity": "Activity",
+        "noCompletedActivities": "No completed activities.",
+        "pendingActivities": "Pending Activities",
+        "loadingPendingUserInfo": "Loading pending user information...",
+        "nextActivities": "Next Activities",
+        "loadingAssigneeInfo": "Loading assignee information...",
+        "noNextActivities": "No next activities.",
+        "referenceInfo": "Reference Information"
     }
 }
