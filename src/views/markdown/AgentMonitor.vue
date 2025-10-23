@@ -1151,7 +1151,6 @@ export default {
                 time: item.timeStamp,
                 content: item.content
             }));
-            console.log('chatMessages', this.chatMessages);
             // 워크아이템 조회
             const worklist = await backend.getWorkListByInstId(this.$parent.instId);
             if (worklist && worklist.length > 0) {

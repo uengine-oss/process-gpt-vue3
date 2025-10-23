@@ -279,6 +279,20 @@
         "redaction": "Edit",
         "preview": "Preview"
     },
+    "dmn": {
+        "title": "Business Rules",
+        "cardTitle": "DMN Management",
+        "explanation": "Manage business rules interactively.",
+        "add": "Add",
+        "edit": "Edit",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "save": "Save DMN",
+        "deleteDmn": "Delete DMN",
+        "deleteDmnMessage": "Are you sure you want to delete the DMN?",
+        "editMode": "Edit Mode",
+        "viewMode": "View Mode"
+    },
     "processDefinition": {
         "title": "Process Definition",
         "cardTitle": "Process Definition Management",
@@ -1741,6 +1755,11 @@
             "question": "Question Mode",
             "actions": "Action Mode",
             "knowledge": "Knowledge Management"
+        },
+        "businessRuleTabs": {
+            "learning": "Rule Learning",
+            "inference": "Rule Inference",
+            "management": "Rule Management"
         }
     },
     "FormWorkItem": {
@@ -1780,6 +1799,7 @@
     "agentChat": {
         "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n ‘Use the color that matches each company’s CI when writing a proposal.’ \n ‘Proposals for government and public institutions must be written in Korean (HWP) format.’ \n ‘For B2C proposals, prioritize visual materials to help customers understand.’ \n You can train such guides.",
         "questionModeInfo": "Question Mode: You can ask questions to the agent and receive answers. \n For example, \n ‘Show me only the assessment items for regional evaluation from last week’s learning.’ \n ‘Summarize the rules related to CI color in the proposal writing guidelines.’ \n ‘Explain only the procedure for quality inspection in the learned manual.’ \n You can verify learning content or check only the necessary parts through such questions.",
-        "actionsModeInfo": "Actions Mode: The agent performs actual tasks and you can check the results. \n For example, \n ‘Calculate the premium based on the input customer data.’ \n ‘Summarize the recent quarterly sales results and visualize them as a graph.’ \n ‘Automatically write a proposal according to the specified format.’ \n You can execute such commands."
+        "actionsModeInfo": "Actions Mode: The agent performs actual tasks and you can check the results. \n For example, \n ‘Calculate the premium based on the input customer data.’ \n ‘Summarize the recent quarterly sales results and visualize them as a graph.’ \n ‘Automatically write a proposal according to the specified format.’ \n You can execute such commands.",
+        "ruleInferenceModeInfo": "Business Rule Inference Mode: Infer results for specific conditions based on learned business rules. \n For example, \n 'Is a customer with a credit score of 750 and annual income of 60M KRW eligible for a loan?' \n 'What is the final price for a VIP customer with a purchase amount of 1M KRW?' \n 'What is the screening result for an applicant with 7 years of experience and 2 certifications?' \n You can verify rules and infer results in advance."
     }
 }

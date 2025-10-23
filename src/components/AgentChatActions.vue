@@ -18,18 +18,10 @@ export default {
         AgentMonitor
     },
     props: {
-        instId: {
-            type: String,
-            required: true
-        },
         agentInfo: {
             type: Object,
             required: true
         },
-        howToUseInfo: {
-            type: Object,
-            default: null
-        }
     },
     data: () => ({
         instance: null,
@@ -38,10 +30,16 @@ export default {
                 orchestration: 'crewai-action'
             }
         },
+        howToUseInfo: {
+            text: 'agentChat.actionsModeInfo'
+        }
     }),
     computed: {
         id() {
             return this.$route.params.id;
+        },
+        instId() {
+            return this.agentInfo?.id ? `${this.agentInfo.id}-actions` : '';
         }
     },
     created() {

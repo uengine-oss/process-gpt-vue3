@@ -668,6 +668,13 @@ export default {
                                     BgColor: 'primary'
                                 };
                                 menu.children.push(obj);
+                            } else if (item.type && item.type === 'dmn') {
+                                obj = {
+                                    title: item.name,
+                                    to: `/dmn/${item.id}`,
+                                    BgColor: 'primary'
+                                };
+                                menu.children.push(obj);
                             }
                         }
                     } else {
