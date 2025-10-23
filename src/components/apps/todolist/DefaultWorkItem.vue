@@ -1,8 +1,8 @@
 <template>
     <v-row v-if="!isCompleted" class="ma-0 pa-0 task-btn" style="right: 10px">
         <v-spacer></v-spacer>
-        <v-btn v-if="!isDryRun" @click="intermediateSave" color="primary" rounded class="mr-1">중간 저장</v-btn>
-        <v-btn @click="executeProcess" color="primary" rounded>완료</v-btn>
+        <v-btn v-if="!isDryRun" @click="intermediateSave" color="primary" rounded class="mr-1">{{ $t('DefaultWorkItem.intermediateSave') }}</v-btn>
+        <v-btn @click="executeProcess" color="primary" rounded>{{ $t('DefaultWorkItem.complete') }}</v-btn>
     </v-row>
     <div class="pa-4" style="height: 100%">
         <div class="d-flex flex-column overflow-y-auto" style="height: 100%">

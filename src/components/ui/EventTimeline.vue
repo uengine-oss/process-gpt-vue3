@@ -143,25 +143,25 @@
                         <!-- Browser-use 결과 -->
                         <div v-else-if="item.payload.crewType === 'browser-use'" class="pa-4 browser-result">
                             <div class="browser-result-header">
-                                <h5>브라우저 자동화 결과</h5>
+                                <h5>{{ $t('EventTimeline.browserAutomationResult') }}</h5>
                                 <div class="browser-status" :class="{ 'success': item.payload.outputRaw?.success }">
-                                {{ item.payload.outputRaw?.success ? '✅ 완료' : '❌ 실패' }}
+                                {{ item.payload.outputRaw?.success ? `✅ ${$t('EventTimeline.completed')}` : `❌ ${$t('EventTimeline.failed')}` }}
                                 </div>
                             </div>
                             
                             <div v-if="item.payload.outputRaw?.result_summary" class="browser-summary">
-                                <h6>작업 요약</h6>
+                                <h6>{{ $t('EventTimeline.taskSummary') }}</h6>
                                 <div class="summary-text">{{ item.payload.outputRaw.result_summary }}</div>
                             </div>
                             
                             <div v-if="item.payload.outputRaw?.completed_at" class="browser-time">
-                                <h6>완료 시간</h6>
+                                <h6>{{ $t('EventTimeline.completedTime') }}</h6>
                                 <div class="time-text">{{ formatDateTime(item.payload.outputRaw.completed_at) }}</div>
                             </div>
 
                             <!-- 생성된 파일들 -->
                             <div v-if="item.payload.outputRaw?.generated_files" class="browser-files">
-                                <h6>생성된 파일</h6>
+                                <h6>{{ $t('EventTimeline.generatedFiles') }}</h6>
                                 
                                 <!-- 일반 파일들 -->
                                 <div class="files-list">
@@ -180,8 +180,8 @@
                                 <div v-if="getImageSlides(item.payload.outputRaw.generated_files).length > 0" class="image-slides-container">
                                     <div class="image-slides-header">
                                         <div class="header-info">
-                                            <h5>이미지 갤러리</h5>
-                                            <span class="slide-hint">{{ getImageSlides(item.payload.outputRaw.generated_files).length }}개의 이미지</span>
+                                            <h5>{{ $t('EventTimeline.imageGallery') }}</h5>
+                                            <span class="slide-hint">{{ getImageSlides(item.payload.outputRaw.generated_files).length }}{{ $t('EventTimeline.images') }}</span>
                                         </div>
                                         <div class="slide-navigation">
                                             <button @click="previousImageSlide()" :disabled="imageIndex === 0" class="nav-btn">←</button>
@@ -233,7 +233,7 @@
                     </div>
                     <div v-if="shouldShowExpandControls(item.payload)" class="expand-controls">
                         <span class="expand-hint">
-                            더블클릭으로도 {{ isTaskExpanded(item.payload.id) ? '접기' : '펼치기' }}가 가능합니다
+                            {{ $t('EventTimeline.doubleClickHint') }} {{ isTaskExpanded(item.payload.id) ? $t('agentMonitor.collapse') : $t('agentMonitor.expand') }} {{ $t('EventTimeline.expandCollapse') }}
                         </span>
                         <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
                             {{ isTaskExpanded(item.payload.id) ? $t('agentMonitor.collapse') : $t('agentMonitor.expand') }}
@@ -276,7 +276,7 @@
         <v-card class="image-dialog-card">
             <v-card-title class="image-dialog-header">
                 <div class="dialog-title">
-                    <h3>이미지 갤러리</h3>
+                    <h3>{{ $t('EventTimeline.imageGallery') }}</h3>
                     <span class="dialog-counter">{{ imageIndex + 1 }} / {{ images.length }}</span>
                 </div>
                 <v-btn icon @click="closeImageDialog">
@@ -438,8 +438,8 @@ export default {
                 ? 'human asked'
                 : payload.crewType
             return [
-                { label: '시작시간', value: this.formatTime(payload.startTime) },
-                { label: '요청 유형', value: typeLabel }
+                { label: this.$t('EventTimeline.startTime'), value: this.formatTime(payload.startTime) },
+                { label: this.$t('EventTimeline.requestType'), value: typeLabel }
             ]
         },
         isSubmittableTask(task) {
@@ -501,15 +501,15 @@ export default {
             return (!jobId || !this.toolUsageStatusByTask[jobId]) ? [] : this.toolUsageStatusByTask[jobId]
         },
         getToolStatusText(tool) {
-            const status = tool.status === 'done' ? '사용 완료' : '사용 중입니다'
+            const status = tool.status === 'done' ? this.$t('EventTimeline.toolUsageComplete') : this.$t('EventTimeline.toolUsageInProgress')
             const detail = tool.query || tool.info
-            return `${tool.tool_name} 도구 ${status}${detail ? ': ' + detail : ''}`
+            return `${tool.tool_name} ${this.$t('EventTimeline.tool')} ${status}${detail ? ': ' + detail : ''}`
         },
         getHumanResultText(payload) {
             const status = String(payload?.humanResponse?.status || '').toUpperCase()
-            if (status === 'APPROVED' || status === 'APPROVE') return '승인됨'
-            if (status === 'REJECTED') return '거절됨'
-            return '처리됨'
+            if (status === 'APPROVED' || status === 'APPROVE') return this.$t('EventTimeline.approved')
+            if (status === 'REJECTED') return this.$t('EventTimeline.rejected')
+            return this.$t('EventTimeline.processed')
         },
         getHumanResultClass(payload) {
             const status = String(payload?.humanResponse?.status || '').toUpperCase()
@@ -526,15 +526,15 @@ export default {
         },
         getDisplayName(task) {
             if (task.isHumanAsked) {
-                return '사용자 승인 및 추가 정보 요청'
+                return this.$t('agentMonitor.humanApproval')
             }
             const name = task.name?.trim()
             return (!name || name.toLowerCase() === 'unknown') ? task.role : task.name
         },
         getStatusText(task) {
-            if (!task.isCompleted) return '진행중';
-            if (task.isError) return '작업실패';
-            return task.isCrewCompleted ? '전체완료' : '작업완료';
+            if (!task.isCompleted) return this.$t('EventTimeline.inProgress');
+            if (task.isError) return this.$t('EventTimeline.taskFailed');
+            return task.isCrewCompleted ? this.$t('EventTimeline.allCompleted') : this.$t('EventTimeline.taskCompleted');
         },
         formatTime(timestamp) {
             return new Date(timestamp).toLocaleString('ko-KR', {

@@ -1,5 +1,35 @@
 <template>
-    <v-card elevation="10">
+    <v-col cols="12" md="12" class="pa-0">
+        <v-card elevation="10" 
+            class="is-work-height"
+        >
+            <OrganizationChart
+                    :node="organizationChart"
+                    :key="organizationChart.id"
+                    :userList="userList"
+                    @updateNode="updateNode"
+                    @addMember="openAddDialog"
+                    ref="organizationChart"
+            ></OrganizationChart>
+        </v-card>
+
+        <v-dialog 
+            v-model="addDialog" 
+            :max-width="isMobile ? '100vw' : 500"
+            :fullscreen="isMobile"
+        >
+            <OrganizationAddDialog
+                :teamInfo="editNode"
+                :userList="userList"
+                @addUser="addUser"
+                @addAgent="addAgent"
+                @closeDialog="closeAddDialog"
+            ></OrganizationAddDialog>
+        </v-dialog>
+    </v-col>
+
+    <!-- 기존 좌측 chat UI와 함께 동작하던 부분 다시 주석을 풀어 사용할 때 #apexTreeWrapper > svg 전체 검색 후 globalStyle.css의 768px(모바일 사이즈) 부분의 주석도 함께 풀어 사용 -->
+    <!-- <v-card elevation="10">
         <AppBaseCard>
             <template v-slot:leftpart>
                 <Chat :name="$t(chatInfo.title)"
@@ -49,7 +79,7 @@
                 @closeDialog="closeAddDialog"
             ></OrganizationAddDialog>
         </v-dialog>
-    </v-card>
+    </v-card> -->
 </template>
 
 <script>
