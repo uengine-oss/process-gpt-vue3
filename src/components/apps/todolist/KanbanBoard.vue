@@ -14,6 +14,7 @@
                     :showAddButton="false"
                     :users="users"
                     :sortOption="sortOption"
+                    :pageSize="pageSize"
                     @scrollBottom="handleScrollBottom"
                     @todoTaskColumnFold="todoTaskColumnFold"
                     @todoTaskColumnunfold="todoTaskColumnUnfold"
@@ -48,6 +49,10 @@ export default {
         sortOption: {
             type: String,
             default: 'startDate'
+        },
+        pageSize: {
+            type: Number,
+            default: 10
         }
     },
     computed: {
