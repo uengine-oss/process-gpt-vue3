@@ -20,7 +20,7 @@
                     <v-expansion-panel-title class="participants-panel-title pa-4">
                         <div class="d-flex align-center">
                             <v-icon size="small" class="mr-2">mdi-account-group</v-icon>
-                            <span class="text-body-2 font-weight-medium">참여자 보기</span>
+                            <span class="text-body-2 font-weight-medium">{{ $t('BpmnUengineViewer.viewParticipants') }}</span>
                             <v-chip size="x-small" class="ml-2">{{ laneAssignments.length }}</v-chip>
                         </div>
                     </v-expansion-panel-title>

@@ -59,6 +59,10 @@
         "dateAndTime": "Date and Time",
         "category": "Category"
     },
+    "DefaultWorkItem": {
+        "intermediateSave": "Intermediate Save",
+        "complete": "Complete"
+    },
     "dashboard": {
         "title": "Dashboard",
         "startProcess": "Start Process",
@@ -136,6 +140,9 @@
     "runningInstance": {
         "title": "Running Instance",
         "running": "Starting..."
+    },
+    "ProcessInstanceRunning": {
+        "generating": "Generating"
     },
     "admin": {
         "title": "Administrator Menu",
@@ -227,7 +234,9 @@
         "agentEndpoint": "Endpoint",
         "agentDescription": "Description",
         "agentTools": "Tools",
-        "agentSkills": "Skills"
+        "agentSkills": "Skills",
+        "aiProvider": "AI Provider",
+        "aiModel": "AI Model"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
@@ -949,6 +958,7 @@
         "replace-with-event-based-gateway": "Replace with event-based gateway",
         "replace-with-inclusive-gateway": "Replace with inclusive gateway",
         "replace-with-parallel-gateway": "Replace with parallel gateway",
+        "replace-with-exclusive-gateway": "Replace with exclusive gateway",
         "replace-with-data-object-reference": "Replace With Data Object Reference",
         "replace-with-event-subprocess": "Replace with event subprocess",
         "replace-with-transaction": "Replace with transaction",
@@ -996,7 +1006,10 @@
         "crewaiDeepResearchDescription": "Multi-agent collaboration for deep research and analysis. ex) Document analysis, data collection, report writing (5~15 minutes)",
         "crewaiActionDescription": "Optimal path call various tools to achieve the goal. ex) MCP, A2A (1~5 minutes)",
         "openaiDeepResearchDescription": "Advanced reasoning and systematic analysis based on GPT-4. ex) Logical thinking, creative problem solving (3~10 minutes)",
-        "langchainReactDescription": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)"
+        "langchainReactDescription": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)",
+        "delegateMessage": "Task '{taskName}' has been delegated to {username}.",
+        "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {username}.",
+        "runAgain": "Run Again"
     },
     "TestProcess": {
         "title": "Testing Process",
@@ -1089,7 +1102,12 @@
         "statusInProgress": "In Progress",
         "statusPendingCancelled": "Pending/Cancelled",
         "statusDone": "Done",
-        "executeProcess": "Execute Process"
+        "executeProcess": "Execute Process",
+        "taskName": "Task Name",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "duration": "Duration",
+        "assignees": "Assignees"
     },
     "DryRunProcess": {
         "notFound": "Work item not found."
@@ -1629,6 +1647,30 @@
         "langchainReactDescription": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)",
         "browserUseDescription": "Perform real-time web information collection and tasks by manipulating the actual browser. ex) Search, form filling, scraping (2~8 minutes)"
     },
+    "EventTimeline": {
+        "browserAutomationResult": "Browser Automation Result",
+        "completed": "Completed",
+        "failed": "Failed",
+        "taskSummary": "Task Summary",
+        "completedTime": "Completed Time",
+        "generatedFiles": "Generated Files",
+        "imageGallery": "Image Gallery",
+        "images": "images",
+        "doubleClickHint": "Double-click to",
+        "expandCollapse": "expand/collapse",
+        "startTime": "Start Time",
+        "requestType": "Request Type",
+        "toolUsageComplete": "completed",
+        "toolUsageInProgress": "in progress",
+        "tool": "tool",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "processed": "Processed",
+        "inProgress": "In Progress",
+        "taskFailed": "Task Failed",
+        "allCompleted": "All Completed",
+        "taskCompleted": "Task Completed"
+    },
     "agentFeedback": {
         "learningInProgress": "Agent is learning from feedback...",
         "agent": "Agent",
@@ -1764,10 +1806,14 @@
     },
     "FormWorkItem": {
         "previous": "Previous Step",
-        "save": "Save",
+        "save": "Save Draft",
         "submitComplete": "Submit Complete",
         "noFormData": "No form data registered",
-        "noFormDataDescription": "No form data found for the current work."
+        "noFormDataDescription": "No form data found for the current work.",
+        "previousStep": "Previous Step",
+        "intermediateSave": "Intermediate Save",
+        "delegateMessage": "Task '{taskName}' has been delegated to {email}({username}).",
+        "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {email}({username})."
     },
     "InstanceSource": {
         "addFile": "Add File",
@@ -1797,9 +1843,30 @@
         "delete": "Delete"
     },
     "agentChat": {
-        "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n ‘Use the color that matches each company’s CI when writing a proposal.’ \n ‘Proposals for government and public institutions must be written in Korean (HWP) format.’ \n ‘For B2C proposals, prioritize visual materials to help customers understand.’ \n You can train such guides.",
-        "questionModeInfo": "Question Mode: You can ask questions to the agent and receive answers. \n For example, \n ‘Show me only the assessment items for regional evaluation from last week’s learning.’ \n ‘Summarize the rules related to CI color in the proposal writing guidelines.’ \n ‘Explain only the procedure for quality inspection in the learned manual.’ \n You can verify learning content or check only the necessary parts through such questions.",
-        "actionsModeInfo": "Actions Mode: The agent performs actual tasks and you can check the results. \n For example, \n ‘Calculate the premium based on the input customer data.’ \n ‘Summarize the recent quarterly sales results and visualize them as a graph.’ \n ‘Automatically write a proposal according to the specified format.’ \n You can execute such commands.",
+        "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n 'Use the color that matches each company's CI when writing a proposal.' \n 'Proposals for government and public institutions must be written in Korean (HWP) format.' \n 'For B2C proposals, prioritize visual materials to help customers understand.' \n You can train such guides.",
+        "questionModeInfo": "Question Mode: You can ask questions to the agent and receive answers. \n For example, \n 'Show me only the assessment items for regional evaluation from last week's learning.' \n 'Summarize the rules related to CI color in the proposal writing guidelines.' \n 'Explain only the procedure for quality inspection in the learned manual.' \n You can verify learning content or check only the necessary parts through such questions.",
+        "actionsModeInfo": "Actions Mode: The agent performs actual tasks and you can check the results. \n For example, \n 'Calculate the premium based on the input customer data.' \n 'Summarize the recent quarterly sales results and visualize them as a graph.' \n 'Automatically write a proposal according to the specified format.' \n You can execute such commands.",
         "ruleInferenceModeInfo": "Business Rule Inference Mode: Infer results for specific conditions based on learned business rules. \n For example, \n 'Is a customer with a credit score of 750 and annual income of 60M KRW eligible for a loan?' \n 'What is the final price for a VIP customer with a purchase amount of 1M KRW?' \n 'What is the screening result for an applicant with 7 years of experience and 2 certifications?' \n You can verify rules and infer results in advance."
+    },
+    "ReworkDialog": {
+        "title": "Rework Scope Setting",
+        "warning": "Only completed items can be reworked.",
+        "currentOnly": "Current Stage Only",
+        "currentOnlyDesc": "Re-executes only the current stage of the selected task. Does not affect other stages.",
+        "includeReference": "Include Next Stages Referencing Current",
+        "includeReferenceDesc": "Re-executes the current stage and all subsequent stages that reference it. Only related tasks will be affected.",
+        "includeAll": "Include All Next Stages",
+        "includeAllDesc": "Re-executes all subsequent stages starting from the current stage.",
+        "submit": "Submit",
+        "close": "Close"
+    },
+    "AgentKnowledgeManagement": {
+        "title": "Knowledge Management",
+        "description": "You can manage the agent's knowledge and learning data.",
+        "noMemory": "No memories available",
+        "addFirstMemory": "Add your first memory."
+    },
+    "BpmnUengineViewer": {
+        "viewParticipants": "View Participants"
     }
 }

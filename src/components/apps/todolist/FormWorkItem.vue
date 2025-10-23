@@ -13,11 +13,11 @@
                     class="rounded-pill mr-2"
                     density="compact"
                     style="background-color: #808080; color: white;"
-                >이전 단계</v-btn>
+                >{{ $t('FormWorkItem.previousStep') }}</v-btn>
                 <v-btn v-if="!isDryRun" @click="saveTask" 
                     density="compact"
                     class="mr-2 default-greay-btn" rounded variant="flat"
-                >중간 저장</v-btn>
+                >{{ $t('FormWorkItem.intermediateSave') }}</v-btn>
                 <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
                     class="bouncing-arrow-horizontal submit-complete-pc" 
                     color="primary" 
@@ -64,9 +64,9 @@
                         <v-icon size="64" color="grey-lighten-1" class="mb-4">
                             mdi-file-document-outline
                         </v-icon>
-                        <h3 class="text-h6 text-grey-darken-1 mb-2">등록된 폼 정보가 없습니다</h3>
+                        <h3 class="text-h6 text-grey-darken-1 mb-2">{{ $t('FormWorkItem.noFormData') }}</h3>
                         <p class="text-body-2 text-grey">
-                            현재 작업에 대한 폼 데이터를 찾을 수 없습니다.
+                            {{ $t('FormWorkItem.noFormDataDescription') }}
                         </p>
                     </div>
                     <!-- 기존 폼 컨텐츠 -->
@@ -128,13 +128,13 @@
                                 class="rounded-pill mr-2"
                                 density="compact"
                                 style="background-color: #808080; color: white;"
-                            >이전 단계</v-btn>
+                            >{{ $t('FormWorkItem.previousStep') }}</v-btn>
                             <v-btn v-if="!isDryRun && isSimulate != 'true'"
                                 @click="saveTask"
                                 class="mr-2  default-greay-btn"
                                 density="compact"
                                 rounded variant="flat"
-                            >중간 저장</v-btn>
+                            >{{ $t('FormWorkItem.intermediateSave') }}</v-btn>
                             <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
                                 class="bouncing-arrow-horizontal"
                                 color="primary"
@@ -575,10 +575,19 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    let notificationMessage = `'${me.workItem.activity.name}'업무를 ${delegateUser.email}(${delegateUser.username})에게 위임하였습니다.`;
+                    let notificationMessage = me.$t('FormWorkItem.delegateMessage', {
+                        taskName: me.workItem.activity.name,
+                        email: delegateUser.email,
+                        username: delegateUser.username
+                    });
                     if(assigneeUserInfo){
                         const formattedAssigneeInfo = assigneeUserInfo.map(user => `${user.email}(${user.username})`).join(',');
-                        notificationMessage = `'${me.workItem.activity.name}'업무의 담당자를 [${formattedAssigneeInfo}]에서 ${delegateUser.email}(${delegateUser.username})으로 위임하였습니다.`;
+                        notificationMessage = me.$t('FormWorkItem.delegateMessageWithAssignee', {
+                            taskName: me.workItem.activity.name,
+                            assigneeInfo: formattedAssigneeInfo,
+                            email: delegateUser.email,
+                            username: delegateUser.username
+                        });
                     }
                   
                     await Promise.all([

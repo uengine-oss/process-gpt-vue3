@@ -1,5 +1,5 @@
 <template>
-    <v-card>
+    <div>
         <v-row class="ma-0 pa-4">
             <v-card-title class="text-h6 pa-0">{{ dialogTitle }}</v-card-title>
             <v-spacer></v-spacer>
@@ -13,7 +13,7 @@
             </v-btn>
         </v-row>
 
-        <v-card-text class="ma-0 pa-4 pb-0 pt-2 organization-edit-dialog-contents">
+        <v-card-text class="ma-0 pa-4 pb-0 pt-0 organization-edit-dialog-contents">
             <!-- edit user -->
             <div v-if="dialogType == 'edit-user'">
                 <v-text-field 
@@ -53,17 +53,16 @@
                 <div>'{{ editNode.data.name }}' {{ $t('organizationChartDefinition.deleteMessage') }}</div>
             </div>
         </v-card-text>
-        <v-card-actions>
+        <v-card-actions class="ma-0 pa-4 pt-2">
             <v-spacer></v-spacer>
             <v-btn @click="update"
                 :disabled="!isValid"
                 color="primary"
-                variant="elevated" 
-                class="rounded-pill"
-                density="compact"
+                variant="flat" 
+                rounded
             >{{ buttonText }}</v-btn>
         </v-card-actions>
-    </v-card>
+    </div>
 </template>
 
 <script>

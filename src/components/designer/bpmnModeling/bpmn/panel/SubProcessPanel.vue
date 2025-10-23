@@ -6,88 +6,93 @@
                 item-title="name" color="primary" label="Definition" variant="outlined" hide-details></v-autocomplete>
         </div> -->
         <div>
-            <v-radio-group v-model="isForEachRole" inline>
-                <v-radio :label="$t('SubProcessPanel.forEachRole')" :value="true"></v-radio>
-                <v-radio :label="$t('SubProcessPanel.forEachVariable')" :value="false"></v-radio>
-            </v-radio-group>
-            <div v-if="isForEachRole">
-                <v-row class="ma-0 pa-0">
-                    <v-autocomplete
-                        :items="roles"
-                        v-model="selectedRole"
-                        color="primary"
-                        :label="$t('SubProcessPanel.role')"
-                        variant="outlined"
-                        hide-details
-                    ></v-autocomplete>
-                    <!-- <bpmn-parameter-contexts
-                        :for-sub-process="true"
-                        :definition-variables="definitionVariables"
-                        :is-view-mode="isViewMode"
-                        :parameter-contexts="copyUengineProperties.variableBindings"
-                    ></bpmn-parameter-contexts> -->
-                </v-row>
-                <DetailComponent
-                    :title="$t('SubProcessPanel.forEachRoleDescriptionTitle')"
-                    :details="forEachRoleDescription"
-                />
+            <div v-if="mode != 'ProcessGPT'">
+                <v-radio-group v-model="isForEachRole" inline>
+                    <v-radio :label="$t('SubProcessPanel.forEachRole')" :value="true"></v-radio>
+                    <v-radio :label="$t('SubProcessPanel.forEachVariable')" :value="false"></v-radio>
+                </v-radio-group>
+                <div v-if="isForEachRole">
+                    <v-row class="ma-0 pa-0">
+                        <v-autocomplete
+                            :items="roles"
+                            v-model="selectedRole"
+                            color="primary"
+                            :label="$t('SubProcessPanel.role')"
+                            variant="outlined"
+                            hide-details
+                        ></v-autocomplete>
+                        <!-- <bpmn-parameter-contexts
+                            :for-sub-process="true"
+                            :definition-variables="definitionVariables"
+                            :is-view-mode="isViewMode"
+                            :parameter-contexts="copyUengineProperties.variableBindings"
+                        ></bpmn-parameter-contexts> -->
+                    </v-row>
+                    <DetailComponent
+                        :title="$t('SubProcessPanel.forEachRoleDescriptionTitle')"
+                        :details="forEachRoleDescription"
+                    />
+                </div>
+                <div v-else> 
+                    <v-row class="ma-0 pa-0">
+                        <v-autocomplete
+                            v-if="mode == 'uEngine'"
+                            :items="processVariables"
+                            :item-props="true"
+                            item-value
+                            item-title="name"
+                            color="primary"
+                            v-model="selectedVariable"
+                            :label="$t('SubProcessPanel.variable')"
+                            variant="outlined"
+                            :disabled="typeof copyUengineProperties.forEachVariable === 'string'"
+                        ></v-autocomplete>
+                        <!-- <bpmn-parameter-contexts
+                            :for-sub-process="true"
+                            :definition-variables="definitionVariables"
+                            :is-view-mode="isViewMode"
+                            :parameter-contexts="copyUengineProperties.variableBindings"
+                        ></bpmn-parameter-contexts> -->
+                    </v-row>
+                    <DetailComponent
+                        :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
+                        :details="SubProcessDescription"
+                        :detailUrl="'https://www.youtube.com/watch?v=nhQCDfYa6Gk'"
+                    />
+                </div>
             </div>
-            <div v-else> 
-                <v-row class="ma-0 pa-0">
-                    <v-autocomplete
-                        v-if="mode == 'uEngine'"
-                        :items="processVariables"
-                        :item-props="true"
-                        item-value
-                        item-title="name"
-                        color="primary"
-                        v-model="selectedVariable"
-                        :label="$t('SubProcessPanel.variable')"
-                        variant="outlined"
-                        :disabled="typeof copyUengineProperties.forEachVariable === 'string'"
-                    ></v-autocomplete>
-                    <v-text-field
-                        v-if="mode == 'ProcessGPT'"
-                        color="primary"
-                        v-model="copyUengineProperties.forEachVariable"
-                        :label="$t('SubProcessPanel.variable')"
-                        hint="<formKey>:<expr>"
-                        persistent-hint
-                        variant="outlined"
-                    ></v-text-field>
-                    <!-- <bpmn-parameter-contexts
-                        :for-sub-process="true"
-                        :definition-variables="definitionVariables"
-                        :is-view-mode="isViewMode"
-                        :parameter-contexts="copyUengineProperties.variableBindings"
-                    ></bpmn-parameter-contexts> -->
-                </v-row>
-                <DetailComponent
-                    :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
-                    :details="SubProcessDescription"
-                    :detailUrl="'https://www.youtube.com/watch?v=nhQCDfYa6Gk'"
+
+            <!-- ProcessGPT 전용: TextConditionField 패턴으로 텍스트/함수 모드 토글 및 입력 -->
+            <div v-if="mode == 'ProcessGPT'">
+                <TextConditionField
+                    :value="typeof copyUengineProperties.forEachVariable === 'string' ? copyUengineProperties.forEachVariable : ''"
+                    @update:value="updateForEachVariable"
+                    :mode="copyUengineProperties.forEachVariableMode"
+                    :conditionFunction="copyUengineProperties.determinationCode"
+                    @update:mode="updateForEachVariableMode"
+                    @update:conditionFunction="updateDeterminationCode"
                 />
+                <div class="mt-2 d-flex justify-end">
+                    <v-btn @click="generateFinalizeRule" color="primary" density="compact" variant="flat" rounded>
+                        <span v-if="isFinalizeRuleGenerating" class="thinking-wave-text">
+                            <span v-for="(char, index) in $t('SubProcessPanel.ruleGenerating')" :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
+                                {{ char === ' ' ? '\u00A0' : char }}
+                            </span>
+                        </span>
+                        <span v-else>
+                            {{ $t('SubProcessPanel.ruleGenerator') }}
+                        </span>
+                    </v-btn>
+                </div>
             </div>
 
             <div>
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0 mt-2">
                     <v-text-field v-model="pattern" :label="$t('SubProcessPanel.subProcessNamePattern')"></v-text-field>
                 </v-row>
             </div>
 
-            <!-- ProcessGPT 전용 결정론적 규칙화 버튼 -->
-            <div v-if="mode == 'ProcessGPT'" class="mt-4 d-flex justify-end">
-                <v-btn @click="generateFinalizeRule" color="primary" density="compact" variant="flat" rounded>
-                    <span v-if="isFinalizeRuleGenerating" class="thinking-wave-text">
-                        <span v-for="(char, index) in $t('SubProcessPanel.ruleGenerating')" :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
-                            {{ char === ' ' ? '\u00A0' : char }}
-                        </span>
-                    </span>
-                    <span v-else>
-                        {{ $t('SubProcessPanel.ruleGenerator') }}
-                    </span>
-                </v-btn>
-            </div>
+            
 
             <!-- 결정론적 규칙화 결과 다이얼로그 -->
             <v-dialog v-model="finalizeGenerationDialog" max-width="960" persistent>
@@ -111,7 +116,7 @@
                         <v-textarea
                             readonly
                             auto-grow
-                            :model-value="copyUengineProperties?.finalizeFunction || ''"
+                            :model-value="copyUengineProperties?.determinationCode || ''"
                             density="comfortable"
                         />
 
@@ -165,9 +170,13 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import SubprocessRuleGenerator from '@/components/ai/SubprocessRuleGenerator.js';
+import TextConditionField from './TextConditionField.vue';
 
 export default {
     name: 'sub-process-panel',
+    components: {
+        TextConditionField
+    },
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
@@ -297,6 +306,11 @@ export default {
             });
         } catch(e) {
             console.warn('Failed to load formDefs for finalize rule generation', e);
+        }
+
+        // ProcessGPT 기본 모드 설정(text/function). 기존 값 없으면 text로 초기화
+        if (this.mode == 'ProcessGPT' && !this.copyUengineProperties.forEachVariableMode) {
+            this.copyUengineProperties.forEachVariableMode = 'text';
         }
     },
     computed: {
@@ -445,7 +459,7 @@ export default {
 
         // 결정론적 규칙화: SequenceFlowPanel의 generateRule 패턴을 준용
         cancelFinalizeGeneration() {
-            this.copyUengineProperties.finalizeFunction = this.previousFinalizeFunction;
+            this.copyUengineProperties.determinationCode = this.previousDeterminationCode;
             this.finalizeGenerationDialog = false;
         },
         applyGeneratedFinalizeRule() {
@@ -486,9 +500,7 @@ export default {
                             const expected = Array.isArray(this.copyUengineProperties.finalize_io_examples) ? this.copyUengineProperties.finalize_io_examples : [];
                             jsonData.io_examples = expected.map(ex => ({ input: ex.input, output: ex.mismatch ? !ex.output : ex.output }));
                         }
-                        this.copyUengineProperties.finalizeFunction = jsonData.python_expr;
-                        if (!this.copyUengineProperties.forEachVariable) this.copyUengineProperties.forEachVariable = {};
-                        this.copyUengineProperties.forEachVariable = jsonData.python_expr;
+                        this.copyUengineProperties.determinationCode = jsonData.python_expr;
                         const raw = Array.isArray(jsonData.io_examples) ? jsonData.io_examples : [];
                         this.copyUengineProperties.finalize_io_examples = raw;
                         this.finalizeIoExamplesGood = raw.filter(ex => (typeof ex.output === 'number') && ex.output > 0);
@@ -521,9 +533,9 @@ export default {
             const singleFieldTarget = buildSingleFieldTarget(this.copyUengineProperties.finalize_io_examples || []);
 
             // Backup previous function before generation
-            this.previousFinalizeFunction = this.copyUengineProperties.finalizeFunction;
+            this.previousDeterminationCode = this.copyUengineProperties.determinationCode;
 
-            const isInitial = !this.copyUengineProperties.finalizeFunction;
+            const isInitial = !this.copyUengineProperties.determinationCode;
             this.lastIsInitialFinalize = isInitial;
             const generatorOptions = {
                 name: this.element.name,
@@ -536,7 +548,7 @@ export default {
                 generatorOptions.singleFieldTarget = singleFieldTarget;
                 const hasAnyMismatch = (this.copyUengineProperties.finalize_io_examples || []).some(ex => !!ex.mismatch);
                 if (!hasAnyMismatch) {
-                    generatorOptions.previousExpr = this.copyUengineProperties.finalizeFunction || '';
+                    generatorOptions.previousExpr = this.copyUengineProperties.determinationCode || '';
                 }
                 this.lastHasMismatchFinalize = hasAnyMismatch;
             }
@@ -548,6 +560,18 @@ export default {
         },
         updateFinalizeMismatchItem(example, val) {
             example.mismatch = !!val;
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
+        },
+        updateForEachVariableMode(mode) {
+            this.copyUengineProperties.forEachVariableMode = mode || 'text';
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
+        },
+        updateForEachVariable(val) {
+            this.copyUengineProperties.forEachVariable = val || '';
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
+        },
+        updateDeterminationCode(fn) {
+            this.copyUengineProperties.determinationCode = fn || '';
             this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
         hasUnclosedTripleBackticks(inputString) {

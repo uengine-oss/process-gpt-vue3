@@ -59,6 +59,10 @@
         "dateAndTime": "일시",
         "category": "구분"
     },
+    "DefaultWorkItem": {
+        "intermediateSave": "중간 저장",
+        "complete": "완료"
+    },
     "dashboard": {
         "title": "대시보드",
         "startProcess": "프로세스 시작",
@@ -136,6 +140,9 @@
     "runningInstance": {
         "title": "시작 중인 인스턴스",
         "running": " 시작 중..."
+    },
+    "ProcessInstanceRunning": {
+        "generating": "생성중입니다"
     },
     "admin": {
         "title": "관리자 메뉴",
@@ -227,7 +234,9 @@
         "agentEndpoint": "엔드포인트",
         "agentDescription": "설명",
         "agentTools": "도구",
-        "agentSkills": "기술"
+        "agentSkills": "기술",
+        "aiProvider": "AI 제공사",
+        "aiModel": "AI 모델"
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
@@ -951,6 +960,7 @@
         "replace-with-event-based-gateway": "이벤트 기반 게이트웨이로 변경",
         "replace-with-inclusive-gateway": "포괄적 게이트웨이로 변경",
         "replace-with-parallel-gateway": "병렬 게이트웨이로 변경",
+        "replace-with-exclusive-gateway": "배타적 게이트웨이로 변경",
         "replace-with-data-object-reference": "데이터 객체 참조로 변경",
         "replace-with-event-subprocess": "이벤트 하위 프로세스로 변경",
         "replace-with-transaction": "트랜잭션으로 변경",
@@ -998,7 +1008,10 @@
         "crewaiDeepResearchDescription": "다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 (5~15분 소요)",
         "crewaiActionDescription": "최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A (1~5분 소요)",
         "openaiDeepResearchDescription": "GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 (3~10분 소요)",
-        "langchainReactDescription": "LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 (3~5분 소요)"
+        "langchainReactDescription": "LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 (3~5분 소요)",
+        "delegateMessage": "'{taskName}'업무를 {username}에게 위임하였습니다.",
+        "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {username}으로 위임하였습니다.",
+        "runAgain": "다시 수행하기"
     },
     "TestProcess": {
         "title": "테스트 프로세스",
@@ -1091,7 +1104,12 @@
         "statusInProgress": "진행중",
         "statusPendingCancelled": "보류/반송",
         "statusDone": "완료업무",
-        "executeProcess": "프로세스 실행"
+        "executeProcess": "프로세스 실행",
+        "taskName": "업무명",
+        "startDate": "시작일",
+        "endDate": "만료일",
+        "duration": "기간",
+        "assignees": "담당자"
     },
     "DryRunProcess": {
         "notFound": "워크아이템을 찾을 수 없습니다."
@@ -1631,6 +1649,30 @@
         "langchainReactDescription": "LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 (3~5분 소요)",
         "browserUseDescription": "실제 브라우저를 조작하여 실시간 웹 정보 수집 및 작업 수행. ex) 검색, 폼 작성, 스크래핑 (2~8분 소요)"
     },
+    "EventTimeline": {
+        "browserAutomationResult": "브라우저 자동화 결과",
+        "completed": "완료",
+        "failed": "실패",
+        "taskSummary": "작업 요약",
+        "completedTime": "완료 시간",
+        "generatedFiles": "생성된 파일",
+        "imageGallery": "이미지 갤러리",
+        "images": "개의 이미지",
+        "doubleClickHint": "더블클릭으로도",
+        "expandCollapse": "접기/펼치기가 가능합니다",
+        "startTime": "시작시간",
+        "requestType": "요청 유형",
+        "toolUsageComplete": "사용 완료",
+        "toolUsageInProgress": "사용 중입니다",
+        "tool": "도구",
+        "approved": "승인됨",
+        "rejected": "거절됨",
+        "processed": "처리됨",
+        "inProgress": "진행중",
+        "taskFailed": "작업실패",
+        "allCompleted": "전체완료",
+        "taskCompleted": "작업완료"
+    },
     "agentFeedback": {
         "learningInProgress": "에이전트가 피드백을 기반으로 학습중입니다...",
         "agent": "에이전트",
@@ -1780,7 +1822,11 @@
         "save": "중간 저장",
         "submitComplete": "제출 완료",
         "noFormData": "등록된 폼 정보가 없습니다",
-        "noFormDataDescription": "현재 작업에 대한 폼 데이터를 찾을 수 없습니다."
+        "noFormDataDescription": "현재 작업에 대한 폼 데이터를 찾을 수 없습니다.",
+        "previousStep": "이전 단계",
+        "intermediateSave": "중간 저장",
+        "delegateMessage": "'{taskName}'업무를 {email}({username})에게 위임하였습니다.",
+        "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {email}({username})으로 위임하였습니다."
     },
     "InstanceSource": {
         "addFile": "파일 추가",
@@ -1814,5 +1860,26 @@
         "questionModeInfo": "질의 모드: 에이전트가 학습한 내용을 기반으로 질의응답을 수행하고, 필요한 정보를 선별해 제공합니다. \n 예를 들어, \n ‘지난주 학습한 보험 심사 기준 중 지역 평가 항목만 알려줘.’ \n ‘제안서 작성 지침에서 CI 컬러 관련 규칙만 요약해.’ \n ‘학습된 매뉴얼 중 품질검사 절차 부분만 설명해.’ \n 와 같은 질문을 통해 학습 내용을 검증하거나 필요한 부분만 확인할 수 있습니다.",
         "actionsModeInfo": "액션 모드: 에이전트가 실제 작업을 수행하고 결과를 확인할 수 있습니다. \n 예를 들어, \n ‘입력된 고객 데이터를 기반으로 보험료를 산출해.’ \n ‘최근 분기 영업 실적을 요약하고 그래프로 시각화해.’ \n ‘지정된 서식에 따라 제안서를 자동으로 작성해.’ \n 와 같은 명령을 실행할 수 있습니다.",
         "ruleInferenceModeInfo": "비즈니스 규칙 추론 모드: 학습한 비즈니스 규칙을 조회하고 특정 조건에 대한 결과를 추론할 수 있습니다. \n 예를 들어, \n '신용점수 750점, 연소득 6천만원인 고객의 대출 가능 여부는?' \n '구매 금액이 100만원인 VIP 고객에게 적용되는 최종 가격은?' \n '경력 7년에 자격증 2개를 보유한 지원자의 심사 결과는?' \n 와 같이 규칙을 검증하고 결과를 미리 확인할 수 있습니다."
+    },
+    "ReworkDialog": {
+        "title": "재작업 범위 설정",
+        "warning": "완료된 항목만 재작업 가능합니다.",
+        "currentOnly": "현재 단계만",
+        "currentOnlyDesc": "선택된 작업 항목의 현재 단계만 다시 수행합니다. 다른 단계에는 영향을 주지 않습니다.",
+        "includeReference": "현재 단계를 참조하는 다음 단계 포함",
+        "includeReferenceDesc": "현재 단계와 이를 참조하는 다음 단계들을 함께 다시 수행합니다. 연관된 작업들만 영향을 받습니다.",
+        "includeAll": "모든 다음 단계 포함",
+        "includeAllDesc": "현재 단계부터 시작하여 모든 후속 단계들을 다시 수행합니다.",
+        "submit": "제출",
+        "close": "닫기"
+    },
+    "AgentKnowledgeManagement": {
+        "title": "지식 관리",
+        "description": "에이전트의 지식과 학습 데이터를 관리할 수 있습니다.",
+        "noMemory": "메모리가 없습니다",
+        "addFirstMemory": "첫 번째 메모리를 추가해보세요."
+    },
+    "BpmnUengineViewer": {
+        "viewParticipants": "참여자 보기"
     }
 }

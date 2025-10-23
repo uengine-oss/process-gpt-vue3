@@ -74,7 +74,7 @@
                                     </v-row>
                                 </div>
                                 
-                                <div v-for="(message, index) in filteredMessages" :key="index" class="py-1">
+                                <div v-for="(message, index) in filteredMessages" :key="index" class="py-1 px-3">
                                     <!-- 날짜 구분선 표시 -->
                                     <div v-if="shouldDisplayDateSeparator(message, index)" class="date-separator-container">
                                         <v-divider class="date-separator-line"></v-divider>

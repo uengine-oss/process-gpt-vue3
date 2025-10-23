@@ -721,11 +721,20 @@ export default {
                     }
                 });
                 
+                // title이 있는 항목들만 필터링
+                menu.children = menu.children.filter(item => item && item.title && item.title.trim().length > 0);
+                deletedMenu.children = deletedMenu.children.filter(item => item && item.title && item.title.trim().length > 0);
+                
                 this.definitionList = this.sortProjectList(menu);
                 this.deletedDefinitionList = this.sortProjectList(deletedMenu);
             }
         },
         sortProjectList(list) {
+            // list나 list.children이 없는 경우 안전하게 반환
+            if (!list || !list.children || !Array.isArray(list.children)) {
+                return list || { children: [] };
+            }
+
             const getCharType = (char) => {
                 if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(char)) return 1; // 한글
                 if (/[a-zA-Z]/.test(char)) return 2; // 영어
@@ -735,6 +744,20 @@ export default {
 
             // children 배열을 정렬하고 원본 객체 구조를 유지
             list.children.sort((a, b) => {
+                // title이 없는 경우 안전하게 처리
+                if (!a || !a.title || !b || !b.title) {
+                    if (!a || !a.title) return 1;  // a를 뒤로
+                    if (!b || !b.title) return -1; // b를 뒤로
+                    return 0;
+                }
+
+                // title이 빈 문자열인 경우도 처리
+                if (a.title.length === 0 || b.title.length === 0) {
+                    if (a.title.length === 0) return 1;  // a를 뒤로
+                    if (b.title.length === 0) return -1; // b를 뒤로
+                    return 0;
+                }
+
                 const titleA = a.title.charAt(0);
                 const titleB = b.title.charAt(0);
                 

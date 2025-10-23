@@ -1,5 +1,5 @@
 <template>
-    <v-col v-if="infoDetail" style="height: 100%;">
+    <v-col v-if="infoDetail">
         <v-alert color="#2196F3" variant="outlined">
             <template v-slot:title>
                 <Icons style="padding-left:-5px;" :icon="'info-line'" :size="32" :color="'#2196F3'"/>

@@ -74,7 +74,7 @@
                             :disabled="isLoading"
                             :loading="isLoading"
                         >
-                            다시 수행하기
+                            {{ $t('WorkItem.runAgain') }}
                         </v-btn>
                     </div>
                 </v-row>
@@ -261,7 +261,7 @@
                                 </perfect-scrollbar>
                             </v-card>
                         </v-window-item>
-                        <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-3" style="height: 100%;">
+                        <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-0" style="height: 100%;">
                             <!-- 워크아이템 에이전트 맡기기 -->
                             <AgentMonitor ref="agentMonitor" :html="html" :workItem="workItem" :key="updatedDefKey" @browser-use-completed="handleBrowserUseCompleted" @update:agent-busy="updateAgentBusyState"/>
                         </v-window-item>
@@ -780,32 +780,41 @@ export default {
         },
         tabList() {
             if (this.mode == 'ProcessGPT') {
+                let tabs = [];
+                
                 if(this.bpmn && this.isStarted) {
-                    return [
+                    tabs = [
                         { value: 'progress', label: this.$t('WorkItem.progress') },
-                    ]
+                    ];
                 } else if (this.bpmn && !this.isStarted && this.isCompleted) {
-                    return [
+                    tabs = [
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
                         { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
-                    ]
+                    ];
                 } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
-                    return [
+                    tabs = [
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
                         { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
-                    ]
+                    ];
                 } else {
-                    return [
+                    tabs = [
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') }, //어시스턴트
                         { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
-                    ]
+                    ];
                 }
+                
+                // currentRunningResearchMethod가 있으면 agent-monitor 탭 추가
+                if (this.currentRunningResearchMethod && !tabs.find(t => t.value === 'agent-monitor')) {
+                    tabs.push({ value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') });
+                }
+                
+                return tabs;
                 
             } else {
                 return[
@@ -852,6 +861,12 @@ export default {
                 if (firstAvailableTab) {
                     this.selectedTab = firstAvailableTab.value;
                 }
+            }
+        },
+        currentRunningResearchMethod(newValue) {
+            // currentRunningResearchMethod가 있으면 agent-monitor 탭으로 변경
+            if (newValue) {
+                this.selectedTab = 'agent-monitor';
             }
         },
         workItem: {
@@ -1585,10 +1600,17 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    let notificationMessage = `'${me.workItem.activity.name}'업무를 ${delegateUser.username}에게 위임하였습니다.`;
+                    let notificationMessage = me.$t('WorkItem.delegateMessage', {
+                        taskName: me.workItem.activity.name,
+                        username: delegateUser.username
+                    });
                     if(assigneeUserInfo){
                         const formattedAssigneeInfo = assigneeUserInfo.map(user => user.username).join(',');
-                        notificationMessage = `'${me.workItem.activity.name}'업무의 담당자를 [${formattedAssigneeInfo}]에서 ${delegateUser.username}으로 위임하였습니다.`;
+                        notificationMessage = me.$t('WorkItem.delegateMessageWithAssignee', {
+                            taskName: me.workItem.activity.name,
+                            assigneeInfo: formattedAssigneeInfo,
+                            username: delegateUser.username
+                        });
                     }
                     
                     // uid 값을 백엔드로 전송

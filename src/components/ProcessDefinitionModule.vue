@@ -775,6 +775,16 @@ export default {
                     return 'Unknown';
                 };
 
+                // 항상 문자열을 보장하도록 역할 값을 정규화
+                const normalizeRole = (val) => {
+                    if (typeof val === 'string') return val;
+                    if (val && typeof val === 'object') {
+                        if (typeof val.name === 'string') return val.name;
+                        return '';
+                    }
+                    return val == null ? '' : String(val);
+                };
+
 
                 // ---------- 재귀 파서 ----------
                 function processSubProcess(subProcessTmp, processId) {
@@ -932,12 +942,14 @@ export default {
                     task.process = activity.process;
                     task.attachedEvents = activity.attachedEvents || null;
 
-                    task.role = resolveRole(activity.id, lanesForRole, parentLanes);
+                    task.role = normalizeRole(resolveRole(activity.id, lanesForRole, parentLanes));
 
                     const propsJson = getPropsJson(activity) || {};
                     if (propsJson) {
                         // task.properties = activity['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}';
-                        task.role = propsJson.role || task.role;
+                        if (Object.prototype.hasOwnProperty.call(propsJson, 'role')) {
+                            task.role = normalizeRole(propsJson.role) || task.role;
+                        }
                         task.duration = propsJson.duration || 5;
                         task.description = propsJson.description || task.description;
                         task.instruction = propsJson.instruction || task.instruction;
@@ -1375,17 +1387,20 @@ export default {
                             if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
                                 me.processDefinition.data = [];
                                 me.processDefinition.activities.forEach(async (activity) => {
+                                    let formId
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
-                                        let formId = activity.tool.replace('formHandler:', '');
-                                        let formHtml = localStorage.getItem(formId);
-                                        if (formHtml) {
-                                            const options = {
-                                                type: 'form',
-                                                proc_def_id: info.proc_def_id,
-                                                activity_id: activity.id
-                                            }
-                                            await backend.putRawDefinition(formHtml, formId, options);
+                                        formId = activity.tool.replace('formHandler:', '');
+                                    } else {
+                                        formId = `${me.processDefinition.processDefinitionId}_${activity.id}_form`; 
+                                    }                                    
+                                    let formHtml = localStorage.getItem(formId);
+                                    if (formHtml) {
+                                        const options = {
+                                            type: 'form',
+                                            proc_def_id: info.proc_def_id,
+                                            activity_id: activity.id
                                         }
+                                        await backend.putRawDefinition(formHtml, formId, options);
                                         localStorage.removeItem(formId);
                                     }
                                 });

@@ -6,7 +6,7 @@
             <div v-if="errorMessage" class="error-banner">{{ errorMessage }}</div>
             
             <EventTimeline 
-                v-if="timeline.length > 0 || isActionsMode"
+                v-if="!isInitialLoading && (timeline.length > 0 || isActionsMode)"
                 :timeline="timeline"
                 :human-query-answers="humanQueryAnswers"
                 :expanded-tasks="expandedTasks"
@@ -30,7 +30,7 @@
 
             <!-- 빈 상태 -->
             <EmptyState 
-                v-else
+                v-else-if="!isInitialLoading"
                 :is-queued="isQueued"
                 :orchestration-options="orchestrationOptions"
                 :selected-orchestration-method="selectedOrchestrationMethod"
@@ -154,6 +154,7 @@ export default {
             chatMessages: [],
             isCancelled: false,
             isLoading: false,
+            isInitialLoading: true, // 초기 데이터 로딩 상태
             selectedOrchestrationMethod: null, // 통합된 오케스트레이션 방식
             isDropdownOpen: false, // 드롭다운 열림 상태
             openBrowserAgent: false,
@@ -388,6 +389,7 @@ export default {
         workItem: {
             deep: true,
             async handler(newVal) {
+                this.isInitialLoading = true;
                 if (newVal.worklist.orchestration) {
                     this.selectedOrchestrationMethod = newVal.worklist.orchestration;
                 }
@@ -689,7 +691,10 @@ export default {
         // ========================================
         async loadData() {
             const taskId = this.validateTaskId();
-            if (!taskId) return;
+            if (!taskId) {
+                this.isInitialLoading = false;
+                return;
+            }
 
             try {
                 this.downloadedBrowserAgent = localStorage.getItem('downloadedBrowserAgent') === 'true';
@@ -718,6 +723,8 @@ export default {
                 }
             } catch (error) {
                 this.handleError(error, '이벤트 데이터를 불러오는 중 오류가 발생했습니다');
+            } finally {
+                this.isInitialLoading = false;
             }
         },
         // ========================================
@@ -1145,26 +1152,31 @@ export default {
         // 액션 모드 데이터 조회 - 메시지 + 이벤트
         // ========================================
         async loadActionsModeData() {
-            // 메시지 조회
-            await this.getMessages(this.$parent.instId);
-            this.chatMessages = this.messages.map(item => ({
-                time: item.timeStamp,
-                content: item.content
-            }));
-            // 워크아이템 조회
-            const worklist = await backend.getWorkListByInstId(this.$parent.instId);
-            if (worklist && worklist.length > 0) {
-                // 이벤트 조회
-                const eventPromises = worklist.map(async (item) => {
-                    const events = await backend.fetchEventList({
-                        match: {
-                            todo_id: item.taskId
-                        }
+            try {
+                // 메시지 조회
+                await this.getMessages(this.$parent.instId);
+                this.chatMessages = this.messages.map(item => ({
+                    time: item.timeStamp,
+                    content: item.content
+                }));
+                console.log('chatMessages', this.chatMessages);
+                // 워크아이템 조회
+                const worklist = await backend.getWorkListByInstId(this.$parent.instId);
+                if (worklist && worklist.length > 0) {
+                    // 이벤트 조회
+                    const eventPromises = worklist.map(async (item) => {
+                        const events = await backend.fetchEventList({
+                            match: {
+                                todo_id: item.taskId
+                            }
+                        });
+                        return events;
                     });
-                    return events;
-                });
-                const results = await Promise.all(eventPromises);
-                this.events = results.flat();
+                    const results = await Promise.all(eventPromises);
+                    this.events = results.flat();
+                }
+            } finally {
+                this.isInitialLoading = false;
             }
         },
 
@@ -1221,7 +1233,7 @@ export default {
 .agent-monitor {
     max-width: 800px;
     margin: 0 auto;
-    padding: 0;
+    padding: 0 8px 8px 8px;
     width: 100%;
     height: 100%;
     display: flex;
