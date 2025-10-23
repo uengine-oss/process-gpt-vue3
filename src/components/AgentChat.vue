@@ -10,32 +10,11 @@
                 />
             </template>
             <template v-slot:rightpart>
-                <!-- Learning Mode Tab Content -->
-                <div v-if="activeTab === 'learning' || activeTab === 'question'" class="chat-info-view-wrapper-chats">
-                    <Chat :messages="messages" :agentInfo="agentInfo"
-                        :userInfo="userInfo" :chatRoomId="chatRoomId"
-                        :howToUseInfo="howToUseInfo"
-                        @sendMessage="beforeSendMessage" @stopMessage="stopMessage"
-                    ></Chat>
-                </div>
-                
-                <!-- Action Mode Tab Content -->
-                <div v-else-if="activeTab === 'actions'" style="height: 100%; width: 100%;">
-                    <AgentActions :instId="chatRoomId"
-                        :agentInfo="agentInfo"
-                        :howToUseInfo="howToUseInfo"
-                    ></AgentActions>
-                </div>
-
-                <!-- Knowledge Management Tab Content -->
-                <div v-else-if="activeTab === 'knowledge'">
-                    <AgentKnowledgeManagement 
-                        :agentInfo="agentInfo" 
-                        :knowledges="knowledges" 
-                        :isLoading="isLoading"
-                        @deleteKnowledge="deleteKnowledge"
-                    />
-                </div>
+                <component 
+                    :is="currentTabComponent" 
+                    v-bind="currentTabProps"
+                    v-on="currentTabEvents"
+                />
             </template>
 
             <template v-slot:mobileLeftContent="{ closeDrawer }">
@@ -54,23 +33,33 @@
 <script>
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
-import ChatModule from "@/components/ChatModule.vue";
-import Chat from "@/components/ui/Chat.vue";
-import AgentKnowledgeManagement from "@/components/AgentKnowledgeManagement.vue";
 import AgentChatInfo from "@/components/AgentChatInfo.vue";
-import AgentActions from "@/components/AgentActions.vue";
 
-import AgentChatGenerator from "@/components/ai/AgentChatGenerator.js";
+// Agent Chat 탭 컴포넌트
+import AgentChatLearning from "@/components/AgentChatLearning.vue";
+import AgentChatQuestion from "@/components/AgentChatQuestion.vue";
+import AgentChatActions from "@/components/AgentChatActions.vue";
+import AgentKnowledgeManagement from "@/components/AgentKnowledgeManagement.vue";
+import BusinessRuleLearning from "@/components/BusinessRuleLearning.vue";
+import BusinessRuleInference from "@/components/BusinessRuleInference.vue";
+import BusinessRuleManagement from "@/components/BusinessRuleManagement.vue";
+
 import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
 
+import BackendFactory from '@/components/api/BackendFactory';
+
 export default {
-    mixins: [ChatModule, AgentCrudMixin],
+    mixins: [AgentCrudMixin],
     components: {
         AppBaseCard,
-        Chat,
-        AgentKnowledgeManagement,
         AgentChatInfo,
-        AgentActions
+        AgentChatLearning,
+        AgentChatQuestion,
+        AgentChatActions,
+        AgentKnowledgeManagement,
+        BusinessRuleLearning,
+        BusinessRuleInference,
+        BusinessRuleManagement
     },
     data: () => ({
         agentInfo: {
@@ -80,9 +69,7 @@ export default {
             goal: '에이전트의 목표가 설정되지 않았습니다.',
             agent_type: 'agent',
         },
-        isAgentLearning: true,
         activeTab: '',
-        chatRoomId: '',
 
         // knowledge management
         knowledges: [],
@@ -90,138 +77,206 @@ export default {
 
         // action mode
         workItem: null,
+
+        // 탭 설정
+        tabHandlers: null,
+
+        // dmn
+        dmnList: [],
+        selectedDmnId: null,
+        
+        // backend
+        backend: null,
     }),
     computed: {
         id() {
             return this.$route.params.id;
         },
-        howToUseInfo() {
-            // activeTab에 따라 다른 설명 반환
-            if (this.activeTab === 'learning') {
-                return {
-                    text: 'agentChat.learningModeInfo'
-                };
-            } else if (this.activeTab === 'question') {
-                return {
-                    text: 'agentChat.questionModeInfo'
-                };
-            } else if (this.activeTab === 'actions') {
-                return {
-                    text: 'agentChat.actionsModeInfo'
-                };
-            }
-            return null;
+        currentTabComponent() {
+            const handler = this.tabHandlers?.[this.activeTab];
+            return handler?.component || null;
+        },
+        currentTabProps() {
+            const handler = this.tabHandlers?.[this.activeTab];
+            return handler?.props?.(this) || {};
+        },
+        currentTabEvents() {
+            const handler = this.tabHandlers?.[this.activeTab];
+            return handler?.events?.(this) || {};
         }
     },
     watch: {
         "$route": {
-            async handler() {
+            async handler(newRoute, oldRoute) {
+                // 해시만 변경된 경우는 init을 호출하지 않음
+                if (oldRoute && newRoute.path === oldRoute.path && newRoute.hash !== oldRoute.hash) {
+                    return;
+                }
                 await this.init();
             },
             deep: true
         },
         activeTab: {
-            async handler(newVal) {
-                if (newVal === 'knowledge') {
-                    await this.getKnowledge();
-                } else if (newVal === 'question') {
-                    this.isAgentLearning = false;
-                    this.chatRoomId = `${this.agentInfo.id}-question`;
-                    await this.getMessages(this.chatRoomId);
-                } else if (newVal === 'actions') {
-                    this.isAgentLearning = false;
-                    this.chatRoomId = `${this.agentInfo.id}-actions`;
-                } else {
-                    this.isAgentLearning = true;
-                    this.chatRoomId = `${this.agentInfo.id}-learning`;
-                    await this.getMessages(this.chatRoomId);
+            async handler(newVal, oldVal) {
+                // 초기 로딩이 아닌 경우에만 URL 해시 업데이트
+                if (newVal && oldVal !== '') {
+                    window.location.hash = newVal;
                 }
-            },
-            immediate: true
+                
+                const handler = this.tabHandlers?.[newVal];
+                if (handler && typeof handler.activate === 'function') {
+                    await handler.activate();
+                }
+            }
         }
     },
     created() {
-        this.generator = new AgentChatGenerator(this, {
-            isStream: false,
-            preferredLanguage: "Korean",
-        });
+        this.backend = BackendFactory.createBackend();
 
-        this.isAgentChat = true;
+        // 탭 핸들러 초기화
+        this.setupTabHandlers();
     },
     async mounted() {
         await this.init();
+
+        this.EventBus.on('dmn-deleted', () => {
+            this.selectedDmnId = null;
+        });
     },
     methods: {
+        /**
+         * 각 탭의 동작을 정의
+         */
+        setupTabHandlers() {
+            this.tabHandlers = {
+                // 학습 모드
+                'learning': {
+                    component: 'AgentChatLearning',
+                    props: (vm) => ({}),
+                    events: (vm) => ({
+                        stopMessage: vm.stopMessage
+                    }),
+                    activate: async () => {
+                        this.selectedDmnId = null;
+                    }
+                },
+
+                // 질문 모드
+                'question': {
+                    component: 'AgentChatQuestion',
+                    props: (vm) => ({}),
+                    events: (vm) => ({
+                        stopMessage: vm.stopMessage
+                    }),
+                    activate: async () => {
+                        this.selectedDmnId = null;
+                    }
+                },
+
+                // 액션 모드
+                'actions': {
+                    component: 'AgentChatActions',
+                    props: (vm) => ({
+                        agentInfo: vm.agentInfo
+                    }),
+                    events: () => ({}),
+                    activate: async () => {
+                        this.selectedDmnId = null;
+                    }
+                },
+
+                // 지식 관리
+                'knowledge': {
+                    component: 'AgentKnowledgeManagement',
+                    props: (vm) => ({
+                        knowledges: vm.knowledges,
+                        isLoading: vm.isLoading
+                    }),
+                    events: (vm) => ({
+                        deleteKnowledge: vm.deleteKnowledge
+                    }),
+                    activate: async () => {
+                        this.selectedDmnId = null;
+                        await this.getKnowledge();
+                    }
+                },
+
+                // 비즈니스 규칙 학습
+                'dmn-modeling': {
+                    component: 'BusinessRuleLearning',
+                    props: (vm) => ({
+                        ownerInfo: vm.agentInfo,
+                        dmnId: vm.selectedDmnId
+                    }),
+                    events: () => ({}),
+                    activate: () => {
+                    }
+                },
+
+                // 비즈니스 규칙 추론
+                'rule-inference': {
+                    component: 'BusinessRuleInference',
+                    props: (vm) => ({
+                        ownerInfo: vm.agentInfo,
+                        dmnList: vm.dmnList
+                    }),
+                    events: (vm) => ({
+                        stopMessage: vm.stopMessage
+                    }),
+                    activate: async () => {
+                        this.selectedDmnId = null;
+                        await this.getDMNList();
+                    }
+                },
+
+                // 비즈니스 규칙 관리
+                'rule-management': {
+                    component: 'BusinessRuleManagement',
+                    props: (vm) => ({
+                        ownerInfo: vm.agentInfo,
+                        dmnList: vm.dmnList
+                    }),
+                    events: (vm) => ({
+                        'edit-dmn': vm.goEditDMN
+                    }),
+                    activate: async () => {
+                        this.selectedDmnId = null;
+                        await this.getDMNList();
+                    }
+                }
+            };
+        },
+
         async init() {
             this.agentInfo = await this.backend.getUserById(this.id);
-            this.activeTab = this.agentInfo.agent_type == 'a2a' ? 'actions' : 'learning';
-
-            if (this.isAgentLearning) {
-                this.chatRoomId = `${this.agentInfo.id}-learning`;
+            
+            // URL 해시가 있으면 해당 탭으로, 없으면 기본 탭으로 설정
+            const hashTab = window.location.hash.replace('#', '');
+            let selectedTab = '';
+            
+            // 해시가 있고 유효한 탭이면 해시 우선
+            if (hashTab && this.tabHandlers && this.tabHandlers[hashTab]) {
+                selectedTab = hashTab;
             } else {
-                this.chatRoomId = `${this.agentInfo.id}-question`;
-            }
-
-            await this.getMessages(this.chatRoomId);
-        },
-        async putMessage(message){
-            let uuid = this.uuid()
-            if(message.uuid){
-                uuid = message.uuid
-            }
-            let messageObj = {
-                "messages": message,
-                "id": this.chatRoomId,
-                "uuid": uuid
+                // 해시가 없거나 유효하지 않으면 기본 탭
+                selectedTab = this.agentInfo.agent_type == 'a2a' ? 'actions' : 'learning';
+                // 기본 탭으로 설정할 때는 해시도 업데이트
+                window.location.hash = selectedTab;
             }
             
-            this.putObject(`chats/${uuid}`, messageObj);
-        },
-         async beforeSendMessage(newMessage) {
-            if (newMessage && (newMessage.text != '' || (newMessage.images && newMessage.images.length > 0) || newMessage.image != null)) {
-                this.putMessage(this.createMessageObj(newMessage))
-                this.generator.beforeGenerate(newMessage);
-                this.sendMessage(newMessage);
-            }
-        },
-        afterModelCreated(response) {
-            if (response.work == 'A2AResponse') {
-                let messageWriting = this.messages[this.messages.length - 1];
-                if (messageWriting && messageWriting.isLoading) {
-                    messageWriting.content += response.content
-                    let content = response.content.replaceAll('\n', '<br>')
-                    messageWriting.htmlContent += content
+            // activeTab이 이미 같은 값이면 watch가 트리거되지 않으므로 수동으로 activate 호출
+            const shouldActivate = this.activeTab === selectedTab;
+            
+            // activeTab 설정
+            this.activeTab = selectedTab;
+            
+            // activeTab이 변경되지 않은 경우 수동으로 activate 호출
+            if (shouldActivate) {
+                const handler = this.tabHandlers?.[selectedTab];
+                if (handler && typeof handler.activate === 'function') {
+                    await handler.activate();
                 }
             }
-        },
-        afterModelStopped(response) {
-            // console.log(response)
-        },
-        async afterGenerationFinished(responseObj) {
-            if(responseObj && responseObj.work) {
-                let obj = this.createMessageObj(responseObj, 'agent')
-                obj.name = this.agentInfo.username
-                obj.profile = this.agentInfo.profile
-                if (responseObj.work == 'Mem0AgentQuery') {
-                    obj.content = responseObj.content
-                    if (responseObj.searchResults) {
-                        obj.searchResults = responseObj.searchResults
-                    }
-                    if (responseObj.htmlContent) {
-                        obj.htmlContent = responseObj.htmlContent
-                    }
-                } else if (responseObj.work == 'Mem0AgentInformation' || responseObj.work == 'Mem0AgentResponse') {
-                    obj.content = responseObj.content
-                } else if (responseObj.work == 'A2AResponse') {
-                    let content = responseObj.content
-                    content = content.replaceAll('undefined', '')
-                    obj.content = content
-                    obj.htmlContent = content.replaceAll('\n', '<br>')
-                }
-                obj.uuid = this.uuid()
-                await this.putMessage(obj)
-            }
-            await this.getMessages(this.chatRoomId);
         },
 
         // agent update handler
@@ -256,7 +311,25 @@ export default {
         async deleteKnowledge(options) {
             await this.backend.deleteVecsDocument(options);
             await this.getKnowledge();
-        }
+        },
+
+        // DMN
+        async getDMNList() {
+            let options = null;
+            if (this.agentInfo && this.agentInfo.id) {
+                options = {
+                    match: {
+                        owner: this.agentInfo.id,
+                        type: "dmn"
+                    }
+                }
+            }
+            this.dmnList = await this.backend.listDefinition("dmn", options);
+        },
+        goEditDMN(id) {
+            this.selectedDmnId = id;
+            this.activeTab = 'dmn-modeling';
+        },
     }
 }
 </script>

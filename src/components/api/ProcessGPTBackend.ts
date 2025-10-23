@@ -63,6 +63,9 @@ class ProcessGPTBackend implements Backend {
                     item.activityId = item.activity_id || ''
                 });
                 return formDefs
+            } else if (path === "dmn") {
+                let procDefs = await storage.list('proc_def', options);
+                return procDefs
             } else {
                 if (options) {
                     options.match = { isdeleted: false }
@@ -213,19 +216,24 @@ class ProcessGPTBackend implements Backend {
                     id: defId,
                 }
             });
+
             if (procDef) {
                 procDef.bpmn = xml;
                 procDef.name = options.name;
-                procDef.definition = options.definition;
-                await storage.putObject('proc_def', procDef);
             } else {
-                await storage.putObject('proc_def', {
+                procDef = {
                     id: defId,
                     name: options.name,
                     bpmn: xml,
-                    definition: options.definition,
-                });
+                    definition: null,
+                    owner: null,
+                    type: 'bpmn'
+                }
             }
+            if (options.definition) procDef.definition = options.definition;
+            if (options.owner) procDef.owner = options.owner;
+            if (options.type) procDef.type = options.type;
+            await storage.putObject('proc_def', procDef);
 
             if (options.version) {
                 const procDefArcv: any = {
@@ -277,7 +285,7 @@ class ProcessGPTBackend implements Backend {
                         return null;
                     }
                     return data;
-                } else if(options.type === "bpmn") {
+                } else if (options.type === "bpmn" || options.type === "dmn") {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "_")
                     let data = null;
                     // ::TODO: 개정된 프로세스 실행에 대한 작업 완료 후 사용
@@ -286,7 +294,7 @@ class ProcessGPTBackend implements Backend {
                     //         proc_def_id: defId, arcv_id: options.version
                     //     } });
                     // } else {
-                        data = await storage.getString(`proc_def`, { column: 'bpmn', match: { id: defId } });
+                    data = await storage.getString(`proc_def`, { column: 'bpmn', match: { id: defId } });
                     // }
                     return data;
                 }
@@ -2211,7 +2219,7 @@ class ProcessGPTBackend implements Backend {
 
     async getAgentList() {
         try {
-            const list = await storage.list('users', { match: { is_agent: true } });
+            const list = await storage.list('users', { match: { is_agent: true, tenant_id: window.$tenantName } });
             return list;
         } catch (error) {
             //@ts-ignore

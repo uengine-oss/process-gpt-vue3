@@ -127,15 +127,35 @@ export default {
             const dom = new DOMParser().parseFromString(html, 'text/html');
 
 
-            // 이름 중복 여부를 검사하기 위해서
+            // 이름 중복 여부를 검사하고 자동으로 고유하게 만들기
             const nameSet = new Set();
+            const nameCountMap = new Map(); // 이름별 카운터
+            
             (dom.querySelectorAll('[name]')).forEach((el) => {
-                const name = el.getAttribute('name');
+                let name = el.getAttribute('name');
                 if(!name || name.length <= 0) return;
 
+                // 중복된 이름이면 고유하게 만들기
                 if (nameSet.has(name)) {
-                    throw new Error(`'${name}' 이름이 중복되어 있습니다.`);
+                    const originalName = name;
+                    let counter = nameCountMap.get(originalName) || 1;
+                    
+                    // 고유한 이름이 될 때까지 카운터 증가
+                    do {
+                        counter++;
+                        name = `${originalName}_${counter}`;
+                    } while (nameSet.has(name));
+                    
+                    nameCountMap.set(originalName, counter);
+                    
+                    // 실제 DOM 요소의 name 속성 업데이트
+                    el.setAttribute('name', name);
+                    console.warn(`중복된 이름 '${originalName}'을 '${name}'으로 자동 변경했습니다.`);
+                } else if (!nameCountMap.has(name)) {
+                    // 첫 번째 등장이면 카운터 초기화
+                    nameCountMap.set(name, 0);
                 }
+                
                 nameSet.add(name);
             });
 

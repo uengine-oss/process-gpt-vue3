@@ -150,8 +150,12 @@ export default {
   },
 
   created() {
+    // readonly가 아닌 경우(편집/미리보기 모드)에만 EventBus 이벤트를 처리
+    // readonly인 경우(채팅 메시지 폼)는 무시하여 의도치 않은 업데이트 방지
     this.EventBus.on('updatePreviewHTML', (newHTML) => {
-      this.updateFormHTML(newHTML);
+      if (!this.readonly) {
+        this.updateFormHTML(newHTML);
+      }
     });
   },
 

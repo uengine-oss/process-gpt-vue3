@@ -538,6 +538,26 @@ export default {
                             //     });
                             // }
 
+                            // activities의 tool 정보 복원
+                            if (newProcessDefinition.activities) {
+                                // 기존 processDefinition에서 activities 찾기 (activities 또는 elements에서)
+                                let oldActivities = [];
+                                if (me.processDefinition.elements) {
+                                    oldActivities = me.processDefinition.elements.filter(el => el.elementType === 'Activity');
+                                }
+                                
+                                // tool 정보 복원
+                                if (oldActivities.length > 0) {
+                                    newProcessDefinition.activities = newProcessDefinition.activities.map(newActivity => {
+                                        const oldActivity = oldActivities.find(oldActivity => oldActivity.id === newActivity.id);
+                                        if (oldActivity && oldActivity.tool) {
+                                            newActivity.tool = oldActivity.tool;
+                                        }
+                                        return newActivity;
+                                    });
+                                }
+                            }
+
                             // newProcessDefinition = me.checkDefinitionSync(newProcessDefinition, me.processDefinition);
                             me.processDefinition = newProcessDefinition;
                         }
@@ -1387,17 +1407,20 @@ export default {
                             if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
                                 me.processDefinition.data = [];
                                 me.processDefinition.activities.forEach(async (activity) => {
+                                    let formId
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
-                                        let formId = activity.tool.replace('formHandler:', '');
-                                        let formHtml = localStorage.getItem(formId);
-                                        if (formHtml) {
-                                            const options = {
-                                                type: 'form',
-                                                proc_def_id: info.proc_def_id,
-                                                activity_id: activity.id
-                                            }
-                                            await backend.putRawDefinition(formHtml, formId, options);
+                                        formId = activity.tool.replace('formHandler:', '');
+                                    } else {
+                                        formId = `${me.processDefinition.processDefinitionId}_${activity.id}_form`; 
+                                    }                                    
+                                    let formHtml = localStorage.getItem(formId);
+                                    if (formHtml) {
+                                        const options = {
+                                            type: 'form',
+                                            proc_def_id: info.proc_def_id,
+                                            activity_id: activity.id
                                         }
+                                        await backend.putRawDefinition(formHtml, formId, options);
                                         localStorage.removeItem(formId);
                                     }
                                 });
