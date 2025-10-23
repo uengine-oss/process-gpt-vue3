@@ -10,7 +10,20 @@ export default {
             chatSubscription: null
         }
     },
+    computed: {
+        id() {
+            return this.$route.params.id;
+        }
+    },
     watch: {
+        async id(newId, oldId) {
+            if (newId && newId !== oldId) {
+                if (this.backend && this.backend.getUserById) {
+                    this.agentInfo = await this.backend.getUserById(newId);
+                }
+                this.chatRoomId = `${newId}-${this.type}`;
+            }
+        },
         chatRoomId: {
             async handler(newVal) {
                 if (newVal && newVal != '') {
@@ -25,7 +38,6 @@ export default {
     async mounted() {
         this.chatSubscription = await this.backend.watchData('chats', this.chatRoomId, (data) => {
             if (data && data.new && (data.eventType === "INSERT" || data.eventType === "UPDATE")) {
-                console.log("chat message received", data.new);
                 const message = data.new;
                 this.messages.push(message);
             }

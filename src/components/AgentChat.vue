@@ -10,15 +10,7 @@
                 />
             </template>
             <template v-slot:rightpart>
-                <div v-if="activeTab && ['learning', 'question', 'dmn-modeling', 'rule-inference'].includes(activeTab)" class="chat-info-view-wrapper-chats">
-                    <component 
-                        :is="currentTabComponent" 
-                        v-bind="currentTabProps"
-                        v-on="currentTabEvents"
-                    />
-                </div>
                 <component 
-                    v-else-if="activeTab"
                     :is="currentTabComponent" 
                     v-bind="currentTabProps"
                     v-on="currentTabEvents"
@@ -117,8 +109,7 @@ export default {
         "$route": {
             async handler(newRoute, oldRoute) {
                 // 해시만 변경된 경우는 init을 호출하지 않음
-                if (oldRoute && newRoute.path === oldRoute.path && 
-                    newRoute.hash !== oldRoute.hash) {
+                if (oldRoute && newRoute.path === oldRoute.path && newRoute.hash !== oldRoute.hash) {
                     return;
                 }
                 await this.init();

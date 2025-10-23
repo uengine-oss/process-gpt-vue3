@@ -31,11 +31,6 @@ export default {
             }
         }
     },
-    computed: {
-        id() {
-            return this.$route.params.id;
-        }
-    },
     created() {
         this.generator = new AgentChatGenerator(this, {
             isStream: false,

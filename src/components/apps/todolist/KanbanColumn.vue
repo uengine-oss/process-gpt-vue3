@@ -33,11 +33,26 @@
             
             <!-- 드래그 기능 제거된 단순 구조 -->
             <div class="list-group">
-                <transition-group>
+                <!-- 초기 로딩시 스켈레톤 표시 -->
+                <div v-if="loading && column.tasks.length === 0">
+                    <div v-for="index in pageSize" :key="'skeleton-' + index" class="todo-task-item-card-style mb-3">
+                        <v-skeleton-loader height="120"></v-skeleton-loader>
+                    </div>
+                </div>
+                
+                <!-- 실제 태스크 목록 -->
+                <transition-group v-else>
                     <div v-for="task in sortedTasks" :key="task.taskId" class="todo-task-item-card-style">
                         <KanbanColumnCard :task="task" @deleteTask="deleteTask" :userList="users" />
                     </div>
                 </transition-group>
+                
+                <!-- 추가 로딩시 하단 스켈레톤 표시 (기존 데이터가 있을 때) -->
+                <div v-if="loading && column.tasks.length > 0" class="mt-2">
+                    <div v-for="index in 10" :key="'loading-skeleton-' + index" class="todo-task-item-card-style mb-3">
+                        <v-skeleton-loader height="120"></v-skeleton-loader>
+                    </div>
+                </div>
                 
                 <!-- 마지막 페이지 표시 (스크롤을 통해 추가 로딩이 발생한 경우에만) -->
                 <div v-if="!hasMore && currentPage > 0 && column.tasks.length > 0">
@@ -88,6 +103,10 @@ export default {
         sortOption: {
             type: String,
             default: 'startDate'
+        },
+        pageSize: {
+            type: Number,
+            default: 10
         }
     },
     data: () => ({
