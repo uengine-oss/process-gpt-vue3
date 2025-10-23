@@ -35,6 +35,7 @@
                 :isNotAll="false"
                 :showAddButton="false"
                 :sortOption="sortOption"
+                :pageSize="pageSize"
                 @loadMore="handleLoadMore"
                 @updateStatus="updateStatus"
             />
@@ -147,14 +148,12 @@ export default {
         ]);
     },
     methods: {
-        loadDeletedInstance() {
-            var me = this
-            me.$try({
-                context: me,
-                action: async () => {
-                    this.deletedInstances = await backend.getDeletedInstances()
-                }
-            })
+        async loadDeletedInstance() {
+            try {
+                this.deletedInstances = await backend.getDeletedInstances()
+            } catch (error) {
+                console.error('삭제된 인스턴스 로딩 중 오류 발생:', error);
+            }
         },
         handleLoadMore(columnId) {
             if (this.loading[columnId]) {
@@ -169,79 +168,74 @@ export default {
             this.loadWorkListByStatus(columnId);
         },
         async loadWorkListByStatus(status) {
-            var me = this;
+            const me = this;
             
             // 로딩 시작
             me.loading[status] = true;
             
-            me.$try({
-                context: me,
-                action: async () => {
-                    const userId = localStorage.getItem('uid');
-                    let requestOptions = {
-                        page: me.pages[status],
-                        size: me.pageSize
-                    };
+            try {
+                const userId = localStorage.getItem('uid');
+                let requestOptions = {
+                    page: me.pages[status],
+                    size: me.pageSize
+                };
 
-                    // status별로 다른 API 호출
-                    let worklist;
-                    if (status === 'DONE') {
-                        worklist = await backend.getCompletedList(requestOptions);
-                    } else if (status === 'IN_PROGRESS') {
-                        requestOptions.status = 'IN_PROGRESS';
-                        requestOptions.userId = userId;
-                        worklist = await backend.getWorkList(requestOptions);
-                    } else if (status === 'PENDING') {
-                        requestOptions.status = 'PENDING';
-                        requestOptions.userId = userId;
-                        worklist = await backend.getWorkList(requestOptions);
-                    } else if (status === 'TODO') {
-                        // TODO는 여러 상태를 포함 (TODO, NEW, DRAFT)
-                        requestOptions.userId = userId;
-                        let allWorklist = await backend.getWorkList(requestOptions);
-                        worklist = allWorklist.filter(item => 
-                            item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT'
-                        );
-                    }
-                    
-                    if (!worklist) worklist = [];
-                    
-                    // 더 이상 데이터가 없는지 확인
-                    if (worklist.length < me.pageSize) {
-                        me.hasMore[status] = false;
-                    }
-                    
-                    const column = me.todolist.find(x => x.id === status);
-                    
-                    worklist.forEach(function(item) {
-                        // 상태별 매칭 (IN_PROGRESS는 SUBMITTED도 포함)
-                        let shouldAdd = false;
-                        if (status === 'IN_PROGRESS' && (item.status === 'IN_PROGRESS' || item.status === 'SUBMITTED')) {
-                            shouldAdd = true;
-                        } else if (status === 'TODO' && (item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT')) {
-                            shouldAdd = true;
-                        } else if (status === 'DONE' && (item.status === 'DONE' || item.status === 'COMPLETED')) {
-                            shouldAdd = true;
-                        } else if (item.status === status) {
-                            shouldAdd = true;
-                        }
-
-                        if (shouldAdd) {
-                            const taskExist = column.tasks.find(task => task.taskId === item.taskId);
-                            if (!taskExist) {
-                                column.tasks.push(item);
-                            }
-                        }
-                    });
-                    
-                    // 로딩 완료
-                    me.loading[status] = false;
-                },
-                onFail: () => {
-                    // 에러 발생 시에도 로딩 상태 해제
-                    me.loading[status] = false;
+                // status별로 다른 API 호출
+                let worklist;
+                if (status === 'DONE') {
+                    worklist = await backend.getCompletedList(requestOptions);
+                } else if (status === 'IN_PROGRESS') {
+                    requestOptions.status = 'IN_PROGRESS';
+                    requestOptions.userId = userId;
+                    worklist = await backend.getWorkList(requestOptions);
+                } else if (status === 'PENDING') {
+                    requestOptions.status = 'PENDING';
+                    requestOptions.userId = userId;
+                    worklist = await backend.getWorkList(requestOptions);
+                } else if (status === 'TODO') {
+                    // TODO는 여러 상태를 포함 (TODO, NEW, DRAFT)
+                    requestOptions.userId = userId;
+                    let allWorklist = await backend.getWorkList(requestOptions);
+                    worklist = allWorklist.filter(item => 
+                        item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT'
+                    );
                 }
-            });
+                
+                if (!worklist) worklist = [];
+                
+                // 더 이상 데이터가 없는지 확인
+                if (worklist.length < me.pageSize) {
+                    me.hasMore[status] = false;
+                }
+                
+                const column = me.todolist.find(x => x.id === status);
+                
+                worklist.forEach(function(item) {
+                    // 상태별 매칭 (IN_PROGRESS는 SUBMITTED도 포함)
+                    let shouldAdd = false;
+                    if (status === 'IN_PROGRESS' && (item.status === 'IN_PROGRESS' || item.status === 'SUBMITTED')) {
+                        shouldAdd = true;
+                    } else if (status === 'TODO' && (item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT')) {
+                        shouldAdd = true;
+                    } else if (status === 'DONE' && (item.status === 'DONE' || item.status === 'COMPLETED')) {
+                        shouldAdd = true;
+                    } else if (item.status === status) {
+                        shouldAdd = true;
+                    }
+
+                    if (shouldAdd) {
+                        const taskExist = column.tasks.find(task => task.taskId === item.taskId);
+                        if (!taskExist) {
+                            column.tasks.push(item);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('워크리스트 로딩 중 오류 발생:', error);
+            } finally {
+                // 로딩 완료
+                me.loading[status] = false;
+            }
         },
         updateStatus(taskId, originColumnId) {
             let task;
