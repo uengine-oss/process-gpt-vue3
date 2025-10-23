@@ -124,6 +124,8 @@ ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS bpmn text;
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS uuid uuid DEFAULT gen_random_uuid();
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS isdeleted boolean DEFAULT false;
+ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS owner text;
+ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS type text;
 
 -- proc_def_arcv table
 ALTER TABLE public.proc_def_arcv ADD COLUMN IF NOT EXISTS arcv_id text;

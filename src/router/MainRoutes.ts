@@ -83,6 +83,16 @@ const MainRoutes = {
             component: () => import('@/components/UIDefinitionChat.vue')
         },
         {
+            name: 'dmn',
+            path: '/dmn/chat',
+            component: () => import('@/components/DmnChat.vue')
+        },
+        {
+            name: 'dmn',
+            path: '/dmn/:pathMatch(.*)*',
+            component: () => import('@/components/DmnChat.vue')
+        },
+        {
             name: 'Definition Map',
             path: '/definition-map',
             component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),

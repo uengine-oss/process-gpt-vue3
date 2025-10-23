@@ -131,8 +131,26 @@
                     {{ tab.label }}
                 </v-tab>
             </v-tabs>
+
+            <!-- DMN Tabs -->
+            <div v-if="!editDialog && agentType !== 'a2a'">
+                <v-divider class="mb-4"></v-divider>
+                <span class="text-body-2 font-weight-medium">비즈니스 규칙</span>
+                <v-tabs
+                    v-model="activeTab"
+                    direction="vertical"
+                    color="primary"
+                    class="agent-tabs"
+                    @update:model-value="handleTabChange"
+                >
+                    <v-tab v-for="tab in businessRuleTabs" :key="tab.value" :value="tab.value" class="text-left justify-start">
+                        <v-icon start class="mr-2">{{ tab.icon }}</v-icon>
+                        {{ tab.label }}
+                    </v-tab>
+                </v-tabs>
+            </div>
         </div>
-            
+
         <!-- 편집 모드일 때 OrganizationEditDialog 표시 -->
         <div v-else>
             <OrganizationEditDialog class="agent-chat-info-organization-edit-dialog"
@@ -159,8 +177,8 @@ export default {
             default: () => ({
                 id: '',
                 profile: '/images/chat-icon.png',
-                        username: '',
-                        goal: ''
+                username: '',
+                goal: ''
             })
         },
         activeTab: {
@@ -184,7 +202,13 @@ export default {
                 goal: false,
                 persona: false,
                 tools: false
-            }
+            },
+            agentType: 'agent',
+            businessRuleTabs: [
+                { label: this.$t('AgentChatInfo.businessRuleTabs.learning'), value: 'dmn-modeling', icon: 'mdi-file-tree' },
+                { label: this.$t('AgentChatInfo.businessRuleTabs.inference'), value: 'rule-inference', icon: 'mdi-file-tree' },
+                { label: this.$t('AgentChatInfo.businessRuleTabs.management'), value: 'rule-management', icon: 'mdi-file-tree' }
+            ]
         }
     },
     mounted() {
@@ -193,10 +217,12 @@ export default {
     computed: {
         tabList() {
             if (this.agentInfo.agent_type == 'a2a') {
+                this.agentType = 'a2a';
                 return [
                     { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }
                 ]
             } else {
+                this.agentType = 'agent';
                 return [
                     { label: this.$t('AgentChatInfo.tabs.learning'), value: 'learning', icon: 'mdi-school' },
                     { label: this.$t('AgentChatInfo.tabs.question'), value: 'question', icon: 'mdi-chat' },
