@@ -150,10 +150,6 @@
 <script>
 export default {
     props: {
-        agentInfo: {
-            type: Object,
-            default: () => ({})
-        },
         knowledges: {
             type: Array,
             default: () => []
