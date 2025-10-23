@@ -1375,17 +1375,20 @@ export default {
                             if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
                                 me.processDefinition.data = [];
                                 me.processDefinition.activities.forEach(async (activity) => {
+                                    let formId
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
-                                        let formId = activity.tool.replace('formHandler:', '');
-                                        let formHtml = localStorage.getItem(formId);
-                                        if (formHtml) {
-                                            const options = {
-                                                type: 'form',
-                                                proc_def_id: info.proc_def_id,
-                                                activity_id: activity.id
-                                            }
-                                            await backend.putRawDefinition(formHtml, formId, options);
+                                        formId = activity.tool.replace('formHandler:', '');
+                                    } else {
+                                        formId = `${me.processDefinition.processDefinitionId}_${activity.id}_form`; 
+                                    }                                    
+                                    let formHtml = localStorage.getItem(formId);
+                                    if (formHtml) {
+                                        const options = {
+                                            type: 'form',
+                                            proc_def_id: info.proc_def_id,
+                                            activity_id: activity.id
                                         }
+                                        await backend.putRawDefinition(formHtml, formId, options);
                                         localStorage.removeItem(formId);
                                     }
                                 });
