@@ -996,7 +996,8 @@
         "openaiDeepResearchDescription": "GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 (3~10분 소요)",
         "langchainReactDescription": "LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 (3~5분 소요)",
         "delegateMessage": "'{taskName}'업무를 {username}에게 위임하였습니다.",
-        "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {username}으로 위임하였습니다."
+        "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {username}으로 위임하였습니다.",
+        "runAgain": "다시 수행하기"
     },
     "TestProcess": {
         "title": "테스트 프로세스",
@@ -1089,7 +1090,12 @@
         "statusInProgress": "진행중",
         "statusPendingCancelled": "보류/반송",
         "statusDone": "완료업무",
-        "executeProcess": "프로세스 실행"
+        "executeProcess": "프로세스 실행",
+        "taskName": "업무명",
+        "startDate": "시작일",
+        "endDate": "만료일",
+        "duration": "기간",
+        "assignees": "담당자"
     },
     "DryRunProcess": {
         "notFound": "워크아이템을 찾을 수 없습니다."

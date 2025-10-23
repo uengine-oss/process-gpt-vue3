@@ -12,7 +12,7 @@
                         {{ $t(item.label) }}
                     </v-tab>
                     <v-btn 
-                        variant="elevated" 
+                        variant="flat" 
                         color="primary" 
                         size="small" 
                         @click="openPDM()" 
@@ -39,7 +39,7 @@
                         {{ $t(item.label) }}
                     </v-btn>
                     <v-btn 
-                        variant="elevated" 
+                        variant="flat" 
                         color="primary" 
                         size="small" 
                         @click="openPDM()" 
