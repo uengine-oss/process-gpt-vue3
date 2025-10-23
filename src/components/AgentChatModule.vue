@@ -18,7 +18,6 @@ export default {
     watch: {
         async id(newId, oldId) {
             if (newId && newId !== oldId) {
-                console.log('AgentChatModule id changed', oldId, '->', newId);
                 if (this.backend && this.backend.getUserById) {
                     this.agentInfo = await this.backend.getUserById(newId);
                 }
@@ -27,7 +26,6 @@ export default {
         },
         chatRoomId: {
             async handler(newVal) {
-                console.log('AgentChatModule chatRoomId changed', newVal);
                 if (newVal && newVal != '') {
                     await this.getMessages(newVal);
                 }
@@ -40,7 +38,6 @@ export default {
     async mounted() {
         this.chatSubscription = await this.backend.watchData('chats', this.chatRoomId, (data) => {
             if (data && data.new && (data.eventType === "INSERT" || data.eventType === "UPDATE")) {
-                console.log("chat message received", data.new);
                 const message = data.new;
                 this.messages.push(message);
             }
