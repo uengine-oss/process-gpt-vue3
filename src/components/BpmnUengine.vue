@@ -1,5 +1,5 @@
 <template>
-    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode }" v-hammer:pan="onPan" v-hammer:pinch="onPinch"> 
+    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal }" v-hammer:pan="onPan" v-hammer:pinch="onPinch"> 
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
         <div v-if="isViewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
@@ -128,6 +128,9 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 1080;
+        },
+        isPal() {
+            return window.$pal;
         },
     },
     mounted() {
