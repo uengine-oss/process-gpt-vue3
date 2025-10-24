@@ -38,7 +38,6 @@ export default {
         });
     },
     async mounted() {
-        console.log('AgentChatLearning mounted');
         this.agentInfo = await this.backend.getUserById(this.id);
         this.chatRoomId = `${this.id}-${this.type}`;
         await this.getMessages(this.chatRoomId);

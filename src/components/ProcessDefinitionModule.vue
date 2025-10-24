@@ -250,18 +250,22 @@ export default {
             });
         },
         async saveFormData(html, activityId) {
-            const options = {
-                type: 'form',
-                proc_def_id: this.processDefinition.processDefinitionId,
-                activity_id: activityId
-            };
-            let formId = `${options.proc_def_id}_${options.activity_id}_form`;
-            formId = formId.toLowerCase().replace(/[/.]/g, "_");
+            let formId = '';
+            if (this.processDefinition && this.processDefinition.processDefinitionId) {
+                formId = `${this.processDefinition.processDefinitionId}_${activityId}_form`;
+            } else {
+                formId = `${activityId}_form`;
+            }
+            formId = formId.toLowerCase().replace(/[/.]/g, "_").replace(/#/g, "_");
             if (this.lastPath) {
                 if (this.lastPath == 'chat' || this.lastPath == 'definition-map') {
                     localStorage.setItem(formId, html);
                 } else {
-                    await backend.putRawDefinition(html, formId, options);
+                    await backend.putRawDefinition(html, formId, {
+                        type: 'form',
+                        proc_def_id: this.processDefinition.processDefinitionId,
+                        activity_id: activityId
+                    });
                 }
             } else {
                 localStorage.setItem(formId, html);
@@ -558,7 +562,6 @@ export default {
                                 }
                             }
 
-                            // newProcessDefinition = me.checkDefinitionSync(newProcessDefinition, me.processDefinition);
                             me.processDefinition = newProcessDefinition;
                         }
 
@@ -1471,50 +1474,10 @@ export default {
                 }
             });
         },
-
-        checkDefinitionSync(newVal, oldVal) {
-            try {
-                if (newVal && oldVal) {
-                    if (newVal.activities && oldVal.activities) {
-                        newVal.activities = newVal.activities.map(newActivity => {
-                            const oldActivity = oldVal.activities.find(oldActivity => oldActivity.id === newActivity.id);
-                            if (oldActivity) {
-                                newActivity.type = oldActivity.type;
-                                newActivity.duration = oldActivity.duration;
-                                newActivity.agentMode = oldActivity.agentMode;
-                                newActivity.orchestration = oldActivity.orchestration;
-                                newActivity.description = oldActivity.description;
-                                newActivity.instruction = oldActivity.instruction;
-                                newActivity.checkpoints = oldActivity.checkpoints;
-                                newActivity.properties = oldActivity.properties;
-                                newActivity.inputData = oldActivity.inputData;
-                                newActivity.outputData = oldActivity.outputData;
-                                newActivity.tool = oldActivity.tool;
-                            }
-                            return newActivity;
-                        });
-                    }
-                    if (newVal.gateways && oldVal.gateways) {
-                        newVal.gateways = newVal.gateways.map(newGateway => {
-                            const oldGateway = oldVal.gateways.find(oldGateway => oldGateway.id === newGateway.id);
-                            if (oldGateway) {
-                                newGateway.conditionData = oldGateway.conditionData || [];
-                            }
-                            return newGateway;
-                        });
-                    }
-                    return newVal;
-                }
-            } catch (error) {
-                console.error('Error checking definition sync:', error);
-                return newVal;
-            }
-        },
         
         async optimizeDefinition(processDefinition) {
             if (!processDefinition || !processDefinition.activities) {
                 processDefinition = await this.convertXMLToJSON(this.bpmn);
-                // processDefinition = this.checkDefinitionSync(processDefinition, this.processDefinition);
             }
 
             return new Promise((resolve, reject) => {

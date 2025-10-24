@@ -40,6 +40,15 @@ You MUST return ONLY valid JSON in this exact format. No markdown, no explanatio
 - **Rules**: Input conditions → output values mappings with proper hit policies
 - **DMNDI**: Visualization elements for proper rendering
 
+## Hit Policy Guidelines
+- Use full notation (UNIQUE, ANY, FIRST, PRIORITY, OUTPUT ORDER, RULE ORDER, COLLECT)
+- **DO NOT use abbreviated versions** (U, A, F, P, O, R, C, C+, C<, C>, C#)
+- For **COLLECT** hit policy, analyze requirements to determine if aggregation is needed:
+  - If aggregation needed, add separate **aggregation** attribute with values: SUM, MIN, MAX, COUNT
+  - Use full names (SUM, not +; MIN, not <; MAX, not >; COUNT, not #)
+  - Example: \`hitPolicy="COLLECT" aggregation="SUM"\`
+  - If no aggregation needed, use only \`hitPolicy="COLLECT"\` without aggregation attribute
+
 ## ID and Naming Conventions
 - Use **lowercase snake_case** for all IDs (e.g., "loan_approval", "customer_risk_assessment")
 - Derive IDs from business domain/purpose (no mandatory prefixes)

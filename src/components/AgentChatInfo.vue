@@ -136,14 +136,18 @@
             <div v-if="!editDialog && agentType !== 'a2a'">
                 <v-divider class="mb-4"></v-divider>
                 <span class="text-body-2 font-weight-medium">비즈니스 규칙</span>
+                <v-btn size="x-small" variant="text" icon @click="handleDmnChange(null)">
+                    <v-icon>mdi-plus</v-icon>
+                </v-btn>
                 <v-tabs
-                    v-model="activeTab"
+                    v-if="dmnList.length > 0"
+                    v-model="selectedDmnId"
                     direction="vertical"
                     color="primary"
                     class="agent-tabs"
-                    @update:model-value="handleTabChange"
+                    @update:model-value="handleDmnChange"
                 >
-                    <v-tab v-for="tab in businessRuleTabs" :key="tab.value" :value="tab.value" class="text-left justify-start">
+                    <v-tab v-for="dmn in dmnList" :key="dmn.id" :value="dmn.id" class="text-left justify-start" @click="handleDmnChange(dmn.id)">
                         <Icons :icon="tab.icon" :size="16" class="mr-2"/>
                         {{ tab.label }}
                     </v-tab>
@@ -188,6 +192,10 @@ export default {
         isMobile: {
             type: Boolean,
             default: false
+        },
+        dmnList: {
+            type: Array,
+            default: () => []
         }
     },
     data() {
@@ -208,7 +216,8 @@ export default {
                 { label: this.$t('AgentChatInfo.businessRuleTabs.learning'), value: 'dmn-modeling', icon: 'sidebarDMN' },
                 { label: this.$t('AgentChatInfo.businessRuleTabs.inference'), value: 'rule-inference', icon: 'sidebarDMN' },
                 { label: this.$t('AgentChatInfo.businessRuleTabs.management'), value: 'rule-management', icon: 'sidebarDMN' }
-            ]
+            ],
+            selectedDmnId: null
         }
     },
     mounted() {
@@ -261,11 +270,30 @@ export default {
             },
             deep: true,
             immediate: true
+        },
+        $route: {
+            handler(newVal) {
+                if (newVal.query.dmnId) {
+                    this.selectedDmnId = newVal.query.dmnId;
+                }
+            },
+            deep: true
         }
     },
     methods: {
         handleTabChange(newTab) {
-            this.$emit('update:activeTab', newTab);
+            this.$router.push({ hash: '#' + newTab });
+            this.selectedDmnId = null;
+        },
+
+        handleDmnChange(dmnId) {
+            if (dmnId) {
+                this.selectedDmnId = dmnId;
+                this.$router.push({ query: { dmnId: dmnId }, hash: '#dmn-modeling' });
+            } else {
+                this.selectedDmnId = null;
+                this.$router.push({ query: {}, hash: '#dmn-modeling' });
+            }
         },
         
         initializeImage() {
