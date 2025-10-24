@@ -144,7 +144,7 @@
                     @update:model-value="handleTabChange"
                 >
                     <v-tab v-for="tab in businessRuleTabs" :key="tab.value" :value="tab.value" class="text-left justify-start">
-                        <v-icon start class="mr-2">{{ tab.icon }}</v-icon>
+                        <Icons :icon="tab.icon" :size="16" class="mr-2"/>
                         {{ tab.label }}
                     </v-tab>
                 </v-tabs>
@@ -205,9 +205,9 @@ export default {
             },
             agentType: 'agent',
             businessRuleTabs: [
-                { label: this.$t('AgentChatInfo.businessRuleTabs.learning'), value: 'dmn-modeling', icon: 'mdi-file-tree' },
-                { label: this.$t('AgentChatInfo.businessRuleTabs.inference'), value: 'rule-inference', icon: 'mdi-file-tree' },
-                { label: this.$t('AgentChatInfo.businessRuleTabs.management'), value: 'rule-management', icon: 'mdi-file-tree' }
+                { label: this.$t('AgentChatInfo.businessRuleTabs.learning'), value: 'dmn-modeling', icon: 'sidebarDMN' },
+                { label: this.$t('AgentChatInfo.businessRuleTabs.inference'), value: 'rule-inference', icon: 'sidebarDMN' },
+                { label: this.$t('AgentChatInfo.businessRuleTabs.management'), value: 'rule-management', icon: 'sidebarDMN' }
             ]
         }
     },

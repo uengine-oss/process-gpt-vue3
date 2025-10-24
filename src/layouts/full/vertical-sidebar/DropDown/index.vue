@@ -10,13 +10,27 @@ const useI18n = computed(() => {
 
 function getIcon(item) {
     if (item.type && item.type.includes('bpmn')) {
-        return 'ibm-process-mining';
+        return 'sidebarProcess';
     } else if (item.type && item.type.includes('json')) {
         return 'json';
     } else if (item.type && item.type.includes('form')) {
         return 'document';
+    } else if (item.type && item.type.includes('dmn')) {
+        return 'sidebarDMN';
     } else {
         return 'ibm-process-mining';
+    }
+}
+
+function getIconColor(item) {
+    if (item.type && item.type.includes('bpmn')) {
+        return '#64B5F6';
+    } else if (item.type && item.type.includes('dmn')) {
+        return '#BA68C8';
+    } else if (item.type && item.type.includes('form')) {
+        return '#81C784';
+    } else {
+        return '';
     }
 }
 </script>
@@ -36,13 +50,16 @@ function getIcon(item) {
             :style="{ marginLeft: 8 + (level - 1) + 'px' }"
         >
             <!-- 정의관리 아이콘 보여지던곳 -->
-            <!-- <template v-slot:prepend>
-                <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
+            <template v-slot:prepend>
+                <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor"
+                    class="mr-2"
+                >
                     <Icons
                         :icon="getIcon(item)"
+                        :color="getIconColor(item)"
                     />
                 </div>
-            </template> -->
+            </template>
             <v-tooltip bottom :text="useI18n ? $t(item.title) : item.title">
                 <template v-slot:activator="{ props }">
                     <v-list-item-title

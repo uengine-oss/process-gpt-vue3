@@ -189,7 +189,7 @@
                     </v-col>
                 </div>
               
-                <!-- 정의관리 타이틀 + 목록 -->
+                <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
                 <v-col class="pa-0">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
@@ -240,18 +240,6 @@
                         </template>
                     </ExpandableList>
                 </v-col>
-                <!-- <v-col class="pa-0" style="flex: 1 1; overflow: auto;">
-                    <div class="text-medium-emphasis cp-menu mt-3 ml-2">{{ $t('VerticalSidebar.trash') }}</div>
-                        <template v-if="deletedDefinitionList">
-                            <NavCollapse v-for="(deletedDefinition, i) in deletedDefinitionList" :key="i"
-                                :item="deletedDefinition" 
-                                class="leftPadding"
-                                @update:item="(deletedDefinitionList[i] = $event)" 
-                                :level="0" 
-                                :type="'definition-list'" 
-                            />
-                        </template>
-                </v-col> -->
             </v-list>
             <Footer class="mt-2" />
         </div>
@@ -415,7 +403,7 @@ export default {
                 },
                 {
                     title: 'processDefinition.title',
-                    icon: 'ibm-process-mining',
+                    icon: 'sidebarProcess',
                     BgColor: 'primary',
                     to: '/definitions/chat',
                     disable: false
@@ -665,14 +653,16 @@ export default {
                                 obj = {
                                     title: item.definition.processDefinitionName,
                                     to: `/definitions/${item.definition.processDefinitionId}`,
-                                    BgColor: 'primary'
+                                    BgColor: 'primary',
+                                    type: 'bpmn'
                                 };
                                 menu.children.push(obj);
                             } else if (item.type && item.type === 'dmn') {
                                 obj = {
                                     title: item.name,
                                     to: `/dmn/${item.id}`,
-                                    BgColor: 'primary'
+                                    BgColor: 'primary',
+                                    type: 'dmn'
                                 };
                                 menu.children.push(obj);
                             }
@@ -713,7 +703,8 @@ export default {
                                 obj = {
                                     title: item.definition.processDefinitionName,
                                     to: `/definitions/${item.definition.processDefinitionId}`,
-                                    BgColor: 'primary'
+                                    BgColor: 'primary',
+                                    type: 'bpmn'
                                 };
                                 deletedMenu.children.push(obj);
                             }
