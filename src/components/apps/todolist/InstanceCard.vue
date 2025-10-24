@@ -409,6 +409,10 @@ export default {
             this.tab = lastTab;
         }
         this.init();
+
+        this.EventBus.on('todolist-updated', async () => {
+            await this.loadTasks();
+        });
     },
     computed: {
         id() {
@@ -516,30 +520,35 @@ export default {
                     //     await activeComponents[0].init();
                     // }
 
-                    let result = [];
-                    const tasks = await backend.getWorkList({instId: me.id});
-                    result = result.concat(tasks);
-                    // 바로 아래 자식 태스크 추가
-                    for (const task of tasks) {
-                        let childTaks = await backend.getWorkList({instId: task.taskId});
-                        const updatedWorklist = childTaks.map(item => ({
-                            ...item,
-                            parent: task.taskId, // 인스턴스가 부모
-                        }));
-                        result = result.concat(updatedWorklist);
-                    }
-                    me.tasks = result;
-                    let dependencies = await backend.getTaskDependencyByInstId(me.id)
-                    me.dependencies = me.settingTaskDependency(dependencies, me.tasks);
-                    // 칸반 컬럼 업데이트
-                    me.columns.forEach(column => {
-                        if(column.id == 'IN_PROGRESS') {
-                            column.tasks = me.tasks.filter(task => task.status === 'SUBMITTED' || task.status === 'IN_PROGRESS');
-                        } else {
-                            column.tasks = me.tasks.filter(task => task.status === column.id);
-                        }
-                    });
+                    await me.loadTasks();
+
                     me.isLoading = false
+                }
+            });
+        },
+        async loadTasks() {
+            var me = this;
+            let result = [];
+            const tasks = await backend.getWorkList({instId: me.id});
+            result = result.concat(tasks);
+            // 바로 아래 자식 태스크 추가
+            for (const task of tasks) {
+                let childTaks = await backend.getWorkList({instId: task.taskId});
+                const updatedWorklist = childTaks.map(item => ({
+                    ...item,
+                    parent: task.taskId, // 인스턴스가 부모
+                }));
+                result = result.concat(updatedWorklist);
+            }
+            me.tasks = result;
+            let dependencies = await backend.getTaskDependencyByInstId(me.id)
+            me.dependencies = me.settingTaskDependency(dependencies, me.tasks);
+            // 칸반 컬럼 업데이트
+            me.columns.forEach(column => {
+                if(column.id == 'IN_PROGRESS') {
+                    column.tasks = me.tasks.filter(task => task.status === 'SUBMITTED' || task.status === 'IN_PROGRESS');
+                } else {
+                    column.tasks = me.tasks.filter(task => task.status === column.id);
                 }
             });
         },
