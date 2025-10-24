@@ -114,6 +114,9 @@ export default {
                     this.selectedDmnId = null;
                 }
                 if (newRoute.hash) this.activeTab = newRoute.hash.replace('#', '');
+                if (newRoute.params.id !== oldRoute.params.id) {
+                    this.agentInfo = await this.backend.getUserById(newRoute.params.id);
+                }
                 await this.init();
             },
             deep: true
