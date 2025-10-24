@@ -147,9 +147,9 @@
                     class="agent-tabs"
                     @update:model-value="handleDmnChange"
                 >
-                    <v-tab v-for="dmn in dmnList" :key="dmn.id" :value="dmn.id" class="text-left justify-start" @click="handleDmnChange(dmn.id)">
-                        <Icons :icon="tab.icon" :size="16" class="mr-2"/>
-                        {{ tab.label }}
+                    <v-tab v-for="dmn in dmnTabList" :key="dmn.id" :value="dmn.id" class="text-left justify-start" @click="handleDmnChange(dmn.id)">
+                        <Icons :icon="dmn.icon" :size="16" class="mr-2"/>
+                        {{ dmn.label }}
                     </v-tab>
                 </v-tabs>
             </div>
@@ -212,11 +212,6 @@ export default {
                 tools: false
             },
             agentType: 'agent',
-            businessRuleTabs: [
-                { label: this.$t('AgentChatInfo.businessRuleTabs.learning'), value: 'dmn-modeling', icon: 'sidebarDMN' },
-                { label: this.$t('AgentChatInfo.businessRuleTabs.inference'), value: 'rule-inference', icon: 'sidebarDMN' },
-                { label: this.$t('AgentChatInfo.businessRuleTabs.management'), value: 'rule-management', icon: 'sidebarDMN' }
-            ],
             selectedDmnId: null
         }
     },
@@ -258,6 +253,14 @@ export default {
             }
             
             return [];
+        },
+
+        dmnTabList() {
+            return this.dmnList.map(dmn => ({
+                id: dmn.id,
+                label: dmn.name,
+                icon: 'sidebarDMN'
+            }));
         }
     },
     watch: {
