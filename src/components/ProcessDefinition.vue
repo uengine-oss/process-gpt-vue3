@@ -947,7 +947,7 @@ export default {
                     return;
                 }
                 
-                if (this.isViewMode) {
+                if (this.isViewMode && !this.isPal) {
                     this.$try({
                         action: async () => {
                             // 아무것도 하지 않음

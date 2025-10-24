@@ -1840,14 +1840,16 @@ export default {
                     imgElement.src = event.target.result;
                     imgElement.onload = () => {
                         const canvas = document.createElement("canvas");
-                        const max_width = 200;
-                        const scaleSize = max_width / imgElement.width;
-                        canvas.width = max_width;
+                        // AI Vision 분석을 위해 고해상도 유지 (최대 2048px)
+                        const max_width = 2048;
+                        const scaleSize = imgElement.width > max_width ? max_width / imgElement.width : 1;
+                        canvas.width = imgElement.width * scaleSize;
                         canvas.height = imgElement.height * scaleSize;
 
                         const ctx = canvas.getContext("2d");
                         ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-                        const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
+                        // AI가 이미지를 제대로 인식할 수 있도록 높은 품질 유지 (0.9 = 90% 품질)
+                        const srcEncoded = ctx.canvas.toDataURL("image/jpeg", 0.9);
 
                         // 이미지 배열에 추가
                         me.attachedImages.push({
@@ -1939,14 +1941,16 @@ export default {
                         imgElement.src = e.target.result;
                         imgElement.onload = () => {
                             const canvas = document.createElement("canvas");
-                            const max_width = 200;
-                            const scaleSize = max_width / imgElement.width;
-                            canvas.width = max_width;
+                            // AI Vision 분석을 위해 고해상도 유지 (최대 2048px)
+                            const max_width = 2048;
+                            const scaleSize = imgElement.width > max_width ? max_width / imgElement.width : 1;
+                            canvas.width = imgElement.width * scaleSize;
                             canvas.height = imgElement.height * scaleSize;
 
                             const ctx = canvas.getContext("2d");
                             ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-                            const srcEncoded = ctx.canvas.toDataURL(imgElement, "image/jpeg", 0.2);
+                            // AI가 이미지를 제대로 인식할 수 있도록 높은 품질 유지 (0.9 = 90% 품질)
+                            const srcEncoded = ctx.canvas.toDataURL("image/jpeg", 0.9);
 
                             // 이미지 배열에 추가
                             this.attachedImages.push({

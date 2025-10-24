@@ -1,7 +1,8 @@
 <template>
+    
     <div style="height: 100%; position: relative;" 
         ref="container" class="vue-bpmn-diagram-container" 
-        :class="{ 'view-mode': isViewMode, 'vue-bpmn-diagram-container-view-mode': isViewMode }" 
+        :class="{ 'view-mode': isViewMode, 'vue-bpmn-diagram-container-view-mode': isViewMode, 'not-pal': !isPal }" 
         v-hammer:pan="onPan" 
         v-hammer:pinch="onPinch"
     >
@@ -171,6 +172,9 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        isPal() {
+            return window.$pal;
         },
     },
     mounted() {
@@ -1029,11 +1033,11 @@ svg .bpmn-diff-deleted marker[id*="sequenceflow-end"] path {
 }
 
 /* 읽기모드에서 더블클릭 비활성화 */
-.view-mode .djs-element {
+.view-mode.not-pal .djs-element {
   pointer-events: auto !important;
 }
 
-.view-mode .djs-element * {
+.view-mode.not-pal .djs-element * {
   pointer-events: none !important;
 }
 
