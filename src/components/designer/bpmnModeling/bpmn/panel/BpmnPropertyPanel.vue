@@ -39,7 +39,7 @@
                 </v-menu>
             </div>
             <v-spacer></v-spacer>
-            <v-btn @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
+            <v-btn v-if="!isViewMode" @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
                 <v-icon>mdi-content-save</v-icon>
             </v-btn>
             <v-btn @click="closePanel" icon variant="text" density="comfortable" class="panel-close-btn">
