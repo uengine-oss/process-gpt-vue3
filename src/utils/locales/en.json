@@ -13,7 +13,8 @@
         "delete": "Deleted successfully.",
         "instanceDelete": "The instance has been deleted.",
         "completed": "Completed",
-        "savedMarketplace": "Saved to marketplace."
+        "savedMarketplace": "Saved to marketplace.",
+        "reworkRequested": "Rework has been requested."
     },
     "errorMsg": {
         "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
@@ -335,7 +336,7 @@
         "restoreProcessMessage": "Do you want to restore the process?",
         "webFormUrl": "Web Form URL",
         "isReadOnlyMode": "Read-only mode.",
-        "isReadOnlyModeWarningMsg": "읽기 모드입니다. 연필버튼을 클릭하여 수정하십시오."
+        "isReadOnlyModeWarningMsg": "This is read-only mode. Click the pencil icon to edit."
     },
     "ProcessVariable": {
         "name": "Name",

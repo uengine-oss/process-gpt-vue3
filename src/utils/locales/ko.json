@@ -13,7 +13,8 @@
         "delete": "삭제되었습니다.",
         "instanceDelete": "인스턴스가 삭제되었습니다.",
         "completed": "실행 완료",
-        "savedMarketplace": "마켓플레이스에 등록되었습니다."
+        "savedMarketplace": "마켓플레이스에 등록되었습니다.",
+        "reworkRequested": "재작업이 요청되었습니다."
     },
     "errorMsg": {
         "isBackendConnected" : "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요.",
