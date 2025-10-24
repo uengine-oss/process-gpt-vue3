@@ -73,7 +73,7 @@
                             ></v-textarea>
                         </div>
                     </div>
-                    <div v-if="mode == 'ProcessGPT'">
+                    <div v-if="mode == 'ProcessGPT' && !isPal">
                         <v-checkbox
                             v-model="checkOptimize"
                             :label="$t('ProcessDefinitionVersionDialog.optimize')"
@@ -160,6 +160,9 @@ export default {
         },
         mode() {
             return window.$mode;
+        },
+        isPal() {
+            return window.$pal;
         },
     },
     watch: {
@@ -310,6 +313,9 @@ export default {
         },
         validate() {
             // idRules 검증
+            if(this.isPal) {
+                return true;
+            }
             if (this.information.proc_def_id) {
                 for (const rule of this.idRules) {
                     const result = rule(this.information.proc_def_id);
