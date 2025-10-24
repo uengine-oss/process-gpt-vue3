@@ -311,7 +311,7 @@ export default {
         dmnId: {
             handler(newVal, oldVal) {
                 // 초기 로딩 시 (oldVal === undefined)는 created에서 처리하므로 스킵
-                if (oldVal === undefined) return;
+                if (oldVal === undefined || oldVal === null) return;
                 
                 // 값이 실제로 변경되었을 때만 처리
                 if (newVal !== oldVal) {
@@ -333,6 +333,8 @@ export default {
                         this.dmnXml = null;
                         this.dmnName = null;
                         this.isLoadedDmn = false;
+                        this.dmnRenderKey++;
+                        this.messages = [];
                     }
                 }
             }
@@ -429,6 +431,8 @@ export default {
             this.dmnName = name;
             this.loadDmnId = id;
             this.isLoadedDmn = true;
+
+            this.EventBus.emit('dmn-saved', { id: id, name: name });
         },
         
         async loadData() {
@@ -482,6 +486,7 @@ export default {
                 this.dmnName = null;
                 this.loadDmnId = null;
                 this.isShowDmnModeler = true;
+                this.messages = [];
             }
 
             if (this.ownerInfo && this.ownerInfo.id) {   
