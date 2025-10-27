@@ -3,18 +3,44 @@ import MainRoutes from './MainRoutes';
 import AuthRoutes from './AuthRoutes';
 import TenantRoutes from './TenantRoutes';
 
+declare global {
+    interface Window {
+        $try?: (options: any, parameters?: any, options_?: any) => Promise<void>;
+        $app_?: any;
+    }
+}
+
+// 동적 임포트 재시도 래퍼 함수
+export const retryDynamicImport = (importFn: () => Promise<any>, retries = 3, delay = 1000) => {
+    return new Promise((resolve, reject) => {
+        importFn()
+            .then(resolve)
+            .catch((error) => {
+                if (retries > 0) {
+                    setTimeout(() => {
+                        retryDynamicImport(importFn, retries - 1, delay)
+                            .then(resolve)
+                            .catch(reject);
+                    }, delay);
+                } else {
+                    reject(error);
+                }
+            });
+    });
+};
+
 export const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
         {
             path: '/:pathMatch(.*)*',
-            component: () => import('@/views/authentication/Error.vue')
+            component: () => retryDynamicImport(() => import('@/views/authentication/Error.vue'))
         },
         // 외부 고객용 폼 URL
         {
             name: 'External Forms',
             path: '/external-forms/:formId',
-            component: () => import('@/components/ui/ExternalForms.vue')
+            component: () => retryDynamicImport(() => import('@/components/ui/ExternalForms.vue'))
         },
         MainRoutes,
         AuthRoutes,
@@ -22,17 +48,17 @@ export const router = createRouter({
         {
             name: 'Markdown Editor',
             path: '/markdown-editor',
-            component: () => import('@/views/markdown/MarkdownEditor.vue')
+            component: () => retryDynamicImport(() => import('@/views/markdown/MarkdownEditor.vue'))
         },
         {
             name: 'Slide',
             path: '/slide-editor',
-            component: () => import('@/views/markdown/SlideEditor.vue')
+            component: () => retryDynamicImport(() => import('@/views/markdown/SlideEditor.vue'))
         },
         {
             path: '/present',
             name: 'presentation',
-            component: () => import('@/views/markdown/SlidePresentation.vue'),
+            component: () => retryDynamicImport(() => import('@/views/markdown/SlidePresentation.vue')),
             props: (route) => ({
                 printPdf: route.query['print-pdf'] !== undefined,
                 showNotes: route.query.showNotes,
@@ -51,7 +77,6 @@ router.beforeEach(async (to: any, from: any, next: any) => {
         if (hasRouterError) {
             console.log('[라우터] 에러 상태 감지 - 상태 리셋 후 계속 진행');
             hasRouterError = false;
-            // 새로고침 대신 에러 상태만 리셋하고 라우팅 계속 진행
         }
 
         if (window.$mode !== 'uEngine') {
@@ -100,77 +125,28 @@ router.onError((error) => {
     
     const errorMessage = error?.message || error?.toString() || '';
     
-    // 심각한 라우팅 에러만 hasRouterError 설정
-    // 비즈니스 로직이나 API 에러는 라우팅에 영향주지 않음
+    // 동적 임포트 실패 시 자동 복구
     if (errorMessage.includes('Failed to fetch dynamically imported module') ||
         errorMessage.includes('Module not found') ||
         errorMessage.includes('Cannot resolve component')) {
-        console.warn('[라우터] 심각한 라우팅 에러 - 상태 설정');
         hasRouterError = true;
+        
+        // 사용자에게 알림
+        if (window.$app_) {
+            window.$app_.snackbarMessage = '페이지 로딩 중 오류가 발생했습니다. 자동으로 재시도합니다.';
+            window.$app_.snackbarColor = 'warning';
+            window.$app_.snackbar = true;
+            window.$app_.clickCount = 0;
+        }
+        
+        // 2초 후 자동 새로고침
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
     } else {
-        console.warn('[라우터] 일반적인 에러 - 라우팅 계속 진행');
+        console.log('[라우터] 일반적인 에러 - 라우팅 계속 진행');
     }
 });
 
-// 전역 에러 핸들러로 Vue 컴포넌트 에러도 감지
-window.addEventListener('unhandledrejection', (event) => {
-    const errorMessage = event.reason?.message || event.reason?.toString() || '';
-    
-    // Supabase, 초기화, 파일 처리 관련 에러는 라우터 에러로 처리하지 않음
-    if (errorMessage.includes('$supabase') || 
-        errorMessage.includes('Cannot redefine property') ||
-        errorMessage.includes('setupSupabase') ||
-        errorMessage.includes('downloadFile') ||
-        errorMessage.includes('uploadFile') ||
-        errorMessage.includes('error in downloadFile') ||
-        errorMessage.includes('400 (Bad Request)')) {
-        console.warn('[전역] 초기화/파일처리 관련 에러 무시:', event.reason);
-        return;
-    }
-    
-    console.error('[전역] 처리되지 않은 Promise 에러:', event.reason);
-    
-    // 정말 심각한 에러만 라우터 에러로 처리
-    if (errorMessage.includes('Failed to fetch dynamically imported module') ||
-        errorMessage.includes('Module not found') ||
-        errorMessage.includes('Cannot resolve component') ||
-        errorMessage.includes('ReferenceError') ||
-        errorMessage.includes('SyntaxError')) {
-        console.warn('[전역] 심각한 애플리케이션 에러 - 라우터 상태 설정');
-        hasRouterError = true;
-    } else {
-        console.warn('[전역] 일반적인 에러 - 애플리케이션 계속 진행');
-    }
-});
-
-window.addEventListener('error', (event) => {
-    const errorMessage = event.error?.message || event.error?.toString() || '';
-    
-    // Supabase, 초기화, 파일 처리 관련 에러는 라우터 에러로 처리하지 않음
-    if (errorMessage.includes('$supabase') || 
-        errorMessage.includes('Cannot redefine property') ||
-        errorMessage.includes('setupSupabase') ||
-        errorMessage.includes('downloadFile') ||
-        errorMessage.includes('uploadFile') ||
-        errorMessage.includes('error in downloadFile') ||
-        errorMessage.includes('400 (Bad Request)')) {
-        console.warn('[전역] 초기화/파일처리 관련 에러 무시:', event.error);
-        return;
-    }
-    
-    console.error('[전역] JavaScript 에러:', event.error);
-    
-    // 정말 심각한 에러만 라우터 에러로 처리
-    if (errorMessage.includes('Failed to fetch dynamically imported module') ||
-        errorMessage.includes('Module not found') ||
-        errorMessage.includes('Cannot resolve component') ||
-        errorMessage.includes('ReferenceError') ||
-        errorMessage.includes('SyntaxError')) {
-        console.warn('[전역] 심각한 JavaScript 에러 - 라우터 상태 설정');
-        hasRouterError = true;
-    } else {
-        console.warn('[전역] 일반적인 JavaScript 에러 - 애플리케이션 계속 진행');
-    }
-});
 
 export default router;
