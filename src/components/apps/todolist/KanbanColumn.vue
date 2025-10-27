@@ -219,39 +219,24 @@ export default {
                 const addedTask = event.added.element;
                 const taskId = addedTask.taskId;
                 
+                // 이동 전 상태는 addedTask에 저장된 원래 상태 사용
+                const fromStatus = addedTask.status;
+                const toStatus = this.column.id;
+                
+                // 완료됨(DONE)에서 진행중(IN_PROGRESS)으로 이동 시 재작업 가능 여부 판별
+                if (fromStatus === 'DONE' && toStatus === 'IN_PROGRESS') {
+                    this.currentDraggedTask = addedTask;
+                    this.openReworkDialog(addedTask, fromStatus);
+                    return;
+                } else {
+                    backend.putWorkItem(taskId, { status: toStatus });
+                }
+
                 // 원본 column.tasks에서 정확한 task 찾기 (고유 ID 기반)
                 const originalTask = this.column.tasks.find(t => t.taskId === taskId);
                 if (!originalTask) {
                     // 원본에 없으면 새로 추가
                     this.column.tasks.push(addedTask);
-                }
-                
-                // 이동 전 상태는 addedTask에 저장된 원래 상태 사용
-                const fromStatus = addedTask.status;
-                const toStatus = this.column.id;
-                
-                console.log('드래그 앤 드롭 이동:', {
-                    업무명: addedTask.name || addedTask.title,
-                    이전상태: fromStatus,
-                    이동한컬럼: toStatus,
-                    taskId: taskId
-                });
-                
-                // 상태 업데이트 (UI 반영) - 원본과 추가된 task 모두 업데이트
-                addedTask.status = toStatus;
-                if (originalTask) {
-                    originalTask.status = toStatus;
-                }
-                
-                // 완료됨(DONE)에서 진행중(IN_PROGRESS)으로 이동 시 재작업 다이얼로그 표시
-                if (fromStatus === 'DONE' && toStatus === 'IN_PROGRESS') {
-                    console.log('재작업 다이얼로그 열기:', {
-                        업무명: addedTask.name || addedTask.title,
-                        taskId: taskId,
-                        instId: addedTask.instId
-                    });
-                    this.currentDraggedTask = addedTask;
-                    this.openReworkDialog(addedTask);
                 }
             }
             
@@ -266,11 +251,24 @@ export default {
                     this.column.tasks.splice(index, 1);
                 }
             }
+            
         },
-        async openReworkDialog(task) {
-            // 재작업 가능한 액티비티 목록 로드
-            await this.loadReworkActivities(task);
-            this.reworkDialog = true;
+        async openReworkDialog(task, fromStatus) {
+            const enableRework = await backend.enableRework(task);
+            if (!enableRework) {
+                this.$try({
+                    context: this,
+                    action: () => {
+                    },
+                    warningMsg: '재작업 가능한 액티비티가 없습니다.'
+                });
+            } else {
+                // 재작업 가능한 액티비티 목록 로드
+                await this.loadReworkActivities(task);
+                this.reworkDialog = true;
+            }
+            task.status = fromStatus;
+            this.$emit('updateStatus', task.taskId, fromStatus);
         },
         async loadReworkActivities(task) {
             // WorkItem과 동일한 구조로 초기화
@@ -305,39 +303,34 @@ export default {
         },
         closeReworkDialog() {
             this.reworkDialog = false;
-            this.currentDraggedTask = null;
             this.reworkActivities = [];
         },
         submitRework(activities) {
             const me = this;
             
+            me.closeReworkDialog();
             if (!me.currentDraggedTask || !me.currentDraggedTask.instId) {
                 console.error('재작업할 태스크 정보가 없습니다.');
-                me.closeReworkDialog();
                 return;
             }
             
             backend.reWorkItem({
                 instanceId: me.currentDraggedTask.instId,
-                activities: activities
+                activities: activities,
+                activityId: me.currentDraggedTask.tracingTag
             }).then(data => {
                 if (data) {
-                    const workItemIds = Object.keys(data);
-                    if (workItemIds.length > 0) {
-                        // 재작업이 생성된 워크아이템으로 이동
-                        me.$router.push(`/todolist/${workItemIds[0]}`);
-                    }
+                    me.$try({
+                        context: me,
+                        action: () => {
+                            me.currentDraggedTask = null;
+                            me.EventBus.emit('todolist-updated');
+                        },
+                        successMsg: this.$t('successMsg.reworkRequested')
+                    });
                 }
             }).catch(err => {
                 console.error('재작업 요청 중 오류:', err);
-            });
-
-            me.$try({
-                context: me,
-                action: () => {
-                    me.closeReworkDialog();
-                },
-                successMsg: this.$t('successMsg.reworkRequested')
             });
         },
         updateTask(event) {
