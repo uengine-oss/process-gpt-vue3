@@ -9,6 +9,8 @@ import 'dmn-js/dist/assets/dmn-js-decision-table.css';
 import 'dmn-js/dist/assets/dmn-js-literal-expression.css';
 import 'dmn-js/dist/assets/dmn-js-shared.css';
 import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
+import 'dmn-js-decision-table/assets/css/dmn-js-decision-table.css';
+import 'dmn-js-decision-table/assets/css/dmn-js-decision-table-controls.css';
 
 import DmnModeler from 'dmn-js/lib/Modeler';
 import DmnViewer from 'dmn-js/lib/Viewer';
