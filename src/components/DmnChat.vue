@@ -233,23 +233,19 @@
                     </v-btn>
                 </v-card-title>
                 <v-card-text>
-                    <v-text-field
-                        v-model="dmnIdToSave"
-                        label="DMN ID"
-                        :placeholder="loadDmnId === 'chat' ? '새 DMN ID를 입력하세요' : loadDmnId"
-                        variant="outlined"
-                        density="comfortable"
-                    ></v-text-field>
-                    <v-text-field
-                        v-model="dmnNameToSave"
-                        label="DMN Name"
-                        :placeholder="dmnName || '새 DMN 이름을 입력하세요'"
-                        variant="outlined"
-                        density="comfortable"
-                    ></v-text-field>
+                    <v-form v-model="isSaveFormValid">
+                        <v-text-field
+                            v-model="dmnNameToSave"
+                            label="DMN Name"
+                            :placeholder="dmnName || '새 DMN 이름을 입력하세요'"
+                            variant="outlined"
+                            density="comfortable"
+                            :rules="[(v) => !!v || 'DMN 이름을 입력하세요']"
+                        ></v-text-field>
+                    </v-form>
                 </v-card-text>
                 <v-card-actions class="d-flex justify-end">
-                    <v-btn color="primary" variant="flat" rounded @click="beforeSaveDmn">저장</v-btn>
+                    <v-btn color="primary" variant="flat" rounded @click="beforeSaveDmn" :disabled="!isSaveFormValid">저장</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -334,7 +330,8 @@ export default {
             dmnDefinition: null,
             isRoutedWithUnsaved: false,
 
-            owner: ''
+            owner: '',
+            isSaveFormValid: false
         };
     },
     async created() {
@@ -434,7 +431,7 @@ export default {
     },
     methods: {
         openSaveDialog() {
-            this.dmnIdToSave = this.loadDmnId === 'chat' ? '' : this.loadDmnId;
+            this.dmnIdToSave = this.loadDmnId || '';
             this.dmnNameToSave = this.dmnName || '';
             this.isOpenSaveDialog = true;
         },
@@ -449,26 +446,19 @@ export default {
                 context: me,
                 action: async () => {
                     const xml = await me.$refs.dmnModeler.saveDMN();
-                    const id = me.dmnIdToSave || me.loadDmnId;
-                    const name = me.dmnNameToSave || me.dmnName;
-                    
-                    if (!id || id === 'chat') {
-                        alert('DMN ID를 입력해주세요.');
-                        return;
-                    }
                     
                     await me.saveDmn({
-                        id: id,
-                        name: name,
+                        id: me.dmnIdToSave,
+                        name: me.dmnNameToSave,
                         xml: xml
                     });
                     
+                    me.isAIUpdated = false;
                     me.isChanged = false;
                     me.isOpenSaveDialog = false;
                     
-                    // 새로 저장한 경우 해당 ID로 이동
-                    if (me.loadDmnId === 'chat') {
-                        await me.$router.push(`/dmn/${id}`);
+                    if (me.$route.path === '/dmn/chat') {
+                        await me.$router.push(`/dmn/${me.dmnIdToSave}`);
                     }
                 },
                 successMsg: this.$t('successMsg.save')
@@ -491,7 +481,6 @@ export default {
         },
         
         async loadData() {
-            // dmnId prop이 있으면 우선 사용, 없으면 라우트에서 가져오기
             if (this.dmnId && this.dmnId !== 'chat') {
                 this.loadDmnId = this.dmnId;
             } else {
@@ -509,17 +498,10 @@ export default {
             
             if (this.isLoadedDmn) {
                 try {
-                    const dmnData = await this.backend.getRawDefinition(this.loadDmnId, { type: 'dmn' });
-                    this.dmnXml = dmnData;
-                    
-                    // DMN 이름 추출 (XML에서)
-                    const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(this.dmnXml, 'text/xml');
-                    const definitions = xmlDoc.getElementsByTagName('definitions')[0];
-                    if (definitions) {
-                        this.dmnName = definitions.getAttribute('name') || this.loadDmnId;
-                    }
-                    
+                    const dmnData = await this.backend.getRawDefinition(this.loadDmnId);
+                    this.dmnXml = dmnData.bpmn;
+                    this.dmnName = dmnData.name;
+
                     this.dmnRenderKey++;
                     this.isShowDmnModeler = true;
                 } catch (error) {
@@ -532,14 +514,18 @@ export default {
                         // 임베디드 모드에서는 경고만 출력하고 새 DMN 화면으로
                         console.warn(`DMN '${this.loadDmnId}' 로드 실패. 새 DMN 생성 모드로 전환합니다.`);
                     }
+                    // 새 DMN으로 전환
                     this.dmnXml = null;
-                    this.dmnName = null;
+                    this.dmnName = '';
+                    this.loadDmnId = this.uuid();
+                    this.isLoadedDmn = false;
                     this.isShowDmnModeler = true;
                 }
             } else {
+                // 새 DMN 생성 모드 - UUID로 ID 생성
                 this.dmnXml = null;
-                this.dmnName = null;
-                this.loadDmnId = null;
+                this.dmnName = '';
+                this.loadDmnId = this.uuid();
                 this.isShowDmnModeler = true;
                 this.messages = [];
             }
@@ -603,7 +589,6 @@ export default {
                 }
             } catch (parseError) {
                 console.error('[DMN] JSON 파싱 실패:', parseError);
-                console.log('[DMN] 파싱 시도한 내용:', jsonContent.substring(0, 500));
                 return;
             }
         },
@@ -635,7 +620,6 @@ export default {
                         parsed = JSON.parse(jsonContent);
                     } catch (parseError) {
                         console.error('[DMN] JSON 파싱 실패:', parseError);
-                        console.log('[DMN] 파싱 시도한 내용:', jsonContent.substring(0, 500));
                         if (messageWriting) {
                             messageWriting.content = 'AI 응답의 JSON 파싱에 실패했습니다.';
                         }
@@ -646,7 +630,7 @@ export default {
                 // DMN XML 설정
                 this.dmnXml = parsed.dmnXml;
 
-                // DMN 이름 추출
+                // XML 파싱 에러 체크만 수행 (id와 name은 읽지 않음)
                 try {
                     const parser = new DOMParser();
                     const xmlDoc = parser.parseFromString(this.dmnXml, 'text/xml');
@@ -661,14 +645,16 @@ export default {
                         return;
                     }
                     
-                    const definitions = xmlDoc.getElementsByTagName('definitions')[0];
-                    if (definitions) {
-                        this.loadDmnId = definitions.getAttribute('id') || this.loadDmnId;
-                        this.dmnName = definitions.getAttribute('name') || 'New DMN Decision';
+                    // 새 DMN 생성 시 - ID가 없으면 UUID 생성
+                    if (!this.loadDmnId || this.loadDmnId === 'chat') {
+                        this.loadDmnId = this.uuid();
+                        const definitions = xmlDoc.getElementsByTagName('definitions')[0];
+                        if (definitions) {
+                            this.dmnName = definitions.getAttribute('name') || 'New DMN Decision';
+                        }
                     }
                 } catch (xmlError) {
                     console.error('[DMN] XML 처리 중 오류:', xmlError);
-                    this.dmnName = 'New DMN Decision';
                 }
                 
                 this.dmnRenderKey++;
@@ -699,7 +685,6 @@ export default {
         },
         
         onDmnDefinitionLoaded(definition) {
-            console.log('DMN Definition loaded:', definition);
             this.dmnDefinition = definition;
             
             // Store에 DMN 정의 저장
@@ -724,6 +709,8 @@ export default {
                 context: me,
                 action: async () => {
                     me.isOpenDeleteDialog = false;
+                    me.isAIUpdated = false;
+                    me.isChanged = false;
                     if (me.$route.path.startsWith('/dmn/')) {
                         await me.$router.push('/dmn/chat');
                     } else {

@@ -766,7 +766,7 @@
                 <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                     <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                         class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
-                        auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
+                        auto-grow rows="1" @keydown.enter="beforeSend" :disabled="disableChat"
                         @input="handleTextareaInput"
                         @paste="handlePaste"
                     >
@@ -892,7 +892,7 @@
             <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.definitionMapInputMessage')"
-                    auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
+                    auto-grow rows="1" @keydown.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
                     @input="handleTextareaInput"
                     @paste="handlePaste"
                 >
