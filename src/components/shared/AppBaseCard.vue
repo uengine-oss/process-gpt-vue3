@@ -58,14 +58,14 @@ const canvasReSize = computed(() => {
 // 조건에 따라 슬롯 이름을 결정하는 계산된 속성
 const slotName = computed(() => {
     const path = route.path;
-    // /definition-map에서 모바일일 때는 leftpart를 right-part에 표시
-    if (path === '/definition-map' && isWidthUnder1279.value) {
+    // 1279px 이하일 때 특정 경로에서는 leftpart를 right-part에 표시
+    if (isWidthUnder1279.value && (
+        path === '/definition-map' || 
+        /^\/definitions\//.test(path) || 
+        /^\/dmn\//.test(path)
+    )) {
         return 'leftpart';
     }
-    // /definitions/로 시작하는 다른 경로들
-    else if (/^\/definitions\//.test(path) && isWidthUnder1279.value) {
-        return 'leftpart';
-    } 
     else {
         return 'rightpart';
     }

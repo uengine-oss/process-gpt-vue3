@@ -1,0 +1,200 @@
+.vue-dmn-diagram-container {
+    .djs-palette {
+        background: none;
+        border: none;
+        // 가로 배치 설정
+        left: 8px !important;
+        top: 8px !important;
+        bottom: auto !important;
+        width: auto !important;
+        height: auto !important;
+        
+        .djs-palette-entries {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: wrap;
+            column-gap: 5px;
+            row-gap: 5px;
+        }
+        
+        .entry {
+            display: inline-flex !important;
+            width: 40px;
+            height: 40px;
+            justify-content: center;
+            align-items: center;
+        }
+    }
+
+    .separator {
+        display: none;
+    }
+
+    .dmn-definitions {
+        // 카드 스타일
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 8px;
+        left: 16px !important;
+        top: 60px;
+    }
+
+    .dmn-definitions-name,
+    .dmn-definitions-id {
+        &:hover,
+        &:focus {
+            border: solid 1px rgba(var(--v-theme-primary)) !important;
+            outline: none;
+        }
+    }
+
+    // DMN 요소들 카드 디자인
+    .djs-shape {
+        .djs-visual {
+            // 실제 보이는 요소에만 스타일 적용 (hit 영역 제외)
+            > path,
+            > rect:not(.djs-hit) {
+                fill: rgba(var(--v-theme-primary), 0.2) !important;
+                stroke: rgba(0, 0, 0, 0.12) !important;
+                stroke-width: 1px !important;
+                transition: all 0.3s ease;
+            }
+        }
+
+        &:hover {
+            .djs-visual {
+                > path,
+                > rect:not(.djs-hit) {
+                    fill: rgba(var(--v-theme-primary), 0.3) !important;
+                    stroke: rgba(var(--v-theme-primary)) !important;
+                    stroke-width: 2px !important;
+                }
+            }
+        }
+    }
+
+    // hit 영역은 투명하게 유지
+    .djs-hit {
+        fill: none !important;
+        stroke: none !important;
+    }
+
+    // Decision 요소만 둥근 모서리 적용 (InputData 등은 제외)
+    .djs-shape[data-element-id*="Decision"] {
+        .djs-visual rect {
+            rx: 8 !important;
+            ry: 8 !important;
+        }
+    }
+
+    // 텍스트 레이블 스타일
+    .djs-label {
+        text {
+            font-family: 'Arial', sans-serif !important;
+            font-weight: 500 !important;
+            fill: #333333 !important;
+        }
+    }
+
+    // Connection 라인 스타일
+    .djs-connection {
+        .djs-visual {
+            path {
+                stroke: #9e9e9e !important;
+                stroke-width: 1px !important;
+                transition: stroke 0.2s ease;
+            }
+        }
+
+        &:hover {
+            .djs-visual path {
+                stroke: rgba(var(--v-theme-primary)) !important;
+                stroke-width: 1.5px !important;
+            }
+        }
+
+        &.selected {
+            .djs-visual path {
+                stroke: rgba(var(--v-theme-primary)) !important;
+                stroke-width: 2px !important;
+            }
+        }
+    }
+
+    // Connection 화살표 marker 기본 스타일
+    marker {
+        path, polygon, circle {
+            fill: #9e9e9e !important;
+            stroke: #9e9e9e !important;
+            transition: all 0.2s ease;
+        }
+    }
+
+    // Information Requirement (채워진 화살표)
+    marker[id*="information-requirement"] {
+        path, polygon {
+            fill: #9e9e9e !important;
+            stroke: #9e9e9e !important;
+        }
+    }
+
+    // Knowledge Requirement (비어있는 화살표/꺾쇠)
+    marker[id*="knowledge-requirement"] {
+        path, polygon {
+            fill: none !important;
+            stroke: #9e9e9e !important;
+            stroke-width: 1.5px !important;
+        }
+    }
+
+    // Authority Requirement (원형 끝)
+    marker[id*="authority-requirement"] {
+        path, polygon {
+            fill: none !important;
+            stroke: #9e9e9e !important;
+            stroke-width: 1.5px !important;
+        }
+        
+        circle {
+            fill: #ffffff !important;
+            stroke: #9e9e9e !important;
+            stroke-width: 1.5px !important;
+        }
+    }
+
+    // Association (점선)
+    marker[id*="association"] {
+        path, polygon {
+            fill: #9e9e9e !important;
+            stroke: #9e9e9e !important;
+        }
+    }
+
+    .dmn-icon-decision-table {
+        background: rgb(var(--v-theme-primary)) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 4px !important;
+        padding: 2px 8px !important;
+        margin: 2px 0px 0px 2px !important;
+        box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 
+                    0px 2px 2px 0px rgba(0, 0, 0, 0.14), 
+                    0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+        transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .djs-context-pad .entry {
+        width: 30px;
+        height: 30px;
+        /* border: solid 1px rgba(124, 124, 124, 0.3); */
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.7);
+    }
+
+    .djs-palette .entry {
+        font-size: 24px !important;
+    }
+    
+    .djs-context-pad .group {
+        min-width: 100px;
+    }
+}

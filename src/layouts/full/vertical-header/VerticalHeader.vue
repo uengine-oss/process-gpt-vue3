@@ -179,11 +179,7 @@ function newNotification(type: string) {
 
 // 사이드바 토글 함수
 function handleSidebarToggle() {
-    if (window.innerWidth <= 1279) {
-        customizer.SET_SIDEBAR_DRAWER();
-    } else {
-        customizer.SET_MINI_SIDEBAR(!customizer.mini_sidebar);
-    }
+    customizer.SET_SIDEBAR_DRAWER();
 }
 
 // 알림 뱃지 업데이트 핸들러
