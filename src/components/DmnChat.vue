@@ -62,6 +62,22 @@
                                 </div>
                             </div>
                         </template>
+                        <template #custom-input-tools>
+                            <v-select
+                                v-model="isInferenceMode"
+                                :items="[
+                                    { title: '생성', value: false },
+                                    { title: '추론', value: true }
+                                ]"
+                                item-title="title"
+                                item-value="value"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                rounded
+                                class="mx-2 inference-mode-select"
+                            ></v-select>
+                        </template>
                     </Chat>
                 </div>
             </template>
@@ -106,6 +122,22 @@
                                     </v-btn>
                                 </div>
                             </div>
+                        </template>
+                        <template #custom-input-tools>
+                            <v-select
+                                v-model="isInferenceMode"
+                                :items="[
+                                    { title: '생성', value: false },
+                                    { title: '추론', value: true }
+                                ]"
+                                item-title="title"
+                                item-value="value"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                rounded
+                                class="mx-2 inference-mode-select"
+                            ></v-select>
                         </template>
                     </Chat>
                 </div>
@@ -163,7 +195,7 @@
             </div>
             
             <!-- Chat Section -->
-            <div class="chat-section" :class="{ 'chat-section-empty': messages.length === 0 }">
+            <div class="chat-section" :class="chatSectionClass">
                 <Chat
                     :messages="messages"
                     :userInfo="userInfo"
@@ -171,7 +203,24 @@
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
-                />
+                >
+                    <template #custom-input-tools>
+                        <v-select
+                            v-model="isInferenceMode"
+                            :items="[
+                                { title: '생성', value: false },
+                                { title: '추론', value: true }
+                            ]"
+                            item-title="title"
+                            item-value="value"
+                            variant="outlined"
+                            density="compact"
+                            hide-details
+                            rounded
+                            class="mx-2 inference-mode-select"
+                        ></v-select>
+                    </template>
+                </Chat>
             </div>
         </div>
 
@@ -275,6 +324,7 @@ export default {
             isLoadedDmn: false,
             isChanged: false,
             isAIUpdated: false,
+            isInferenceMode: false, // 추론 모드 플래그
             
             viewMode: 'edit',
             loadDmnId: '',
@@ -375,6 +425,11 @@ export default {
         isStandaloneMode() {
             // URL이 /dmn/으로 시작하면 좌우 분할 레이아웃 사용
             return this.$route.path.startsWith('/dmn/');
+        },
+        chatSectionClass() {
+            return {
+                'chat-section-empty': this.messages.length === 0
+            };
         }
     },
     methods: {
@@ -499,23 +554,58 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
+                    // DMN XML 수집 (추론 모드에서도 필요)
                     if (me.$refs.dmnModeler) {
                         me.prevDmnOutput = await me.$refs.dmnModeler.saveDMN();
                     }
                     
                     newMessage.mentionedUsers = null;
                     
-                    if (me.prevDmnOutput) {
-                        me.generator.sendMessageWithPrevDmnOutput(newMessage);
+                    // 모드에 따라 다른 처리
+                    if (me.isInferenceMode) {
+                        // 추론 모드: DMN XML을 컨텍스트로 제공
+                        me.generator.isInferenceMode = true;
+                        
+                        if (me.prevDmnOutput) {
+                            me.generator.dmnXmlList = [{
+                                id: me.loadDmnId || 'current_dmn',
+                                name: me.dmnName || 'Current DMN',
+                                xml: me.prevDmnOutput
+                            }];
+                        }
+                        
+                        me.generator.sendInferenceMessage(newMessage);
                     } else {
-                        me.generator.sendMessage(newMessage);
+                        // 생성 모드: DMN 생성/수정
+                        me.generator.isInferenceMode = false;
+                        me.generator.dmnXmlList = [];
+                        
+                        if (me.prevDmnOutput) {
+                            me.generator.sendMessageWithPrevDmnOutput(newMessage);
+                        } else {
+                            me.generator.sendMessage(newMessage);
+                        }
                     }
+                    me.sendMessage(newMessage);
                 }
             });
         },
         
         afterModelCreated(response) {
-            // console.log('DMN 생성 중:', response);
+            try {
+                const messageWriting = this.messages[this.messages.length - 1];
+                if (this.isInferenceMode) {
+                    if (messageWriting) {
+                        messageWriting.contentType = 'markdown';
+                        messageWriting.content = response;
+                    }
+                    return;
+                }
+            } catch (parseError) {
+                console.error('[DMN] JSON 파싱 실패:', parseError);
+                console.log('[DMN] 파싱 시도한 내용:', jsonContent.substring(0, 500));
+                return;
+            }
         },
         
         afterGenerationFinished(response) {
@@ -526,6 +616,16 @@ export default {
             try {
                 const messageWriting = this.messages[this.messages.length - 1];
                 
+                // 추론 모드: 마크다운 응답을 그대로 표시
+                if (this.isInferenceMode) {
+                    if (messageWriting) {
+                        messageWriting.contentType = 'markdown';
+                        messageWriting.content = response;
+                    }
+                    return;
+                }
+                
+                // 생성 모드: JSON 파싱 및 DMN 업데이트
                 let parsed;
                 if (typeof response === 'object' && response.dmnXml) {
                     parsed = response;
@@ -619,10 +719,10 @@ export default {
         
         async deleteDmn() {
             const me = this;
+            await this.backend.deleteDefinition(me.loadDmnId, { type: 'dmn' });
             me.$try({
                 context: me,
                 action: async () => {
-                    await this.backend.deleteDefinition(me.loadDmnId, { type: 'dmn' });
                     me.isOpenDeleteDialog = false;
                     if (me.$route.path.startsWith('/dmn/')) {
                         await me.$router.push('/dmn/chat');
@@ -737,6 +837,10 @@ export default {
         flex: 0 0 auto;
         min-height: 150px;
     }
+}
+
+.inference-mode-select {
+    max-width: 100px;
 }
 </style>
 

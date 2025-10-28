@@ -303,6 +303,13 @@
                                                     <ProcessWorkResult :message="message" />
                                                 </div>
 
+                                                <!-- markdown message -->
+                                                <div v-else-if="message.contentType && message.contentType == 'markdown'" class="other-message">
+                                                    <div v-html="renderedMarkdown(message.content)" 
+                                                        class="markdown-content mx-3 pl-3 py-2"
+                                                    ></div>
+                                                </div>
+
                                                 <div v-else class="w-100 pb-3">
                                                     <!-- 단일 이미지 표시 (기존 호환성) -->
                                                     <v-sheet v-if="message.image && !message.images" class="mb-1">
@@ -1100,6 +1107,7 @@ import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ChatRoomNameGenerator from "@/components/ai/ChatRoomNameGenerator.js";
 import ProcessWorkResult from './ProcessWorkResult.vue';
 import InfoAlert from './InfoAlert.vue';
+import { marked } from 'marked';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -1389,6 +1397,14 @@ export default {
         }
     },
     methods: {
+        renderedMarkdown(text) {
+            if (!text) return '';
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+            return marked(text);
+        },
         handleResize() {
             // 화면 크기 변경 시 즉시 높이 업데이트
             this.windowWidth = window.innerWidth;

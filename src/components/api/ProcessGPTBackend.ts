@@ -64,6 +64,14 @@ class ProcessGPTBackend implements Backend {
                 });
                 return formDefs
             } else if (path === "dmn") {
+                // dmn 타입인 경우 기본적으로 type="dmn" 필터 추가
+                if (!options) {
+                    options = { match: { type: "dmn" } };
+                } else if (!options.match) {
+                    options.match = { type: "dmn" };
+                } else {
+                    options.match.type = "dmn";
+                }
                 let procDefs = await storage.list('proc_def', options);
                 return procDefs
             } else {
