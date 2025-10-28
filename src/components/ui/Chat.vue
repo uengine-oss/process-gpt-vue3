@@ -1106,7 +1106,6 @@ import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ChatRoomNameGenerator from "@/components/ai/ChatRoomNameGenerator.js";
 import ProcessWorkResult from './ProcessWorkResult.vue';
-import InfoAlert from './InfoAlert.vue';
 import { marked } from 'marked';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -1120,8 +1119,7 @@ export default {
         Record,
         DynamicForm,
         SummaryButton,
-        ProcessWorkResult,
-        InfoAlert
+        ProcessWorkResult
     },
     mixins: [
         ProgressAnimated,

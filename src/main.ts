@@ -38,9 +38,11 @@ import setLocale from './plugins/setLocale';
 // icon
 import { Icon } from '@iconify/vue';
 import Icons from '@/components/ui-components/Icons.vue'
+import InfoAlert from '@/components/ui/InfoAlert.vue'
 
 // css
 import '@/assets/css/globalStyle.css';
+import '@/assets/css/dmnStyle.scss';
 import '@/assets/css/mashUpStyle.css';
 
 // 전역 관리 ts
@@ -342,6 +344,7 @@ async function initializeApp() {
     app.use(VueTablerIcons);
     app.component('Icon', Icon);
     app.component('Icons', Icons)
+    app.component('InfoAlert', InfoAlert);
     app.component('DetailComponent', DetailComponent);
     app.directive('hammer', hammerDirective);
     // app.use(print);
