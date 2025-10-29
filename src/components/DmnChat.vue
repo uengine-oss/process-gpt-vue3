@@ -144,84 +144,88 @@
             </template>
         </AppBaseCard>
 
-        <!-- 상하 분할 레이아웃 (기타 경로) -->
-        <div v-else class="d-flex flex-column w-100 dmn-chat-container">
-            <!-- DMN Section -->
-            <div class="d-flex flex-column flex-grow-1 bg-grey-lighten-4 dmn-section">
-                <!-- DMN Header -->
-                <div class="d-flex align-center px-4 py-1 bg-white border-b ga-2">
-                    <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName ? dmnName : 'New DMN Decision' }}</h6>
-                    <v-spacer></v-spacer>
-                    <div class="d-flex align-center ga-1">
-                        <v-btn 
-                            icon
-                            size="small"
-                            variant="text"
-                            @click="openSaveDialog"
-                            :class="{ 'icon-heartbit': isChanged }"
-                        >
-                            <v-icon size="small">mdi-content-save</v-icon>
-                            <v-tooltip activator="parent">{{ $t('dmn.save') }}</v-tooltip>
-                        </v-btn>
-                        
-                        <v-btn 
-                            v-if="isLoadedDmn"
-                            icon
-                            size="small"
-                            variant="text"
-                            color="error"
-                            @click="openDeleteDialog"
-                        >
-                            <v-icon size="small">mdi-delete</v-icon>
-                            <v-tooltip activator="parent">{{ $t('dmn.deleteDmn') }}</v-tooltip>
-                        </v-btn>
+        <!-- 통합 레이아웃 (기타 경로) -->
+        <div v-else class="w-100 dmn-chat-container">
+            <Chat
+                :messages="messages"
+                :userInfo="userInfo"
+                :chatInfo="chatInfo"
+                :showScrollTopButton="true"
+                @sendMessage="beforeSendMessage"
+                @sendEditedMessage="sendEditedMessage"
+                @stopMessage="stopMessage"
+            >
+                <template #custom-content>
+                    <!-- DMN Section -->
+                    <div class="dmn-section-wrapper">
+                        <div class="d-flex flex-column bg-grey-lighten-4 dmn-section">
+                            <!-- DMN Header -->
+                            <div class="d-flex align-center px-4 py-2 bg-white border-b ga-2">
+                                <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName ? dmnName : 'New DMN Decision' }}</h6>
+                                <v-spacer></v-spacer>
+                                <div class="d-flex align-center ga-1">
+                                    <v-btn 
+                                        icon
+                                        size="small"
+                                        variant="text"
+                                        @click="openSaveDialog"
+                                        :class="{ 'icon-heartbit': isChanged }"
+                                    >
+                                        <v-icon size="small">mdi-content-save</v-icon>
+                                        <v-tooltip activator="parent">{{ $t('dmn.save') }}</v-tooltip>
+                                    </v-btn>
+                                    
+                                    <v-btn 
+                                        v-if="isLoadedDmn"
+                                        icon
+                                        size="small"
+                                        variant="text"
+                                        color="error"
+                                        @click="openDeleteDialog"
+                                    >
+                                        <v-icon size="small">mdi-delete</v-icon>
+                                        <v-tooltip activator="parent">{{ $t('dmn.deleteDmn') }}</v-tooltip>
+                                    </v-btn>
+                                </div>
+                            </div>
+                            
+                            <!-- DMN Modeler -->
+                            <div class="dmn-modeler-wrapper">
+                                <DmnModeler
+                                    v-if="isShowDmnModeler"
+                                    ref="dmnModeler"
+                                    :dmn="dmnXml"
+                                    :isViewMode="viewMode === 'view'"
+                                    :key="dmnRenderKey"
+                                    @definition="onDmnDefinitionLoaded"
+                                    @error="onDmnError"
+                                    @shown="onDmnShown"
+                                />
+                                <div v-else class="d-flex align-center justify-center h-100 w-100">
+                                    <v-progress-circular color="primary" indeterminate></v-progress-circular>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </template>
                 
-                <!-- DMN Modeler -->
-                <DmnModeler
-                    v-if="isShowDmnModeler"
-                    ref="dmnModeler"
-                    :dmn="dmnXml"
-                    :isViewMode="viewMode === 'view'"
-                    :key="dmnRenderKey"
-                    @definition="onDmnDefinitionLoaded"
-                    @error="onDmnError"
-                    @shown="onDmnShown"
-                />
-                <div v-else class="d-flex align-center justify-center h-100 w-100">
-                    <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                </div>
-            </div>
-            
-            <!-- Chat Section -->
-            <div class="chat-section" :class="chatSectionClass">
-                <Chat
-                    :messages="messages"
-                    :userInfo="userInfo"
-                    :chatInfo="{ title: 'dmn.explanation' }"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                >
-                    <template #custom-input-tools>
-                        <v-select
-                            v-model="isInferenceMode"
-                            :items="[
-                                { title: '생성', value: false },
-                                { title: '추론', value: true }
-                            ]"
-                            item-title="title"
-                            item-value="value"
-                            variant="outlined"
-                            density="compact"
-                            hide-details
-                            rounded
-                            class="mx-2 inference-mode-select"
-                        ></v-select>
-                    </template>
-                </Chat>
-            </div>
+                <template #custom-input-tools>
+                    <v-select
+                        v-model="isInferenceMode"
+                        :items="[
+                            { title: '생성', value: false },
+                            { title: '추론', value: true }
+                        ]"
+                        item-title="title"
+                        item-value="value"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        rounded
+                        class="mx-2 inference-mode-select"
+                    ></v-select>
+                </template>
+            </Chat>
         </div>
 
         <v-dialog v-model="isOpenSaveDialog" max-width="500">
@@ -305,7 +309,7 @@ export default {
     data() {
         return {
             chatInfo: {
-                title: 'dmn.cardTitle',
+                title: '',
                 text: 'dmn.explanation'
             },
 
@@ -422,11 +426,6 @@ export default {
         isStandaloneMode() {
             // URL이 /dmn/으로 시작하면 좌우 분할 레이아웃 사용
             return this.$route.path.startsWith('/dmn/');
-        },
-        chatSectionClass() {
-            return {
-                'chat-section-empty': this.messages.length === 0
-            };
         }
     },
     methods: {
@@ -742,34 +741,24 @@ export default {
 </script>
 
 <style scoped>
-/* 상하 분할 레이아웃 (기본) */
+/* 통합 레이아웃 */
 .dmn-chat-container {
-    height: calc(100vh - 111px); /* 75px (헤더) + 36px (padding) */
-    overflow: hidden;
+    height: calc(100vh - 132px);
+}
+
+.dmn-section-wrapper {
+    margin-bottom: 16px;
 }
 
 .dmn-section {
-    flex: 1;
-    border-bottom: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: white;
 }
 
-.dmn-section :deep(.vue-dmn-diagram-container) {
-    flex: 1;
+.dmn-modeler-wrapper :deep(.vue-dmn-diagram-container) {
     height: 100%;
 }
-
-.chat-section {
-    flex: 1;
-    overflow: auto;
-    border-top: 1px solid #e0e0e0;
-    transition: flex 0.3s ease;
-}
-
-.chat-section-empty {
-    flex: 0 0 auto;
-    min-height: 150px;
-}
-
 /* 좌우 분할 레이아웃 (/dmn/ 경로) */
 :deep(.left-part) {
     width: 75%;
@@ -809,20 +798,7 @@ export default {
 /* 반응형 레이아웃 */
 @media (max-width: 768px) {
     .dmn-chat-container {
-        height: 100vh; /* 모바일에서는 헤더가 사이드바에 있으므로 전체 높이 사용 */
-    }
-
-    .dmn-section {
-        flex: 1;
-    }
-
-    .chat-section {
-        flex: 1;
-    }
-    
-    .chat-section-empty {
-        flex: 0 0 auto;
-        min-height: 150px;
+        height: calc(100vh - 40px);
     }
 }
 

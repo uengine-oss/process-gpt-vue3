@@ -4,12 +4,10 @@
     >
         <div class="chat-info-view-wrapper">
             <div class="chat-info-view-area">
-                <div class="chat-info-view-area">
+                <div class="chat-info-view-area" style="position: relative;">
                     <slot name="custom-chat-top"></slot>
                     <slot name="custom-title" v-if="!definitionMapOnlyInput">
-                        <div v-if="name && name !== '' || chatInfo"
-                            class="pa-4"
-                        >
+                        <div v-if="name && name !== '' || chatInfo">
                             <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                                 <div>
                                     <h5 class="text-h5 mb-n1">{{ name }}</h5>
@@ -29,15 +27,47 @@
                         <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
                     </slot>
 
+                    <!-- 스크롤 상하단 이동 아이콘 -->
+                    <div v-if="showScrollTopButton" 
+                        style="position: absolute; bottom: 8px; right: 8px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; pointer-events: auto;"
+                    >
+                        <!-- 최상단 이동 -->
+                        <v-icon
+                            @click="scrollToTop"
+                            color="primary"
+                            size="28"
+                            style="cursor: pointer; border-radius: 50%; padding: 4px;"
+                        >
+                            mdi-arrow-up-circle
+                            <v-tooltip activator="parent" location="left">최상단으로 이동</v-tooltip>
+                        </v-icon>
+                        
+                        <!-- 최하단 이동 -->
+                        <v-icon
+                            @click="scrollToBottom"
+                            color="primary"
+                            size="28"
+                            style="cursor: pointer; border-radius: 50%; padding: 4px;"
+                        >
+                            mdi-arrow-down-circle
+                            <v-tooltip activator="parent" location="left">최하단으로 이동</v-tooltip>
+                        </v-icon>
+                    </div>
+
                     <perfect-scrollbar v-if="!definitionMapOnlyInput"
                         class="h-100 chat-view-box"
                         ref="scrollContainer"
                         @scroll="handleScroll"
                     >
+
                         <div class="d-flex w-100"
                             :style="$globalState.state.isRightZoomed ? 'height:100vh;' : ''"
                         >
                             <v-col class="chat-view-box-col pa-0">
+
+                                <!-- 커스텀 콘텐츠 슬롯 -->
+                                <slot name="custom-content"></slot>
+                                
                                 <InfoAlert :howToUseInfo="howToUseInfo"
                                     :chatInfo="chatInfo"
                                 />
@@ -1164,6 +1194,10 @@ export default {
         howToUseInfo: {
             type: Object,
             default: null
+        },
+        showScrollTopButton: {
+            type: Boolean,
+            default: false
         }
     },
     emits: [
@@ -1395,6 +1429,11 @@ export default {
         }
     },
     methods: {
+        scrollToTop() {
+            if (this.$refs.scrollContainer) {
+                this.$refs.scrollContainer.$el.scrollTop = 0;
+            }
+        },
         renderedMarkdown(text) {
             if (!text) return '';
             marked.setOptions({

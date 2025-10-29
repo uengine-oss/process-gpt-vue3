@@ -27,7 +27,8 @@ export default {
             chatRoomId: '',
             type: 'learning',
             chatInfo: {
-                title: 'AgentChatInfo.tabs.learning'
+                title: '',
+                text: 'agentChat.learningModeInfo'
             }
         }
     },

@@ -197,4 +197,28 @@
     .djs-context-pad .group {
         min-width: 100px;
     }
+
+    // View DRD 버튼을 닫기 아이콘으로 변경
+    .view-drd-button {
+        background: rgb(var(--v-theme-primary)) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 50% !important;
+        width: 34px !important;
+        height: 34px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0 !important;
+        margin: 4px 0px 0px 4px !important;
+        cursor: pointer;
+
+        &::before {
+            content: '‹';
+            font-size: 18px !important;
+            font-weight: bold;
+            line-height: 1;
+        }
+    }
 }
