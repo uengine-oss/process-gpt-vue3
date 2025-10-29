@@ -746,10 +746,6 @@ export default {
     height: calc(100vh - 132px);
 }
 
-.dmn-section-wrapper {
-    margin-bottom: 16px;
-}
-
 .dmn-section {
     border-radius: 8px;
     overflow: hidden;
