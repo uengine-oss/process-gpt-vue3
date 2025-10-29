@@ -33,7 +33,7 @@
                     >
                         <template v-slot:custom-title>
                             <!-- DMN Header -->
-                            <div class="d-flex align-center px-4 py-3 bg-white border-b ga-2">
+                            <div class="d-flex align-center bg-white border-b ga-2">
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName || 'New DMN Decision' }}</h6>
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">
@@ -94,7 +94,7 @@
                     >
                         <template v-slot:custom-title>
                             <!-- DMN Header -->
-                            <div class="d-flex align-center px-4 py-3 bg-white border-b ga-2">
+                            <div class="d-flex align-center bg-white border-b ga-2">
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName || 'New DMN Decision' }}</h6>
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">
@@ -151,6 +151,7 @@
                 :userInfo="userInfo"
                 :chatInfo="chatInfo"
                 :showScrollTopButton="true"
+                :agentMessage="true"
                 @sendMessage="beforeSendMessage"
                 @sendEditedMessage="sendEditedMessage"
                 @stopMessage="stopMessage"
@@ -160,7 +161,7 @@
                     <div class="dmn-section-wrapper">
                         <div class="d-flex flex-column bg-grey-lighten-4 dmn-section">
                             <!-- DMN Header -->
-                            <div class="d-flex align-center px-4 py-2 bg-white border-b ga-2">
+                            <div class="d-flex align-center bg-white border-b ga-2">
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName ? dmnName : 'New DMN Decision' }}</h6>
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">
@@ -747,7 +748,6 @@ export default {
 }
 
 .dmn-section {
-    border-radius: 8px;
     overflow: hidden;
     background-color: white;
 }

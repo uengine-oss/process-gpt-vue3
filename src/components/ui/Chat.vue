@@ -303,7 +303,7 @@
                                                 </v-card>
                                             </div>
                                             <div v-else-if="!message.disableMsg || message.isLoading" :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'">
-                                                <v-row v-if="shouldDisplayUserInfo(message, index)"
+                                                <v-row v-if="shouldDisplayUserInfo(message, index) && !agentMessage"
                                                     class="ma-0 pa-0"
                                                 >
                                                     <v-row class="ma-0 pa-0 d-flex align-center mb-2">
@@ -334,7 +334,9 @@
                                                 </div>
 
                                                 <!-- markdown message -->
-                                                <div v-else-if="message.contentType && message.contentType == 'markdown'" class="other-message">
+                                                <div v-else-if="message.contentType && message.contentType == 'markdown'" 
+                                                    :class="agentMessage ? 'agent-message' : 'other-message'"
+                                                >
                                                     <div v-html="renderedMarkdown(message.content)" 
                                                         class="markdown-content mx-3 pl-3 py-2"
                                                     ></div>
@@ -1196,6 +1198,10 @@ export default {
             default: null
         },
         showScrollTopButton: {
+            type: Boolean,
+            default: false
+        },
+        agentMessage: {
             type: Boolean,
             default: false
         }
@@ -2389,6 +2395,12 @@ pre {
 .other-message {
   margin-right: auto;
   background-color: #f1f1f1 !important;
+  border-radius: 8px !important;
+}
+
+.agent-message {
+  margin-right: auto;
+  background-color: #ffffff !important;
   border-radius: 8px !important;
 }
 

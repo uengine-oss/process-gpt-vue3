@@ -1,6 +1,6 @@
 .vue-dmn-diagram-container {
     .djs-container {
-        height: 50vh !important;
+        height: 60vh !important;
     }
     .djs-palette {
         background: none;
@@ -224,4 +224,9 @@
             line-height: 1;
         }
     }
+}
+
+
+.dmn-section-wrapper {
+    padding: 12px;
 }

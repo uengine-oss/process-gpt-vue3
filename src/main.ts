@@ -44,6 +44,7 @@ import InfoAlert from '@/components/ui/InfoAlert.vue'
 import '@/assets/css/globalStyle.css';
 import '@/assets/css/dmnStyle.scss';
 import '@/assets/css/mashUpStyle.css';
+import '@/assets/css/customMarkdown.scss';
 
 // 전역 관리 ts
 import globalState from '@/stores/globalState';
