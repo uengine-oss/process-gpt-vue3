@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-row class="ma-0 pa-0">
+        <v-row class="ma-0 pa-0 process-definition-chat-tree-box">
             <!-- 왼쪽: TreeView -->
             <v-col cols="12" md="3" class="pa-0">
                 <v-card elevation="10" class="pa-3 tree-view-card">

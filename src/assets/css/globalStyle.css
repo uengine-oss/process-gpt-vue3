@@ -5,6 +5,9 @@ h1, h2, h3, h4, h5, h6 {
 hr {
     opacity: 1 !important;
 }
+.process-definition-chat-tree-box .is-work-height {
+    height: calc(100vh - 194px);
+}
 
 .bpmn-uengine-viewer-laneAssignments .v-expansion-panel-text__wrapper {
     padding: 0px !important;
