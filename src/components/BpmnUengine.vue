@@ -177,46 +177,39 @@ export default {
                     const canvas = this.bpmnViewer.get('canvas');
                     const container = this.canvasContainer;
                     const elementRegistry = this.bpmnViewer.get('elementRegistry');
-                    const scale = canvas.viewbox().scale;
 
                     Object.keys(newVal).forEach((activityId) => {
                         const element = elementRegistry.get(activityId);
                         if (!element) return;
+                        
                         if (newVal[activityId] === 'generating') {
+                            // 보라색 테두리 추가
                             canvas.addMarker(activityId, 'running');
-                                                        
-                            const bbox = canvas.getAbsoluteBBox(element);
-                            const nodeCenter = {
-                                x: bbox.x + bbox.width / 2,
-                                y: bbox.y + bbox.height / 2
-                            };
-                            const scale = 1.3;
+                            
+                            // 화면 정중앙에 액티비티 배치
                             const viewbox = canvas.viewbox();
-
-                            const newWidth = viewbox.width / scale;
-                            const newHeight = viewbox.height / scale;
-                            let x
-                            let y
-                            if(this.isHorizontal) {
-                                x = nodeCenter.x - newWidth / 2 - 30;
-                                y = nodeCenter.y - newHeight / 2 - 280;
-                            } else {
-                                x = nodeCenter.x - newWidth / 2;
-                                y = nodeCenter.y - newHeight / 2;
-                            }
-                            const newViewbox = {
-                                x: x,
-                                y: y,
-                                width: newWidth,
-                                height: newHeight
+                            const elementMid = {
+                                x: element.x + element.width / 2,
+                                y: element.y + element.height / 2
                             };
-                            canvas.viewbox(newViewbox);
+
+                            // 확대를 100% (zoom = 1.0)로 설정
+                            const zoom = 1.0;
+                            
+                            // viewbox를 element 중심으로 이동
+                            canvas.viewbox({
+                                x: elementMid.x - (viewbox.outer.width / zoom / 2),
+                                y: elementMid.y - (viewbox.outer.height / zoom / 2),
+                                width: viewbox.outer.width / zoom,
+                                height: viewbox.outer.height / zoom
+                            });
+                            
+                            console.log(`📍 액티비티 "${activityId}" 포커싱 완료 (정중앙, 100% 줌)`);
                         } else if (newVal[activityId] === 'finished') {
                             canvas.addMarker(activityId, 'generated');
-                            self.resetZoom();
+                            console.log('✅ 폼 생성 완료');
                         }
                     });
-
                 }
             },
             deep: true
