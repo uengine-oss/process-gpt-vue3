@@ -171,10 +171,36 @@
                                             <div v-for="[fileName, file] in filteredFiles(item.payload.outputRaw.generated_files)" :key="fileName" class="file-item">
                                                 <div class="file-header">
                                                     <span class="file-name">{{ fileName }}</span>
-                                                    <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                                                    <div class="file-actions">
+                                                        <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                                                        <v-btn v-if="file.url" 
+                                                            @click="downloadFile(fileName, file)" 
+                                                            size="small" 
+                                                            variant="elevated" 
+                                                            color="primary" 
+                                                            class="ml-2"
+                                                            density="compact">
+                                                            <v-icon size="small" class="mr-1">mdi-download</v-icon>
+                                                            {{ '다운로드' }}
+                                                        </v-btn>
+                                                    </div>
                                                 </div>
-                                                <div v-if="file.content" class="file-content">
-                                                    <div class="markdown-container" v-html="formatMarkdownContent(file.content)"></div>
+                                                
+                                                <!-- 파싱 중 로딩 표시 -->
+                                                <div v-if="file.parsing" class="file-parsing">
+                                                    <v-progress-circular indeterminate color="primary" size="20" width="2" class="mr-2"></v-progress-circular>
+                                                    <span class="parsing-text">{{ $t('EventTimeline.parsingDocument') }}</span>
+                                                </div>
+                                                
+                                                <!-- 파싱 오류 표시 -->
+                                                <div v-else-if="file.parsed_error" class="file-error">
+                                                    <v-icon size="small" color="error" class="mr-1">mdi-alert-circle</v-icon>
+                                                    <span class="error-text">{{ $t('EventTimeline.parsingFailed') }}: {{ file.parsed_error }}</span>
+                                                </div>
+                                                
+                                                <!-- 파싱된 내용 표시 -->
+                                                <div v-else-if="file.content || file.parsed_content" class="file-content">
+                                                    <div class="markdown-container" v-html="formatMarkdownContent(file.content || file.parsed_content)"></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -323,6 +349,8 @@
 
 <script>
 import { marked } from 'marked'
+import { parseFileDocument } from '@/utils/upstageParser'
+import BackendFactory from '@/components/api/BackendFactory'
 
 export default {
     props: {
@@ -363,12 +391,14 @@ export default {
     emits: ['update:humanQueryAnswers', 'update:expandedTasks', 'update:slideIndexes', 'onCancelHumanQuery', 'onConfirmHumanQuery', 'submitTask', 'previousSlide', 'nextSlide', 'goToSlide', 'toggleTaskExpansion', 'browserUseCompleted'],
     data() {
         return {
+            isParseSuccess: false,
             imageIndex: 0,
             imageDialog: {
                 show: false,
                 files: null
             },
-            images: []
+            images: [],
+            processedBrowserUseTasks: new Set() // 이미 처리된 browser-use 작업 추적
         };
     },
     computed: {
@@ -393,26 +423,105 @@ export default {
     watch: {
         timeline: {
             handler(newTimeline) {
-                // browser-use 완료된 작업 감지
+                // browser-use 완료된 작업 감지 (중복 처리 방지)
                 newTimeline.forEach(item => {
                     if (item.type === 'task' && 
                         item.payload.crewType === 'browser-use' && 
                         item.payload.isCompleted &&
                         item.payload.outputRaw?.generated_files) {
                         
-                        // 이미지가 아닌 파일들만 필터링
-                        const nonImageFiles = {};
+                        // 이미 처리된 작업인지 확인
+                        if (this.processedBrowserUseTasks.has(item.payload.id)) {
+                            return; // 이미 처리된 작업은 스킵
+                        }
+                        
+                        // 처리된 작업으로 마킹
+                        this.processedBrowserUseTasks.add(item.payload.id);
+                        
+                        // 이미지가 아닌 파일들만 필터링하고 File 객체 생성 후 Upstage로 파싱
+                        const nonImageFiles = [];
+                        const filePromises = [];
                         Object.entries(item.payload.outputRaw.generated_files).forEach(([fileName, fileData]) => {
                             if (!this.isImageFile(fileName)) {
-                                nonImageFiles[fileName] = fileData;
+                                // URL이 있으면 File 객체 생성 (Supabase Storage에서 가져오기)
+                                if (fileData.url) {
+                                    const processPromise = (async () => {
+                                        try {
+                                            // 1. File 객체 생성
+                                            const fileObject = await this.createFileFromUrl(fileName, fileData);
+                                            if (!fileObject) {
+                                                return null;
+                                            }
+                                            
+                                            console.log(`[EventTimeline] File 객체 생성 완료: ${fileName}`);
+                                            
+                                            // 2. 파싱 중 표시
+                                            fileData.parsing = true;
+                                            fileData.parsed_error = null;
+                                            
+                                            // 3. Upstage AI로 파싱 (결과만 받아옴)
+                                            const parseResult = await parseFileDocument(fileObject, fileData);
+                                            
+                                            // 4. 파싱 결과를 fileData에 세팅
+                                            this.setParseResultToFileData(fileName, fileData, parseResult);
+                                            
+                                            console.log(`[EventTimeline] 파싱 완료: ${fileName}`);
+
+                                            nonImageFiles.push({
+                                                fileName: fileName,
+                                                content: fileData.parsed_content
+                                            });
+                                            
+                                            // 5. 파싱이 완료된 File 객체 반환
+                                            return fileObject;
+                                        } catch (error) {
+                                            console.error(`[EventTimeline] 파일 처리 실패 (${fileName}):`, error);
+                                            fileData.parsing = false;
+                                            fileData.parsed_error = error.message;
+                                            return null;
+                                        }
+                                    })();
+                                    
+                                    filePromises.push(processPromise);
+                                }
                             }
                         });
                         
-                        this.$emit('browserUseCompleted', {
-                            taskId: item.payload.id,
-                            generatedFiles: nonImageFiles,
-                            resultSummary: item.payload.outputRaw.result_summary
-                        });
+                        // 모든 파일 파싱이 완료된 후 EventBus로 전달 및 DB 업데이트
+                        if (filePromises.length > 0) {
+                            Promise.all(filePromises).then(async generatedFiles => {
+                                console.log(`[EventTimeline] 모든 파일 처리 완료 (${filePromises.length}개)`);
+
+                                // 빠른 예시 생성 시 사용
+                                if(nonImageFiles.length > 0) {
+                                    this.$emit('browserUseCompleted', {
+                                        taskId: item.payload.id,
+                                        generatedFiles: nonImageFiles
+                                    });
+                                }
+                                
+                                const validFiles = generatedFiles.filter(f => f !== null);
+                                
+                                // EventBus로 파일 전송
+                                if (validFiles.length > 0 && this.EventBus) {
+                                    console.log(`[EventTimeline] EventBus로 ${validFiles.length}개 파일 전송`);
+                                    this.EventBus.emit('browser-use-files-generated', {
+                                        files: validFiles
+                                    });
+                                }
+                                
+                                // 모든 파싱이 완료된 후 DB에 저장
+                                if (this.isParseSuccess) {
+                                    console.log(`[EventTimeline] 파싱 결과를 DB에 저장 중...`);
+                                    await this.saveEventToDatabase(item.payload);
+                                }
+                                
+                                // Vue 반응성을 위한 강제 업데이트
+                                this.$forceUpdate();
+                            }).catch(error => {
+                                console.error('[EventTimeline] 파일 처리 중 오류:', error);
+                            });
+                        }
                     }
                 });
                 
@@ -434,6 +543,69 @@ export default {
         }
     },
     methods: {
+        /**
+         * 파싱 결과를 fileData에 세팅
+         */
+        setParseResultToFileData(fileName, fileData, parseResult) {
+            try {
+                if (parseResult.success) {
+                    // 파싱 성공
+                    fileData.parsed_content = parseResult.text;
+                    // fileData.parsed_markdown = parseResult.markdown;
+                    // fileData.parsed_html = parseResult.html;
+                    // fileData.parsed_source = parseResult.source;
+                    // fileData.parsed_elements = parseResult.elements;
+                    fileData.parsed_at = parseResult.parsedAt;
+                    fileData.parsing = false;
+                    
+                    if (parseResult.cached) {
+                        console.log(`✅ [EventTimeline] 캐시된 데이터 사용: ${fileName}`);
+                    } else {
+                        this.isParseSuccess = true;
+                        console.log(`✅ [EventTimeline] 파싱 성공: ${fileName} (${parseResult.text?.length || 0} 문자)`);
+                    }
+                } else {
+                    // 파싱 실패
+                    fileData.parsed_error = parseResult.error;
+                    fileData.parsing = false;
+                    console.warn(`⚠️ [EventTimeline] 파싱 실패: ${fileName} - ${parseResult.error}`);
+                }
+            } catch (error) {
+                console.error(`❌ [EventTimeline] 파싱 결과 세팅 실패: ${fileName}`, error);
+                fileData.parsed_error = error.message;
+                fileData.parsing = false;
+            }
+        },
+        
+        /**
+         * 이벤트 데이터를 DB에 저장
+         */
+        async saveEventToDatabase(eventItem) {
+            try {
+                if (!eventItem.completedEventId) {
+                    console.warn('[EventTimeline] 이벤트 ID가 없어 DB 저장을 건너뜁니다.');
+                    return;
+                }
+
+                const backend = BackendFactory.createBackend();
+                
+                // outputRaw 전체를 data로 저장 (generated_files에 파싱 결과 포함됨)
+                const eventData = {
+                    id: eventItem.completedEventId,
+                    job_id: eventItem.jobId,
+                    data: eventItem.outputRaw // outputRaw에 generated_files가 포함되어 있고, 파싱 결과도 함께
+                };
+                
+                console.log(`[EventTimeline] DB에 이벤트 저장 중... (ID: ${eventItem.id})`);
+                
+                await backend.putEvent(eventData);
+                
+                console.log(`✅ [EventTimeline] DB 저장 완료: ${eventItem.id}`);
+                
+            } catch (error) {
+                console.error('❌ [EventTimeline] DB 저장 실패:', error);
+            }
+        },
         getTimelineKey(item, index) {
             return item.type + '-' + (item.type === 'task' ? item.payload.id : 'chat-' + index)
         },
@@ -596,7 +768,7 @@ export default {
                 .filter(([fileName]) => this.isImageFile(fileName))
                 .map(([fileName, fileData]) => ({
                     fileName,
-                    src: this.getImageSrc(fileData.content, fileName),
+                    src: fileData.url || this.getImageSrc(fileData.content, fileName), // URL 우선, 없으면 content
                     alt: fileName
                 }));
         },
@@ -772,11 +944,15 @@ export default {
         },
         getImageSrc(content, fileName) {
             if (!content) return '';
+            // HTTP/HTTPS URL인 경우 그대로 반환 (Supabase Storage URL)
+            if (content.startsWith('http://') || content.startsWith('https://')) {
+                return content;
+            }
             // 이미 data URL인 경우 그대로 반환
             if (content.startsWith('data:image/')) {
                 return content;
             }
-            // 파일 확장자에 따라 MIME 타입 결정
+            // Base64 데이터인 경우 data URL로 변환 (하위 호환성)
             const mimeType = this.getMimeTypeFromFileName(fileName);
             return `data:${mimeType};base64,${content}`;
         },
@@ -791,6 +967,119 @@ export default {
             if (lowerFileName.endsWith('.svg')) return 'image/svg+xml';
             // 기본값은 PNG
             return 'image/png';
+        },
+        getFileMimeType(fileName, fileData) {
+            // fileData에 mime_type이 있으면 사용
+            if (fileData.mime_type) {
+                return fileData.mime_type;
+            }
+            
+            // 파일 확장자로 추정
+            if (!fileName) return 'application/octet-stream';
+            const lowerFileName = fileName.toLowerCase();
+            
+            // 문서 파일
+            if (lowerFileName.endsWith('.pdf')) return 'application/pdf';
+            if (lowerFileName.endsWith('.doc')) return 'application/msword';
+            if (lowerFileName.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            if (lowerFileName.endsWith('.xls')) return 'application/vnd.ms-excel';
+            if (lowerFileName.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            if (lowerFileName.endsWith('.ppt')) return 'application/vnd.ms-powerpoint';
+            if (lowerFileName.endsWith('.pptx')) return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+            if (lowerFileName.endsWith('.hwp')) return 'application/x-hwp';
+            
+            // 텍스트 파일
+            if (lowerFileName.endsWith('.txt')) return 'text/plain';
+            if (lowerFileName.endsWith('.csv')) return 'text/csv';
+            if (lowerFileName.endsWith('.json')) return 'application/json';
+            if (lowerFileName.endsWith('.xml')) return 'application/xml';
+            if (lowerFileName.endsWith('.html')) return 'text/html';
+            
+            // 압축 파일
+            if (lowerFileName.endsWith('.zip')) return 'application/zip';
+            if (lowerFileName.endsWith('.rar')) return 'application/x-rar-compressed';
+            if (lowerFileName.endsWith('.7z')) return 'application/x-7z-compressed';
+            
+            // 이미지 파일
+            if (lowerFileName.endsWith('.png')) return 'image/png';
+            if (lowerFileName.endsWith('.jpg') || lowerFileName.endsWith('.jpeg')) return 'image/jpeg';
+            if (lowerFileName.endsWith('.gif')) return 'image/gif';
+            if (lowerFileName.endsWith('.webp')) return 'image/webp';
+            if (lowerFileName.endsWith('.bmp')) return 'image/bmp';
+            if (lowerFileName.endsWith('.svg')) return 'image/svg+xml';
+            
+            // 기본값
+            return 'application/octet-stream';
+        },
+        async createFileFromUrl(fileName, fileData) {
+            try {
+                if (!fileData.url) {
+                    console.error('URL 데이터가 없습니다.');
+                    return null;
+                }
+                
+                console.log(`[EventTimeline] URL에서 파일 가져오기: ${fileName} from ${fileData.url}`);
+                
+                // URL에서 파일 다운로드
+                const response = await fetch(fileData.url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // Blob으로 변환
+                const blob = await response.blob();
+                
+                // MIME 타입 결정 (응답 헤더 우선, 없으면 fileData에서)
+                const mimeType = blob.type || fileData.mime_type || this.getFileMimeType(fileName, fileData);
+                
+                // File 객체 생성
+                const file = new File([blob], fileName, {
+                    type: mimeType,
+                    lastModified: Date.now()
+                });
+                
+                console.log(`File 객체 생성 완료: ${fileName} (${file.size} bytes, ${file.type})`);
+                
+                return file;
+            } catch (error) {
+                console.error('File 객체 생성 중 오류 발생:', fileName, error);
+                return null;
+            }
+        },
+        async downloadFile(fileName, fileData) {
+            try {
+                if (!fileData.url) {
+                    console.error('URL 데이터가 없습니다.');
+                    return;
+                }
+                
+                console.log(`[EventTimeline] 파일 다운로드: ${fileName} from ${fileData.url}`);
+                
+                // URL에서 파일 가져오기
+                const response = await fetch(fileData.url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const blob = await response.blob();
+                
+                // 다운로드 링크 생성 및 클릭
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                
+                // 정리
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                
+                console.log(`파일 다운로드 완료: ${fileName}`);
+            } catch (error) {
+                console.error('파일 다운로드 중 오류 발생:', error);
+                alert('파일 다운로드에 실패했습니다.');
+            }
         },
     }
 }
@@ -1897,6 +2186,15 @@ export default {
   color: #495057;
   font-size: 14px;
   word-break: break-all;
+  flex: 1;
+  margin-right: 12px;
+}
+
+.file-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .file-size {
@@ -1905,6 +2203,39 @@ export default {
   background: #f8f9fa;
   padding: 4px 8px;
   border-radius: 4px;
+  white-space: nowrap;
+}
+
+.file-parsing {
+  margin-top: 12px;
+  padding: 12px;
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  color: #1976d2;
+  font-size: 13px;
+}
+
+.file-parsing .parsing-text {
+  font-weight: 500;
+}
+
+.file-error {
+  margin-top: 12px;
+  padding: 12px;
+  background: #ffebee;
+  border: 1px solid #ef9a9a;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  color: #c62828;
+  font-size: 13px;
+}
+
+.file-error .error-text {
+  font-weight: 500;
 }
 
 .file-content {

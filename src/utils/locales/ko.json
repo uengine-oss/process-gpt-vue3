@@ -1673,6 +1673,8 @@
         "toolUsageComplete": "사용 완료",
         "toolUsageInProgress": "사용 중입니다",
         "tool": "도구",
+        "parsingDocument": "문서 파싱 중...",
+        "parsingFailed": "파싱 실패",
         "approved": "승인됨",
         "rejected": "거절됨",
         "processed": "처리됨",

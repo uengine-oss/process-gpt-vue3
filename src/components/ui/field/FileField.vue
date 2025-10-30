@@ -107,6 +107,12 @@ export default {
     },
 
     async mounted() {
+        // EventBus 이벤트 리스너 등록
+        if (this.EventBus) {
+            this.EventBus.on('browser-use-files-generated', this.handleGeneratedFiles);
+            console.log('[FileField] EventBus 리스너 등록 완료');
+        }
+
         if (this.modelValue && this.modelValue.path) {
             try {
                 // modelValue 검증 - 올바른 파일 경로인지 확인
@@ -159,8 +165,76 @@ export default {
             }]
         }
     },
+    
+    beforeUnmount() {
+        // EventBus 이벤트 리스너 해제
+        if (this.EventBus) {
+            this.EventBus.off('browser-use-files-generated', this.handleGeneratedFiles);
+            console.log('[FileField] EventBus 리스너 해제 완료');
+        }
+    },
 
     methods: {
+        handleGeneratedFiles(data) {
+            console.log('[FileField] EventBus로부터 파일 수신:', data);
+            
+            if (!data || !data.files || data.files.length === 0) {
+                console.warn('[FileField] 수신된 파일이 없습니다.');
+                return;
+            }
+            
+            // File 객체들을 selectedFiles에 추가
+            const newFiles = data.files.map(file => {
+                // File 객체에 추가 속성 설정
+                file.originalFileName = file.name;
+                file.path = file.name; // 임시 path
+                return file;
+            });
+            
+            // 기존 파일이 비어있거나 초기값인 경우 교체
+            if (!this.selectedFiles || 
+                this.selectedFiles.length === 0 || 
+                (this.selectedFiles.length === 1 && !this.selectedFiles[0].name)) {
+                this.selectedFiles = newFiles;
+                console.log(`[FileField] ${newFiles.length}개 파일이 추가되었습니다.`, this.selectedFiles);
+            } else {
+                // 중복 체크 후 추가
+                const filesToAdd = [];
+                let duplicateCount = 0;
+                
+                newFiles.forEach(newFile => {
+                    const isDuplicate = this.selectedFiles.some(existingFile => {
+                        // 파일명, 크기, 타입을 모두 비교
+                        return existingFile.name === newFile.name &&
+                               existingFile.size === newFile.size &&
+                               existingFile.type === newFile.type;
+                    });
+                    
+                    if (isDuplicate) {
+                        duplicateCount++;
+                        console.log(`[FileField] 중복 파일 제외: ${newFile.name} (${newFile.size} bytes, ${newFile.type})`);
+                    } else {
+                        filesToAdd.push(newFile);
+                    }
+                });
+                
+                if (filesToAdd.length > 0) {
+                    this.selectedFiles = [...this.selectedFiles, ...filesToAdd];
+                    console.log(`[FileField] ${filesToAdd.length}개 파일이 추가되었습니다. (${duplicateCount}개 중복 제외)`, this.selectedFiles);
+                } else {
+                    console.log(`[FileField] 모든 파일이 중복되어 추가되지 않았습니다. (${duplicateCount}개 중복)`);
+                }
+            }
+            
+            // 첫 번째 파일을 modelValue로 업데이트 (중복이 아닌 경우에만)
+            if (this.selectedFiles && this.selectedFiles.length > 0 && this.selectedFiles[0].name) {
+                const firstFile = this.selectedFiles[0];
+                this.$emit('update:modelValue', { 
+                    path: firstFile.path || firstFile.name, 
+                    name: firstFile.originalFileName || firstFile.name 
+                });
+            }
+        },
         async handleFileChange(event) {
             try {
                 const file = event.target.files[0];

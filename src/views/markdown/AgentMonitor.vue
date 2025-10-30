@@ -243,6 +243,9 @@ export default {
                     task.isCompleted = true
                     task.outputRaw = data || null
                     task.content = this.resolvePrimaryValue(data || null, task.crewType)
+                    if(task.crewType === 'browser-use') {
+                        task.completedEventId = e.id
+                    }
                 } else if (event_type === 'error') {
                     // job_id 매칭 없이 독립 태스크 생성
                     const friendlyText = data && (data.friendly || data.message || data.msg || data.raw_error)
@@ -849,6 +852,12 @@ export default {
             this.$nextTick(() => {
                 const task = this.tasks.find(t => t.jobId === jobId || t.id === row.id);
                 if (task && task.isCompleted) {
+                    // browser-use 작업은 폼 업데이트 하지 않음
+                    if (task.crewType === 'browser-use') {
+                        console.log('[AgentMonitor] browser-use 작업 완료 (폼 업데이트 스킵)', task);
+                        return;
+                    }
+                    
                     console.log('[AgentMonitor] submitTask 감지', task);
                     this.submitTask(task);
                 }

@@ -1131,6 +1131,18 @@ export default {
         
             if(this.formData && typeof this.formData == 'object'){
                 for (const key of Object.keys(this.formData)) {
+                    if(this.formData[key] && typeof this.formData[key] == 'object'){
+                        // 빈 객체가 아니면 삭제 (내용이 있으면 삭제)
+                        if(Object.keys(this.formData[key]).length > 0){
+                            delete this.formData[key];
+                        }
+                    } else if(typeof this.formData[key] == 'string'){
+                        // 빈 문자열이 아니면 삭제 (내용이 있으면 삭제)
+                        if(this.formData[key].trim() !== ''){
+                            delete this.formData[key];
+                        }
+                    }
+                    
                     if(this.formData[key] && (typeof this.formData[key] == 'string' && this.formData[key].includes("data:image/"))){
                         this.imgKeyList.push(key)
                         this.isVisionMode = true
