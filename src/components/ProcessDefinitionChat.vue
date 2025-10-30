@@ -966,13 +966,10 @@ export default {
                         me.externalSystems.push(system);
                     });
                 }
-                me.isDeleted = false;
-                let fullPath = me.$route.params.pathMatch.join('/');
-                if (fullPath.startsWith('/')) {
-                    fullPath = fullPath.substring(1);
-                }
-                let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
-                if (fullPath && lastPath != 'chat') {
+            me.isDeleted = false;
+            let fullPath = me.fullPath;
+            let lastPath = me.$route.params.pathMatch ? me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1] : null;
+                if (fullPath && fullPath != 'definitions-tree' && lastPath != 'chat') {
                     let bpmn = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
                     me.bpmn = bpmn;             
                     me.definitionChangeCount++;
@@ -1035,6 +1032,11 @@ export default {
                     me.disableChat = false;
                     me.isViewMode = false;
                     me.definitionChangeCount++;
+                } else if (fullPath == 'definitions-tree') {
+                    me.isEditable = true;
+                    me.lock = false;
+                    me.disableChat = false;
+                    me.isViewMode = false;
                 }
 
                 // 프로세스 정의 체계도에서 넘어온 쿼리 파라미터 처리
@@ -1082,11 +1084,8 @@ export default {
             let xmlObj = await modeler.saveXML({ format: true, preamble: true });
             me.bpmn = xmlObj.xml;
             this.setOrientation();
-            let fullPath = me.$route.params.pathMatch.join('/');
-            if (fullPath.startsWith('/')) {
-                fullPath = fullPath.substring(1);
-            }
-            let lastPath = this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
+            let fullPath = me.fullPath;
+            let lastPath = me.$route.params.pathMatch ? me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1] : null;
             if(fullPath == 'chat' && lastPath == 'chat') return;
             definitions = modeler.getDefinitions();
             if(definitions) {
