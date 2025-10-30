@@ -7,7 +7,7 @@
                         <div class="process-work-result-header">
                             <div class="process-work-result-title-section">
                                 <v-icon class="mr-2">mdi-check-circle</v-icon>
-                                <h4 class="text-h6 mb-0">완료된 작업</h4>
+                                <h4 class="text-h6 mb-0">{{ $t('ProcessWorkResult.completedActivities') }}</h4>
                             </div>
                             <div class="process-work-result-user-section">
                                 <template v-for="(activity, index) in completedActivities" :key="'completed-' + index">
@@ -32,18 +32,18 @@
                                                 width="2"
                                             ></v-progress-circular>
                                         </div>
-                                        <span class="body-text-2 text-medium-emphasis">완료자 정보 로딩 중...</span>
+                                        <span class="body-text-2 text-medium-emphasis">{{ $t('ProcessWorkResult.loadingCompletedUserInfo') }}</span>
                                     </template>
                                 </template>
                             </div>
                         </div>
                         <v-list dense class="pa-0">
                             <v-list-item v-for="(activity, index) in completedActivities" :key="'completed-' + index" class="px-0">
-                                <v-list-item-title class="font-weight-bold">활동: {{ activity.completedActivityName }}</v-list-item-title>
+                                <v-list-item-title class="font-weight-bold">{{ $t('ProcessWorkResult.activity') }}: {{ activity.completedActivityName }}</v-list-item-title>
                                 <div style="color: #808080;">{{ activity.description }}</div>
                             </v-list-item>
                             <v-list-item v-if="completedActivities.length === 0" class="px-0">
-                                <v-list-item-subtitle class="text-grey">완료된 작업이 없습니다.</v-list-item-subtitle>
+                                <v-list-item-subtitle class="text-grey">{{ $t('ProcessWorkResult.noCompletedActivities') }}</v-list-item-subtitle>
                             </v-list-item>
                         </v-list>
                     </v-card-text>
@@ -55,7 +55,7 @@
                         <div class="process-work-result-header">
                             <div class="process-work-result-title-section">
                                 <v-icon class="mr-2">mdi-cancel</v-icon>
-                                <h4 class="text-h6 mb-0">보류/반송된 작업</h4>
+                                <h4 class="text-h6 mb-0">{{ $t('ProcessWorkResult.pendingActivities') }}</h4>
                             </div>
                             <div class="process-work-result-user-section">
                                 <template v-for="(activity, index) in pendingActivities" :key="'pending-' + index">
@@ -80,14 +80,14 @@
                                                 width="2"
                                             ></v-progress-circular>
                                         </div>
-                                        <span class="body-text-2 text-medium-emphasis">보류/반송자 정보 로딩 중...</span>
+                                        <span class="body-text-2 text-medium-emphasis">{{ $t('ProcessWorkResult.loadingPendingUserInfo') }}</span>
                                     </template>
                                 </template>
                             </div>
                         </div>
                         <v-list dense class="pa-0">
                             <v-list-item v-for="(activity, index) in pendingActivities" :key="'pending-' + index" class="px-0">
-                                <v-list-item-title class="font-weight-bold">활동: {{ activity.completedActivityName }}</v-list-item-title>
+                                <v-list-item-title class="font-weight-bold">{{ $t('ProcessWorkResult.activity') }}: {{ activity.completedActivityName }}</v-list-item-title>
                                 <div style="color: #808080;">{{ activity.description }}</div>
                             </v-list-item>
                         </v-list>
@@ -100,7 +100,7 @@
                         <div class="process-work-result-header">
                             <div class="process-work-result-title-section">
                                 <v-icon class="mr-2">mdi-refresh</v-icon>
-                                <h4 class="text-h6 mb-0">다음 작업</h4>
+                                <h4 class="text-h6 mb-0">{{ $t('ProcessWorkResult.nextActivities') }}</h4>
                             </div>
                             <div class="process-work-result-user-section">
                                 <template v-for="(activity, index) in nextActivities" :key="'next-' + index">
@@ -125,18 +125,18 @@
                                                 width="2"
                                             ></v-progress-circular>
                                         </div>
-                                        <span class="body-text-2 text-medium-emphasis">담당자 정보 로딩 중...</span>
+                                        <span class="body-text-2 text-medium-emphasis">{{ $t('ProcessWorkResult.loadingAssigneeInfo') }}</span>
                                     </template>
                                 </template>
                             </div>
                         </div>
                         <v-list dense class="pa-0">
                             <v-list-item v-for="(activity, index) in nextActivities" :key="'next-' + index" class="px-0">
-                                <v-list-item-title class="font-weight-bold">활동: {{ activity.nextActivityName }}</v-list-item-title>
+                                <v-list-item-title class="font-weight-bold">{{ $t('ProcessWorkResult.activity') }}: {{ activity.nextActivityName }}</v-list-item-title>
                                 <v-list-item-subtitle style="color: #808080;">{{ activity.description }}</v-list-item-subtitle>
                             </v-list-item>
                             <v-list-item v-if="nextActivities.length === 0" class="px-0">
-                                <v-list-item-subtitle class="text-grey">다음 작업이 없습니다.</v-list-item-subtitle>
+                                <v-list-item-subtitle class="text-grey">{{ $t('ProcessWorkResult.noNextActivities') }}</v-list-item-subtitle>
                             </v-list-item>
                         </v-list>
                     </v-card-text>
@@ -154,7 +154,7 @@
                 <v-card-text class="ma-0 pa-4">
                     <div class="d-flex align-center">
                         <v-icon class="mr-2">mdi-clipboard-text</v-icon>
-                        <h4 class="text-h6 mb-0">참조 정보</h4>
+                        <h4 class="text-h6 mb-0">{{ $t('ProcessWorkResult.referenceInfo') }}</h4>
                     </div>
                     <v-list dense class="pa-0">
                         <v-list-item v-for="(info, index) in referenceInfo" :key="'ref-' + index" class="px-0">

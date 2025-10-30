@@ -63,6 +63,11 @@ const MainRoutes = {
             component: () => import('@/components/OrganizationChartChat.vue')
         },
         {
+            name: 'definitions-with-tree',
+            path: '/definitions-tree/:pathMatch(.*)*',
+            component: () => import('@/components/ProcessDefinitionChatWithTree.vue')
+        },
+        {
             name: 'definitions',
             path: '/definitions/:pathMatch(.*)*',
             component: () => import('@/components/ProcessDefinitionChat.vue')

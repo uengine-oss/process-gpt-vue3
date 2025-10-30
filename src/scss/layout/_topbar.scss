@@ -39,6 +39,41 @@
             }
         }
     }
+
+    &:not(.mini-sidebar) {
+        .v-navigation-drawer--closed + * {
+            .v-app-bar {
+                &.v-toolbar {
+                    left: 0 !important;
+                    max-width: calc(100% - 40px) !important;
+                }
+            }
+        }
+    }
+}
+
+.sidebar-closed {
+    .verticalLayout {
+        .v-app-bar {
+            &.v-toolbar {
+                left: 0 !important;
+                max-width: calc(100% - 40px) !important;
+            }
+        }
+    }
+
+    &.verticalLayout {
+        .v-app-bar {
+            &.v-toolbar {
+                left: 0 !important;
+                max-width: calc(100% - 40px) !important;
+            }
+        }
+    }
+
+    .v-main {
+        padding-left: 0 !important;
+    }
 }
 
 

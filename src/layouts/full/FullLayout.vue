@@ -46,6 +46,7 @@ const isModelingTab = computed(() => {
         <v-app :theme="customizer.actTheme" :class="[
             customizer.actTheme,
             customizer.mini_sidebar ? 'mini-sidebar' : '',
+            !customizer.Sidebar_drawer ? 'sidebar-closed' : '',
             customizer.setHorizontalLayout ? 'horizontalLayout' : 'verticalLayout',
             customizer.setBorderCard ? 'cardBordered' : '',
         ]">
@@ -82,6 +83,7 @@ const isModelingTab = computed(() => {
         <v-app :theme="customizer.actTheme" :class="[
             customizer.actTheme,
             customizer.mini_sidebar ? 'mini-sidebar' : '',
+            !customizer.Sidebar_drawer ? 'sidebar-closed' : '',
             customizer.setHorizontalLayout ? 'horizontalLayout' : 'verticalLayout',
             customizer.setBorderCard ? 'cardBordered' : '',
         ]">

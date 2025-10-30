@@ -13,7 +13,8 @@
         "delete": "삭제되었습니다.",
         "instanceDelete": "인스턴스가 삭제되었습니다.",
         "completed": "실행 완료",
-        "savedMarketplace": "마켓플레이스에 등록되었습니다."
+        "savedMarketplace": "마켓플레이스에 등록되었습니다.",
+        "reworkRequested": "재작업이 요청되었습니다."
     },
     "errorMsg": {
         "isBackendConnected" : "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요.",
@@ -272,7 +273,14 @@
         "isReadable": "열람",
         "isWritable": "개정",
         "marketplace": "마켓플레이스",
-        "marketplaceExplanation": "비즈니스 프로세스 템플릿을 찾아보세요"
+        "marketplaceExplanation": "비즈니스 프로세스 템플릿을 찾아보세요",
+        "treeView": "트리 뷰로 보기",
+        "treeViewExplanation": "프로세스를 트리 구조로 확인하고 편집하세요"
+    },
+    "processDefinitionTree": {
+        "search": "검색",
+        "uploadExcel": "엑셀 업로드",
+        "createMap": "맵 생성"
     },
     "uiDefinition": {
         "title": "화면 정의",
@@ -1883,5 +1891,17 @@
     },
     "BpmnUengineViewer": {
         "viewParticipants": "참여자 보기"
+    },
+    "ProcessWorkResult": {
+        "completedActivities": "완료된 작업",
+        "loadingCompletedUserInfo": "완료자 정보 로딩 중...",
+        "activity": "활동",
+        "noCompletedActivities": "완료된 작업이 없습니다.",
+        "pendingActivities": "보류/반송된 작업",
+        "loadingPendingUserInfo": "보류/반송자 정보 로딩 중...",
+        "nextActivities": "다음 작업",
+        "loadingAssigneeInfo": "담당자 정보 로딩 중...",
+        "noNextActivities": "다음 작업이 없습니다.",
+        "referenceInfo": "참조 정보"
     }
 }

@@ -1,345 +1,350 @@
 <template>
-    <div v-if="timeline.length > 0" class="timeline-list">
-        <div v-for="(item, index) in timeline" :key="getTimelineKey(item, index)" class="timeline-item">
-            <!-- 작업 카드 -->
-            <div v-if="item.type === 'task'" class="task-card">
-                <!-- 작업 헤더 -->
-                <div class="task-header">
-                    <div class="task-left">
-                        <div class="task-avatar">
-                            <img v-if="item.payload.agentProfile" :src="item.payload.agentProfile" alt="Agent" class="avatar-image"/>
-                            <span v-else>{{ index + 1 }}</span>
+    <div>
+        <div>
+            <InfoAlert :howToUseInfo="howToUseInfo"/>
+            <div v-if="timeline.length > 0" class="timeline-list">
+                <div v-for="(item, index) in timeline" :key="getTimelineKey(item, index)" class="timeline-item">
+                    <!-- 작업 카드 -->
+                    <div v-if="item.type === 'task'" class="task-card">
+                        <!-- 작업 헤더 -->
+                        <div class="task-header">
+                            <div class="task-left">
+                                <div class="task-avatar">
+                                    <img v-if="item.payload.agentProfile" :src="item.payload.agentProfile" alt="Agent" class="avatar-image"/>
+                                    <span v-else>{{ index + 1 }}</span>
+                                </div>
+                                <div class="task-info">
+                                    <h3 class="task-title">{{ getDisplayName(item.payload) }}</h3>
+                                    <p class="task-description">{{ item.payload.goal }}</p>
+                                </div>
+                            </div>
+                            <div class="task-header-right">
+                                <div :class="getTaskStatusClass(item.payload)">
+                                    <div class="status-dot"></div>
+                                    <span>{{ getStatusText(item.payload) }}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="task-info">
-                            <h3 class="task-title">{{ getDisplayName(item.payload) }}</h3>
-                            <p class="task-description">{{ item.payload.goal }}</p>
-                        </div>
-                    </div>
-                    <div class="task-header-right">
-                        <div :class="getTaskStatusClass(item.payload)">
-                            <div class="status-dot"></div>
-                            <span>{{ getStatusText(item.payload) }}</span>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- 작업 메타데이터 -->
-                <div class="task-meta">
-                    <div v-for="meta in getTaskMeta(item.payload)" :key="meta.label" class="meta-item">
-                        <span class="meta-label">{{ meta.label }}</span>
-                        <span class="meta-value">{{ meta.value }}</span>
-                    </div>
-                </div>
+                        <!-- 작업 메타데이터 -->
+                        <div class="task-meta">
+                            <div v-for="meta in getTaskMeta(item.payload)" :key="meta.label" class="meta-item">
+                                <span class="meta-label">{{ meta.label }}</span>
+                                <span class="meta-value">{{ meta.value }}</span>
+                            </div>
+                        </div>
 
-                <div v-if="item.payload.crewType === 'browser-use' && !item.payload.isCompleted" class="browser-container">
-                    <div class="browser-preview" @click="openBrowserDialog(item.id)">
-                        <iframe 
-                            :src="browserIframeUrl" 
-                            class="browser-iframe" 
-                            frameborder="0" 
-                            allowfullscreen>
-                        </iframe>
-                        <div class="expand-overlay">
-                            <v-btn icon class="expand-btn">
-                                <v-icon size="large">mdi-fullscreen</v-icon>
-                            </v-btn>
+                        <div v-if="item.payload.crewType === 'browser-use' && !item.payload.isCompleted" class="browser-container">
+                            <div class="browser-preview" @click="openBrowserDialog(item.id)">
+                                <iframe 
+                                    :src="browserIframeUrl" 
+                                    class="browser-iframe" 
+                                    frameborder="0" 
+                                    allowfullscreen>
+                                </iframe>
+                                <div class="expand-overlay">
+                                    <v-btn icon class="expand-btn">
+                                        <v-icon size="large">mdi-fullscreen</v-icon>
+                                    </v-btn>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Human Asked 응답 영역 -->
-                <div v-if="item.payload.isHumanAsked" class="human-query-input">
-                    <div class="query-header">
-                        <h4 class="query-title">{{ $t('agentMonitor.request') }}</h4>
-                        <div class="role-pill">{{ item.payload.role }}</div>
-                    </div>
-                    <div class="query-content">
-                        <p class="query-question">{{ item.payload.humanQueryData.text || $t('agentMonitor.requestContent') }}</p>
-                        <div v-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'text'" class="input-field">
-                            <input 
-                                v-model.trim="humanQueryAnswers[item.payload.id]" 
-                                class="query-input" 
-                                type="text" 
-                                :placeholder="$t('agentMonitor.inputAnswer')" 
-                            />
-                        </div>
-                        <div v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'select'" class="input-field">
-                            <select v-model="humanQueryAnswers[item.payload.id]" class="query-select">
-                                <option disabled value="">{{ $t('agentMonitor.selectAnswer') }}</option>
-                                <option v-for="opt in item.payload.humanQueryData.options" :key="opt" :value="opt">{{ opt }}</option>
-                            </select>
-                        </div>
-                        <div v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'confirm'" class="confirm-hint">
-                            {{ $t('agentMonitor.continue') }}
-                        </div>
-                    </div>
-                    <v-row v-if="!item.payload.isCompleted" class="query-actions ma-0 pa-0">
-                        <v-spacer></v-spacer>
-                        <v-btn @click="onCancelHumanQuery(item.payload)"
-                            class="query-cancel rounded-pill mr-2" 
-                            variant="elevated" 
-                            color="grey"
-                            density="compact"
-                        >
-                            {{ $t('agentMonitor.cancel') }}
-                        </v-btn>
-                        <v-btn @click="onConfirmHumanQuery(item.payload)"
-                            class="query-confirm rounded-pill" 
-                            color="primary"
-                            variant="elevated" 
-                            density="compact"
-                            :disabled="item.payload.humanQueryData.type !== 'confirm' && !humanQueryAnswers[item.payload.id]" 
-                        >
-                            {{ $t('agentMonitor.confirm') }}
-                        </v-btn>
-                    </v-row>
-                    <div v-else class="query-completed">
-                        <span class="completed-pill" :class="getHumanResultClass(item.payload)">{{ getHumanResultText(item.payload) }}</span>
-                        <span v-if="getHumanResultDetail(item.payload)" class="completed-detail">{{ getHumanResultDetail(item.payload) }}</span>
-                    </div>
-                </div>
-
-                <!-- 작업 결과 -->
-                <div v-else-if="item.payload.isCompleted && item.payload.content" class="task-result">
-                    <div class="result-header">
-                        <v-row class="ma-0 pa-0 align-center">
-                            <h4 class="result-title">{{ $t('agentMonitor.result') }}</h4>
-                            <v-spacer></v-spacer>
-                            <v-btn v-if="shouldShowSubmitButton(item.payload)"
-                                    @click="submitTask(item.payload)"
+                        <!-- Human Asked 응답 영역 -->
+                        <div v-if="item.payload.isHumanAsked" class="human-query-input">
+                            <div class="query-header">
+                                <h4 class="query-title">{{ $t('agentMonitor.request') }}</h4>
+                                <div class="role-pill">{{ item.payload.role }}</div>
+                            </div>
+                            <div class="query-content">
+                                <p class="query-question">{{ item.payload.humanQueryData.text || $t('agentMonitor.requestContent') }}</p>
+                                <div v-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'text'" class="input-field">
+                                    <input 
+                                        v-model.trim="humanQueryAnswers[item.payload.id]" 
+                                        class="query-input" 
+                                        type="text" 
+                                        :placeholder="$t('agentMonitor.inputAnswer')" 
+                                    />
+                                </div>
+                                <div v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'select'" class="input-field">
+                                    <select v-model="humanQueryAnswers[item.payload.id]" class="query-select">
+                                        <option disabled value="">{{ $t('agentMonitor.selectAnswer') }}</option>
+                                        <option v-for="opt in item.payload.humanQueryData.options" :key="opt" :value="opt">{{ opt }}</option>
+                                    </select>
+                                </div>
+                                <div v-else-if="!item.payload.isCompleted && item.payload.humanQueryData.type === 'confirm'" class="confirm-hint">
+                                    {{ $t('agentMonitor.continue') }}
+                                </div>
+                            </div>
+                            <v-row v-if="!item.payload.isCompleted" class="query-actions ma-0 pa-0">
+                                <v-spacer></v-spacer>
+                                <v-btn @click="onCancelHumanQuery(item.payload)"
+                                    class="query-cancel rounded-pill mr-2" 
+                                    variant="elevated" 
+                                    color="grey"
+                                    density="compact"
+                                >
+                                    {{ $t('agentMonitor.cancel') }}
+                                </v-btn>
+                                <v-btn @click="onConfirmHumanQuery(item.payload)"
+                                    class="query-confirm rounded-pill" 
                                     color="primary"
                                     variant="elevated" 
-                                    class="rounded-pill"
                                     density="compact"
-                            >
-                            {{ $t('agentMonitor.accept') }}
-                        </v-btn>
-                        </v-row>
-                    </div>
-                    <div class="result-content">
-                        <!-- 슬라이드 결과 -->
-                        <div v-if="item.payload.crewType === 'slide'" class="slides-container">
-                            <div class="slides-header">
-                                <div class="header-info">
-                                    <h5>{{ $t('agentMonitor.presentationMode') }}</h5>
-                                    <span class="slide-hint">{{ $t('agentMonitor.slideHint') }}</span>
-                                </div>
-                                <div class="slide-navigation">
-                                    <button @click="previousSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === 0" class="nav-btn">←</button>
-                                    <span class="slide-counter">{{ getSlideIndex(item.payload.id) + 1 }} / {{ getSlides(item.payload.content).length }}</span>
-                                    <button @click="nextSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === getSlides(item.payload.content).length - 1" class="nav-btn">→</button>
-                                </div>
-                            </div>
-                            <div class="slide-content">
-                                    <div v-html="getCurrentSlide(item.payload)" class="slide-inner"></div>
-                            </div>
-                            <div class="slide-indicators">
-                                    <span v-for="(slide, index) in getSlides(item.payload.content)" :key="index"
-                                            :class="['indicator', { active: index === getSlideIndex(item.payload.id) }]"
-                                            @click="goToSlide(item.payload.id, index)"></span>
+                                    :disabled="item.payload.humanQueryData.type !== 'confirm' && !humanQueryAnswers[item.payload.id]" 
+                                >
+                                    {{ $t('agentMonitor.confirm') }}
+                                </v-btn>
+                            </v-row>
+                            <div v-else class="query-completed">
+                                <span class="completed-pill" :class="getHumanResultClass(item.payload)">{{ getHumanResultText(item.payload) }}</span>
+                                <span v-if="getHumanResultDetail(item.payload)" class="completed-detail">{{ getHumanResultDetail(item.payload) }}</span>
                             </div>
                         </div>
-                        
-                        <!-- Browser-use 결과 -->
-                        <div v-else-if="item.payload.crewType === 'browser-use'" class="pa-4 browser-result">
-                            <div class="browser-result-header">
-                                <h5>{{ $t('EventTimeline.browserAutomationResult') }}</h5>
-                                <div class="browser-status" :class="{ 'success': item.payload.outputRaw?.success }">
-                                {{ item.payload.outputRaw?.success ? `✅ ${$t('EventTimeline.completed')}` : `❌ ${$t('EventTimeline.failed')}` }}
-                                </div>
-                            </div>
-                            
-                            <div v-if="item.payload.outputRaw?.result_summary" class="browser-summary">
-                                <h6>{{ $t('EventTimeline.taskSummary') }}</h6>
-                                <div class="summary-text">{{ item.payload.outputRaw.result_summary }}</div>
-                            </div>
-                            
-                            <div v-if="item.payload.outputRaw?.completed_at" class="browser-time">
-                                <h6>{{ $t('EventTimeline.completedTime') }}</h6>
-                                <div class="time-text">{{ formatDateTime(item.payload.outputRaw.completed_at) }}</div>
-                            </div>
 
-                            <!-- 생성된 파일들 -->
-                            <div v-if="item.payload.outputRaw?.generated_files" class="browser-files">
-                                <h6>{{ $t('EventTimeline.generatedFiles') }}</h6>
-                                
-                                <!-- 일반 파일들 -->
-                                <div class="files-list">
-                                    <div v-for="[fileName, file] in filteredFiles(item.payload.outputRaw.generated_files)" :key="fileName" class="file-item">
-                                        <div class="file-header">
-                                            <span class="file-name">{{ fileName }}</span>
-                                            <div class="file-actions">
-                                                <span class="file-size">{{ formatFileSize(file.size) }}</span>
-                                                <v-btn v-if="file.url" 
-                                                       @click="downloadFile(fileName, file)" 
-                                                       size="small" 
-                                                       variant="elevated" 
-                                                       color="primary" 
-                                                       class="ml-2"
-                                                       density="compact">
-                                                    <v-icon size="small" class="mr-1">mdi-download</v-icon>
-                                                    {{ '다운로드' }}
-                                                </v-btn>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- 파싱 중 로딩 표시 -->
-                                        <div v-if="file.parsing" class="file-parsing">
-                                            <v-progress-circular indeterminate color="primary" size="20" width="2" class="mr-2"></v-progress-circular>
-                                            <span class="parsing-text">{{ $t('EventTimeline.parsingDocument') }}</span>
-                                        </div>
-                                        
-                                        <!-- 파싱 오류 표시 -->
-                                        <div v-else-if="file.parsed_error" class="file-error">
-                                            <v-icon size="small" color="error" class="mr-1">mdi-alert-circle</v-icon>
-                                            <span class="error-text">{{ $t('EventTimeline.parsingFailed') }}: {{ file.parsed_error }}</span>
-                                        </div>
-                                        
-                                        <!-- 파싱된 내용 표시 -->
-                                        <div v-else-if="file.content || file.parsed_content" class="file-content">
-                                            <div class="markdown-container" v-html="formatMarkdownContent(file.content || file.parsed_content)"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 이미지 슬라이드 -->
-                                <div v-if="getImageSlides(item.payload.outputRaw.generated_files).length > 0" class="image-slides-container">
-                                    <div class="image-slides-header">
+                        <!-- 작업 결과 -->
+                        <div v-else-if="item.payload.isCompleted && item.payload.content" class="task-result">
+                            <div class="result-header">
+                                <v-row class="ma-0 pa-0 align-center">
+                                    <h4 class="result-title">{{ $t('agentMonitor.result') }}</h4>
+                                    <v-spacer></v-spacer>
+                                    <v-btn v-if="shouldShowSubmitButton(item.payload)"
+                                            @click="submitTask(item.payload)"
+                                            color="primary"
+                                            variant="elevated" 
+                                            class="rounded-pill"
+                                            density="compact"
+                                    >
+                                    {{ $t('agentMonitor.accept') }}
+                                </v-btn>
+                                </v-row>
+                            </div>
+                            <div class="result-content">
+                                <!-- 슬라이드 결과 -->
+                                <div v-if="item.payload.crewType === 'slide'" class="slides-container">
+                                    <div class="slides-header">
                                         <div class="header-info">
-                                            <h5>{{ $t('EventTimeline.imageGallery') }}</h5>
-                                            <span class="slide-hint">{{ getImageSlides(item.payload.outputRaw.generated_files).length }}{{ $t('EventTimeline.images') }}</span>
+                                            <h5>{{ $t('agentMonitor.presentationMode') }}</h5>
+                                            <span class="slide-hint">{{ $t('agentMonitor.slideHint') }}</span>
                                         </div>
                                         <div class="slide-navigation">
-                                            <button @click="previousImageSlide()" :disabled="imageIndex === 0" class="nav-btn">←</button>
-                                            <span class="slide-counter">{{ imageIndex + 1 }} / {{ images.length }}</span>
-                                            <button @click="nextImageSlide()" :disabled="imageIndex === images.length - 1" class="nav-btn">→</button>
+                                            <button @click="previousSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === 0" class="nav-btn">←</button>
+                                            <span class="slide-counter">{{ getSlideIndex(item.payload.id) + 1 }} / {{ getSlides(item.payload.content).length }}</span>
+                                            <button @click="nextSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === getSlides(item.payload.content).length - 1" class="nav-btn">→</button>
                                         </div>
                                     </div>
-                                    <div class="image-slide-content">
-                                        <div class="image-wrapper">
-                                            <img v-if="images[imageIndex]" 
-                                                 :src="images[imageIndex].src" 
-                                                 :alt="images[imageIndex].alt" 
-                                                 class="image-slide-image" />
-                                            <button @click="openImageDialog(item.payload.outputRaw.generated_files)" 
-                                                    class="expand-image-btn">
-                                                <v-icon size="large">mdi-magnify-plus</v-icon>
-                                            </button>
-                                        </div>
+                                    <div class="slide-content">
+                                            <div v-html="getCurrentSlide(item.payload)" class="slide-inner"></div>
                                     </div>
-                                    <div class="image-slide-indicators">
-                                        <span v-for="(slide, index) in images" :key="index"
-                                              :class="['indicator', { active: index === imageIndex }]"
-                                              @click="goToImageSlide(index)"></span>
+                                    <div class="slide-indicators">
+                                            <span v-for="(slide, index) in getSlides(item.payload.content)" :key="index"
+                                                    :class="['indicator', { active: index === getSlideIndex(item.payload.id) }]"
+                                                    @click="goToSlide(item.payload.id, index)"></span>
                                     </div>
                                 </div>
+                                
+                                <!-- Browser-use 결과 -->
+                                <div v-else-if="item.payload.crewType === 'browser-use'" class="pa-4 browser-result">
+                                    <div class="browser-result-header">
+                                        <h5>{{ $t('EventTimeline.browserAutomationResult') }}</h5>
+                                        <div class="browser-status" :class="{ 'success': item.payload.outputRaw?.success }">
+                                        {{ item.payload.outputRaw?.success ? `✅ ${$t('EventTimeline.completed')}` : `❌ ${$t('EventTimeline.failed')}` }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div v-if="item.payload.outputRaw?.result_summary" class="browser-summary">
+                                        <h6>{{ $t('EventTimeline.taskSummary') }}</h6>
+                                        <div class="summary-text">{{ item.payload.outputRaw.result_summary }}</div>
+                                    </div>
+                                    
+                                    <div v-if="item.payload.outputRaw?.completed_at" class="browser-time">
+                                        <h6>{{ $t('EventTimeline.completedTime') }}</h6>
+                                        <div class="time-text">{{ formatDateTime(item.payload.outputRaw.completed_at) }}</div>
+                                    </div>
+
+                                    <!-- 생성된 파일들 -->
+                                    <div v-if="item.payload.outputRaw?.generated_files" class="browser-files">
+                                        <h6>{{ $t('EventTimeline.generatedFiles') }}</h6>
+                                        
+                                        <!-- 일반 파일들 -->
+                                        <div class="files-list">
+                                            <div v-for="[fileName, file] in filteredFiles(item.payload.outputRaw.generated_files)" :key="fileName" class="file-item">
+                                                <div class="file-header">
+                                                    <span class="file-name">{{ fileName }}</span>
+                                                    <div class="file-actions">
+                                                        <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                                                        <v-btn v-if="file.url" 
+                                                            @click="downloadFile(fileName, file)" 
+                                                            size="small" 
+                                                            variant="elevated" 
+                                                            color="primary" 
+                                                            class="ml-2"
+                                                            density="compact">
+                                                            <v-icon size="small" class="mr-1">mdi-download</v-icon>
+                                                            {{ '다운로드' }}
+                                                        </v-btn>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- 파싱 중 로딩 표시 -->
+                                                <div v-if="file.parsing" class="file-parsing">
+                                                    <v-progress-circular indeterminate color="primary" size="20" width="2" class="mr-2"></v-progress-circular>
+                                                    <span class="parsing-text">{{ $t('EventTimeline.parsingDocument') }}</span>
+                                                </div>
+                                                
+                                                <!-- 파싱 오류 표시 -->
+                                                <div v-else-if="file.parsed_error" class="file-error">
+                                                    <v-icon size="small" color="error" class="mr-1">mdi-alert-circle</v-icon>
+                                                    <span class="error-text">{{ $t('EventTimeline.parsingFailed') }}: {{ file.parsed_error }}</span>
+                                                </div>
+                                                
+                                                <!-- 파싱된 내용 표시 -->
+                                                <div v-else-if="file.content || file.parsed_content" class="file-content">
+                                                    <div class="markdown-container" v-html="formatMarkdownContent(file.content || file.parsed_content)"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 이미지 슬라이드 -->
+                                        <div v-if="getImageSlides(item.payload.outputRaw.generated_files).length > 0" class="image-slides-container">
+                                            <div class="image-slides-header">
+                                                <div class="header-info">
+                                                    <h5>{{ $t('EventTimeline.imageGallery') }}</h5>
+                                                    <span class="slide-hint">{{ getImageSlides(item.payload.outputRaw.generated_files).length }}{{ $t('EventTimeline.images') }}</span>
+                                                </div>
+                                                <div class="slide-navigation">
+                                                    <button @click="previousImageSlide()" :disabled="imageIndex === 0" class="nav-btn">←</button>
+                                                    <span class="slide-counter">{{ imageIndex + 1 }} / {{ images.length }}</span>
+                                                    <button @click="nextImageSlide()" :disabled="imageIndex === images.length - 1" class="nav-btn">→</button>
+                                                </div>
+                                            </div>
+                                            <div class="image-slide-content">
+                                                <div class="image-wrapper">
+                                                    <img v-if="images[imageIndex]" 
+                                                        :src="images[imageIndex].src" 
+                                                        :alt="images[imageIndex].alt" 
+                                                        class="image-slide-image" />
+                                                    <button @click="openImageDialog(item.payload.outputRaw.generated_files)" 
+                                                            class="expand-image-btn">
+                                                        <v-icon size="large">mdi-magnify-plus</v-icon>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="image-slide-indicators">
+                                                <span v-for="(slide, index) in images" :key="index"
+                                                    :class="['indicator', { active: index === imageIndex }]"
+                                                    @click="goToImageSlide(index)"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 마크다운 결과 -->
+                                <div v-else-if="isMarkdownType(item.payload.crewType)" 
+                                    :class="['markdown-container', { 
+                                    expanded: isTaskExpanded(item.payload.id),
+                                    'has-expand-controls': shouldShowExpandControls(item.payload)
+                                    }]"
+                                    @dblclick="toggleTaskExpansion(item.payload.id)"
+                                    v-html="getMarkdownContent(item.payload)"
+                                ></div>
+
+                                <!-- JSON 결과 -->
+                                <div v-else class="pa-4"
+                                    :class="['json-container', { 
+                                        expanded: isTaskExpanded(item.payload.id),
+                                        'has-expand-controls': shouldShowExpandControls(item.payload)
+                                    }]"
+                                    @dblclick="toggleTaskExpansion(item.payload.id)"
+                                >
+                                    <div>{{ formatJsonOutput(item.payload.content) }}</div>
+                                </div>
+                            </div>
+                            <div v-if="shouldShowExpandControls(item.payload)" class="expand-controls">
+                                <span class="expand-hint">
+                                    {{ $t('EventTimeline.doubleClickHint') }} {{ isTaskExpanded(item.payload.id) ? $t('agentMonitor.collapse') : $t('agentMonitor.expand') }} {{ $t('EventTimeline.expandCollapse') }}
+                                </span>
+                                <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
+                                    {{ isTaskExpanded(item.payload.id) ? $t('agentMonitor.collapse') : $t('agentMonitor.expand') }}
+                                    <span class="expand-icon">{{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}</span>
+                                </button>
                             </div>
                         </div>
 
-                        <!-- 마크다운 결과 -->
-                        <div v-else-if="isMarkdownType(item.payload.crewType)" 
-                            :class="['markdown-container', { 
-                            expanded: isTaskExpanded(item.payload.id),
-                            'has-expand-controls': shouldShowExpandControls(item.payload)
-                            }]"
-                            @dblclick="toggleTaskExpansion(item.payload.id)"
-                            v-html="getMarkdownContent(item.payload)"
-                        ></div>
+                        <!-- 진행 상태 -->
+                        <div v-else-if="!item.payload.isCompleted" class="task-progress">
+                            <div class="progress-dots">
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                            </div>
+                            <span>{{ $t('agentMonitor.workInProgress') }}</span>
+                        </div>
 
-                        <!-- JSON 결과 -->
-                        <div v-else class="pa-4"
-                            :class="['json-container', { 
-                                expanded: isTaskExpanded(item.payload.id),
-                                'has-expand-controls': shouldShowExpandControls(item.payload)
-                            }]"
-                            @dblclick="toggleTaskExpansion(item.payload.id)"
-                        >
-                            <div>{{ formatJsonOutput(item.payload.content) }}</div>
+                        <!-- 도구 사용 상태 -->
+                        <div v-if="!item.payload.isCompleted && getToolUsageList(item.payload.jobId).length" class="tool-usage-status-list">
+                            <div v-for="(tool, idx) in getToolUsageList(item.payload.jobId)" :key="`${item.payload.jobId}-${tool.tool_name}-${idx}`" class="tool-usage-status-item">
+                                <div class="tool-status-indicator">
+                                    <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
+                                    <div v-else class="check-mark">✓</div>
+                                </div>
+                                <span>{{ getToolStatusText(tool) }}</span>
+                            </div>
                         </div>
                     </div>
-                    <div v-if="shouldShowExpandControls(item.payload)" class="expand-controls">
-                        <span class="expand-hint">
-                            {{ $t('EventTimeline.doubleClickHint') }} {{ isTaskExpanded(item.payload.id) ? $t('agentMonitor.collapse') : $t('agentMonitor.expand') }} {{ $t('EventTimeline.expandCollapse') }}
-                        </span>
-                        <button @click="toggleTaskExpansion(item.payload.id)" class="expand-button">
-                            {{ isTaskExpanded(item.payload.id) ? $t('agentMonitor.collapse') : $t('agentMonitor.expand') }}
-                            <span class="expand-icon">{{ isTaskExpanded(item.payload.id) ? '▲' : '▼' }}</span>
-                        </button>
+
+                    <!-- 채팅 메시지 -->
+                    <div v-else class="chat-message">
+                        <div class="bubble">{{ item.payload.content }}</div>
                     </div>
                 </div>
-
-                <!-- 진행 상태 -->
-                <div v-else-if="!item.payload.isCompleted" class="task-progress">
-                    <div class="progress-dots">
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>
-                    <span>{{ $t('agentMonitor.workInProgress') }}</span>
-                </div>
-
-                <!-- 도구 사용 상태 -->
-                <div v-if="!item.payload.isCompleted && getToolUsageList(item.payload.jobId).length" class="tool-usage-status-list">
-                    <div v-for="(tool, idx) in getToolUsageList(item.payload.jobId)" :key="`${item.payload.jobId}-${tool.tool_name}-${idx}`" class="tool-usage-status-item">
-                        <div class="tool-status-indicator">
-                            <div v-if="tool.status === 'searching'" class="loading-spinner"></div>
-                            <div v-else class="check-mark">✓</div>
-                        </div>
-                        <span>{{ getToolStatusText(tool) }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 채팅 메시지 -->
-            <div v-else class="chat-message">
-                <div class="bubble">{{ item.payload.content }}</div>
             </div>
         </div>
-    </div>
 
-    <!-- 이미지 확대 다이얼로그 -->
-    <v-dialog v-model="imageDialog.show" max-width="90vw" max-height="90vh" persistent>
-        <v-card class="image-dialog-card">
-            <v-card-title class="image-dialog-header">
-                <div class="dialog-title">
-                    <h3>{{ $t('EventTimeline.imageGallery') }}</h3>
-                    <span class="dialog-counter">{{ imageIndex + 1 }} / {{ images.length }}</span>
-                </div>
-                <v-btn icon @click="closeImageDialog">
-                    <v-icon>mdi-close</v-icon>
-                </v-btn>
-            </v-card-title>
-            
-            <v-card-text class="image-dialog-content">
-                <div class="dialog-image-container">
-                    <button @click="previousImageSlide()" 
-                            :disabled="imageIndex === 0" 
-                            class="dialog-nav-btn dialog-nav-left">
-                        <v-icon>mdi-chevron-left</v-icon>
-                    </button>
-                    
-                    <div class="dialog-image-wrapper">
-                        <img v-if="images[imageIndex]" 
-                             :src="images[imageIndex].src" 
-                             :alt="images[imageIndex].alt" 
-                             class="dialog-image" />
+        <!-- 이미지 확대 다이얼로그 -->
+        <v-dialog v-model="imageDialog.show" max-width="90vw" max-height="90vh" persistent>
+            <v-card class="image-dialog-card">
+                <v-card-title class="image-dialog-header">
+                    <div class="dialog-title">
+                        <h3>{{ $t('EventTimeline.imageGallery') }}</h3>
+                        <span class="dialog-counter">{{ imageIndex + 1 }} / {{ images.length }}</span>
+                    </div>
+                    <v-btn icon @click="closeImageDialog">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                
+                <v-card-text class="image-dialog-content">
+                    <div class="dialog-image-container">
+                        <button @click="previousImageSlide()" 
+                                :disabled="imageIndex === 0" 
+                                class="dialog-nav-btn dialog-nav-left">
+                            <v-icon>mdi-chevron-left</v-icon>
+                        </button>
+                        
+                        <div class="dialog-image-wrapper">
+                            <img v-if="images[imageIndex]" 
+                                :src="images[imageIndex].src" 
+                                :alt="images[imageIndex].alt" 
+                                class="dialog-image" />
+                        </div>
+                        
+                        <button @click="nextImageSlide()" 
+                                :disabled="imageIndex === images.length - 1" 
+                                class="dialog-nav-btn dialog-nav-right">
+                            <v-icon>mdi-chevron-right</v-icon>
+                        </button>
                     </div>
                     
-                    <button @click="nextImageSlide()" 
-                            :disabled="imageIndex === images.length - 1" 
-                            class="dialog-nav-btn dialog-nav-right">
-                        <v-icon>mdi-chevron-right</v-icon>
-                    </button>
-                </div>
-                
-                <div class="dialog-indicators">
-                    <span v-for="(slide, index) in images" :key="index"
-                          :class="['dialog-indicator', { active: index === imageIndex }]"
-                          @click="goToImageSlide(index)"></span>
-                </div>
-            </v-card-text>
-        </v-card>
-    </v-dialog>
+                    <div class="dialog-indicators">
+                        <span v-for="(slide, index) in images" :key="index"
+                            :class="['dialog-indicator', { active: index === imageIndex }]"
+                            @click="goToImageSlide(index)"></span>
+                    </div>
+                </v-card-text>
+            </v-card>
+        </v-dialog>
+    </div>
 </template>
 
 <script>
@@ -376,6 +381,11 @@ export default {
         browserIframeUrl: {
             type: String,
             default: ''
+        },
+        // chat인포 관련
+        howToUseInfo: {
+            type: Object,
+            default: null
         }
     },
     emits: ['update:humanQueryAnswers', 'update:expandedTasks', 'update:slideIndexes', 'onCancelHumanQuery', 'onConfirmHumanQuery', 'submitTask', 'previousSlide', 'nextSlide', 'goToSlide', 'toggleTaskExpansion', 'browserUseCompleted'],

@@ -1758,11 +1758,12 @@ export default {
             
             backend.reWorkItem({
                 instanceId: me.workItem.worklist.instId,
-                activities: activities
+                activities: activities,
+                activityId: me.workItem.activity.tracingTag
             }).then(data => {
                 if (data) {
-                    const workItemIds = Object.keys(data);
-                    me.$router.push(`/todolist/${workItemIds[0]}`);
+                    const instId = me.workItem.worklist.instId.replace(/\./g, '_DOT_');
+                    me.$router.push(`/instancelist/${instId}`);
                 }
             }).catch(err => {
                 console.error('재작업 요청 중 오류:', err);

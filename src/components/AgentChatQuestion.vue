@@ -27,7 +27,8 @@ export default {
             chatRoomId: '',
             type: 'question',
             chatInfo: {
-                title: 'AgentChatInfo.tabs.question'
+                title: '',
+                text: 'agentChat.questionModeInfo'
             }
         }
     },

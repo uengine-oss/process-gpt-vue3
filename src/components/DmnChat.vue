@@ -33,7 +33,7 @@
                     >
                         <template v-slot:custom-title>
                             <!-- DMN Header -->
-                            <div class="d-flex align-center px-4 py-3 bg-white border-b ga-2">
+                            <div class="d-flex align-center bg-white border-b ga-2">
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName || 'New DMN Decision' }}</h6>
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">
@@ -61,6 +61,22 @@
                                     </v-btn>
                                 </div>
                             </div>
+                        </template>
+                        <template #custom-input-tools>
+                            <v-select
+                                v-model="isInferenceMode"
+                                :items="[
+                                    { title: '생성', value: false },
+                                    { title: '추론', value: true }
+                                ]"
+                                item-title="title"
+                                item-value="value"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                rounded
+                                class="mx-2 inference-mode-select"
+                            ></v-select>
                         </template>
                     </Chat>
                 </div>
@@ -78,7 +94,7 @@
                     >
                         <template v-slot:custom-title>
                             <!-- DMN Header -->
-                            <div class="d-flex align-center px-4 py-3 bg-white border-b ga-2">
+                            <div class="d-flex align-center bg-white border-b ga-2">
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName || 'New DMN Decision' }}</h6>
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">
@@ -107,72 +123,110 @@
                                 </div>
                             </div>
                         </template>
+                        <template #custom-input-tools>
+                            <v-select
+                                v-model="isInferenceMode"
+                                :items="[
+                                    { title: '생성', value: false },
+                                    { title: '추론', value: true }
+                                ]"
+                                item-title="title"
+                                item-value="value"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                                rounded
+                                class="mx-2 inference-mode-select"
+                            ></v-select>
+                        </template>
                     </Chat>
                 </div>
             </template>
         </AppBaseCard>
 
-        <!-- 상하 분할 레이아웃 (기타 경로) -->
-        <div v-else class="d-flex flex-column w-100 dmn-chat-container">
-            <!-- DMN Section -->
-            <div class="d-flex flex-column flex-grow-1 bg-grey-lighten-4 dmn-section">
-                <!-- DMN Header -->
-                <div class="d-flex align-center px-4 py-1 bg-white border-b ga-2">
-                    <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName ? dmnName : 'New DMN Decision' }}</h6>
-                    <v-spacer></v-spacer>
-                    <div class="d-flex align-center ga-1">
-                        <v-btn 
-                            icon
-                            size="small"
-                            variant="text"
-                            @click="openSaveDialog"
-                            :class="{ 'icon-heartbit': isChanged }"
-                        >
-                            <v-icon size="small">mdi-content-save</v-icon>
-                            <v-tooltip activator="parent">{{ $t('dmn.save') }}</v-tooltip>
-                        </v-btn>
-                        
-                        <v-btn 
-                            v-if="isLoadedDmn"
-                            icon
-                            size="small"
-                            variant="text"
-                            color="error"
-                            @click="openDeleteDialog"
-                        >
-                            <v-icon size="small">mdi-delete</v-icon>
-                            <v-tooltip activator="parent">{{ $t('dmn.deleteDmn') }}</v-tooltip>
-                        </v-btn>
+        <!-- 통합 레이아웃 (기타 경로) -->
+        <div v-else class="w-100 dmn-chat-container">
+            <Chat
+                :messages="messages"
+                :userInfo="userInfo"
+                :chatInfo="chatInfo"
+                :showScrollTopButton="true"
+                :agentMessage="true"
+                @sendMessage="beforeSendMessage"
+                @sendEditedMessage="sendEditedMessage"
+                @stopMessage="stopMessage"
+            >
+                <template #custom-content>
+                    <!-- DMN Section -->
+                    <div class="dmn-section-wrapper">
+                        <div class="d-flex flex-column bg-grey-lighten-4 dmn-section">
+                            <!-- DMN Header -->
+                            <div class="d-flex align-center bg-white border-b ga-2">
+                                <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName ? dmnName : 'New DMN Decision' }}</h6>
+                                <v-spacer></v-spacer>
+                                <div class="d-flex align-center ga-1">
+                                    <v-btn 
+                                        icon
+                                        size="small"
+                                        variant="text"
+                                        @click="openSaveDialog"
+                                        :class="{ 'icon-heartbit': isChanged }"
+                                    >
+                                        <v-icon size="small">mdi-content-save</v-icon>
+                                        <v-tooltip activator="parent">{{ $t('dmn.save') }}</v-tooltip>
+                                    </v-btn>
+                                    
+                                    <v-btn 
+                                        v-if="isLoadedDmn"
+                                        icon
+                                        size="small"
+                                        variant="text"
+                                        color="error"
+                                        @click="openDeleteDialog"
+                                    >
+                                        <v-icon size="small">mdi-delete</v-icon>
+                                        <v-tooltip activator="parent">{{ $t('dmn.deleteDmn') }}</v-tooltip>
+                                    </v-btn>
+                                </div>
+                            </div>
+                            
+                            <!-- DMN Modeler -->
+                            <div class="dmn-modeler-wrapper">
+                                <DmnModeler
+                                    v-if="isShowDmnModeler"
+                                    ref="dmnModeler"
+                                    :dmn="dmnXml"
+                                    :isViewMode="viewMode === 'view'"
+                                    :key="dmnRenderKey"
+                                    @definition="onDmnDefinitionLoaded"
+                                    @error="onDmnError"
+                                    @shown="onDmnShown"
+                                />
+                                <div v-else class="d-flex align-center justify-center h-100 w-100">
+                                    <v-progress-circular color="primary" indeterminate></v-progress-circular>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </template>
                 
-                <!-- DMN Modeler -->
-                <DmnModeler
-                    v-if="isShowDmnModeler"
-                    ref="dmnModeler"
-                    :dmn="dmnXml"
-                    :isViewMode="viewMode === 'view'"
-                    :key="dmnRenderKey"
-                    @definition="onDmnDefinitionLoaded"
-                    @error="onDmnError"
-                    @shown="onDmnShown"
-                />
-                <div v-else class="d-flex align-center justify-center h-100 w-100">
-                    <v-progress-circular color="primary" indeterminate></v-progress-circular>
-                </div>
-            </div>
-            
-            <!-- Chat Section -->
-            <div class="chat-section" :class="{ 'chat-section-empty': messages.length === 0 }">
-                <Chat
-                    :messages="messages"
-                    :userInfo="userInfo"
-                    :chatInfo="{ title: 'dmn.explanation' }"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                />
-            </div>
+                <template #custom-input-tools>
+                    <v-select
+                        v-model="isInferenceMode"
+                        :items="[
+                            { title: '생성', value: false },
+                            { title: '추론', value: true }
+                        ]"
+                        item-title="title"
+                        item-value="value"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        rounded
+                        class="mx-2 inference-mode-select"
+                    ></v-select>
+                </template>
+            </Chat>
         </div>
 
         <v-dialog v-model="isOpenSaveDialog" max-width="500">
@@ -184,23 +238,19 @@
                     </v-btn>
                 </v-card-title>
                 <v-card-text>
-                    <v-text-field
-                        v-model="dmnIdToSave"
-                        label="DMN ID"
-                        :placeholder="loadDmnId === 'chat' ? '새 DMN ID를 입력하세요' : loadDmnId"
-                        variant="outlined"
-                        density="comfortable"
-                    ></v-text-field>
-                    <v-text-field
-                        v-model="dmnNameToSave"
-                        label="DMN Name"
-                        :placeholder="dmnName || '새 DMN 이름을 입력하세요'"
-                        variant="outlined"
-                        density="comfortable"
-                    ></v-text-field>
+                    <v-form v-model="isSaveFormValid">
+                        <v-text-field
+                            v-model="dmnNameToSave"
+                            label="DMN Name"
+                            :placeholder="dmnName || '새 DMN 이름을 입력하세요'"
+                            variant="outlined"
+                            density="comfortable"
+                            :rules="[(v) => !!v || 'DMN 이름을 입력하세요']"
+                        ></v-text-field>
+                    </v-form>
                 </v-card-text>
                 <v-card-actions class="d-flex justify-end">
-                    <v-btn color="primary" variant="flat" rounded @click="beforeSaveDmn">저장</v-btn>
+                    <v-btn color="primary" variant="flat" rounded @click="beforeSaveDmn" :disabled="!isSaveFormValid">저장</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -260,7 +310,7 @@ export default {
     data() {
         return {
             chatInfo: {
-                title: 'dmn.cardTitle',
+                title: '',
                 text: 'dmn.explanation'
             },
 
@@ -275,6 +325,7 @@ export default {
             isLoadedDmn: false,
             isChanged: false,
             isAIUpdated: false,
+            isInferenceMode: false, // 추론 모드 플래그
             
             viewMode: 'edit',
             loadDmnId: '',
@@ -284,7 +335,8 @@ export default {
             dmnDefinition: null,
             isRoutedWithUnsaved: false,
 
-            owner: ''
+            owner: '',
+            isSaveFormValid: false
         };
     },
     async created() {
@@ -311,7 +363,7 @@ export default {
         dmnId: {
             handler(newVal, oldVal) {
                 // 초기 로딩 시 (oldVal === undefined)는 created에서 처리하므로 스킵
-                if (oldVal === undefined) return;
+                if (oldVal === undefined || oldVal === null) return;
                 
                 // 값이 실제로 변경되었을 때만 처리
                 if (newVal !== oldVal) {
@@ -333,6 +385,8 @@ export default {
                         this.dmnXml = null;
                         this.dmnName = null;
                         this.isLoadedDmn = false;
+                        this.dmnRenderKey++;
+                        this.messages = [];
                     }
                 }
             }
@@ -377,7 +431,7 @@ export default {
     },
     methods: {
         openSaveDialog() {
-            this.dmnIdToSave = this.loadDmnId === 'chat' ? '' : this.loadDmnId;
+            this.dmnIdToSave = this.loadDmnId || '';
             this.dmnNameToSave = this.dmnName || '';
             this.isOpenSaveDialog = true;
         },
@@ -392,26 +446,19 @@ export default {
                 context: me,
                 action: async () => {
                     const xml = await me.$refs.dmnModeler.saveDMN();
-                    const id = me.dmnIdToSave || me.loadDmnId;
-                    const name = me.dmnNameToSave || me.dmnName;
-                    
-                    if (!id || id === 'chat') {
-                        alert('DMN ID를 입력해주세요.');
-                        return;
-                    }
                     
                     await me.saveDmn({
-                        id: id,
-                        name: name,
+                        id: me.dmnIdToSave,
+                        name: me.dmnNameToSave,
                         xml: xml
                     });
                     
+                    me.isAIUpdated = false;
                     me.isChanged = false;
                     me.isOpenSaveDialog = false;
                     
-                    // 새로 저장한 경우 해당 ID로 이동
-                    if (me.loadDmnId === 'chat') {
-                        await me.$router.push(`/dmn/${id}`);
+                    if (me.$route.path === '/dmn/chat') {
+                        await me.$router.push(`/dmn/${me.dmnIdToSave}`);
                     }
                 },
                 successMsg: this.$t('successMsg.save')
@@ -429,10 +476,11 @@ export default {
             this.dmnName = name;
             this.loadDmnId = id;
             this.isLoadedDmn = true;
+
+            this.EventBus.emit('dmn-saved', { id: id, name: name });
         },
         
         async loadData() {
-            // dmnId prop이 있으면 우선 사용, 없으면 라우트에서 가져오기
             if (this.dmnId && this.dmnId !== 'chat') {
                 this.loadDmnId = this.dmnId;
             } else {
@@ -450,17 +498,10 @@ export default {
             
             if (this.isLoadedDmn) {
                 try {
-                    const dmnData = await this.backend.getRawDefinition(this.loadDmnId, { type: 'dmn' });
-                    this.dmnXml = dmnData;
-                    
-                    // DMN 이름 추출 (XML에서)
-                    const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(this.dmnXml, 'text/xml');
-                    const definitions = xmlDoc.getElementsByTagName('definitions')[0];
-                    if (definitions) {
-                        this.dmnName = definitions.getAttribute('name') || this.loadDmnId;
-                    }
-                    
+                    const dmnData = await this.backend.getRawDefinition(this.loadDmnId);
+                    this.dmnXml = dmnData.bpmn;
+                    this.dmnName = dmnData.name;
+
                     this.dmnRenderKey++;
                     this.isShowDmnModeler = true;
                 } catch (error) {
@@ -473,15 +514,20 @@ export default {
                         // 임베디드 모드에서는 경고만 출력하고 새 DMN 화면으로
                         console.warn(`DMN '${this.loadDmnId}' 로드 실패. 새 DMN 생성 모드로 전환합니다.`);
                     }
+                    // 새 DMN으로 전환
                     this.dmnXml = null;
-                    this.dmnName = null;
+                    this.dmnName = '';
+                    this.loadDmnId = this.uuid();
+                    this.isLoadedDmn = false;
                     this.isShowDmnModeler = true;
                 }
             } else {
+                // 새 DMN 생성 모드 - UUID로 ID 생성
                 this.dmnXml = null;
-                this.dmnName = null;
-                this.loadDmnId = null;
+                this.dmnName = '';
+                this.loadDmnId = this.uuid();
                 this.isShowDmnModeler = true;
+                this.messages = [];
             }
 
             if (this.ownerInfo && this.ownerInfo.id) {   
@@ -494,23 +540,57 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
+                    // DMN XML 수집 (추론 모드에서도 필요)
                     if (me.$refs.dmnModeler) {
                         me.prevDmnOutput = await me.$refs.dmnModeler.saveDMN();
                     }
                     
                     newMessage.mentionedUsers = null;
                     
-                    if (me.prevDmnOutput) {
-                        me.generator.sendMessageWithPrevDmnOutput(newMessage);
+                    // 모드에 따라 다른 처리
+                    if (me.isInferenceMode) {
+                        // 추론 모드: DMN XML을 컨텍스트로 제공
+                        me.generator.isInferenceMode = true;
+                        
+                        if (me.prevDmnOutput) {
+                            me.generator.dmnXmlList = [{
+                                id: me.loadDmnId || 'current_dmn',
+                                name: me.dmnName || 'Current DMN',
+                                xml: me.prevDmnOutput
+                            }];
+                        }
+                        
+                        me.generator.sendInferenceMessage(newMessage);
                     } else {
-                        me.generator.sendMessage(newMessage);
+                        // 생성 모드: DMN 생성/수정
+                        me.generator.isInferenceMode = false;
+                        me.generator.dmnXmlList = [];
+                        
+                        if (me.prevDmnOutput) {
+                            me.generator.sendMessageWithPrevDmnOutput(newMessage);
+                        } else {
+                            me.generator.sendMessage(newMessage);
+                        }
                     }
+                    me.sendMessage(newMessage);
                 }
             });
         },
         
         afterModelCreated(response) {
-            // console.log('DMN 생성 중:', response);
+            try {
+                const messageWriting = this.messages[this.messages.length - 1];
+                if (this.isInferenceMode) {
+                    if (messageWriting) {
+                        messageWriting.contentType = 'markdown';
+                        messageWriting.content = response;
+                    }
+                    return;
+                }
+            } catch (parseError) {
+                console.error('[DMN] JSON 파싱 실패:', parseError);
+                return;
+            }
         },
         
         afterGenerationFinished(response) {
@@ -521,6 +601,16 @@ export default {
             try {
                 const messageWriting = this.messages[this.messages.length - 1];
                 
+                // 추론 모드: 마크다운 응답을 그대로 표시
+                if (this.isInferenceMode) {
+                    if (messageWriting) {
+                        messageWriting.contentType = 'markdown';
+                        messageWriting.content = response;
+                    }
+                    return;
+                }
+                
+                // 생성 모드: JSON 파싱 및 DMN 업데이트
                 let parsed;
                 if (typeof response === 'object' && response.dmnXml) {
                     parsed = response;
@@ -530,7 +620,6 @@ export default {
                         parsed = JSON.parse(jsonContent);
                     } catch (parseError) {
                         console.error('[DMN] JSON 파싱 실패:', parseError);
-                        console.log('[DMN] 파싱 시도한 내용:', jsonContent.substring(0, 500));
                         if (messageWriting) {
                             messageWriting.content = 'AI 응답의 JSON 파싱에 실패했습니다.';
                         }
@@ -541,7 +630,7 @@ export default {
                 // DMN XML 설정
                 this.dmnXml = parsed.dmnXml;
 
-                // DMN 이름 추출
+                // XML 파싱 에러 체크만 수행 (id와 name은 읽지 않음)
                 try {
                     const parser = new DOMParser();
                     const xmlDoc = parser.parseFromString(this.dmnXml, 'text/xml');
@@ -556,14 +645,16 @@ export default {
                         return;
                     }
                     
-                    const definitions = xmlDoc.getElementsByTagName('definitions')[0];
-                    if (definitions) {
-                        this.loadDmnId = definitions.getAttribute('id') || this.loadDmnId;
-                        this.dmnName = definitions.getAttribute('name') || 'New DMN Decision';
+                    // 새 DMN 생성 시 - ID가 없으면 UUID 생성
+                    if (!this.loadDmnId || this.loadDmnId === 'chat') {
+                        this.loadDmnId = this.uuid();
+                        const definitions = xmlDoc.getElementsByTagName('definitions')[0];
+                        if (definitions) {
+                            this.dmnName = definitions.getAttribute('name') || 'New DMN Decision';
+                        }
                     }
                 } catch (xmlError) {
                     console.error('[DMN] XML 처리 중 오류:', xmlError);
-                    this.dmnName = 'New DMN Decision';
                 }
                 
                 this.dmnRenderKey++;
@@ -594,7 +685,6 @@ export default {
         },
         
         onDmnDefinitionLoaded(definition) {
-            console.log('DMN Definition loaded:', definition);
             this.dmnDefinition = definition;
             
             // Store에 DMN 정의 저장
@@ -614,11 +704,13 @@ export default {
         
         async deleteDmn() {
             const me = this;
+            await this.backend.deleteDefinition(me.loadDmnId, { type: 'dmn' });
             me.$try({
                 context: me,
                 action: async () => {
-                    await this.backend.deleteDefinition(me.loadDmnId, { type: 'dmn' });
                     me.isOpenDeleteDialog = false;
+                    me.isAIUpdated = false;
+                    me.isChanged = false;
                     if (me.$route.path.startsWith('/dmn/')) {
                         await me.$router.push('/dmn/chat');
                     } else {
@@ -650,34 +742,19 @@ export default {
 </script>
 
 <style scoped>
-/* 상하 분할 레이아웃 (기본) */
+/* 통합 레이아웃 */
 .dmn-chat-container {
-    height: calc(100vh - 111px); /* 75px (헤더) + 36px (padding) */
-    overflow: hidden;
+    height: calc(100vh - 132px);
 }
 
 .dmn-section {
-    flex: 1;
-    border-bottom: 2px solid #e0e0e0;
+    overflow: hidden;
+    background-color: white;
 }
 
-.dmn-section :deep(.vue-dmn-diagram-container) {
-    flex: 1;
+.dmn-modeler-wrapper :deep(.vue-dmn-diagram-container) {
     height: 100%;
 }
-
-.chat-section {
-    flex: 1;
-    overflow: auto;
-    border-top: 1px solid #e0e0e0;
-    transition: flex 0.3s ease;
-}
-
-.chat-section-empty {
-    flex: 0 0 auto;
-    min-height: 150px;
-}
-
 /* 좌우 분할 레이아웃 (/dmn/ 경로) */
 :deep(.left-part) {
     width: 75%;
@@ -717,21 +794,12 @@ export default {
 /* 반응형 레이아웃 */
 @media (max-width: 768px) {
     .dmn-chat-container {
-        height: 100vh; /* 모바일에서는 헤더가 사이드바에 있으므로 전체 높이 사용 */
+        height: calc(100vh - 40px);
     }
+}
 
-    .dmn-section {
-        flex: 1;
-    }
-
-    .chat-section {
-        flex: 1;
-    }
-    
-    .chat-section-empty {
-        flex: 0 0 auto;
-        min-height: 150px;
-    }
+.inference-mode-select {
+    max-width: 100px;
 }
 </style>
 

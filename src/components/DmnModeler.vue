@@ -9,6 +9,8 @@ import 'dmn-js/dist/assets/dmn-js-decision-table.css';
 import 'dmn-js/dist/assets/dmn-js-literal-expression.css';
 import 'dmn-js/dist/assets/dmn-js-shared.css';
 import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
+import 'dmn-js-decision-table/assets/css/dmn-js-decision-table.css';
+import 'dmn-js-decision-table/assets/css/dmn-js-decision-table-controls.css';
 
 import DmnModeler from 'dmn-js/lib/Modeler';
 import DmnViewer from 'dmn-js/lib/Viewer';
@@ -192,7 +194,7 @@ export default {
              namespace="http://camunda.org/schema/1.0/dmn" 
              exporter="dmn-js (https://demo.bpmn.io/dmn)" 
              exporterVersion="12.1.0">
-  <decision id="Decision_1" name="Decision 1">
+  <decision id="Decision_1" name="Decision 1 test">
     <decisionTable id="DecisionTable_1">
       <input id="Input_1">
         <inputExpression id="InputExpression_1" typeRef="string">
@@ -205,7 +207,7 @@ export default {
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1">
       <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">
-        <dc:Bounds height="80" width="180" x="160" y="100" />
+        <dc:Bounds height="80" width="180" x="200" y="64" />
       </dmndi:DMNShape>
     </dmndi:DMNDiagram>
   </dmndi:DMNDI>
@@ -243,7 +245,6 @@ export default {
 .vue-dmn-diagram-container {
     width: 100%;
     height: 100%;
-    min-height: 300px;
     position: relative;
 }
 

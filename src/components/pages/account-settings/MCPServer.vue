@@ -328,29 +328,28 @@ export default {
                 
                 if (parsedJson.mcpServers && parsedJson.mcpServers[this.editingKey]) {
                     // mcpServers 구조에서 해당 서버 정보 추출
-                    const serverData = parsedJson.mcpServers[this.editingKey];
+                    let serverData = parsedJson.mcpServers[this.editingKey];
+                    
+                    // serverData 안에 또 mcpServers가 중첩되어 있는 경우 처리
+                    if (serverData.mcpServers) {
+                        // 중첩된 구조에서 실제 서버 데이터 추출
+                        const nestedKey = Object.keys(serverData.mcpServers)[0];
+                        if (nestedKey) {
+                            serverData = serverData.mcpServers[nestedKey];
+                        }
+                    }
+                    
+                    // 모든 속성을 그대로 복사하고, enabled 기본값만 설정
                     updatedServer = {
-                        command: serverData.command || '',
-                        args: serverData.args || [],
-                        transport: serverData.transport || 'stdio',
+                        ...serverData,
                         enabled: serverData.enabled !== undefined ? serverData.enabled : true
                     };
-
-                    if (serverData.env) {
-                        updatedServer.env = serverData.env;
-                    }
                 } else {
                     // 직접 서버 설정인 경우
                     updatedServer = {
-                        command: parsedJson.command || '',
-                        args: parsedJson.args || [],
-                        transport: parsedJson.transport || 'stdio',
+                        ...parsedJson,
                         enabled: parsedJson.enabled !== undefined ? parsedJson.enabled : true
                     };
-
-                    if (parsedJson.env) {
-                        updatedServer.env = parsedJson.env;
-                    }
                 }
 
                 const updatedServers = {
@@ -397,21 +396,21 @@ export default {
             if (server.command === 'npx') return 'mdi-npm';
             if (server.command === 'uvx') return 'mdi-package-variant';
             if (server.command === 'deno') return 'mdi-language-javascript';
-            if (server.type === 'url') return 'mdi-web';
+            if (server.type === 'url' || server.type === 'sse') return 'mdi-web';
             return 'mdi-server';
         },
         getServerColor(server) {
             if (server.command === 'npx') return 'orange';
             if (server.command === 'uvx') return 'blue';
             if (server.command === 'deno') return 'green';
-            if (server.type === 'url') return 'purple';
+            if (server.type === 'url' || server.type === 'sse') return 'purple';
             return 'grey';
         },
         getServerDescription(server) {
             if (server.command === 'npx') return 'Node.js Package';
             if (server.command === 'uvx') return 'Python Package';
             if (server.command === 'deno') return 'Deno Runtime';
-            if (server.type === 'url') return 'Web Service';
+            if (server.type === 'url' || server.type === 'sse') return 'Web Service';
             return 'Custom Server';
         },
         async saveNewMCP() {
@@ -439,29 +438,32 @@ export default {
                         serverKey = `custom-server-${Date.now()}`;
                     }
                     
-                    newServer = {
-                        command: mcpServers[serverKey].command || '',
-                        args: mcpServers[serverKey].args || [],
-                        transport: mcpServers[serverKey].transport || 'stdio',
-                        enabled: mcpServers[serverKey].enabled !== undefined ? mcpServers[serverKey].enabled : true
-                    };
-
-                    if (mcpServers[serverKey].env) {
-                        newServer.env = mcpServers[serverKey].env;
+                    let serverData = mcpServers[serverKey];
+                    
+                    // serverData 안에 또 mcpServers가 중첩되어 있는 경우 처리
+                    if (serverData.mcpServers) {
+                        // 중첩된 구조에서 실제 서버 데이터 추출
+                        const nestedKey = Object.keys(serverData.mcpServers)[0];
+                        if (nestedKey) {
+                            serverKey = nestedKey; // 실제 서버 키로 업데이트
+                            serverData = serverData.mcpServers[nestedKey];
+                        }
                     }
+                    
+                    // 모든 속성을 그대로 복사하고, enabled 기본값만 설정
+                    newServer = {
+                        ...serverData,
+                        enabled: serverData.enabled !== undefined ? serverData.enabled : true
+                    };
                 } else {
                     // mcpServers 구조가 없는 경우 (직접 서버 설정)
                     serverKey = `custom-server-${Date.now()}`;
+                    
+                    // 모든 속성을 그대로 복사하고, enabled 기본값만 설정
                     newServer = {
-                        command: parsedJson.command || '',
-                        args: parsedJson.args || [],
-                        transport: parsedJson.transport || 'stdio',
+                        ...parsedJson,
                         enabled: parsedJson.enabled !== undefined ? parsedJson.enabled : true
                     };
-
-                    if (parsedJson.env) {
-                        newServer.env = parsedJson.env;
-                    }
                 }
 
                 const updatedServers = {

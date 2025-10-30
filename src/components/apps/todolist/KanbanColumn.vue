@@ -19,30 +19,25 @@
         <div v-if="!todoTaskColumnBtnStatus" ref="section"
             class="pa-3 todo-list-card-box"
         >
-            <!-- 기존 draggable 코드 (드래그 기능 테스트를 위해 주석처리)
-            <draggable class="dragArea list-group cursor-move" :list="column.tasks"
-                :animation="200" ghost-class="ghost-card" group="tasks" @add="updateTask"
-                :move="checkDraggable">
-                    <transition-group>
-                        <div v-for="task in column.tasks" :key="task.id" class="cursor-move todo-task-item-card-style">
-                            <KanbanColumnCard :task="task" @deleteTask="deleteTask" :userInfo="users" />
-                        </div>
-                    </transition-group>
-            </draggable>
-            -->
-            
-            <!-- 드래그 기능 제거된 단순 구조 -->
-            <div class="list-group">
+            <!-- 드래그 가능한 구조 (완료됨과 진행중 간에만, 모바일은 드래그 불가) -->
+            <component 
+                :is="dragComponentType" 
+                class="dragArea list-group" 
+                :class="dragCursorClass"
+                v-bind="draggableProps"
+                @change="handleDragChange"
+            >
                 <!-- 초기 로딩시 스켈레톤 표시 -->
                 <div v-if="loading && column.tasks.length === 0">
                     <div v-for="index in pageSize" :key="'skeleton-' + index" class="todo-task-item-card-style mb-3">
                         <v-skeleton-loader height="120"></v-skeleton-loader>
                     </div>
                 </div>
-                
-                <!-- 실제 태스크 목록 -->
                 <transition-group v-else>
-                    <div v-for="task in sortedTasks" :key="task.taskId" class="todo-task-item-card-style">
+                    <div v-for="task in sortedTasks" :key="task.taskId" 
+                        class="todo-task-item-card-style"
+                        :class="{ 'cursor-move': !isMobile }"
+                    >
                         <KanbanColumnCard :task="task" @deleteTask="deleteTask" :userList="users" />
                     </div>
                 </transition-group>
@@ -61,11 +56,20 @@
                         <span>{{ $t('todoList.endOfList') }}</span>
                     </div>
                 </div>
-            </div>
+            </component>
         </div>
          <!-- workItem dialog -->
          <v-dialog v-model="dialog" max-width="500">
             <WorkItemDialog :taskId="taskId" :workItem="workItem" @closeDialog="closeDialog" />
+        </v-dialog>
+        
+        <!-- rework dialog -->
+        <v-dialog v-model="reworkDialog" width="500">
+            <ReworkDialog
+                :reworkActivities="reworkActivities"
+                @submitRework="submitRework"
+                @close="closeReworkDialog"
+            />
         </v-dialog>
     </v-card>
 </template>
@@ -73,13 +77,15 @@
 <script>
 import KanbanColumnCard from "./KanbanColumnCard.vue";
 import WorkItemDialog from "./WorkItemDialog.vue";
+import ReworkDialog from "./ReworkDialog.vue";
 
 import BackendFactory from "@/components/api/BackendFactory";
 const backend = BackendFactory.createBackend();
 export default {
     components: {
         KanbanColumnCard,
-        WorkItemDialog
+        WorkItemDialog,
+        ReworkDialog
     },
     props: {
         column: Object,
@@ -113,8 +119,40 @@ export default {
         todoTaskColumnBtnStatus: false,
         dialog: false,
         originColumnId: null,
+        reworkDialog: false,
+        reworkActivities: [],
+        currentDraggedTask: null,
     }),
     computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
+        dragComponentType() {
+            return this.isMobile ? 'div' : 'draggable';
+        },
+        dragCursorClass() {
+            return this.isMobile ? '' : 'cursor-move';
+        },
+        draggableProps() {
+            if (this.isMobile) {
+                return {};
+            }
+            return {
+                list: this.sortedTasks,
+                animation: 200,
+                ghostClass: 'ghost-card',
+                group: this.dragGroup,
+                move: this.checkMove
+            };
+        },
+        dragGroup() {
+            // IN_PROGRESS와 DONE만 서로 드래그 가능
+            if (this.column.id === 'IN_PROGRESS' || this.column.id === 'DONE') {
+                return 'allowed-tasks';
+            }
+            // 나머지 컬럼은 드래그 불가 (각각 고유한 그룹으로 분리)
+            return `no-drag-${this.column.id}`;
+        },
         sortedTasks() {
             if (!this.column.tasks || this.column.tasks.length === 0) {
                 return [];
@@ -171,16 +209,129 @@ export default {
                 this.$emit('scrollBottom', this.column.id);
             }
         },
-        checkDraggable(event) {
-            // const task = event.draggedContext.element;
-            // if (!task.instId) {
-            //     return true;
-            // } else {
-            //     if (this.column.id != 'DONE') {
-            //         return true;
-            //     }
-            // }
-            return true;
+        checkMove(event) {
+            // 같은 컬럼 내부에서의 순서 변경은 불가
+            return event.from !== event.to;
+        },
+        handleDragChange(event) {
+            // 드래그 앤 드롭 이동 로그 출력
+            if (event.added) {
+                const addedTask = event.added.element;
+                const taskId = addedTask.taskId;
+                
+                // 이동 전 상태는 addedTask에 저장된 원래 상태 사용
+                const fromStatus = addedTask.status;
+                const toStatus = this.column.id;
+                
+                // 완료됨(DONE)에서 진행중(IN_PROGRESS)으로 이동 시 재작업 가능 여부 판별
+                if (fromStatus === 'DONE' && toStatus === 'IN_PROGRESS') {
+                    this.currentDraggedTask = addedTask;
+                    this.openReworkDialog(addedTask, fromStatus);
+                    return;
+                } else {
+                    backend.putWorkItem(taskId, { status: toStatus });
+                }
+
+                // 원본 column.tasks에서 정확한 task 찾기 (고유 ID 기반)
+                const originalTask = this.column.tasks.find(t => t.taskId === taskId);
+                if (!originalTask) {
+                    // 원본에 없으면 새로 추가
+                    this.column.tasks.push(addedTask);
+                }
+            }
+            
+            // removed 이벤트 처리 (드래그 시작 시 출발지에서 제거될 때)
+            if (event.removed) {
+                const removedTask = event.removed.element;
+                const taskId = removedTask.taskId;
+                
+                // 원본 column.tasks에서도 제거
+                const index = this.column.tasks.findIndex(t => t.taskId === taskId);
+                if (index > -1) {
+                    this.column.tasks.splice(index, 1);
+                }
+            }
+            
+        },
+        async openReworkDialog(task, fromStatus) {
+            const enableRework = await backend.enableRework(task);
+            if (!enableRework) {
+                this.$try({
+                    context: this,
+                    action: () => {
+                    },
+                    warningMsg: '재작업 가능한 액티비티가 없습니다.'
+                });
+            } else {
+                // 재작업 가능한 액티비티 목록 로드
+                await this.loadReworkActivities(task);
+                this.reworkDialog = true;
+            }
+            task.status = fromStatus;
+            this.$emit('updateStatus', task.taskId, fromStatus);
+        },
+        async loadReworkActivities(task) {
+            // WorkItem과 동일한 구조로 초기화
+            this.reworkActivities = {
+                current: [{
+                    id: task.tracingTag || task.activityId,
+                    name: task.name || task.title
+                }],
+                reference: [],
+                all: []
+            };
+            
+            try {
+                // task에 instId와 tracingTag가 있는 경우에만 백엔드 호출
+                if (task.instId && (task.tracingTag || task.activityId)) {
+                    const options = {
+                        instanceId: task.instId,
+                        activityId: task.tracingTag || task.activityId
+                    };
+                    const result = await backend.getReworkActivities(options);
+                    
+                    if (result.reference) {
+                        this.reworkActivities.reference = result.reference;
+                    }
+                    if (result.all) {
+                        this.reworkActivities.all = result.all;
+                    }
+                }
+            } catch (error) {
+                console.error('재작업 액티비티 로딩 중 오류:', error);
+            }
+        },
+        closeReworkDialog() {
+            this.reworkDialog = false;
+            this.reworkActivities = [];
+        },
+        submitRework(activities) {
+            const me = this;
+            
+            me.closeReworkDialog();
+            if (!me.currentDraggedTask || !me.currentDraggedTask.instId) {
+                console.error('재작업할 태스크 정보가 없습니다.');
+                return;
+            }
+            
+            backend.reWorkItem({
+                instanceId: me.currentDraggedTask.instId,
+                activities: activities,
+                activityId: me.currentDraggedTask.tracingTag
+            }).then(data => {
+                if (data) {
+                    me.$try({
+                        context: me,
+                        action: () => {
+                            me.currentDraggedTask = null;
+                            me.EventBus.emit('todolist-updated');
+                        },
+                        successMsg: this.$t('successMsg.reworkRequested')
+                    });
+                }
+            }).catch(err => {
+                console.error('재작업 요청 중 오류:', err);
+            });
         },
         updateTask(event) {
             var me = this;

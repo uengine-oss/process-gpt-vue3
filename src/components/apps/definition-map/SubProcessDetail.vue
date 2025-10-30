@@ -302,8 +302,13 @@ export default {
             let me = this;
             if(this.Pal) {
                 if(e.extensionElements?.values[0]) {
-                    const json = JSON.parse(e.extensionElements.values[0].$children[0].$body);
-                    if(json.definitionId) {
+                    let json = '';
+                    try{
+                        json = JSON.parse(e.extensionElements.values[0].$children[0].$body);
+                    } catch(error) {
+                        json = JSON.parse(e.extensionElements.values[0].json);
+                    }
+                    if(json.definitionId) { 
                         const defInfo = await backend.getRawDefinition(json.definitionId, null);
                         if (defInfo) {
                             let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }

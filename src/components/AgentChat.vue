@@ -5,7 +5,7 @@
                 <AgentChatInfo 
                     :agentInfo="agentInfo" 
                     :activeTab="activeTab"
-                    @update:activeTab="activeTab = $event"
+                    :dmnList="dmnList"
                     @agentUpdated="handleAgentUpdated"
                 />
             </template>
@@ -22,7 +22,7 @@
                     :agentInfo="agentInfo" 
                     :activeTab="activeTab"
                     :isMobile="true"
-                    @update:activeTab="activeTab = $event"
+                    :dmnList="dmnList"
                     @agentUpdated="handleAgentUpdated"
                 />
             </template>
@@ -41,8 +41,6 @@ import AgentChatQuestion from "@/components/AgentChatQuestion.vue";
 import AgentChatActions from "@/components/AgentChatActions.vue";
 import AgentKnowledgeManagement from "@/components/AgentKnowledgeManagement.vue";
 import BusinessRuleLearning from "@/components/BusinessRuleLearning.vue";
-import BusinessRuleInference from "@/components/BusinessRuleInference.vue";
-import BusinessRuleManagement from "@/components/BusinessRuleManagement.vue";
 
 import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
 
@@ -58,8 +56,6 @@ export default {
         AgentChatActions,
         AgentKnowledgeManagement,
         BusinessRuleLearning,
-        BusinessRuleInference,
-        BusinessRuleManagement
     },
     data: () => ({
         agentInfo: {
@@ -87,6 +83,9 @@ export default {
         
         // backend
         backend: null,
+        
+        // 중복 호출 방지 플래그
+        isInitializing: false,
     }),
     computed: {
         id() {
@@ -108,19 +107,30 @@ export default {
     watch: {
         "$route": {
             async handler(newRoute, oldRoute) {
-                // 해시만 변경된 경우는 init을 호출하지 않음
-                if (oldRoute && newRoute.path === oldRoute.path && newRoute.hash !== oldRoute.hash) {
-                    return;
+                if (newRoute.query && newRoute.query.dmnId) {
+                    this.selectedDmnId = newRoute.query.dmnId;
+                } else {
+                    this.selectedDmnId = null;
                 }
-                await this.init();
+                if (newRoute.hash) this.activeTab = newRoute.hash.replace('#', '');
+                
+                // agent ID가 변경된 경우에만 agentInfo와 init 호출
+                if (newRoute.params.id !== oldRoute.params.id) {
+                    this.agentInfo = await this.backend.getUserById(newRoute.params.id);
+                    await this.init();
+                }
             },
             deep: true
         },
         activeTab: {
             async handler(newVal, oldVal) {
                 // 초기 로딩이 아닌 경우에만 URL 해시 업데이트
-                if (newVal && oldVal !== '') {
-                    window.location.hash = newVal;
+                // 하지만 이미 $router.push로 변경된 경우는 제외
+                if (newVal && oldVal !== '' && !this.isInitializing) {
+                    const currentHash = window.location.hash.replace('#', '');
+                    if (currentHash !== newVal) {
+                        window.location.hash = newVal;
+                    }
                 }
                 
                 const handler = this.tabHandlers?.[newVal];
@@ -137,10 +147,17 @@ export default {
         this.setupTabHandlers();
     },
     async mounted() {
+        this.agentInfo = await this.backend.getUserById(this.id);
         await this.init();
+
+        this.EventBus.on('dmn-saved', async (data) => {
+            this.selectedDmnId = data.id;
+            this.$router.push({ query: { dmnId: data.id }, hash: '#dmn-modeling' });
+        });
 
         this.EventBus.on('dmn-deleted', () => {
             this.selectedDmnId = null;
+            this.$router.push({ query: {}, hash: '#' + this.activeTab });
         });
     },
     methods: {
@@ -201,7 +218,7 @@ export default {
                     }
                 },
 
-                // 비즈니스 규칙 학습
+                // // 비즈니스 규칙 학습
                 'dmn-modeling': {
                     component: 'BusinessRuleLearning',
                     props: (vm) => ({
@@ -209,73 +226,42 @@ export default {
                         dmnId: vm.selectedDmnId
                     }),
                     events: () => ({}),
-                    activate: () => {
-                    }
+                    activate: () => {}
                 },
-
-                // 비즈니스 규칙 추론
-                'rule-inference': {
-                    component: 'BusinessRuleInference',
-                    props: (vm) => ({
-                        ownerInfo: vm.agentInfo,
-                        dmnList: vm.dmnList
-                    }),
-                    events: (vm) => ({
-                        stopMessage: vm.stopMessage
-                    }),
-                    activate: async () => {
-                        this.selectedDmnId = null;
-                        await this.getDMNList();
-                    }
-                },
-
-                // 비즈니스 규칙 관리
-                'rule-management': {
-                    component: 'BusinessRuleManagement',
-                    props: (vm) => ({
-                        ownerInfo: vm.agentInfo,
-                        dmnList: vm.dmnList
-                    }),
-                    events: (vm) => ({
-                        'edit-dmn': vm.goEditDMN
-                    }),
-                    activate: async () => {
-                        this.selectedDmnId = null;
-                        await this.getDMNList();
-                    }
-                }
             };
         },
 
         async init() {
-            this.agentInfo = await this.backend.getUserById(this.id);
+            // 중복 호출 방지
+            if (this.isInitializing) return;
+            this.isInitializing = true;
             
-            // URL 해시가 있으면 해당 탭으로, 없으면 기본 탭으로 설정
-            const hashTab = window.location.hash.replace('#', '');
-            let selectedTab = '';
-            
-            // 해시가 있고 유효한 탭이면 해시 우선
-            if (hashTab && this.tabHandlers && this.tabHandlers[hashTab]) {
-                selectedTab = hashTab;
-            } else {
-                // 해시가 없거나 유효하지 않으면 기본 탭
-                selectedTab = this.agentInfo.agent_type == 'a2a' ? 'actions' : 'learning';
-                // 기본 탭으로 설정할 때는 해시도 업데이트
-                window.location.hash = selectedTab;
-            }
-            
-            // activeTab이 이미 같은 값이면 watch가 트리거되지 않으므로 수동으로 activate 호출
-            const shouldActivate = this.activeTab === selectedTab;
-            
-            // activeTab 설정
-            this.activeTab = selectedTab;
-            
-            // activeTab이 변경되지 않은 경우 수동으로 activate 호출
-            if (shouldActivate) {
-                const handler = this.tabHandlers?.[selectedTab];
-                if (handler && typeof handler.activate === 'function') {
-                    await handler.activate();
+            try {
+                let selectedTab = '';
+                if (this.$route.query && this.$route.query.dmnId) {
+                    this.selectedDmnId = this.$route.query.dmnId;
+                    selectedTab = 'dmn-modeling';
+                } else {
+                    // URL 해시가 있으면 해당 탭으로, 없으면 기본 탭으로 설정
+                    const hashTab = window.location.hash.replace('#', '');
+                    
+                    // 해시가 있고 유효한 탭이면 해시 우선
+                    if (hashTab && this.tabHandlers && this.tabHandlers[hashTab]) {
+                        selectedTab = hashTab;
+                    } else {
+                        // 해시가 없거나 유효하지 않으면 기본 탭
+                        selectedTab = this.agentInfo.agent_type == 'a2a' ? 'actions' : 'learning';
+                        // 기본 탭으로 설정할 때는 해시도 업데이트 (router.push 사용)
+                        this.$router.push({ hash: '#' + selectedTab });
+                    }
                 }
+
+                // activeTab 설정
+                this.activeTab = selectedTab;
+                
+                await this.getDMNList();
+            } finally {
+                this.isInitializing = false;
             }
         },
 
@@ -315,20 +301,26 @@ export default {
 
         // DMN
         async getDMNList() {
-            let options = null;
-            if (this.agentInfo && this.agentInfo.id) {
-                options = {
-                    match: {
-                        owner: this.agentInfo.id,
-                        type: "dmn"
-                    }
-                }
+            // agentInfo가 로드되지 않았으면 빈 배열 반환
+            if (!this.agentInfo || !this.agentInfo.id) {
+                this.dmnList = [];
+                return;
             }
-            this.dmnList = await this.backend.listDefinition("dmn", options);
-        },
-        goEditDMN(id) {
-            this.selectedDmnId = id;
-            this.activeTab = 'dmn-modeling';
+            
+            const options = {
+                match: {
+                    owner: this.agentInfo.id,
+                    type: "dmn"
+                }
+            };
+            
+            const result = await this.backend.listDefinition("dmn", options);
+            // 결과가 배열인 경우에만 업데이트
+            if (Array.isArray(result)) {
+                this.dmnList = result;
+            } else {
+                this.dmnList = [];
+            }
         },
     }
 }

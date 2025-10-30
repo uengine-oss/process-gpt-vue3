@@ -100,50 +100,48 @@ export default {
                 return;
             }
 
-            if (!window.$pal) {
-                this.loadScreen = false;
-                this.backend = BackendFactory.createBackend();
-                if (window.$isTenantServer) {
-                    await this.backend.checkDBConnection();
-                    this.loadScreen = true;
-                } else {
-                    const tenantId = await this.backend.getTenant(window.$tenantName);
-                    if(window.$tenantName !== 'localhost') {
-                        if (!tenantId) {
-                            if(localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === window.$tenantName) {
-                                localStorage.removeItem('tenantId');
-                            }
-                            alert(window.$tenantName + " 존재하지 않는 경로입니다.");
-                            if (localStorage.getItem('email')) {
-                                window.location.href = getMainDomainUrl('/tenant/manage');
-                            } else {
-                                window.location.href = getMainDomainUrl('/auth/login');
-                            }
-                            return;
-                        } else {
-                            // 루트 페이지 및 인증 관련 페이지인 경우 로그인 체크 건너뛰기
-                            const skipLoginCheck = window.location.pathname === '/' || 
-                                                  window.location.pathname.startsWith('/auth/');
-                                                //   || window.location.port === '8088';
-                            const userInfo = await this.backend.getUserInfo();
-                            if(!skipLoginCheck) {
-                                if(userInfo) {
-                                    const res = await this.backend.setTenant(window.$tenantName);
-                                    if (!res) {
-                                        this.$try({}, null, {
-                                            errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
-                                        })
-                                        window.location.href = getMainDomainUrl('/tenant/manage');
-                                    }
-                                } else {
-                                    this.$router.push('/auth/login');
-                                }
-                            }
-                            this.loadScreen = true;
+            this.loadScreen = false;
+            this.backend = BackendFactory.createBackend();
+            if (window.$isTenantServer) {
+                await this.backend.checkDBConnection();
+                this.loadScreen = true;
+            } else {
+                const tenantId = await this.backend.getTenant(window.$tenantName);
+                if(window.$tenantName !== 'localhost') {
+                    if (!tenantId) {
+                        if(localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === window.$tenantName) {
+                            localStorage.removeItem('tenantId');
                         }
+                        alert(window.$tenantName + " 존재하지 않는 경로입니다.");
+                        if (localStorage.getItem('email')) {
+                            window.location.href = getMainDomainUrl('/tenant/manage');
+                        } else {
+                            window.location.href = getMainDomainUrl('/auth/login');
+                        }
+                        return;
                     } else {
+                        // 루트 페이지 및 인증 관련 페이지인 경우 로그인 체크 건너뛰기
+                        const skipLoginCheck = window.location.pathname === '/' || 
+                                                window.location.pathname.startsWith('/auth/');
+                                            //   || window.location.port === '8088';
+                        const userInfo = await this.backend.getUserInfo();
+                        if(!skipLoginCheck) {
+                            if(userInfo) {
+                                const res = await this.backend.setTenant(window.$tenantName);
+                                if (!res) {
+                                    this.$try({}, null, {
+                                        errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
+                                    })
+                                    window.location.href = getMainDomainUrl('/tenant/manage');
+                                }
+                            } else {
+                                this.$router.push('/auth/login');
+                            }
+                        }
                         this.loadScreen = true;
                     }
+                } else {
+                    this.loadScreen = true;
                 }
             }
 

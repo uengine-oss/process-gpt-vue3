@@ -64,6 +64,14 @@ class ProcessGPTBackend implements Backend {
                 });
                 return formDefs
             } else if (path === "dmn") {
+                // dmn 타입인 경우 기본적으로 type="dmn" 필터 추가
+                if (!options) {
+                    options = { match: { type: "dmn" } };
+                } else if (!options.match) {
+                    options.match = { type: "dmn" };
+                } else {
+                    options.match.type = "dmn";
+                }
                 let procDefs = await storage.list('proc_def', options);
                 return procDefs
             } else {
@@ -4584,14 +4592,21 @@ class ProcessGPTBackend implements Backend {
             if (!workItem) {
                 return false;
             }
-            
-            const isCompleted = workItem.worklist.status === "COMPLETED" || workItem.worklist.status === "DONE";
+            if (workItem.worklist) {
+                const { worklist, activity, ...rest } = workItem;
+                workItem = {
+                    ...worklist,
+                    ...activity,
+                    ...rest
+                };
+            }
+
+            const isCompleted = workItem.status === "COMPLETED" || workItem.status === "DONE";
             if (!isCompleted) {
                 return false;
-            }
-            
+            }            
             const currentUserId = localStorage.getItem('uid');
-            const endpoint = workItem.worklist.endpoint;
+            const endpoint = workItem.endpoint;
             if (!currentUserId || !endpoint) {
                 return false;
             }
@@ -4608,8 +4623,8 @@ class ProcessGPTBackend implements Backend {
                 return false;
             }
             
-            const activityId = workItem.activity.tracingTag;
-            const procInstId = workItem.worklist.instId;
+            const activityId = workItem.tracingTag;
+            const procInstId = workItem.instId;
             
             const allWorkItems = await storage.list('todolist', {
                 match: {
@@ -4626,7 +4641,7 @@ class ProcessGPTBackend implements Backend {
             }
             
             const recentWorkItem = allWorkItems[0];
-            const isRecentWorkItem = recentWorkItem.id === workItem.worklist.taskId;
+            const isRecentWorkItem = recentWorkItem.id === workItem.taskId;
 
             if (isRecentWorkItem) {
                 return true;

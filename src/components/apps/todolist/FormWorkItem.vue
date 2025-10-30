@@ -16,7 +16,7 @@
                 >{{ $t('FormWorkItem.previousStep') }}</v-btn>
                 <v-btn v-if="!isDryRun" @click="saveTask" 
                     density="compact"
-                    class="mr-2 default-greay-btn" rounded variant="flat"
+                    class="mr-2 default-gray-btn" rounded variant="flat"
                 >{{ $t('FormWorkItem.intermediateSave') }}</v-btn>
                 <v-icon v-if="isSimulate == 'true' && isFinishedAgentGeneration"
                     class="bouncing-arrow-horizontal submit-complete-pc" 
@@ -131,7 +131,7 @@
                             >{{ $t('FormWorkItem.previousStep') }}</v-btn>
                             <v-btn v-if="!isDryRun && isSimulate != 'true'"
                                 @click="saveTask"
-                                class="mr-2  default-greay-btn"
+                                class="mr-2  default-gray-btn"
                                 density="compact"
                                 rounded variant="flat"
                             >{{ $t('FormWorkItem.intermediateSave') }}</v-btn>

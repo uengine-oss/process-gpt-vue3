@@ -4,12 +4,10 @@
     >
         <div class="chat-info-view-wrapper">
             <div class="chat-info-view-area">
-                <div class="chat-info-view-area">
+                <div class="chat-info-view-area" style="position: relative;">
                     <slot name="custom-chat-top"></slot>
                     <slot name="custom-title" v-if="!definitionMapOnlyInput">
-                        <div v-if="name && name !== '' || chatInfo"
-                            class="pa-4"
-                        >
+                        <div v-if="name && name !== '' || chatInfo">
                             <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                                 <div>
                                     <h5 class="text-h5 mb-n1">{{ name }}</h5>
@@ -29,15 +27,47 @@
                         <v-divider style="margin:0px;" v-if="name && name !== '' || chatInfo || type == 'form'" />
                     </slot>
 
+                    <!-- 스크롤 상하단 이동 아이콘 -->
+                    <div v-if="showScrollTopButton" 
+                        style="position: absolute; bottom: 8px; right: 8px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; pointer-events: auto;"
+                    >
+                        <!-- 최상단 이동 -->
+                        <v-icon
+                            @click="scrollToTop"
+                            color="primary"
+                            size="28"
+                            style="cursor: pointer; border-radius: 50%; padding: 4px;"
+                        >
+                            mdi-arrow-up-circle
+                            <v-tooltip activator="parent" location="left">최상단으로 이동</v-tooltip>
+                        </v-icon>
+                        
+                        <!-- 최하단 이동 -->
+                        <v-icon
+                            @click="scrollToBottom"
+                            color="primary"
+                            size="28"
+                            style="cursor: pointer; border-radius: 50%; padding: 4px;"
+                        >
+                            mdi-arrow-down-circle
+                            <v-tooltip activator="parent" location="left">최하단으로 이동</v-tooltip>
+                        </v-icon>
+                    </div>
+
                     <perfect-scrollbar v-if="!definitionMapOnlyInput"
                         class="h-100 chat-view-box"
                         ref="scrollContainer"
                         @scroll="handleScroll"
                     >
+
                         <div class="d-flex w-100"
                             :style="$globalState.state.isRightZoomed ? 'height:100vh;' : ''"
                         >
                             <v-col class="chat-view-box-col pa-0">
+
+                                <!-- 커스텀 콘텐츠 슬롯 -->
+                                <slot name="custom-content"></slot>
+                                
                                 <InfoAlert :howToUseInfo="howToUseInfo"
                                     :chatInfo="chatInfo"
                                 />
@@ -273,7 +303,7 @@
                                                 </v-card>
                                             </div>
                                             <div v-else-if="!message.disableMsg || message.isLoading" :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'">
-                                                <v-row v-if="shouldDisplayUserInfo(message, index)"
+                                                <v-row v-if="shouldDisplayUserInfo(message, index) && !agentMessage"
                                                     class="ma-0 pa-0"
                                                 >
                                                     <v-row class="ma-0 pa-0 d-flex align-center mb-2">
@@ -301,6 +331,15 @@
 
                                                 <div v-else-if="message.contentType && message.contentType == 'json' && type == 'instances'">
                                                     <ProcessWorkResult :message="message" />
+                                                </div>
+
+                                                <!-- markdown message -->
+                                                <div v-else-if="message.contentType && message.contentType == 'markdown'" 
+                                                    :class="agentMessage ? 'agent-message' : 'other-message'"
+                                                >
+                                                    <div v-html="renderedMarkdown(message.content)" 
+                                                        class="markdown-content mx-3 pl-3 py-2"
+                                                    ></div>
                                                 </div>
 
                                                 <div v-else class="w-100 pb-3">
@@ -759,7 +798,7 @@
                 <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                     <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                         class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
-                        auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
+                        auto-grow rows="1" @keydown.enter="beforeSend" :disabled="disableChat"
                         @input="handleTextareaInput"
                         @paste="handlePaste"
                     >
@@ -885,7 +924,7 @@
             <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.definitionMapInputMessage')"
-                    auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
+                    auto-grow rows="1" @keydown.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
                     @input="handleTextareaInput"
                     @paste="handlePaste"
                 >
@@ -1099,7 +1138,7 @@ import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ChatRoomNameGenerator from "@/components/ai/ChatRoomNameGenerator.js";
 import ProcessWorkResult from './ProcessWorkResult.vue';
-import InfoAlert from './InfoAlert.vue';
+import { marked } from 'marked';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -1112,8 +1151,7 @@ export default {
         Record,
         DynamicForm,
         SummaryButton,
-        ProcessWorkResult,
-        InfoAlert
+        ProcessWorkResult
     },
     mixins: [
         ProgressAnimated,
@@ -1158,6 +1196,14 @@ export default {
         howToUseInfo: {
             type: Object,
             default: null
+        },
+        showScrollTopButton: {
+            type: Boolean,
+            default: false
+        },
+        agentMessage: {
+            type: Boolean,
+            default: false
         }
     },
     emits: [
@@ -1389,6 +1435,19 @@ export default {
         }
     },
     methods: {
+        scrollToTop() {
+            if (this.$refs.scrollContainer) {
+                this.$refs.scrollContainer.$el.scrollTop = 0;
+            }
+        },
+        renderedMarkdown(text) {
+            if (!text) return '';
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+            return marked(text);
+        },
         handleResize() {
             // 화면 크기 변경 시 즉시 높이 업데이트
             this.windowWidth = window.innerWidth;
@@ -2336,6 +2395,12 @@ pre {
 .other-message {
   margin-right: auto;
   background-color: #f1f1f1 !important;
+  border-radius: 8px !important;
+}
+
+.agent-message {
+  margin-right: auto;
+  background-color: #ffffff !important;
   border-radius: 8px !important;
 }
 
