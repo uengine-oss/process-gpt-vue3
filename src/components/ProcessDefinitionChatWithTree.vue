@@ -11,7 +11,7 @@
                         </v-card-title>
                         <v-spacer></v-spacer>
                         
-                        <div class="ga-2">
+                        <div class="d-flex ga-2">
                             <v-btn color="grey" variant="flat">추가</v-btn>
                             <v-btn color="grey" variant="flat">삭제</v-btn>
                         </div>
@@ -64,7 +64,7 @@
                         <v-spacer></v-spacer>
                         
                         <!-- 버튼들 -->
-                        <div cols="12" md="6" class="d-flex ga-2">
+                        <div class="d-flex ga-2">
                             <v-btn color="grey" variant="flat">{{ $t('processDefinitionTree.uploadExcel') }}</v-btn>
                             <v-btn color="grey" variant="flat">{{ $t('processDefinitionTree.createMap') }}</v-btn>
                         </div>
