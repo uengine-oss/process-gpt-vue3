@@ -111,48 +111,18 @@
 
 
             <v-row class="ma-0 pa-0">
-                <v-col v-if="componentName == 'DefinitionMapList' && isAdmin"
-                    cols="12" lg="3" md="4" sm="6"
-                    class="pa-4"
-                >
-                    <v-card
-                        @click="openConsultingDialog = true, ProcessPreviewMode = false"
-                        class="consulting-card"
-                        elevation="3"
-                        rounded="lg"
-                    >
-                        <v-card-item class="pa-5">
-                            <div class="d-flex align-center">
-                                <v-avatar
-                                    color="primary"
-                                    size="42"
-                                    class="mr-4"
-                                >
-                                    <Icons :icon="'magic'" :size="24" color="white" />
-                                </v-avatar>
-                                <div>
-                                    <v-card-title class="text-primary font-weight-bold pb-1" style="white-space: normal; line-height: 1.2;">
-                                        {{ $t('processDefinitionMap.consultingButton') }}
-                                    </v-card-title>
-                                    <div class="text-subtitle-2 text-grey-darken-1">
-                                        {{ $t('processDefinitionMap.analyzeAndImproveProcessWithAI') }}
-                                    </div>
-                                </div>
-                            </div>
-                        </v-card-item>
-                    </v-card>
-                </v-col>
-                <v-col v-if="componentName == 'DefinitionMapList' && mode == 'ProcessGPT' && isAdmin"
-                    cols="12"
-                    lg="3"
-                    md="4"
+                <v-col 
+                    v-for="(card, index) in actionCards" 
+                    :key="index"
+                    v-show="card.show"
+                    cols="12" 
+                    lg="3" 
+                    md="4" 
                     sm="6"
                     class="pa-4"
                 >
-                    <!-- @click="addSampleProcess" -->
                     <v-card
-                        
-                        @click="openMarketplaceDialog = true"
+                        @click="card.action"
                         class="consulting-card"
                         elevation="3"
                         rounded="lg"
@@ -164,15 +134,14 @@
                                     size="42"
                                     class="mr-4"
                                 >
-                                    <Icons :icon="'market'" :size="24" color="white" />
+                                    <Icons :icon="card.icon" :size="24" color="white" />
                                 </v-avatar>
                                 <div>
-                                    <v-card-title class="text-primary font-weight-bold pb-1">
-                                        {{ $t('processDefinitionMap.marketplace') }}
+                                    <v-card-title class="text-primary font-weight-bold pb-1" style="white-space: normal; line-height: 1.2;">
+                                        {{ card.title }}
                                     </v-card-title>
-                                    <!-- div로 변경, Vuetify3의 서브타이틀 스타일 클래스 적용 (text-subtitle-2) -->
                                     <div class="text-subtitle-2 text-grey-darken-1">
-                                        {{ $t('processDefinitionMap.marketplaceExplanation') }}
+                                        {{ card.description }}
                                     </div>
                                 </div>
                             </div>
@@ -333,6 +302,38 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        actionCards() {
+            return [
+                {
+                    show: this.componentName === 'DefinitionMapList' && this.isAdmin,
+                    icon: 'magic',
+                    title: this.$t('processDefinitionMap.consultingButton'),
+                    description: this.$t('processDefinitionMap.analyzeAndImproveProcessWithAI'),
+                    action: () => {
+                        this.openConsultingDialog = true;
+                        this.ProcessPreviewMode = false;
+                    }
+                },
+                {
+                    show: this.componentName === 'DefinitionMapList' && this.mode === 'ProcessGPT' && this.isAdmin,
+                    icon: 'market',
+                    title: this.$t('processDefinitionMap.marketplace'),
+                    description: this.$t('processDefinitionMap.marketplaceExplanation'),
+                    action: () => {
+                        this.openMarketplaceDialog = true;
+                    }
+                },
+                {
+                    show: this.componentName === 'DefinitionMapList' && this.isAdmin,
+                    icon: 'file-tree',
+                    title: this.$t('processDefinitionMap.treeView'),
+                    description: this.$t('processDefinitionMap.treeViewExplanation'),
+                    action: () => {
+                        this.navigateToTreeView();
+                    }
+                }
+            ];
         },
         actionButtons() {
             return [
@@ -771,6 +772,39 @@ export default {
         },
         clickPlayBtn(value){
             this.$emit('clickPlayBtn', value)
+        },
+        async navigateToTreeView() {
+            // 첫 번째 서브프로세스를 찾아서 해당 경로로 이동
+            try {
+                const processMap = await backend.getProcessDefinitionMap();
+                let firstSubProcessId = null;
+
+                // mega_proc_list를 순회하며 첫 번째 서브프로세스 찾기
+                if (processMap && processMap.mega_proc_list) {
+                    for (const megaProc of processMap.mega_proc_list) {
+                        if (megaProc.major_proc_list && megaProc.major_proc_list.length > 0) {
+                            for (const majorProc of megaProc.major_proc_list) {
+                                if (majorProc.sub_proc_list && majorProc.sub_proc_list.length > 0) {
+                                    firstSubProcessId = majorProc.sub_proc_list[0].id;
+                                    break;
+                                }
+                            }
+                        }
+                        if (firstSubProcessId) break;
+                    }
+                }
+
+                // 첫 번째 서브프로세스로 이동, 없으면 chat으로 이동
+                const targetPath = firstSubProcessId 
+                    ? `/definitions-tree/${firstSubProcessId}` 
+                    : '/definitions-tree/chat';
+                
+                this.$router.push(targetPath);
+            } catch (error) {
+                console.error('TreeView 이동 중 오류:', error);
+                // 오류 발생 시 기본 경로로 이동
+                this.$router.push('/definitions-tree/chat');
+            }
         }
     },
 }

@@ -273,7 +273,14 @@
         "isReadable": "열람",
         "isWritable": "개정",
         "marketplace": "마켓플레이스",
-        "marketplaceExplanation": "비즈니스 프로세스 템플릿을 찾아보세요"
+        "marketplaceExplanation": "비즈니스 프로세스 템플릿을 찾아보세요",
+        "treeView": "트리 뷰로 보기",
+        "treeViewExplanation": "프로세스를 트리 구조로 확인하고 편집하세요"
+    },
+    "processDefinitionTree": {
+        "search": "검색",
+        "uploadExcel": "엑셀 업로드",
+        "createMap": "맵 생성"
     },
     "uiDefinition": {
         "title": "화면 정의",

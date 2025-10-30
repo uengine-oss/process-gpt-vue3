@@ -273,7 +273,14 @@
         "isReadable": "Readable",
         "isWritable": "Writable",
         "marketplace": "Marketplace",
-        "marketplaceExplanation": "Find a business process template"
+        "marketplaceExplanation": "Find a business process template",
+        "treeView": "View as Tree",
+        "treeViewExplanation": "View and edit processes in a tree structure"
+    },
+    "processDefinitionTree": {
+        "search": "Search",
+        "uploadExcel": "Upload Excel",
+        "createMap": "Create Map"
     },
     "uiDefinition": {
         "title": "Screen Definition",

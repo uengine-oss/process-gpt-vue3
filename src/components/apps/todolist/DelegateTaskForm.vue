@@ -164,7 +164,7 @@
                                         <v-btn v-if="item.id === currentUserUid"
                                             @click.stop="selectMyself(item)"
                                             variant="elevated" 
-                                            class="rounded-pill default-greay-btn"
+                                            class="rounded-pill default-gray-btn"
                                             density="compact"
                                             prepend-icon="mdi-account"
                                         >{{ $t('DelegateTask.delegateToMyself') }}
