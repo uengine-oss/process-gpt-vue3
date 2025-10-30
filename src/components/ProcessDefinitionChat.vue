@@ -2366,6 +2366,74 @@ export default {
                 console.warn('⚠️ 실시간 JSON 파싱 오류:', error);
             }
         },
+
+        /**
+         * 액티비티 이름으로 검색하고 포커싱
+         * @param {String} activityName - 검색할 액티비티 이름
+         */
+        searchAndFocusActivity(activityName) {
+            if (!activityName || activityName.trim() === '') {
+                console.log('검색어가 비어있습니다.');
+                return;
+            }
+
+            try {
+                const store = useBpmnStore();
+                let modeler = store.getModeler;
+                
+                if (!modeler) {
+                    console.error('Modeler를 찾을 수 없습니다.');
+                    return;
+                }
+
+                const elementRegistry = modeler.get('elementRegistry');
+                const canvas = modeler.get('canvas');
+                const selection = modeler.get('selection');
+
+                // 모든 엘리먼트 검색
+                const allElements = elementRegistry.getAll();
+                
+                // 액티비티 이름과 일치하는 엘리먼트 찾기
+                const matchedElement = allElements.find(element => {
+                    return element.businessObject && 
+                           element.businessObject.name && 
+                           element.businessObject.name.toLowerCase().includes(activityName.toLowerCase());
+                });
+
+                if (matchedElement) {
+                    console.log('✅ 액티비티를 찾았습니다:', matchedElement.businessObject.name);
+                    
+                    // 엘리먼트 선택
+                    selection.select(matchedElement);
+                    
+                    // 화면 정중앙에 액티비티 배치
+                    const viewbox = canvas.viewbox();
+                    const elementMid = {
+                        x: matchedElement.x + matchedElement.width / 2,
+                        y: matchedElement.y + matchedElement.height / 2
+                    };
+
+                    // 적절한 줌 레벨 설정 (1.0 = 100%)
+                    const zoom = 1.0;
+                    
+                    // viewbox를 element 중심으로 이동
+                    canvas.viewbox({
+                        x: elementMid.x - (viewbox.outer.width / zoom / 2),
+                        y: elementMid.y - (viewbox.outer.height / zoom / 2),
+                        width: viewbox.outer.width / zoom,
+                        height: viewbox.outer.height / zoom
+                    });
+
+                    return true;
+                } else {
+                    console.log('❌ 일치하는 액티비티를 찾을 수 없습니다.');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ 액티비티 검색 중 오류:', error);
+                return false;
+            }
+        },
     }
 };
 </script>

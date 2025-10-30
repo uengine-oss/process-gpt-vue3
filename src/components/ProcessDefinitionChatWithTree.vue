@@ -59,7 +59,18 @@
                             <v-text-field v-model="searchValue" variant="plain" density="compact"
                                 class="position-relative pt-0 ml-3 custom-placeholer-color" :placeholder="$t('chatListing.search')"
                                 single-line hide-details
+                                @keyup.enter="handleSearch"
                             ></v-text-field>
+                            <v-btn 
+                                v-if="searchValue" 
+                                icon 
+                                variant="text" 
+                                size="small"
+                                @click="handleSearch"
+                                class="ml-2"
+                            >
+                                <v-icon>mdi-magnify</v-icon>
+                            </v-btn>
                         </v-row>
                         <v-spacer></v-spacer>
                         
@@ -132,6 +143,7 @@ export default {
         processDefinitionMap: null,
         selectedNodeId: null,
         search: '',
+        searchValue: '',
         // 엑셀 파일 업로드 관련
         uploadedFileName: null,
         isParsingExcel: false,
@@ -488,6 +500,34 @@ export default {
                 
             } catch (error) {
                 console.error('❌ 프로세스 맵 생성 실패:', error);
+            }
+        },
+
+        /**
+         * 검색 버튼 클릭 또는 엔터 키 입력 핸들러
+         */
+        handleSearch() {
+            if (!this.searchValue || this.searchValue.trim() === '') {
+                console.log('검색어를 입력해주세요.');
+                return;
+            }
+
+            console.log('🔍 액티비티 검색:', this.searchValue);
+
+            // 자식 컴포넌트(ProcessDefinitionChat)의 searchAndFocusActivity 메서드 호출
+            const chatComponent = this.$refs.processDefinitionChat;
+            if (chatComponent && chatComponent.searchAndFocusActivity) {
+                const found = chatComponent.searchAndFocusActivity(this.searchValue);
+                
+                if (found) {
+                    console.log('✅ 액티비티를 찾아 포커싱했습니다.');
+                } else {
+                    console.log('❌ 일치하는 액티비티를 찾을 수 없습니다.');
+                    // 사용자에게 알림 (선택적)
+                    // alert(`"${this.searchValue}"와 일치하는 액티비티를 찾을 수 없습니다.`);
+                }
+            } else {
+                console.error('ProcessDefinitionChat 컴포넌트를 찾을 수 없습니다.');
             }
         }
     }
