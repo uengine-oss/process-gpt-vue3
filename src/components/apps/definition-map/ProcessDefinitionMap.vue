@@ -795,9 +795,10 @@ export default {
                 }
 
                 // 첫 번째 서브프로세스로 이동, 없으면 chat으로 이동
-                const targetPath = firstSubProcessId 
-                    ? `/definitions-tree/${firstSubProcessId}` 
-                    : '/definitions-tree/chat';
+                // const targetPath = firstSubProcessId 
+                //     ? `/definitions-tree/${firstSubProcessId}` 
+                //     : '/definitions-tree/chat';
+                const targetPath = `/definitions-tree`
                 
                 this.$router.push(targetPath);
             } catch (error) {

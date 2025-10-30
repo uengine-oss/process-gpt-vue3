@@ -65,9 +65,33 @@
                         
                         <!-- 버튼들 -->
                         <div class="d-flex ga-2">
-                            <v-btn color="grey" variant="flat">{{ $t('processDefinitionTree.uploadExcel') }}</v-btn>
-                            <v-btn color="grey" variant="flat">{{ $t('processDefinitionTree.createMap') }}</v-btn>
+                            <v-btn 
+                                color="success" 
+                                variant="flat"
+                                @click="openFileDialog"
+                                :loading="isParsingExcel"
+                            >
+                                <v-icon class="mr-2">mdi-file-excel</v-icon>
+                                {{ uploadedFileName || $t('processDefinitionTree.uploadExcel') }}
+                            </v-btn>
+                            <v-btn 
+                                color="primary" 
+                                variant="flat"
+                                @click="handleCreateMap"
+                                :disabled="!parsedExcelData"
+                            >
+                                {{ $t('processDefinitionTree.createMap') }}
+                            </v-btn>
                         </div>
+                        
+                        <!-- 숨겨진 파일 입력 -->
+                        <input
+                            ref="fileInput"
+                            type="file"
+                            accept=".xlsx,.xls"
+                            style="display: none"
+                            @change="handleFileSelect"
+                        />
                     </div>
                 </v-card>
                 
@@ -86,6 +110,7 @@ import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import VTreeview from 'vue3-treeview';
 import 'vue3-treeview/dist/style.css';
+import * as XLSX from 'xlsx';
 
 const backend = BackendFactory.createBackend();
 
@@ -96,23 +121,25 @@ export default {
         VTreeview,
     },
     props: {
-        chatMode: {
-            type: String,
-            default: ""
-        },
+        
     },
     data: () => ({
         nodes: {},
         config: {
             roots: []
         },
+        chatMode: 'tree',
         processDefinitionMap: null,
         selectedNodeId: null,
         search: '',
+        // 엑셀 파일 업로드 관련
+        uploadedFileName: null,
+        isParsingExcel: false,
+        parsedExcelData: null,
     }),
     async created() {
         await this.loadProcessDefinitionMap();
-        await this.loadFirstSubProcess();
+        // await this.loadFirstSubProcess();
     },
     watch: {
         // 라우트 변경 감지 - 프로세스 정의 체계도 새로고침
@@ -299,6 +326,168 @@ export default {
                 }
             } catch (error) {
                 console.error('첫 번째 서브프로세스 로드 실패:', error);
+            }
+        },
+
+        /**
+         * 파일 다이얼로그 열기
+         */
+        openFileDialog() {
+            this.$refs.fileInput.click();
+        },
+
+        /**
+         * 파일 선택 핸들러
+         */
+        async handleFileSelect(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            await this.processExcelFile(file);
+            
+            // 파일 입력 초기화 (같은 파일을 다시 선택할 수 있도록)
+            event.target.value = '';
+        },
+
+        /**
+         * 엑셀 파일 처리
+         */
+        async processExcelFile(file) {
+            console.log('📄 엑셀 파일 처리 시작:', file.name);
+            
+            this.isParsingExcel = true;
+            this.uploadedFileName = null;
+            
+            try {
+                // XLSX 라이브러리로 파싱
+                const result = await this.parseWithXLSX(file);
+                
+                if (result.success) {
+                    this.uploadedFileName = file.name;
+                    this.parsedExcelData = result;
+                    
+                    console.log('✅ 엑셀 파싱 성공:', result);
+                    console.log('📊 시트 목록:', result.sheetNames);
+                    console.log('📊 시트 수:', result.sheetCount);
+                    
+                    // 파싱된 데이터 출력 (디버깅용)
+                    result.sheetNames.forEach(sheetName => {
+                        console.log(`📋 시트 "${sheetName}":`, result.data[sheetName]);
+                    });
+                    
+                    console.log(`엑셀 파일이 성공적으로 파싱되었습니다. (${result.sheetCount}개 시트)`);
+                } else {
+                    console.error('❌ 엑셀 파싱 실패:', result.error);
+                    console.log(`엑셀 파일 파싱에 실패했습니다: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('❌ 엑셀 파일 처리 중 오류:', error);
+            } finally {
+                this.isParsingExcel = false;
+            }
+        },
+
+        /**
+         * XLSX 라이브러리를 사용하여 엑셀 파싱
+         */
+        parseWithXLSX(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    try {
+                        const data = e.target.result;
+                        const startTime = Date.now();
+                        
+                        // 엑셀 파일 파싱
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        const elapsed = (Date.now() - startTime) / 1000;
+                        console.log(`⏱️ XLSX 파싱 시간: ${elapsed.toFixed(2)}초`);
+                        
+                        // 모든 시트의 데이터를 추출
+                        const result = {};
+                        
+                        workbook.SheetNames.forEach(sheetName => {
+                            const worksheet = workbook.Sheets[sheetName];
+                            // 시트를 JSON으로 변환 (두 가지 형태로)
+                            const jsonArray = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                            const jsonObjects = XLSX.utils.sheet_to_json(worksheet);
+                            
+                            result[sheetName] = {
+                                array: jsonArray,      // 배열 형태
+                                objects: jsonObjects   // 객체 배열 형태
+                            };
+                        });
+                        
+                        resolve({
+                            success: true,
+                            data: result,
+                            sheetNames: workbook.SheetNames,
+                            sheetCount: workbook.SheetNames.length,
+                            workbook: workbook
+                        });
+                        
+                    } catch (parseError) {
+                        console.error('❌ XLSX 파싱 중 오류:', parseError);
+                        resolve({
+                            success: false,
+                            error: parseError.message
+                        });
+                    }
+                };
+                
+                reader.onerror = (error) => {
+                    console.error('❌ 파일 읽기 중 오류:', error);
+                    resolve({
+                        success: false,
+                        error: '파일 읽기 실패'
+                    });
+                };
+                
+                reader.readAsArrayBuffer(file);
+            });
+        },
+
+        /**
+         * 맵 생성 버튼 클릭 핸들러
+         */
+        async handleCreateMap() {
+            if (!this.parsedExcelData) {
+                console.error('파싱된 엑셀 데이터가 없습니다.');
+                return;
+            }
+
+            try {
+                console.log('🚀 프로세스 맵 생성 시작');
+                
+                // 파싱된 엑셀 데이터를 문자열로 변환
+                let excelContent = '';
+                this.parsedExcelData.sheetNames.forEach(sheetName => {
+                    const sheetData = this.parsedExcelData.data[sheetName];
+                    excelContent += `\n\n[시트: ${sheetName}]\n`;
+                    excelContent += JSON.stringify(sheetData.objects, null, 2);
+                });
+
+                console.log('📋 엑셀 내용:', excelContent);
+
+                // 메시지 생성
+                const message = {
+                    text: excelContent + '\n\n위 내용을 보고 프로세스를 생성해줘',
+                    images: [],
+                    mentionedUsers: []
+                };
+
+                // 자식 컴포넌트(ProcessDefinitionChat)의 beforeSendMessage 메서드 호출
+                const chatComponent = this.$refs.processDefinitionChat;
+                if (chatComponent && chatComponent.beforeSendMessage) {
+                    await chatComponent.beforeSendMessage(message);
+                } else {
+                    console.error('ProcessDefinitionChat 컴포넌트를 찾을 수 없습니다.');
+                }
+                
+            } catch (error) {
+                console.error('❌ 프로세스 맵 생성 실패:', error);
             }
         }
     }

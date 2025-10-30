@@ -64,7 +64,7 @@ const MainRoutes = {
         },
         {
             name: 'definitions-with-tree',
-            path: '/definitions-tree/:pathMatch(.*)*',
+            path: '/definitions-tree',
             component: () => import('@/components/ProcessDefinitionChatWithTree.vue')
         },
         {
