@@ -9,6 +9,13 @@
                             <v-icon class="mr-2">mdi-file-tree</v-icon>
                             프로세스 체계도
                         </v-card-title>
+                        <v-spacer></v-spacer>
+                        
+                        <div class="d-flex ga-2">
+                            <!-- <v-btn color="grey" variant="flat">추가</v-btn>
+                            <v-btn color="grey" variant="flat">삭제</v-btn> -->
+                            <v-btn color="grey" variant="flat" @click="selectedProcessId = null">새 프로세스</v-btn>
+                        </div>
                     </v-row>
                     
                     <!-- TreeView -->
@@ -36,30 +43,37 @@
             <v-col cols="12" md="9" class="pa-0 chat-container">
                 <v-card flat class="pa-3">
                     <div class="ma-0 pa-0 align-center d-flex">
-                        <!-- 검색창 -->
-                        <v-row class="align-center flex-fill border border-borderColor header-search rounded-pill px-5 ma-0 pa-0">
-                            <Icons :icon="'magnifer-linear'" :size="22" />
-                            <v-text-field v-model="searchValue" variant="plain" density="compact"
-                                class="position-relative pt-0 ml-3 custom-placeholer-color" :placeholder="$t('chatListing.search')"
-                                single-line hide-details
-                                @keyup.enter="handleSearch"
-                            ></v-text-field>
-                            <v-btn 
-                                v-if="searchValue" 
-                                icon 
-                                variant="text" 
-                                size="small"
-                                @click="handleSearch"
-                                class="ml-2"
-                            >
-                                <v-icon>mdi-magnify</v-icon>
-                            </v-btn>
-                        </v-row>
+                        <!-- 검색창 (자동완성 지원) -->
+                        <v-autocomplete
+                            v-model="searchValue"
+                            :items="processElementList"
+                            variant="outlined"
+                            density="compact"
+                            :placeholder="$t('chatListing.search')"
+                            prepend-inner-icon="mdi-magnify"
+                            clearable
+                            hide-details
+                            class="flex-fill rounded-pill"
+                            @update:model-value="handleRealtimeSearch"
+                            @update:search="handleSearchInput"
+                            @focus="updateElementList"
+                            auto-select-first
+                        >
+                            <template v-slot:item="{ props, item }">
+                                <v-list-item v-bind="props">
+                                    <!-- <template v-slot:prepend>
+                                        <v-icon>{{ item.raw.icon }}</v-icon>
+                                    </template> -->
+                                    <!-- <v-list-item-title>{{ item.raw.name }}</v-list-item-title> -->
+                                </v-list-item>
+                            </template>
+                        </v-autocomplete>
                         <v-spacer></v-spacer>
                         
                         <!-- 버튼들 -->
                         <div class="d-flex ga-2">
                             <v-btn 
+                                v-if="!selectedProcessId"
                                 color="success" 
                                 variant="flat"
                                 @click="openFileDialog"
@@ -69,6 +83,7 @@
                                 {{ uploadedFileName || $t('processDefinitionTree.uploadExcel') }}
                             </v-btn>
                             <v-btn 
+                                v-if="!selectedProcessId"
                                 color="primary" 
                                 variant="flat"
                                 @click="handleCreateMap"
@@ -200,6 +215,8 @@ export default {
         selectedProcessId: null,
         search: '',
         searchValue: '',
+        searchInputText: '',
+        processElementList: [],
         // 엑셀 파일 업로드 관련
         uploadedFileName: null,
         isParsingExcel: false,
@@ -334,6 +351,96 @@ export default {
                     }
                 }
             });
+        },
+        // 프로세스 요소 목록 업데이트 (검색창 포커스 시 호출)
+        updateElementList() {
+            const chatComponent = this.$refs.processDefinitionChat;
+            if (!chatComponent || !chatComponent.processDefinition) {
+                this.processElementList = [];
+                return;
+            }
+
+            const processDefinition = chatComponent.processDefinition;
+            const elementList = [];
+
+            const getIcon = (elementType) => {
+                switch (elementType) {
+                    case 'Activity':
+                        return 'mdi-file-document-edit-outline';
+                    case 'Event':
+                        return 'mdi-lightning-bolt-circle';
+                    case 'Gateway':
+                        return 'mdi-source-branch';
+                    case 'Sequence':
+                        return 'mdi-arrow-right-bold';
+                    default:
+                        return 'mdi-circle-outline';
+                }
+            };
+
+            // Elements 구조인 경우
+            if (processDefinition.elements && Array.isArray(processDefinition.elements)) {
+                processDefinition.elements.forEach(element => {
+                    if (element.name) {
+                        elementList.push({
+                            title: element.name,
+                            value: element.name,
+                            name: element.name,
+                            type: element.elementType,
+                            icon: getIcon(element.elementType)
+                        });
+                    }
+                });
+            } else {
+                // 분리된 구조인 경우
+                // Activities
+                if (processDefinition.activities && Array.isArray(processDefinition.activities)) {
+                    processDefinition.activities.forEach(activity => {
+                        if (activity.name) {
+                            elementList.push({
+                                title: activity.name,
+                                value: activity.name,
+                                name: activity.name,
+                                type: 'Activity',
+                                icon: getIcon('Activity')
+                            });
+                        }
+                    });
+                }
+
+                // Events
+                if (processDefinition.events && Array.isArray(processDefinition.events)) {
+                    processDefinition.events.forEach(event => {
+                        if (event.name) {
+                            elementList.push({
+                                title: event.name,
+                                value: event.name,
+                                name: event.name,
+                                type: 'Event',
+                                icon: getIcon('Event')
+                            });
+                        }
+                    });
+                }
+
+                // Gateways
+                if (processDefinition.gateways && Array.isArray(processDefinition.gateways)) {
+                    processDefinition.gateways.forEach(gateway => {
+                        if (gateway.name) {
+                            elementList.push({
+                                title: gateway.name,
+                                value: gateway.name,
+                                name: gateway.name,
+                                type: 'Gateway',
+                                icon: getIcon('Gateway')
+                            });
+                        }
+                    });
+                }
+            }
+
+            this.processElementList = elementList;
+            console.log('🔍 요소 목록 업데이트됨:', elementList.length, '개');
         },
 
         /**
@@ -982,6 +1089,38 @@ export default {
         },
 
         /**
+         * 실시간 검색 (자동완성 선택 또는 직접 입력 시)
+         */
+        handleRealtimeSearch(value) {
+            console.log('🔍 실시간 검색:', value);
+            
+            if (!value || value.trim() === '') {
+                return;
+            }
+
+            // 자식 컴포넌트(ProcessDefinitionChat)의 searchAndFocusActivity 메서드 호출
+            const chatComponent = this.$refs.processDefinitionChat;
+            if (chatComponent && chatComponent.searchAndFocusActivity) {
+                chatComponent.searchAndFocusActivity(value);
+            }
+        },
+
+        /**
+         * 검색 입력 변경 시 (타이핑 중)
+         */
+        handleSearchInput(value) {
+            this.searchInputText = value;
+            
+            // 실시간 검색 (디바운스 없이 즉시 실행)
+            if (value && value.trim() !== '') {
+                const chatComponent = this.$refs.processDefinitionChat;
+                if (chatComponent && chatComponent.searchAndFocusActivity) {
+                    chatComponent.searchAndFocusActivity(value);
+                }
+            }
+        },
+
+        /**
          * 프로세스 정의를 엑셀 파일로 다운로드
          */
         async handleDownloadExcel() {
@@ -997,6 +1136,12 @@ export default {
 
                 const processDefinition = chatComponent.processDefinition;
                 console.log('📋 프로세스 정의:', processDefinition);
+
+                // 구조 판별: elements가 있으면 새로운 구조, 없으면 이전 구조
+                const hasElementsStructure = processDefinition.elements && Array.isArray(processDefinition.elements);
+                const hasOldStructure = processDefinition.activities && Array.isArray(processDefinition.activities);
+                
+                console.log('📊 구조 타입:', hasElementsStructure ? 'Elements 구조' : 'Activities 분리 구조');
 
                 // 워크북 생성
                 const workbook = XLSX.utils.book_new();
@@ -1074,194 +1219,266 @@ export default {
                     XLSX.utils.book_append_sheet(workbook, rolesSheet, '3.역할(Lane)');
                 }
 
-                // 4. Elements에서 Activity만 추출
-                if (processDefinition.elements && processDefinition.elements.length > 0) {
-                    const activities = processDefinition.elements.filter(el => el.elementType === 'Activity');
-                    
-                    if (activities.length > 0) {
-                        const activitiesData = [
-                            ['ID', '이름', '타입', '역할', '설명', '지시사항', 
-                             '소요시간(일)', '체크포인트', '입력데이터', '출력데이터', 
-                             '도구', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
-                        ];
-                        
-                        activities.forEach(activity => {
-                            activitiesData.push([
-                                activity.id || '',
-                                activity.name || '',
-                                activity.type || '',
-                                activity.role || '',
-                                activity.description || '',
-                                activity.instruction || '',
-                                activity.duration || '',
-                                Array.isArray(activity.checkpoints) ? activity.checkpoints.join(', ') : '',
-                                Array.isArray(activity.inputData) ? activity.inputData.join(', ') : '',
-                                Array.isArray(activity.outputData) ? activity.outputData.join(', ') : '',
-                                activity.tool || '',
-                                activity.layer || '',
-                                activity.order || '',
-                                activity.x || '',
-                                activity.y || '',
-                                activity.width || '',
-                                activity.height || ''
-                            ]);
-                        });
-
-                        const activitiesSheet = XLSX.utils.aoa_to_sheet(activitiesData);
-                        activitiesSheet['!cols'] = [
-                            { wch: 30 },  // ID
-                            { wch: 25 },  // 이름
-                            { wch: 15 },  // 타입
-                            { wch: 15 },  // 역할
-                            { wch: 40 },  // 설명
-                            { wch: 40 },  // 지시사항
-                            { wch: 12 },  // 소요시간
-                            { wch: 30 },  // 체크포인트
-                            { wch: 30 },  // 입력데이터
-                            { wch: 30 },  // 출력데이터
-                            { wch: 35 },  // 도구
-                            { wch: 8 },   // Layer
-                            { wch: 8 },   // Order
-                            { wch: 8 },   // X좌표
-                            { wch: 8 },   // Y좌표
-                            { wch: 8 },   // 너비
-                            { wch: 8 }    // 높이
-                        ];
-                        XLSX.utils.book_append_sheet(workbook, activitiesSheet, '4.액티비티');
-                    }
+                // 4. 액티비티 시트 (구조에 따라 분기)
+                let activities = [];
+                if (hasElementsStructure) {
+                    // Elements 구조: elementType === 'Activity'인 것만 추출
+                    activities = processDefinition.elements.filter(el => el.elementType === 'Activity');
+                } else if (hasOldStructure) {
+                    // 이전 구조: activities 배열 직접 사용
+                    activities = processDefinition.activities;
                 }
 
-                // 5. Elements에서 Event만 추출
-                if (processDefinition.elements && processDefinition.elements.length > 0) {
-                    const events = processDefinition.elements.filter(el => el.elementType === 'Event');
+                if (activities.length > 0) {
+                    const activitiesData = [
+                        ['ID', '이름', '타입', '역할', '설명', '지시사항', 
+                         '소요시간(일)', '체크포인트', '입력데이터', '출력데이터', 
+                         '도구', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
+                    ];
                     
-                    if (events.length > 0) {
-                        const eventsData = [
-                            ['ID', '이름', '타입', '역할', '설명', '트리거', 
-                             'BPMN타입', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
-                        ];
-                        
-                        events.forEach(event => {
-                            eventsData.push([
-                                event.id || '',
-                                event.name || '',
-                                event.type || '',
-                                event.role || '',
-                                event.description || '',
-                                event.trigger || '',
-                                event.bpmnType || '',
-                                event.layer || '',
-                                event.order || '',
-                                event.x || '',
-                                event.y || '',
-                                event.width || '',
-                                event.height || ''
-                            ]);
-                        });
+                    activities.forEach(activity => {
+                        // properties가 JSON 문자열인 경우 파싱
+                        let parsedProps = {};
+                        if (activity.properties && typeof activity.properties === 'string') {
+                            try {
+                                parsedProps = JSON.parse(activity.properties);
+                            } catch (e) {
+                                console.warn('properties 파싱 실패:', e);
+                            }
+                        }
 
-                        const eventsSheet = XLSX.utils.aoa_to_sheet(eventsData);
-                        eventsSheet['!cols'] = [
-                            { wch: 30 },  // ID
-                            { wch: 25 },  // 이름
-                            { wch: 15 },  // 타입
-                            { wch: 15 },  // 역할
-                            { wch: 40 },  // 설명
-                            { wch: 30 },  // 트리거
-                            { wch: 20 },  // BPMN타입
-                            { wch: 8 },   // Layer
-                            { wch: 8 },   // Order
-                            { wch: 8 },   // X좌표
-                            { wch: 8 },   // Y좌표
-                            { wch: 8 },   // 너비
-                            { wch: 8 }    // 높이
-                        ];
-                        XLSX.utils.book_append_sheet(workbook, eventsSheet, '5.이벤트');
-                    }
+                        const checkpoints = activity.checkpoints || parsedProps.checkpoints || [];
+                        const description = activity.description || parsedProps.description || '';
+
+                        activitiesData.push([
+                            activity.id || '',
+                            activity.name || '',
+                            activity.type || '',
+                            activity.role || parsedProps.role || '',
+                            description,
+                            activity.instruction || '',
+                            activity.duration || '',
+                            Array.isArray(checkpoints) ? checkpoints.join(', ') : '',
+                            Array.isArray(activity.inputData) ? activity.inputData.join(', ') : '',
+                            Array.isArray(activity.outputData) ? activity.outputData.join(', ') : '',
+                            activity.tool || '',
+                            activity.layer || '',
+                            activity.order || '',
+                            activity.x || '',
+                            activity.y || '',
+                            activity.width || '',
+                            activity.height || ''
+                        ]);
+                    });
+
+                    const activitiesSheet = XLSX.utils.aoa_to_sheet(activitiesData);
+                    activitiesSheet['!cols'] = [
+                        { wch: 30 },  // ID
+                        { wch: 25 },  // 이름
+                        { wch: 15 },  // 타입
+                        { wch: 15 },  // 역할
+                        { wch: 40 },  // 설명
+                        { wch: 40 },  // 지시사항
+                        { wch: 12 },  // 소요시간
+                        { wch: 30 },  // 체크포인트
+                        { wch: 30 },  // 입력데이터
+                        { wch: 30 },  // 출력데이터
+                        { wch: 35 },  // 도구
+                        { wch: 8 },   // Layer
+                        { wch: 8 },   // Order
+                        { wch: 8 },   // X좌표
+                        { wch: 8 },   // Y좌표
+                        { wch: 8 },   // 너비
+                        { wch: 8 }    // 높이
+                    ];
+                    XLSX.utils.book_append_sheet(workbook, activitiesSheet, '4.액티비티');
                 }
 
-                // 6. Elements에서 Gateway만 추출
-                if (processDefinition.elements && processDefinition.elements.length > 0) {
-                    const gateways = processDefinition.elements.filter(el => el.elementType === 'Gateway');
-                    
-                    if (gateways.length > 0) {
-                        const gatewaysData = [
-                            ['ID', '이름', '타입', '역할', '설명', '조건', 
-                             'BPMN타입', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
-                        ];
-                        
-                        gateways.forEach(gateway => {
-                            gatewaysData.push([
-                                gateway.id || '',
-                                gateway.name || '',
-                                gateway.type || '',
-                                gateway.role || '',
-                                gateway.description || '',
-                                gateway.condition || '',
-                                gateway.bpmnType || '',
-                                gateway.layer || '',
-                                gateway.order || '',
-                                gateway.x || '',
-                                gateway.y || '',
-                                gateway.width || '',
-                                gateway.height || ''
-                            ]);
-                        });
-
-                        const gatewaysSheet = XLSX.utils.aoa_to_sheet(gatewaysData);
-                        gatewaysSheet['!cols'] = [
-                            { wch: 30 },  // ID
-                            { wch: 25 },  // 이름
-                            { wch: 15 },  // 타입
-                            { wch: 15 },  // 역할
-                            { wch: 40 },  // 설명
-                            { wch: 30 },  // 조건
-                            { wch: 20 },  // BPMN타입
-                            { wch: 8 },   // Layer
-                            { wch: 8 },   // Order
-                            { wch: 8 },   // X좌표
-                            { wch: 8 },   // Y좌표
-                            { wch: 8 },   // 너비
-                            { wch: 8 }    // 높이
-                        ];
-                        XLSX.utils.book_append_sheet(workbook, gatewaysSheet, '6.게이트웨이');
-                    }
+                // 5. 이벤트 시트 (구조에 따라 분기)
+                let events = [];
+                if (hasElementsStructure) {
+                    // Elements 구조: elementType === 'Event'인 것만 추출
+                    events = processDefinition.elements.filter(el => el.elementType === 'Event');
+                } else if (processDefinition.events && Array.isArray(processDefinition.events)) {
+                    // 이전 구조: events 배열 직접 사용
+                    events = processDefinition.events;
                 }
 
-                // 7. Elements에서 Sequence만 추출 (순서/흐름)
-                if (processDefinition.elements && processDefinition.elements.length > 0) {
-                    const sequences = processDefinition.elements.filter(el => el.elementType === 'Sequence');
+                if (events.length > 0) {
+                    const eventsData = [
+                        ['ID', '이름', '타입', '역할', '설명', '트리거', 
+                         'BPMN타입', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
+                    ];
                     
-                    if (sequences.length > 0) {
-                        const sequencesData = [
-                            ['ID', '이름', '시작(Source)', '종료(Target)', '조건', 'Waypoints']
-                        ];
-                        
-                        sequences.forEach(seq => {
-                            const waypoints = seq.waypoints && Array.isArray(seq.waypoints) 
-                                ? seq.waypoints.map(wp => `(${wp.x},${wp.y})`).join(' → ')
-                                : '';
-                            
-                            sequencesData.push([
-                                seq.id || '',
-                                seq.name || '',
-                                seq.source || '',
-                                seq.target || '',
-                                seq.condition || '',
-                                waypoints
-                            ]);
-                        });
+                    events.forEach(event => {
+                        // properties가 JSON 문자열인 경우 파싱
+                        let parsedProps = {};
+                        if (event.properties && typeof event.properties === 'string') {
+                            try {
+                                parsedProps = JSON.parse(event.properties);
+                            } catch (e) {
+                                console.warn('properties 파싱 실패:', e);
+                            }
+                        }
 
-                        const sequencesSheet = XLSX.utils.aoa_to_sheet(sequencesData);
-                        sequencesSheet['!cols'] = [
-                            { wch: 30 },  // ID
-                            { wch: 30 },  // 이름
-                            { wch: 30 },  // 시작
-                            { wch: 30 },  // 종료
-                            { wch: 40 },  // 조건
-                            { wch: 50 }   // Waypoints
-                        ];
-                        XLSX.utils.book_append_sheet(workbook, sequencesSheet, '7.시퀀스(흐름)');
-                    }
+                        const description = event.description || parsedProps.description || '';
+
+                        eventsData.push([
+                            event.id || '',
+                            event.name || '',
+                            event.type || '',
+                            event.role || '',
+                            description,
+                            event.trigger || '',
+                            event.bpmnType || '',
+                            event.layer || '',
+                            event.order || '',
+                            event.x || '',
+                            event.y || '',
+                            event.width || '',
+                            event.height || ''
+                        ]);
+                    });
+
+                    const eventsSheet = XLSX.utils.aoa_to_sheet(eventsData);
+                    eventsSheet['!cols'] = [
+                        { wch: 30 },  // ID
+                        { wch: 25 },  // 이름
+                        { wch: 15 },  // 타입
+                        { wch: 15 },  // 역할
+                        { wch: 40 },  // 설명
+                        { wch: 30 },  // 트리거
+                        { wch: 20 },  // BPMN타입
+                        { wch: 8 },   // Layer
+                        { wch: 8 },   // Order
+                        { wch: 8 },   // X좌표
+                        { wch: 8 },   // Y좌표
+                        { wch: 8 },   // 너비
+                        { wch: 8 }    // 높이
+                    ];
+                    XLSX.utils.book_append_sheet(workbook, eventsSheet, '5.이벤트');
+                }
+
+                // 6. 게이트웨이 시트 (구조에 따라 분기)
+                let gateways = [];
+                if (hasElementsStructure) {
+                    // Elements 구조: elementType === 'Gateway'인 것만 추출
+                    gateways = processDefinition.elements.filter(el => el.elementType === 'Gateway');
+                } else if (processDefinition.gateways && Array.isArray(processDefinition.gateways)) {
+                    // 이전 구조: gateways 배열 직접 사용
+                    gateways = processDefinition.gateways;
+                }
+
+                if (gateways.length > 0) {
+                    const gatewaysData = [
+                        ['ID', '이름', '타입', '역할', '설명', '조건', 
+                         'BPMN타입', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
+                    ];
+                    
+                    gateways.forEach(gateway => {
+                        // properties가 JSON 문자열인 경우 파싱
+                        let parsedProps = {};
+                        if (gateway.properties && typeof gateway.properties === 'string') {
+                            try {
+                                parsedProps = JSON.parse(gateway.properties);
+                            } catch (e) {
+                                console.warn('properties 파싱 실패:', e);
+                            }
+                        }
+
+                        const description = gateway.description || parsedProps.description || '';
+                        const condition = gateway.condition ? 
+                            (typeof gateway.condition === 'object' ? JSON.stringify(gateway.condition) : gateway.condition) : '';
+
+                        gatewaysData.push([
+                            gateway.id || '',
+                            gateway.name || '',
+                            gateway.type || '',
+                            gateway.role || '',
+                            description,
+                            condition,
+                            gateway.bpmnType || '',
+                            gateway.layer || '',
+                            gateway.order || '',
+                            gateway.x || '',
+                            gateway.y || '',
+                            gateway.width || '',
+                            gateway.height || ''
+                        ]);
+                    });
+
+                    const gatewaysSheet = XLSX.utils.aoa_to_sheet(gatewaysData);
+                    gatewaysSheet['!cols'] = [
+                        { wch: 30 },  // ID
+                        { wch: 25 },  // 이름
+                        { wch: 15 },  // 타입
+                        { wch: 15 },  // 역할
+                        { wch: 40 },  // 설명
+                        { wch: 30 },  // 조건
+                        { wch: 20 },  // BPMN타입
+                        { wch: 8 },   // Layer
+                        { wch: 8 },   // Order
+                        { wch: 8 },   // X좌표
+                        { wch: 8 },   // Y좌표
+                        { wch: 8 },   // 너비
+                        { wch: 8 }    // 높이
+                    ];
+                    XLSX.utils.book_append_sheet(workbook, gatewaysSheet, '6.게이트웨이');
+                }
+
+                // 7. 시퀀스(흐름) 시트 (구조에 따라 분기)
+                let sequences = [];
+                if (hasElementsStructure) {
+                    // Elements 구조: elementType === 'Sequence'인 것만 추출
+                    sequences = processDefinition.elements.filter(el => el.elementType === 'Sequence');
+                } else if (processDefinition.sequences && Array.isArray(processDefinition.sequences)) {
+                    // 이전 구조: sequences 배열 직접 사용
+                    sequences = processDefinition.sequences;
+                }
+
+                if (sequences.length > 0) {
+                    const sequencesData = [
+                        ['ID', '이름', '시작(Source)', '종료(Target)', '조건', 'Waypoints']
+                    ];
+                    
+                    sequences.forEach(seq => {
+                        // properties가 JSON 문자열인 경우 파싱
+                        let parsedProps = {};
+                        if (seq.properties && typeof seq.properties === 'string') {
+                            try {
+                                parsedProps = JSON.parse(seq.properties);
+                            } catch (e) {
+                                console.warn('properties 파싱 실패:', e);
+                            }
+                        }
+
+                        const waypoints = seq.waypoints && Array.isArray(seq.waypoints) 
+                            ? seq.waypoints.map(wp => `(${wp.x},${wp.y})`).join(' → ')
+                            : '';
+                        
+                        const condition = seq.condition || parsedProps.condition || '';
+                        const conditionStr = typeof condition === 'object' ? JSON.stringify(condition) : condition;
+
+                        sequencesData.push([
+                            seq.id || '',
+                            seq.name || '',
+                            seq.source || '',
+                            seq.target || '',
+                            conditionStr,
+                            waypoints
+                        ]);
+                    });
+
+                    const sequencesSheet = XLSX.utils.aoa_to_sheet(sequencesData);
+                    sequencesSheet['!cols'] = [
+                        { wch: 30 },  // ID
+                        { wch: 30 },  // 이름
+                        { wch: 30 },  // 시작
+                        { wch: 30 },  // 종료
+                        { wch: 40 },  // 조건
+                        { wch: 50 }   // Waypoints
+                    ];
+                    XLSX.utils.book_append_sheet(workbook, sequencesSheet, '7.시퀀스(흐름)');
                 }
 
                 // 8. SubProcesses 시트
