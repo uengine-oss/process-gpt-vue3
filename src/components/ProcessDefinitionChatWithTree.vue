@@ -9,12 +9,6 @@
                             <v-icon class="mr-2">mdi-file-tree</v-icon>
                             프로세스 체계도
                         </v-card-title>
-                        <v-spacer></v-spacer>
-                        
-                        <div class="d-flex ga-2">
-                            <v-btn color="grey" variant="flat">추가</v-btn>
-                            <v-btn color="grey" variant="flat">삭제</v-btn>
-                        </div>
                     </v-row>
                     
                     <!-- TreeView -->
@@ -28,6 +22,8 @@
                         :config="config"
                         :nodes="nodes"
                         class="process-tree"
+                        @nodeOpened="handleNodeOpened"
+                        @nodeClosed="handleNodeClosed"
                     ></v-treeview>
                     
                     <v-alert v-else-if="!isLoadingProcessDefinitionMap && Object.keys(nodes).length === 0" type="info" variant="tonal" class="mt-3">
@@ -109,11 +105,70 @@
                 />
             </v-col>
         </v-row>
+
+        <!-- Major -> Sub 추가 시 ProcessDialog 사용 -->
+        <ProcessDialog
+            v-if="processDialog && processDialogMode === 'add' && currentNodeType === 'major'"
+            :process="processForm"
+            :enableEdit="true"
+            :type="currentNodeType"
+            :processDialogStatus="processDialog"
+            :processType="processDialogMode"
+            :subProcessDialogStauts="true"
+            @add="handleProcessAdd"
+            @closeProcessDialog="closeProcessDialog"
+        />
+
+        <!-- Mega -> Major 추가 및 수정용 간단한 다이얼로그 -->
+        <v-dialog v-model="processDialog" max-width="500" persistent 
+            v-else-if="processDialog && (processDialogMode === 'update' || currentNodeType === 'mega')">
+            <v-card>
+                <v-card-title class="pa-4">
+                    <span v-if="processDialogMode === 'add'">
+                        Major 프로세스 추가
+                    </span>
+                    <span v-else>
+                        {{ currentNodeType === 'mega' ? 'Mega 프로세스 수정' : 
+                           currentNodeType === 'major' ? 'Major 프로세스 수정' : 
+                           currentNodeType === 'sub' ? 'Sub 프로세스 수정' : '프로세스 수정' }}
+                    </span>
+                </v-card-title>
+                
+                <v-card-text class="pa-4">
+                    <v-text-field
+                        v-model="processForm.name"
+                        label="프로세스 이름"
+                        variant="outlined"
+                        density="comfortable"
+                        autofocus
+                        @keyup.enter="saveProcessDialog"
+                    ></v-text-field>
+                </v-card-text>
+                
+                <v-card-actions class="pa-4 pt-0 justify-center">
+                    <v-btn
+                        color="primary"
+                        variant="flat"
+                        @click="saveProcessDialog"
+                    >
+                        {{ processDialogMode === 'add' ? '추가' : '수정' }}
+                    </v-btn>
+                    <v-btn
+                        color="error"
+                        variant="flat"
+                        @click="closeProcessDialog"
+                    >
+                        취소
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
 <script>
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
+import ProcessDialog from '@/components/apps/definition-map/ProcessDialog.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import VTreeview from 'vue3-treeview';
 import 'vue3-treeview/dist/style.css';
@@ -125,6 +180,7 @@ export default {
     name: 'ProcessDefinitionChatWithTree',
     components: {
         ProcessDefinitionChat,
+        ProcessDialog,
         VTreeview,
     },
     props: {
@@ -150,18 +206,41 @@ export default {
         parsedExcelData: null,
         // 프로세스 정의 체계도 로딩 상태
         isLoadingProcessDefinitionMap: false,
+        // 프로세스 다이얼로그
+        processDialog: false,
+        processDialogMode: 'add',
+        currentNodeType: '',
+        currentNode: null,
+        processForm: {
+            id: '',
+            name: ''
+        },
+        // 트리 상태 관리
+        openedNodes: [],
     }),
     async created() {
+        // 저장된 트리 상태 불러오기
+        try {
+            const saved = localStorage.getItem('processTreeOpenedNodes');
+            if (saved) {
+                this.openedNodes = JSON.parse(saved);
+            }
+        } catch (error) {
+            console.error('트리 상태 불러오기 실패:', error);
+        }
+        
         await this.loadProcessDefinitionMap();
     },
     mounted() {
         this.$nextTick(() => {
             this.attachNodeClickListeners();
+            this.attachNodeActionButtons();
         });
     },
     updated() {
         this.$nextTick(() => {
             this.attachNodeClickListeners();
+            this.attachNodeActionButtons();
         });
     },
     watch: {
@@ -182,12 +261,81 @@ export default {
                 this.$nextTick(() => {
                     setTimeout(() => {
                         this.attachNodeClickListeners();
+                        this.attachNodeActionButtons();
                     }, 300);
                 });
             }
         }
     },
     methods: {
+        /**
+         * 노드가 열렸을 때 처리
+         */
+        handleNodeOpened(node) {
+            if (node && node.id) {
+                if (!this.openedNodes.includes(node.id)) {
+                    this.openedNodes.push(node.id);
+                }
+                this.saveTreeState();
+            }
+        },
+
+        /**
+         * 노드가 닫혔을 때 처리
+         */
+        handleNodeClosed(node) {
+            if (node && node.id) {
+                const index = this.openedNodes.indexOf(node.id);
+                if (index > -1) {
+                    this.openedNodes.splice(index, 1);
+                }
+                this.saveTreeState();
+            }
+        },
+
+        /**
+         * 트리 상태를 localStorage에 저장
+         */
+        saveTreeState() {
+            try {
+                localStorage.setItem('processTreeOpenedNodes', JSON.stringify(this.openedNodes));
+            } catch (error) {
+                console.error('트리 상태 저장 실패:', error);
+            }
+        },
+
+        /**
+         * localStorage에서 트리 상태 복구
+         */
+        restoreTreeState() {
+            try {
+                const saved = localStorage.getItem('processTreeOpenedNodes');
+                if (saved) {
+                    this.openedNodes = JSON.parse(saved);
+                    this.$nextTick(() => {
+                        this.expandSavedNodes();
+                    });
+                }
+            } catch (error) {
+                console.error('트리 상태 복구 실패:', error);
+            }
+        },
+
+        /**
+         * 저장된 노드들을 펼치기
+         */
+        expandSavedNodes() {
+            this.openedNodes.forEach(nodeId => {
+                const nodeElement = document.querySelector(`[data-node-id="${nodeId}"]`);
+                if (nodeElement) {
+                    const iconWrapper = nodeElement.querySelector('.icon-wrapper');
+                    if (iconWrapper && !iconWrapper.classList.contains('opened')) {
+                        iconWrapper.click();
+                    }
+                }
+            });
+        },
+
         /**
          * 트리 노드에 클릭 이벤트 리스너 추가
          */
@@ -203,6 +351,11 @@ export default {
                 nodeWrapper.addEventListener('click', (event) => {
                     // 아이콘 클릭은 접기/펼치기이므로 제외
                     if (event.target.closest('.icon-wrapper')) {
+                        return;
+                    }
+                    
+                    // 액션 버튼 클릭은 제외
+                    if (event.target.closest('.node-action-buttons')) {
                         return;
                     }
                     
@@ -237,6 +390,286 @@ export default {
         },
 
         /**
+         * 트리 노드에 추가/삭제 버튼 추가
+         */
+        attachNodeActionButtons() {
+            const nodeWrappers = document.querySelectorAll('.process-tree .node-wrapper');
+            
+            nodeWrappers.forEach(nodeWrapper => {
+                // 이미 버튼이 추가되었는지 확인
+                if (nodeWrapper.dataset.actionButtonsAttached) {
+                    return;
+                }
+                
+                const inputWrapper = nodeWrapper.querySelector('.input-wrapper');
+                if (!inputWrapper) {
+                    return;
+                }
+                
+                // 노드 텍스트로 노드 찾기
+                const nodeText = inputWrapper.textContent?.trim();
+                let foundNode = null;
+                for (const key in this.nodes) {
+                    if (this.nodes[key].text === nodeText) {
+                        foundNode = this.nodes[key];
+                        break;
+                    }
+                }
+                
+                if (!foundNode) {
+                    return;
+                }
+                
+                const nodeType = foundNode.data?.type;
+                
+                // 버튼 컨테이너 생성
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'node-action-buttons';
+                
+                // mega와 major는 추가 버튼 표시
+                if (nodeType === 'mega' || nodeType === 'major') {
+                    const addButton = document.createElement('button');
+                    addButton.innerHTML = '+';
+                    addButton.className = 'node-action-btn add-btn';
+                    addButton.title = nodeType === 'mega' ? 'Major 프로세스 추가' : 'Sub 프로세스 추가';
+                    addButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.handleNodeAddAction(foundNode);
+                    });
+                    buttonContainer.appendChild(addButton);
+                }
+                
+                // 모든 타입에 수정 버튼 표시
+                const editButton = document.createElement('button');
+                editButton.innerHTML = '✎';
+                editButton.className = 'node-action-btn edit-btn';
+                editButton.title = '수정';
+                editButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.handleNodeEditAction(foundNode);
+                });
+                buttonContainer.appendChild(editButton);
+                
+                // 모든 타입에 삭제 버튼 표시
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = '✕';
+                deleteButton.className = 'node-action-btn delete-btn';
+                deleteButton.title = '삭제';
+                deleteButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.handleNodeDeleteAction(foundNode);
+                });
+                buttonContainer.appendChild(deleteButton);
+                
+                // 노드에 버튼 추가
+                nodeWrapper.appendChild(buttonContainer);
+                
+                // 버튼 추가 표시
+                nodeWrapper.dataset.actionButtonsAttached = 'true';
+            });
+        },
+
+        /**
+         * 노드 추가 액션 핸들러
+         */
+        handleNodeAddAction(node) {
+            this.processDialogMode = 'add';
+            this.currentNodeType = node.data?.type || '';
+            this.currentNode = node;
+            this.processForm = { id: '', name: '' };
+            this.processDialog = true;
+        },
+
+        /**
+         * 노드 수정 액션 핸들러
+         */
+        handleNodeEditAction(node) {
+            this.processDialogMode = 'update';
+            this.currentNodeType = node.data?.type || '';
+            this.currentNode = node;
+            this.processForm = {
+                id: node.data?.originalId || '',
+                name: node.text || ''
+            };
+            this.processDialog = true;
+        },
+
+        /**
+         * 노드 삭제 액션 핸들러
+         */
+        handleNodeDeleteAction(node) {
+            const nodeName = node.text;
+            if (confirm(`"${nodeName}" 프로세스를 삭제하시겠습니까?`)) {
+                this.deleteProcessNode(node.data?.type, node);
+            }
+        },
+
+        /**
+         * 프로세스 추가 핸들러
+         */
+        async handleProcessAdd(newProcess) {
+            try {
+                const parentType = this.currentNodeType;
+                const parentId = this.currentNode.data?.originalId;
+
+                if (parentType === 'mega') {
+                    // Mega에 Major 추가
+                    const mega = this.processDefinitionMap.mega_proc_list.find(m => m.id === parentId);
+                    if (mega) {
+                        if (!mega.major_proc_list) mega.major_proc_list = [];
+                        mega.major_proc_list.push({
+                            id: newProcess.id || this.generateUniqueId(),
+                            name: newProcess.name,
+                            sub_proc_list: []
+                        });
+                    }
+                } else if (parentType === 'major') {
+                    // Major에 Sub 추가 (기존 정의 또는 신규)
+                    for (const mega of this.processDefinitionMap.mega_proc_list) {
+                        const major = mega.major_proc_list?.find(m => m.id === parentId);
+                        if (major) {
+                            if (!major.sub_proc_list) major.sub_proc_list = [];
+                            
+                            // ProcessDialog에서 반환된 newProcess 구조 확인
+                            // id와 name만 있으면 기존 정의, 그 외 필드가 있으면 신규
+                            const subProcess = {
+                                id: newProcess.id || this.generateUniqueId(),
+                                name: newProcess.name || newProcess.label || newProcess.id
+                            };
+                            
+                            // 기존 프로세스 정의를 선택한 경우
+                            if (newProcess.path || newProcess.label) {
+                                subProcess.new = false;
+                            } else {
+                                // 새로 생성한 경우
+                                subProcess.new = true;
+                            }
+                            
+                            major.sub_proc_list.push(subProcess);
+                            break;
+                        }
+                    }
+                }
+
+                await backend.putProcessDefinitionMap(this.processDefinitionMap);
+                await this.refreshTree();
+                this.closeProcessDialog();
+            } catch (error) {
+                console.error('프로세스 추가 실패:', error);
+            }
+        },
+
+        /**
+         * 프로세스 수정 핸들러
+         */
+        async handleProcessEdit(updatedProcess) {
+            try {
+                const nodeId = this.currentNode.data?.originalId;
+                const nodeType = this.currentNodeType;
+
+                if (nodeType === 'mega') {
+                    const mega = this.processDefinitionMap.mega_proc_list.find(m => m.id === nodeId);
+                    if (mega) mega.name = updatedProcess.name;
+                } else if (nodeType === 'major') {
+                    for (const mega of this.processDefinitionMap.mega_proc_list) {
+                        const major = mega.major_proc_list?.find(m => m.id === nodeId);
+                        if (major) {
+                            major.name = updatedProcess.name;
+                            break;
+                        }
+                    }
+                } else if (nodeType === 'sub') {
+                    for (const mega of this.processDefinitionMap.mega_proc_list) {
+                        for (const major of mega.major_proc_list || []) {
+                            const sub = major.sub_proc_list?.find(s => s.id === nodeId);
+                            if (sub) {
+                                sub.name = updatedProcess.name;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                await backend.putProcessDefinitionMap(this.processDefinitionMap);
+                await this.refreshTree();
+                this.closeProcessDialog();
+            } catch (error) {
+                console.error('프로세스 수정 실패:', error);
+            }
+        },
+
+        /**
+         * 프로세스 노드 삭제
+         */
+        async deleteProcessNode(nodeType, node) {
+            try {
+                const nodeId = node.data?.originalId;
+
+                if (nodeType === 'mega') {
+                    const index = this.processDefinitionMap.mega_proc_list.findIndex(m => m.id === nodeId);
+                    if (index !== -1) this.processDefinitionMap.mega_proc_list.splice(index, 1);
+                } else if (nodeType === 'major') {
+                    for (const mega of this.processDefinitionMap.mega_proc_list) {
+                        const index = mega.major_proc_list?.findIndex(m => m.id === nodeId);
+                        if (index !== -1) {
+                            mega.major_proc_list.splice(index, 1);
+                            break;
+                        }
+                    }
+                } else if (nodeType === 'sub') {
+                    for (const mega of this.processDefinitionMap.mega_proc_list) {
+                        for (const major of mega.major_proc_list || []) {
+                            const index = major.sub_proc_list?.findIndex(s => s.id === nodeId);
+                            if (index !== -1) {
+                                major.sub_proc_list.splice(index, 1);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                await backend.putProcessDefinitionMap(this.processDefinitionMap);
+                await this.refreshTree();
+            } catch (error) {
+                console.error('프로세스 삭제 실패:', error);
+            }
+        },
+
+        /**
+         * 고유 ID 생성
+         */
+        generateUniqueId() {
+            const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+            return s4() + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+        },
+
+        /**
+         * 프로세스 다이얼로그 저장
+         */
+        async saveProcessDialog() {
+            if (!this.processForm.name || this.processForm.name.trim() === '') {
+                alert('프로세스 이름을 입력해주세요.');
+                return;
+            }
+
+            if (this.processDialogMode === 'add') {
+                await this.handleProcessAdd(this.processForm);
+            } else if (this.processDialogMode === 'update') {
+                await this.handleProcessEdit(this.processForm);
+            }
+        },
+
+        /**
+         * 프로세스 다이얼로그 닫기
+         */
+        closeProcessDialog() {
+            this.processDialog = false;
+            this.processForm = { id: '', name: '' };
+            this.currentNode = null;
+            this.currentNodeType = '';
+        },
+
+        /**
          * 프로세스 정의 체계도를 Supabase에서 로드
          */
         async loadProcessDefinitionMap() {
@@ -247,6 +680,13 @@ export default {
                 
                 if (this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
                     this.convertToVue3TreeviewFormat(this.processDefinitionMap.mega_proc_list);
+                    
+                    // 트리 상태 복구
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            this.restoreTreeState();
+                        }, 500);
+                    });
                 }
             } catch (error) {
                 console.error('프로세스 정의 체계도 로드 실패:', error);
@@ -282,7 +722,8 @@ export default {
                     id: megaId,
                     text: mega.name,
                     children: [],
-                    data: { type: 'mega', originalId: mega.id }
+                    data: { type: 'mega', originalId: mega.id },
+                    state: { opened: this.openedNodes.includes(megaId) }
                 };
 
                 if (mega.major_proc_list && Array.isArray(mega.major_proc_list)) {
@@ -294,7 +735,8 @@ export default {
                             id: majorId,
                             text: major.name,
                             children: [],
-                            data: { type: 'major', originalId: major.id }
+                            data: { type: 'major', originalId: major.id },
+                            state: { opened: this.openedNodes.includes(majorId) }
                         };
 
                         if (major.sub_proc_list && Array.isArray(major.sub_proc_list)) {
@@ -311,7 +753,8 @@ export default {
                                         originalId: sub.id,
                                         processDefinitionId: sub.id,
                                         new: sub.new || false
-                                    }
+                                    },
+                                    state: { opened: this.openedNodes.includes(subId) }
                                 };
                             });
                         }
@@ -896,6 +1339,7 @@ export default {
     cursor: pointer;
 }
 
+
 .tree-node-text.is-sub:hover {
     background-color: rgba(25, 118, 210, 0.08);
     color: #1976d2;
@@ -917,6 +1361,79 @@ export default {
 
 .tree-view-card::-webkit-scrollbar-thumb:hover {
     background: #a0a0a0;
+}
+
+/* 노드 액션 버튼 컨테이너 */
+.process-tree :deep(.node-action-buttons) {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.process-tree :deep(.node-wrapper) {
+    display: flex;
+    align-items: center;
+}
+
+.process-tree :deep(.node-wrapper:hover .node-action-buttons) {
+    opacity: 1;
+}
+
+/* 노드 액션 버튼 스타일 */
+.process-tree :deep(.node-action-btn) {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    color: #666;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.2s ease;
+}
+
+.process-tree :deep(.node-action-btn:hover) {
+    transform: scale(1.1);
+}
+
+/* 추가 버튼 */
+.process-tree :deep(.add-btn) {
+    border-color: #4caf50;
+    color: #4caf50;
+}
+
+.process-tree :deep(.add-btn:hover) {
+    background-color: #4caf50;
+    color: #fff;
+}
+
+/* 수정 버튼 */
+.process-tree :deep(.edit-btn) {
+    border-color: #2196f3;
+    color: #2196f3;
+}
+
+.process-tree :deep(.edit-btn:hover) {
+    background-color: #2196f3;
+    color: #fff;
+}
+
+/* 삭제 버튼 */
+.process-tree :deep(.delete-btn) {
+    border-color: #f44336;
+    color: #f44336;
+}
+
+.process-tree :deep(.delete-btn:hover) {
+    background-color: #f44336;
+    color: #fff;
 }
 </style>
 
