@@ -294,6 +294,10 @@ export default {
             type: String,
             default: ""
         },
+        selectedProcessDefinitionId: {
+            type: String,
+            default: null
+        },
     },
     data: () => ({
         allUserList: [],
@@ -428,6 +432,16 @@ export default {
         });
     },
     watch: {
+        selectedProcessDefinitionId(newVal, oldVal) {
+            if (newVal && newVal !== oldVal) {
+                console.log('✨ selectedProcessDefinitionId 변경됨:', newVal);
+                // fullPath가 computed이므로 자동으로 업데이트되고 init()이 호출됨
+                this.messages = [];
+                if (this.init) {
+                    this.init();
+                }
+            }
+        },
         $route: {
             deep: true,
             handler(newVal, oldVal) {
@@ -455,7 +469,10 @@ export default {
     computed: {
         fullPath() {
             let path
-            if(this.$route.params.pathMatch){
+            // selectedProcessDefinitionId가 있으면 우선 사용
+            if (this.selectedProcessDefinitionId) {
+                path = this.selectedProcessDefinitionId;
+            } else if(this.$route.params.pathMatch){
                 path = this.$route.params.pathMatch.join('/');
                 if (path.startsWith('/')) {
                     path = fullPath.substring(1);
