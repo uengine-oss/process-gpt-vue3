@@ -324,15 +324,15 @@ export default {
                         this.openMarketplaceDialog = true;
                     }
                 },
-                {
-                    show: this.componentName === 'DefinitionMapList' && this.isAdmin,
-                    icon: 'file-tree',
-                    title: this.$t('processDefinitionMap.treeView'),
-                    description: this.$t('processDefinitionMap.treeViewExplanation'),
-                    action: () => {
-                        this.navigateToTreeView();
-                    }
-                }
+                // {
+                //     show: this.componentName === 'DefinitionMapList' && this.isAdmin,
+                //     icon: 'file-tree',
+                //     title: this.$t('processDefinitionMap.treeView'),
+                //     description: this.$t('processDefinitionMap.treeViewExplanation'),
+                //     action: () => {
+                //         this.navigateToTreeView();
+                //     }
+                // }
             ];
         },
         actionButtons() {
