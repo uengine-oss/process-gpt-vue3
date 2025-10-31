@@ -31,7 +31,46 @@
                         class="process-tree"
                         @nodeOpened="handleNodeOpened"
                         @nodeClosed="handleNodeClosed"
-                    ></v-treeview>
+                    >
+                        <template #before-input="{ node }">
+                            <span 
+                                @click="node.data?.type === 'sub' ? handleNodeClick(node) : null"
+                                style="cursor: pointer;"
+                            ></span>
+                        </template>
+                        
+                        <template #after-input="{ node }">
+                            <span class="node-action-buttons">
+                                <!-- mega와 major는 추가 버튼 표시 -->
+                                <button 
+                                    v-if="node.data?.type === 'mega' || node.data?.type === 'major'"
+                                    class="node-action-btn add-btn" 
+                                    :title="node.data?.type === 'mega' ? 'Major 프로세스 추가' : 'Sub 프로세스 추가'"
+                                    @click.stop="handleNodeAddAction(node)"
+                                >
+                                    +
+                                </button>
+                                
+                                <!-- 모든 타입에 수정 버튼 표시 -->
+                                <button 
+                                    class="node-action-btn edit-btn" 
+                                    title="수정"
+                                    @click.stop="handleNodeEditAction(node)"
+                                >
+                                    ✎
+                                </button>
+                                
+                                <!-- 모든 타입에 삭제 버튼 표시 -->
+                                <button 
+                                    class="node-action-btn delete-btn" 
+                                    title="삭제"
+                                    @click.stop="handleNodeDeleteAction(node)"
+                                >
+                                    ✕
+                                </button>
+                            </span>
+                        </template>
+                    </v-treeview>
                     
                     <v-alert v-else-if="!isLoadingProcessDefinitionMap && Object.keys(nodes).length === 0" type="info" variant="tonal" class="mt-3">
                         프로세스 정의가 없습니다.
@@ -248,18 +287,6 @@ export default {
         
         await this.loadProcessDefinitionMap();
     },
-    mounted() {
-        this.$nextTick(() => {
-            this.attachNodeClickListeners();
-            this.attachNodeActionButtons();
-        });
-    },
-    updated() {
-        this.$nextTick(() => {
-            this.attachNodeClickListeners();
-            this.attachNodeActionButtons();
-        });
-    },
     watch: {
         // 라우트 변경 감지 - 프로세스 정의 체계도 새로고침
         '$route': {
@@ -269,18 +296,6 @@ export default {
                 if (newVal.path.startsWith('/definitions') && oldVal.path.startsWith('/definitions')) {
                     await this.loadProcessDefinitionMap();
                 }
-            }
-        },
-        // nodes 객체 변경 감지 - 트리뷰가 렌더링되면 리스너 추가
-        nodes: {
-            deep: true,
-            handler() {
-                this.$nextTick(() => {
-                    setTimeout(() => {
-                        this.attachNodeClickListeners();
-                        this.attachNodeActionButtons();
-                    }, 300);
-                });
             }
         }
     },
@@ -441,139 +456,6 @@ export default {
 
             this.processElementList = elementList;
             console.log('🔍 요소 목록 업데이트됨:', elementList.length, '개');
-        },
-
-        /**
-         * 트리 노드에 클릭 이벤트 리스너 추가
-         */
-        attachNodeClickListeners() {
-            const nodeWrappers = document.querySelectorAll('.process-tree .node-wrapper');
-            
-            nodeWrappers.forEach(nodeWrapper => {
-                // 이미 리스너가 추가되었는지 확인
-                if (nodeWrapper.dataset.listenerAttached) {
-                    return;
-                }
-                
-                nodeWrapper.addEventListener('click', (event) => {
-                    // 아이콘 클릭은 접기/펼치기이므로 제외
-                    if (event.target.closest('.icon-wrapper')) {
-                        return;
-                    }
-                    
-                    // 액션 버튼 클릭은 제외
-                    if (event.target.closest('.node-action-buttons')) {
-                        return;
-                    }
-                    
-                    // nodeWrapper에서 텍스트 추출
-                    const inputWrapper = nodeWrapper.querySelector('.input-wrapper');
-                    if (inputWrapper) {
-                        const nodeText = inputWrapper.textContent?.trim();
-                        
-                        // nodes 객체에서 텍스트로 노드 찾기
-                        let foundNode = null;
-                        for (const key in this.nodes) {
-                            if (this.nodes[key].text === nodeText) {
-                                foundNode = this.nodes[key];
-                                break;
-                            }
-                        }
-                        
-                        if (foundNode) {
-                            // sub 노드만 처리
-                            if (foundNode.data?.type !== 'sub') {
-                                return;
-                            }
-                            
-                            this.handleNodeClick(foundNode);
-                        }
-                    }
-                });
-                
-                // 리스너 추가 표시
-                nodeWrapper.dataset.listenerAttached = 'true';
-            });
-        },
-
-        /**
-         * 트리 노드에 추가/삭제 버튼 추가
-         */
-        attachNodeActionButtons() {
-            const nodeWrappers = document.querySelectorAll('.process-tree .node-wrapper');
-            
-            nodeWrappers.forEach(nodeWrapper => {
-                // 이미 버튼이 추가되었는지 확인
-                if (nodeWrapper.dataset.actionButtonsAttached) {
-                    return;
-                }
-                
-                const inputWrapper = nodeWrapper.querySelector('.input-wrapper');
-                if (!inputWrapper) {
-                    return;
-                }
-                
-                // 노드 텍스트로 노드 찾기
-                const nodeText = inputWrapper.textContent?.trim();
-                let foundNode = null;
-                for (const key in this.nodes) {
-                    if (this.nodes[key].text === nodeText) {
-                        foundNode = this.nodes[key];
-                        break;
-                    }
-                }
-                
-                if (!foundNode) {
-                    return;
-                }
-                
-                const nodeType = foundNode.data?.type;
-                
-                // 버튼 컨테이너 생성
-                const buttonContainer = document.createElement('div');
-                buttonContainer.className = 'node-action-buttons';
-                
-                // mega와 major는 추가 버튼 표시
-                if (nodeType === 'mega' || nodeType === 'major') {
-                    const addButton = document.createElement('button');
-                    addButton.innerHTML = '+';
-                    addButton.className = 'node-action-btn add-btn';
-                    addButton.title = nodeType === 'mega' ? 'Major 프로세스 추가' : 'Sub 프로세스 추가';
-                    addButton.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.handleNodeAddAction(foundNode);
-                    });
-                    buttonContainer.appendChild(addButton);
-                }
-                
-                // 모든 타입에 수정 버튼 표시
-                const editButton = document.createElement('button');
-                editButton.innerHTML = '✎';
-                editButton.className = 'node-action-btn edit-btn';
-                editButton.title = '수정';
-                editButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.handleNodeEditAction(foundNode);
-                });
-                buttonContainer.appendChild(editButton);
-                
-                // 모든 타입에 삭제 버튼 표시
-                const deleteButton = document.createElement('button');
-                deleteButton.innerHTML = '✕';
-                deleteButton.className = 'node-action-btn delete-btn';
-                deleteButton.title = '삭제';
-                deleteButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.handleNodeDeleteAction(foundNode);
-                });
-                buttonContainer.appendChild(deleteButton);
-                
-                // 노드에 버튼 추가
-                nodeWrapper.appendChild(buttonContainer);
-                
-                // 버튼 추가 표시
-                nodeWrapper.dataset.actionButtonsAttached = 'true';
-            });
         },
 
         /**
