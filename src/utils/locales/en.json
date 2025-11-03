@@ -1888,5 +1888,24 @@
         "loadingAssigneeInfo": "Loading assignee information...",
         "noNextActivities": "No next activities.",
         "referenceInfo": "Reference Information"
+    },
+    "ProcessDefinitionChatWithTree": {
+        "processHierarchy": "Process Hierarchy",
+        "newProcess": "New Process",
+        "noProcessDefinition": "No process definitions.",
+        "downloadExcel": "Download Excel",
+        "addMajorProcess": "Add Major Process",
+        "addSubProcess": "Add Sub Process",
+        "editMegaProcess": "Edit Mega Process",
+        "editMajorProcess": "Edit Major Process",
+        "editSubProcess": "Edit Sub Process",
+        "editProcess": "Edit Process",
+        "processName": "Process Name",
+        "add": "Add",
+        "edit": "Edit",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "editProcessName": "Edit Process Name",
+        "openProcess": "Open Process"
     }
 }
