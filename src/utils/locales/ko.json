@@ -1903,5 +1903,24 @@
         "loadingAssigneeInfo": "담당자 정보 로딩 중...",
         "noNextActivities": "다음 작업이 없습니다.",
         "referenceInfo": "참조 정보"
+    },
+    "ProcessDefinitionChatWithTree": {
+        "processHierarchy": "프로세스 체계도",
+        "newProcess": "새 프로세스",
+        "noProcessDefinition": "프로세스 정의가 없습니다.",
+        "downloadExcel": "엑셀 다운로드",
+        "addMajorProcess": "Major 프로세스 추가",
+        "addSubProcess": "Sub 프로세스 추가",
+        "editMegaProcess": "Mega 프로세스 수정",
+        "editMajorProcess": "Major 프로세스 수정",
+        "editSubProcess": "Sub 프로세스 수정",
+        "editProcess": "프로세스 수정",
+        "processName": "프로세스 이름",
+        "add": "추가",
+        "edit": "수정",
+        "cancel": "취소",
+        "delete": "삭제",
+        "editProcessName": "프로세스 이름 수정",
+        "openProcess": "프로세스 열기"
     }
 }

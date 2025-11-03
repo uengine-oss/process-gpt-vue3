@@ -2,47 +2,89 @@
     <div>
         <v-row class="ma-0 pa-0 process-definition-chat-tree-box">
             <!-- 왼쪽: TreeView -->
-            <v-col cols="12" md="3" class="pa-0">
+            <v-col v-if="isTreeViewVisible" cols="12" md="3" class="pa-0">
                 <v-card elevation="10" class="pa-3 tree-view-card">
                     <v-row class="ma-0 pa-0">
-                        <v-card-title class="pa-2 mb-2">
-                            <v-icon class="mr-2">mdi-file-tree</v-icon>
-                            프로세스 체계도
+                        <v-card-title class="ma-0 pa-0">
+                            <v-icon class="mr-2" size="20">mdi-file-tree</v-icon>
+                            {{ $t('ProcessDefinitionChatWithTree.processHierarchy') }}
                         </v-card-title>
                         <v-spacer></v-spacer>
                         
                         <div class="d-flex ga-2">
-                            <!-- <v-btn color="grey" variant="flat">추가</v-btn>
-                            <v-btn color="grey" variant="flat">삭제</v-btn> -->
-                            <v-btn color="grey" variant="flat" @click="selectedProcessId = null">새 프로세스</v-btn>
+                            <v-btn @click="selectedProcessId = null"
+                                color="primary"
+                                variant="flat" 
+                                class="rounded-pill"
+                                density="compact"
+                            >{{ $t('ProcessDefinitionChatWithTree.newProcess') }}
+                            </v-btn>
                         </div>
                     </v-row>
-                    
-                    <!-- TreeView -->
-                    <div v-if="isLoadingProcessDefinitionMap" class="text-center pa-5">
-                        <v-progress-circular indeterminate color="primary"></v-progress-circular>
-                        <div class="mt-3">로딩 중...</div>
+
+                    <div class="process-definition-chat-tree-box-inner mt-2">
+                        <!-- TreeView -->
+                        <div v-if="isLoadingProcessDefinitionMap" class="text-center pa-5">
+                            <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                            <div class="mt-3">{{ $t('common.loading') }}</div>
+                        </div>
+                        
+                        <v-treeview
+                            v-else-if="!isLoadingProcessDefinitionMap && Object.keys(nodes).length > 0"
+                            :config="config"
+                            :nodes="nodes"
+                            class="process-tree"
+                            @nodeOpened="handleNodeOpened"
+                            @nodeClosed="handleNodeClosed"
+                        >
+                            <template #after-input="{ node }">
+                                <div class="node-action-buttons" v-if="node && node.data">
+                                    <v-tooltip 
+                                        v-for="(btn, index) in getNodeActionButtons(node)" 
+                                        :key="index"
+                                        location="bottom"
+                                    >
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn 
+                                                v-bind="props" 
+                                                icon 
+                                                variant="text" 
+                                                type="file" 
+                                                class="node-action-btn" 
+                                                density="comfortable" 
+                                                @click.stop="btn.action(node)"
+                                            >
+                                                <Icons :icon="btn.icon" :size="btn.size" :color="btn.iconColor" />
+                                            </v-btn>
+                                        </template>
+                                        <span>{{ btn.tooltip }}</span>
+                                    </v-tooltip>
+                                </div>
+                            </template>
+                        </v-treeview>
+                        
+                        <v-alert v-else-if="!isLoadingProcessDefinitionMap && Object.keys(nodes).length === 0" type="info" variant="tonal" class="mt-3">
+                            {{ $t('ProcessDefinitionChatWithTree.noProcessDefinition') }}
+                        </v-alert>
                     </div>
-                    
-                    <v-treeview
-                        v-else-if="!isLoadingProcessDefinitionMap && Object.keys(nodes).length > 0"
-                        :config="config"
-                        :nodes="nodes"
-                        class="process-tree"
-                        @nodeOpened="handleNodeOpened"
-                        @nodeClosed="handleNodeClosed"
-                    ></v-treeview>
-                    
-                    <v-alert v-else-if="!isLoadingProcessDefinitionMap && Object.keys(nodes).length === 0" type="info" variant="tonal" class="mt-3">
-                        프로세스 정의가 없습니다.
-                    </v-alert>
                 </v-card>
             </v-col>
 
             <!-- 오른쪽: ProcessDefinitionChat -->
-            <v-col cols="12" md="9" class="pa-0 chat-container">
+            <v-col cols="12" :md="isTreeViewVisible ? 9 : 12" class="pa-0 chat-container">
                 <v-card flat class="pa-3">
                     <div class="ma-0 pa-0 align-center d-flex">
+                        <!-- 트리뷰 토글 버튼 -->
+                        <v-btn 
+                            icon
+                            flat
+                            @click="isTreeViewVisible = !isTreeViewVisible"
+                            class="mr-2"
+                            size="32"
+                        >
+                            <Icons :icon="'list-bold-duotone'"/>
+                        </v-btn>
+                        
                         <!-- 검색창 (자동완성 지원) -->
                         <v-autocomplete
                             v-model="searchValue"
@@ -60,7 +102,7 @@
                             auto-select-first
                         >
                             <template v-slot:item="{ props, item }">
-                                <v-list-item v-bind="props">
+                                <v-list-item v-bind="props" :title="item.raw.name">
                                     <!-- <template v-slot:prepend>
                                         <v-icon>{{ item.raw.icon }}</v-icon>
                                     </template> -->
@@ -74,30 +116,36 @@
                         <div class="d-flex ga-2">
                             <v-btn 
                                 v-if="!selectedProcessId"
-                                color="success" 
-                                variant="flat"
                                 @click="openFileDialog"
                                 :loading="isParsingExcel"
+                                color="grey"
+                                variant="flat"
+                                class="rounded-pill"
+                                density="compact"
                             >
                                 <v-icon class="mr-2">mdi-file-excel</v-icon>
                                 {{ uploadedFileName || $t('processDefinitionTree.uploadExcel') }}
                             </v-btn>
                             <v-btn 
                                 v-if="!selectedProcessId"
-                                color="primary" 
-                                variant="flat"
                                 @click="handleCreateMap"
                                 :disabled="!parsedExcelData"
+                                color="grey"
+                                variant="flat"
+                                class="rounded-pill"
+                                density="compact"
                             >
                                 {{ $t('processDefinitionTree.createMap') }}
                             </v-btn>
                             <v-btn 
-                                color="info" 
-                                variant="flat"
                                 @click="handleDownloadExcel"
+                                color="grey"
+                                variant="flat"
+                                class="rounded-pill"
+                                density="compact"
                             >
                                 <v-icon class="mr-2">mdi-download</v-icon>
-                                엑셀 다운로드
+                                {{ $t('ProcessDefinitionChatWithTree.downloadExcel') }}
                             </v-btn>
                         </div>
                         
@@ -140,19 +188,19 @@
             <v-card>
                 <v-card-title class="pa-4">
                     <span v-if="processDialogMode === 'add'">
-                        Major 프로세스 추가
+                        {{ $t('ProcessDefinitionChatWithTree.addMajorProcess') }}
                     </span>
                     <span v-else>
-                        {{ currentNodeType === 'mega' ? 'Mega 프로세스 수정' : 
-                           currentNodeType === 'major' ? 'Major 프로세스 수정' : 
-                           currentNodeType === 'sub' ? 'Sub 프로세스 수정' : '프로세스 수정' }}
+                        {{ currentNodeType === 'mega' ? $t('ProcessDefinitionChatWithTree.editMegaProcess') : 
+                           currentNodeType === 'major' ? $t('ProcessDefinitionChatWithTree.editMajorProcess') : 
+                           currentNodeType === 'sub' ? $t('ProcessDefinitionChatWithTree.editSubProcess') : $t('ProcessDefinitionChatWithTree.editProcess') }}
                     </span>
                 </v-card-title>
                 
                 <v-card-text class="pa-4">
                     <v-text-field
                         v-model="processForm.name"
-                        label="프로세스 이름"
+                        :label="$t('ProcessDefinitionChatWithTree.processName')"
                         variant="outlined"
                         density="comfortable"
                         autofocus
@@ -166,14 +214,14 @@
                         variant="flat"
                         @click="saveProcessDialog"
                     >
-                        {{ processDialogMode === 'add' ? '추가' : '수정' }}
+                        {{ processDialogMode === 'add' ? $t('ProcessDefinitionChatWithTree.add') : $t('ProcessDefinitionChatWithTree.edit') }}
                     </v-btn>
                     <v-btn
                         color="error"
                         variant="flat"
                         @click="closeProcessDialog"
                     >
-                        취소
+                        {{ $t('ProcessDefinitionChatWithTree.cancel') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -234,6 +282,8 @@ export default {
         },
         // 트리 상태 관리
         openedNodes: [],
+        // 트리뷰 표시 상태
+        isTreeViewVisible: true,
     }),
     async created() {
         // 저장된 트리 상태 불러오기
@@ -249,16 +299,10 @@ export default {
         await this.loadProcessDefinitionMap();
     },
     mounted() {
-        this.$nextTick(() => {
-            this.attachNodeClickListeners();
-            this.attachNodeActionButtons();
-        });
+        // DOM 조작 제거 - slot으로 대체됨
     },
     updated() {
-        this.$nextTick(() => {
-            this.attachNodeClickListeners();
-            this.attachNodeActionButtons();
-        });
+        // DOM 조작 제거 - slot으로 대체됨
     },
     watch: {
         // 라우트 변경 감지 - 프로세스 정의 체계도 새로고침
@@ -271,20 +315,66 @@ export default {
                 }
             }
         },
-        // nodes 객체 변경 감지 - 트리뷰가 렌더링되면 리스너 추가
+        // nodes 객체 변경 감지
         nodes: {
             deep: true,
             handler() {
-                this.$nextTick(() => {
-                    this.$nextTick(() => {
-                        this.attachNodeClickListeners();
-                        this.attachNodeActionButtons();
-                    });
-                });
+                // DOM 조작 제거 - slot으로 대체됨
             }
         }
     },
     methods: {
+        /**
+         * 노드별 액션 버튼 목록 반환
+         */
+        getNodeActionButtons(node) {
+            const buttons = [];
+            const nodeType = node.data?.type;
+
+            // Mega, Major는 추가 버튼
+            if (nodeType === 'mega' || nodeType === 'major') {
+                buttons.push({
+                    icon: 'plus',
+                    tooltip: nodeType === 'mega' ? this.$t('ProcessDefinitionChatWithTree.addMajorProcess') : this.$t('ProcessDefinitionChatWithTree.addSubProcess'),
+                    action: this.handleNodeAddAction,
+                    iconColor: '',
+                    size: 10
+                });
+            }
+            // 삭제 버튼
+            buttons.push({
+                icon: 'trash',
+                tooltip: this.$t('ProcessDefinitionChatWithTree.delete'),
+                action: this.handleNodeDeleteAction,
+                iconColor: '#FB977D',
+                size: 12
+            });
+
+            // 수정 버튼
+            buttons.push({
+                icon: 'pencil',
+                tooltip: this.$t('ProcessDefinitionChatWithTree.editProcessName'),
+                action: this.handleNodeEditAction,
+                iconColor: '',
+                size: 10
+            });
+
+            // Sub 프로세스 열기 버튼
+            if (nodeType === 'sub') {
+                buttons.push({
+                    icon: 'open',
+                    tooltip: this.$t('ProcessDefinitionChatWithTree.openProcess'),
+                    action: this.handleNodeClick,
+                    iconColor: '',
+                    size: 12
+                });
+            }
+
+
+
+            return buttons;
+        },
+
         /**
          * 노드가 열렸을 때 처리
          */
@@ -444,139 +534,6 @@ export default {
 
             this.processElementList = elementList;
             console.log('🔍 요소 목록 업데이트됨:', elementList.length, '개');
-        },
-
-        /**
-         * 트리 노드에 클릭 이벤트 리스너 추가
-         */
-        attachNodeClickListeners() {
-            const nodeWrappers = document.querySelectorAll('.process-tree .node-wrapper');
-            
-            nodeWrappers.forEach(nodeWrapper => {
-                // 이미 리스너가 추가되었는지 확인
-                if (nodeWrapper.dataset.listenerAttached) {
-                    return;
-                }
-                
-                nodeWrapper.addEventListener('click', (event) => {
-                    // 아이콘 클릭은 접기/펼치기이므로 제외
-                    if (event.target.closest('.icon-wrapper')) {
-                        return;
-                    }
-                    
-                    // 액션 버튼 클릭은 제외
-                    if (event.target.closest('.node-action-buttons')) {
-                        return;
-                    }
-                    
-                    // nodeWrapper에서 텍스트 추출
-                    const inputWrapper = nodeWrapper.querySelector('.input-wrapper');
-                    if (inputWrapper) {
-                        const nodeText = inputWrapper.textContent?.trim();
-                        
-                        // nodes 객체에서 텍스트로 노드 찾기
-                        let foundNode = null;
-                        for (const key in this.nodes) {
-                            if (this.nodes[key].text === nodeText) {
-                                foundNode = this.nodes[key];
-                                break;
-                            }
-                        }
-                        
-                        if (foundNode) {
-                            // sub 노드만 처리
-                            if (foundNode.data?.type !== 'sub') {
-                                return;
-                            }
-                            
-                            this.handleNodeClick(foundNode);
-                        }
-                    }
-                });
-                
-                // 리스너 추가 표시
-                nodeWrapper.dataset.listenerAttached = 'true';
-            });
-        },
-
-        /**
-         * 트리 노드에 추가/삭제 버튼 추가
-         */
-        attachNodeActionButtons() {
-            const nodeWrappers = document.querySelectorAll('.process-tree .node-wrapper');
-            
-            nodeWrappers.forEach(nodeWrapper => {
-                // 이미 버튼이 추가되었는지 확인
-                if (nodeWrapper.dataset.actionButtonsAttached) {
-                    return;
-                }
-                
-                const inputWrapper = nodeWrapper.querySelector('.input-wrapper');
-                if (!inputWrapper) {
-                    return;
-                }
-                
-                // 노드 텍스트로 노드 찾기
-                const nodeText = inputWrapper.textContent?.trim();
-                let foundNode = null;
-                for (const key in this.nodes) {
-                    if (this.nodes[key].text === nodeText) {
-                        foundNode = this.nodes[key];
-                        break;
-                    }
-                }
-                
-                if (!foundNode) {
-                    return;
-                }
-                
-                const nodeType = foundNode.data?.type;
-                
-                // 버튼 컨테이너 생성
-                const buttonContainer = document.createElement('div');
-                buttonContainer.className = 'node-action-buttons';
-                
-                // mega와 major는 추가 버튼 표시
-                if (nodeType === 'mega' || nodeType === 'major') {
-                    const addButton = document.createElement('button');
-                    addButton.innerHTML = '+';
-                    addButton.className = 'node-action-btn add-btn';
-                    addButton.title = nodeType === 'mega' ? 'Major 프로세스 추가' : 'Sub 프로세스 추가';
-                    addButton.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.handleNodeAddAction(foundNode);
-                    });
-                    buttonContainer.appendChild(addButton);
-                }
-                
-                // 모든 타입에 수정 버튼 표시
-                const editButton = document.createElement('button');
-                editButton.innerHTML = '✎';
-                editButton.className = 'node-action-btn edit-btn';
-                editButton.title = '수정';
-                editButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.handleNodeEditAction(foundNode);
-                });
-                buttonContainer.appendChild(editButton);
-                
-                // 모든 타입에 삭제 버튼 표시
-                const deleteButton = document.createElement('button');
-                deleteButton.innerHTML = '✕';
-                deleteButton.className = 'node-action-btn delete-btn';
-                deleteButton.title = '삭제';
-                deleteButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.handleNodeDeleteAction(foundNode);
-                });
-                buttonContainer.appendChild(deleteButton);
-                
-                // 노드에 버튼 추가
-                nodeWrapper.appendChild(buttonContainer);
-                
-                // 버튼 추가 표시
-                nodeWrapper.dataset.actionButtonsAttached = 'true';
-            });
         },
 
         /**
@@ -1583,18 +1540,20 @@ export default {
     background: #a0a0a0;
 }
 
+/* 노드 래퍼를 flex로 설정하여 버튼 우측 정렬 */
+.process-tree :deep(.node-wrapper) {
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+}
+
 /* 노드 액션 버튼 컨테이너 */
 .process-tree :deep(.node-action-buttons) {
-    display: flex;
+    display: inline-flex;
     gap: 4px;
     margin-left: auto;
     opacity: 0;
     transition: opacity 0.2s ease;
-}
-
-.process-tree :deep(.node-wrapper) {
-    display: flex;
-    align-items: center;
 }
 
 .process-tree :deep(.node-wrapper:hover .node-action-buttons) {
@@ -1619,41 +1578,69 @@ export default {
     transition: all 0.2s ease;
 }
 
-.process-tree :deep(.node-action-btn:hover) {
-    transform: scale(1.1);
+:deep(.input-wrapper) {
+    margin-left: 4px !important;
 }
 
-/* 추가 버튼 */
-.process-tree :deep(.add-btn) {
-    border-color: #4caf50;
-    color: #4caf50;
+/* 트리 계층 구조 라인 스타일 */
+/* tree-level1, tree-level2 등 자식 ul에 적용 */
+.process-tree :deep(ul[class*="tree-level"]) {
+    position: relative;
+    padding-left: 16px;
+    overflow: visible;
 }
 
-.process-tree :deep(.add-btn:hover) {
-    background-color: #4caf50;
-    color: #fff;
+/* 자식 노드 그룹에 수직 라인 추가 */
+.process-tree :deep(ul[class*="tree-level"]::before) {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: -8px;
+    bottom: 0;
+    width: 1px;
+    background-color: #cbd5e0;
 }
 
-/* 수정 버튼 */
-.process-tree :deep(.edit-btn) {
-    border-color: #2196f3;
-    color: #2196f3;
+/* 각 자식 노드에 수평 연결 라인 추가 */
+.process-tree :deep(ul[class*="tree-level"] > li.tree-node) {
+    position: relative;
 }
 
-.process-tree :deep(.edit-btn:hover) {
-    background-color: #2196f3;
-    color: #fff;
+.process-tree :deep(ul[class*="tree-level"] > li.tree-node::before) {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 10px;
+    width: 20px;
+    height: 1px;
+    background-color: #cbd5e0;
 }
 
-/* 삭제 버튼 */
-.process-tree :deep(.delete-btn) {
-    border-color: #f44336;
-    color: #f44336;
+/* 마지막 자식 노드의 수직 라인 조정 */
+.process-tree :deep(ul[class*="tree-level"] > li.tree-node:last-child::after) {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 10px;
+    bottom: 0;
+    width: 1px;
+    background-color: #fff;
+    z-index: 1;
 }
 
-.process-tree :deep(.delete-btn:hover) {
-    background-color: #f44336;
-    color: #fff;
+/* 노드 wrapper에 배경색 추가 (라인이 뒤로 가도록) */
+.process-tree :deep(.node-wrapper) {
+    position: relative;
+    z-index: 2;
+    background-color: #fff;
+}
+
+/* icon-wrapper 영역을 좁게 조정 */
+.process-tree :deep(.icon-wrapper) {
+    position: relative;
+    z-index: 1;
+    width: 12px !important;
+    min-width: 12px !important;
 }
 </style>
 
