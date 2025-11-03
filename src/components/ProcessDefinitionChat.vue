@@ -346,7 +346,7 @@ export default {
     async created() {
         $try(async () => {
             // Issue: init Methods가 종료되기전에, ChatGenerator를 생성하면서 this로 넘겨주는 Client 정보가 누락되는 현상 발생.
-            if(this.chatMode == 'consulting' || this.chatMode == 'tree'){
+            if(this.chatMode == 'consulting' || (this.chatMode == 'tree' && this.selectedProcessDefinitionId == null)){
                 this.isConsultingMode = true
                 this.isEditable = true;
             } 
