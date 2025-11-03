@@ -1042,7 +1042,7 @@ export default {
 
                 // 메시지 생성
                 const message = {
-                    text: excelContent + '\n\n위 내용을 보고 프로세스를 생성해줘',
+                    text: excelContent,
                     images: [],
                     mentionedUsers: []
                 };
@@ -1188,35 +1188,88 @@ export default {
                     XLSX.utils.book_append_sheet(workbook, dataSheet, '2.프로세스변수');
                 }
 
-                // 3. Roles(역할/Lane) 시트
+                // 3. Roles(역할/Lane) 시트 - 실제 사용된 role만 추출
                 if (processDefinition.roles && processDefinition.roles.length > 0) {
-                    const rolesData = [
-                        ['역할 이름', 'Endpoint', '담당 업무', 'X좌표', 'Y좌표', '너비', '높이']
-                    ];
+                    // 사용된 role 목록 수집
+                    const usedRoles = new Set();
                     
-                    processDefinition.roles.forEach(role => {
-                        rolesData.push([
-                            role.name || '',
-                            role.endpoint || '',
-                            role.resolutionRule || '',
-                            role.boundary?.minX || '',
-                            role.boundary?.minY || '',
-                            role.boundary?.width || '',
-                            role.boundary?.height || ''
-                        ]);
-                    });
+                    // Elements 구조인 경우
+                    if (processDefinition.elements && Array.isArray(processDefinition.elements)) {
+                        processDefinition.elements.forEach(element => {
+                            if (element.role) {
+                                usedRoles.add(element.role);
+                            }
+                        });
+                    } else {
+                        // 분리된 구조인 경우
+                        // Activities에서 role 수집
+                        if (processDefinition.activities && Array.isArray(processDefinition.activities)) {
+                            processDefinition.activities.forEach(activity => {
+                                if (activity.role) {
+                                    usedRoles.add(activity.role);
+                                }
+                            });
+                        }
+                        
+                        // Events에서 role 수집
+                        if (processDefinition.events && Array.isArray(processDefinition.events)) {
+                            processDefinition.events.forEach(event => {
+                                if (event.role) {
+                                    usedRoles.add(event.role);
+                                }
+                            });
+                        }
+                        
+                        // Gateways에서 role 수집
+                        if (processDefinition.gateways && Array.isArray(processDefinition.gateways)) {
+                            processDefinition.gateways.forEach(gateway => {
+                                if (gateway.role) {
+                                    usedRoles.add(gateway.role);
+                                }
+                            });
+                        }
+                    }
+                    
+                    // 실제 사용된 role만 필터링
+                    const filteredRoles = processDefinition.roles.filter(role => 
+                        usedRoles.has(role.name)
+                    );
+                    
+                    console.log('📊 전체 Role 수:', processDefinition.roles.length);
+                    console.log('✅ 사용된 Role 수:', filteredRoles.length);
+                    console.log('🔍 사용된 Role 목록:', Array.from(usedRoles));
+                    
+                    if (filteredRoles.length > 0) {
+                        const rolesData = [
+                            ['역할 이름', 'Endpoint', '담당 업무', 'X좌표', 'Y좌표', '너비', '높이']
+                        ];
+                        
+                        filteredRoles.forEach(role => {
+                            rolesData.push([
+                                role.name || '',
+                                role.endpoint || '',
+                                role.resolutionRule || '',
+                                role.boundary?.minX || '',
+                                role.boundary?.minY || '',
+                                role.boundary?.width || '',
+                                role.boundary?.height || ''
+                            ]);
+                        });
 
-                    const rolesSheet = XLSX.utils.aoa_to_sheet(rolesData);
-                    rolesSheet['!cols'] = [
-                        { wch: 20 },  // 역할 이름
-                        { wch: 25 },  // Endpoint
-                        { wch: 40 },  // 담당 업무
-                        { wch: 10 },  // X좌표
-                        { wch: 10 },  // Y좌표
-                        { wch: 10 },  // 너비
-                        { wch: 10 }   // 높이
-                    ];
-                    XLSX.utils.book_append_sheet(workbook, rolesSheet, '3.역할(Lane)');
+                        const rolesSheet = XLSX.utils.aoa_to_sheet(rolesData);
+                        rolesSheet['!cols'] = [
+                            { wch: 20 },  // 역할 이름
+                            { wch: 25 },  // Endpoint
+                            { wch: 40 },  // 담당 업무
+                            { wch: 10 },  // X좌표
+                            { wch: 10 },  // Y좌표
+                            { wch: 10 },  // 너비
+                            { wch: 10 }   // 높이
+                        ];
+                        XLSX.utils.book_append_sheet(workbook, rolesSheet, '3.역할(Lane)');
+                    } else {
+                        console.log('⚠️ 사용된 Role이 없습니다. Role 시트를 생성하지 않습니다.');
+                    }
                 }
 
                 // 4. 액티비티 시트 (구조에 따라 분기)
