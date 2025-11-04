@@ -1734,7 +1734,10 @@
         "feedbackDescription": "프로세스 실행이 정상인가요?"
     },
     "ActivityInputData": {
-        "previousInput": "이전 입력값"
+        "previousInput": "이전 작업 입력 내역",
+        "previousInputDescription": "이전 작업에 입력한 내용입니다. 참고하여 현재 작업을 진행하세요.",
+        "previousInputDetailTitle": "이전 작업 입력 내역이란?",
+        "previousInputDetail": "BPM 프로세스에서 이전 단계의 작업자가 입력한 폼 데이터를 보여줍니다.\n\n이 정보를 참고하여 현재 작업을 수행하면 프로세스 흐름을 더 명확하게 파악할 수 있습니다.\n\n예시: 결재 요청 → 검토 → 승인 프로세스에서 '검토' 단계라면,\n'결재 요청' 단계에서 입력한 내용이 표시됩니다."
     },
     "MCPServer": {
         "searchMCPServers": "MCP 서버 검색"
