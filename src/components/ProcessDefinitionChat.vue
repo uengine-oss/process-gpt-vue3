@@ -4,7 +4,7 @@
         style="background-color: rgba(255, 255, 255, 0)"
         :class="{ 'is-deleted': isDeleted, 'user-left-part': !isAdmin }"
     >
-        <v-card v-if="isConsultingMode">
+        <v-card v-if="isConsultingMode && chatMode != 'tree'">
             <div :key="chatRenderKey">
                 <div style="display: none;">
                     <process-definition
@@ -346,7 +346,7 @@ export default {
     async created() {
         $try(async () => {
             // Issue: init Methods가 종료되기전에, ChatGenerator를 생성하면서 this로 넘겨주는 Client 정보가 누락되는 현상 발생.
-            if(this.chatMode == 'consulting'){
+            if(this.chatMode == 'consulting' || (this.chatMode == 'tree' && this.selectedProcessDefinitionId == null)){
                 this.isConsultingMode = true
                 this.isEditable = true;
             } 
@@ -355,11 +355,19 @@ export default {
 
                 this.processDefinitionMap = await backend.getProcessDefinitionMap();
 
-                this.messages.push({
-                    "role": "system",
-                    "content": this.$t('ProcessDefinitionChat.greetingMessage', { name: this.userInfo.name }),                    
-                    "timeStamp": Date.now(),
-                })
+                if(this.chatMode == 'tree'){
+                    this.messages.push({
+                        "role": "system",
+                        "content": this.$t('ProcessDefinitionChat.greetingMessageTree', { name: this.userInfo.name }),
+                        "timeStamp": Date.now(),
+                    })
+                } else {
+                    this.messages.push({
+                        "role": "system",
+                        "content": this.$t('ProcessDefinitionChat.greetingMessage', { name: this.userInfo.name }),
+                        "timeStamp": Date.now(),
+                    })
+                }
 
                 // CrewAI 서비스 사용 여부에 따라 분기
                 if (this.useCrewAI) {
@@ -395,6 +403,7 @@ export default {
                     isStream: true,
                     preferredLanguage: 'Korean'
                 });
+                
                 if (this.$store.state.messages) {
                     const messagesString = JSON.stringify(this.$store.state.messages);
                     this.prompt = `아래 대화 내용에서 프로세스를 유추하여 프로세스 정의를 생성해주세요. 이때 가능한 프로세스를 일반화하여 작성:
