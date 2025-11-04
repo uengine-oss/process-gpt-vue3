@@ -397,7 +397,7 @@
                 
                 body.append(
                     '<div id="keditor-sidebar" class="keditor-ui">' +
-                    '   <a id="keditor-sidebar-toggler" class="keditor-ui"><i class="fa fa-chevron-right"></i></a>' +
+                    '   <a id="keditor-sidebar-toggler" class="keditor-ui"><i class="fa fa-chevron-left"></i></a>' +
                     '   <div id="keditor-snippets-list" class="keditor-ui"></div>' +
                     '   <div id="keditor-snippets-content" class="keditor-ui" style="display: none"></div>' +
                     '   <div id="keditor-setting-panel" class="keditor-ui">' +

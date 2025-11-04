@@ -222,6 +222,10 @@ export default {
             }
         },
         async loadDataSource() {
+            if (!this.localDynamicDataSource || this.localReadonly) {
+                return;
+            }
+            
             try {
                 this.dataSources = await backend.getDataSourceList();
                 const dataSource = this.dataSources.find(ds => ds.key === this.localDynamicDataSource)
