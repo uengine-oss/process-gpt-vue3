@@ -127,6 +127,10 @@ hr {
     height: 93% !important;
 }
 
+.form-definition-preview-form section {
+    margin-bottom: 8px !important;
+}
+
 .form-layout-card-contents-desktop {
     /* 여러 개의 컬럼이 있을 때 세로 구분선 적용 */
     [class*="col-"]:not(:only-child):not(:last-child) {
@@ -134,6 +138,11 @@ hr {
         padding-right: 1rem;
         margin-right: 1rem;
     }
+}
+
+.form-layout-card-contents-desktop .form-layout-card {
+    border: none !important;
+
 }
 
 .gantt_cal_ltitle {

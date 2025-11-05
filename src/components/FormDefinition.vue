@@ -23,7 +23,7 @@
                 style="height: calc(100vh - 260px);"
             >
                 <template v-if="isShowPreview">
-                    <DynamicForm ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+                    <DynamicForm class="form-definition-preview-form" ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
                     <!-- <template v-if="dev.isDevMode">
                         <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
                         <v-btn color="primary" class="full-width my-5" @click="onClickPreviewApplyButton">적용</v-btn>

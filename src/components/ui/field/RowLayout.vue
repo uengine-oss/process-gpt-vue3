@@ -16,7 +16,7 @@
         </div>
     </template>
     <template v-else>
-        <v-card class="pa-0 mb-4 form-layout-card" variant="outlined">           
+        <v-card class="pa-0 mb-0 form-layout-card" variant="outlined">           
             <v-card-title v-if="alias && alias.length" class="d-flex justify-space-between">
                 <div class="text-h5 font-weight-semibold" style="white-space: normal; word-break: break-all;">{{(alias && alias.length > 0) ? alias : name}}</div>
             </v-card-title>
