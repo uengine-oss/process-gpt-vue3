@@ -138,6 +138,16 @@
                                 {{ $t('processDefinitionTree.createMap') }}
                             </v-btn>
                             <v-btn 
+                                @click="handleOpenFlow"
+                                color="grey"
+                                variant="flat"
+                                class="rounded-pill"
+                                density="compact"
+                            >
+                                <v-icon class="mr-2">mdi-chart-timeline-variant</v-icon>
+                                Open Flow
+                            </v-btn>
+                            <v-btn 
                                 @click="handleDownloadExcel"
                                 color="grey"
                                 variant="flat"
@@ -226,12 +236,43 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
+        <!-- Vue Flow 다이얼로그 -->
+        <v-dialog v-model="flowDialog" max-width="1400" persistent>
+            <v-card>
+                <v-card-title class="pa-4 d-flex align-center">
+                    <v-icon class="mr-2">mdi-chart-timeline-variant</v-icon>
+                    <span>
+                        프로세스 플로우
+                        <span v-if="currentProcessDefinitionForFlow?.processDefinitionName" class="text-grey ml-2">
+                            - {{ currentProcessDefinitionForFlow.processDefinitionName }}
+                        </span>
+                    </span>
+                    <v-spacer></v-spacer>
+                    <v-btn 
+                        icon 
+                        variant="text" 
+                        @click="handleCloseFlow"
+                        size="small"
+                    >
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                
+                <v-card-text class="pa-0" style="height: 80vh;">
+                    <ProcessFlowExample 
+                        :process-definition="currentProcessDefinitionForFlow"
+                    />
+                </v-card-text>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
 <script>
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import ProcessDialog from '@/components/apps/definition-map/ProcessDialog.vue';
+import ProcessFlowExample from '@/components/ProcessFlowExample.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import VTreeview from 'vue3-treeview';
 import 'vue3-treeview/dist/style.css';
@@ -244,6 +285,7 @@ export default {
     components: {
         ProcessDefinitionChat,
         ProcessDialog,
+        ProcessFlowExample,
         VTreeview,
     },
     props: {
@@ -284,6 +326,10 @@ export default {
         openedNodes: [],
         // 트리뷰 표시 상태
         isTreeViewVisible: true,
+        // Vue Flow 다이얼로그 표시 상태
+        flowDialog: false,
+        // Vue Flow에 표시할 현재 프로세스 정의
+        currentProcessDefinitionForFlow: null,
     }),
     async created() {
         // 저장된 트리 상태 불러오기
@@ -848,6 +894,7 @@ export default {
                 
                 // selectedProcessId를 업데이트하여 ProcessDefinitionChat에 전달
                 this.selectedProcessId = processId;
+                this.searchValue = '';
             }
         },
 
@@ -1078,6 +1125,33 @@ export default {
                     chatComponent.searchAndFocusActivity(value);
                 }
             }
+        },
+
+        /**
+         * Vue Flow 다이얼로그 열기
+         * 현재 프로세스 정의를 가져와서 전달
+         */
+        handleOpenFlow() {
+            const chatComponent = this.$refs.processDefinitionChat;
+            if (chatComponent && chatComponent.processDefinition) {
+                // 프로세스 정의를 복사하여 저장 (참조 문제 방지)
+                this.currentProcessDefinitionForFlow = JSON.parse(JSON.stringify(chatComponent.processDefinition));
+                this.flowDialog = true;
+            } else {
+                console.warn('⚠️ 표시할 프로세스 정의가 없습니다.');
+                alert('표시할 프로세스 정의가 없습니다. 먼저 프로세스를 선택해주세요.');
+            }
+        },
+
+        /**
+         * Vue Flow 다이얼로그 닫기
+         */
+        handleCloseFlow() {
+            this.flowDialog = false;
+            // 다음에 열 때 최신 데이터를 가져오기 위해 초기화
+            this.$nextTick(() => {
+                this.currentProcessDefinitionForFlow = null;
+            });
         },
 
         /**
