@@ -113,8 +113,8 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
           target: targetId,
           sourceHandle: 'bottom',
           targetHandle: 'top',
-          type: 'step',
-          label: seq.name || '',
+          type: 'default', // 곡선
+          label: '55s', // 선 중간에 표시
           style: { stroke: '#333', strokeWidth: 2 },
         })
       }
