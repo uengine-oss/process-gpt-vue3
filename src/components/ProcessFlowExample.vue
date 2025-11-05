@@ -4,7 +4,7 @@ import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
-import { initialEdges, initialNodes } from './initial-elements.js'
+// import { initialEdges, initialNodes } from './initial-elements.js'
 import { convertProcessDefinitionToVueFlow } from './processDefinitionToVueFlow.js'
 import ProcessNode from './ProcessNode.vue'
 import EventNode from './EventNode.vue'
@@ -24,10 +24,10 @@ const flowData = computed(() => {
     if (props.processDefinition) {
       return convertProcessDefinitionToVueFlow(props.processDefinition)
     }
-    return { nodes: initialNodes, edges: initialEdges }
+    // return { nodes: initialNodes, edges: initialEdges }
   } catch (error) {
     console.error('❌ flowData 계산 오류:', error)
-    return { nodes: initialNodes, edges: initialEdges }
+    // return { nodes: initialNodes, edges: initialEdges }
   }
 })
 

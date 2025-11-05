@@ -11,7 +11,7 @@
                         </v-card-title>
                         <v-spacer></v-spacer>
                         
-                        <div class="d-flex ga-2">
+                        <!-- <div class="d-flex ga-2">
                             <v-btn @click="selectedProcessId = null"
                                 color="primary"
                                 variant="flat" 
@@ -19,7 +19,7 @@
                                 density="compact"
                             >{{ $t('ProcessDefinitionChatWithTree.newProcess') }}
                             </v-btn>
-                        </div>
+                        </div> -->
                     </v-row>
 
                     <div class="process-definition-chat-tree-box-inner mt-2">
@@ -36,7 +36,15 @@
                             class="process-tree"
                             @nodeOpened="handleNodeOpened"
                             @nodeClosed="handleNodeClosed"
+                            @nodeClicked="handleNodeClick"
                         >
+                            <template #before-input="{ node }">
+                                <span 
+                                    :class="{ 'selected-indicator': node.state?.selected }" 
+                                    class="node-indicator"
+                                ></span>
+                            </template>
+                            
                             <template #after-input="{ node }">
                                 <div class="node-action-buttons" v-if="node && node.data">
                                     <v-tooltip 
@@ -116,7 +124,6 @@
                         <div class="d-flex ga-2">
                             <v-btn
                                 @click="openFileDialog"
-                                :loading="isParsingExcel"
                                 color="grey"
                                 variant="flat"
                                 class="rounded-pill"
@@ -127,7 +134,8 @@
                             </v-btn>
                             <v-btn 
                                 @click="handleCreateMap"
-                                :disabled="!parsedExcelData"
+                                :disabled="!selectedFile"
+                                :loading="isParsingExcel"
                                 color="grey"
                                 variant="flat"
                                 class="rounded-pill"
@@ -172,6 +180,7 @@
                     ref="processDefinitionChat"
                     :chatMode="chatMode"
                     :selectedProcessDefinitionId="selectedProcessId"
+                    :treeProcessLocation="treeProcessLocation"
                     :key="selectedProcessId || 'default'"
                 />
             </v-col>
@@ -275,6 +284,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import VTreeview from 'vue3-treeview';
 import 'vue3-treeview/dist/style.css';
 import * as XLSX from 'xlsx';
+import { useCustomizerStore } from '@/stores/customizer';
 
 const backend = BackendFactory.createBackend();
 
@@ -306,6 +316,7 @@ export default {
         searchInputText: '',
         processElementList: [],
         // 엑셀 파일 업로드 관련
+        selectedFile: null,
         uploadedFileName: null,
         isParsingExcel: false,
         parsedExcelData: null,
@@ -328,6 +339,8 @@ export default {
         flowDialog: false,
         // Vue Flow에 표시할 현재 프로세스 정의
         currentProcessDefinitionForFlow: null,
+        // 트리에서 생성된 프로세스의 위치 정보 (AI 생성 시 사용)
+        treeProcessLocation: null,
     }),
     async created() {
         // 저장된 트리 상태 불러오기
@@ -342,8 +355,57 @@ export default {
         
         await this.loadProcessDefinitionMap();
     },
-    mounted() {
+    async mounted() {
         // DOM 조작 제거 - slot으로 대체됨
+        // 사이드바가 열려있으면 닫기
+        const customizer = useCustomizerStore();
+        if (customizer.Sidebar_drawer) {
+            customizer.SET_SIDEBAR_DRAWER();
+        }
+
+        const processMap = await backend.getProcessDefinitionMap();
+        let firstSubProcessId = null;
+        let firstSubProcessLocation = null;
+
+        // mega_proc_list를 순회하며 첫 번째 서브프로세스 찾기
+        if (processMap && processMap.mega_proc_list) {
+            for (const megaProc of processMap.mega_proc_list) {
+                if (megaProc.major_proc_list && megaProc.major_proc_list.length > 0) {
+                    for (const majorProc of megaProc.major_proc_list) {
+                        if (majorProc.sub_proc_list && majorProc.sub_proc_list.length > 0) {
+                            const firstSubProc = majorProc.sub_proc_list[0];
+                            firstSubProcessId = firstSubProc.id;
+                            
+                            // 첫 번째 프로세스의 위치 정보 저장
+                            firstSubProcessLocation = {
+                                megaProcessId: megaProc.id,
+                                majorProcessId: majorProc.id,
+                                processDefinitionId: firstSubProc.id,
+                                megaProcessName: megaProc.name,
+                                majorProcessName: majorProc.name,
+                                processDefinitionName: firstSubProc.name
+                            };
+                            break;
+                        }
+                    }
+                }
+                if (firstSubProcessId) break;
+            }
+        }
+
+        this.selectedProcessId = firstSubProcessId;
+        this.selectedNodeId = firstSubProcessId ? `sub_${firstSubProcessId}` : null;
+        this.treeProcessLocation = firstSubProcessLocation;
+        
+        // 트리가 로드된 후 선택 상태 업데이트 및 클릭 이벤트 추가
+        this.$nextTick(() => {
+            if (this.selectedNodeId && this.nodes[this.selectedNodeId]) {
+                this.nodes[this.selectedNodeId].state.selected = true;
+            }
+            
+            // 트리 노드 클릭 이벤트 추가
+            this.attachNodeClickEvents();
+        });
     },
     updated() {
         // DOM 조작 제거 - slot으로 대체됨
@@ -364,6 +426,19 @@ export default {
             deep: true,
             handler() {
                 // DOM 조작 제거 - slot으로 대체됨
+            }
+        },
+        // 선택된 노드 ID 변경 감지
+        selectedNodeId: {
+            handler(newId, oldId) {
+                // 이전 선택 노드의 selected 상태 제거
+                if (oldId && this.nodes[oldId]) {
+                    this.nodes[oldId].state.selected = false;
+                }
+                // 새 선택 노드의 selected 상태 설정
+                if (newId && this.nodes[newId]) {
+                    this.nodes[newId].state.selected = true;
+                }
             }
         }
     },
@@ -404,15 +479,15 @@ export default {
             });
 
             // Sub 프로세스 열기 버튼
-            if (nodeType === 'sub') {
-                buttons.push({
-                    icon: 'open',
-                    tooltip: this.$t('ProcessDefinitionChatWithTree.openProcess'),
-                    action: this.handleNodeClick,
-                    iconColor: '',
-                    size: 12
-                });
-            }
+            // if (nodeType === 'sub') {
+            //     buttons.push({
+            //         icon: 'open',
+            //         tooltip: this.$t('ProcessDefinitionChatWithTree.openProcess'),
+            //         action: this.handleNodeClick,
+            //         iconColor: '',
+            //         size: 12
+            //     });
+            // }
 
 
 
@@ -628,11 +703,22 @@ export default {
                     const mega = this.processDefinitionMap.mega_proc_list.find(m => m.id === parentId);
                     if (mega) {
                         if (!mega.major_proc_list) mega.major_proc_list = [];
+                        const majorId = newProcess.id || this.generateUniqueId();
                         mega.major_proc_list.push({
-                            id: newProcess.id || this.generateUniqueId(),
+                            id: majorId,
                             name: newProcess.name,
                             sub_proc_list: []
                         });
+                        
+                        // 새로 생성한 Major 프로세스 위치 정보 저장
+                        if (!newProcess.path && !newProcess.label) {
+                            this.treeProcessLocation = {
+                                megaProcessId: mega.id,
+                                majorProcessId: majorId,
+                                megaProcessName: mega.name,
+                                majorProcessName: newProcess.name
+                            };
+                        }
                     }
                 } else if (parentType === 'major') {
                     // Major에 Sub 추가 (기존 정의 또는 신규)
@@ -643,8 +729,9 @@ export default {
                             
                             // ProcessDialog에서 반환된 newProcess 구조 확인
                             // id와 name만 있으면 기존 정의, 그 외 필드가 있으면 신규
+                            const subProcessId = newProcess.id || this.generateUniqueId();
                             const subProcess = {
-                                id: newProcess.id || this.generateUniqueId(),
+                                id: subProcessId,
                                 name: newProcess.name || newProcess.label || newProcess.id
                             };
                             
@@ -654,6 +741,20 @@ export default {
                             } else {
                                 // 새로 생성한 경우
                                 subProcess.new = true;
+                                
+                                // 트리에서 생성한 프로세스의 위치 정보 저장
+                                this.treeProcessLocation = {
+                                    megaProcessId: mega.id,
+                                    majorProcessId: major.id,
+                                    processDefinitionId: subProcessId,
+                                    megaProcessName: mega.name,
+                                    majorProcessName: major.name,
+                                    processDefinitionName: newProcess.name
+                                };
+                                
+                                // 생성된 프로세스 자동 선택
+                                this.selectedProcessId = subProcessId;
+                                this.selectedNodeId = `sub_${subProcessId}`;
                             }
                             
                             major.sub_proc_list.push(subProcess);
@@ -865,7 +966,10 @@ export default {
                                         processDefinitionId: sub.id,
                                         new: sub.new || false
                                     },
-                                    state: { opened: this.openedNodes.includes(subId) }
+                                    state: { 
+                                        opened: this.openedNodes.includes(subId),
+                                        selected: this.selectedNodeId === subId
+                                    }
                                 };
                             });
                         }
@@ -884,6 +988,8 @@ export default {
             }
 
             const nodeId = node.id;
+            
+            // 새 노드 선택 (watch에서 selected 상태 업데이트)
             this.selectedNodeId = nodeId;
 
             // sub 프로세스만 클릭 가능 (실제 프로세스 정의)
@@ -893,7 +999,47 @@ export default {
                 // selectedProcessId를 업데이트하여 ProcessDefinitionChat에 전달
                 this.selectedProcessId = processId;
                 this.searchValue = '';
+                
+                // 선택된 프로세스의 위치 정보 찾기 (mega, major 정보)
+                this.findAndSetProcessLocation(processId);
             }
+        },
+        
+        /**
+         * 선택된 프로세스의 트리 위치 정보를 찾아서 설정
+         * @param {String} processId - 프로세스 ID
+         */
+        findAndSetProcessLocation(processId) {
+            if (!this.processDefinitionMap || !this.processDefinitionMap.mega_proc_list) {
+                this.treeProcessLocation = null;
+                return;
+            }
+            
+            // 모든 mega, major를 순회하며 해당 프로세스 찾기
+            for (const mega of this.processDefinitionMap.mega_proc_list) {
+                if (mega.major_proc_list) {
+                    for (const major of mega.major_proc_list) {
+                        if (major.sub_proc_list) {
+                            const sub = major.sub_proc_list.find(s => s.id === processId);
+                            if (sub) {
+                                // 찾은 경우 위치 정보 저장
+                                this.treeProcessLocation = {
+                                    megaProcessId: mega.id,
+                                    majorProcessId: major.id,
+                                    processDefinitionId: sub.id,
+                                    megaProcessName: mega.name,
+                                    majorProcessName: major.name,
+                                    processDefinitionName: sub.name
+                                };
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 찾지 못한 경우 null로 설정
+            this.treeProcessLocation = null;
         },
 
         /**
@@ -901,6 +1047,74 @@ export default {
          */
         async refreshTree() {
             await this.loadProcessDefinitionMap();
+            
+            // 트리 다시 로드 후 클릭 이벤트 재부착
+            this.$nextTick(() => {
+                this.attachNodeClickEvents();
+            });
+        },
+        
+        /**
+         * 트리 노드에 클릭 이벤트 추가
+         */
+        attachNodeClickEvents() {
+            console.log('🔧 트리 노드 클릭 이벤트 추가 시작');
+            
+            // 약간의 지연을 두고 DOM이 완전히 렌더링될 때까지 대기
+            setTimeout(() => {
+                // 모든 트리 노드 찾기
+                const treeNodes = document.querySelectorAll('.process-tree .tree-node');
+                console.log('📋 찾은 트리 노드 수:', treeNodes.length);
+                
+                treeNodes.forEach((treeNode) => {
+                    const nodeWrapper = treeNode.querySelector('.node-wrapper');
+                    if (!nodeWrapper) return;
+                    
+                    // 기존 리스너 제거 방지
+                    if (nodeWrapper.hasAttribute('data-click-attached')) return;
+                    
+                    nodeWrapper.setAttribute('data-click-attached', 'true');
+                    
+                    // 노드 ID 미리 확인
+                    let nodeId = treeNode.id || 
+                                treeNode.getAttribute('id') || 
+                                treeNode.getAttribute('data-id') ||
+                                treeNode.dataset.id;
+                    
+                    if (!nodeId) {
+                        const inputWrapper = nodeWrapper.querySelector('.input-wrapper');
+                        const nodeText = inputWrapper ? inputWrapper.textContent.trim() : '';
+                        for (const [id, node] of Object.entries(this.nodes)) {
+                            if (node.text === nodeText) {
+                                nodeId = id;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 서브 프로세스만 cursor pointer 적용
+                    if (nodeId && nodeId.startsWith('sub_')) {
+                        nodeWrapper.style.cursor = 'pointer';
+                    } else {
+                        nodeWrapper.style.cursor = 'default';
+                    }
+                    
+                    // 클릭 이벤트 추가
+                    nodeWrapper.addEventListener('click', (e) => {
+                        // 버튼 클릭은 제외
+                        if (e.target.closest('.node-action-btn') || e.target.closest('.node-action-buttons')) {
+                            return;
+                        }
+                        
+                        console.log('🖱️ 노드 클릭됨:', nodeId);
+                        
+                        // 서브 프로세스만 클릭 가능
+                        if (nodeId && this.nodes[nodeId] && nodeId.startsWith('sub_')) {
+                            this.handleNodeClick(this.nodes[nodeId]);
+                        }
+                    });
+                });
+            }, 500);
         },
 
         /**
@@ -917,7 +1131,10 @@ export default {
             const file = event.target.files?.[0];
             if (!file) return;
 
-            await this.processExcelFile(file);
+            // 파일만 저장하고 파싱은 하지 않음
+            this.selectedFile = file;
+            this.uploadedFileName = file.name;
+            console.log('📄 파일 선택됨:', file.name);
             
             // 파일 입력 초기화 (같은 파일을 다시 선택할 수 있도록)
             event.target.value = '';
@@ -1027,12 +1244,21 @@ export default {
          * 맵 생성 버튼 클릭 핸들러
          */
         async handleCreateMap() {
-            if (!this.parsedExcelData) {
-                console.error('파싱된 엑셀 데이터가 없습니다.');
+            if (!this.selectedFile) {
+                console.error('선택된 파일이 없습니다.');
                 return;
             }
 
             try {
+                // 먼저 파일 파싱
+                console.log('📄 엑셀 파일 파싱 시작');
+                await this.processExcelFile(this.selectedFile);
+                
+                if (!this.parsedExcelData) {
+                    console.error('파일 파싱에 실패했습니다.');
+                    return;
+                }
+                
                 console.log('🚀 프로세스 맵 생성 시작');
                 
                 // 파싱된 엑셀 데이터를 문자열로 변환
@@ -1624,6 +1850,41 @@ export default {
 /* 프로세스 트리 스타일 */
 .process-tree {
     user-select: none;
+}
+
+/* node-wrapper는 JavaScript에서 동적으로 cursor 설정 */
+
+/* 선택 표시기 */
+.node-indicator {
+    width: 3px;
+    height: 20px;
+    margin-right: 8px;
+    background-color: transparent;
+    border-radius: 2px;
+    transition: background-color 0.2s ease;
+}
+
+.node-indicator.selected-indicator {
+    background-color: #1976d2;
+}
+
+/* 선택된 노드의 input-wrapper 스타일 */
+.process-tree :deep(.selected-indicator ~ .input-wrapper) {
+    font-weight: 600 !important;
+    color: #1976d2 !important;
+    background-color: rgba(25, 118, 210, 0.08) !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    margin-left: 0 !important;
+}
+
+/* checkbox가 있을 경우 */
+.process-tree :deep(.selected-indicator ~ .checkbox-wrapper ~ .input-wrapper) {
+    font-weight: 600 !important;
+    color: #1976d2 !important;
+    background-color: rgba(25, 118, 210, 0.08) !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
 }
 
 /* 트리 노드 텍스트 스타일 */

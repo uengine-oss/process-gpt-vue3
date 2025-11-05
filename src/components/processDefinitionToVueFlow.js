@@ -33,7 +33,7 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
         data: {
           header: activity.role || '역할',
           content: activity.name || `Activity ${index + 1}`,
-          footer: activity.type || 'Activity',
+          footer: activity.system || 'system',
         },
         style: { width: 150, height: 80 },
       })
@@ -114,8 +114,14 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
           sourceHandle: 'bottom',
           targetHandle: 'top',
           type: 'default', // 곡선
-          label: '55s', // 선 중간에 표시
+          label: seq.requiredTime || '55s', // 선 중간에 표시
           style: { stroke: '#333', strokeWidth: 2 },
+          markerEnd: {
+            type: 'arrowclosed',
+            width: 11,
+            height: 11,
+            color: '#333',
+          },
         })
       }
     })

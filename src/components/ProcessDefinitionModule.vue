@@ -546,8 +546,13 @@ export default {
                             if (newProcessDefinition.activities) {
                                 // 기존 processDefinition에서 activities 찾기 (activities 또는 elements에서)
                                 let oldActivities = [];
-                                if (me.processDefinition.elements) {
+                                let oldSequences = [];
+                                if (me.processDefinition.activities) {
+                                    oldActivities = me.processDefinition.activities;
+                                    oldSequences = me.processDefinition.sequences;
+                                } else if (me.processDefinition.elements) {
                                     oldActivities = me.processDefinition.elements.filter(el => el.elementType === 'Activity');
+                                    oldSequences = me.processDefinition.elements.filter(el => el.elementType === 'Sequence');
                                 }
                                 
                                 // tool 정보 복원
@@ -557,7 +562,23 @@ export default {
                                         if (oldActivity && oldActivity.tool) {
                                             newActivity.tool = oldActivity.tool;
                                         }
+                                        if(oldActivity && oldActivity.system) {
+                                            newActivity.system = oldActivity.system;
+                                        }
                                         return newActivity;
+                                    });
+                                }
+
+                                if(oldSequences.length > 0) {
+                                    newProcessDefinition.sequences = newProcessDefinition.sequences.map(newSequence => {
+                                        let oldSequence = oldSequences.find(oldSequence => oldSequence.id === newSequence.id);
+                                        if(!oldSequence) {
+                                            oldSequence = oldSequences.find(oldSequence => oldSequence.source === newSequence.source && oldSequence.target === newSequence.target);
+                                        }
+                                        if(oldSequence && oldSequence.requiredTime) {
+                                            newSequence.requiredTime = oldSequence.requiredTime;
+                                        }
+                                        return newSequence;
                                     });
                                 }
                             }

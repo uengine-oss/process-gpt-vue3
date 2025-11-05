@@ -301,7 +301,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                 "source": "이전_컴포넌트_id",
                 "type": "StartEvent" | "EndEvent" | "IntermediateCatchEvent",
                 "description": "이벤트 설명(한글)",
-                "trigger": "트리거 조건"
+                "trigger": "트리거 조건",
+                "system": "사용된 시스템 이름, 제공된 정보 중 시스템 정보가 있는 경우 반드시 포함. 없다면 null"
               }
               // 타입별 예시:
               # Event
@@ -324,6 +325,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                     "name": "시퀀스명(한글)",
                     "source": "시작_컴포넌트_id",
                     "target": "도착_컴포넌트_id",
+                    "requiredTime": "55s", // 소요 시간, 제공된 정보 중 액티비티 별 소요 시간 정보가 있는 경우 각 시퀀스의 source 액티비티의 소요시간을 포함. 없다면 null.
                     "condition": ${window.$mode !== 'ProcessGPT' ? `{
                       "key": "데이터변수명",
                       "condition": "==", // ==, !=, >, <, >=, <= 중 하나
@@ -343,7 +345,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                     "inputData": ["입력 데이터명"],
                     "outputData": ["출력 데이터명"],
                     "checkpoints": ["체크포인트1", "체크포인트2"],
-                    "duration": "5"
+                    "duration": "5",
+                    "system": "사용된 시스템 이름, 제공된 정보 중 시스템 정보가 있는 경우 반드시 포함. 없다면 null"
                   }
               # Gateway
                   {
@@ -353,7 +356,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                     "role": "역할명",
                     "source": "이전_컴포넌트_id",
                     "type": "ExclusiveGateway" | "ParallelGateway" | "InclusiveGateway",
-                    "description": "게이트웨이 설명(한글)"
+                    "description": "게이트웨이 설명(한글)",
+                    "system": "사용된 시스템 이름, 제공된 정보 중 시스템 정보가 있는 경우 반드시 포함. 없다면 null"
                   }
             ],
             "subProcesses": [

@@ -239,6 +239,8 @@ import Chat from '@/components/ui/Chat.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
+import { useCustomizerStore } from '@/stores/customizer';
+
 import * as jsondiff from 'jsondiffpatch';
 var jsondiffpatch = jsondiff.create({
     objectHash: function (obj, index) {
@@ -429,6 +431,12 @@ export default {
                 this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
             }
         });
+
+        // 사이드바가 닫혀있으면 열기   
+        const customizer = useCustomizerStore();
+        if (!customizer.Sidebar_drawer) {
+            customizer.SET_SIDEBAR_DRAWER();
+        }
     },
     beforeRouteLeave(to, from, next) {
         if (this.lock && this.enableEdit) {
@@ -774,37 +782,13 @@ export default {
             this.$emit('clickPlayBtn', value)
         },
         async navigateToTreeView() {
-            // 첫 번째 서브프로세스를 찾아서 해당 경로로 이동
             try {
-                const processMap = await backend.getProcessDefinitionMap();
-                let firstSubProcessId = null;
-
-                // mega_proc_list를 순회하며 첫 번째 서브프로세스 찾기
-                if (processMap && processMap.mega_proc_list) {
-                    for (const megaProc of processMap.mega_proc_list) {
-                        if (megaProc.major_proc_list && megaProc.major_proc_list.length > 0) {
-                            for (const majorProc of megaProc.major_proc_list) {
-                                if (majorProc.sub_proc_list && majorProc.sub_proc_list.length > 0) {
-                                    firstSubProcessId = majorProc.sub_proc_list[0].id;
-                                    break;
-                                }
-                            }
-                        }
-                        if (firstSubProcessId) break;
-                    }
-                }
-
-                // 첫 번째 서브프로세스로 이동, 없으면 chat으로 이동
-                // const targetPath = firstSubProcessId 
-                //     ? `/definitions-tree/${firstSubProcessId}` 
-                //     : '/definitions-tree/chat';
                 const targetPath = `/definitions-tree`
-                
                 this.$router.push(targetPath);
             } catch (error) {
                 console.error('TreeView 이동 중 오류:', error);
                 // 오류 발생 시 기본 경로로 이동
-                this.$router.push('/definitions-tree/chat');
+                this.$router.push('/definitions-tree');
             }
         }
     },

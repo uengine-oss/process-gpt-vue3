@@ -346,10 +346,22 @@ export default {
     async created() {
         $try(async () => {
             // Issue: init Methods가 종료되기전에, ChatGenerator를 생성하면서 this로 넘겨주는 Client 정보가 누락되는 현상 발생.
-            if(this.chatMode == 'consulting' || (this.chatMode == 'tree' && this.selectedProcessDefinitionId == null)){
+            if(this.chatMode == 'consulting'){
                 this.isConsultingMode = true
                 this.isEditable = true;
-            } 
+            } else if(this.chatMode == 'tree') {
+                // tree 모드일 때는 실제 프로세스 존재 여부를 확인
+                try {
+                    const value = await backend.getRawDefinition(this.selectedProcessDefinitionId);
+                    // 프로세스가 존재하면 일반 채팅 모드
+                    this.isConsultingMode = !value;
+                } catch(e) {
+                    // 에러 발생 시 컨설팅 모드
+                    this.isConsultingMode = true;
+                }
+                this.isEditable = true;
+            }
+            
             if(this.isConsultingMode){
                 this.userInfo = await this.backend.getUserInfo();
 
@@ -358,7 +370,8 @@ export default {
                 if(this.chatMode == 'tree'){
                     this.messages.push({
                         "role": "system",
-                        "content": this.$t('ProcessDefinitionChat.greetingMessageTree', { name: this.userInfo.name }),
+                        "content": `${this.userInfo.name}님 안녕하세요! 생성할 프로세스의 .xlsx 파일을 첨부 후 맵 생성 버튼을 클릭하시면 요구사항 분석 후 프로세스 정의를 생성해드릴게요!`,
+                        // "content": this.$t('ProcessDefinitionChat.greetingMessageTree', { name: this.userInfo.name }),
                         "timeStamp": Date.now(),
                     })
                 } else {
@@ -437,6 +450,13 @@ export default {
             const card = await backend.getBSCard();
             if (card) {
                 this.strategy = card.value;
+            }
+
+            if (this.chatMode == 'tree') {
+                this.isEditable = true;
+                this.lock = false;
+                this.disableChat = false;
+                this.isViewMode = false;
             }
         });
     },
@@ -1014,6 +1034,8 @@ export default {
                             me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
                             me.oldProcDefId = me.processDefinition.processDefinitionId;
                             me.afterLoadBpmn();
+                        } else {
+                            me.processDefinition.processDefinitionId = fullPath;
                         }
 
                         // const role = localStorage.getItem('role');
@@ -1062,11 +1084,6 @@ export default {
                     me.disableChat = false;
                     me.isViewMode = false;
                     me.definitionChangeCount++;
-                } else if (fullPath == 'definitions-tree') {
-                    me.isEditable = true;
-                    me.lock = false;
-                    me.disableChat = false;
-                    me.isViewMode = false;
                 }
 
                 // 프로세스 정의 체계도에서 넘어온 쿼리 파라미터 처리
@@ -1219,12 +1236,22 @@ export default {
                         if (unknown.processDefinitionId) {
                             this.processDefinition = unknown;
                             if(!this.processDefinition) this.processDefinition = {};
+                            
+                            // 트리에서 생성한 프로세스인 경우 트리에서 정한 ID 사용
+                            if (this.treeProcessLocation && this.treeProcessLocation.processDefinitionId) {
+                                this.processDefinition['processDefinitionId'] = this.treeProcessLocation.processDefinitionId;
+                                this.processDefinition['processDefinitionName'] = this.treeProcessLocation.processDefinitionName || unknown.processDefinitionName;
+                                this.projectName = this.treeProcessLocation.processDefinitionName || unknown.processDefinitionName;
+                                this.oldProcDefId = this.treeProcessLocation.processDefinitionId;
+                            } else {
+                                this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
+                                this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
+                                this.projectName = unknown.processDefinitionName;
+                                this.oldProcDefId = unknown.processDefinitionId;
+                            }
+                            
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
                             this.bpmn = this.createBpmnXml(unknown, this.isHorizontal);
-                            this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
-                            this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
-                            this.projectName = unknown.processDefinitionName
-                            this.oldProcDefId = unknown.processDefinitionId;
                             this.definitionChangeCount++;
                         }
                     }
@@ -1529,50 +1556,64 @@ export default {
                         if(unknown.processDefinitionName){
                             this.projectName = unknown.processDefinitionName
                         }
-                        if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
-                            if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == unknown.megaProcessId)) {
+                        
+                        // 트리에서 생성한 프로세스인 경우 트리에서 정한 ID를 사용
+                        let megaProcessId = unknown.megaProcessId;
+                        let majorProcessId = unknown.majorProcessId;
+                        let processDefinitionId = unknown.processDefinitionId;
+                        let processDefinitionName = unknown.processDefinitionName;
+                        
+                        if (this.treeProcessLocation) {
+                            megaProcessId = this.treeProcessLocation.megaProcessId || megaProcessId;
+                            majorProcessId = this.treeProcessLocation.majorProcessId || majorProcessId;
+                            processDefinitionId = this.treeProcessLocation.processDefinitionId || processDefinitionId;
+                            processDefinitionName = this.treeProcessLocation.processDefinitionName || processDefinitionName;
+                        }
+                        
+                        if (megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
+                            if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.id == megaProcessId)) {
                                 this.processDefinitionMap.mega_proc_list.push({
-                                    name: unknown.megaProcessId,
-                                    id: unknown.megaProcessId,
+                                    name: this.treeProcessLocation?.megaProcessName || megaProcessId,
+                                    id: megaProcessId,
                                     major_proc_list: [
                                         {
-                                            name: unknown.majorProcessId,
-                                            id: unknown.majorProcessId,
+                                            name: this.treeProcessLocation?.majorProcessName || majorProcessId,
+                                            id: majorProcessId,
                                             sub_proc_list: [
                                                 {
-                                                    id: unknown.processDefinitionId,
-                                                    name: unknown.processDefinitionName
+                                                    id: processDefinitionId,
+                                                    name: processDefinitionName
                                                 }
                                             ]
                                         }
                                     ]
                                 });
                             }
-                            if (unknown.majorProcessId) {
+                            if (majorProcessId) {
                                 this.processDefinitionMap.mega_proc_list.forEach((megaProcess) => {
-                                    if (megaProcess.name == unknown.megaProcessId) {
-                                        if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == unknown.majorProcessId)) {
+                                    if (megaProcess.id == megaProcessId) {
+                                        if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.id == majorProcessId)) {
                                             const idx = megaProcess.major_proc_list.findIndex(
-                                                (majorProcess) => majorProcess.name == unknown.majorProcessId
+                                                (majorProcess) => majorProcess.id == majorProcessId
                                             );
                                             if (
                                                 !megaProcess.major_proc_list[idx].sub_proc_list.some(
-                                                    (subProcess) => subProcess.id == unknown.processDefinitionId
+                                                    (subProcess) => subProcess.id == processDefinitionId
                                                 )
                                             ) {
                                                 megaProcess.major_proc_list[idx].sub_proc_list.push({
-                                                    id: unknown.processDefinitionId,
-                                                    name: unknown.processDefinitionName
+                                                    id: processDefinitionId,
+                                                    name: processDefinitionName
                                                 });
                                             }
                                         } else {
                                             megaProcess.major_proc_list.push({
-                                                name: unknown.majorProcessId,
-                                                id: unknown.majorProcessId,
+                                                name: this.treeProcessLocation?.majorProcessName || majorProcessId,
+                                                id: majorProcessId,
                                                 sub_proc_list: [
                                                     {
-                                                        id: unknown.processDefinitionId,
-                                                        name: unknown.processDefinitionName
+                                                        id: processDefinitionId,
+                                                        name: processDefinitionName
                                                     }
                                                 ]
                                             });
@@ -2182,11 +2223,18 @@ export default {
                     // BPMN XML 생성
                     this.bpmn = this.createBpmnXml(processDefinition, this.isHorizontal);
                     
-                    // 프로젝트 정보 설정
-                    this.processDefinition['processDefinitionId'] = processDefinition.processDefinitionId;
-                    this.processDefinition['processDefinitionName'] = processDefinition.processDefinitionName;
-                    this.projectName = processDefinition.processDefinitionName;
-                    this.oldProcDefId = processDefinition.processDefinitionId;
+                    // 프로젝트 정보 설정 - 트리에서 생성한 프로세스인 경우 트리에서 정한 ID 사용
+                    if (this.treeProcessLocation && this.treeProcessLocation.processDefinitionId) {
+                        this.processDefinition['processDefinitionId'] = this.treeProcessLocation.processDefinitionId;
+                        this.processDefinition['processDefinitionName'] = this.treeProcessLocation.processDefinitionName || processDefinition.processDefinitionName;
+                        this.projectName = this.treeProcessLocation.processDefinitionName || processDefinition.processDefinitionName;
+                        this.oldProcDefId = this.treeProcessLocation.processDefinitionId;
+                    } else {
+                        this.processDefinition['processDefinitionId'] = processDefinition.processDefinitionId;
+                        this.processDefinition['processDefinitionName'] = processDefinition.processDefinitionName;
+                        this.projectName = processDefinition.processDefinitionName;
+                        this.oldProcDefId = processDefinition.processDefinitionId;
+                    }
                     
                     // 정의 변경 카운트 증가 (UI 업데이트 트리거)
                     this.definitionChangeCount++;
@@ -2268,50 +2316,63 @@ export default {
         // 프로세스 정의 체계도 업데이트 (기존 로직에서 추출)
         async updateProcessDefinitionMap(processDefinition) {
             try {
-                if (processDefinition.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
-                    if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == processDefinition.megaProcessId)) {
+                // 트리에서 생성한 프로세스인 경우 트리에서 정한 ID를 사용
+                let megaProcessId = processDefinition.megaProcessId;
+                let majorProcessId = processDefinition.majorProcessId;
+                let processDefId = processDefinition.processDefinitionId;
+                let processDefName = processDefinition.processDefinitionName;
+                
+                if (this.treeProcessLocation) {
+                    megaProcessId = this.treeProcessLocation.megaProcessId || megaProcessId;
+                    majorProcessId = this.treeProcessLocation.majorProcessId || majorProcessId;
+                    processDefId = this.treeProcessLocation.processDefinitionId || processDefId;
+                    processDefName = this.treeProcessLocation.processDefinitionName || processDefName;
+                }
+                
+                if (megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
+                    if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.id == megaProcessId)) {
                         this.processDefinitionMap.mega_proc_list.push({
-                            name: processDefinition.megaProcessId,
-                            id: processDefinition.megaProcessId,
+                            name: this.treeProcessLocation?.megaProcessName || megaProcessId,
+                            id: megaProcessId,
                             major_proc_list: [
                                 {
-                                    name: processDefinition.majorProcessId,
-                                    id: processDefinition.majorProcessId,
+                                    name: this.treeProcessLocation?.majorProcessName || majorProcessId,
+                                    id: majorProcessId,
                                     sub_proc_list: [
                                         {
-                                            id: processDefinition.processDefinitionId,
-                                            name: processDefinition.processDefinitionName
+                                            id: processDefId,
+                                            name: processDefName
                                         }
                                     ]
                                 }
                             ]
                         });
                     }
-                    if (processDefinition.majorProcessId) {
+                    if (majorProcessId) {
                         this.processDefinitionMap.mega_proc_list.forEach((megaProcess) => {
-                            if (megaProcess.name == processDefinition.megaProcessId) {
-                                if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == processDefinition.majorProcessId)) {
+                            if (megaProcess.id == megaProcessId) {
+                                if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.id == majorProcessId)) {
                                     const idx = megaProcess.major_proc_list.findIndex(
-                                        (majorProcess) => majorProcess.name == processDefinition.majorProcessId
+                                        (majorProcess) => majorProcess.id == majorProcessId
                                     );
                                     if (
                                         !megaProcess.major_proc_list[idx].sub_proc_list.some(
-                                            (subProcess) => subProcess.id == processDefinition.processDefinitionId
+                                            (subProcess) => subProcess.id == processDefId
                                         )
                                     ) {
                                         megaProcess.major_proc_list[idx].sub_proc_list.push({
-                                            id: processDefinition.processDefinitionId,
-                                            name: processDefinition.processDefinitionName
+                                            id: processDefId,
+                                            name: processDefName
                                         });
                                     }
                                 } else {
                                     megaProcess.major_proc_list.push({
-                                        name: processDefinition.majorProcessId,
-                                        id: processDefinition.majorProcessId,
+                                        name: this.treeProcessLocation?.majorProcessName || majorProcessId,
+                                        id: majorProcessId,
                                         sub_proc_list: [
                                             {
-                                                id: processDefinition.processDefinitionId,
-                                                name: processDefinition.processDefinitionName
+                                                id: processDefId,
+                                                name: processDefName
                                             }
                                         ]
                                     });
