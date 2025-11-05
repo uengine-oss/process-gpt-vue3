@@ -133,16 +133,11 @@ router.onError((error) => {
         
         // 사용자에게 알림
         if (window.$app_) {
-            window.$app_.snackbarMessage = '페이지 로딩 중 오류가 발생했습니다. 자동으로 재시도합니다.';
+            window.$app_.snackbarMessage = '페이지 로딩 중 오류가 발생했습니다. 페이지를 새로고침 하십시오.';
             window.$app_.snackbarColor = 'warning';
             window.$app_.snackbar = true;
             window.$app_.clickCount = 0;
         }
-        
-        // 2초 후 자동 새로고침
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
     } else {
         console.log('[라우터] 일반적인 에러 - 라우팅 계속 진행');
     }
