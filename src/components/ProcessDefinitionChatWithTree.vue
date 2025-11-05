@@ -114,8 +114,7 @@
                         
                         <!-- 버튼들 -->
                         <div class="d-flex ga-2">
-                            <v-btn 
-                                v-if="!selectedProcessId"
+                            <v-btn
                                 @click="openFileDialog"
                                 :loading="isParsingExcel"
                                 color="grey"
@@ -127,7 +126,6 @@
                                 {{ uploadedFileName || $t('processDefinitionTree.uploadExcel') }}
                             </v-btn>
                             <v-btn 
-                                v-if="!selectedProcessId"
                                 @click="handleCreateMap"
                                 :disabled="!parsedExcelData"
                                 color="grey"

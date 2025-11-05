@@ -878,6 +878,10 @@ export default {
                         me.disableChat = true;
                         me.isViewMode = true;
                     }
+
+                    if(me.chatMode == 'tree') {
+                        me.disableChat = false;
+                    }
                 }
             });
         },
