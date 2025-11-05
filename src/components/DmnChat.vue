@@ -149,7 +149,6 @@
             <Chat
                 :messages="messages"
                 :userInfo="userInfo"
-                :chatInfo="chatInfo"
                 :showScrollTopButton="true"
                 :agentMessage="true"
                 @sendMessage="beforeSendMessage"
@@ -161,7 +160,7 @@
                     <div class="dmn-section-wrapper">
                         <div class="d-flex flex-column bg-grey-lighten-4 dmn-section">
                             <!-- DMN Header -->
-                            <div class="d-flex align-center bg-white border-b ga-2">
+                            <div class="d-flex align-center bg-white border-b ga-2 pa-3 pt-0 pb-0">
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName ? dmnName : 'New DMN Decision' }}</h6>
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">

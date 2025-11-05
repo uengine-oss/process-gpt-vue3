@@ -15,12 +15,16 @@
                             <v-icon class="mr-2" size="small">mdi-form-select</v-icon>
                             {{ getActivityName(field.formId) }}
                         </div>
+                        <DetailComponent
+                            :title="$t('ActivityInputData.previousInputDescription')"
+                            :details="previousInputDetails"
+                        />
                     </div>
                     <v-spacer></v-spacer>
-                     <div
-                         v-if="formHtmlData[field.formId]"
-                         :class="['summary-container', { 'w-100': isSummaryExpanded[field.formId] }]"
-                     >
+                    <div
+                        v-if="formHtmlData[field.formId]"
+                        :class="['summary-container', { 'w-100': isSummaryExpanded[field.formId] }]"
+                    >
                          <SummaryButton 
                              class="activity-input-data-summary-button"
                              @expanded="handleSummaryExpanded(field.formId, $event)"
@@ -71,11 +75,13 @@
 import BackendFactory from "@/components/api/BackendFactory";
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import SummaryButton from '@/components/ui/SummaryButton.vue';
+import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 
 export default {
     components: {
         DynamicForm,
-        SummaryButton
+        SummaryButton,
+        DetailComponent
     },
     props: {
         inputFields: Array,
@@ -88,7 +94,12 @@ export default {
             fieldMetadata: {}, // 폼별 필드 메타데이터 저장 (레이지 로딩)
             activityMetadata: null, // proc_def의 activities 정보 (레이지 로딩)
             formHtmlData: {}, // 폼별 HTML 데이터 저장
-            isSummaryExpanded: {}
+            isSummaryExpanded: {},
+            previousInputDetails: [
+                {
+                    title: 'ActivityInputData.previousInputDetail'
+                }
+            ]
         }
     },
     async mounted() {
