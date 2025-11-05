@@ -222,17 +222,20 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { useMcpEditorStore } from '@/stores/mcpEditor';
+
 const backend = BackendFactory.createBackend();
 
 export default {
+    setup() {
+        const mcpEditorStore = useMcpEditorStore();
+        return { mcpEditorStore };
+    },
     data: () => ({
-        editingKey: null,
         selectedToolToAdd: null,
-        isAddMode: false,
         saving: false,
         adding: false,
         mcpServers: {},
-        mcpJsonText: '',
         editDialog: false,
         searchQuery: '',
         MONACO_EDITOR_OPTIONS: {
@@ -241,6 +244,65 @@ export default {
             formatOnPaste: true
         }
     }),
+    computed: {
+        // Store의 상태를 computed로 연결
+        editingKey: {
+            get() {
+                return this.mcpEditorStore.editingKey;
+            },
+            set(value) {
+                this.mcpEditorStore.editingKey = value;
+            }
+        },
+        mcpJsonText: {
+            get() {
+                return this.mcpEditorStore.mcpJsonText;
+            },
+            set(value) {
+                this.mcpEditorStore.updateMcpJsonText(value);
+            }
+        },
+        newJsonText: {
+            get() {
+                return this.mcpEditorStore.newJsonText;
+            },
+            set(value) {
+                this.mcpEditorStore.updateNewJsonText(value);
+            }
+        },
+        isAddMode: {
+            get() {
+                return this.mcpEditorStore.isAddMode;
+            },
+            set(value) {
+                this.mcpEditorStore.isAddMode = value;
+            }
+        },
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
+        filteredMcpServers() {
+            if (!this.searchQuery || this.searchQuery.trim() === '') {
+                return this.mcpServers;
+            }
+            
+            const query = this.searchQuery.toLowerCase();
+            const filtered = {};
+            
+            Object.keys(this.mcpServers).forEach(key => {
+                const server = this.mcpServers[key];
+                const serverName = this.formatServerName(key).toLowerCase();
+                const serverDescription = this.getServerDescription(server).toLowerCase();
+                
+                // 타이틀(서버명)과 서브타이틀(설명)에서 검색
+                if (serverName.includes(query) || serverDescription.includes(query)) {
+                    filtered[key] = server;
+                }
+            });
+            
+            return filtered;
+        }
+    },
     async mounted() {
         await this.loadData();
     },
@@ -297,10 +359,7 @@ export default {
             }
         },
         closeEdit() {
-            this.isAddMode = false;
-            this.newJsonText = '';
-            this.editingKey = null;
-            this.mcpJsonText = '';
+            this.mcpEditorStore.clearEditingState();
             this.editDialog = false;
         },
         async toggleServer(key, value) {
@@ -396,21 +455,21 @@ export default {
             if (server.command === 'npx') return 'mdi-npm';
             if (server.command === 'uvx') return 'mdi-package-variant';
             if (server.command === 'deno') return 'mdi-language-javascript';
-            if (server.type === 'url' || server.type === 'sse') return 'mdi-web';
+            if (server.type === 'url' || server.type === 'sse' || server.type === 'http') return 'mdi-web';
             return 'mdi-server';
         },
         getServerColor(server) {
             if (server.command === 'npx') return 'orange';
             if (server.command === 'uvx') return 'blue';
             if (server.command === 'deno') return 'green';
-            if (server.type === 'url' || server.type === 'sse') return 'purple';
+            if (server.type === 'url' || server.type === 'sse' || server.type === 'http') return 'purple';
             return 'grey';
         },
         getServerDescription(server) {
             if (server.command === 'npx') return 'Node.js Package';
             if (server.command === 'uvx') return 'Python Package';
             if (server.command === 'deno') return 'Deno Runtime';
-            if (server.type === 'url' || server.type === 'sse') return 'Web Service';
+            if (server.type === 'url' || server.type === 'sse' || server.type === 'http') return 'Web Service';
             return 'Custom Server';
         },
         async saveNewMCP() {
@@ -484,32 +543,6 @@ export default {
             } finally {
                 this.adding = false;
             }
-        }
-    },
-    computed: {
-        isMobile() {
-            return window.innerWidth <= 768;
-        },
-        filteredMcpServers() {
-            if (!this.searchQuery || this.searchQuery.trim() === '') {
-                return this.mcpServers;
-            }
-            
-            const query = this.searchQuery.toLowerCase();
-            const filtered = {};
-            
-            Object.keys(this.mcpServers).forEach(key => {
-                const server = this.mcpServers[key];
-                const serverName = this.formatServerName(key).toLowerCase();
-                const serverDescription = this.getServerDescription(server).toLowerCase();
-                
-                // 타이틀(서버명)과 서브타이틀(설명)에서 검색
-                if (serverName.includes(query) || serverDescription.includes(query)) {
-                    filtered[key] = server;
-                }
-            });
-            
-            return filtered;
         }
     }
 };
