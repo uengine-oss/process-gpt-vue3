@@ -365,7 +365,10 @@ export default {
         async toggleServer(key, value) {
             try {
                 this.mcpServers[key].enabled = !value;
-                await backend.setMCPByTenant(this.mcpServers);
+                const dataToSave = {
+                    mcpServers: this.mcpServers
+                };
+                await backend.setMCPByTenant(dataToSave);
             } catch (error) {
                 this.mcpServers[key].enabled = !value;
                 console.error('서버 토글 중 오류:', error);
