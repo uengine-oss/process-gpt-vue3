@@ -1006,7 +1006,7 @@
         "generateExample": "예시 재생성",
         "quickGenerateExample": "빠른 생성",
         "quickGenerateExampleDescription": "기본 AI 모델을 사용한 빠른 초안 생성. ex) 기본 문서 작성, 간단한 분석 (1~3분 소요)",
-        "resultInput": "결과 입력",
+        "resultInput": "현재 작업",
         "researchMethod": "에이전트에 맡기기",
         "runningResearchMethod": "진행 중인 연구방식",
         "crewaiDeepResearch": "CrewAI 심층 연구",

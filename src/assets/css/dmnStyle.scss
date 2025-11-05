@@ -230,4 +230,250 @@
             line-height: 1;
         }
     }
+
+    // Decision Table Vuetify3 스타일
+    .decision-table-properties {
+        background: #ffffff !important;
+        border-radius: 8px !important;
+        border: 1px solid rgba(0, 0, 0, 0.12) !important;
+        padding: 16px !important;
+        margin: 16px !important;
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .decision-table-name {
+        border: 1px solid rgba(0, 0, 0, 0.12) !important;
+        border-radius: 4px !important;
+        padding: 8px 12px !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        transition: border-color 0.2s ease !important;
+
+        &:hover,
+        &:focus {
+            border-color: rgb(var(--v-theme-primary)) !important;
+            outline: none !important;
+        }
+    }
+
+    .decision-table-header-separator {
+        display: none !important;
+    }
+
+    .hit-policy {
+        background: #ffffff !important;
+        padding: 12px !important;
+        border-radius: 4px !important;
+
+        .dms-label {
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            color: rgba(0, 0, 0, 0.6) !important;
+            margin-bottom: 4px !important;
+        }
+
+        .hit-policy-edit-policy-select {
+            .dms-input {
+                border: 1px solid rgba(0, 0, 0, 0.12) !important;
+                border-radius: 4px !important;
+                padding: 8px 12px !important;
+                background: #ffffff !important;
+                transition: all 0.2s ease !important;
+
+                &:hover {
+                    border-color: rgba(0, 0, 0, 0.38) !important;
+                }
+
+                &:focus {
+                    outline: none !important;
+                }
+            }
+
+            .dms-input-select-icon {
+                color: rgba(0, 0, 0, 0.54) !important;
+            }
+        }
+    }
+
+    .tjs-table-container {
+        background: #ffffff !important;
+        border-radius: 8px !important;
+        margin: 16px !important;
+        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1) !important;
+        border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    }
+
+    .tjs-table {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        width: 100% !important;
+
+        thead {
+            background: rgba(var(--v-theme-primary), 0.08) !important;
+
+            tr {
+                border: 1px solid rgba(0, 0, 0, 0.12) !important;
+            }
+
+            th {
+                padding: 12px 16px !important;
+                font-size: 14px !important;
+                font-weight: 600 !important;
+                color: rgba(0, 0, 0, 0.87) !important;
+                text-align: left !important;
+                border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+                border-bottom: none !important;
+                transition: background-color 0.2s ease !important;
+                border: 1px solid rgba(0, 0, 0, 0.12) !important;
+
+                &:last-child {
+                    border-right: none !important;
+                }
+
+                &.index-column {
+                    background: rgba(var(--v-theme-primary), 0.12) !important;
+                    text-align: center !important;
+                    width: 60px !important;
+                }
+
+                &.input-cell,
+                &.output-cell {
+                    &.input-editor,
+                    &.output-editor {
+                        background: rgba(var(--v-theme-primary), 0.15) !important;
+                    }
+                }
+
+                &:hover {
+                    background: rgba(var(--v-theme-primary), 0.15) !important;
+                }
+            }
+        }
+
+        tbody {
+            tr {
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+                transition: background-color 0.2s ease !important;
+
+                &:hover {
+                    background: rgba(var(--v-theme-primary), 0.04) !important;
+                }
+
+                &:last-child {
+                    border-bottom: none !important;
+                }
+            }
+
+            td {
+                font-size: 14px !important;
+                color: rgba(0, 0, 0, 0.87) !important;
+                border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+                transition: all 0.2s ease !important;
+                border: 1px solid rgba(0, 0, 0, 0.12) !important;
+
+                &:last-child {
+                    border-right: none !important;
+                }
+
+                &.index-column {
+                    background: rgba(0, 0, 0, 0.02) !important;
+                    text-align: center !important;
+                    font-weight: 500 !important;
+                    color: rgba(0, 0, 0, 0.6) !important;
+                }
+
+                &:focus,
+                &:focus-within {
+                    background: rgba(var(--v-theme-primary), 0.08) !important;
+                    outline: 2px solid rgb(var(--v-theme-primary)) !important;
+                    outline-offset: -2px !important;
+                }
+            }
+        }
+
+        tfoot {
+            background: rgba(0, 0, 0, 0.02) !important;
+
+            tr {
+                border-top: 1px solid rgba(0, 0, 0, 0.12) !important;
+            }
+
+            td {
+                border-left: 1px solid rgba(0, 0, 0, 0.06) !important;
+                border-right: none !important;
+
+                &:last-child {
+                    border-right: none !important;
+                }
+
+                &.add-rule-add {
+                    text-align: center !important;
+                    cursor: pointer !important;
+                    transition: background-color 0.2s ease !important;
+                    color: black !important;
+                    font-weight: 500 !important;
+                    font-size: 13px !important;
+                    padding: 0px !important;
+                    margin: 0px !important;
+
+                    &:hover {
+                        background: rgba(var(--v-theme-primary), 0.08) !important;
+                    }
+                }
+            }
+        }
+    }
+
+    .annotation {
+        &.header {
+            background: rgba(var(--v-theme-primary), 0.08) !important;
+        }
+    }
+
+    // Content Editable 요소 스타일
+    .content-editable {
+        min-height: 20px !important;
+        border-radius: 4px !important;
+        padding: 4px 8px !important;
+        transition: all 0.2s ease !important;
+
+        &:hover {
+            background: rgba(0, 0, 0, 0.04) !important;
+        }
+
+        &:focus {
+            background: #ffffff !important;
+            outline-offset: -2px !important;
+        }
+    }
+
+    // Actionable 요소 스타일
+    .actionable {
+        cursor: pointer !important;
+        
+        &.add-rule {
+            border-radius: 4px !important;
+            transition: all 0.2s ease !important;
+
+            &:hover {
+                background: rgba(var(--v-theme-primary), 0.08) !important;
+                transform: translateY(-1px) !important;
+                box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1) !important;
+            }
+
+            &:active {
+                transform: translateY(0) !important;
+            }
+        }
+    }
+
+    // dmn-icon-plus 아이콘 스타일
+    .dmn-decision-table-container .action-icon {
+        color: rgba(0, 0, 0, 0.54) !important;
+        background-color: transparent !important;
+
+        &:hover {
+            color: rgb(var(--v-theme-primary)) !important;
+        }
+    }
 }

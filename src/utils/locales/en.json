@@ -1004,7 +1004,7 @@
         "generateExample": "Generate Example",
         "quickGenerateExample": "Quick Generation",
         "quickGenerateExampleDescription": "Quick draft generation using the default AI model. ex) Basic document writing, simple analysis (1~3 minutes)",
-        "resultInput": "Result Input",
+        "resultInput": "Current Task",
         "researchMethod": "Agent Delegation",
         "runningResearchMethod": "Running Research Method",
         "crewaiDeepResearch": "CrewAI Deep Research",
