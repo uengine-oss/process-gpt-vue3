@@ -371,11 +371,6 @@ const MainRoutes = {
             name: 'API Test',
             path: '/api/test',
             component: () => import('@/components/TestPage.vue')
-        },
-        {
-            name: 'Complaints',
-            path: '/complaints',
-            component: () => import('@/views/complaints/ComplaintBoard.vue') 
         }
     ]
 };
