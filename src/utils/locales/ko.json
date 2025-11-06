@@ -1906,5 +1906,13 @@
         "loadingAssigneeInfo": "담당자 정보 로딩 중...",
         "noNextActivities": "다음 작업이 없습니다.",
         "referenceInfo": "참조 정보"
+    },
+    "AgentBadgesDiagram": {
+        "chatWithAgent": "에이전트와 채팅",
+        "trainAgent": "학습 시키기",
+        "persona": "페르소나",
+        "tools": "툴 & 스킬",
+        "knowledge": "지식 온톨로지",
+        "achievements": "성과 & 뱃지"
     }
 }

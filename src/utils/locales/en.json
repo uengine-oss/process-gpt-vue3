@@ -1889,5 +1889,13 @@
         "loadingAssigneeInfo": "Loading assignee information...",
         "noNextActivities": "No next activities.",
         "referenceInfo": "Reference Information"
+    },
+    "AgentBadgesDiagram": {
+        "chatWithAgent": "Chat with Agent",
+        "trainAgent": "Train Agent",
+        "persona": "Persona",
+        "tools": "Tools & Skills",
+        "knowledge": "Knowledge Ontology",
+        "achievements": "Achievements & Badges"
     }
 }
