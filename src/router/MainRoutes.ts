@@ -375,7 +375,7 @@ const MainRoutes = {
         {
             name: 'Complaints',
             path: '/complaints',
-            component: () => import('@/views/complaints/ComplaintBoard.vue')
+            component: () => import('@/views/complaints/ComplaintBoard.vue') 
         }
     ]
 };

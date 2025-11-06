@@ -1,4 +1,5 @@
 <template>
+  <div class="fullscreen-overlay">
   <v-container fluid>
     <v-row>
       <v-col cols="12">
@@ -11,7 +12,7 @@
             주민 여러분의 불편사항을 접수하고 신속하게 처리합니다
           </v-card-subtitle>
 
-          <!-- 통계 카드 -->
+          <!-- 통계 카드 -->  
           <v-row class="mb-6">
             <v-col cols="12" md="3">
               <v-card color="primary" dark>
@@ -79,10 +80,6 @@
                     </v-chip>
                     <v-chip size="small" :color="getUrgencyColor(complaint.urgency)" class="mr-2" label>
                       {{ complaint.urgency }}
-                    </v-chip>
-                    <v-chip size="small" color="grey-lighten-1" class="mr-2" label>
-                      <v-icon start size="small">mdi-account-hard-hat</v-icon>
-                      {{ complaint.assignedTo }}
                     </v-chip>
                   </v-list-item-subtitle>
 
@@ -216,62 +213,6 @@
             </v-card>
           </div>
 
-          <!-- 배정 담당자 -->
-          <div class="mb-4">
-            <div class="text-h6 font-weight-bold mb-2">
-              <v-icon class="mr-2">mdi-account-hard-hat</v-icon>배정 담당자
-            </div>
-            <v-card variant="outlined" class="pa-4 bg-blue-lighten-5">
-              <div class="d-flex align-center">
-                <v-avatar color="primary" class="mr-3">
-                  <v-icon color="white">mdi-account</v-icon>
-                </v-avatar>
-                <div>
-                  <div class="text-subtitle-1 font-weight-bold">{{ selectedComplaint.assignedTo }}</div>
-                  <div class="text-caption text-grey-darken-1">{{ selectedComplaint.category }}</div>
-                </div>
-              </div>
-            </v-card>
-          </div>
-
-          <!-- 배정 사유 -->
-          <div class="mb-4">
-            <div class="text-h6 font-weight-bold mb-2">
-              <v-icon class="mr-2">mdi-information</v-icon>배정 사유
-            </div>
-            <v-card variant="outlined" class="pa-4 bg-amber-lighten-5">
-              <div class="text-body-2">{{ selectedComplaint.reason }}</div>
-            </v-card>
-          </div>
-
-          <!-- 권장 조치 -->
-          <div class="mb-4">
-            <div class="text-h6 font-weight-bold mb-2">
-              <v-icon class="mr-2">mdi-clipboard-check</v-icon>권장 조치
-            </div>
-            <v-card variant="outlined" class="pa-4 bg-green-lighten-5">
-              <div class="text-body-2">{{ selectedComplaint.action }}</div>
-            </v-card>
-          </div>
-
-          <!-- 처리 우선순위 -->
-          <div>
-            <div class="text-h6 font-weight-bold mb-2">
-              <v-icon class="mr-2">mdi-priority-high</v-icon>처리 우선순위
-            </div>
-            <v-card variant="outlined" class="pa-4">
-              <v-progress-linear
-                :model-value="(6 - selectedComplaint.priority) * 20"
-                :color="getPriorityColor(selectedComplaint.priority)"
-                height="30"
-                striped
-              >
-                <template v-slot:default>
-                  <strong class="text-white">우선순위: {{ selectedComplaint.priority }}</strong>
-                </template>
-              </v-progress-linear>
-            </v-card>
-          </div>
         </v-card-text>
 
         <v-card-actions class="justify-end pa-4 bg-grey-lighten-4">
@@ -285,6 +226,7 @@
       </v-card>
     </v-dialog>
   </v-container>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -376,7 +318,7 @@ const complaints = ref<Complaint[]>([
     title: '해충 출몰 (바퀴벌레)',
     description: '집에 바퀴벌레가 너무 많이 나와요. 특히 주방에서 많이 보입니다. 방역을 해주세요.',
     category: '방역/해충',
-    status: '접수',
+    status: '처리중',
     urgency: '보통',
     date: '2025-11-02 16:30',
     location: '401동 305호',
@@ -465,6 +407,19 @@ const openDialog = (complaint: Complaint) => {
 </script>
 
 <style scoped>
+.fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: white;
+  z-index: 9999;
+  overflow-y: auto;
+}
+
 .complaint-item {
   cursor: pointer;
   transition: background-color 0.3s;
