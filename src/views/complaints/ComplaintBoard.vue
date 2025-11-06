@@ -1,19 +1,20 @@
 <template>
   <div class="fullscreen-overlay">
-  <v-container fluid>
-    <v-row>
-      <v-col cols="12">
-        <v-card class="pa-5">
-          <v-card-title class="text-h4 font-weight-bold mb-4">
-            <v-icon size="large" class="mr-3" color="primary">mdi-clipboard-text</v-icon>
-            주거 시설 민원 게시판
-          </v-card-title>
-          <v-card-subtitle class="text-subtitle-1 mb-6">
-            주민 여러분의 불편사항을 접수하고 신속하게 처리합니다
-          </v-card-subtitle>
+    <!-- 민원 목록 화면 -->
+    <v-container v-if="!selectedComplaint" fluid>
+      <v-row>
+        <v-col cols="12">
+          <v-card class="pa-5">
+            <v-card-title class="text-h4 font-weight-bold mb-4">
+              <v-icon size="large" class="mr-3" color="primary">mdi-clipboard-text</v-icon>
+              주거 시설 민원 게시판
+            </v-card-title>
+            <v-card-subtitle class="text-subtitle-1 mb-6">
+              주민 여러분의 불편사항을 접수하고 신속하게 처리합니다
+            </v-card-subtitle>
 
-          <!-- 통계 카드 -->  
-          <v-row class="mb-6">
+            <!-- 통계 카드 -->  
+            <v-row class="mb-6">
             <v-col cols="12" md="3">
               <v-card color="primary" dark>
                 <v-card-text class="text-center">
@@ -110,18 +111,24 @@
         </v-card>
       </v-col>
     </v-row>
+  </v-container>
 
-    <!-- 민원 상세 다이얼로그 -->
-    <v-dialog v-model="dialog" max-width="800px">
-      <v-card v-if="selectedComplaint">
-        <v-card-title class="text-h5 bg-primary text-white">
-          <v-icon class="mr-2" color="white">{{ getCategoryIcon(selectedComplaint.category) }}</v-icon>
-          민원 상세 정보
-          <v-spacer></v-spacer>
-          <v-btn icon @click="dialog = false" color="white" variant="text">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
-        </v-card-title>
+    <!-- 민원 상세 화면 -->
+    <v-container v-if="selectedComplaint" fluid>
+      <v-row>
+        <v-col cols="12">
+          <v-card class="pa-5">
+            <v-card-title class="text-h5 bg-primary text-white d-flex align-center">
+              <v-btn icon @click="closeDetail" color="white" variant="text" class="mr-2">
+                <v-icon>mdi-arrow-left</v-icon>
+              </v-btn>
+              <v-icon class="mr-2" color="white">{{ getCategoryIcon(selectedComplaint.category) }}</v-icon>
+              민원 상세 정보
+              <v-spacer></v-spacer>
+              <v-btn icon @click="closeDetail" color="white" variant="text">
+                <v-icon>mdi-close</v-icon>
+              </v-btn>
+            </v-card-title>
 
         <v-card-text class="mt-4">
           <!-- 기본 정보 -->
@@ -213,19 +220,18 @@
             </v-card>
           </div>
 
-        </v-card-text>
+            </v-card-text>
 
-        <v-card-actions class="justify-end pa-4 bg-grey-lighten-4">
-          <v-btn color="grey" @click="dialog = false" variant="text">
-            닫기
-          </v-btn>
-          <v-btn color="primary" @click="dialog = false" variant="flat">
-            확인
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </v-container>
+            <v-card-actions class="justify-end pa-4 bg-grey-lighten-4">
+              <v-btn color="grey" @click="closeDetail" variant="text">
+                <v-icon class="mr-2">mdi-arrow-left</v-icon>
+                목록으로
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
   </div>
 </template>
 
@@ -248,7 +254,6 @@ interface Complaint {
   priority: number;
 }
 
-const dialog = ref(false);
 const selectedComplaint = ref<Complaint | null>(null);
 
 // 하드코딩된 민원 데이터
@@ -399,10 +404,14 @@ const getPriorityColor = (priority: number) => {
   return 'green';
 };
 
-// 다이얼로그 열기
+// 상세 화면 열기
 const openDialog = (complaint: Complaint) => {
   selectedComplaint.value = complaint;
-  dialog.value = true;
+};
+
+// 목록으로 돌아가기
+const closeDetail = () => {
+  selectedComplaint.value = null;
 };
 </script>
 
