@@ -38,7 +38,18 @@ export async function parseDocumentWithUpstage(file, options = {}) {
             };
         }
 
-        console.log(`🚀 [Upstage] 파싱 시작: ${file.name} (${formatFileSize(file.size)})`);
+        // 파일 정보 상세 로깅
+        console.log(`🚀 [Upstage] 파싱 시작:`, {
+            name: file.name,
+            size: formatFileSize(file.size),
+            type: file.type || '❌ MIME 타입 없음',
+            lastModified: new Date(file.lastModified).toISOString()
+        });
+
+        // MIME 타입이 없거나 text/plain, text/markdown인 경우 경고
+        if (!file.type || file.type === 'text/plain' || file.type === 'text/markdown') {
+            console.warn(`⚠️ [Upstage] MIME 타입 문제: "${file.type}" - Upstage는 특정 문서 형식만 지원합니다.`);
+        }
 
         // 옵션 기본값 설정
         const {
@@ -205,6 +216,41 @@ export async function parseFileDocument(fileObject, fileData = null, options = {
                 source: fileData.parsed_source,
                 parsedAt: fileData.parsed_at
             };
+        }
+
+        // 텍스트 파일인지 확인 (text/plain, text/markdown, text/html 등)
+        const isTextFile = fileObject.type && (
+            fileObject.type.startsWith('text/') ||
+            fileObject.type === 'application/json'
+        );
+
+        if (isTextFile) {
+            console.log(`📄 [Upstage] 텍스트 파일 직접 읽기: ${fileObject.name} (${fileObject.type})`);
+            
+            try {
+                // 텍스트 파일은 직접 읽기
+                const text = await fileObject.text();
+                
+                console.log(`✅ [Upstage] 텍스트 파일 읽기 성공: ${fileObject.name} (${text.length} 문자)`);
+                
+                return {
+                    success: true,
+                    text: text,
+                    markdown: text, // 텍스트 그대로 사용
+                    html: '',
+                    source: 'direct-read',
+                    fileName: fileObject.name,
+                    fileSize: fileObject.size,
+                    parsedAt: new Date().toISOString(),
+                    elapsedTime: 0
+                };
+            } catch (readError) {
+                console.error(`❌ [Upstage] 텍스트 파일 읽기 실패: ${fileObject.name}`, readError);
+                return {
+                    success: false,
+                    error: `텍스트 파일 읽기 실패: ${readError.message}`
+                };
+            }
         }
 
         console.log(`[Upstage] 파싱 시작: ${fileObject.name}`);

@@ -994,6 +994,7 @@ export default {
             if (lowerFileName.endsWith('.json')) return 'application/json';
             if (lowerFileName.endsWith('.xml')) return 'application/xml';
             if (lowerFileName.endsWith('.html')) return 'text/html';
+            if (lowerFileName.endsWith('.md') || lowerFileName.endsWith('.markdown')) return 'text/markdown';
             
             // 압축 파일
             if (lowerFileName.endsWith('.zip')) return 'application/zip';
