@@ -56,7 +56,7 @@ const themeColors = ref([
 // LocalStorage에서 설정 불러오기 및 초기화
 onMounted(() => {
     const savedSettings = JSON.parse(localStorage.getItem('userSettings') ?? '{}');
-    customizer.boxed = savedSettings.boxed ?? false;
+    customizer.boxed = false;
     customizer.mini_sidebar = savedSettings.mini_sidebar ?? false;
     customizer.actTheme = savedSettings.actTheme ?? 'BLUE_THEME';
     
@@ -70,14 +70,14 @@ onMounted(() => {
 
 // 모든 관련 상태를 하나의 watch에서 감시
 watch(
-  [() => customizer.boxed, () => customizer.mini_sidebar, () => customizer.actTheme], 
-  ([newBoxed, newMiniSidebar, newActTheme]) => {
+  [() => customizer.mini_sidebar, () => customizer.actTheme], 
+  ([newMiniSidebar, newActTheme]) => {
     // 현재 선택된 테마의 색상 코드 찾기
     const selectedTheme = themeColors.value.find(theme => theme.name === newActTheme);
     const themeColorCode = selectedTheme ? selectedTheme.colorCode : '#0085DB';
     
     const userSettings = {
-      boxed: newBoxed,
+      boxed: false,
       mini_sidebar: newMiniSidebar,
       actTheme: newActTheme,
       themeColorCode: themeColorCode
@@ -114,17 +114,6 @@ watch(
                     </v-item>
                 </v-col>
             </v-item-group>
-            <h6 class="text-h6 mt-11 mb-2">{{ $t('Customizer.containerOption') }}</h6>
-            <v-btn-toggle v-model="customizer.boxed" color="primary" class="my-2 btn-group-custom gap-3" rounded="0" group>
-                <v-btn :value="true" variant="text" elevation="10" class="rounded-xl">
-                    <Icons :icon="'cardholder-linear'" :size="22" class="mr-2" />
-                    {{ $t('Customizer.boxed') }}
-                </v-btn>
-                <v-btn :value="false" variant="text" elevation="10" class="rounded-xl">
-                    <Icons :icon="'scanner-linear'" :size="22" class="mr-2" />
-                    {{ $t('Customizer.full') }}
-                </v-btn>
-            </v-btn-toggle>
             <!---  불필요하게 작아지는 사이드바 영역 타입을 설정하는 부분 --->
             <!-- <v-sheet v-if="customizer.setHorizontalLayout != true">
                 <h6 class="text-h6 mt-11 mb-2">Sidebar Type</h6>

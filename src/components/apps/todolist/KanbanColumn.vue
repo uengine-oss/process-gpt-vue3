@@ -259,6 +259,7 @@ export default {
                 this.$try({
                     context: this,
                     action: () => {
+                        this.EventBus.emit('todolist-updated');
                     },
                     warningMsg: '재작업 가능한 액티비티가 없습니다.'
                 });
@@ -267,8 +268,6 @@ export default {
                 await this.loadReworkActivities(task);
                 this.reworkDialog = true;
             }
-            task.status = fromStatus;
-            this.$emit('updateStatus', task.taskId, fromStatus);
         },
         async loadReworkActivities(task) {
             // WorkItem과 동일한 구조로 초기화
@@ -304,11 +303,16 @@ export default {
         closeReworkDialog() {
             this.reworkDialog = false;
             this.reworkActivities = [];
+            this.currentDraggedTask = null;
+            
+            // UI 상태만 새로고침 (백엔드는 변경되지 않았으므로)
+            this.EventBus.emit('todolist-updated');
         },
         submitRework(activities) {
             const me = this;
             
-            me.closeReworkDialog();
+            this.reworkDialog = false;
+            this.reworkActivities = [];
             if (!me.currentDraggedTask || !me.currentDraggedTask.instId) {
                 console.error('재작업할 태스크 정보가 없습니다.');
                 return;

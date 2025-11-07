@@ -383,16 +383,7 @@ export default {
                         height: viewbox.height + 100
                     });
                 }
-
-                if (self.isPreviewMode) {
-                    if (window.$mode == "ProcessGPT") {
-                        if (self.currentActivities && self.currentActivities.length > 0) {
-                            self.currentActivities.forEach((actId) => {
-                                if (actId) canvas.addMarker(actId, 'highlight');
-                            });
-                        }
-                    } 
-                }
+                
                 eventBus.on('shape.added', async function (event) {
                     const element = event.element;
                     const businessObject = element.businessObject;

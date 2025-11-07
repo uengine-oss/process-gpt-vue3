@@ -9,10 +9,10 @@
                     <div class="learning-buttons-item">
                         <v-btn @click="goToAgentChat"
                             color="primary"
-                            variant="elevated" 
+                            variant="flat" 
                             class="rounded-pill"
                             density="compact"
-                        >{{ agentType == 'a2a' ? '에이전트와 채팅' : '학습 시키기' }}
+                        >{{ agentType == 'a2a' ? $t('AgentBadgesDiagram.chatWithAgent') : $t('AgentBadgesDiagram.trainAgent') }}
                         </v-btn>
                     </div>
                 </div>
@@ -167,7 +167,7 @@ export default {
             if (personaInfo.length > 0) {
                 this.mobileSections.push({
                     id: 'persona',
-                    title: '페르소나',
+                    title: this.$t('AgentBadgesDiagram.persona'),
                     content: personaInfo
                 });
             }
@@ -189,7 +189,7 @@ export default {
             if (toolsInfo.length > 0) {
                 this.mobileSections.push({
                     id: 'tools',
-                    title: '툴 & 스킬',
+                    title: this.$t('AgentBadgesDiagram.tools'),
                     content: toolsInfo
                 });
             }
@@ -198,7 +198,7 @@ export default {
             const knowledgeInfo = ['비즈니스 프로세스 분석', '요구사항 정의', '워크플로우 최적화', '데이터 모델링'];
             this.mobileSections.push({
                 id: 'knowledge',
-                title: '지식 온톨로지',
+                title: this.$t('AgentBadgesDiagram.knowledge'),
                 content: knowledgeInfo
             });
 
@@ -206,7 +206,7 @@ export default {
             const achievementInfo = ['완료된 프로젝트: 15개', '성공률: 94%', '전문 인증: ISO 9001'];
             this.mobileSections.push({
                 id: 'achievements',
-                title: '성과 & 뱃지',
+                title: this.$t('AgentBadgesDiagram.achievements'),
                 content: achievementInfo
             });
         },
@@ -249,7 +249,7 @@ export default {
                 this.nodesData.push({
                     id: 'persona',
                     type: 'callout',
-                    title: '페르소나',
+                    title: this.$t('AgentBadgesDiagram.persona'),
                     content: personaInfo,
                     size: 25,
                     x: this.centerX + 90,
@@ -275,7 +275,7 @@ export default {
                 this.nodesData.push({
                     id: 'tools',
                     type: 'callout',
-                    title: '툴 & 스킬',
+                    title: this.$t('AgentBadgesDiagram.tools'),
                     content: toolsInfo,
                     size: 25,
                     x: this.centerX - 60,
@@ -288,7 +288,7 @@ export default {
             this.nodesData.push({
                 id: 'knowledge',
                 type: 'callout',
-                title: '지식 온톨로지',
+                title: this.$t('AgentBadgesDiagram.knowledge'),
                 content: knowledgeInfo,
                 size: 25,
                 x: this.centerX + 80,
@@ -300,7 +300,7 @@ export default {
             this.nodesData.push({
                 id: 'achievements',
                 type: 'callout',
-                title: '성과 & 뱃지',
+                title: this.$t('AgentBadgesDiagram.achievements'),
                 content: achievementInfo,
                 size: 25,
                 x: this.centerX - 100,
@@ -538,8 +538,8 @@ export default {
                 const size = this.calculateNodeSize(d);
                 const maxWidth = 130; // 150px - 20px padding
                 
-                // 제목 아래에서 시작
-                let currentY = -size.height/2 + 35;
+                // 제목 아래에서 시작 (언어별, 섹션별 마진 조정)
+                let currentY = -size.height/2 + (this.$i18n.locale === 'en' && (d.id === 'knowledge' || d.id === 'achievements') ? 50 : 35);
                 
                 d.content.forEach((line) => {
                     if (line.length * 7 > maxWidth) {
@@ -793,6 +793,7 @@ export default {
 .profile-title {
     font-weight: 600;
     font-size: 14px;
+    margin-top: 2px;
 }
 
 .header-controls {
@@ -823,6 +824,7 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-bottom: 4px;
 }
 
 .zoom-btn:hover:not(:disabled) {

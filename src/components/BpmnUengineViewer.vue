@@ -433,14 +433,6 @@ export default {
                 
                 self.resetZoom();
 
-                if (window.$mode == "ProcessGPT") {
-                    if (self.currentActivities && self.currentActivities.length > 0) {
-                        self.currentActivities.forEach((actId) => {
-                            if (actId) canvas.addMarker(actId, 'highlight');
-                        });
-                    }
-                } 
-
                 var overlays = self.bpmnViewer.get('overlays');
 
                 if (self.adminMode) {
