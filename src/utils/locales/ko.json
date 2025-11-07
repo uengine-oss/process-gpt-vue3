@@ -1828,7 +1828,8 @@
             "learning": "규칙 학습",
             "inference": "규칙 추론",
             "management": "룰 관리"
-        }
+        },
+        "businessRule": "비즈니스 규칙"
     },
     "FormWorkItem": {
         "previous": "이전 단계",
