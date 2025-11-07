@@ -146,8 +146,61 @@ export default {
             this.loadWorkListByStatus('TODO'),
             this.loadWorkListByStatus('DONE')
         ]);
+        
+        this.EventBus.on('todolist-updated', async () => {
+            await this.reloadAllTodoList();
+        });
     },
     methods: {
+        async reloadAllTodoList() {
+            const userId = localStorage.getItem('uid');
+            
+            // 각 status별로 현재까지 로드된 데이터만 다시 불러오기
+            const reloadPromises = this.todolist.map(async (column) => {
+                const status = column.id;
+                let requestOptions = {
+                    page: 0,
+                    size: (this.pages[status] + 1) * this.pageSize
+                };
+                
+                let worklist;
+                if (status === 'DONE') {
+                    worklist = await backend.getCompletedList(requestOptions);
+                } else if (status === 'IN_PROGRESS') {
+                    requestOptions.status = 'IN_PROGRESS';
+                    requestOptions.userId = userId;
+                    worklist = await backend.getWorkList(requestOptions);
+                } else if (status === 'PENDING') {
+                    requestOptions.status = 'PENDING';
+                    requestOptions.userId = userId;
+                    worklist = await backend.getWorkList(requestOptions);
+                } else if (status === 'TODO') {
+                    requestOptions.userId = userId;
+                    let allWorklist = await backend.getWorkList(requestOptions);
+                    worklist = allWorklist.filter(item => 
+                        item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT'
+                    );
+                }
+                
+                if (!worklist) worklist = [];
+                
+                // 컬럼 tasks 업데이트
+                column.tasks = worklist.filter(item => {
+                    if (status === 'IN_PROGRESS' && (item.status === 'IN_PROGRESS' || item.status === 'SUBMITTED')) {
+                        return true;
+                    } else if (status === 'TODO' && (item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT')) {
+                        return true;
+                    } else if (status === 'DONE' && (item.status === 'DONE' || item.status === 'COMPLETED')) {
+                        return true;
+                    } else if (item.status === status) {
+                        return true;
+                    }
+                    return false;
+                });
+            });
+            
+            await Promise.all(reloadPromises);
+        },
         async loadDeletedInstance() {
             try {
                 this.deletedInstances = await backend.getDeletedInstances()
