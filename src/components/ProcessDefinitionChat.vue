@@ -298,6 +298,10 @@ export default {
             type: String,
             default: null
         },
+        treeProcessLocation: {
+            type: Object,
+            default: null
+        }
     },
     data: () => ({
         allUserList: [],
@@ -342,6 +346,7 @@ export default {
         accumulatedJSON: '',
         lastParsedJSON: null,
         isRetry: false,
+        retryCount: 0,
     }),
     async created() {
         $try(async () => {
@@ -525,6 +530,10 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        maxRetryCount() {
+            // 컨설팅 모드: 최대 10번, 일반 모드: 최대 3번
+            return this.isConsultingMode ? 10 : 3;
         },
     },
     async beforeRouteLeave(to, from, next) {
@@ -1176,6 +1185,10 @@ export default {
         },
         beforeSendMessage(newMessage) {
             this.waitForCustomer = false
+            // 새로운 메시지를 보낼 때 재시도가 아니라면 retryCount 초기화
+            if(!this.isRetry) {
+                this.retryCount = 0;
+            }
             if(!this.isConsultingMode){
                 this.generator = new ChatGenerator(this, {
                     isStream: true,
@@ -1264,11 +1277,12 @@ export default {
 
         parseJsonProcess(response) {
             if(response != ""){
-                if(!this.isRetry) {
-                    this.isRetry = true
+                if(this.retryCount < this.maxRetryCount) {
+                    this.retryCount++;
+                    this.isRetry = true;
                     this.messages.push({
                         "role": "system",
-                        "content": "프로세스 생성 시도중 오류 발생하여 다시 시도합니다.",
+                        "content": `프로세스 생성 시도중 오류 발생하여 다시 시도합니다. (${this.retryCount}/${this.maxRetryCount})`,
                         "timeStamp": Date.now()
                     })
                     const newMessage = {
@@ -1278,10 +1292,11 @@ export default {
                     }
                     this.beforeSendMessage(newMessage)
                 } else {
-                    this.isRetry = false
+                    this.isRetry = false;
+                    this.retryCount = 0;
                     this.messages.push({
                         "role": "system",
-                        "content": "프로세스 생성 시도중 오류 발생하였습니다. 잠시 후 다시 시도해주세요.",
+                        "content": `프로세스 생성 시도중 오류 발생하였습니다. 최대 재시도 횟수(${this.maxRetryCount}회)를 초과했습니다. 잠시 후 다시 시도해주세요.`,
                         "timeStamp": Date.now()
                     })
                 }
@@ -1483,11 +1498,12 @@ export default {
                                 jsonProcess = partialParse(jsonProcess)
                             } catch(e){
                                 // 재시도
-                                if(!this.isRetry) {
-                                    this.isRetry = true
+                                if(this.retryCount < this.maxRetryCount) {
+                                    this.retryCount++;
+                                    this.isRetry = true;
                                     this.messages.push({
                                         "role": "system",
-                                        "content": "프로세스 생성 시도중 오류 발생하여 다시 시도합니다.",
+                                        "content": `프로세스 생성 시도중 오류 발생하여 다시 시도합니다. (${this.retryCount}/${this.maxRetryCount})`,
                                         "timeStamp": Date.now()
                                     })
                                     const newMessage = {
@@ -1497,10 +1513,11 @@ export default {
                                     }
                                     this.beforeSendMessage(newMessage)
                                 } else {
-                                    this.isRetry = false
+                                    this.isRetry = false;
+                                    this.retryCount = 0;
                                     this.messages.push({
                                         "role": "system",
-                                        "content": "프로세스 생성 시도중 오류 발생하였습니다. 잠시 후 다시 시도해주세요.",
+                                        "content": `프로세스 생성 시도중 오류 발생하였습니다. 최대 재시도 횟수(${this.maxRetryCount}회)를 초과했습니다. 잠시 후 다시 시도해주세요.`,
                                         "timeStamp": Date.now()
                                     })
                                 }
@@ -1522,17 +1539,38 @@ export default {
                         this.messages[this.messages.length - 1].content = content
 
                         if(unknown.validity && unknown.validity == "Suitable"){
+                            // 적절한 답변이 생성되었으므로 재시도 카운트 초기화
+                            this.retryCount = 0;
+                            this.isRetry = false;
                             this.generator = new ConsultingGenerator(this, {
                                 isStream: true,
                                 preferredLanguage: "Korean"
                             });
                         } else if(unknown.validity && unknown.validity == "Unsuitable"){
+                            // 부적절한 답변이므로 재시도 카운트 증가
+                            if(this.retryCount < this.maxRetryCount) {
+                                this.retryCount++;
+                                console.log(`컨설팅 답변 재생성 중... (${this.retryCount}/${this.maxRetryCount})`);
+                            } else {
+                                // 최대 재시도 횟수 초과
+                                this.retryCount = 0;
+                                this.isRetry = false;
+                                this.messages.push({
+                                    "role": "system",
+                                    "content": `적절한 답변 생성을 위한 최대 재시도 횟수(${this.maxRetryCount}회)를 초과했습니다. 다른 질문을 해주시거나 잠시 후 다시 시도해주세요.`,
+                                    "timeStamp": Date.now()
+                                });
+                                return; // 재시도 중단
+                            }
                             this.generator = new ConsultingGenerator(this, {
                                 isStream: true,
                                 preferredLanguage: "Korean"
                             });
                         } else {
                             if(unknown.answerType && unknown.answerType == 'generateProcessDef'){
+                                // 프로세스 생성 모드로 전환 시 재시도 카운트 초기화
+                                this.retryCount = 0;
+                                this.isRetry = false;
                                 this.generator = new ChatGenerator(this, {
                                     isStream: true,
                                     preferredLanguage: 'Korean'
@@ -1727,6 +1765,9 @@ export default {
                                 })
                             }
                             if(jsonProcess.modifications){
+                                // 수정이 성공적으로 완료되었으므로 재시도 카운트 초기화
+                                this.retryCount = 0;
+                                this.isRetry = false;
                                 this.messages.push({
                                     "role": "system",
                                     "content": `요청하신 내용에 따라 수정을 완료하였습니다.`,
@@ -1742,6 +1783,9 @@ export default {
                                 })
                             } else {
                                 await this.checkedFormData();
+                                // 성공적으로 생성되었으므로 재시도 카운트 초기화
+                                this.retryCount = 0;
+                                this.isRetry = false;
                                 this.messages.push({
                                     "role": "system",
                                     "content": `요청하신 프로세스 생성을 모두 완료하였습니다. 🎉🎉`,

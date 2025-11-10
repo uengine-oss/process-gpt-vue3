@@ -18,6 +18,8 @@ const props = defineProps({
   },
 })
 
+const emit = defineEmits(['node-double-click'])
+
 // processDefinition이 있으면 변환, 없으면 초기 데이터 사용
 const flowData = computed(() => {
   try {
@@ -108,6 +110,13 @@ function logToObject() {
   console.log('Nodes:', nodes.value)
   console.log('Edges:', edges.value)
 }
+
+// 노드 더블클릭 핸들러
+function handleNodeDoubleClick({ node }) {
+  console.log('🖱️ 노드 더블클릭 (ProcessFlowExample):', node)
+  // 노드의 데이터를 부모 컴포넌트로 전달
+  emit('node-double-click', node.data)
+}
 </script>
 
 <template>
@@ -123,6 +132,7 @@ function logToObject() {
     :max-zoom="4"
     @pane-ready="onPaneReady"
     @connect="handleConnect"
+    @node-double-click="handleNodeDoubleClick"
   >
     <Background pattern-color="#aaa" :gap="16" />
     <MiniMap />

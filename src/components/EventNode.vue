@@ -1,10 +1,11 @@
 <template>
   <div class="event-node" :class="nodeClass">
     <div class="event-label">{{ data.label }}</div>
-    <Handle type="target" :position="Position.Left" />
-    <Handle type="source" :position="Position.Right" />
-    <Handle type="source" :position="Position.Bottom" />
-    <Handle type="target" :position="Position.Top" />
+    <Handle type="target" :position="Position.Left" id="left" :style="{ opacity: 0 }" />
+    <Handle type="source" :position="Position.Right" id="right-source" :style="{ right: '-12px', opacity: 0 }" />
+    <Handle type="target" :position="Position.Right" id="right" :style="{ right: '-12px', opacity: 0 }" />
+    <Handle type="source" :position="Position.Bottom" id="bottom" :style="{ opacity: 0 }" />
+    <Handle type="target" :position="Position.Top" id="top" :style="{ opacity: 0 }" />
   </div>
 </template>
 
