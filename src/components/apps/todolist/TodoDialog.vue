@@ -2,35 +2,35 @@
     <div>
         <v-card v-if="type == 'view'">
             <v-card-title class="d-flex align-center justify-space-between pt-3 pl-5">
-                <h4 class="text-h4">할 일</h4>
+                <h4 class="text-h4">{{ $t('TodoDialog.todo') }}</h4>
                 <v-icon @click="type = 'edit'">mdi-pencil</v-icon>
             </v-card-title>
 
             <v-card-text class="px-6">
                 <div class="mb-3">
-                    <span class="text-h6 font-weight-semibold">제목: </span>
+                    <span class="text-h6 font-weight-semibold">{{ $t('TodoDialog.title') }}: </span>
                     <span class="text-h6">{{ task.name }}</span>
                 </div>
                 <div class="mb-3">
-                    <span class="text-h6 font-weight-semibold">시작일: </span>
+                    <span class="text-h6 font-weight-semibold">{{ $t('TodoDialog.startDate') }}: </span>
                     <span class="text-h6">{{ task.startDate }}</span>
                 </div>
                 <div class="mb-3">
-                    <span class="text-h6 font-weight-semibold">마감일: </span>
+                    <span class="text-h6 font-weight-semibold">{{ $t('TodoDialog.dueDate') }}: </span>
                     <span class="text-h6">{{ task.dueDate }}</span>
                 </div>
                 <div class="mb-3">
-                    <span class="text-h6 font-weight-semibold">상태: </span>
+                    <span class="text-h6 font-weight-semibold">{{ $t('TodoDialog.status') }}: </span>
                     <span class="text-h6">{{ task.status }}</span>
                 </div>
                 <div>
-                    <span class="text-h6 font-weight-semibold">설명: </span>
+                    <span class="text-h6 font-weight-semibold">{{ $t('TodoDialog.description') }}: </span>
                     <span class="text-h6">{{ task.description }}</span>
                 </div>
             </v-card-text>
 
             <v-card-actions class="justify-center pt-0">
-                <v-btn color="error" variant="flat" @click="close">닫기</v-btn>
+                <v-btn color="error" variant="flat" @click="close">{{ $t('TodoDialog.close') }}</v-btn>
             </v-card-actions>
         </v-card>
 
@@ -39,12 +39,12 @@
         >
             <v-row class="ma-0 pa-4 pb-0 align-center">
                 <div v-if="type && type == 'edit'" class="d-flex">
-                    <v-card-title  class="pa-0">할 일 수정</v-card-title>
+                    <v-card-title  class="pa-0">{{ $t('TodoDialog.editTask') }}</v-card-title>
                     <v-icon @click="type = 'view'">mdi-arrow-left</v-icon>
                 </div>
 
                 <v-card-title v-else class="pa-0 pb-0">
-                    <v-card-title  class="pa-0">업무 등록</v-card-title>
+                    <v-card-title  class="pa-0">{{ $t('TodoDialog.addTask') }}</v-card-title>
                 </v-card-title>
                 <v-spacer></v-spacer>
                 <v-btn @click="close"
@@ -58,9 +58,9 @@
             </v-row>
 
             <v-card-text class="pa-4 pb-0 isMobile-add-todo-dialog">
-                <v-text-field v-model="newTask.name" label="할일명" autofocus></v-text-field>
-                <v-text-field v-model="newTask.startDate" label="시작일" type="datetime-local"></v-text-field>
-                <v-text-field v-model="newTask.dueDate" label="마감일" type="datetime-local"></v-text-field>
+                <v-text-field v-model="newTask.name" :label="$t('TodoDialog.taskName')" autofocus></v-text-field>
+                <v-text-field v-model="newTask.startDate" :label="$t('TodoDialog.startDate')" type="datetime-local"></v-text-field>
+                <v-text-field v-model="newTask.dueDate" :label="$t('TodoDialog.dueDate')" type="datetime-local"></v-text-field>
                 <v-autocomplete
                     v-model="formDefId"
                     :items="formList"
@@ -72,14 +72,14 @@
                     style="margin-bottom: 10px;"
                 ></v-autocomplete>
                 <!-- <v-select v-model="newTask.status" :items="statusList" item-title="text" item-value="value" label="진행 상태" variant="outlined"></v-select> -->
-                <v-textarea v-model="newTask.description" label="설명" outlined></v-textarea>
+                <v-textarea v-model="newTask.description" :label="$t('TodoDialog.description')" outlined></v-textarea>
                
             </v-card-text>
 
             <!-- 버튼을 라운드 스타일로 변경 -->
             <!-- 오른쪽 정렬을 위해 justify-end로 변경 -->
             <v-card-actions class="justify-end pa-4 pt-0">
-                <v-btn :disabled="newTask.name == ''" color="primary" variant="flat" @click="save" rounded>저장</v-btn>
+                <v-btn :disabled="newTask.name == ''" color="primary" variant="flat" @click="save" rounded>{{ $t('TodoDialog.save') }}</v-btn>
             </v-card-actions>
         </v-card>
     </div>

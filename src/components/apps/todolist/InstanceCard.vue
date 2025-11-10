@@ -194,7 +194,7 @@
                                         @click="openDialog"
                                         :color="!isMobile ? '' : 'primary'"
                                     >
-                                        <v-tooltip activator="parent" location="left">업무 등록</v-tooltip>
+                                        <v-tooltip activator="parent" location="left">{{ $t('InstanceCard.addTask') }}</v-tooltip>
                                         <PlusIcon stroke-width="2" />
                                     </v-avatar>
                                 </div>
