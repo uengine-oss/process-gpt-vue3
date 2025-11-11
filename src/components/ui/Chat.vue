@@ -39,7 +39,7 @@
                             style="cursor: pointer; border-radius: 50%; padding: 4px;"
                         >
                             mdi-arrow-up-circle
-                            <v-tooltip activator="parent" location="left">최상단으로 이동</v-tooltip>
+                            <v-tooltip activator="parent" location="left">{{ $t('chat.moveTop') }}</v-tooltip>
                         </v-icon>
                         
                         <!-- 최하단 이동 -->
@@ -50,7 +50,7 @@
                             style="cursor: pointer; border-radius: 50%; padding: 4px;"
                         >
                             mdi-arrow-down-circle
-                            <v-tooltip activator="parent" location="left">최하단으로 이동</v-tooltip>
+                            <v-tooltip activator="parent" location="left">{{ $t('chat.moveBottom') }}</v-tooltip>
                         </v-icon>
                     </div>
 
@@ -76,7 +76,7 @@
                                 <div v-if="participantUsers.length > 0"
                                     class="pa-4 chat-participants-box"
                                 >
-                                    <h6 class="text-subtitle-1 font-weight-bold mb-2" style="color: #333;">참여자 현황</h6>
+                                    <h6 class="text-subtitle-1 font-weight-bold mb-2" style="color: #333;">{{ $t('chat.participants') }}</h6>
                                     <v-row class="ma-0 pa-0">
                                         <div v-for="participant in participantUsers" :key="participant.id" class="mr-4">
                                             <div class="d-flex align-center">

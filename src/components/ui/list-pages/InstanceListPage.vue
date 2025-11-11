@@ -28,7 +28,7 @@
                     <div v-if="getParticipantsForItem(item).length > 0" class="mt-2">
                         <div :class="isMobile ? 'd-block' : 'd-flex flex-wrap align-center'" class="mt-1">
                             <!-- 모든 참여자를 개별적으로 표시 -->
-                            <span class="text-caption text-grey-600 mr-2">참여자:</span>
+                            <span class="text-caption text-grey-600 mr-2">{{ $t('InstanceListPage.participants') }}:</span>
                             <div :class="isMobile ? 'd-block mt-1' : 'd-flex flex-wrap align-center'">
                                 <div 
                                     v-for="(participant, index) in getParticipantsForItem(item)"

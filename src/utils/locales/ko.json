@@ -82,6 +82,19 @@
         "sortByStartDate": "시작일 최근 순",
         "endOfList": "모든 업무를 확인했습니다"
     },
+    "TodoDialog": {
+        "editTask": "할 일 수정",
+        "addTask": "업무 등록",
+        "taskName": "할일명",
+        "startDate": "시작일",
+        "dueDate": "마감일",
+        "description": "설명",
+        "save": "저장",
+        "todo": "할 일",
+        "title": "제목",
+        "status": "상태",
+        "close": "닫기"
+    },
     "calendar": {
         "title": "달력",
         "evnet": "일정",
@@ -379,7 +392,10 @@
         "user": "유저",
         "chatRoom": "대화 목록",
         "viewDetails": "상세보기",
-        "executeProcess": "프로세스 실행"
+        "executeProcess": "프로세스 실행",
+        "participants": "참여자 현황",
+        "moveTop": "최상단으로 이동",
+        "moveBottom": "최하단으로 이동"
     },
     "accountTab": {
         "accountSetting": "계정 설정",
@@ -1092,7 +1108,8 @@
         "starterInfo": "시작자: 정보 불러오는 중",
         "startDateInfo": "시작일시: 정보 불러오는 중",
         "starter": "시작자",
-        "startDate": "시작일시"
+        "startDate": "시작일시",
+        "addTask": "업무 등록"
     },
     "ProjectCard": {
         "managment": "스케줄",
@@ -1611,6 +1628,9 @@
         "completed": "완료",
         "cancelled": "취소"
     },
+    "InstanceListPage": {
+        "participants": "참여자"
+    },
     "kanbanColumnCard": {
         "edit": "수정",
         "delete": "삭제",
@@ -1828,7 +1848,8 @@
             "learning": "규칙 학습",
             "inference": "규칙 추론",
             "management": "룰 관리"
-        }
+        },
+        "businessRule": "비즈니스 규칙"
     },
     "FormWorkItem": {
         "previous": "이전 단계",

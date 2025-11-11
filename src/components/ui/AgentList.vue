@@ -19,27 +19,35 @@
         >
             <template #items="{ displayedItems }">
                 <div class="agent-items">
-                    <div 
+                    <v-tooltip 
                         v-for="agent in displayedItems" 
+                        bottom
                         :key="agent.id"
-                        class="agent-item"
-                        @click="goToAgentChat(agent.id)"
+                        :text="agent.name || 'Unnamed Agent'"
                     >
-                        <div class="agent-avatar">
-                            <img 
-                                v-if="agent.img" 
-                                :src="agent.img" 
-                                :alt="agent.name"
-                                class="agent-image"
-                                @error="handleImageError"
-                            />
-                            <div v-else class="agent-emoji">🤖</div>
-                        </div>
-                        <div class="agent-info">
-                            <span class="agent-name">{{ agent.name || 'Unnamed Agent' }}</span>
-                            <span v-if="agent.role" class="agent-role">{{ agent.role }}</span>
-                        </div>
-                    </div>
+                        <template v-slot:activator="{ props }">
+                            <div 
+                                v-bind="props"
+                                class="agent-item"
+                                @click="goToAgentChat(agent.id)"
+                            >
+                                <div class="agent-avatar">
+                                    <img 
+                                        v-if="agent.img" 
+                                        :src="agent.img" 
+                                        :alt="agent.name"
+                                        class="agent-image"
+                                        @error="handleImageError"
+                                    />
+                                    <div v-else class="agent-emoji">🤖</div>
+                                </div>
+                                <div class="agent-info">
+                                    <span class="agent-name">{{ agent.name || 'Unnamed Agent' }}</span>
+                                    <span v-if="agent.role" class="agent-role">{{ agent.role }}</span>
+                                </div>
+                            </div>
+                        </template>
+                    </v-tooltip>
                 </div>
             </template>
         </ExpandableList>
@@ -293,7 +301,8 @@ export default {
 }
 
 .agent-item:hover {
-    background-color: rgba(103, 126, 234, 0.08);
+    background-color: #e3f2fd;
+    /* background-color: rgba(103, 126, 234, 0.08); */
     transform: translateX(2px);
 }
 
