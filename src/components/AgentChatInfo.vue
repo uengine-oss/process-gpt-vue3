@@ -3,8 +3,8 @@
         <div v-if="!editDialog" class="pa-4">
             <!-- 편집 모드가 아닐 때만 일반 화면 표시 -->
             <div class="text-left mb-4">
-                <v-row class="align-center ma-0 pa-0 mb-4">
-                    <v-avatar size="24" class="mr-2">
+                <v-row class="align-start ma-0 pa-0 mb-4">
+                    <v-avatar size="24" class="mr-2 flex-shrink-0">
                         <!-- 프로필 이미지가 있고 로딩 성공했을 때만 표시 -->
                         <v-img 
                             v-if="agentInfo.profile && imageLoaded && !isDefaultImage(agentInfo.profile)"
@@ -27,17 +27,18 @@
                             </template>
                         </v-img>
                     </v-avatar>
-                    <h5 v-if="!isMobile" class="text-h6 font-weight-bold">{{ agentInfo.username || $t('AgentChatInfo.defaultAgentName') }}</h5>
-                    <h6 v-else class="text-subtitle-1 font-weight-bold">{{ agentInfo.username || $t('AgentChatInfo.defaultAgentName') }}</h6>
+                    <div class="agent-name-wrapper">
+                        <h5 v-if="!isMobile" class="text-h6 font-weight-bold agent-name-text">{{ agentInfo.username || $t('AgentChatInfo.defaultAgentName') }}</h5>
+                        <h6 v-else class="text-subtitle-1 font-weight-bold agent-name-text">{{ agentInfo.username || $t('AgentChatInfo.defaultAgentName') }}</h6>
+                    </div>
                     
-                    <v-spacer></v-spacer>
                     <!-- 수정 버튼 -->
                     <v-btn 
                         @click="openEditDialog"
                         variant="text"
                         :size="20"
                         icon
-                        class="rounded-pill"
+                        class="rounded-pill flex-shrink-0 ml-2"
                     >
                         <Icons :icon="'pencil'" :size="14"/>
                     </v-btn>
@@ -433,6 +434,18 @@ export default {
     margin: 2px !important;
     font-size: 11px !important;
     height: 24px !important;
+}
+
+.agent-name-wrapper {
+    flex: 1;
+    min-width: 0;
+}
+
+.agent-name-text {
+    word-break: break-word;
+    white-space: normal;
+    margin: 0;
+    text-align: left !important;
 }
 
 /* 반응형 디자인 */
