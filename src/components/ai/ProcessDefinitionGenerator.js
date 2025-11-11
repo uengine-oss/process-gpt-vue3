@@ -196,6 +196,14 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
 
     
     결과는 프로세스에 대한 설명과 함께 valid 한 json 으로 표현해줘. markdown 으로, three backticks 로 감싸. 예를 들면:
+    
+    **설명 작성 규칙:**
+    - 설명 부분은 반드시 마크다운 형식으로 작성해야 합니다.
+    - 제목은 ## 또는 ###을 사용하여 계층적으로 구성하세요.
+    - 중요한 키워드나 개념은 **굵게** 표시하세요.
+    - 단계별 설명은 번호 목록(1. 2. 3.)이나 불릿 목록(-)을 사용하세요.
+    - 프로세스의 흐름은 → 화살표를 사용하여 시각적으로 표현하세요.
+    - 역할이나 담당자는 백틱으로 강조하세요.
 
     \`\`\`
     ${jsonStructure}

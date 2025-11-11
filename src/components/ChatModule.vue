@@ -177,7 +177,7 @@ export default {
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
                                 // &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
-                                && (me.messages[me.messages.length - 1].content == '...' || me.messages[me.messages.length - 1].content == '테이블 생성 중...' || me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, '')))
+                                && (me.messages[me.messages.length - 1].content == 'AI 생성중...' || me.messages[me.messages.length - 1].content == '테이블 생성 중...' || me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, '')))
                                 ) {
                                     me.messages[me.messages.length - 1] = data.new.messages
                                     me.messages[me.messages.length - 1].isLoading = false
@@ -407,7 +407,7 @@ export default {
             if((!this.ProcessGPTActive || this.isSystemChat) && !this.isAgentChat){
                 this.messages.push({
                     role: 'system',
-                    content: '...',
+                    content: 'AI 생성중...',
                     isLoading: true
                 });
             }
@@ -465,7 +465,7 @@ export default {
 
                 this.messages.push({
                     role: 'system',
-                    content: '...',
+                    content: 'AI 생성중...',
                     isLoading: true
                 });
 
@@ -566,7 +566,7 @@ export default {
                             if(this.messages && this.messages.length == 0){
                                 this.messages.push({
                                     role: 'system',
-                                    content: '...',
+                                    content: 'AI 생성중...',
                                     isLoading: true
                                 });
                             }
@@ -624,7 +624,7 @@ export default {
                     if(this.messages && this.messages.length == 0){
                         this.messages.push({
                             role: 'system',
-                            content: '...',
+                            content: 'AI 생성중...',
                             isLoading: true
                         });
                     }

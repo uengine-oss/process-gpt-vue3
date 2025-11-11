@@ -302,7 +302,8 @@
                                                     </v-list>
                                                 </v-card>
                                             </div>
-                                            <div v-else-if="!message.disableMsg || message.isLoading" :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'">
+                                            <!-- chat 관련 UI가 위 아래 붙기때문에 적용했던 스타일 필요시 다시 삽입 :style="shouldDisplayUserInfo(message, index) ? '' : 'margin-top: -20px;'" -->
+                                            <div v-else-if="!message.disableMsg || message.isLoading" >
                                                 <v-row v-if="shouldDisplayUserInfo(message, index) && !agentMessage"
                                                     class="ma-0 pa-0"
                                                 >
@@ -334,11 +335,11 @@
                                                 </div>
 
                                                 <!-- markdown message -->
-                                                <div v-else-if="message.contentType && message.contentType == 'markdown'" 
+                                                <div v-else-if="(message.contentType && message.contentType == 'markdown') || (message.role == 'system' && !message.contentType)" 
                                                     :class="agentMessage ? 'agent-message' : 'other-message'"
                                                 >
-                                                    <div v-html="renderedMarkdown(message.content)" 
-                                                        class="markdown-content mx-3 pl-3 py-2"
+                                                    <div v-html="renderedMarkdown(message.content, filteredMessages.length - 1 == index && isLoading)" 
+                                                        class="markdown-content pl-3 py-2"
                                                     ></div>
                                                 </div>
 
@@ -798,7 +799,7 @@
                 <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                     <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                         class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
-                        auto-grow rows="1" @keydown.enter="beforeSend" :disabled="disableChat"
+                        auto-grow rows="1" @keydown="beforeSend" :disabled="disableChat"
                         @input="handleTextareaInput"
                         @paste="handlePaste"
                     >
@@ -924,7 +925,7 @@
             <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.definitionMapInputMessage')"
-                    auto-grow rows="1" @keydown.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
+                    auto-grow rows="1" @keydown="beforeSend" :disabled="disableChat || isGenerationFinished"
                     @input="handleTextareaInput"
                     @paste="handlePaste"
                 >
@@ -1440,13 +1441,54 @@ export default {
                 this.$refs.scrollContainer.$el.scrollTop = 0;
             }
         },
-        renderedMarkdown(text) {
+        renderedMarkdown(text, isGenerating = false) {
             if (!text) return '';
+            
+            const trimmedText = text.trim();
+            
+            // "AI 생성중..." 텍스트를 감지하면 띵킹 애니메이션 반환
+            if (trimmedText === 'AI 생성중...') {
+                const loadingText = 'AI 생성 중...';
+                const animatedChars = loadingText.split('').map((char, index) => {
+                    const safeChar = char === ' ' ? '&nbsp;' : char;
+                    return `<span class="thinking-char" style="animation-delay: ${index * 0.1}s">${safeChar}</span>`;
+                }).join('');
+                
+                return `<div class="thinking-wave-text" style="font-weight: bold;">${animatedChars}</div>`;
+            }
+            
+            const isLoadingPlaceholder = trimmedText === '...' || trimmedText === '….';
+            
+            let processedText = text;
+            let hasJsonBlock = false;
+            
+            if (!isLoadingPlaceholder && (text.includes('processDefinitionId') || text.includes('elements'))) {
+                const codeBlockStart = text.indexOf('```');
+                if (codeBlockStart !== -1) {
+                    hasJsonBlock = true;
+                    processedText = text.substring(0, codeBlockStart).trim();
+                }
+            }
+            
             marked.setOptions({
                 breaks: true,
                 gfm: true
             });
-            return marked(text);
+            
+            let renderedHtml = isLoadingPlaceholder ? '' : marked(processedText);
+            
+            if ((hasJsonBlock && isGenerating) || isLoadingPlaceholder) {
+                const loadingText = 'AI 생성 중...';
+                const animatedChars = loadingText.split('').map((char, index) => {
+                    const safeChar = char === ' ' ? '&nbsp;' : char;
+                    return `<span class="thinking-char" style="animation-delay: ${index * 0.1}s">${safeChar}</span>`;
+                }).join('');
+                
+                const marginTop = hasJsonBlock ? 'margin-top: 16px;' : '';
+                renderedHtml += `<div class="thinking-wave-text" style="${marginTop} font-weight: bold;">${animatedChars}</div>`;
+            }
+            
+            return renderedHtml;
         },
         handleResize() {
             // 화면 크기 변경 시 즉시 높이 업데이트
@@ -1774,8 +1816,34 @@ export default {
             this.replyUser = message;
         },
         beforeSend($event) {
-            if ($event && $event.shiftKey) return;
-
+            // keydown 이벤트인 경우에만 Enter 키 체크 및 중복 방지
+            if ($event && $event.type === 'keydown') {
+                // Enter 키가 아니면 무시
+                if ($event.key !== 'Enter') return;
+                
+                // Shift+Enter는 줄바꿈 허용
+                if ($event.shiftKey) {
+                    console.log('🟠 [beforeSend] Shift+Enter - 줄바꿈');
+                    return;
+                }
+                
+                // 기본 동작 방지 (일반 Enter만)
+                $event.preventDefault();
+                $event.stopPropagation();
+                
+                // 중복 호출 방지: 200ms 이내의 중복 Enter 키 무시
+                const now = Date.now();
+                if (now - this.lastEnterTime < 200) {
+                    console.log('🟠 [beforeSend] 중복 Enter 무시 (200ms 이내)');
+                    return;
+                }
+                this.lastEnterTime = now;
+                
+                console.log('🟠 [beforeSend] Enter 키로 전송');
+            } else {
+                console.log('🟠 [beforeSend] 버튼 클릭으로 전송');
+            }
+            
             if(this.isAgentMode){
                 this.requestDraftAgent();
                 setTimeout(() => {
@@ -2394,7 +2462,6 @@ pre {
 
 .other-message {
   margin-right: auto;
-  background-color: #f1f1f1 !important;
   border-radius: 8px !important;
 }
 
