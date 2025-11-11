@@ -144,14 +144,14 @@
                                 {{ $t('processDefinitionTree.createMap') }}
                             </v-btn>
                             <v-btn 
-                                @click="handleOpenFlow"
-                                color="grey"
+                                @click="toggleFlowView"
+                                :color="showFlowOverlay ? 'primary' : 'grey'"
                                 variant="flat"
                                 class="rounded-pill"
                                 density="compact"
                             >
                                 <v-icon class="mr-2">mdi-chart-timeline-variant</v-icon>
-                                Open Flow
+                                {{ showFlowOverlay ? 'BPMN으로 보기' : 'Flow로 보기' }}
                             </v-btn>
                             <v-btn 
                                 @click="handleDownloadExcel"
@@ -181,7 +181,17 @@
                     :chatMode="chatMode"
                     :selectedProcessDefinitionId="selectedProcessId"
                     :treeProcessLocation="treeProcessLocation"
+                    :showFlowOverlay="showFlowOverlay"
+                    :currentProcessDefinitionForFlow="currentProcessDefinitionForFlow"
+                    :showActivityPanel="showActivityPanel"
+                    :selectedFlowActivity="selectedFlowActivity"
                     :key="selectedProcessId || 'default'"
+                    @closeFlowOverlay="closeFlowOverlay"
+                    @closeActivityPanel="closeActivityPanel"
+                    @node-double-click="handleFlowNodeDoubleClick"
+                    @save-activity-changes="saveActivityChanges"
+                    @generation-finished="handleGenerationFinished"
+                    @process-definition-ready="handleProcessDefinitionReady"
                 />
             </v-col>
         </v-row>
@@ -244,144 +254,6 @@
             </v-card>
         </v-dialog>
 
-        <!-- Vue Flow 다이얼로그 -->
-        <v-dialog v-model="flowDialog" max-width="1600" persistent>
-            <v-card>
-                <v-card-title class="pa-4 d-flex align-center">
-                    <v-icon class="mr-2">mdi-chart-timeline-variant</v-icon>
-                    <span>
-                        프로세스 플로우
-                        <span v-if="currentProcessDefinitionForFlow?.processDefinitionName" class="text-grey ml-2">
-                            - {{ currentProcessDefinitionForFlow.processDefinitionName }}
-                        </span>
-                    </span>
-                    <v-spacer></v-spacer>
-                    <v-btn 
-                        icon 
-                        variant="text" 
-                        @click="handleCloseFlow"
-                        size="small"
-                    >
-                        <v-icon>mdi-close</v-icon>
-                    </v-btn>
-                </v-card-title>
-                
-                <v-card-text class="pa-0" style="height: 80vh;">
-                    <div class="d-flex" style="height: 100%;">
-                        <!-- Flow 영역 -->
-                        <div :style="{ width: showActivityPanel ? '70%' : '100%', transition: 'width 0.3s' }">
-                            <ProcessFlowExample 
-                                v-if="currentProcessDefinitionForFlow"
-                                :process-definition="currentProcessDefinitionForFlow"
-                                @node-double-click="handleFlowNodeDoubleClick"
-                            />
-                        </div>
-                        
-                        <!-- 속성 편집 패널 -->
-                        <v-slide-x-reverse-transition>
-                            <div v-if="showActivityPanel && selectedFlowActivity" 
-                                 class="activity-panel pa-4" 
-                                 style="width: 30%; border-left: 1px solid #e0e0e0; overflow-y: auto;">
-                                <div class="d-flex align-center mb-4">
-                                    <h3 class="text-h6">액티비티 속성</h3>
-                                    <v-spacer></v-spacer>
-                                    <v-btn 
-                                        icon 
-                                        variant="text" 
-                                        size="small"
-                                        @click="closeActivityPanel"
-                                    >
-                                        <v-icon>mdi-close</v-icon>
-                                    </v-btn>
-                                </div>
-                                
-                                <v-card variant="outlined" class="mb-3">
-                                    <v-card-text>
-                                        <div class="mb-3">
-                                            <div class="text-caption text-grey mb-1">액티비티명</div>
-                                            <div class="text-body-1 font-weight-medium">{{ selectedFlowActivity.content || selectedFlowActivity.name }}</div>
-                                        </div>
-                                        
-                                        <v-text-field
-                                            v-model="selectedFlowActivity.header"
-                                            label="역할/담당"
-                                            variant="outlined"
-                                            density="compact"
-                                            hide-details
-                                            class="mb-3"
-                                            readonly
-                                        ></v-text-field>
-                                        
-                                        <v-text-field
-                                            v-model="selectedFlowActivity.footer"
-                                            label="시스템/도구"
-                                            variant="outlined"
-                                            density="compact"
-                                            hide-details
-                                            class="mb-3"
-                                        ></v-text-field>
-                                        
-                                        <v-text-field
-                                            v-model="selectedFlowActivity.requiredTime"
-                                            label="소요시간 (들어오는 화살표)"
-                                            variant="outlined"
-                                            density="compact"
-                                            hide-details
-                                            class="mb-3"
-                                            placeholder="예: 55s, 1m, 2h"
-                                        ></v-text-field>
-                                        
-                                        <v-text-field
-                                            v-if="selectedFlowActivity.backflowSequenceId"
-                                            v-model="selectedFlowActivity.backflowRequiredTime"
-                                            label="역행 소요시간 (빨간 화살표)"
-                                            variant="outlined"
-                                            density="compact"
-                                            hide-details
-                                            class="mb-3"
-                                            placeholder="예: 160s, 5m, 1h"
-                                        >
-                                            <template v-slot:prepend-inner>
-                                                <v-icon color="error" size="small">mdi-arrow-u-left-top</v-icon>
-                                            </template>
-                                        </v-text-field>
-                                        
-                                        <v-textarea
-                                            v-model="selectedFlowActivity.description"
-                                            label="설명"
-                                            variant="outlined"
-                                            density="compact"
-                                            hide-details
-                                            rows="3"
-                                            class="mb-3"
-                                        ></v-textarea>
-                                    </v-card-text>
-                                </v-card>
-                                
-                                <div class="d-flex ga-2">
-                                    <v-btn
-                                        color="primary"
-                                        variant="flat"
-                                        block
-                                        @click="saveActivityChanges"
-                                    >
-                                        <v-icon class="mr-1">mdi-content-save</v-icon>
-                                        저장
-                                    </v-btn>
-                                    <v-btn
-                                        color="grey"
-                                        variant="outlined"
-                                        @click="closeActivityPanel"
-                                    >
-                                        취소
-                                    </v-btn>
-                                </div>
-                            </div>
-                        </v-slide-x-reverse-transition>
-                    </div>
-                </v-card-text>
-            </v-card>
-        </v-dialog>
     </div>
 </template>
 
@@ -446,8 +318,8 @@ export default {
         openedNodes: [],
         // 트리뷰 표시 상태
         isTreeViewVisible: true,
-        // Vue Flow 다이얼로그 표시 상태
-        flowDialog: false,
+        // Flow 오버레이 표시 상태
+        showFlowOverlay: false,
         // Vue Flow에 표시할 현재 프로세스 정의
         currentProcessDefinitionForFlow: null,
         // 트리에서 생성된 프로세스의 위치 정보 (AI 생성 시 사용)
@@ -553,6 +425,35 @@ export default {
                 // 새 선택 노드의 selected 상태 설정
                 if (newId && this.nodes[newId]) {
                     this.nodes[newId].state.selected = true;
+                }
+            }
+        },
+        // 선택된 프로세스 ID 변경 감지
+        selectedProcessId: {
+            handler(newId, oldId) {
+                if (newId !== oldId && oldId) {
+                    console.log('🔄 프로세스 변경 감지:', oldId, '→', newId);
+                    
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            const chatComponent = this.$refs.processDefinitionChat;
+                            
+                            if (this.showFlowOverlay) {
+                                if (chatComponent && chatComponent.isConsultingMode) {
+                                    // Flow 모드인데 컨설팅 모드로 바뀌면 BPMN으로 전환
+                                    console.log('🔄 컨설팅 모드 감지 - BPMN으로 전환');
+                                    this.showFlowOverlay = false;
+                                } else if (chatComponent && chatComponent.processDefinition) {
+                                    // Flow 모드이고 일반 모드면 Flow 데이터 갱신
+                                    console.log('🔄 일반 모드 - Flow 데이터 갱신');
+                                    this.showFlowOverlay = false;
+                                    this.$nextTick(() => {
+                                        this.toggleFlowView();
+                                    });
+                                }
+                            }
+                        }, 500);
+                    });
                 }
             }
         }
@@ -708,7 +609,7 @@ export default {
             // Elements 구조인 경우
             if (processDefinition.elements && Array.isArray(processDefinition.elements)) {
                 processDefinition.elements.forEach(element => {
-                    if (element.name) {
+                    if (element.name && element.elementType != 'Sequence') {
                         elementList.push({
                             title: element.name,
                             value: element.name,
@@ -1573,20 +1474,35 @@ export default {
 
             console.log('🔍 액티비티 검색:', this.searchValue);
 
-            // 자식 컴포넌트(ProcessDefinitionChat)의 searchAndFocusActivity 메서드 호출
-            const chatComponent = this.$refs.processDefinitionChat;
-            if (chatComponent && chatComponent.searchAndFocusActivity) {
-                const found = chatComponent.searchAndFocusActivity(this.searchValue);
+            let found = false;
+
+            // Flow 모드인 경우
+            if (this.showFlowOverlay) {
+                const chatComponent = this.$refs.processDefinitionChat;
+                const flowComponent = chatComponent?.$refs?.processFlowExample;
                 
-                if (found) {
-                    console.log('✅ 액티비티를 찾아 포커싱했습니다.');
+                if (flowComponent && flowComponent.searchAndFocusActivity) {
+                    console.log('🎯 Flow 모드 검색');
+                    found = flowComponent.searchAndFocusActivity(this.searchValue);
                 } else {
-                    console.log('❌ 일치하는 액티비티를 찾을 수 없습니다.');
-                    // 사용자에게 알림 (선택적)
-                    // alert(`"${this.searchValue}"와 일치하는 액티비티를 찾을 수 없습니다.`);
+                    console.error('ProcessFlowExample 컴포넌트를 찾을 수 없습니다.');
                 }
+            } 
+            // BPMN 모드인 경우
+            else {
+                const chatComponent = this.$refs.processDefinitionChat;
+                if (chatComponent && chatComponent.searchAndFocusActivity) {
+                    console.log('🎯 BPMN 모드 검색');
+                    found = chatComponent.searchAndFocusActivity(this.searchValue);
+                } else {
+                    console.error('ProcessDefinitionChat 컴포넌트를 찾을 수 없습니다.');
+                }
+            }
+
+            if (found) {
+                console.log('✅ 액티비티를 찾아 포커싱했습니다.');
             } else {
-                console.error('ProcessDefinitionChat 컴포넌트를 찾을 수 없습니다.');
+                console.log('❌ 일치하는 액티비티를 찾을 수 없습니다.');
             }
         },
 
@@ -1600,10 +1516,21 @@ export default {
                 return;
             }
 
-            // 자식 컴포넌트(ProcessDefinitionChat)의 searchAndFocusActivity 메서드 호출
-            const chatComponent = this.$refs.processDefinitionChat;
-            if (chatComponent && chatComponent.searchAndFocusActivity) {
-                chatComponent.searchAndFocusActivity(value);
+            // Flow 모드인 경우
+            if (this.showFlowOverlay) {
+                const chatComponent = this.$refs.processDefinitionChat;
+                const flowComponent = chatComponent?.$refs?.processFlowExample;
+                
+                if (flowComponent && flowComponent.searchAndFocusActivity) {
+                    flowComponent.searchAndFocusActivity(value);
+                }
+            } 
+            // BPMN 모드인 경우
+            else {
+                const chatComponent = this.$refs.processDefinitionChat;
+                if (chatComponent && chatComponent.searchAndFocusActivity) {
+                    chatComponent.searchAndFocusActivity(value);
+                }
             }
         },
 
@@ -1615,34 +1542,78 @@ export default {
             
             // 실시간 검색 (디바운스 없이 즉시 실행)
             if (value && value.trim() !== '') {
-                const chatComponent = this.$refs.processDefinitionChat;
-                if (chatComponent && chatComponent.searchAndFocusActivity) {
-                    chatComponent.searchAndFocusActivity(value);
+                // Flow 모드인 경우
+                if (this.showFlowOverlay) {
+                    setTimeout(() => {
+                        const chatComponent = this.$refs.processDefinitionChat;
+                        const flowComponent = chatComponent?.$refs?.processFlowExample;
+                        
+                        if (flowComponent && flowComponent.searchAndFocusActivity) {
+                            flowComponent.searchAndFocusActivity(value);
+                        }
+                    }, 100);
+                } 
+                // BPMN 모드인 경우
+                else {
+                    const chatComponent = this.$refs.processDefinitionChat;
+                    if (chatComponent && chatComponent.searchAndFocusActivity) {
+                        chatComponent.searchAndFocusActivity(value);
+                    }
                 }
             }
         },
 
         /**
-         * Vue Flow 다이얼로그 열기
-         * 현재 프로세스 정의를 가져와서 전달
+         * Flow 뷰 토글 (BPMN ↔ Flow)
          */
-        handleOpenFlow() {
+        toggleFlowView(type) {
             const chatComponent = this.$refs.processDefinitionChat;
-            if (chatComponent && chatComponent.processDefinition) {
-                // 프로세스 정의를 복사하여 저장 (참조 문제 방지)
-                this.currentProcessDefinitionForFlow = JSON.parse(JSON.stringify(chatComponent.processDefinition));
-                this.flowDialog = true;
+            
+            if (!this.showFlowOverlay || (type == 'flow' && !chatComponent.isConsultingMode)) {
+                // Flow 뷰 열기
+                if (chatComponent && chatComponent.processDefinition) {
+                    // 프로세스 정의를 복사하여 저장 (참조 문제 방지)
+                    this.currentProcessDefinitionForFlow = JSON.parse(JSON.stringify(chatComponent.processDefinition));
+                    this.showFlowOverlay = true;
+                } else {
+                    console.warn('⚠️ 표시할 프로세스 정의가 없습니다.');
+                    alert('표시할 프로세스 정의가 없습니다. 먼저 프로세스를 선택해주세요.');
+                }
             } else {
-                console.warn('⚠️ 표시할 프로세스 정의가 없습니다.');
-                alert('표시할 프로세스 정의가 없습니다. 먼저 프로세스를 선택해주세요.');
+                // BPMN 뷰로 돌아가기
+                this.closeFlowOverlay();
             }
+
+            this.handleSearchInput(this.searchValue);
         },
 
         /**
-         * Vue Flow 다이얼로그 닫기
+         * AI 생성 완료 시 Flow 형식으로 전환
          */
-        handleCloseFlow() {
-            this.flowDialog = false;
+        handleGenerationFinished() {
+            console.log('✅ AI 생성 완료 - Flow 형식으로 전환');
+            this.$nextTick(() => {
+                this.toggleFlowView();
+            });
+        },
+
+        /**
+         * processDefinition이 준비되면 자동으로 Flow 열기
+         */
+        handleProcessDefinitionReady() {
+            // if (!this.showFlowOverlay) {
+                console.log('✅ processDefinition 준비됨 - Flow 자동 열기');
+                this.$nextTick(() => {
+                    this.toggleFlowView('flow');
+                });
+            // }
+        },
+
+        /**
+         * Flow 오버레이 닫기
+         */
+        closeFlowOverlay() {
+            this.showFlowOverlay = false;
             this.showActivityPanel = false;
             this.selectedFlowActivity = null;
             // 다음에 열 때 최신 데이터를 가져오기 위해 초기화
@@ -1656,6 +1627,8 @@ export default {
          */
         handleFlowNodeDoubleClick(nodeData) {
             console.log('🖱️ 노드 더블클릭:', nodeData);
+            console.log('📋 backflowSequenceId:', nodeData.backflowSequenceId);
+            console.log('📋 backflowRequiredTime:', nodeData.backflowRequiredTime);
             
             // 선택된 액티비티 정보 저장 (깊은 복사로 원본 보호)
             this.selectedFlowActivity = JSON.parse(JSON.stringify(nodeData));
@@ -1682,7 +1655,7 @@ export default {
                 // 원본 프로세스 정의에서 해당 액티비티 찾아서 업데이트
                 const chatComponent = this.$refs.processDefinitionChat;
                 if (!chatComponent || !chatComponent.processDefinition) {
-                    alert('프로세스 정의를 찾을 수 없습니다.');
+                    console.error('❌ 프로세스 정의를 찾을 수 없습니다.');
                     return;
                 }
                 
@@ -1776,18 +1749,12 @@ export default {
                     });
                     
                     console.log('✅ 액티비티 업데이트 완료 (메모리에만 저장)');
-                    alert('저장되었습니다.');
-                    
-                    // 패널 닫기
-                    this.closeActivityPanel();
                 } else {
                     console.error('❌ 액티비티를 찾을 수 없습니다:', activityName);
-                    alert('액티비티를 찾을 수 없습니다.');
                 }
                 
             } catch (error) {
                 console.error('❌ 액티비티 저장 실패:', error);
-                alert('저장에 실패했습니다: ' + error.message);
             }
         },
 
@@ -3459,27 +3426,5 @@ export default {
     min-width: 12px !important;
 }
 
-/* 액티비티 속성 패널 스타일 */
-.activity-panel {
-    background-color: #fafafa;
-    max-height: 80vh;
-}
-
-.activity-panel::-webkit-scrollbar {
-    width: 6px;
-}
-
-.activity-panel::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.activity-panel::-webkit-scrollbar-thumb {
-    background: #c0c0c0;
-    border-radius: 3px;
-}
-
-.activity-panel::-webkit-scrollbar-thumb:hover {
-    background: #a0a0a0;
-}
 </style>
 

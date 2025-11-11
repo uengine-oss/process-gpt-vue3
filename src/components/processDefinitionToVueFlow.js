@@ -258,9 +258,11 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
   edges.forEach((edge, index) => {
     // edge.id는 `edge_${seq.id || index}` 형식
     const seqId = edge.id.replace('edge_', '')
-    const sequence = sequences.find(seq => seq.id === seqId || sequences[index] === seq)
+    // seq.id로 찾거나, 인덱스로 직접 매핑
+    const sequence = sequences.find(seq => seq.id === seqId) || sequences[index]
     if (sequence) {
       edgeToSequenceMap.set(edge.id, sequence)
+      console.log(`📌 Edge-Sequence 매핑: ${edge.id} -> ${sequence.id || `index_${index}`}`)
     }
   })
 
@@ -380,7 +382,9 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
       if (sourceNode && sequence) {
         sourceNode.data.backflowSequenceId = sequence.id
         sourceNode.data.backflowRequiredTime = sequence.requiredTime || ''
-        console.log(`🔴 역행 시퀀스 추가: ${edge.source} -> 시퀀스 ID: ${sequence.id}`)
+        console.log(`🔴 역행 시퀀스 추가: ${edge.source} (${sourceNode.data.content || sourceNode.data.label}) -> 시퀀스 ID: ${sequence.id}, 소요시간: ${sequence.requiredTime || '없음'}`)
+      } else {
+        console.warn(`⚠️ 역행 시퀀스를 찾지 못함: edge ${edge.id}, sourceNode: ${!!sourceNode}, sequence: ${!!sequence}`)
       }
       
       console.log(`🔴 역행: ${edge.source}(순서${sourceOrder}) -> ${edge.target}(순서${targetOrder}) [right→right]`)

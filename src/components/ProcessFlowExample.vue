@@ -37,6 +37,7 @@ const nodes = ref([])
 const edges = ref([])
 const dark = ref(false)
 const vueFlowRef = ref(null)
+const highlightedNodeId = ref(null) // 검색으로 강조된 노드 ID
 
 // flowData가 변경될 때마다 nodes와 edges 업데이트
 watch(
@@ -117,6 +118,83 @@ function handleNodeDoubleClick({ node }) {
   // 노드의 데이터를 부모 컴포넌트로 전달
   emit('node-double-click', node.data)
 }
+
+// 액티비티 검색 및 포커스
+function searchAndFocusActivity(activityName) {
+  if (!activityName || activityName.trim() === '') {
+    console.log('검색어가 비어있습니다.')
+    // 이전 강조 제거
+    if (highlightedNodeId.value) {
+      const prevNode = nodes.value.find(n => n.id === highlightedNodeId.value)
+      if (prevNode && prevNode.style) {
+        delete prevNode.style.border
+        delete prevNode.style.boxShadow
+      }
+      highlightedNodeId.value = null
+    }
+    return false
+  }
+
+  try {
+    const searchTerm = activityName.toLowerCase()
+    
+    // 이전에 강조된 노드 초기화
+    if (highlightedNodeId.value) {
+      const prevNode = nodes.value.find(n => n.id === highlightedNodeId.value)
+      if (prevNode && prevNode.style) {
+        delete prevNode.style.border
+        delete prevNode.style.boxShadow
+      }
+    }
+    
+    // 노드 검색 (content, name, label 등에서 검색)
+    const matchedNode = nodes.value.find(node => {
+      const content = node.data?.content || node.data?.name || node.data?.label || ''
+      return content.toLowerCase().includes(searchTerm)
+    })
+
+    if (matchedNode) {
+      console.log('✅ 노드를 찾았습니다:', matchedNode.data)
+      
+      // 노드 스타일 직접 변경
+      if (!matchedNode.style) {
+        matchedNode.style = {}
+      }
+      matchedNode.style.border = '3px solid rgb(var(--v-theme-primary))'
+      matchedNode.style.borderRadius = '8px'
+      matchedNode.style.boxShadow = '0 0 20px rgba(var(--v-theme-primary), 0.6)'
+      highlightedNodeId.value = matchedNode.id
+      
+      console.log('🎨 노드 스타일 적용:', matchedNode.style)
+      
+      // Vue Flow 인스턴스에서 노드 포커싱
+      if (vueFlowRef.value) {
+        // 노드 위치로 화면 이동 (중앙 배치, 줌 1.0)
+        vueFlowRef.value.setCenter(
+          matchedNode.position.x + (matchedNode.dimensions?.width || 100) / 2,
+          matchedNode.position.y + (matchedNode.dimensions?.height || 80) / 2,
+          { zoom: 1.0, duration: 800 }
+        )
+        
+        console.log('📍 노드 포커싱 및 강조 완료')
+      }
+      
+      return true
+    } else {
+      console.log('❌ 일치하는 노드를 찾을 수 없습니다.')
+      highlightedNodeId.value = null
+      return false
+    }
+  } catch (error) {
+    console.error('❌ 검색 중 오류 발생:', error)
+    return false
+  }
+}
+
+// 외부에서 호출 가능하도록 expose
+defineExpose({
+  searchAndFocusActivity
+})
 </script>
 
 <template>
