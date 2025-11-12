@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - ktds
 
 jobs:
   build-and-deploy:
@@ -34,7 +35,12 @@ jobs:
       - name: Build and push Docker image to GHCR
         run: |
           IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)
-          IMAGE_NAME=ghcr.io/uengine-oss/process-gpt:$IMAGE_TAG
+          
+          if [ "${{ github.ref_name }}" == "ktds" ]; then
+            IMAGE_NAME=ghcr.io/uengine-oss/process-gpt-ktds:$IMAGE_TAG
+          else
+            IMAGE_NAME=ghcr.io/uengine-oss/process-gpt:$IMAGE_TAG
+          fi
 
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
