@@ -1935,5 +1935,15 @@
         "tools": "툴 & 스킬",
         "knowledge": "지식 온톨로지",
         "achievements": "성과 & 뱃지"
+    },
+    "Gantt": {
+        "description": "설명",
+        "delete": "업무 삭제",
+        "moveInstance": "인스턴스로 이동",
+        "moveWorkItem": "워크아이템으로 이동",
+        "inProgress": "진행중",
+        "pending": "보류/반송",
+        "scheduled": "예정업무",
+        "done": "완료업무"
     }
 }

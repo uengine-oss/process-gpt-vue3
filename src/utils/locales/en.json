@@ -1918,5 +1918,15 @@
         "tools": "Tools & Skills",
         "knowledge": "Knowledge Ontology",
         "achievements": "Achievements & Badges"
+    },
+    "Gantt": {
+        "description": "Description",
+        "delete": "Task Delete",
+        "moveInstance": "Move to Instance",
+        "moveWorkItem": "Move to Work Item",
+        "inProgress": "In Progress",
+        "pending": "Pending",
+        "scheduled": "Scheduled",
+        "done": "Done"
     }
 }

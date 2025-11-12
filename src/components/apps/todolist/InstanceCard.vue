@@ -470,7 +470,7 @@ export default {
             return this.isMobile ? '' : 'd-flex align-center justify-end ml-2 mr-2';
         },
         buttonContainerStyle() {
-            return this.isMobile ? 'position: fixed; right: 16px; bottom: 32px; z-index: 999;' : '';
+            return this.isMobile ? 'position: fixed; right: 16px; bottom: 32px; z-index: 999;' : 'cursor: pointer;';
         }
     },
     methods: {

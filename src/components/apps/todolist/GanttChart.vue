@@ -75,7 +75,7 @@
                             <div class="gantt-detail-overlay-contents pa-4">
                             <!-- {{ editItem }} -->
                                 <div v-if="editItem.description" class="issue-desc mt-2">
-                                    <div class="issue-title">설명</div>
+                                    <div class="issue-title">{{ $t('Gantt.description') }}</div>
                                     {{ editItem.description }}
                                 </div>
 
@@ -154,22 +154,22 @@ export default {
     methods: {
         getStatusText(status) {
             const statusMap = {
-                'IN_PROGRESS': '진행중',
-                'SUBMITTED': '진행중',
-                'RUNNING': '진행중',
-                'PENDING': '보류/반송',
-                'CANCELLED': '보류/반송',
-                'TODO': '예정업무',
-                'DONE': '완료업무'
+                'IN_PROGRESS': this.$t('Gantt.inProgress'),
+                'SUBMITTED': this.$t('Gantt.inProgress'),
+                'RUNNING': this.$t('Gantt.inProgress'),
+                'PENDING': this.$t('Gantt.pending'),
+                'CANCELLED': this.$t('Gantt.pending'),
+                'TODO': this.$t('Gantt.scheduled'),
+                'DONE': this.$t('Gantt.done')
             };
             return statusMap[status] || status;
         },
         getTooltipText() {
             if (!this.editItem) return '';
             if (this.editItem.parent == 0) {
-                return '인스턴스로 이동';
+                return this.$t('Gantt.moveInstance');
             } else {
-                return '워크아이템으로 이동';
+                return this.$t('Gantt.moveWorkItem');
             }
         },
         handleMessage(value){

@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <v-card class="pa-0">
         <v-row class="ma-0 pa-4">
             <v-card-title class="text-h6 pa-0">{{ dialogTitle }}</v-card-title>
             <v-spacer></v-spacer>
@@ -13,7 +13,7 @@
             </v-btn>
         </v-row>
 
-        <v-card-text class="ma-0 pa-4 pb-0 pt-0 organization-edit-dialog-contents">
+        <v-card-text class="ma-0 pa-4 pb-0 pt-1 organization-edit-dialog-contents">
             <!-- edit user -->
             <div v-if="dialogType == 'edit-user'">
                 <v-text-field 
@@ -62,7 +62,7 @@
                 rounded
             >{{ buttonText }}</v-btn>
         </v-card-actions>
-    </div>
+    </v-card>
 </template>
 
 <script>

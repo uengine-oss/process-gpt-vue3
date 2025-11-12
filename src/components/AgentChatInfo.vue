@@ -136,7 +136,7 @@
             <!-- DMN Tabs -->
             <div v-if="!editDialog && agentType !== 'a2a'">
                 <v-divider class="mb-4"></v-divider>
-                <span class="text-body-2 font-weight-medium">비즈니스 규칙</span>
+                <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.businessRule') }}</span>
                 <v-btn size="x-small" variant="text" icon @click="handleDmnChange(null)">
                     <v-icon>mdi-plus</v-icon>
                 </v-btn>
