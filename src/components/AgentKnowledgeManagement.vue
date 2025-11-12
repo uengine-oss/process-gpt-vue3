@@ -6,7 +6,7 @@
                 {{ $t('AgentKnowledgeManagement.description') }}
             </p>
         </div>
-        <div class="px-4">
+        <div>
             <div v-if="knowledges.length === 0 && !isLoading" class="text-center py-8">
                 <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-database-off</v-icon>
                 <h6 class="text-h6 text-grey">{{ $t('AgentKnowledgeManagement.noMemory') }}</h6>
@@ -17,7 +17,9 @@
                 <v-skeleton-loader type="card"></v-skeleton-loader>
             </div>
             
-            <div v-else>
+            <div v-else
+                class="knowledge-management-table"
+            >
                 <!-- 테이블 -->
                 <v-data-table
                     :headers="headers"
@@ -33,7 +35,11 @@
                 >
                     <!-- 데이터 컬럼 -->
                     <template v-slot:item.metadata.data="{ item }">
-                        <div class="text-truncate" style="max-width: 400px;" :title="item.metadata.data">
+                        <div class="text-truncate"
+                            style="max-width: 400px;"
+                            :title="item.metadata.data"
+
+                        >
                             {{ item.metadata.data }}
                         </div>
                     </template>
@@ -57,7 +63,7 @@
                     <!-- Expand 영역 -->
                     <template v-slot:expanded-row="{ columns, item }">
                         <td :colspan="columns.length">
-                            <div class="px-4 py-2 expanded-row-content">
+                            <v-card elevation="10" class="px-4 py-2 expanded-row-content">
                                 <!-- 탭 네비게이션 -->
                                 <v-tabs v-model="item.activeTab" class="mb-1" density="compact">
                                     <v-tab value="metadata">Metadata</v-tab>
@@ -66,7 +72,7 @@
                                 
                                 <!-- 탭 내용 -->
                                  <div v-if="item.activeTab === 'metadata'">
-                                     <v-list>
+                                     <v-list class="knowledge-expanded-row-list">
                                         <v-list-item>
                                             <v-list-item-title class="text-caption text-medium-emphasis">내용</v-list-item-title>
                                             <div style="white-space: pre-wrap; word-break: break-word;">{{ item.metadata.data }}</div>
@@ -100,11 +106,9 @@
                                  </div>
                                 
                                 <div v-else-if="item.activeTab === 'raw'">
-                                    <v-card variant="outlined" class="pa-4">
-                                        <pre class="text-body-2" style="white-space: pre-wrap; word-break: break-word;">{{ JSON.stringify(item, null, 2) }}</pre>
-                                    </v-card>
+                                    <pre class="text-body-2" style="white-space: pre-wrap; word-break: break-word;">{{ JSON.stringify(item, null, 2) }}</pre>
                                 </div>
-                            </div>
+                            </v-card>
                         </td>
                     </template>
                 </v-data-table>
@@ -224,15 +228,18 @@ export default {
 <style scoped>
 .knowledge-management {
     height: 100%;
-    overflow-y: auto;
+}
+
+.knowledge-expanded-row-list .v-list-item {
+    padding: 0px 0px 8px 0px;
 }
 
 .expanded-row-content {
-    background-color: #f0f0f0 !important;
+    background-color: rgb(var(--v-theme-primary), 0.1) !important;
 }
 
 .expanded-row-content > div > div.v-list {
-    background-color: #f0f0f0 !important;
+    background-color: transparent;
 }
 
 .dialog-content-cell {
