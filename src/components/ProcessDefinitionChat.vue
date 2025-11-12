@@ -917,6 +917,31 @@ export default {
             if(window.$pal){
                 await this.beforeSavePALUserTasks(info);
             }
+            
+            // 엑셀 파일이 업로드되어 있으면 Supabase Storage에 저장
+            try {
+                if(this.processDefinition && !this.processDefinition.excel_template_url) {
+                    const excelTemplateUrl = await new Promise((resolve) => {
+                        // emit으로 부모 컴포넌트에 업로드 요청
+                        this.$emit('upload-excel-to-storage', (url) => {
+                            resolve(url);
+                        });
+                    });
+                    
+                    if (excelTemplateUrl) {
+                        // processDefinition에 엑셀 템플릿 URL 저장
+                        if (!this.processDefinition) {
+                            this.processDefinition = {};
+                        }
+                        this.processDefinition.excel_template_url = excelTemplateUrl;
+                        console.log('✅ 엑셀 템플릿 URL이 processDefinition에 저장되었습니다:', excelTemplateUrl);
+                    }
+                }
+            } catch (error) {
+                console.error('❌ 엑셀 파일 업로드 중 오류:', error);
+                // 엑셀 업로드 실패해도 프로세스 저장은 계속 진행
+            }
+            
             this.saveDefinition(info);
         },
         async beforeSavePALUserTasks(info) {
@@ -1043,15 +1068,15 @@ export default {
                             me.disableChat = false;
                             me.isViewMode = false;
                         } else {
-                            me.lock = true;
-                            me.disableChat = true;
-                            me.isViewMode = true;
+                            // me.lock = true;
+                            // me.disableChat = true;
+                            // me.isViewMode = true;
                         }
                     } else {
-                        me.editUser = '';
-                        me.lock = true;
-                        me.disableChat = true;
-                        me.isViewMode = true;
+                        // me.editUser = '';
+                        // me.lock = true;
+                        // me.disableChat = true;
+                        // me.isViewMode = true;
                     }
 
                     if(me.chatMode == 'tree') {
@@ -1248,10 +1273,10 @@ export default {
                 if (me.$route.query && me.$route.query.modeling) {
                     document.title = me.projectName;
                 }
-                if (me.$route.query && me.$route.query.edit) {
-                    me.lock = true;
-                    me.toggleLock();
-                }
+                // if (me.$route.query && me.$route.query.edit) {
+                //     me.lock = true;
+                //     me.toggleLock();
+                // }
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
             } catch (e) {
                 console.log(e);

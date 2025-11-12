@@ -547,12 +547,18 @@ export default {
                                 // 기존 processDefinition에서 activities 찾기 (activities 또는 elements에서)
                                 let oldActivities = [];
                                 let oldSequences = [];
+                                let excelTemplateUrl = null;
+
                                 if (me.processDefinition.activities) {
                                     oldActivities = me.processDefinition.activities;
                                     oldSequences = me.processDefinition.sequences;
                                 } else if (me.processDefinition.elements) {
                                     oldActivities = me.processDefinition.elements.filter(el => el.elementType === 'Activity');
                                     oldSequences = me.processDefinition.elements.filter(el => el.elementType === 'Sequence');
+                                }
+
+                                if(me.processDefinition.excel_template_url) {
+                                    excelTemplateUrl = me.processDefinition.excel_template_url;
                                 }
                                 
                                 // tool 정보 복원
@@ -580,6 +586,10 @@ export default {
                                         }
                                         return newSequence;
                                     });
+                                }
+
+                                if(excelTemplateUrl) {
+                                    newProcessDefinition.excel_template_url = excelTemplateUrl;
                                 }
                             }
 
@@ -609,9 +619,9 @@ export default {
                     };
                     this.$emit("modelCreated", processInfo);
 
-                    me.disableChat = true;
-                    me.isViewMode = true;
-                    me.lock = true; // 잠금처리 ( 수정 불가 )
+                    // me.disableChat = true;
+                    // me.isViewMode = true;
+                    // me.lock = true; // 잠금처리 ( 수정 불가 )
                     me.definitionChangeCount++;
 
                     me.loading = false;

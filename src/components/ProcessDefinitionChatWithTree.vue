@@ -192,6 +192,7 @@
                     @save-activity-changes="saveActivityChanges"
                     @generation-finished="handleGenerationFinished"
                     @process-definition-ready="handleProcessDefinitionReady"
+                    @upload-excel-to-storage="handleUploadExcelToStorage"
                 />
             </v-col>
         </v-row>
@@ -1167,6 +1168,126 @@ export default {
         },
 
         /**
+         * Supabase Storage에 엑셀 파일 업로드
+         * @returns {Promise<string|null>} 업로드된 파일의 공개 URL 또는 null
+         */
+        async uploadExcelToStorage() {
+            try {
+                if (!this.selectedFile) {
+                    console.log('⚠️ 업로드할 파일이 없습니다.');
+                    return null;
+                }
+
+                console.log('📤 Supabase Storage에 엑셀 파일 업로드 시작:', this.selectedFile.name);
+
+                // 파일명 생성: 타임스탬프 + 원본 파일명
+                const timestamp = Date.now();
+                const sanitizedFileName = this.selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                const storageFileName = `${timestamp}_${sanitizedFileName}`;
+
+                // Supabase Storage에 업로드
+                const { data, error } = await window.$supabase.storage
+                    .from('excel-templates')
+                    .upload(storageFileName, this.selectedFile, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (error) {
+                    console.error('❌ Supabase Storage 업로드 실패:', error);
+                    throw error;
+                }
+
+                console.log('✅ Supabase Storage 업로드 성공:', data);
+
+                // 공개 URL 가져오기
+                const { data: publicUrlData } = window.$supabase.storage
+                    .from('excel-templates')
+                    .getPublicUrl(storageFileName);
+
+                const publicUrl = publicUrlData.publicUrl;
+                console.log('🔗 엑셀 파일 공개 URL:', publicUrl);
+
+                return publicUrl;
+
+            } catch (error) {
+                console.error('❌ 엑셀 파일 업로드 중 오류:', error);
+                alert(`엑셀 파일 업로드 실패: ${error.message}`);
+                return null;
+            }
+        },
+
+        /**
+         * emit으로 받은 엑셀 업로드 요청 처리
+         * @param {Function} callback - 결과를 전달할 콜백 함수
+         */
+        async handleUploadExcelToStorage(callback) {
+            try {
+                const excelTemplateUrl = await this.uploadExcelToStorage();
+                // 콜백 함수를 통해 결과 전달
+                if (callback && typeof callback === 'function') {
+                    callback(excelTemplateUrl);
+                }
+            } catch (error) {
+                console.error('❌ handleUploadExcelToStorage 오류:', error);
+                // 에러 발생 시 null 전달
+                if (callback && typeof callback === 'function') {
+                    callback(null);
+                }
+            }
+        },
+
+        /**
+         * URL에서 엑셀 파일을 로드하여 originalWorkbook에 저장
+         * @param {string} url - 엑셀 파일 URL
+         * @returns {Promise<boolean>} 로드 성공 여부
+         */
+        async loadExcelFromUrl(url) {
+            try {
+                console.log('📥 URL에서 엑셀 파일 로드 시작:', url);
+
+                // URL에서 파일 다운로드
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                console.log('✅ 파일 다운로드 완료, 크기:', blob.size, 'bytes');
+
+                // Blob을 ArrayBuffer로 변환
+                const arrayBuffer = await blob.arrayBuffer();
+
+                // XLSX로 파싱 (xlsx-js-style로 스타일 포함)
+                const workbook = XLSX.read(arrayBuffer, {
+                    type: 'array',
+                    cellStyles: true,
+                    cellFormula: true,
+                    cellDates: true
+                });
+
+                console.log('✅ 엑셀 파싱 완료');
+                console.log('📋 시트 목록:', workbook.SheetNames);
+
+                // originalWorkbook에 저장
+                this.originalWorkbook = workbook;
+                this.originalWorkbookInfo = {
+                    fileName: url.split('/').pop() || 'template.xlsx',
+                    sheetNames: workbook.SheetNames,
+                    sheetCount: workbook.SheetNames.length
+                };
+
+                console.log('💾 원본 엑셀 형식 저장 완료:', this.originalWorkbookInfo);
+
+                return true;
+
+            } catch (error) {
+                console.error('❌ URL에서 엑셀 파일 로드 실패:', error);
+                return false;
+            }
+        },
+
+        /**
          * 엑셀 파일 처리
          */
         async processExcelFile(file) {
@@ -1490,19 +1611,19 @@ export default {
             } 
             // BPMN 모드인 경우
             else {
-                const chatComponent = this.$refs.processDefinitionChat;
-                if (chatComponent && chatComponent.searchAndFocusActivity) {
+            const chatComponent = this.$refs.processDefinitionChat;
+            if (chatComponent && chatComponent.searchAndFocusActivity) {
                     console.log('🎯 BPMN 모드 검색');
                     found = chatComponent.searchAndFocusActivity(this.searchValue);
                 } else {
                     console.error('ProcessDefinitionChat 컴포넌트를 찾을 수 없습니다.');
                 }
             }
-
-            if (found) {
-                console.log('✅ 액티비티를 찾아 포커싱했습니다.');
-            } else {
-                console.log('❌ 일치하는 액티비티를 찾을 수 없습니다.');
+                
+                if (found) {
+                    console.log('✅ 액티비티를 찾아 포커싱했습니다.');
+                } else {
+                    console.log('❌ 일치하는 액티비티를 찾을 수 없습니다.');
             }
         },
 
@@ -1527,9 +1648,9 @@ export default {
             } 
             // BPMN 모드인 경우
             else {
-                const chatComponent = this.$refs.processDefinitionChat;
-                if (chatComponent && chatComponent.searchAndFocusActivity) {
-                    chatComponent.searchAndFocusActivity(value);
+            const chatComponent = this.$refs.processDefinitionChat;
+            if (chatComponent && chatComponent.searchAndFocusActivity) {
+                chatComponent.searchAndFocusActivity(value);
                 }
             }
         },
@@ -1555,9 +1676,9 @@ export default {
                 } 
                 // BPMN 모드인 경우
                 else {
-                    const chatComponent = this.$refs.processDefinitionChat;
-                    if (chatComponent && chatComponent.searchAndFocusActivity) {
-                        chatComponent.searchAndFocusActivity(value);
+                const chatComponent = this.$refs.processDefinitionChat;
+                if (chatComponent && chatComponent.searchAndFocusActivity) {
+                    chatComponent.searchAndFocusActivity(value);
                     }
                 }
             }
@@ -1571,14 +1692,14 @@ export default {
             
             if (!this.showFlowOverlay || (type == 'flow' && !chatComponent.isConsultingMode)) {
                 // Flow 뷰 열기
-                if (chatComponent && chatComponent.processDefinition) {
-                    // 프로세스 정의를 복사하여 저장 (참조 문제 방지)
-                    this.currentProcessDefinitionForFlow = JSON.parse(JSON.stringify(chatComponent.processDefinition));
+            if (chatComponent && chatComponent.processDefinition) {
+                // 프로세스 정의를 복사하여 저장 (참조 문제 방지)
+                this.currentProcessDefinitionForFlow = JSON.parse(JSON.stringify(chatComponent.processDefinition));
                     this.showFlowOverlay = true;
-                } else {
-                    console.warn('⚠️ 표시할 프로세스 정의가 없습니다.');
-                    alert('표시할 프로세스 정의가 없습니다. 먼저 프로세스를 선택해주세요.');
-                }
+            } else {
+                console.warn('⚠️ 표시할 프로세스 정의가 없습니다.');
+                alert('표시할 프로세스 정의가 없습니다. 먼저 프로세스를 선택해주세요.');
+            }
             } else {
                 // BPMN 뷰로 돌아가기
                 this.closeFlowOverlay();
@@ -1775,12 +1896,28 @@ export default {
                 const processDefinition = chatComponent.processDefinition;
                 console.log('📋 프로세스 정의:', processDefinition);
                 
-                // 원본 엑셀이 있으면 그 형식을 기반으로 다운로드
+                // 1단계: 현재 업로드된 엑셀 파일이 있는지 체크
                 if (this.originalWorkbook && this.originalWorkbookInfo) {
-                    console.log('🔄 원본 엑셀 형식 기반으로 다운로드');
+                    console.log('🔄 [1단계] 업로드된 원본 엑셀 형식 기반으로 다운로드');
                     await this.downloadExcelWithOriginalFormat(processDefinition);
                     return;
                 }
+
+                // 2단계: processDefinition에 excel_template_url이 있는지 체크
+                if (processDefinition.excel_template_url) {
+                    console.log('🔄 [2단계] 저장된 엑셀 템플릿 URL에서 파일 불러오기:', processDefinition.excel_template_url);
+                    const loaded = await this.loadExcelFromUrl(processDefinition.excel_template_url);
+                    if (loaded) {
+                        console.log('✅ 엑셀 템플릿 로드 완료, 원본 형식으로 다운로드');
+                        await this.downloadExcelWithOriginalFormat(processDefinition);
+                        return;
+                    } else {
+                        console.warn('⚠️ 엑셀 템플릿 로드 실패, 기본 양식으로 다운로드');
+                    }
+                }
+
+                // 3단계: 위 둘 다 없으면 7개 시트 양식으로 다운로드
+                console.log('🔄 [3단계] 기본 7개 시트 양식으로 다운로드');
 
                 // 구조 판별: elements가 있으면 새로운 구조, 없으면 이전 구조
                 const hasElementsStructure = processDefinition.elements && Array.isArray(processDefinition.elements);
@@ -3427,4 +3564,5 @@ export default {
 }
 
 </style>
+
 
