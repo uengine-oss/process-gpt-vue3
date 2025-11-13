@@ -2064,7 +2064,9 @@ export default {
                     activities = processDefinition.activities;
                 }
 
+                // ✅ 시퀀스 정보를 기반으로 액티비티 순서 정렬
                 if (activities.length > 0) {
+                    activities = this.sortActivitiesBySequence(activities, processDefinition);
                     const activitiesData = [
                         ['ID', '이름', '타입', '역할', '설명', '지시사항', 
                          '소요시간(일)', '체크포인트', '입력데이터', '출력데이터', 
@@ -2516,7 +2518,9 @@ export default {
                         activities = processDefinition.activities;
                     }
                     
+                    // ✅ 시퀀스 정보를 기반으로 액티비티 순서 정렬
                     if (activities.length > 0) {
+                        activities = this.sortActivitiesBySequence(activities, processDefinition);
                         this.addOrUpdateSheet(workbookCopy, '4.액티비티', this.createActivitiesData(activities), false);
                     }
                 }
@@ -2652,6 +2656,10 @@ export default {
                 
                 console.log(`📊 업데이트할 액티비티 수: ${activities.length}`);
                 
+                // ✅ 시퀀스 정보를 기반으로 액티비티 순서 정렬
+                activities = this.sortActivitiesBySequence(activities, processDefinition);
+                console.log(`✅ 시퀀스 기반 정렬 완료: ${activities.length}개 액티비티`);
+                
                 // 원본 시트의 데이터 영역 찾기 (헤더 행 찾기)
                 const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:Z1000');
                 let headerRow = -1;
@@ -2741,6 +2749,152 @@ export default {
             } catch (error) {
                 console.error('❌ 원본 시트 업데이트 실패:', error);
                 console.error('상세 오류:', error.stack);
+            }
+        },
+
+        /**
+         * 시퀀스 정보를 기반으로 액티비티를 정렬 (실제 그려진 순서대로)
+         * @param {Array} activities - 정렬할 액티비티 배열
+         * @param {Object} processDefinition - 프로세스 정의 객체
+         * @returns {Array} 정렬된 액티비티 배열
+         */
+        sortActivitiesBySequence(activities, processDefinition) {
+            try {
+                // 시퀀스 정보 추출
+                let sequences = [];
+                if (processDefinition.elements && Array.isArray(processDefinition.elements)) {
+                    sequences = processDefinition.elements.filter(el => el.elementType === 'Sequence');
+                } else if (processDefinition.sequences && Array.isArray(processDefinition.sequences)) {
+                    sequences = processDefinition.sequences;
+                }
+
+                if (!sequences || sequences.length === 0) {
+                    console.log('⚠️ 시퀀스 정보가 없어 원본 순서 유지');
+                    return activities;
+                }
+
+                console.log(`📊 시퀀스 정보: ${sequences.length}개`);
+
+                // 모든 노드 ID 수집 (events, activities, gateways)
+                const allNodeIds = new Set();
+                activities.forEach(act => allNodeIds.add(act.id));
+                
+                if (processDefinition.events) {
+                    const events = Array.isArray(processDefinition.events) 
+                        ? processDefinition.events 
+                        : processDefinition.elements?.filter(el => el.elementType === 'Event') || [];
+                    events.forEach(evt => allNodeIds.add(evt.id));
+                }
+                
+                if (processDefinition.gateways) {
+                    const gateways = Array.isArray(processDefinition.gateways)
+                        ? processDefinition.gateways
+                        : processDefinition.elements?.filter(el => el.elementType === 'Gateway') || [];
+                    gateways.forEach(gw => allNodeIds.add(gw.id));
+                }
+
+                // 그래프 구조 생성 (인접 리스트)
+                const graph = new Map();
+                const inDegree = new Map();
+                
+                // 모든 노드 초기화
+                allNodeIds.forEach(nodeId => {
+                    graph.set(nodeId, []);
+                    inDegree.set(nodeId, 0);
+                });
+
+                // 시퀀스로부터 그래프 간선 추가
+                sequences.forEach(seq => {
+                    if (seq.source && seq.target && allNodeIds.has(seq.source) && allNodeIds.has(seq.target)) {
+                        graph.get(seq.source).push(seq.target);
+                        inDegree.set(seq.target, (inDegree.get(seq.target) || 0) + 1);
+                    }
+                });
+
+                // 시작 노드 찾기 (inDegree가 0인 노드들)
+                const startNodes = Array.from(allNodeIds).filter(nodeId => inDegree.get(nodeId) === 0);
+                
+                if (startNodes.length === 0) {
+                    console.log('⚠️ 시작 노드를 찾을 수 없어 원본 순서 유지');
+                    return activities;
+                }
+
+                console.log(`📍 시작 노드: ${startNodes.length}개`, startNodes);
+
+                // BFS를 통한 방문 순서 결정
+                const visitOrder = new Map(); // nodeId -> 방문 순서 번호
+                const queue = [...startNodes];
+                const visited = new Set();
+                let orderCounter = 0;
+
+                // 시작 노드들의 순서 설정
+                startNodes.forEach(nodeId => {
+                    visitOrder.set(nodeId, orderCounter++);
+                });
+
+                while (queue.length > 0) {
+                    const currentNodeId = queue.shift();
+                    
+                    if (visited.has(currentNodeId)) continue;
+                    visited.add(currentNodeId);
+
+                    // 다음 노드들을 큐에 추가
+                    const neighbors = graph.get(currentNodeId) || [];
+                    neighbors.forEach(nextNodeId => {
+                        const currentInDegree = inDegree.get(nextNodeId) - 1;
+                        inDegree.set(nextNodeId, currentInDegree);
+                        
+                        if (currentInDegree === 0 && !visited.has(nextNodeId)) {
+                            if (!visitOrder.has(nextNodeId)) {
+                                visitOrder.set(nextNodeId, orderCounter++);
+                            }
+                            queue.push(nextNodeId);
+                        }
+                    });
+                }
+
+                // 방문하지 못한 노드 처리 (순환이나 분리된 노드)
+                allNodeIds.forEach(nodeId => {
+                    if (!visitOrder.has(nodeId)) {
+                        visitOrder.set(nodeId, orderCounter++);
+                    }
+                });
+
+                console.log(`📋 방문 순서 결정 완료: ${visitOrder.size}개 노드`);
+
+                // 액티비티만 필터링하여 순서대로 정렬
+                const activityIds = activities.map(act => act.id);
+                const orderedActivityIds = Array.from(visitOrder.entries())
+                    .filter(([nodeId]) => activityIds.includes(nodeId))
+                    .sort((a, b) => a[1] - b[1]) // 방문 순서로 정렬
+                    .map(([nodeId]) => nodeId);
+
+                console.log(`📊 정렬된 액티비티 ID 순서:`, orderedActivityIds);
+
+                // 순서대로 액티비티 재배열
+                const sortedActivities = [];
+                orderedActivityIds.forEach(id => {
+                    const activity = activities.find(act => act.id === id);
+                    if (activity) {
+                        sortedActivities.push(activity);
+                    }
+                });
+
+                // 혹시 누락된 액티비티가 있다면 마지막에 추가
+                activities.forEach(activity => {
+                    if (!sortedActivities.find(act => act.id === activity.id)) {
+                        sortedActivities.push(activity);
+                    }
+                });
+
+                console.log(`✅ 액티비티 정렬 완료: ${sortedActivities.length}개`);
+                return sortedActivities;
+
+            } catch (error) {
+                console.error('❌ 액티비티 정렬 중 오류:', error);
+                console.error('상세 오류:', error.stack);
+                // 오류 발생 시 원본 순서 반환
+                return activities;
             }
         },
 
