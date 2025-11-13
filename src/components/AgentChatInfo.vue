@@ -1,9 +1,9 @@
 <template>
     <div>
-        <div v-if="!editDialog" class="pa-4">
+        <div v-if="!editDialog">
             <!-- 편집 모드가 아닐 때만 일반 화면 표시 -->
-            <div class="text-left mb-4">
-                <v-row class="align-start ma-0 pa-0 mb-4">
+            <div class="text-left">
+                <v-row class="align-start pa-4 ma-0">
                     <v-avatar size="24" class="mr-2 flex-shrink-0">
                         <!-- 프로필 이미지가 있고 로딩 성공했을 때만 표시 -->
                         <v-img 
@@ -44,115 +44,115 @@
                     </v-btn>
                 </v-row>
                 
-                <!-- Goal Section - 모든 버전에서 표시 -->
-                <div class="pa-0 mb-1">
-                    <v-icon size="small" class="mr-1">mdi-target</v-icon>
-                    <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.goal') }}</span>
-                </div>
-                <p class="text-body-2 text-medium-emphasis mb-3">
-                    {{ getDisplayText(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 'goal', 50) }}
-                    <v-btn
-                        v-if="shouldShowToggleButton(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 50)"
-                        @click="toggleTextExpansion('goal')"
-                        variant="text"
-                        size="small"
-                        color="primary"
-                        class="pa-0 text-caption ml-1"
-                        style="min-width: auto; height: auto; vertical-align: baseline;"
-                    >
-                        {{ expandedTexts.goal ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
-                    </v-btn>
-                </p>
-                
-                <!-- Persona Section -->
-                <div v-if="agentInfo.persona" class="pa-0 mb-1">
-                    <v-icon size="small" class="mr-1">mdi-account-tie</v-icon>
-                    <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.persona') }}</span>
-                </div>
-                <p v-if="agentInfo.persona" class="text-body-2 text-medium-emphasis mb-3">
-                    {{ getDisplayText(agentInfo.persona, 'persona', 50) }}
-                    <v-btn
-                        v-if="shouldShowToggleButton(agentInfo.persona, 50)"
-                        @click="toggleTextExpansion('persona')"
-                        variant="text"
-                        size="small"
-                        color="primary"
-                        class="pa-0 text-caption ml-1"
-                        style="min-width: auto; height: auto; vertical-align: baseline;"
-                    >
-                        {{ expandedTexts.persona ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
-                    </v-btn>
-                </p>
-                
-                <!-- Tools Section -->
-                <div v-if="agentInfo.tools && agentInfo.tools.length > 0" class="pa-0 mb-1">
-                    <v-icon size="small" class="mr-1">mdi-tools</v-icon>
-                    <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.tools') }}</span>
-                </div>
-                <div v-if="agentInfo.tools && agentInfo.tools.length > 0" class="mb-3">
-                    <v-chip-group class="tools-chips">
-                        <v-chip 
-                            v-for="tool in getDisplayTools()" 
-                            :key="tool"
-                            size="small"
-                            color="success"
-                            variant="outlined"
-                            class="ma-1"
-                        >
-                            {{ tool }}
-                        </v-chip>
+                <div class="agent-chat-info-content pa-4">
+                    <!-- Goal Section - 모든 버전에서 표시 -->
+                    <div class="pa-0 mb-1">
+                        <v-icon size="small" class="mr-1">mdi-target</v-icon>
+                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.goal') }}</span>
+                    </div>
+                    <p class="text-body-2 text-medium-emphasis mb-3">
+                        {{ getDisplayText(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 'goal', 50) }}
                         <v-btn
-                            v-if="shouldShowToolsToggle()"
-                            @click="toggleTextExpansion('tools')"
+                            v-if="shouldShowToggleButton(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 50)"
+                            @click="toggleTextExpansion('goal')"
                             variant="text"
                             size="small"
                             color="primary"
-                            class="pa-0 text-caption ma-1"
-                            style="min-width: auto; height: auto; vertical-align: middle;"
+                            class="pa-0 text-caption ml-1"
+                            style="min-width: auto; height: auto; vertical-align: baseline;"
                         >
-                            {{ expandedTexts.tools ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                            {{ expandedTexts.goal ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
                         </v-btn>
-                    </v-chip-group>
-                </div>
-            </div>
-            
-            <v-divider v-if="!editDialog" class="mb-4"></v-divider>
-            
-            <!-- Tab Navigation - 편집 모드가 아닐 때만 표시 -->
-            <v-tabs
-                v-if="!editDialog"
-                v-model="activeTab"
-                direction="vertical"
-                color="primary"
-                class="agent-tabs"
-                @update:model-value="handleTabChange"
-            >
-                <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value" class="text-left justify-start">
-                    <v-icon start class="mr-2">{{ tab.icon }}</v-icon>
-                    {{ tab.label }}
-                </v-tab>
-            </v-tabs>
+                    </p>
 
-            <!-- DMN Tabs -->
-            <div v-if="!editDialog && agentType !== 'a2a'">
-                <v-divider class="mb-4"></v-divider>
-                <span class="text-body-2 font-weight-medium">비즈니스 규칙</span>
-                <v-btn size="x-small" variant="text" icon @click="handleDmnChange(null)">
-                    <v-icon>mdi-plus</v-icon>
-                </v-btn>
-                <v-tabs
-                    v-if="dmnList.length > 0"
-                    v-model="selectedDmnId"
-                    direction="vertical"
-                    color="primary"
-                    class="agent-tabs"
-                    @update:model-value="handleDmnChange"
-                >
-                    <v-tab v-for="dmn in dmnTabList" :key="dmn.id" :value="dmn.id" class="text-left justify-start" @click="handleDmnChange(dmn.id)">
-                        <Icons :icon="dmn.icon" :size="16" class="mr-2"/>
-                        {{ dmn.label }}
-                    </v-tab>
-                </v-tabs>
+                    <!-- Persona Section -->
+                    <div v-if="agentInfo.persona" class="pa-0 mb-1">
+                        <v-icon size="small" class="mr-1">mdi-account-tie</v-icon>
+                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.persona') }}</span>
+                    </div>
+                    <p v-if="agentInfo.persona" class="text-body-2 text-medium-emphasis mb-3">
+                        {{ getDisplayText(agentInfo.persona, 'persona', 50) }}
+                        <v-btn
+                            v-if="shouldShowToggleButton(agentInfo.persona, 50)"
+                            @click="toggleTextExpansion('persona')"
+                            variant="text"
+                            size="small"
+                            color="primary"
+                            class="pa-0 text-caption ml-1"
+                            style="min-width: auto; height: auto; vertical-align: baseline;"
+                        >
+                            {{ expandedTexts.persona ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                        </v-btn>
+                    </p>
+                    
+                    <!-- Tools Section -->
+                    <div v-if="agentInfo.tools && agentInfo.tools.length > 0" class="pa-0 mb-1">
+                        <v-icon size="small" class="mr-1">mdi-tools</v-icon>
+                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.tools') }}</span>
+                    </div>
+                    <div v-if="agentInfo.tools && agentInfo.tools.length > 0" class="mb-3">
+                        <v-chip-group class="tools-chips">
+                            <v-chip 
+                                v-for="tool in getDisplayTools()" 
+                                :key="tool"
+                                size="small"
+                                color="success"
+                                variant="outlined"
+                                class="ma-1"
+                            >
+                                {{ tool }}
+                            </v-chip>
+                            <v-btn
+                                v-if="shouldShowToolsToggle()"
+                                @click="toggleTextExpansion('tools')"
+                                variant="text"
+                                size="small"
+                                color="primary"
+                                class="pa-0 text-caption ma-1"
+                                style="min-width: auto; height: auto; vertical-align: middle;"
+                            >
+                                {{ expandedTexts.tools ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                            </v-btn>
+                        </v-chip-group>
+                    </div>
+                    <v-divider class="mb-4"></v-divider>
+                    
+                    <!-- Tab Navigation - 편집 모드가 아닐 때만 표시 -->
+                    <v-tabs
+                        v-model="activeTab"
+                        direction="vertical"
+                        color="primary"
+                        class="agent-tabs"
+                        @update:model-value="handleTabChange"
+                    >
+                        <v-tab v-for="tab in tabList" :key="tab.value" :value="tab.value" class="text-left justify-start">
+                            <v-icon start class="mr-2">{{ tab.icon }}</v-icon>
+                            {{ tab.label }}
+                        </v-tab>
+                    </v-tabs>
+
+                    <!-- DMN Tabs -->
+                    <div v-if="!editDialog && agentType !== 'a2a'">
+                        <v-divider class="mb-4"></v-divider>
+                        <span class="text-body-2 font-weight-medium">비즈니스 규칙</span>
+                        <v-btn size="x-small" variant="text" icon @click="handleDmnChange(null)">
+                            <v-icon>mdi-plus</v-icon>
+                        </v-btn>
+                        <v-tabs
+                            v-if="dmnList.length > 0"
+                            v-model="selectedDmnId"
+                            direction="vertical"
+                            color="primary"
+                            class="agent-tabs"
+                            @update:model-value="handleDmnChange"
+                        >
+                            <v-tab v-for="dmn in dmnTabList" :key="dmn.id" :value="dmn.id" class="text-left justify-start" @click="handleDmnChange(dmn.id)">
+                                <Icons :icon="dmn.icon" :size="16" class="mr-2"/>
+                                {{ dmn.label }}
+                            </v-tab>
+                        </v-tabs>
+                    </div>
+                </div>
             </div>
         </div>
 

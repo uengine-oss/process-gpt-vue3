@@ -116,36 +116,38 @@
         </div>
 
         <!-- 삭제 확인 다이얼로그 -->
-        <v-dialog v-model="deleteDialog" max-width="400">
+        <v-dialog v-model="deleteDialog" max-width="40vw">
             <v-card>
-                <v-card-title>지식 삭제</v-card-title>
-                <v-card-text>
-                    해당 학습 내역을 삭제하시겠습니까?
-                    <br>
-                    <div 
-                        class="dialog-content-cell" 
-                        style="cursor: pointer; margin-top: 8px;"
-                        @click="toggleDialogExpand"
+                <v-row class="ma-0 pa-4 pb-0 align-center">
+                    <v-card-title class="pa-0"
+                    >{{ $t('AgentKnowledgeManagement.deleteDialogTitle') }}
+                    </v-card-title>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="deleteDialog = false"
+                        class="ml-auto" 
+                        variant="text" 
+                        density="compact"
+                        icon
                     >
-                        <span v-if="!isDialogExpanded">
-                            {{ truncateText(selectedKnowledge?.metadata.data || '', 100) }}
-                            <span v-if="(selectedKnowledge?.metadata.data || '').length > 100" class="text-caption">
-                                ... 더보기
-                            </span>
-                        </span>
-                        <span v-else>
-                            {{ selectedKnowledge?.metadata.data }}
-                            <span class="text-caption">
-                                ... 접기
-                            </span>
-                        </span>
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-row>
+                <v-card-text class="ma-0 pa-4">
+                    <div class="agent-knowledge-management-dialog-preview-text"
+                        style="margin-top: 8px;"
+                    >
+                        {{ selectedKnowledge?.metadata.data }}
                     </div>
                 </v-card-text>
-                <v-card-actions>
+                <v-row class="ma-0 pa-4 pt-0">
                     <v-spacer></v-spacer>
-                    <v-btn @click="deleteDialog = false">취소</v-btn>
-                    <v-btn color="error" @click="confirmDelete">삭제</v-btn>
-                </v-card-actions>
+                    <v-btn @click="confirmDelete"
+                        color="error"
+                        variant="flat" 
+                        class="rounded-pill"
+                    >{{ $t('AgentKnowledgeManagement.deleteButton') }}
+                    </v-btn>
+                </v-row>
             </v-card>
         </v-dialog>
     </div>
@@ -169,7 +171,6 @@ export default {
             itemsPerPage: 10,
             deleteDialog: false,
             selectedKnowledge: null,
-            isDialogExpanded: false,
             headers: [
                 { title: '내용', key: 'metadata.data', sortable: true },
                 { title: '생성일', key: 'metadata.created_at', sortable: true, width: '150px' },
@@ -204,22 +205,11 @@ export default {
         deleteKnowledge(knowledge) {
             this.selectedKnowledge = knowledge;
             this.deleteDialog = true;
-            this.isDialogExpanded = false;
         },
         confirmDelete() {
             this.$emit('deleteKnowledge', { memory_id: this.selectedKnowledge.id });
             this.deleteDialog = false;
             this.selectedKnowledge = null;
-            this.isDialogExpanded = false;
-        },
-        toggleDialogExpand() {
-            this.isDialogExpanded = !this.isDialogExpanded;
-        },
-        truncateText(text, maxLength) {
-            if (text.length <= maxLength) {
-                return text;
-            }
-            return text.substring(0, maxLength);
         }
     }
 }
@@ -242,14 +232,10 @@ export default {
     background-color: transparent;
 }
 
-.dialog-content-cell {
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    padding: 8px;
+.agent-knowledge-management-dialog-preview-text {
     border-radius: 4px;
-}
-
-.dialog-content-cell:hover {
-    background-color: rgba(0, 0, 0, 0.04);
+    word-break: break-word;
+    max-height: calc(100vh - 300px);
+    overflow: auto;
 }
 </style>

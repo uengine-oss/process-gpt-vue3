@@ -1312,7 +1312,8 @@
     "AppBaseCard": {
         "friends": "친구",
         "progress": "프로세스",
-        "menu": "메뉴"
+        "menu": "메뉴",
+        "agentManagement": "에이전트 관리"
     },
     "ReportField": {
         "title": "컨텐츠 에디터"
@@ -1911,7 +1912,9 @@
         "title": "지식 관리",
         "description": "에이전트의 지식과 학습 데이터를 관리할 수 있습니다.",
         "noMemory": "메모리가 없습니다",
-        "addFirstMemory": "첫 번째 메모리를 추가해보세요."
+        "addFirstMemory": "첫 번째 메모리를 추가해보세요.",
+        "deleteDialogTitle": "학습 내용 삭제",
+        "deleteButton": "삭제"
     },
     "BpmnUengineViewer": {
         "viewParticipants": "참여자 보기"

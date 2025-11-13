@@ -6,6 +6,10 @@ hr {
     opacity: 1 !important;
 }
 
+.agent-chat-info-content {
+    height: calc(100vh - 190px);
+    overflow: auto;
+}
 
 .knowledge-management-table .v-data-table .v-table__wrapper {
     height: calc(100vh - 265px) !important;
@@ -1250,6 +1254,12 @@ hr {
     }
     .is-sidebar-mobile {
         display: block;
+    }
+
+
+    .agent-chat-info-content {
+        height: calc(100vh - 170px);
+        overflow: auto;
     }
 }
 

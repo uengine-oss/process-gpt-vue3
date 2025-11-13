@@ -37,6 +37,8 @@
                                         :src="agent.img" 
                                         :alt="agent.name"
                                         class="agent-image"
+                                        width="32"
+                                        height="32"
                                         @error="handleImageError"
                                     />
                                     <div v-else class="agent-emoji">🤖</div>

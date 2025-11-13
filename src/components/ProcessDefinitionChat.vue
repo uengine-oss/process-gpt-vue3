@@ -42,7 +42,9 @@
                 </div>
             </div>
         </v-card>
-        <AppBaseCard v-else>
+        <AppBaseCard v-else
+             :customMenuName="projectName"
+        >
             <template v-slot:leftpart>
                 <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
                     {{ projectName }}
@@ -171,7 +173,7 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <div class="process-consulting-ai-third-screen">
+                <div class="process-consulting-ai-third-screen chat-info-view-wrapper">
                     <Chat
                         v-if="isAdmin"
                         :prompt="prompt"

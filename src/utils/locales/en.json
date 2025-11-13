@@ -1310,7 +1310,8 @@
     "AppBaseCard": {
         "friends": "Friends",
         "progress": "Progress",
-        "menu": "Menu"
+        "menu": "Menu",
+        "agentManagement": "Agent Management"
     },
     "ReportField": {
         "title": "Content Editor"
@@ -1894,7 +1895,9 @@
         "title": "Knowledge Management",
         "description": "You can manage the agent's knowledge and learning data.",
         "noMemory": "No memories available",
-        "addFirstMemory": "Add your first memory."
+        "addFirstMemory": "Add your first memory.",
+        "deleteDialogTitle": "Delete Learning Content",
+        "deleteButton": "Delete"
     },
     "BpmnUengineViewer": {
         "viewParticipants": "View Participants"
