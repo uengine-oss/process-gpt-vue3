@@ -115,6 +115,43 @@
                             </v-btn>
                         </v-chip-group>
                     </div>
+
+                    <!-- Skills Section -->
+                    <div class="d-flex align-center pa-0 mb-1">
+                        <span class="text-body-2 font-weight-medium mr-1"> 스킬 </span>
+                        <div v-if="agentType === 'agent'" class="ml-auto">
+                            <v-btn @click="toggleEdit('skills')" 
+                                variant="text" 
+                                :size="20" icon 
+                                class="rounded-pill"
+                                :color="editProperties.skills.abled ? 'success' : 'default'"
+                            >
+                                <Icons v-if="!editProperties.skills.abled" :icon="'pencil'" :size="12"/>
+                                <v-icon v-else size="12">mdi-check</v-icon>
+                            </v-btn>
+                        </div>
+                    </div>
+                    <div>
+                        <v-chip-group class="mb-3">
+                            <v-chip 
+                                v-for="skill in parsedSkills" 
+                                :key="skill"
+                                size="small"
+                                variant="outlined"
+                                class="ma-1"
+                            >
+                                {{ skill }}
+                            </v-chip>
+                        </v-chip-group>
+                        <v-file-input
+                            v-if="editProperties.skills.abled && agentType === 'agent'"
+                            accept=".zip"
+                            label="스킬 파일(zip) 업로드"
+                            density="compact"
+                            @update:modelValue="handleSkillsFileChange"
+                        ></v-file-input>
+                    </div>
+                    
                     <v-divider class="mb-4"></v-divider>
                     
                     <!-- Tab Navigation - 편집 모드가 아닐 때만 표시 -->
@@ -212,8 +249,44 @@ export default {
                 persona: false,
                 tools: false
             },
+            editProperties: {
+                goal: {
+                    abled: false,
+                    action: () => {}
+                },
+                persona: {
+                    abled: false,
+                    action: () => {}
+                },
+                description: {
+                    abled: false,
+                    action: () => {}
+                },
+                tools: {
+                    abled: false,
+                    action: () => {}
+                },
+                skills: {
+                    abled: false,
+                    action: () => {
+                        if (this.selectedSkillsFile) {
+                            this.$emit('uploadSkills', this.selectedSkillsFile);
+                        }
+                        this.selectedSkillsFile = null;
+                    }
+                },
+                endpoint: {
+                    abled: false,
+                    action: () => {}
+                },
+                model: {
+                    abled: false,
+                    action: () => {}
+                }
+            },
             agentType: 'agent',
-            selectedDmnId: null
+            selectedDmnId: null,
+            selectedSkillsFile: null
         }
     },
     mounted() {
@@ -256,6 +329,21 @@ export default {
             return [];
         },
 
+        parsedSkills() {
+            if (!this.agentInfo.skills) return [];
+
+            if (typeof this.agentInfo.skills === 'string') {
+                if (this.agentInfo.skills.includes(',')) {
+                    return this.agentInfo.skills
+                        .split(',')
+                        .map(skill => skill.trim())
+                        .filter(skill => skill.length > 0);
+                } else {
+                    return [this.agentInfo.skills.trim()];
+                }
+            }
+        },
+
         dmnTabList() {
             return this.dmnList.map(dmn => ({
                 id: dmn.id,
@@ -285,6 +373,21 @@ export default {
         }
     },
     methods: {
+        handleSkillsFileChange(files) {
+            if (files && files.length > 0) {
+                this.selectedSkillsFile = files[0];
+            } else {
+                this.selectedSkillsFile = null;
+            }
+        },
+
+        toggleEdit(type) {
+            if (this.editProperties[type].abled) {
+                this.editProperties[type].action();
+            }
+            this.editProperties[type].abled = !this.editProperties[type].abled;
+        },
+
         handleTabChange(newTab) {
             this.$router.push({ hash: '#' + newTab });
             this.selectedDmnId = null;
