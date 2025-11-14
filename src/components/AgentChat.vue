@@ -7,6 +7,7 @@
                     :activeTab="activeTab"
                     :dmnList="dmnList"
                     @agentUpdated="handleAgentUpdated"
+                    @uploadSkills="uploadSkills"
                 />
             </template>
             <template v-slot:rightpart>
@@ -62,8 +63,14 @@ export default {
             id: '',
             profile: '/images/chat-icon.png',
             username: 'Agent',
-            goal: '에이전트의 목표가 설정되지 않았습니다.',
+            goal: '',
             agent_type: 'agent',
+            skills: '',
+            tools: '',
+            persona: '',
+            endpoint: '',
+            description: '',
+            model: '',
         },
         activeTab: '',
 
@@ -320,6 +327,33 @@ export default {
                 this.dmnList = result;
             } else {
                 this.dmnList = [];
+            }
+        },
+
+        // skills
+        async uploadSkills(file) {
+            const options = {
+                agentInfo: this.agentInfo,
+                file: file
+            }
+            const data = await this.backend.uploadSkills(options);
+            if (data && data.skills_added && data.skills_added.length > 0) {
+                const skills = this.agentInfo.skills.split(',');
+                data.skills_added.forEach(skill => {
+                    if (!skills.includes(skill.id)) {
+                        skills.push(skill.id);
+                    }
+                });
+                this.agentInfo.skills = skills.join(',');
+            }
+        },
+
+        async checkSkills(skillName) {
+            const skill = await this.backend.checkSkills(skillName);
+            if (skill && skill.exists) {
+                return true;
+            } else {
+                return false;
             }
         },
     }

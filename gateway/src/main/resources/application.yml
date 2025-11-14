@@ -13,6 +13,12 @@ spring:
                 #       - Path=/litellm/**,
                 #   filters:
                 #       - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
+                - id: claude-skills
+                  uri: http://localhost:8765
+                  predicates:
+                      - Path=/claude-skills/**,
+                  filters:
+                      - RewritePath=/claude-skills/?(?<segment>.*), /$\{segment}
                 - id: execution
                   uri: http://localhost:8000
                   predicates:

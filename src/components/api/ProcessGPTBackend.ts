@@ -4667,6 +4667,59 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
+    async uploadSkills(options: any) {
+        try {
+            const form = new FormData();
+            form.append("file", options.file, options.file.name);
+            const response = await axios.post('/claude-skills/skills/upload', form, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            if (response.status === 200) {
+                const addedSkills = response.data.skills_added;
+                let newSkills = '';
+                if (options.agentInfo.skills) {
+                    const skills = options.agentInfo.skills.split(',');
+                    addedSkills.forEach((skill: string) => {
+                        if (!skills.includes(skill)) {
+                            skills.push(skill);
+                        }
+                    });
+                    newSkills = skills.join(',');
+                } else {
+                    newSkills = addedSkills.join(',');
+                }
+                await storage.putObject('users', {
+                    id: options.agentInfo.id,
+                    skills: newSkills,
+                    tenant_id: window.$tenantName
+                });
+                return {
+                    skills_added: addedSkills,
+                    skills: newSkills
+                };
+            } else {
+                throw new Error(response.data.message);
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async checkSkills(skills: string) {
+        try {
+            const response = await axios.get(`/claude-skills/skills/check?name=${skills}`);
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data.message);
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
 }
 
 export default ProcessGPTBackend;
