@@ -83,7 +83,9 @@
             </v-card-text>
             <v-row class="ma-0 pa-0">
                 <v-spacer></v-spacer>
-                <v-btn color="primary" class="ma-0 pa-0" rounded @click="confirmDialog">{{ editMode ? $t('chatListing.save') : $t('chatListing.create') }}</v-btn>
+                <v-btn color="primary" class="ma-0 pa-0" rounded @click="confirmDialog" variant="flat">
+                    {{ editMode ? $t('chatListing.save') : $t('chatListing.create') }}
+                </v-btn>
             </v-row>
         </v-card>
     </v-dialog>
@@ -106,7 +108,9 @@
             </v-card-text>
             <v-row class="ma-0 pa-0">
                 <v-spacer></v-spacer>
-                <v-btn color="primary" rounded @click="deleteChatRoom">{{ $t('chatListing.delete') }}</v-btn>
+                <v-btn color="primary" rounded @click="deleteChatRoom" variant="flat">
+                    {{ $t('chatListing.delete') }}
+                </v-btn>
             </v-row>
         </v-card>
     </v-dialog>
