@@ -3,7 +3,7 @@
         <v-alert
             color="#757575"
             variant="tonal"
-            class="pa-2 mt-1 mb-4"
+            class="pa-2 mt-1 mb-2"
         >
             <v-row class="ma-0 pa-0">
                 <!-- 왼쪽의 info 아이콘 -->

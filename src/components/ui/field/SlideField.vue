@@ -20,17 +20,10 @@
                 <div v-else-if="localModelValue.length == 0" :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px;`">
                     <Icons :icon="'slide-show'" color="white" />
                 </div>
-                <div v-else
-                    @click.stop="previewMenu = !previewMenu"
-                    style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px; margin-right: 8px; cursor: pointer;"
-                    class="d-flex align-center justify-center"
-                >
-                    <v-icon :icon="previewMenu ? 'mdi-chevron-up' : 'mdi-chevron-down'" :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
-                </div>
             </v-row>
             <!-- 미리보기 확장 영역 -->
-            <v-row v-if="previewMenu" class="ma-0 pa-4" @click.stop>
-                <v-sheet elevation="3" rounded style="width: 100%; padding: 16px; background: white; position: relative;">
+            <v-row v-if="previewMenu" class="ma-0 pa-4" @click.stop="previewMenu = false" style="cursor: pointer;">
+                <v-sheet elevation="3" rounded style="width: 100%; padding: 16px; background: white; position: relative; min-height: 500px;">
                     <SlideComponent
                         :content="localModelValue"
                         :isEditMode="false"
