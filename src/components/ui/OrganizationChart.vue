@@ -125,6 +125,7 @@ export default {
                                     ${content.isTeam == true ? `<div class="node-content-btn add-member-btn"><i class="mdi mdi-plus node-content-icon"></i></div>` : ''}
                                     ${content.isTeam == true ? `<div class="node-content-btn edit-team-btn"><i class="mdi mdi-pencil node-content-icon"></i></div>` : ''}
                                     ${content.isTeam == true ? `<div class="node-content-btn delete-team-btn"><i class="mdi mdi-delete node-content-icon"></i></div>` : ''}
+                                    ${content.isAgent ? `<div class="node-content-btn delete-agent-btn"><i class="mdi mdi-delete node-content-icon"></i></div>` : ''}
                                     ${!content.isAgent && !content.isTeam && content.id != 'root' ? `<div class="node-content-btn edit-member-btn"><i class="mdi mdi-pencil node-content-icon"></i></div>` : ''}
                                 </div>
                             </div>
@@ -148,6 +149,12 @@ export default {
                     event.stopPropagation();
                     this.closeBadgesDiagram();
                     
+                    // 버튼이 속한 노드 찾기 및 editNode 설정
+                    const nodeContent = button.closest('.node-content');
+                    if (nodeContent) {
+                        this.editNode = this.findOriginalNodeById(this.node, nodeContent.id);
+                    }
+                    
                     if (button.classList.contains('add-team-btn')) {
                         this.openTeamDialog('add');
                     } else if (button.classList.contains('edit-team-btn')) {
@@ -158,7 +165,8 @@ export default {
                         this.$emit('addMember', this.editNode);
                     } else if (button.classList.contains('edit-member-btn')) {
                         this.openEditDialog('edit-user');
-
+                    } else if (button.classList.contains('delete-agent-btn')) {
+                        this.openEditDialog('delete');
                     }
                 }
             });

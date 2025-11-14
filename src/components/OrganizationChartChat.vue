@@ -8,6 +8,7 @@
                     :key="organizationChart.id"
                     :userList="userList"
                     @updateNode="updateNode"
+                    @updateAgent="handleOrganizationAgentUpdate"
                     @addMember="openAddDialog"
                     ref="organizationChart"
             ></OrganizationChart>
@@ -343,6 +344,9 @@ export default {
             await this.backend.putAgent(newAgent);
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
+            
+            // AgentList 실시간 업데이트를 위한 이벤트 발생
+            this.EventBus.emit('agentAdded', newAgent);
         },
     }
 }
