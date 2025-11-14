@@ -307,8 +307,13 @@ export default {
         await this.loadData();
     },
     methods: {
+        handleMount(editor) {
+            // Monaco Editor 마운트 후 높이 설정
+            if (editor) {
+                editor.layout({ height: 380, width: editor.getLayoutInfo().width });
+            }
+        },
         async getMCPLists() {
-            console.log('getMCPLists');
             const mcpLists = await backend.getMCPLists();
             this.mcpLists = mcpLists;
         },

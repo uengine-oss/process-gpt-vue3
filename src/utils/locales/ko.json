@@ -1949,5 +1949,18 @@
         "pending": "보류/반송",
         "scheduled": "예정업무",
         "done": "완료업무"
+    },
+    "Common": {
+        "cancel": "취소",
+        "delete": "삭제",
+        "save": "저장"
+    },
+    "AgentSkillEdit": {
+        "deleteDialogTitle": "스킬 파일 삭제",
+        "deleteDialogMessage": "스킬 파일을 삭제하시겠습니까? 삭제된 스킬 파일은 복구할 수 없습니다."
+    },
+    "AgentSkills": {
+        "skills": "스킬",
+        "skillUpload": "스킬 파일(.zip) 업로드"
     }
 }

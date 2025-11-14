@@ -124,33 +124,30 @@
                                 variant="text" 
                                 :size="20" icon 
                                 class="rounded-pill"
-                                :color="editProperties.skills.abled ? 'success' : 'default'"
                             >
                                 <Icons v-if="!editProperties.skills.abled" :icon="'pencil'" :size="12"/>
-                                <v-icon v-else size="12">mdi-check</v-icon>
+                                <v-icon v-else size="16">mdi-check</v-icon>
                             </v-btn>
                         </div>
                     </div>
-                    <div>
-                        <v-chip-group class="mb-3">
-                            <v-chip 
-                                v-for="skill in parsedSkills" 
-                                :key="skill"
-                                size="small"
-                                variant="outlined"
-                                class="ma-1"
-                            >
-                                {{ skill }}
-                            </v-chip>
-                        </v-chip-group>
-                        <v-file-input
-                            v-if="editProperties.skills.abled && agentType === 'agent'"
-                            accept=".zip"
-                            label="스킬 파일(zip) 업로드"
-                            density="compact"
-                            @update:modelValue="handleSkillsFileChange"
-                        ></v-file-input>
-                    </div>
+                    <v-chip-group v-if="!editProperties.skills.abled" class="mb-3">
+                        <v-chip 
+                            v-for="skill in parsedSkills" 
+                            :key="skill"
+                            size="small"
+                            variant="outlined"
+                            class="ma-1"
+                        >
+                            {{ skill }}
+                        </v-chip>
+                    </v-chip-group>
+                    <AgentSkills 
+                        v-if="editProperties.skills.abled && agentType === 'agent'" 
+                        :agentSkills="parsedSkills"
+                        :isLoading="isSkillLoading"
+                        @update:skillFileName="openSkillFile"
+                        @uploadSkills="uploadSkills"
+                    />
                     
                     <v-divider class="mb-4"></v-divider>
                     
@@ -207,11 +204,13 @@
 
 <script>
 import OrganizationEditDialog from '@/components/ui/OrganizationEditDialog.vue';
+import AgentSkills from '@/components/AgentSkills.vue';
 
 export default {
     name: 'AgentChatInfo',
     components: {
-        OrganizationEditDialog
+        OrganizationEditDialog,
+        AgentSkills
     },
     props: {
         agentInfo: {
@@ -234,6 +233,10 @@ export default {
         dmnList: {
             type: Array,
             default: () => []
+        },
+        isSkillLoading: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
@@ -269,10 +272,7 @@ export default {
                 skills: {
                     abled: false,
                     action: () => {
-                        if (this.selectedSkillsFile) {
-                            this.$emit('uploadSkills', this.selectedSkillsFile);
-                        }
-                        this.selectedSkillsFile = null;
+                        this.$emit('saveSkills');
                     }
                 },
                 endpoint: {
@@ -373,14 +373,6 @@ export default {
         }
     },
     methods: {
-        handleSkillsFileChange(files) {
-            if (files && files.length > 0) {
-                this.selectedSkillsFile = files[0];
-            } else {
-                this.selectedSkillsFile = null;
-            }
-        },
-
         toggleEdit(type) {
             if (this.editProperties[type].abled) {
                 this.editProperties[type].action();
@@ -513,7 +505,14 @@ export default {
 
         shouldShowToolsToggle() {
             return this.parsedTools && this.parsedTools.length > 4;
-        }
+        },
+
+        uploadSkills(skillsFile) {
+            this.$emit('uploadSkills', skillsFile);
+        },
+        openSkillFile(fileName) {
+            this.$emit('openSkillFile', fileName);
+        },
     }
 }
 </script>
