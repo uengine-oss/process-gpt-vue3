@@ -36,12 +36,11 @@ function getIconColor(item) {
 </script>
 
 <template>
-    <div class="mb-0">
+    <div class="mb-0 item-hover">
         <!---Single Item-->
         <v-list-item
             :to="item.to"
             rounded="lg"
-            :class="'bg-hover-' + item.BgColor"
             :color="item.BgColor"
             :ripple="false"
             :disabled="item.disabled"
@@ -51,7 +50,7 @@ function getIconColor(item) {
         >
             <!-- 정의관리 아이콘 보여지던곳 -->
             <template v-slot:prepend>
-                <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor"
+                <div :color="item.BgColor"
                     class="mr-2"
                 >
                     <Icons
@@ -90,3 +89,11 @@ function getIconColor(item) {
         </v-list-item>
     </div>
 </template>
+
+<style scoped>
+.item-hover:hover {
+    border-radius: 8px;
+    background-color: #e3f2fd;
+    transform: translateX(2px);
+}
+</style>

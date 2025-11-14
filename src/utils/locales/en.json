@@ -82,6 +82,19 @@
         "sortByStartDate": "Start Date (Recent)",
         "endOfList": "All tasks have been reviewed"
     },
+    "TodoDialog": {
+        "editTask": "Edit Task",
+        "addTask": "Add Task",
+        "taskName": "Task Name",
+        "startDate": "Start Date",
+        "dueDate": "Due Date",
+        "description": "Description",
+        "save": "Save",
+        "todo": "Todo",
+        "title": "Title",
+        "status": "Status",
+        "close": "Close"
+    },
     "calendar": {
         "title": "Calendar",
         "evnet": "Event Details",
@@ -379,7 +392,10 @@
         "user": "User",
         "chatRoom": "Chat List",
         "viewDetails": "View Details",
-        "executeProcess": "Execute Process"
+        "executeProcess": "Execute Process",
+        "participants": "Participants",
+        "moveTop": "Move to Top",
+        "moveBottom": "Move to Bottom"
     },
     "accountTab": {
         "accountSetting": "Account Settings",
@@ -1090,7 +1106,8 @@
         "starterInfo": "Starter: Loading information...",
         "startDateInfo": "Start Date: Loading information...",
         "starter": "Starter",
-        "startDate": "Start Date"
+        "startDate": "Start Date",
+        "addTask": "Add Task"
     },
     "ProjectCard": {
         "managment": "Schedule",
@@ -1293,7 +1310,8 @@
     "AppBaseCard": {
         "friends": "Friends",
         "progress": "Progress",
-        "menu": "Menu"
+        "menu": "Menu",
+        "agentManagement": "Agent Management"
     },
     "ReportField": {
         "title": "Content Editor"
@@ -1609,6 +1627,9 @@
         "completed": "Completed",
         "cancelled": "Cancelled"
     },
+    "InstanceListPage": {
+        "participants": "Participants"
+    },
     "kanbanColumnCard": {
         "edit": "Edit",
         "delete": "Delete",
@@ -1811,7 +1832,8 @@
             "learning": "Rule Learning",
             "inference": "Rule Inference",
             "management": "Rule Management"
-        }
+        },
+        "businessRule": "Business Rule"
     },
     "FormWorkItem": {
         "previous": "Previous Step",
@@ -1873,7 +1895,9 @@
         "title": "Knowledge Management",
         "description": "You can manage the agent's knowledge and learning data.",
         "noMemory": "No memories available",
-        "addFirstMemory": "Add your first memory."
+        "addFirstMemory": "Add your first memory.",
+        "deleteDialogTitle": "Delete Learning Content",
+        "deleteButton": "Delete"
     },
     "BpmnUengineViewer": {
         "viewParticipants": "View Participants"
@@ -1897,5 +1921,15 @@
         "tools": "Tools & Skills",
         "knowledge": "Knowledge Ontology",
         "achievements": "Achievements & Badges"
+    },
+    "Gantt": {
+        "description": "Description",
+        "delete": "Task Delete",
+        "moveInstance": "Move to Instance",
+        "moveWorkItem": "Move to Work Item",
+        "inProgress": "In Progress",
+        "pending": "Pending",
+        "scheduled": "Scheduled",
+        "done": "Done"
     }
 }

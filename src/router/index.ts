@@ -42,11 +42,6 @@ export const router = createRouter({
             path: '/external-forms/:formId',
             component: () => retryDynamicImport(() => import('@/components/ui/ExternalForms.vue'))
         },
-        {
-            name: 'Complaints',
-            path: '/complaints',
-            component: () => retryDynamicImport(() => import('@/views/complaints/ComplaintBoard.vue')),
-        },
         MainRoutes,
         AuthRoutes,
         TenantRoutes,
@@ -85,7 +80,7 @@ router.beforeEach(async (to: any, from: any, next: any) => {
         }
 
         if (window.$mode !== 'uEngine') {
-            if (to.fullPath.includes('/auth') || to.fullPath.includes('/external-forms') || to.fullPath.includes('/complaints')) {
+            if (to.fullPath.includes('/auth') || to.fullPath.includes('/external-forms')) {
                 next();
             } else {
                 if (window.$isTenantServer) {

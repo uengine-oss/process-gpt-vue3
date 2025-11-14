@@ -3,7 +3,9 @@
         <!-- <slide-component :key="localModelValue" style="width: 100%; height: 250px;" :content="localModelValue" :isEditMode="false" class="presentation-slide" /> -->
         <v-card class="rounded-lg mb-2" variant="outlined" hover @click="editMarkdown">
             <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
-            <v-row class="ma-0 pa-4" :style="`overflow: hidden; max-height: ${isReportExpanded ? 'auto' : '120px'};`">
+            <v-row class="ma-0 pa-4" style="overflow: hidden;"
+                :style="isReportExpanded ? 'max-height: 100%;' : 'max-height: 120px;'"
+            >
                 <div>
                     <div class="font-weight-medium" style="font-size: 16px;">{{ localAlias ? localAlias : localName }} <span v-if="!localReadonly" class="mdi mdi-pencil"></span></div>
                     <div class="font-weight-medium">Report</div>

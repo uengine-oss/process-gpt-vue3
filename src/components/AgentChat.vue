@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10">
-        <AppBaseCard>
+        <AppBaseCard :customMenuName="agentInfo.username">
             <template v-slot:leftpart="{ closeDrawer }">
                 <AgentChatInfo 
                     :agentInfo="agentInfo" 

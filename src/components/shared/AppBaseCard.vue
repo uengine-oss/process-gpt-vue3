@@ -7,6 +7,10 @@ const props = defineProps({
     isInstanceChat: {
         type: Boolean,
         default: false
+    },
+    customMenuName: {
+        type: String,
+        default: ''
     }
 });
 
@@ -83,11 +87,18 @@ const handleCloseDrawer = () => {
 
 // 경로별 메뉴 이름을 결정하는 계산된 속성
 const menuName = computed(() => {
+    // customMenuName이 있으면 우선 사용
+    if (props.customMenuName) {
+        return props.customMenuName;
+    }
+    
     const path = route.path;
     if (path === '/chats') {
         return proxy.$t('AppBaseCard.friends');
     } else if (path === '/definition-map') {
         return proxy.$t('AppBaseCard.progress');
+    } else if (path.startsWith('/agent-chat')) {
+        return proxy.$t('AppBaseCard.agentManagement');
     }
     return proxy.$t('AppBaseCard.menu');
 });
@@ -131,13 +142,25 @@ const menuButtonStyle = computed(() => {
         <!---right chat conversation -->
         <div class="right-part">
             <!---Toggle Button For mobile-->
-            <v-btn block @click="sDrawer = !sDrawer" variant="text" class="d-lg-none d-md-flex d-sm-flex"
-                style="z-index: 1; background-color: white; flex: 0 0 auto;"
-                :style="menuButtonStyle"    
-            >
-                <Menu2Icon size="20" class="mr-2 cp-dialog-open cp-def-menu" /> {{ menuName }}
-            </v-btn>
-            <v-divider class="d-lg-none d-block" />
+            <v-tooltip location="right">
+                <template v-slot:activator="{ props: tooltipProps }">
+                    <v-btn 
+                        icon 
+                        size="x-small"
+                        @click="sDrawer = !sDrawer" 
+                        variant="text" 
+                        class="mobile-menu-toggle-btn d-lg-none"
+                        v-bind="tooltipProps"
+                    >
+                        <Icons :icon="'list-bold-duotone'"
+                            :size="16"
+                            :color="'#ffffff'"
+                            :style="menuButtonStyle"
+                        />
+                    </v-btn>
+                </template>
+                <span>{{ menuName }}</span>
+            </v-tooltip>
             <slot :name="slotName"></slot>
         </div>
 
@@ -186,6 +209,22 @@ const menuButtonStyle = computed(() => {
     display: flex;
     flex-direction: column;
     height: 100%;
+    position: relative;
+}
+
+.mobile-menu-toggle-btn {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 100;
+    background-color: rgb(var(--v-theme-primary)) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+        opacity: 1;
+    }
 }
 
 .left-part {

@@ -194,7 +194,7 @@
                                         @click="openDialog"
                                         :color="!isMobile ? '' : 'primary'"
                                     >
-                                        <v-tooltip activator="parent" location="left">업무 등록</v-tooltip>
+                                        <v-tooltip activator="parent" location="left">{{ $t('InstanceCard.addTask') }}</v-tooltip>
                                         <PlusIcon stroke-width="2" />
                                     </v-avatar>
                                 </div>
@@ -470,7 +470,7 @@ export default {
             return this.isMobile ? '' : 'd-flex align-center justify-end ml-2 mr-2';
         },
         buttonContainerStyle() {
-            return this.isMobile ? 'position: fixed; right: 16px; bottom: 32px; z-index: 999;' : '';
+            return this.isMobile ? 'position: fixed; right: 16px; bottom: 32px; z-index: 999;' : 'cursor: pointer;';
         }
     },
     methods: {

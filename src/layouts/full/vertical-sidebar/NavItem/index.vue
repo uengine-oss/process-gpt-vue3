@@ -13,7 +13,7 @@ const props = defineProps({
 
 <template>
     <!---Single Item-->
-    <div class="mb-1">
+    <div class="mb-1 item-hover">
         <v-list-item  :to="item.type === 'external' ? '' : item.to" :href="item.type === 'external' ? item.to : ''" rounded
             :class="'  bg-hover-' + item.BgColor" :color="item.BgColor" :ripple="false" :disabled="item.disabled"
             :target="item.type === 'external' ? '_blank' : ''" v-scroll-to="{ el: '#top' }">
@@ -45,3 +45,11 @@ const props = defineProps({
         </v-list-item>
     </div>
 </template>
+
+<style scoped>
+.item-hover:hover {
+    border-radius: 8px;
+    background-color: #e3f2fd;
+    transform: translateX(2px);
+}
+</style>

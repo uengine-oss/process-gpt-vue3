@@ -82,6 +82,19 @@
         "sortByStartDate": "시작일 최근 순",
         "endOfList": "모든 업무를 확인했습니다"
     },
+    "TodoDialog": {
+        "editTask": "할 일 수정",
+        "addTask": "업무 등록",
+        "taskName": "할일명",
+        "startDate": "시작일",
+        "dueDate": "마감일",
+        "description": "설명",
+        "save": "저장",
+        "todo": "할 일",
+        "title": "제목",
+        "status": "상태",
+        "close": "닫기"
+    },
     "calendar": {
         "title": "달력",
         "evnet": "일정",
@@ -379,7 +392,10 @@
         "user": "유저",
         "chatRoom": "대화 목록",
         "viewDetails": "상세보기",
-        "executeProcess": "프로세스 실행"
+        "executeProcess": "프로세스 실행",
+        "participants": "참여자 현황",
+        "moveTop": "최상단으로 이동",
+        "moveBottom": "최하단으로 이동"
     },
     "accountTab": {
         "accountSetting": "계정 설정",
@@ -1092,7 +1108,8 @@
         "starterInfo": "시작자: 정보 불러오는 중",
         "startDateInfo": "시작일시: 정보 불러오는 중",
         "starter": "시작자",
-        "startDate": "시작일시"
+        "startDate": "시작일시",
+        "addTask": "업무 등록"
     },
     "ProjectCard": {
         "managment": "스케줄",
@@ -1295,7 +1312,8 @@
     "AppBaseCard": {
         "friends": "친구",
         "progress": "프로세스",
-        "menu": "메뉴"
+        "menu": "메뉴",
+        "agentManagement": "에이전트 관리"
     },
     "ReportField": {
         "title": "컨텐츠 에디터"
@@ -1611,6 +1629,9 @@
         "completed": "완료",
         "cancelled": "취소"
     },
+    "InstanceListPage": {
+        "participants": "참여자"
+    },
     "kanbanColumnCard": {
         "edit": "수정",
         "delete": "삭제",
@@ -1828,7 +1849,8 @@
             "learning": "규칙 학습",
             "inference": "규칙 추론",
             "management": "룰 관리"
-        }
+        },
+        "businessRule": "비즈니스 규칙"
     },
     "FormWorkItem": {
         "previous": "이전 단계",
@@ -1890,7 +1912,9 @@
         "title": "지식 관리",
         "description": "에이전트의 지식과 학습 데이터를 관리할 수 있습니다.",
         "noMemory": "메모리가 없습니다",
-        "addFirstMemory": "첫 번째 메모리를 추가해보세요."
+        "addFirstMemory": "첫 번째 메모리를 추가해보세요.",
+        "deleteDialogTitle": "학습 내용 삭제",
+        "deleteButton": "삭제"
     },
     "BpmnUengineViewer": {
         "viewParticipants": "참여자 보기"
@@ -1914,5 +1938,15 @@
         "tools": "툴 & 스킬",
         "knowledge": "지식 온톨로지",
         "achievements": "성과 & 뱃지"
+    },
+    "Gantt": {
+        "description": "설명",
+        "delete": "업무 삭제",
+        "moveInstance": "인스턴스로 이동",
+        "moveWorkItem": "워크아이템으로 이동",
+        "inProgress": "진행중",
+        "pending": "보류/반송",
+        "scheduled": "예정업무",
+        "done": "완료업무"
     }
 }

@@ -5,6 +5,17 @@ h1, h2, h3, h4, h5, h6 {
 hr {
     opacity: 1 !important;
 }
+
+.agent-chat-info-content {
+    height: calc(100vh - 190px);
+    overflow: auto;
+}
+
+.knowledge-management-table .v-data-table .v-table__wrapper {
+    height: calc(100vh - 265px) !important;
+    overflow: auto !important;
+}
+
 .process-definition-chat-tree-box .is-work-height {
     height: calc(100vh - 194px);
 }
@@ -1243,6 +1254,12 @@ hr {
     }
     .is-sidebar-mobile {
         display: block;
+    }
+
+
+    .agent-chat-info-content {
+        height: calc(100vh - 170px);
+        overflow: auto;
     }
 }
 
