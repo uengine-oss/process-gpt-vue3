@@ -92,14 +92,24 @@
 
                 <!-- 프로젝트 타이틀 + 목록 -->
                 <div v-if="isShowProject" class="mb-4">
-                    <div  class="d-flex align-center justify-between">
+                    <div  class="d-flex align-center">
                         <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.projectList') }}
                         </div>
-                        <v-spacer></v-spacer>
-                        <PlusIcon v-if="isAdmin" @click="openNewProject()" size="15"
-                            style="cursor: pointer;"
-                        />
+                        <v-tooltip v-if="isAdmin" location="bottom" :text="$t('VerticalSidebar.addProject')">
+                            <template v-slot:activator="{ props }">
+                                <div class="pl-2">
+                                    <Icons 
+                                        @click="openNewProject()"
+                                        v-bind="props"
+                                        :icon="'plus'"
+                                        :size="12"
+                                        :color="'#808080'"
+                                        style="cursor: pointer;"
+                                    />
+                                </div>
+                            </template>
+                        </v-tooltip>
                     </div>
                     <v-col class="pa-0">
                         <ProjectList/>
@@ -108,7 +118,7 @@
                 
                 <!-- 인스턴스 타이틀 + 목록 -->
                 <v-col  class="pa-0 mb-4">
-                    <div v-if="!pal" class="d-flex align-center justify-between">
+                    <div v-if="!pal" class="d-flex align-center">
                         <div v-for="item in instanceItem" :key="item.title"
                             style="height: 24px;"
                         >
@@ -166,7 +176,7 @@
 
                 <!-- 에이전트 타이틀 + 목록 -->
                 <div v-if="isShowAgentList" class="mb-4">
-                    <v-row class="align-center justify-between pa-0 ma-0">
+                    <v-row class="align-center pa-0 ma-0">
                         <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}
                         </div>

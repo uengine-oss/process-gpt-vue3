@@ -1095,7 +1095,7 @@ hr {
 }
 
 .organization-edit-dialog-contents {
-    height: calc(-300px + 100vh);
+    max-height: calc(-300px + 100vh);
     overflow: auto;
 }
 
