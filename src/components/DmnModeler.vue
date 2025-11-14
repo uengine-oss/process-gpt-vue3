@@ -108,6 +108,10 @@ export default {
                 const { activeView } = event;
                 if (activeView && activeView.type === 'drd') {
                     this.setupDrdEventHandlers();
+                    // View 변경 후 팔레트에 버튼 추가
+                    setTimeout(() => {
+                        this.addCenterButtonToPalette();
+                    }, 100);
                 }
             });
         },
@@ -137,6 +141,9 @@ export default {
                 // definitions emit
                 const definitions = self.dmnModeler.getDefinitions();
                 self.$emit('definition', definitions);
+                
+                // 팔레트에 중앙 복귀 버튼 추가
+                self.addCenterButtonToPalette();
             });
 
             // 요소 더블클릭 이벤트
@@ -236,6 +243,44 @@ export default {
         },
         openView(element) {
             return this.dmnModeler.open(element);
+        },
+        addCenterButtonToPalette() {
+            const container = this.$refs.container;
+            if (!container) return;
+            
+            const palette = container.querySelector('.djs-palette');
+            if (!palette) return;
+            
+            // 이미 버튼이 있으면 추가하지 않음
+            if (palette.querySelector('.dmn-icon-center-viewport')) return;
+            
+            // tools 그룹 찾기
+            const toolsGroup = palette.querySelector('[data-group="tools"]');
+            if (!toolsGroup) return;
+            
+            // 중앙 복귀 버튼 생성
+            const centerButton = document.createElement('div');
+            centerButton.className = 'entry dmn-icon-center-viewport';
+            centerButton.setAttribute('draggable', 'true');
+            centerButton.setAttribute('data-action', 'center-viewport');
+            centerButton.setAttribute('title', '중앙 복귀');
+            centerButton.innerHTML = '<i class="mdi mdi-crosshairs-gps" style="font-size: 20px; color: #444;"></i>';
+            
+            centerButton.addEventListener('click', () => {
+                this.resetViewportToCenter();
+            });
+            
+            // tools 그룹 내부에 버튼 추가
+            toolsGroup.appendChild(centerButton);
+        },
+        resetViewportToCenter() {
+            const activeViewer = this.dmnModeler.getActiveViewer();
+            if (activeViewer) {
+                const canvas = activeViewer.get('canvas');
+                if (canvas && canvas.zoom) {
+                    canvas.zoom('fit-viewport');
+                }
+            }
         }
     }
 };

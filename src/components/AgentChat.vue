@@ -6,7 +6,10 @@
                     :agentInfo="agentInfo" 
                     :activeTab="activeTab"
                     :dmnList="dmnList"
+                    :isSkillLoading="isSkillLoading"
                     @agentUpdated="handleAgentUpdated"
+                    @uploadSkills="uploadSkills"
+                    @openSkillFile="openSkillFile"
                 />
             </template>
             <template v-slot:rightpart>
@@ -23,7 +26,10 @@
                     :activeTab="activeTab"
                     :isMobile="true"
                     :dmnList="dmnList"
+                    :isSkillLoading="isSkillLoading"
                     @agentUpdated="handleAgentUpdated"
+                    @uploadSkills="uploadSkills"
+                    @openSkillFile="openSkillFile"
                 />
             </template>
         </AppBaseCard>
@@ -41,6 +47,7 @@ import AgentChatQuestion from "@/components/AgentChatQuestion.vue";
 import AgentChatActions from "@/components/AgentChatActions.vue";
 import AgentKnowledgeManagement from "@/components/AgentKnowledgeManagement.vue";
 import BusinessRuleLearning from "@/components/BusinessRuleLearning.vue";
+import AgentSkillEdit from "@/components/AgentSkillEdit.vue";
 
 import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
 
@@ -56,20 +63,27 @@ export default {
         AgentChatActions,
         AgentKnowledgeManagement,
         BusinessRuleLearning,
+        AgentSkillEdit,
     },
     data: () => ({
         agentInfo: {
             id: '',
             profile: '/images/chat-icon.png',
             username: 'Agent',
-            goal: '에이전트의 목표가 설정되지 않았습니다.',
+            goal: '',
             agent_type: 'agent',
+            skills: '',
+            tools: '',
+            persona: '',
+            endpoint: '',
+            description: '',
+            model: '',
         },
         activeTab: '',
 
         // knowledge management
         knowledges: [],
-        isLoading: false,
+        isKnowledgeLoading: false,
 
         // action mode
         workItem: null,
@@ -86,6 +100,10 @@ export default {
         
         // 중복 호출 방지 플래그
         isInitializing: false,
+
+        // skill edit
+        skillFile: null,
+        isSkillLoading: false,
     }),
     computed: {
         id() {
@@ -207,7 +225,7 @@ export default {
                     component: 'AgentKnowledgeManagement',
                     props: (vm) => ({
                         knowledges: vm.knowledges,
-                        isLoading: vm.isLoading
+                        isLoading: vm.isKnowledgeLoading
                     }),
                     events: (vm) => ({
                         deleteKnowledge: vm.deleteKnowledge
@@ -218,7 +236,7 @@ export default {
                     }
                 },
 
-                // // 비즈니스 규칙 학습
+                // 비즈니스 규칙 학습
                 'dmn-modeling': {
                     component: 'BusinessRuleLearning',
                     props: (vm) => ({
@@ -227,6 +245,22 @@ export default {
                     }),
                     events: () => ({}),
                     activate: () => {}
+                },
+
+                // 스킬 편집
+                'skill-edit': {
+                    component: 'AgentSkillEdit',
+                    props: (vm) => ({
+                        skillFile: vm.skillFile,
+                        isLoading: vm.isSkillLoading
+                    }),
+                    events: (vm) => ({
+                        saveSkillFile: vm.saveSkillFile,
+                        deleteSkillFile: vm.deleteSkillFile,
+                    }),
+                    activate: () => {
+                        this.isSkillLoading = false;
+                    }
                 },
             };
         },
@@ -287,12 +321,12 @@ export default {
 
         // knowledge management
         async getKnowledge() {
-            this.isLoading = true;
+            this.isKnowledgeLoading = true;
             const options = {
                 agent_id: this.id
             }
             this.knowledges = await this.backend.getVecsDocuments(options);
-            this.isLoading = false;
+            this.isKnowledgeLoading = false;
         },
         async deleteKnowledge(options) {
             await this.backend.deleteVecsDocument(options);
@@ -321,6 +355,82 @@ export default {
             } else {
                 this.dmnList = [];
             }
+        },
+
+        // skills
+        async saveSkills() {
+            const options = {
+                agentInfo: this.agentInfo,
+            }
+            await this.backend.saveSkills(options);
+            this.EventBus.emit('skills-updated');
+        },
+
+        async uploadSkills(file) {
+            this.isSkillLoading = true;
+            const options = {
+                agentInfo: this.agentInfo,
+                file: file
+            }
+            try {
+                const data = await this.backend.uploadSkills(options);
+                if (data && data.skills_added && data.skills_added.length > 0) {
+                    const skills = this.agentInfo.skills.split(',');
+                    data.skills_added.forEach(skill => {
+                        if (!skills.includes(skill.id)) {
+                            skills.push(skill.id);
+                        }
+                    });
+                    this.agentInfo.skills = skills.join(',');
+                }
+            } catch (error) {
+                console.error('스킬 업로드 실패:', error);
+            } finally {
+                this.isSkillLoading = false;
+                this.EventBus.emit('skills-updated');
+            }
+        },
+
+        async checkSkills(skillName) {
+            const skill = await this.backend.checkSkills(skillName);
+            if (skill && skill.exists) {
+                return true;
+            } else {
+                return false;
+            }
+        },
+
+        async openSkillFile(skill) {
+            if (!skill || !skill.includes('::')) return;
+
+            const [skillId, fileName] = skill.split('::');
+            const skillFile = await this.backend.getSkillFile(skillId, fileName);
+            this.skillFile = skillFile;
+            this.$router.push({ hash: '#skill-edit' });
+        },
+        async saveSkillFile(skillName, fileName, content) {
+            this.isSkillLoading = true;
+            try {
+                await this.backend.putSkillFile(skillName, fileName, content);
+            } catch (error) {
+                console.error('스킬 저장 실패:', error);
+            } finally {
+                this.isSkillLoading = false;
+            }
+            this.EventBus.emit('skills-updated');
+        },
+        async deleteSkillFile(skillName, fileName) {
+            this.isSkillLoading = true;
+            try {
+                await this.backend.deleteSkillFile(skillName, fileName);
+            } catch (error) {
+                console.error('스킬 삭제 실패:', error);
+            } finally {
+                this.isSkillLoading = false;
+            }
+            this.isSkillLoading = false;
+            this.skillFile = null;
+            this.EventBus.emit('skills-updated');
         },
     }
 }

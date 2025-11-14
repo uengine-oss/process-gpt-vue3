@@ -1,16 +1,16 @@
 <template>
     <div class="summary-wrapper" 
-         :class="isSummaryExpanded ? 'expanded' : ''"
+         :class="isSummaryExpanded ? 'expanded pa-0 mb-4' : ''"
          :style="isSummaryExpanded ? 
              'height: auto; overflow: visible; transition: all 0.3s ease;' : 
-             'height: 100px; overflow: hidden; transition: all 0.3s ease;'"
+             'height: 110px; overflow: hidden; transition: all 0.3s ease;'"
     >
         <div class="summary-button-container" @click.stop="toggleExpanded"
             :style="isSummaryExpanded ? 
                 'width: 100%; padding: 0px;' : 
-                'padding: 0px 16px 0px 0px;'"
+                'padding: 0px;'"
         >
-            <div class="summary-document" :class="isSummaryExpanded ? 'expanded' : ''">
+            <div class="summary-document" :class="isSummaryExpanded ? 'expanded pa-4' : ''">
                 <div class="document-content" :class="isSummaryExpanded ? '' : 'collapsed'">
                     <slot></slot>
                 </div>
@@ -41,6 +41,7 @@ export default {
 <style scoped>
 .summary-wrapper {
     width: 100%;
+    padding: 8px 8px 0px 8px;
     display: flex;
     justify-content: flex-end;
 }
@@ -55,12 +56,13 @@ export default {
 
 .summary-document {
     width: 120px;
-    height: 120px;
+    height: 140px;
     border-radius: 8px;
     transform: rotate(5deg);
+    background-color: white;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     transition: all 0.3s ease;
-    padding: 8px;
+    padding: 0px;
     display: flex;
     flex-direction: column;
     position: relative;

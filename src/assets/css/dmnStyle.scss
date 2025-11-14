@@ -43,6 +43,17 @@
             height: 40px;
             justify-content: center;
             align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            
+            &:hover {
+                .mdi {
+                    color: rgb(var(--v-theme-primary)) !important;
+                }
+            }
+            .mdi {
+                transition: color 0.2s ease;
+            }
         }
     }
 

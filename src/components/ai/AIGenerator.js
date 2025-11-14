@@ -344,25 +344,30 @@ export default class AIGenerator {
             const newUpdates = xhr.responseText.replace('data: [DONE]', '').trim().split('data: ').filter(Boolean);
 
             const newUpdatesParsed = newUpdates.map((update) => {
-                const parsed = JSON.parse(update);
+                try {
+                    const parsed = JSON.parse(update);
 
-                if (parsed.error) {
-                    if (me.client.onError) {
-                        me.client.onError(parsed.error);
+                    if (parsed.error) {
+                        if (me.client.onError) {
+                            me.client.onError(parsed.error);
+                        }
+                        throw new Error(parsed.error.message);
                     }
-                    throw new Error(parsed.error.message);
-                }
 
-                currentResId = parsed.id;
-                if (!me.gptResponseId) {
-                    me.gptResponseId = parsed.id;
+                    currentResId = parsed.id;
+                    if (!me.gptResponseId) {
+                        me.gptResponseId = parsed.id;
+                    }
+                    if (parsed.choices.length > 0 && parsed.choices[0].finish_reason == 'length') {
+                        me.finish_reason = 'length';
+                    }
+                    
+                    return parsed.choices[0]?.delta?.content || parsed.choices[0]?.message?.content || '';
+                } catch (parseError) {
+                    console.warn('[AIGenerator] JSON 파싱 실패, 청크 건너뜀:', parseError.message);
+                    return '';
                 }
-                if (parsed.choices.length > 0 && parsed.choices[0].finish_reason == 'length') {
-                    me.finish_reason = 'length';
-                }
-                
-                return parsed.choices[0]?.delta?.content || parsed.choices[0]?.message?.content || '';
-            });
+            }).filter(Boolean);
 
             const newUpdatesJoined = newUpdatesParsed.join('');
             if (newUpdatesJoined.includes(': null')) {

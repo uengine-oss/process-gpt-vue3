@@ -353,59 +353,89 @@ export default {
             }
         },
         resetZoom() {
-            var self = this;
-            var canvas = self.bpmnViewer.get('canvas');
-            var elementRegistry = self.bpmnViewer.get('elementRegistry');
-            var zoomScroll = self.bpmnViewer.get('zoomScroll');
-            var moveCanvas = self.bpmnViewer.get('MoveCanvas');
+            try {
+                var self = this;
+                
+                // 컨테이너 유효성 검사
+                const container = self.$refs.container;
+                if (!container) {
+                    return;
+                }
+                
+                const containerRect = container.getBoundingClientRect();
+                if (!containerRect || containerRect.width === 0 || containerRect.height === 0) {
+                    return;
+                }
+                
+                // BPMN viewer 유효성 검사
+                if (!self.bpmnViewer) {
+                    return;
+                }
+                
+                var canvas = self.bpmnViewer.get('canvas');
+                var elementRegistry = self.bpmnViewer.get('elementRegistry');
+                var zoomScroll = self.bpmnViewer.get('zoomScroll');
+                var moveCanvas = self.bpmnViewer.get('MoveCanvas');
 
-            var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-
-            zoomScroll.reset();
-
-            // ✅ 1) 기본 줌: 캔버스 꽉 채우기
-            canvas.zoom('fit-viewport', 'auto');
-
-            // ✅ 2) 줌 제한 핸들러
-            canvas._eventBus.on('zoom', function(event) {
-                let zoomLevel = event.scale;
-
-                if (zoomLevel < 0.2) {
-                zoomLevel = 0.2;
-                } else if (zoomLevel > 2) {
-                zoomLevel = 2;
+                if (!canvas || !elementRegistry || !zoomScroll || !moveCanvas) {
+                    return;
                 }
 
-                canvas.zoom(zoomLevel, {
-                x: canvas._cachedViewbox.inner.width / 2,
-                y: canvas._cachedViewbox.inner.height / 2
+                var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+
+                zoomScroll.reset();
+
+                // ✅ 1) 기본 줌: 캔버스 꽉 채우기
+                canvas.zoom('fit-viewport', 'auto');
+
+                // ✅ 2) 줌 제한 핸들러
+                canvas._eventBus.on('zoom', function(event) {
+                    let zoomLevel = event.scale;
+
+                    if (zoomLevel < 0.2) {
+                    zoomLevel = 0.2;
+                    } else if (zoomLevel > 2) {
+                    zoomLevel = 2;
+                    }
+
+                    canvas.zoom(zoomLevel, {
+                    x: canvas._cachedViewbox.inner.width / 2,
+                    y: canvas._cachedViewbox.inner.height / 2
+                    });
                 });
-            });
 
-            // ✅ 3) 꽉 찬 상태의 bbox 가져오기
-            const bbox = canvas.viewbox();
+                // ✅ 3) 꽉 찬 상태의 bbox 가져오기
+                const bbox = canvas.viewbox();
+                
+                // bbox 유효성 검사
+                if (!bbox || !Number.isFinite(bbox.width) || !Number.isFinite(bbox.height) || !Number.isFinite(bbox.scale)) {
+                    return;
+                }
 
-            // ✅ 4) 필요하면 여기서 padding / 이동 조정하고 싶으면 scroll 사용
-            // 예: canvas.scroll({ dx: 50, dy: 50 });
+                // ✅ 4) 필요하면 여기서 padding / 이동 조정하고 싶으면 scroll 사용
+                // 예: canvas.scroll({ dx: 50, dy: 50 });
 
-            // ✅ 5) zoomScroll, moveCanvas 동기화
-            moveCanvas.canvasSize = {
-                height: bbox.height,
-                width: bbox.width,
-                x: bbox.x,
-                y: bbox.y
-            };
-            moveCanvas.scaleOffset = bbox.scale;
-            moveCanvas.resetMovedDistance();
+                // ✅ 5) zoomScroll, moveCanvas 동기화
+                moveCanvas.canvasSize = {
+                    height: bbox.height,
+                    width: bbox.width,
+                    x: bbox.x,
+                    y: bbox.y
+                };
+                moveCanvas.scaleOffset = bbox.scale;
+                moveCanvas.resetMovedDistance();
 
-            zoomScroll.canvasSize = {
-                height: bbox.height,
-                width: bbox.width,
-                x: bbox.x,
-                y: bbox.y
-            };
-            zoomScroll.scaleOffset = bbox.scale;
-            zoomScroll.resetMovedDistance();
+                zoomScroll.canvasSize = {
+                    height: bbox.height,
+                    width: bbox.width,
+                    x: bbox.x,
+                    y: bbox.y
+                };
+                zoomScroll.scaleOffset = bbox.scale;
+                zoomScroll.resetMovedDistance();
+            } catch (error) {
+                // 에러 발생 시 조용히 무시 (중요하지 않은 UI 동작이므로)
+            }
         },
         zoomIn() {
             const zoomScroll = this.bpmnViewer.get('zoomScroll');
@@ -1068,7 +1098,6 @@ svg .bpmn-diff-deleted marker[id*="sequenceflow-end"] path {
 
 @media (max-width: 768px) {
   .participants-panel-wrapper {
-    width: calc(100vw - 32px);
     max-width: 280px;
   }
 }

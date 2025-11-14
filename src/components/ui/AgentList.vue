@@ -249,6 +249,9 @@ export default {
                     type: updatedAgent.agent_type || 'agent'
                 };
                 this.agentList.push(newAgent);
+                
+                // 새로 추가된 에이전트를 최상단으로 이동시키기 위해 최근 열람 정보 저장
+                this.saveRecentlyViewedAgent(updatedAgent.id);
             }
             
             // 업데이트 후 최근 열람 순으로 재정렬

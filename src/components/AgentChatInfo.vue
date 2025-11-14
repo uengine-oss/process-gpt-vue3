@@ -115,6 +115,40 @@
                             </v-btn>
                         </v-chip-group>
                     </div>
+
+                    <!-- Skills Section -->
+                    <div class="d-flex align-center pa-0 mb-1">
+                        <span class="text-body-2 font-weight-medium mr-1"> 스킬 </span>
+                        <div v-if="agentType === 'agent'" class="ml-auto">
+                            <v-btn @click="toggleEdit('skills')" 
+                                variant="text" 
+                                :size="20" icon 
+                                class="rounded-pill"
+                            >
+                                <Icons v-if="!editProperties.skills.abled" :icon="'pencil'" :size="12"/>
+                                <v-icon v-else size="16">mdi-check</v-icon>
+                            </v-btn>
+                        </div>
+                    </div>
+                    <v-chip-group v-if="!editProperties.skills.abled" class="mb-3">
+                        <v-chip 
+                            v-for="skill in parsedSkills" 
+                            :key="skill"
+                            size="small"
+                            variant="outlined"
+                            class="ma-1"
+                        >
+                            {{ skill }}
+                        </v-chip>
+                    </v-chip-group>
+                    <AgentSkills 
+                        v-if="editProperties.skills.abled && agentType === 'agent'" 
+                        :agentSkills="parsedSkills"
+                        :isLoading="isSkillLoading"
+                        @update:skillFileName="openSkillFile"
+                        @uploadSkills="uploadSkills"
+                    />
+                    
                     <v-divider class="mb-4"></v-divider>
                     
                     <!-- Tab Navigation - 편집 모드가 아닐 때만 표시 -->
@@ -170,11 +204,13 @@
 
 <script>
 import OrganizationEditDialog from '@/components/ui/OrganizationEditDialog.vue';
+import AgentSkills from '@/components/AgentSkills.vue';
 
 export default {
     name: 'AgentChatInfo',
     components: {
-        OrganizationEditDialog
+        OrganizationEditDialog,
+        AgentSkills
     },
     props: {
         agentInfo: {
@@ -197,6 +233,10 @@ export default {
         dmnList: {
             type: Array,
             default: () => []
+        },
+        isSkillLoading: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
@@ -212,8 +252,41 @@ export default {
                 persona: false,
                 tools: false
             },
+            editProperties: {
+                goal: {
+                    abled: false,
+                    action: () => {}
+                },
+                persona: {
+                    abled: false,
+                    action: () => {}
+                },
+                description: {
+                    abled: false,
+                    action: () => {}
+                },
+                tools: {
+                    abled: false,
+                    action: () => {}
+                },
+                skills: {
+                    abled: false,
+                    action: () => {
+                        this.$emit('saveSkills');
+                    }
+                },
+                endpoint: {
+                    abled: false,
+                    action: () => {}
+                },
+                model: {
+                    abled: false,
+                    action: () => {}
+                }
+            },
             agentType: 'agent',
-            selectedDmnId: null
+            selectedDmnId: null,
+            selectedSkillsFile: null
         }
     },
     mounted() {
@@ -256,6 +329,21 @@ export default {
             return [];
         },
 
+        parsedSkills() {
+            if (!this.agentInfo.skills) return [];
+
+            if (typeof this.agentInfo.skills === 'string') {
+                if (this.agentInfo.skills.includes(',')) {
+                    return this.agentInfo.skills
+                        .split(',')
+                        .map(skill => skill.trim())
+                        .filter(skill => skill.length > 0);
+                } else {
+                    return [this.agentInfo.skills.trim()];
+                }
+            }
+        },
+
         dmnTabList() {
             return this.dmnList.map(dmn => ({
                 id: dmn.id,
@@ -285,6 +373,13 @@ export default {
         }
     },
     methods: {
+        toggleEdit(type) {
+            if (this.editProperties[type].abled) {
+                this.editProperties[type].action();
+            }
+            this.editProperties[type].abled = !this.editProperties[type].abled;
+        },
+
         handleTabChange(newTab) {
             this.$router.push({ hash: '#' + newTab });
             this.selectedDmnId = null;
@@ -410,7 +505,14 @@ export default {
 
         shouldShowToolsToggle() {
             return this.parsedTools && this.parsedTools.length > 4;
-        }
+        },
+
+        uploadSkills(skillsFile) {
+            this.$emit('uploadSkills', skillsFile);
+        },
+        openSkillFile(fileName) {
+            this.$emit('openSkillFile', fileName);
+        },
     }
 }
 </script>
