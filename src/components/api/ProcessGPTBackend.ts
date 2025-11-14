@@ -4668,15 +4668,36 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // agent skills
+    async saveSkills(options: any) {
+        try {
+            let newSkills = '';
+            if (options.agentInfo.skills) {
+                const skills = options.agentInfo.skills.split(',');
+                newSkills = skills.join(',');
+            }
+            await storage.putObject('users', {
+                id: options.agentInfo.id,
+                skills: newSkills,
+                tenant_id: window.$tenantName
+            });
+            return newSkills;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
     async uploadSkills(options: any) {
         try {
             const form = new FormData();
             form.append("file", options.file, options.file.name);
+            
             const response = await axios.post('/claude-skills/skills/upload', form, {
                 headers: {
                     'Accept': 'application/json'
                 }
             });
+            
             if (response.status === 200) {
                 const addedSkills = response.data.skills_added;
                 let newSkills = '';
@@ -4691,14 +4712,11 @@ class ProcessGPTBackend implements Backend {
                 } else {
                     newSkills = addedSkills.join(',');
                 }
-                await storage.putObject('users', {
-                    id: options.agentInfo.id,
-                    skills: newSkills,
-                    tenant_id: window.$tenantName
-                });
+                options.agentInfo.skills = newSkills;
+                const result = await this.saveSkills(options);
                 return {
                     skills_added: addedSkills,
-                    skills: newSkills
+                    skills: result
                 };
             } else {
                 throw new Error(response.data.message);
@@ -4711,6 +4729,57 @@ class ProcessGPTBackend implements Backend {
     async checkSkills(skills: string) {
         try {
             const response = await axios.get(`/claude-skills/skills/check?name=${skills}`);
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data.message);
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async getSkillFile(skillName: string, fileName?: string) {
+        try {
+            let url = `/claude-skills/skills/${encodeURIComponent(skillName)}/files`;
+            if (fileName) {
+                url += `/${encodeURIComponent(fileName)}`;
+            }
+            const response = await axios.get(url);
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data.message);
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async putSkillFile(skillName: string, fileName: string, content: string) {
+        try {
+            let url = `/claude-skills/skills/${encodeURIComponent(skillName)}/files/${encodeURIComponent(fileName)}`;
+            const response = await axios.put(url, {
+                content: content
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data.message);
+            }
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    async deleteSkillFile(skillName: string, fileName: string) {
+        try {
+            let url = `/claude-skills/skills/${encodeURIComponent(skillName)}/files/${encodeURIComponent(fileName)}`;
+            const response = await axios.delete(url);
             if (response.status === 200) {
                 return response.data;
             } else {
