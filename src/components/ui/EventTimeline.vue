@@ -708,7 +708,7 @@ export default {
         },
         getDisplayName(task) {
             if (task.isHumanAsked) {
-                return this.$t('agentMonitor.humanApproval')
+                return this.$t('AgentSelectInfo.humanApproval.title')
             }
             const name = task.name?.trim()
             return (!name || name.toLowerCase() === 'unknown') ? task.role : task.name

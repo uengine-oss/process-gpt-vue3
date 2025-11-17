@@ -691,11 +691,11 @@ export default {
             if (this.isAgentBusy && this.workItem && this.workItem.worklist && this.workItem.worklist.orchestration) {
                 const orch = this.workItem.worklist.orchestration;
                 const mapping = {
-                    'crewai-deep-research': this.$t('agentMonitor.crewaiDeepResearch'),
-                    'crewai-action': this.$t('agentMonitor.crewaiAction'),
-                    'openai-deep-research': this.$t('agentMonitor.openaiDeepResearch'),
-                    'langchain-react': this.$t('agentMonitor.langchainReact'),
-                    'browser-automation-agent': 'Browser Automation Agent'
+                    'crewai-deep-research': this.$t('AgentSelectInfo.orchestration.crewaiDeepResearch.title'),
+                    'crewai-action': this.$t('AgentSelectInfo.orchestration.crewaiAction.title'),
+                    'openai-deep-research': this.$t('AgentSelectInfo.orchestration.openaiDeepResearch.title'),
+                    'langchain-react': this.$t('AgentSelectInfo.orchestration.langchainReact.title'),
+                    'browser-automation-agent': this.$t('AgentSelectInfo.orchestration.browserAutomationAgent.title')
                 };
                 return mapping[orch] || orch;
             }
