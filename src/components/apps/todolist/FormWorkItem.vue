@@ -537,6 +537,10 @@ export default {
             }
             
             if (this.$refs.checkpoints && !this.$refs.checkpoints.allChecked) {
+                // 로딩 상태 해제
+                if(this.isSimulate == 'true') {
+                    this.isLoading = false;
+                }
                 // 경고 메시지 표시
                 this.$refs.checkpoints.showWarning = true;
                 // 체크포인트 컴포넌트로 스크롤
@@ -554,6 +558,17 @@ export default {
             let value = {};
             if (this.newMessage && this.newMessage.length > 0) {
                 value['user_input_text'] = this.newMessage;
+            }
+            
+            // 체크포인트 체크 정보를 value에 포함
+            // 체크된 체크포인트의 원래 이름을 전달하기 위해 체크포인트 이름을 키로 사용
+            if (this.$refs.checkpoints && this.$refs.checkpoints.checkpoints) {
+                this.$refs.checkpoints.checkpoints.forEach((cp) => {
+                    // 체크포인트 이름을 키로 하고, 체크 여부를 boolean 값으로 저장
+                    // 원래 이름을 보존하기 위해 체크포인트 이름 자체를 키로 사용
+                    const checkpointKey = cp.name + '_check';
+                    value[checkpointKey] = cp.checked;
+                });
             }
             
             if (this.isDryRun && this.mode == 'ProcessGPT' || this.simulate) {

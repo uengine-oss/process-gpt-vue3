@@ -359,6 +359,39 @@ class ProcessGPTBackend implements Backend {
                 input['project_id'] = input.projectId
             }
 
+            // form_values에서 체크포인트 정보를 추출하여 각 폼 객체 내부에 checkpoints 배열로 추가
+            if (input.form_values && typeof input.form_values === 'object') {
+                const checkedCheckpoints: string[] = [];
+                
+                // 먼저 체크된 체크포인트 이름을 수집
+                Object.keys(input.form_values).forEach((key) => {
+                    // _check로 끝나는 키는 체크포인트 정보로 간주
+                    if (key.endsWith('_check') && typeof input.form_values[key] === 'boolean' && input.form_values[key] === true) {
+                        // _check를 제거하여 원래 체크포인트 이름 복원
+                        const checkpointName = key.replace(/_check$/, '');
+                        checkedCheckpoints.push(checkpointName);
+                    }
+                });
+                
+                // 수집한 체크포인트 정보를 각 폼 객체 내부에 checkpoints 배열로 추가
+                if (checkedCheckpoints.length > 0) {
+                    Object.keys(input.form_values).forEach((key) => {
+                        // _check로 끝나지 않는 키는 폼 객체로 간주
+                        if (!key.endsWith('_check') && typeof input.form_values[key] === 'object' && input.form_values[key] !== null) {
+                            // checkpoints 배열을 폼 객체 내부에 추가
+                            input.form_values[key].checkpoints = checkedCheckpoints;
+                        }
+                    });
+                    
+                    // 체크포인트 정보를 form_values 최상위 레벨에서 제거
+                    Object.keys(input.form_values).forEach((key) => {
+                        if (key.endsWith('_check')) {
+                            delete input.form_values[key];
+                        }
+                    });
+                }
+            }
+
             return await me.executeInstance(input);
 
         } catch (error) {
