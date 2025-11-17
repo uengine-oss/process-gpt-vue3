@@ -167,31 +167,31 @@ export default {
             orchestrationOptions: [
                 { 
                     value: 'crewai-deep-research', 
-                    label: this.$t('agentMonitor.crewaiDeepResearch'), 
+                    label: this.$t('AgentSelectInfo.orchestration.crewaiDeepResearch.title'), 
                     startLabel: 'CrewAI Deep Research', 
                     icon: 'playoff'
                 },
                 {
                     value: 'crewai-action',
-                    label: this.$t('agentMonitor.crewaiAction'),
+                    label: this.$t('AgentSelectInfo.orchestration.crewaiAction.title'),
                     startLabel: 'CrewAI Action',
                     icon: 'flowchart'
                 },
                 {
                     value: 'openai-deep-research',
-                    label: this.$t('agentMonitor.openaiDeepResearch'),
+                    label: this.$t('AgentSelectInfo.orchestration.openaiDeepResearch.title'),
                     startLabel: 'OpenAI Deep Research',
                     icon: 'playoff'
                 },
                 {
                     value: 'langchain-react',
-                    label: this.$t('agentMonitor.langchainReact'),
+                    label: this.$t('AgentSelectInfo.orchestration.langchainReact.title'),
                     startLabel: 'LangChain Research',
                     icon: 'playoff'
                 },
                 { 
                     value: 'browser-automation-agent', 
-                    label: 'Browser Automation Agent', 
+                    label: this.$t('AgentSelectInfo.orchestration.browserAutomationAgent.title'), 
                     startLabel: 'Browser Automation Agent', 
                     icon: 'browser'
                 }
@@ -269,13 +269,13 @@ export default {
                     })
                 } else if (event_type === 'human_asked') {
                     // human_asked 이벤트를 별도 작업으로 추가 (블루톤 카드용 텍스트 구성)
-                    const baseDescription = this.$t('agentMonitor.humanApprovalDescription')
+                    const baseDescription = this.$t('AgentSelectInfo.humanApproval.description')
                     const response = humanResponseByJobId[jobId] || null
                     humanAskedTasks.push({
                         id,
                         jobId,
                         goal: baseDescription,
-                        name: this.$t('agentMonitor.humanApproval'),
+                        name: this.$t('AgentSelectInfo.humanApproval.title'),
                         role: data?.role || 'System',
                         crewType: 'human_asked',
                         startTime: timestamp,

@@ -116,11 +116,11 @@ export default {
         },
         getMethodDescription(method) {
             const descriptions = {
-                'crewai-deep-research': this.$t('agentMonitor.crewaiDeepResearchDescription'),
-                'crewai-action': this.$t('agentMonitor.crewaiActionDescription'),
-                'openai-deep-research': this.$t('agentMonitor.openaiDeepResearchDescription'),
-                'langchain-react': this.$t('agentMonitor.langchainReactDescription'),
-                'browser-use': this.$t('agentMonitor.browserUseDescription')
+                'crewai-deep-research': this.$t('AgentSelectInfo.orchestration.crewaiDeepResearch.description'),
+                'crewai-action': this.$t('AgentSelectInfo.orchestration.crewaiAction.description'),
+                'openai-deep-research': this.$t('AgentSelectInfo.orchestration.openaiDeepResearch.description'),
+                'langchain-react': this.$t('AgentSelectInfo.orchestration.langchainReact.description'),
+                'browser-use': this.$t('AgentSelectInfo.orchestration.browserUse.description')
             };
             return descriptions[method] || '';
         }

@@ -1023,17 +1023,156 @@
         "resultInput": "Current Task",
         "researchMethod": "Agent Delegation",
         "runningResearchMethod": "Running Research Method",
-        "crewaiDeepResearch": "CrewAI Deep Research",
-        "crewaiAction": "CrewAI Action",
-        "openaiDeepResearch": "OpenAI Deep Research",
-        "langchainReact": "LangChain Research",
-        "crewaiDeepResearchDescription": "Multi-agent collaboration for deep research and analysis. ex) Document analysis, data collection, report writing (5~15 minutes)",
-        "crewaiActionDescription": "Optimal path call various tools to achieve the goal. ex) MCP, A2A (1~5 minutes)",
-        "openaiDeepResearchDescription": "Advanced reasoning and systematic analysis based on GPT-4. ex) Logical thinking, creative problem solving (3~10 minutes)",
-        "langchainReactDescription": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)",
         "delegateMessage": "Task '{taskName}' has been delegated to {username}.",
         "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {username}.",
         "runAgain": "Run Again"
+    },
+    "AgentSelectInfo": {
+        "orcation": "Agent Research Method",
+        "agentMode": {
+            "none": {
+                "title": "None",
+                "description": "Do not use AI agent"
+            },
+            "draft": {
+                "title": "Draft",
+                "description": "Draft mode — AI creates basic documents"
+            },
+            "complete": {
+                "title": "Complete",
+                "description": "Complete mode — AI automatically completes the task"
+            }
+        },
+        "orchestration": {
+            "none": {
+                "title": "None",
+                "description": "No research needed — when you already have sufficient information",
+                "detailDesc": {
+                    "title": "Start working immediately without additional research",
+                    "details": [
+                        {
+                            "title": "💡 Use this when:\n• You already have all the information you need\n• Simple task or question\n• Quick answer needed"
+                        },
+                        {
+                            "title": "📝 Examples:\n• Summarize documents\n• Code refactoring\n• Text translation"
+                        }
+                    ]
+                }
+            },
+            "crewaiDeepResearch": {
+                "title": "CrewAI Collaborative Research",
+                "description": "Multi-agent collaboration for deep research and analysis. ex) Document analysis, data collection, report writing (5~15 minutes)",
+                "detailDesc": {
+                    "title": "Multiple AI experts work together as a team",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\nResearcher → Data collection\nAnalyst → Deep analysis\nWriter → Report writing"
+                        },
+                        {
+                            "title": "💡 Use this when:\n• Complex topics requiring multi-angle analysis\n• Expert-level report writing\n• Comprehensive market research"
+                        },
+                        {
+                            "title": "📝 Examples:\n• Competitor analysis report\n• Market trend research\n• Strategic planning document"
+                        }
+                    ]
+                }
+            },
+            "crewaiAction": {
+                "title": "CrewAI Action",
+                "description": "Optimal path call various tools to achieve the goal. ex) MCP, A2A (1~5 minutes)",
+                "detailDesc": {
+                    "title": "Data collection using APIs and external tools",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\n→ Call specific APIs or tools\n→ Collect structured data\n→ Integrate and organize results"
+                        },
+                        {
+                            "title": "💡 Use this when:\n• Need data from specific sources\n• Tasks requiring API integration\n• Structured data collection"
+                        },
+                        {
+                            "title": "📝 Examples:\n• Collect stock market data\n• Query weather information\n• CRM system integration\n• Database queries"
+                        }
+                    ]
+                }
+            },
+            "openaiDeepResearch": {
+                "title": "OpenAI Advanced Analysis",
+                "description": "Advanced reasoning and systematic analysis based on GPT-4. ex) Logical thinking, creative problem solving (3~10 minutes)",
+                "detailDesc": {
+                    "title": "Highly reliable research through iterative verification",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\nStage 1: Initial research\nStage 2: Result evaluation\nStage 3: Re-investigation (if needed)\nStage 4: Final verification"
+                        },
+                        {
+                            "title": "💡 Use this when:\n• Exploring uncertain topics\n• Information where reliability is critical\n• Cross-verification from multiple sources needed"
+                        },
+                        {
+                            "title": "📝 Examples:\n• Identify latest research trends\n• Fact-checking\n• Analysis of controversial topics"
+                        }
+                    ]
+                }
+            },
+            "browserAutomationAgent": {
+                "title": "Browser Automation Agent",
+                "description": "Automatically extract and collect data from websites. ex) Web crawling, scraping, form automation (2~10 minutes)",
+                "detailDesc": {
+                    "title": "Visit websites and automatically extract data",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\n→ Access specified websites\n→ Navigate pages and collect data\n→ Extract and organize information"
+                        },
+                        {
+                            "title": "💡 Use this when:\n• Collecting information from specific websites\n• Price comparison or monitoring\n• News article collection"
+                        },
+                        {
+                            "title": "📝 Examples:\n• Shopping mall price comparison\n• Real estate listing collection\n• News headline compilation\n• Competitor website monitoring"
+                        },
+                        {
+                            "title": "⚠️ Note: Website access permission required"
+                        }
+                    ]
+                }
+            },
+            "agentToAgent": {
+                "title": "Agent to Agent",
+                "description": "Real-time multi-agent collaboration for complex tasks. ex) MCP protocol, A2A communication (variable time)",
+                "detailDesc": {
+                    "title": "Multiple agents collaborate in real-time",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\n→ Multiple agents work simultaneously\n→ Real-time information sharing and integration\n→ Dynamic role adjustment"
+                        },
+                        {
+                            "title": "💡 Use this when:\n• Complex and dynamic work flows\n• Continuous monitoring needed\n• Real-time integration from various sources"
+                        },
+                        {
+                            "title": "📝 Examples:\n• 24/7 market monitoring\n• Real-time news curation\n• Complex data dashboard"
+                        },
+                        {
+                            "title": "⚠️ Advanced user feature"
+                        }
+                    ]
+                }
+            },
+            "langchainReact": {
+                "title": "LangChain Research",
+                "description": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)"
+            },
+            "browserUse": {
+                "title": "Browser Use",
+                "description": "Perform real-time web information collection and tasks by manipulating the actual browser. ex) Search, form filling, scraping (2~8 minutes)"
+            }
+        },
+        "cost": {
+            "low": "Cost: Low",
+            "medium": "Cost: Medium",
+            "high": "Cost: High"
+        },
+        "humanApproval": {
+            "title": "User approval and additional information request",
+            "description": "User approval and additional information are required. If you approve the following work plan, please click the check button. If needed, please enter or select the item."
+        }
     },
     "TestProcess": {
         "title": "Testing Process",
@@ -1664,18 +1803,7 @@
         "download": "Download",
         "start": "Start",
         "stop": "Stop",
-        "researchMethod": "Research Method",
-        "crewaiDeepResearch": "CrewAI Deep Research",
-        "crewaiAction": "CrewAI Action",
-        "openaiDeepResearch": "OpenAI Deep Research",
-        "langchainReact": "LangChain Research",
-        "humanApproval": "User approval and additional information request",
-        "humanApprovalDescription": "User approval and additional information are required. If you approve the following work plan, please click the check button. If needed, please enter or select the item.",
-        "crewaiDeepResearchDescription": "Multi-agent collaboration for deep research and analysis. ex) Document analysis, data collection, report writing (5~15 minutes)",
-        "crewaiActionDescription": "Optimal path call various tools to achieve the goal. ex) MCP, A2A (1~5 minutes)",
-        "openaiDeepResearchDescription": "Advanced reasoning and systematic analysis based on GPT-4. ex) Logical thinking, creative problem solving (3~10 minutes)",
-        "langchainReactDescription": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)",
-        "browserUseDescription": "Perform real-time web information collection and tasks by manipulating the actual browser. ex) Search, form filling, scraping (2~8 minutes)"
+        "researchMethod": "Research Method"
     },
     "EventTimeline": {
         "browserAutomationResult": "Browser Automation Result",

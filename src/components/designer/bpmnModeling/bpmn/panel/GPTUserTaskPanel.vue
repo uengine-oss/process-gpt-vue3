@@ -40,12 +40,98 @@
                 </div>
                 <!-- Draft -->
                 <div class="mt-4">
-                    <v-select v-model="activity.agentMode" :items="agentModeItems" hide-details density="compact" :label="$t('BpmnPropertyPanel.agentMode')">
+                    <v-select 
+                        v-model="activity.agentMode" 
+                        :items="agentModeItems" 
+                        item-title="titleKey"
+                        item-value="value"
+                        density="compact" 
+                        :label="$t('BpmnPropertyPanel.agentMode')"
+                        variant="outlined"
+                    >
+                        <template v-slot:selection="{ item }">
+                            <span>{{ item.raw.icon }} {{ $t(item.raw.titleKey) }}</span>
+                        </template>
+                        <template v-slot:item="{ item, props }">
+                            <v-list-item
+                                v-bind="props"
+                            >
+                                <template v-slot:title>
+                                    <div class="d-flex align-center">
+                                        <span class="font-weight-medium">{{ $t(item.raw.titleKey) }}</span>
+                                        <v-chip 
+                                            v-if="item.raw.badge" 
+                                            size="x-small" 
+                                            class="ml-2"
+                                            :color="item.raw.badgeColor || 'primary'"
+                                        >
+                                            {{ item.raw.badge }}
+                                        </v-chip>
+                                    </div>
+                                </template>
+                                <template v-slot:subtitle>
+                                    <div class="text-wrap mt-1">{{ $t(item.raw.descKey) }}</div>
+                                </template>
+                            </v-list-item>
+                        </template>
                     </v-select>
                 </div>
                 <!-- Orchestration -->
                 <div v-if="activity.agentMode === 'draft' || activity.agentMode === 'complete'" class="mt-4">
-                    <v-select v-model="activity.orchestration" :items="orchestrationItems" hide-details density="compact" :label="$t('BpmnPropertyPanel.orchestration')">
+                    <v-select 
+                        v-model="activity.orchestration" 
+                        :items="orchestrationItems" 
+                        item-title="titleKey"
+                        item-value="value"
+                        density="compact" 
+                        :label="$t('AgentSelectInfo.orcation')"
+                        variant="outlined"
+                        :menu-props="{ maxHeight: 600 }"
+                    >
+                        <template v-slot:selection="{ item }">
+                            <v-row class="ma-0 pa-0 align-center">
+                                <Icons v-if="item.raw.icon" :icon="item.raw.icon" class="select-icon" :size="40" />
+                                <div>{{ $t(item.raw.titleKey) }}</div>
+                            </v-row>
+                        </template>
+                        <template v-slot:item="{ item, props }">
+                            <div class="pa-2 pt-0 pb-0">
+                                <v-list-item
+                                    v-bind="props"
+                                    :class="{ 'divider-top': item.raw.divider }"
+                                >
+                                    <template v-if="item.raw.icon" v-slot:prepend>
+                                        <Icons :icon="item.raw.icon" class="select-icon" :size="48" />
+                                    </template>
+                                    <template v-slot:title>
+                                        <div class="d-flex align-center">
+                                            <span class="font-weight-medium">{{ $t(item.raw.titleKey) }}</span>
+                                            <v-chip 
+                                                v-if="item.raw.costKey" 
+                                                size="x-small" 
+                                                class="ml-2"
+                                                :color="getCostColor(item.raw.costKey)"
+                                                variant="flat"
+                                            >
+                                                {{ $t(item.raw.costKey) }}
+                                            </v-chip>
+                                        </div>
+                                    </template>
+                                    <template v-slot:subtitle>
+                                        <div class="text-wrap mt-1">{{ $t(item.raw.descKey) }}</div>
+                                    </template>
+                                </v-list-item>
+                                
+                                <!-- 각 아이템별 상세 정보 -->
+                                <div v-if="item.raw.detailDesc" class="py-2">
+                                    <DetailComponent
+                                        :title="$t(item.raw.detailDesc.title)"
+                                        :details="item.raw.detailDesc.details"
+                                    />
+                                </div>
+                            </div>
+                            <v-divider class="my-1"></v-divider>
+                        </template>
                     </v-select>
                 </div>
             </v-window-item>
@@ -106,6 +192,7 @@
 import Instruction from '@/components/designer/InstructionField.vue';
 import Checkpoints from '@/components/designer/CheckpointsField.vue';
 import Description from '@/components/designer/DescriptionField.vue';
+import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
@@ -118,7 +205,8 @@ export default {
         Instruction,
         Checkpoints,
         Description,
-        FormDefinition
+        FormDefinition,
+        DetailComponent
     },
     props: {
         uengineProperties: Object,
@@ -154,17 +242,151 @@ export default {
             activeTab: 'setting',
             fieldsJson: [],
             agentModeItems: [
-                { title: 'None', value: 'none' },
-                { title: 'Draft', value: 'draft' },
-                { title: 'Complete', value: 'complete' }
+                { 
+                    titleKey: 'AgentSelectInfo.agentMode.none.title',
+                    value: 'none',
+                    descKey: 'AgentSelectInfo.agentMode.none.description'
+                },
+                { 
+                    titleKey: 'AgentSelectInfo.agentMode.draft.title',
+                    value: 'draft',
+                    descKey: 'AgentSelectInfo.agentMode.draft.description',
+                },
+                { 
+                    titleKey: 'AgentSelectInfo.agentMode.complete.title',
+                    value: 'complete',
+                    descKey: 'AgentSelectInfo.agentMode.complete.description',
+                }
             ],
             orchestrationItems: [
-                { title: 'None', value: 'none' },
-                { title: 'Crewai Deep Research', value: 'crewai-deep-research' },
-                { title: 'Crewai Action', value: 'crewai-action' },
-                { title: 'OpenAI Deep Research', value: 'openai-deep-research' },
-                { title: 'Browser automation agent', value: 'browser-automation-agent' },
-                { title: 'Agent To Agent', value: 'a2a' }
+                { 
+                    titleKey: 'AgentSelectInfo.orchestration.none.title',
+                    value: 'none',
+                    descKey: 'AgentSelectInfo.orchestration.none.description',
+                    detailDescTitleKey: 'AgentSelectInfo.orchestration.none.detailDesc.title',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.none.detailDesc.title',
+                        details: [
+                            {
+                                title: 'AgentSelectInfo.orchestration.none.detailDesc.details.0.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.none.detailDesc.details.1.title'
+                            }
+                        ]
+                    }
+                },
+                { 
+                    titleKey: 'AgentSelectInfo.orchestration.crewaiDeepResearch.title',
+                    value: 'crewai-deep-research',
+                    icon: 'playoff',
+                    descKey: 'AgentSelectInfo.orchestration.crewaiDeepResearch.description',
+                    costKey: 'AgentSelectInfo.cost.medium',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.title',
+                        details: [
+                            {
+                                title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.0.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.1.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.2.title'
+                            }
+                        ]
+                    }
+                },
+                { 
+                    titleKey: 'AgentSelectInfo.orchestration.crewaiAction.title',
+                    value: 'crewai-action',
+                    icon: 'flowchart',
+                    descKey: 'AgentSelectInfo.orchestration.crewaiAction.description',
+                    costKey: 'AgentSelectInfo.cost.low',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.title',
+                        details: [
+                            {
+                                title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.0.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.1.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.2.title'
+                            }
+                        ]
+                    }
+                },
+                { 
+                    titleKey: 'AgentSelectInfo.orchestration.openaiDeepResearch.title',
+                    value: 'openai-deep-research',
+                    icon: 'playoff',
+                    descKey: 'AgentSelectInfo.orchestration.openaiDeepResearch.description',
+                    costKey: 'AgentSelectInfo.cost.high',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.title',
+                        details: [
+                            {
+                                title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.0.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.1.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.2.title'
+                            }
+                        ]
+                    }
+                },
+                { 
+                    titleKey: 'AgentSelectInfo.orchestration.browserAutomationAgent.title',
+                    value: 'browser-automation-agent',
+                    icon: 'browser',
+                    descKey: 'AgentSelectInfo.orchestration.browserAutomationAgent.description',
+                    costKey: 'AgentSelectInfo.cost.low',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.title',
+                        details: [
+                            {
+                                title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.0.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.1.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.2.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.3.title'
+                            }
+                        ]
+                    }
+                },
+                { 
+                    titleKey: 'AgentSelectInfo.orchestration.agentToAgent.title',
+                    value: 'a2a',
+                    icon: 'sitemap',
+                    descKey: 'AgentSelectInfo.orchestration.agentToAgent.description',
+                    costKey: 'AgentSelectInfo.cost.high',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.title',
+                        details: [
+                            {
+                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.0.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.1.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.2.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.3.title'
+                            }
+                        ]
+                    }
+                }
             ],
             selectedForms: [],
             availableForms: [],
@@ -270,6 +492,16 @@ export default {
         }
     },
     methods: {
+        getCostColor(costKey) {
+            if (costKey === 'AgentSelectInfo.cost.low') {
+                return 'success';
+            } else if (costKey === 'AgentSelectInfo.cost.medium') {
+                return 'warning';
+            } else if (costKey === 'AgentSelectInfo.cost.high') {
+                return 'error';
+            }
+            return 'grey';
+        },
         async init() {
             var me = this;
             if(me.isPreviewMode){
@@ -440,5 +672,26 @@ export default {
 <style scoped>
 .gpt-user-task-panel {
     margin: -16px;
+}
+
+.select-icon {
+    padding-right: 16px !important;
+}
+
+.divider-top {
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    margin-top: 8px !important;
+    padding-top: 16px !important;
+}
+
+.meta-info {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.meta-item {
+    display: inline-block;
 }
 </style>
