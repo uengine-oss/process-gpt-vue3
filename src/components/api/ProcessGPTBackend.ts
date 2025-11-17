@@ -4215,11 +4215,24 @@ class ProcessGPTBackend implements Backend {
             }
 
             let fieldValue = {};
-
+            const procDef = await this.getRawDefinition(procDefId, null);
+            if(!procDef) {
+                throw new Error('procDef not found');
+            }
+            const definition = procDef.definition;            
             const fieldInfo = field.split('.');
             const formId = fieldInfo[0];
             const fieldId = fieldInfo[1];
-            const activityId = formId.replace(`${procDefId}_`, '').replace('_form', '');
+
+            let activityId = null;
+            if (definition.activities.length > 0) {
+                definition.activities.forEach((activity: any) => {
+                    if(activity.tool.includes('formHandler:') && activity.tool.replace('formHandler:', '') === formId) {
+                        activityId = activity.id;
+                    }
+                });
+            }
+
             let executionScope = null;
 
             let workitem = null;
