@@ -1028,6 +1028,7 @@
         "runAgain": "Run Again"
     },
     "AgentSelectInfo": {
+        "orcation": "Agent Research Method",
         "agentMode": {
             "none": {
                 "title": "None",

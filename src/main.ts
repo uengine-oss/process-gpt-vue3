@@ -1,5 +1,5 @@
 // 개발 환경에서 콘솔 워닝 메시지 비활성화 (크롬 개발자 도구 렉 방지)
-// window.console.warn = () => {};
+window.console.warn = () => {};
 // 필요시 다른 콘솔도 비활성화
 // window.console.log = () => {};
 // window.console.error = () => {};

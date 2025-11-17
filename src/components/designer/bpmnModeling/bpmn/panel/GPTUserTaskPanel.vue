@@ -84,13 +84,13 @@
                         item-title="titleKey"
                         item-value="value"
                         density="compact" 
-                        :label="$t('BpmnPropertyPanel.orcation')"
+                        :label="$t('AgentSelectInfo.orcation')"
                         variant="outlined"
                         :menu-props="{ maxHeight: 600 }"
                     >
                         <template v-slot:selection="{ item }">
                             <v-row class="ma-0 pa-0 align-center">
-                                <Icons :icon="item.raw.icon" class="select-icon" :size="40" />
+                                <Icons v-if="item.raw.icon" :icon="item.raw.icon" class="select-icon" :size="40" />
                                 <div>{{ $t(item.raw.titleKey) }}</div>
                             </v-row>
                         </template>

@@ -1030,6 +1030,7 @@
         "runAgain": "다시 수행하기"
     },
     "AgentSelectInfo": {
+        "orcation" : "에이전트 연구 방식",
         "agentMode": {
             "none": {
                 "title": "없음",
