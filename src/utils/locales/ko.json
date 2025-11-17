@@ -1025,17 +1025,68 @@
         "resultInput": "현재 작업",
         "researchMethod": "에이전트에 맡기기",
         "runningResearchMethod": "진행 중인 연구방식",
-        "crewaiDeepResearch": "CrewAI 심층 연구",
-        "crewaiAction": "CrewAI 액션",
-        "openaiDeepResearch": "OpenAI 심층 연구",
-        "langchainReact": "LangChain 연구",
-        "crewaiDeepResearchDescription": "다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 (5~15분 소요)",
-        "crewaiActionDescription": "최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A (1~5분 소요)",
-        "openaiDeepResearchDescription": "GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 (3~10분 소요)",
-        "langchainReactDescription": "LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 (3~5분 소요)",
         "delegateMessage": "'{taskName}'업무를 {username}에게 위임하였습니다.",
         "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {username}으로 위임하였습니다.",
         "runAgain": "다시 수행하기"
+    },
+    "AgentSelectInfo": {
+        "agentMode": {
+            "none": {
+                "title": "없음",
+                "description": "AI 에이전트를 사용하지 않습니다"
+            },
+            "draft": {
+                "title": "초안",
+                "description": "초안 작성 모드 — AI가 기본 문서를 작성합니다"
+            },
+            "complete": {
+                "title": "완성",
+                "description": "완성 모드 — AI가 작업을 자동으로 완료합니다"
+            }
+        },
+        "orchestration": {
+            "none": {
+                "title": "없음",
+                "description": "연구 불필요 — 이미 충분한 정보가 있을 때"
+            },
+            "crewaiDeepResearch": {
+                "title": "CrewAI 협업 연구",
+                "description": "다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 (5~15분 소요)"
+            },
+            "crewaiAction": {
+                "title": "CrewAI 액션",
+                "description": "최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A (1~5분 소요)"
+            },
+            "openaiDeepResearch": {
+                "title": "OpenAI 고급 분석",
+                "description": "GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 (3~10분 소요)"
+            },
+            "browserAutomationAgent": {
+                "title": "브라우저 자동화 에이전트",
+                "description": "웹사이트에서 자동으로 데이터를 추출하고 수집. ex) 웹 크롤링, 스크래핑, 폼 자동화 (2~10분 소요)"
+            },
+            "agentToAgent": {
+                "title": "에이전트 간 협업",
+                "description": "실시간으로 여러 에이전트가 협력하여 복잡한 작업 수행. ex) MCP 프로토콜, A2A 통신 (가변적 소요)"
+            },
+            "langchainReact": {
+                "title": "LangChain 연구",
+                "description": "LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 (3~5분 소요)"
+            },
+            "browserUse": {
+                "title": "브라우저 사용",
+                "description": "실제 브라우저를 조작하여 실시간 웹 정보 수집 및 작업 수행. ex) 검색, 폼 작성, 스크래핑 (2~8분 소요)"
+            }
+        },
+        "cost": {
+            "low": "비용: 낮음",
+            "medium": "비용: 중간",
+            "high": "비용: 높음"
+        },
+        "humanApproval": {
+            "title": "사용자 승인 및 추가 정보 요청",
+            "description": "사용자의 승인 및 추가 정보가 필요합니다. 아래 작업 계획대로 진행해도 괜찮다면 확인을 눌러주세요. 필요한 경우 입력 또는 선택 항목을 작성해 주세요."
+        }
     },
     "TestProcess": {
         "title": "테스트 프로세스",
@@ -1666,18 +1717,7 @@
         "download": "다운로드",
         "start": "시작하기",
         "stop": "중단",
-        "researchMethod": "연구방식",
-        "crewaiDeepResearch": "CrewAI 심층 연구",
-        "crewaiAction": "CrewAI 액션",
-        "openaiDeepResearch": "OpenAI 심층 연구",
-        "langchainReact": "LangChain 연구",
-        "humanApproval": "사용자 승인 및 추가 정보 요청",
-        "humanApprovalDescription": "사용자의 승인 및 추가 정보가 필요합니다. 아래 작업 계획대로 진행해도 괜찮다면 확인을 눌러주세요. 필요한 경우 입력 또는 선택 항목을 작성해 주세요.",
-        "crewaiDeepResearchDescription": "다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 (5~15분 소요)",
-        "crewaiActionDescription": "최적경로로 다양한 도구를 호출해서 목적을 달성함. ex) MCP, A2A (1~5분 소요)",
-        "openaiDeepResearchDescription": "GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 (3~10분 소요)",
-        "langchainReactDescription": "LangChain 연구 방식을 활용하여, 다양한 도구를 호출해서 목적을 달성함. ex) 이미지 생성, 코드 실행 및 분석 (3~5분 소요)",
-        "browserUseDescription": "실제 브라우저를 조작하여 실시간 웹 정보 수집 및 작업 수행. ex) 검색, 폼 작성, 스크래핑 (2~8분 소요)"
+        "researchMethod": "연구방식"
     },
     "EventTimeline": {
         "browserAutomationResult": "브라우저 자동화 결과",
