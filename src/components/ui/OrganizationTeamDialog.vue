@@ -52,7 +52,7 @@
             </div>
         </v-card-text>
 
-        <v-card-actions>
+        <v-card-actions class="ma-0 pa-4">
             <v-spacer></v-spacer>
             <v-btn 
                 @click="update"

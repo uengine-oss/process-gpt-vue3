@@ -282,7 +282,7 @@
                         </div>
 
                         <!-- 도구 사용 상태 -->
-                        <div v-if="!item.payload.isCompleted && getToolUsageList(item.payload.jobId).length" class="tool-usage-status-list">
+                        <div v-if="getToolUsageList(item.payload.jobId).length" class="tool-usage-status-list">
                             <div v-for="(tool, idx) in getToolUsageList(item.payload.jobId)" :key="`${item.payload.jobId}-${tool.tool_name}-${idx}`" class="tool-usage-status-item">
                                 <div class="tool-status-indicator">
                                     <div v-if="tool.status === 'searching'" class="loading-spinner"></div>

@@ -571,6 +571,7 @@ export default {
                             me.generator.sendMessage(newMessage);
                         }
                     }
+                    newMessage.callType = 'chats';
                     me.sendMessage(newMessage);
                 }
             });

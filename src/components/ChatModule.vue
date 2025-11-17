@@ -570,6 +570,13 @@ export default {
                                     isLoading: true
                                 });
                             }
+                            if(this.messages[this.messages.length - 1].role == 'user'){
+                                this.messages.push({
+                                    role: 'system',
+                                    content: 'AI 생성중...',
+                                    isLoading: true
+                                });
+                            }
                             let messageWriting = this.messages[this.messages.length - 1];
                             messageWriting.content = response;
 
