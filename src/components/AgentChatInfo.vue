@@ -118,7 +118,7 @@
 
                     <!-- Skills Section -->
                     <div class="d-flex align-center pa-0 mb-1">
-                        <span class="text-body-2 font-weight-medium mr-1"> 스킬 </span>
+                        <span class="text-body-2 font-weight-medium mr-1"> {{ $t('AgentSkills.skills') }} </span>
                         <div v-if="agentType === 'agent'" class="ml-auto">
                             <v-btn @click="toggleEdit('skills')" 
                                 variant="text" 

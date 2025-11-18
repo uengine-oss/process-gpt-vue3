@@ -3,7 +3,7 @@
         <v-file-input
             ref="skillsFileInput"
             accept=".zip"
-            label="스킬 파일(.zip) 업로드"
+            :label="$t('AgentSkills.skillUpload')"
             density="compact"
             variant="outlined"
             hide-details
