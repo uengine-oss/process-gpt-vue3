@@ -16,7 +16,7 @@
                     color="grey"
                     class="detail-info-button"
                 >
-                    <v-icon>mdi-help-circle-outline</v-icon>
+                    <v-icon :size="iconSize">mdi-help-circle-outline</v-icon>
                 </v-btn>
             </template>
 
@@ -46,8 +46,10 @@
                         <div v-if="detailUrl" class="mt-3">
                             <v-divider class="mb-2"></v-divider>
                             <a :href="detailUrl" target="_blank" class="detail-link">
-                                {{ $t('DetailComponent.allDetails') }}
-                                <v-icon size="small" class="ml-1">mdi-open-in-new</v-icon>
+                                <v-row class="align-center ma-0 pa-0">
+                                    <div>{{ $t('DetailComponent.allDetails') }}</div>
+                                    <v-icon size="small" class="ml-1">mdi-open-in-new</v-icon>
+                                </v-row>
                             </a>
                         </div>
                     </v-card-text>
@@ -62,7 +64,11 @@ export default {
     props: {
         title: String,
         detailUrl: String,
-        details: Array
+        details: Array,
+        iconSize: {
+            type: [String, Number],
+            default: 'default'
+        }
     },
     created() {
     },

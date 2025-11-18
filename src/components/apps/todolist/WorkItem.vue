@@ -400,18 +400,18 @@
                                                         >
                                                             {{ $t(method.costKey) }}
                                                         </v-chip>
+                                                    
+                                                        <!-- 각 연구 방법별 상세 정보 -->
+                                                        <div v-if="method.detailDesc" class="detail-component-enabled ml-2">
+                                                            <DetailComponent
+                                                                :title="$t(method.detailDesc.title)"
+                                                                :details="method.detailDesc.details"
+                                                            />
+                                                        </div>
                                                     </v-list-item-title>
                                                     <v-list-item-subtitle class="text-wrap">
                                                         {{ $t(method.description) }}
                                                     </v-list-item-subtitle>
-                                                    
-                                                    <!-- 각 연구 방법별 상세 정보 -->
-                                                    <div v-if="method.detailDesc" class="py-2 detail-component-enabled" @click.stop>
-                                                        <DetailComponent
-                                                            :title="$t(method.detailDesc.title)"
-                                                            :details="method.detailDesc.details"
-                                                        />
-                                                    </div>
                                                     <v-divider class="my-1"></v-divider>
                                                 </v-list-item>
                                             </v-list>
