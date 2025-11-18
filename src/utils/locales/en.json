@@ -321,7 +321,9 @@
         "deleteDmn": "Delete DMN",
         "deleteDmnMessage": "Are you sure you want to delete the DMN?",
         "editMode": "Edit Mode",
-        "viewMode": "View Mode"
+        "viewMode": "View Mode",
+        "creation": "Creation",
+        "inference": "Inference"
     },
     "processDefinition": {
         "title": "Process Definition",

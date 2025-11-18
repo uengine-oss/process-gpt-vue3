@@ -183,7 +183,17 @@ export default {
                                     me.messages[me.messages.length - 1].isLoading = false
                                     me.EventBus.emit('instances-updated');
                                 } else {
-                                    me.messages.push(data.new.messages)
+                                    // 중복 메시지 체크: uuid 또는 내용+시간으로 확인
+                                    const isDuplicate = me.messages.some(msg => 
+                                        (data.new.uuid && msg.uuid === data.new.uuid) ||
+                                        (msg.content === data.new.messages.content && 
+                                         msg.role === data.new.messages.role && 
+                                         Math.abs(msg.timeStamp - data.new.messages.timeStamp) < 1000)
+                                    );
+                                    
+                                    if (!isDuplicate) {
+                                        me.messages.push(data.new.messages)
+                                    }
                                 }
                                 me.newMessageInfo = data.new.messages
                             }
@@ -377,7 +387,17 @@ export default {
                     this.messages = []
                 }
 
-                this.messages.push(chatObj);
+                // 중복 메시지 체크: 동일한 내용의 메시지가 최근에 추가되었는지 확인
+                const isDuplicate = this.messages.some(msg => 
+                    msg.content === chatObj.content && 
+                    msg.role === chatObj.role && 
+                    msg.email === chatObj.email &&
+                    Math.abs(msg.timeStamp - chatObj.timeStamp) < 1000  // 1초 이내
+                );
+
+                if (!isDuplicate) {
+                    this.messages.push(chatObj);
+                }
 
                 if (message && message.callType && message.callType == 'chats') {
                     this.lastSendMessage = message;
