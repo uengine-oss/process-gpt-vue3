@@ -37,7 +37,7 @@
             >
                 <v-card
                     class="source-card"
-                    :class="{ 'uploading-border': !item.isProcess }"
+                    :class="{ 'uploading-border': !item.isProcess, 'error-border': item.isError }"
                     elevation="2"
                     hover
                 >
@@ -57,11 +57,12 @@
                                     variant="text"
                                     size="small"
                                     v-bind="props"
-                                    :disabled="!item.isProcess"
+                                    :disabled="!item.isProcess && !item.isError"
                                 ></v-btn>
                             </template>
                             <v-list>
                                 <v-list-item
+                                    v-if="item.isProcess && !item.isError"
                                     prepend-icon="mdi-download"
                                     title="다운로드"
                                     @click="downloadFile(item)"
@@ -80,11 +81,11 @@
                         <div class="file-info">
                             <div class="d-flex justify-end">
                                 <v-chip
-                                    :color="item.isProcess ? 'success' : 'warning'"
+                                    :color="item.isProcess ? 'success' : item.isError ? 'error' : 'warning'"
                                     size="small"
                                     variant="tonal"
                                 >
-                                    {{ item.isProcess ? '업로드 완료' : '업로드 중' }}
+                                    {{ item.isProcess ? '업로드 완료' : item.isError ? '업로드 실패' : '업로드 중' }}
                                 </v-chip>
                             </div>
                         </div>
@@ -188,7 +189,8 @@ export default {
                     name: item.file_name,
                     path: item.file_path,
                     type: item.file_name.split('.').pop(),
-                    isProcess: item.is_process
+                    isProcess: item.is_process,
+                    isError: false
                 }));
             }
         },
@@ -236,18 +238,16 @@ export default {
                 if (me.validateFile(file)) {
                     const instId = me.id;
                     const fileId = this.uuid();
-                    const result = await backend.putInstanceSource({
+                    const sourceItem = {
                         id: fileId,
-                        proc_inst_id: instId,
-                        file_name: file.name
-                    });
-                    await this.getSourceList();
-
-                    if (result.error) {
-                        me.showSnackbar(result.error.message, 'error');
-                        return;
-                    }
-
+                        name: file.name,
+                        path: '',
+                        type: file.name.split('.').pop(),
+                        isProcess: false,
+                        isError: false
+                    };
+                    this.sourceList.push(sourceItem);
+                    
                     me.$try({
                         context: me,
                         action: async () => {
@@ -265,7 +265,29 @@ export default {
                             };
 
                             await backend.uploadFile(file.name, file, 'drive', options);
+                            const result = await backend.putInstanceSource({
+                                id: fileId,
+                                proc_inst_id: instId,
+                                file_name: file.name
+                            });
+                            if (result.error) {
+                                me.sourceList.forEach(item => {
+                                    if (item.id === fileId) {
+                                        item.isError = true;
+                                    }
+                                });
+
+                                me.showSnackbar(result.error.message, 'error');
+                                return;
+                            }
                             await this.getSourceList();
+                        },
+                        onFail: (error) => {
+                            me.sourceList.forEach(item => {
+                                if (item.id === fileId) {
+                                    item.isError = true;
+                                }
+                            });
                         },
                         successMsg: `${file.name} 파일이 업로드되었습니다.`
                     });
@@ -342,10 +364,12 @@ export default {
         },
 
         async deleteFile(file) {
-            const result = await backend.deleteInstanceSource(file);
-            if (result.error) {
-                this.showSnackbar(result.error.message, 'error');
-                return;
+            if (!file.isError) {
+                const result = await backend.deleteInstanceSource(file);
+                if (result.error) {
+                    this.showSnackbar(result.error.message, 'error');
+                    return;
+                }
             }
             this.sourceList = this.sourceList.filter(item => item.id !== file.id);
             this.showSnackbar(`${file.name} 파일이 삭제되었습니다.`, 'success');
@@ -365,6 +389,12 @@ export default {
 <style scoped>
 .uploading-border {
     border: 2px dashed #ff9800 !important;
+    border-radius: 8px;
+    position: relative;
+}
+
+.error-border {
+    border: 2px solid #f44336 !important;
     border-radius: 8px;
     position: relative;
 }

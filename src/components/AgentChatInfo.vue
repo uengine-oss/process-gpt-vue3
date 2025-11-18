@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="!editDialog">
+        <div v-if="!editDialog && !editSkills">
             <!-- 편집 모드가 아닐 때만 일반 화면 표시 -->
             <div class="text-left">
                 <v-row class="align-start pa-4 ma-0">
@@ -125,12 +125,12 @@
                                 :size="20" icon 
                                 class="rounded-pill"
                             >
-                                <Icons v-if="!editProperties.skills.abled" :icon="'pencil'" :size="12"/>
+                                <Icons v-if="!editSkills" :icon="'pencil'" :size="12"/>
                                 <v-icon v-else size="16">mdi-check</v-icon>
                             </v-btn>
                         </div>
                     </div>
-                    <v-chip-group v-if="!editProperties.skills.abled" class="mb-3">
+                    <v-chip-group v-if="!editSkills" class="mb-3">
                         <v-chip 
                             v-for="skill in parsedSkills" 
                             :key="skill"
@@ -141,13 +141,6 @@
                             {{ skill }}
                         </v-chip>
                     </v-chip-group>
-                    <AgentSkills 
-                        v-if="editProperties.skills.abled && agentType === 'agent'" 
-                        :agentSkills="parsedSkills"
-                        :isLoading="isSkillLoading"
-                        @update:skillFileName="openSkillFile"
-                        @uploadSkills="uploadSkills"
-                    />
                     
                     <v-divider class="mb-4"></v-divider>
                     
@@ -189,6 +182,15 @@
                 </div>
             </div>
         </div>
+
+        <AgentSkills 
+            v-else-if="!editDialog && editSkills"
+            :agentSkills="parsedSkills"
+            :isLoading="isSkillLoading"
+            @closeEditSkills="toggleEdit('skills')"
+            @update:skillFileName="openSkillFile"
+            @uploadSkills="uploadSkills"
+        />
 
         <!-- 편집 모드일 때 OrganizationEditDialog 표시 -->
         <div v-else>
@@ -342,6 +344,10 @@ export default {
                     return [this.agentInfo.skills.trim()];
                 }
             }
+        },
+
+        editSkills() {
+            return this.editProperties.skills.abled && this.agentType === 'agent';
         },
 
         dmnTabList() {

@@ -656,7 +656,9 @@ export default {
             this.setReadMessage(this.chatRoomList.findIndex(x => x.id == chatRoomInfo.id));
             
             this.EventBus.emit('chat-room-selected', this.currentChatRoom.id);
-            this.backend.saveAccessPage(this.userInfo.email, 'chat:' + this.currentChatRoom.id);
+            this.backend.saveAccessPage(this.userInfo.email, 'chat:' + this.currentChatRoom.id).catch(e => {
+                console.warn('saveAccessPage 실패:', e);
+            });
         },
         async putMessage(msg, chatRoomId = null){
             // this.addTextToVectorStore(msg)
@@ -707,7 +709,11 @@ export default {
                 this.generator.setWorkList(instanceList);
                 newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
-                this.backend.saveAccessPage(this.userInfo.email, 'chat:' + this.currentChatRoom.id);
+                
+                // saveAccessPage 에러 무시 (Promise rejection 처리)
+                this.backend.saveAccessPage(this.userInfo.email, 'chat:' + this.currentChatRoom.id).catch(e => {
+                    console.warn('saveAccessPage 실패:', e);
+                });
             }
         },
         async executeProcess(input) {

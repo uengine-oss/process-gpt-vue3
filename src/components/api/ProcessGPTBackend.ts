@@ -1376,11 +1376,12 @@ class ProcessGPTBackend implements Backend {
                 const tagName = element.tagName.toLowerCase();
                 const disabled = element.getAttribute('disabled');
                 const readonly = element.getAttribute('readonly');
+                const type = element.getAttribute('type') || tagName.replace('-field', '');
 
                 let field: any = {
                     text: alias || '',
                     key: key,
-                    type: tagName.replace('-field', '') || '',
+                    type: type,
                     disabled: disabled ? disabled : false,
                     readonly: readonly ? readonly : false
                 };
@@ -2718,13 +2719,11 @@ class ProcessGPTBackend implements Backend {
                 throw new Error(response.data.message);
             }
         } catch (error) {
-            if (error && error.error && error.error == 'authentication_required') {
-                // location.href = error.auth_url;
-                // return { error: true, message: 'authentication_required' };
+            const checkDrive = await this.getDriveInfo();
+            if (!checkDrive) {
                 throw new Error('구글 드라이브 연동이 필요합니다. 관리자에게 문의하세요.');
             } else {
-                //@ts-ignore
-                throw new Error(error.message);
+                throw new Error('파일 업로드 실패: ' + (error.message ? error.message : '재로그인 후 다시 시도하세요.'));
             }
         }
     }

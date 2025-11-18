@@ -311,11 +311,8 @@ async function initializeApp() {
         console.error('[Vue Error Handler] 예상치 못한 에러 발생 - 애플리케이션 계속 진행');
     };
     
-    app.use(VueMonacoEditorPlugin, {
-        paths: {
-            vs: '/node_modules/monaco-editor/min/vs'
-        }
-    });
+    // vite-plugin-monaco-editor가 자동으로 경로를 설정하므로 별도 경로 설정 불필요
+    app.use(VueMonacoEditorPlugin);
     app.use(store);
     // @ts-ignore
     app.config.globalProperties.$try = app._component.methods.try;
