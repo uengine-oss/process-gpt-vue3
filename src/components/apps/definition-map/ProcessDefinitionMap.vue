@@ -9,6 +9,7 @@
                     :definitionMapOnlyInput="true"
                     :disableChat="false"
                     :isMobile="isMobile"
+                    @sendMessage="() => {}"
                 />
             </div>
             
