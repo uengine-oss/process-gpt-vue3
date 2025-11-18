@@ -1159,11 +1159,45 @@
             },
             "langchainReact": {
                 "title": "LangChain Research",
-                "description": "LangChain research method to call various tools to achieve the goal. ex) Image generation, code execution and analysis (3~5 minutes)"
+                "description": "Call various tools to achieve goals. ex) Image generation, code execution and analysis (3~5 minutes)",
+                "detailDesc": {
+                    "title": "Call various tools to achieve goals",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\nAI → Select and call tools\nTools → Execute tasks (image generation, code)\nAI → Integrate and analyze results"
+                        },
+                        {
+                            "title": "💡 Use this when:\n• Image generation and editing\n• Code execution and data analysis\n• Math calculation and visualization\n• API-based external service utilization"
+                        },
+                        {
+                            "title": "📝 Examples:\n• \"Analyze CSV with Python\"\n• \"Draw a graph\"\n• \"Generate an image\"\n• \"Call weather API and get info\""
+                        },
+                        {
+                            "title": "📊 Output: Structured data/code\n✅ Pros: Fast, stable, easy automation\n⚠️ Limits: Cannot directly manipulate web UI"
+                        }
+                    ]
+                }
             },
             "browserUse": {
                 "title": "Browser Use",
-                "description": "Perform real-time web information collection and tasks by manipulating the actual browser. ex) Search, form filling, scraping (2~8 minutes)"
+                "description": "Perform tasks by manipulating actual browser. ex) Search, form filling, scraping (2~8 minutes)",
+                "detailDesc": {
+                    "title": "Perform tasks by manipulating actual browser",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\nAI → Launch browser\nBrowser → Access and manipulate webpages\n(Click, input, scroll, scrape)\nAI → Analyze and organize collected info"
+                        },
+                        {
+                            "title": "💡 Use this when:\n• Collect info from websites without API\n• Tasks requiring login\n• Real-time latest info search\n• Form filling and submission automation"
+                        },
+                        {
+                            "title": "📝 Examples:\n• \"Search latest news on Naver\"\n• \"Compare shopping mall prices\"\n• \"Automate registration\"\n• \"Scrape real estate listings\""
+                        },
+                        {
+                            "title": "📊 Output: Real-time web data\n✅ Pros: Access all websites\n⚠️ Limits: Slow, vulnerable to site changes"
+                        }
+                    ]
+                }
             }
         },
         "cost": {

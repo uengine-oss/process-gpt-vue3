@@ -1,55 +1,59 @@
 <template>
-    <div>
-        <div class="pa-2 mt-1 mb-2"
-            style="border-radius: 8px;
-                background-color: #F5F5F5;"
+    <div class="detail-component-wrapper">
+        <v-menu
+            open-on-hover
+            :open-delay="200"
+            :close-delay="200"
+            location="bottom"
+            max-width="400"
         >
-            <v-row class="ma-0 pa-0">
-                <!-- 왼쪽의 info 아이콘 -->
-                <v-icon color="grey" class="mr-2 mt-1">mdi-information</v-icon>
-                
-                <!-- 접혀진 상태에서 기본으로 보이는 텍스트 -->
-                <v-card-title class="pa-0"
-                    style="flex: 1;
-                    white-space: pre-wrap;
-                    overflow: visible;
-                    color: grey;"
-                    >{{ title }}
-                    <a v-if="detailUrl" :href="detailUrl" target="_blank" class="detail-link">{{ $t('DetailComponent.allDetails') }}</a>
+            <template v-slot:activator="{ props }">
+                <v-btn
+                    v-bind="props"
+                    icon
+                    size="x-small"
+                    variant="text"
+                    color="grey"
+                    class="detail-info-button"
+                >
+                    <v-icon>mdi-help-circle-outline</v-icon>
+                </v-btn>
+            </template>
+
+            <v-card class="detail-popup-card">
+                <v-card-title class="pa-4 pb-2 d-flex align-center">
+                    <v-icon color="primary" class="mr-2 mt-1" style="flex-shrink: 0;">mdi-information</v-icon>
+                    <span class="detail-title-text">{{ title }}</span>
                 </v-card-title>
 
-                <!-- 오른쪽의 토글 아이콘 -->
-                <v-tooltip v-if="details" :text="$t('DetailComponent.details')">
-                    <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props"
-                            @click="extendedStatus = !extendedStatus" 
-                            color="grey"
-                            class="mt-1"
-                        >
-                            {{ extendedStatus ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
-                        </v-icon>
-                    </template>
-                </v-tooltip>
-            </v-row>
+                <template v-if="details">
+                    <v-divider class="my-1"></v-divider>
 
-            <!-- 세부 정보 영역 -->
-            <div v-if="extendedStatus" class="pt-1">
-                <div v-for="(item, index) in details" :key="index">
-                    <div class="mb-4">
-                        <div v-if="item.title"
-                            style="font-size:16px;
-                            white-space: pre-wrap;
-                            margin: 20px 0px 5px 0px;
-                            color: grey;"
-                        >{{ $t(item.title) }}</div>
-                        <v-img v-if="item.image"
-                            :src="getImagePath(item.image)" 
-                            style="border: solid 1px gray; border-radius: 8px;" 
-                        />
-                    </div> 
-                </div>
-            </div>
-        </div>
+                    <v-card-text class="pa-4 pt-2" style="max-height: 400px; overflow-y: auto;">
+                        <div v-for="(item, index) in details" :key="index">
+                            <div class="mb-3">
+                                <div v-if="item.title" class="detail-item-content">
+                                    {{ $t(item.title) }}
+                                </div>
+                                <v-img 
+                                    v-if="item.image"
+                                    :src="getImagePath(item.image)" 
+                                    class="detail-item-image mt-2"
+                                />
+                            </div>
+                        </div>
+
+                        <div v-if="detailUrl" class="mt-3">
+                            <v-divider class="mb-2"></v-divider>
+                            <a :href="detailUrl" target="_blank" class="detail-link">
+                                {{ $t('DetailComponent.allDetails') }}
+                                <v-icon size="small" class="ml-1">mdi-open-in-new</v-icon>
+                            </a>
+                        </div>
+                    </v-card-text>
+                </template>
+            </v-card>
+        </v-menu>
     </div>
 </template>
 <script>
@@ -65,9 +69,7 @@ export default {
     components: {
     },
     data() {
-        return {
-            extendedStatus: false,
-        };
+        return {};
     },
     async mounted() {
     },
@@ -84,9 +86,52 @@ export default {
 </script>
 
 <style scoped>
+.detail-component-wrapper {
+    display: inline-block;
+}
+
+.detail-info-button {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.detail-info-button:hover {
+    opacity: 1;
+}
+
+.detail-popup-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.detail-title-text {
+    word-break: break-word;
+    white-space: normal;
+    line-height: 1.5;
+    flex: 1;
+}
+
+.detail-item-content {
+    font-size: 14px;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    color: #424242;
+}
+
+.detail-item-image {
+    border: solid 1px #e0e0e0;
+    border-radius: 8px;
+}
+
 .detail-link {
-    font-size: 16px; 
-    font-weight: 900;
-    color: gray;
+    font-size: 14px; 
+    font-weight: 600;
+    color: #1976d2;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.detail-link:hover {
+    text-decoration: underline;
 }
 </style>
