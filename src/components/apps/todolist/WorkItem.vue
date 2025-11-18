@@ -606,6 +606,7 @@ export default {
 
         html: null,
         formData: null,
+        formFields: [],
 
         // Form data
         inFormNameTabs: [],
@@ -691,11 +692,11 @@ export default {
             if (this.isAgentBusy && this.workItem && this.workItem.worklist && this.workItem.worklist.orchestration) {
                 const orch = this.workItem.worklist.orchestration;
                 const mapping = {
-                    'crewai-deep-research': this.$t('AgentSelectInfo.orchestration.crewaiDeepResearch.title'),
-                    'crewai-action': this.$t('AgentSelectInfo.orchestration.crewaiAction.title'),
-                    'openai-deep-research': this.$t('AgentSelectInfo.orchestration.openaiDeepResearch.title'),
-                    'langchain-react': this.$t('AgentSelectInfo.orchestration.langchainReact.title'),
-                    'browser-automation-agent': this.$t('AgentSelectInfo.orchestration.browserAutomationAgent.title')
+                    'crewai-deep-research': this.$t('agentMonitor.crewaiDeepResearch'),
+                    'crewai-action': this.$t('agentMonitor.crewaiAction'),
+                    'openai-deep-research': this.$t('agentMonitor.openaiDeepResearch'),
+                    'langchain-react': this.$t('agentMonitor.langchainReact'),
+                    'browser-automation-agent': 'Browser Automation Agent'
                 };
                 return mapping[orch] || orch;
             }
@@ -1034,7 +1035,7 @@ export default {
         },
         async checkInitialAgentBusyState() {
             // workItem의 상태를 기반으로 에이전트가 진행 중인지 확인
-            if (!this.workItem || !this.workItem.worklist) {
+            if (!this.workItem || !this.workItem.worklist || this.isStarted) {
                 this.isAgentBusy = false;
                 return;
             }
@@ -1124,22 +1125,32 @@ export default {
                 this.generator.researchMethod = researchMethod;
             }
             
+            const form = await backend.getFormFields(null, this.workItem.activity.tracingTag, this.processDefinition.processDefinitionId);
+            const formFields = form.fields_json;
 
             this.isGeneratingExample = true;
             this.isVisionMode = false
             this.imgKeyList = []
-        
+
             if(this.formData && typeof this.formData == 'object'){
                 for (const key of Object.keys(this.formData)) {
+                    const field = formFields.find(f => f.key == key) || null;
+
                     if(this.formData[key] && typeof this.formData[key] == 'object'){
                         // 빈 객체가 아니면 삭제 (내용이 있으면 삭제)
                         if(Object.keys(this.formData[key]).length > 0){
                             delete this.formData[key];
                         }
-                    } else if(typeof this.formData[key] == 'string'){
+                    } else if(typeof this.formData[key] == 'string') {
                         // 빈 문자열이 아니면 삭제 (내용이 있으면 삭제)
-                        if(this.formData[key].trim() !== ''){
-                            delete this.formData[key];
+                        if (field && field.type == 'text') {
+                            if(this.formData[key].trim() !== '') {
+                                delete this.formData[key];
+                            }
+                        } else if (field && field.type == 'number') {
+                            if(this.formData[key] !== '0') {
+                                delete this.formData[key];
+                            }
                         }
                     }
                     
