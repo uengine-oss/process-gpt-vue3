@@ -18,7 +18,7 @@
             <vue-monaco-editor
                 v-model:value="skillContent"
                 :language="editorLanguage"
-                :options="MONACO_EDITOR_OPTIONS"
+                :options="monacoEditorOptions"
                 @mount="handleMount"
             />
         </v-card-text>
@@ -65,7 +65,7 @@ export default {
             skillName: '',
             fileName: '',
             skillContent: '',
-            MONACO_EDITOR_OPTIONS: {
+            monacoEditorOptions: {
                 automaticLayout: true,
                 formatOnType: true,
                 formatOnPaste: true
@@ -106,8 +106,8 @@ export default {
             handler(newVal) {
                 if (newVal) {
                     this.skillName = newVal.skill_name;
-                    this.fileName = newVal.file_path;
                     this.skillContent = newVal.content;
+                    this.fileName = newVal.file_path.split('/').pop();
                 } else {
                     this.skillName = '';
                     this.fileName = '';
@@ -120,8 +120,8 @@ export default {
     mounted() {
         if (this.skillFile) {
             this.skillName = this.skillFile.skill_name;
-            this.fileName = this.skillFile.file_path;
             this.skillContent = this.skillFile.content;
+            this.fileName = this.skillFile.file_path.split('/').pop();
         }
     },
     methods: {

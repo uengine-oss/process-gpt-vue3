@@ -77,19 +77,19 @@
                     <v-row class="ma-0 pa-0 align-center">
                         <h5 class="text-h5 mb-3">{{ formatServerName(editingKey) }}</h5>
                     </v-row>
-                    <!-- <vue-monaco-editor
+                    <vue-monaco-editor
                         v-model:value="mcpJsonText"
                         language="json"
-                        :options="MONACO_EDITOR_OPTIONS"
+                        :options="monacoEditorOptions"
                         @mount="handleMount"
-                    /> -->
-                    <v-textarea 
+                    />
+                    <!-- <v-textarea 
                         v-model="mcpJsonText" 
                         label="MCP JSON" 
                         hide-details
                         no-resize
                         class="limited-textarea"
-                    />
+                    /> -->
                 </div>
 
                 <div class="d-flex justify-space-between pb-2">
@@ -112,19 +112,19 @@
             <div v-else-if="isAddMode && !editingKey" flat>
                 <div class="pt-0 pb-4">
                     <h5 class="text-h5 mb-3">New MCP</h5>
-                    <!-- <vue-monaco-editor
+                    <vue-monaco-editor
                         v-model:value="newJsonText"
                         language="json"
-                        :options="MONACO_EDITOR_OPTIONS"
+                        :options="monacoEditorOptions"
                         @mount="handleMount"
-                    /> -->
-                    <v-textarea 
+                    />
+                    <!-- <v-textarea 
                         v-model="newJsonText" 
                         label="MCP JSON" 
                         hide-details
                         no-resize
                         class="limited-textarea"
-                    />
+                    /> -->
                 </div>
 
                 <div class="d-flex justify-end pb-2">
@@ -162,21 +162,21 @@
             </div>
 
             <v-card-text class="pa-4">
-                <!-- <vue-monaco-editor
+                <vue-monaco-editor
                     v-if="editingKey"
                     v-model:value="mcpJsonText"
                     language="json"
-                    :options="MONACO_EDITOR_OPTIONS"
+                    :options="monacoEditorOptions"
                     @mount="handleMount"
                 />
                 <vue-monaco-editor
                     v-else
                     v-model:value="newJsonText"
                     language="json"
-                    :options="MONACO_EDITOR_OPTIONS"
+                    :options="monacoEditorOptions"
                     @mount="handleMount"
-                /> -->
-                <v-textarea 
+                />
+                <!-- <v-textarea 
                     v-if="editingKey" 
                     v-model="mcpJsonText" 
                     label="MCP JSON" 
@@ -191,7 +191,7 @@
                     hide-details
                     no-resize
                     class="mobile-textarea"
-                />
+                /> -->
             </v-card-text>
 
             <!-- 하단 버튼 -->
@@ -238,7 +238,7 @@ export default {
         mcpServers: {},
         editDialog: false,
         searchQuery: '',
-        MONACO_EDITOR_OPTIONS: {
+        monacoEditorOptions: {
             automaticLayout: true,
             formatOnType: true,
             formatOnPaste: true

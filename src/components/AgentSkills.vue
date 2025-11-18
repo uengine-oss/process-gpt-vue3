@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-file-input
+        <!-- <v-file-input
             ref="skillsFileInput"
             accept=".zip"
             label="스킬 파일(.zip) 업로드"
@@ -20,40 +20,41 @@
                     :disabled="skillsFile === null"
                 ></v-btn>
             </template>
-        </v-file-input>
+        </v-file-input> -->
+
+        <!-- skills tools -->
+        <div class="d-flex mt-1">
+            <v-btn variant="text" icon size="small" @click="$emit('closeEditSkills')">
+                <v-icon>mdi-arrow-left</v-icon>
+            </v-btn>
+            <v-btn variant="text" icon size="small">
+                <v-icon>mdi-file-document-plus-outline</v-icon>
+            </v-btn>
+            <v-btn variant="text" icon size="small">
+                <v-icon>mdi-folder-plus-outline</v-icon>
+            </v-btn>
+        </div>
 
         <!-- skills tree -->
-        <v-card flat class="pb-3">
+        <v-card flat class="px-3 py-2">
             <v-treeview
                 :config="config"
                 :nodes="nodes"
-                style="user-select: none;"
+                style="user-select: none; width: 100%;"
             >
                 <template #before-input="{ node }">
-                    <div
-                        @click="handleNodeClick(node)"
-                        class="d-inline-flex align-center cursor-pointer"
+                    <div @click="handleNodeClick(node)" class="d-inline-flex align-center cursor-pointer w-100"
+                        :class="{
+                            'text-primary': selectedNodeId === node.id,
+                            'selected-node-background': selectedNodeId === node.id,
+                        }"
                     >
-                        <v-icon
-                            size="small"
-                            class="mx-1"
-                        >
-                            {{ getNodeIcon(node) }}
-                        </v-icon>
-                        <span class="text-subtitle-1 font-weight-medium text-truncate">
+                        <span class="text-subtitle-1 font-weight-medium text-truncate ml-1">
                             {{ node.text }}
                             <v-tooltip activator="parent" location="top">
                                 {{ node.text }}
                             </v-tooltip>
                         </span>
-                        
-                        <!-- <v-spacer></v-spacer>
-                        <v-icon v-if="node.data.type !== 'file'"
-                            size="small"
-                            class="ms-2"
-                        >
-                            mdi-file-plus-outline
-                        </v-icon> -->
                     </div>
                 </template>
             </v-treeview>
@@ -268,24 +269,10 @@ export default {
                     this.nodes[nodeId].state = node.state;
                 }
                 node.state.opened = !node.state.opened;
-                return;
             }
 
             this.selectedNodeId = nodeId;
         },
-
-        getNodeIcon(node) {
-            if (!node || !node.data || !node.data.type) {
-                return 'mdi-file-document-outline';
-            }
-            if (node.data.type === 'skill') {
-                return 'mdi-folder';
-            }
-            if (node.data.type === 'folder') {
-                return 'mdi-folder-outline';
-            }
-            return 'mdi-file-document-outline';
-        }
     }
 }
 </script>
@@ -293,5 +280,9 @@ export default {
 <style scoped>
 ::v-deep(.tree .node-text) {
     display: none;
+}
+
+.selected-node-background {
+    background-color: rgba(var(--v-theme-primary), 0.1);
 }
 </style>
