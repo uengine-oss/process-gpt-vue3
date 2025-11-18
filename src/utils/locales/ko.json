@@ -1305,12 +1305,7 @@
         "statusInProgress": "진행중",
         "statusPendingCancelled": "보류/반송",
         "statusDone": "완료업무",
-        "executeProcess": "프로세스 실행",
-        "taskName": "업무명",
-        "startDate": "시작일",
-        "endDate": "만료일",
-        "duration": "기간",
-        "assignees": "담당자"
+        "executeProcess": "프로세스 실행"
     },
     "DryRunProcess": {
         "notFound": "워크아이템을 찾을 수 없습니다."
@@ -2112,7 +2107,12 @@
         "inProgress": "진행중",
         "pending": "보류/반송",
         "scheduled": "예정업무",
-        "done": "완료업무"
+        "done": "완료업무",
+        "taskName": "업무명",
+        "startDate": "시작일",
+        "endDate": "만료일",
+        "duration": "기간",
+        "assignees": "담당자"
     },
     "Common": {
         "cancel": "취소",

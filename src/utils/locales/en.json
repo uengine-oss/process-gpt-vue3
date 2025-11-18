@@ -1303,12 +1303,7 @@
         "statusInProgress": "In Progress",
         "statusPendingCancelled": "Pending/Cancelled",
         "statusDone": "Done",
-        "executeProcess": "Execute Process",
-        "taskName": "Task Name",
-        "startDate": "Start Date",
-        "endDate": "End Date",
-        "duration": "Duration",
-        "assignees": "Assignees"
+        "executeProcess": "Execute Process"
     },
     "DryRunProcess": {
         "notFound": "Work item not found."
@@ -2095,7 +2090,12 @@
         "inProgress": "In Progress",
         "pending": "Pending",
         "scheduled": "Scheduled",
-        "done": "Done"
+        "done": "Done",
+        "taskName": "Task Name",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "duration": "Duration",
+        "assignees": "Assignees"
     },
     "Common": {
         "cancel": "Cancel",
