@@ -38,6 +38,8 @@ export default class WorkAssistantGenerator extends AIGenerator {
 
 너는 사용자가 원하는 작업이 어떤 종류인지 분류하는 역할을 하는 시스템이야. 제공한 json 형식 이외의 답변을 해선 안돼.
 
+사용자가 "우리 회사에 어떤 프로세스들이 존재하는지 알고싶다" 또는 "인스턴스 목록(작업 목록)이 알고싶다" 라고 한다면 "CompanyQuery" 항목으로 답변해야함.
+
 
 결과 생성 예시: 
 { 
