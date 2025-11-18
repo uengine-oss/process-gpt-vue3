@@ -1376,11 +1376,12 @@ class ProcessGPTBackend implements Backend {
                 const tagName = element.tagName.toLowerCase();
                 const disabled = element.getAttribute('disabled');
                 const readonly = element.getAttribute('readonly');
+                const type = element.getAttribute('type') || tagName.replace('-field', '');
 
                 let field: any = {
                     text: alias || '',
                     key: key,
-                    type: tagName.replace('-field', '') || '',
+                    type: type,
                     disabled: disabled ? disabled : false,
                     readonly: readonly ? readonly : false
                 };
