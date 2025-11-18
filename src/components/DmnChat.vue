@@ -66,8 +66,8 @@
                             <v-select
                                 v-model="isInferenceMode"
                                 :items="[
-                                    { title: '생성', value: false },
-                                    { title: '추론', value: true }
+                                    { title: $t('dmn.creation'), value: false },
+                                    { title: $t('dmn.inference'), value: true }
                                 ]"
                                 item-title="title"
                                 item-value="value"
@@ -76,6 +76,7 @@
                                 hide-details
                                 rounded
                                 class="mx-2 inference-mode-select"
+                                :style="inferenceModeSelectStyle"
                             ></v-select>
                         </template>
                     </Chat>
@@ -127,8 +128,8 @@
                             <v-select
                                 v-model="isInferenceMode"
                                 :items="[
-                                    { title: '생성', value: false },
-                                    { title: '추론', value: true }
+                                    { title: $t('dmn.creation'), value: false },
+                                    { title: $t('dmn.inference'), value: true }
                                 ]"
                                 item-title="title"
                                 item-value="value"
@@ -137,6 +138,7 @@
                                 hide-details
                                 rounded
                                 class="mx-2 inference-mode-select"
+                                :style="inferenceModeSelectStyle"
                             ></v-select>
                         </template>
                     </Chat>
@@ -213,8 +215,8 @@
                     <v-select
                         v-model="isInferenceMode"
                         :items="[
-                            { title: '생성', value: false },
-                            { title: '추론', value: true }
+                            { title:  $t('dmn.creation'), value: false },
+                            { title:  $t('dmn.inference'), value: true }
                         ]"
                         item-title="title"
                         item-value="value"
@@ -223,6 +225,7 @@
                         hide-details
                         rounded
                         class="mx-2 inference-mode-select"
+                        :style="inferenceModeSelectStyle"
                     ></v-select>
                 </template>
             </Chat>
@@ -426,6 +429,13 @@ export default {
         isStandaloneMode() {
             // URL이 /dmn/으로 시작하면 좌우 분할 레이아웃 사용
             return this.$route.path.startsWith('/dmn/');
+        },
+        inferenceModeSelectStyle() {
+            // 현재 언어에 따라 max-width 조정
+            const currentLocale = this.$i18n?.locale || 'ko';
+            return {
+                maxWidth: currentLocale === 'ko' ? '100px' : '150px'
+            };
         }
     },
     methods: {
@@ -796,10 +806,6 @@ export default {
     .dmn-chat-container {
         height: calc(100vh - 40px);
     }
-}
-
-.inference-mode-select {
-    max-width: 100px;
 }
 </style>
 

@@ -321,7 +321,9 @@
         "deleteDmn": "DMN 삭제",
         "deleteDmnMessage": "DMN을 삭제하시겠습니까?",
         "editMode": "편집 모드",
-        "viewMode": "보기 모드"
+        "viewMode": "보기 모드",
+        "creation": "생성",
+        "inference": "추론"
     },
     "processDefinition": {
         "title": "프로세스 정의",

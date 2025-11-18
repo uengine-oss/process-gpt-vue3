@@ -263,7 +263,7 @@ export default {
             centerButton.className = 'entry dmn-icon-center-viewport';
             centerButton.setAttribute('draggable', 'true');
             centerButton.setAttribute('data-action', 'center-viewport');
-            centerButton.setAttribute('title', '중앙 복귀');
+            centerButton.setAttribute('title', 'Center viewport');
             centerButton.innerHTML = '<i class="mdi mdi-crosshairs-gps" style="font-size: 20px; color: #444;"></i>';
             
             centerButton.addEventListener('click', () => {
