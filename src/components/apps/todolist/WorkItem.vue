@@ -389,9 +389,9 @@
                                                     :disabled="isMethodDisabled(method)"
                                                     class="research-method-item"
                                                 >
-                                                    <v-list-item-title>{{ $t(`WorkItem.${method.label}`) }}</v-list-item-title>
+                                                    <v-list-item-title>{{ $t(method.label) }}</v-list-item-title>
                                                     <v-list-item-subtitle class="text-wrap">
-                                                        {{ $t(`WorkItem.${method.description}`) }}
+                                                        {{ $t(method.description) }}
                                                     </v-list-item-subtitle>
                                                 </v-list-item>
                                             </v-list>
@@ -652,11 +652,11 @@ export default {
         researchMethodMenu: false,
         selectedResearchMethod: null,
         researchMethods: [
-            { value: 'default', label: 'quickGenerateExample', description: 'quickGenerateExampleDescription', advanced: false },
-            { value: 'crewaiDeepResearch', label: 'crewaiDeepResearch', description: 'crewaiDeepResearchDescription', advanced: true },
-            { value: 'crewaiAction', label: 'crewaiAction', description: 'crewaiActionDescription', advanced: true },
-            { value: 'openaiDeepResearch', label: 'openaiDeepResearch', description: 'openaiDeepResearchDescription', advanced: true },
-            { value: 'langchainReact', label: 'langchainReact', description: 'langchainReactDescription', advanced: true },
+            { value: 'default', label: 'WorkItem.quickGenerateExample', description: 'WorkItem.quickGenerateExampleDescription', advanced: false },
+            { value: 'crewaiDeepResearch', label: 'AgentSelectInfo.orchestration.crewaiDeepResearch.title', description: 'AgentSelectInfo.orchestration.crewaiDeepResearch.description', advanced: true },
+            { value: 'crewaiAction', label: 'AgentSelectInfo.orchestration.crewaiAction.title', description: 'AgentSelectInfo.orchestration.crewaiAction.description', advanced: true },
+            { value: 'openaiDeepResearch', label: 'AgentSelectInfo.orchestration.openaiDeepResearch.title', description: 'AgentSelectInfo.orchestration.openaiDeepResearch.description', advanced: true },
+            { value: 'langchainReact', label: 'AgentSelectInfo.orchestration.langchainReact.title', description: 'AgentSelectInfo.orchestration.langchainReact.description', advanced: true },
         ],
     }),
     created() {
@@ -691,11 +691,11 @@ export default {
             if (this.isAgentBusy && this.workItem && this.workItem.worklist && this.workItem.worklist.orchestration) {
                 const orch = this.workItem.worklist.orchestration;
                 const mapping = {
-                    'crewai-deep-research': this.$t('agentMonitor.crewaiDeepResearch'),
-                    'crewai-action': this.$t('agentMonitor.crewaiAction'),
-                    'openai-deep-research': this.$t('agentMonitor.openaiDeepResearch'),
-                    'langchain-react': this.$t('agentMonitor.langchainReact'),
-                    'browser-automation-agent': 'Browser Automation Agent'
+                    'crewai-deep-research': this.$t('AgentSelectInfo.orchestration.crewaiDeepResearch.title'),
+                    'crewai-action': this.$t('AgentSelectInfo.orchestration.crewaiAction.title'),
+                    'openai-deep-research': this.$t('AgentSelectInfo.orchestration.openaiDeepResearch.title'),
+                    'langchain-react': this.$t('AgentSelectInfo.orchestration.langchainReact.title'),
+                    'browser-automation-agent': this.$t('AgentSelectInfo.orchestration.browserAutomationAgent.title')
                 };
                 return mapping[orch] || orch;
             }

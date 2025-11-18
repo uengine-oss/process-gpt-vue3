@@ -391,6 +391,9 @@ export default {
 
         // 백엔드 이벤트 신호 직접 구독
         this.subscribeToBackendEvents();
+
+        // 태스크 로그 구독
+        this.subscribeToTaskLog();
     },
     beforeUnmount() {
         // 이벤트 구독 해제
@@ -399,6 +402,16 @@ export default {
         }
     },
     methods: {
+        async subscribeToTaskLog() {
+            if (!this.task.taskId || this.task.status == "DONE") return;
+            const originalStatus = this.task.status;
+            const subscription = await backend.getTaskLog(this.task.taskId, async (task) => {
+                if (task.status == "DONE" || task.status !== originalStatus) {
+                    window.$supabase.removeChannel(subscription);
+                    this.EventBus.emit('todolist-updated');
+                }
+            });
+        },
         generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0;
