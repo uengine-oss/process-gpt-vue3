@@ -121,7 +121,7 @@
 
                         /* 버튼 텍스트 */
                         save: "저장",
-                        cancel: "취소 1111",
+                        cancel: "취소",
                         delete_task: "삭제",
                         confirm: "확인",
 
@@ -1103,9 +1103,6 @@
         });
 
 
-
-
-  
       return {
             ganttContainer,
             deleteTaskById,
