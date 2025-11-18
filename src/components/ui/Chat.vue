@@ -799,7 +799,7 @@
                 <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                     <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                         class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
-                        auto-grow rows="1" @keydown="beforeSend" :disabled="disableChat"
+                        auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
                         @input="handleTextareaInput"
                         @paste="handlePaste"
                     >
@@ -925,7 +925,7 @@
             <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
                 <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                     class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.definitionMapInputMessage')"
-                    auto-grow rows="1" @keydown="beforeSend" :disabled="disableChat || isGenerationFinished"
+                    auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
                     @input="handleTextareaInput"
                     @paste="handlePaste"
                 >
@@ -1292,7 +1292,10 @@ export default {
             
             // 사용자 정보
             currentUserName: localStorage.getItem('userName') || '사용자',
-            currentUserPicture: localStorage.getItem('picture') || '/images/defaultUser.png'
+            currentUserPicture: localStorage.getItem('picture') || '/images/defaultUser.png',
+            
+            // 메시지 전송 중 플래그
+            isSending: false
         };
     },
     created() {
@@ -1816,38 +1819,29 @@ export default {
             this.replyUser = message;
         },
         beforeSend($event) {
-            // keydown 이벤트인 경우에만 Enter 키 체크 및 중복 방지
-            if ($event && $event.type === 'keydown') {
-                // Enter 키가 아니면 무시
-                if ($event.key !== 'Enter') return;
-                
-                // Shift+Enter는 줄바꿈 허용
+            // 이미 전송 중이면 무시
+            if (this.isSending) {
+                return;
+            }
+            
+            // keypress 이벤트인 경우 기본 동작 방지
+            if ($event && $event.type === 'keypress') {
+                // Shift+Enter는 줄바꿈 허용 (keypress.enter가 자동 처리)
                 if ($event.shiftKey) {
-                    console.log('🟠 [beforeSend] Shift+Enter - 줄바꿈');
                     return;
                 }
                 
-                // 기본 동작 방지 (일반 Enter만)
+                // 기본 동작 방지
                 $event.preventDefault();
                 $event.stopPropagation();
-                
-                // 중복 호출 방지: 200ms 이내의 중복 Enter 키 무시
-                const now = Date.now();
-                if (now - this.lastEnterTime < 200) {
-                    console.log('🟠 [beforeSend] 중복 Enter 무시 (200ms 이내)');
-                    return;
-                }
-                this.lastEnterTime = now;
-                
-                console.log('🟠 [beforeSend] Enter 키로 전송');
-            } else {
-                console.log('🟠 [beforeSend] 버튼 클릭으로 전송');
             }
             
             if(this.isAgentMode){
+                this.isSending = true;
                 this.requestDraftAgent();
                 setTimeout(() => {
                     this.newMessage = "";
+                    this.isSending = false;
                 }, 100);
             } else {
                 if (this.isLoading) {
@@ -1856,6 +1850,7 @@ export default {
                 }
                 var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
                 if (copyMsg.length > 0 || this.attachedImages.length > 0) {
+                    this.isSending = true;
                     this.send();
                 }
             }
@@ -1905,6 +1900,7 @@ export default {
                     this.showUserList = false;
                     // this.resetMessageHistory(); // 메시지 전송 후 히스토리 초기화
                 }
+                this.isSending = false;
             }, 100);
         },
         cancel() {
