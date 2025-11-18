@@ -1,7 +1,14 @@
 <template>
     <div>
         <div class="included pa-4 pt-0" style="margin-bottom: 22px">
-            <div class="mt-4">{{$t('LanePanel.selectRoleType')}}</div>
+            <v-row class="ma-0 pa-0 align-center">
+                <div>{{$t('LanePanel.selectRoleType')}}</div>
+
+                <DetailComponent
+                    :title="$t('LanePanel.radioDescriptionTitle')"
+                    :details="radioDescription"
+                />
+            </v-row>
             <v-card variant="outlined" class="pa-2" style="border-radius:8px !important;">
                 <v-radio-group v-model="type" row style="margin-top: 0px !important">
                     <v-radio
@@ -46,11 +53,6 @@
                         ></v-text-field>
                     </div>
                 </div>
-
-                <DetailComponent
-                    :title="$t('LanePanel.radioDescriptionTitle')"
-                    :details="radioDescription"
-                />
             </v-card>
         </div>
     </div>
