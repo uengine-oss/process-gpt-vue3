@@ -100,7 +100,7 @@
                 </v-btn>
             </div>
             <div class="mt-4">
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0 align-center pb-4">
                     <v-autocomplete
                         :label="$t('SendTaskPanel.return')"
                         :items="processVariables"
@@ -111,13 +111,13 @@
                         density="comfortable"
                         variant="outlined"
                     ></v-autocomplete>
+                    <DetailComponent class="ml-2"
+                        :title="$t('SendTaskPanel.returnTitle')"
+                        :iconSize="24"
+                    />
                     <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
                 </v-row>
             </div>
-            <DetailComponent
-                style="padding-bottom:20px;"
-                :title="$t('SendTaskPanel.returnTitle')"
-            />
         </div>
     </div>
 </template>
