@@ -48,25 +48,10 @@ const isOffline = computed(() => {
   transition: all 0.3s ease;
 }
 
-/* off-line 시스템 스타일 */
-.process-node.offline-node {
-  border: 3px solid #ff0000;
-  box-shadow: 0 0 12px rgba(255, 0, 0, 0.3);
-}
-
-.process-node.offline-node .node-header {
-  background: #ffe5e5;
-  border-bottom-color: #ff0000;
-}
-
+/* off-line 시스템 스타일 - 액티비티명 부분만 붉게 표시 */
 .process-node.offline-node .node-content {
-  border-bottom-color: #ff0000;
-  background: #fff8f8;
-}
-
-.process-node.offline-node .node-footer {
-  background: #ffe5e5;
-  color: #cc0000;
+  background: #ff5555;
+  color: white;
   font-weight: bold;
 }
 

@@ -102,7 +102,11 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
     // Sequences를 먼저 추출 (액티비티에 연결된 시퀀스 정보를 찾기 위해)
     let sequences = []
     if (hasElementsStructure) {
-      sequences = processDefinition.elements.filter(el => el.elementType === 'Sequence')
+      if(processDefinition.sequences) {
+        sequences = processDefinition.sequences
+      } else {
+        sequences = processDefinition.elements.filter(el => el.elementType === 'Sequence')
+      }
     } else if (processDefinition.sequences) {
       sequences = processDefinition.sequences
     }
@@ -110,7 +114,11 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
     // 1. Activities 변환
     let activities = []
     if (hasElementsStructure) {
-      activities = processDefinition.elements.filter(el => el.elementType === 'Activity')
+      if(processDefinition.activities) {
+        activities = processDefinition.activities
+      } else {
+        activities = processDefinition.elements.filter(el => el.elementType === 'Activity')
+      }
     } else if (processDefinition.activities) {
       activities = processDefinition.activities
     }

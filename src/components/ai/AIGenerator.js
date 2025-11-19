@@ -212,7 +212,7 @@ export default class AIGenerator {
 
     async checkBackendConnection() {
         try {
-            return true;
+            // return true;
             let response = await fetch(`${this.backendUrl}/sanity-check`);
             if(response.status == 401){
                 // access_token이 만료되어서 접속이 안되는 경우가 있기 때문에 이런 경우, 강재로 세션을 갱신 후, 재시도
@@ -257,12 +257,12 @@ export default class AIGenerator {
             const errorMessage = "Failed to connect to the backend server for AI communication. Please check if the backend is operational.";
 
             console.error(errorMessage);
-            alert(errorMessage);
-            if (me.client.onError)
-                me.client.onError({ message: errorMessage });
+            // alert(errorMessage);
+            // if (me.client.onError)
+                // me.client.onError({ message: errorMessage });
 
-            me.state = 'error';
-            return;
+            // me.state = 'error';
+            // return;
         }
 
 

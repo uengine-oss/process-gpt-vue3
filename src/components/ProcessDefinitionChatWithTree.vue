@@ -2856,6 +2856,48 @@ export default {
                 }
                 console.log(`✅ 기존 행 임시 삭제 완료`);
                 
+                // ✅ 시퀀스 정보로 선행/후행 계산
+                const activityIndexMap = new Map(); // activity.id -> index
+                activities.forEach((activity, index) => {
+                    activityIndexMap.set(activity.id, index);
+                });
+                
+                // 시퀀스 정보 추출
+                let sequences = [];
+                if (processDefinition.elements && Array.isArray(processDefinition.elements)) {
+                    sequences = processDefinition.elements.filter(el => el.elementType === 'Sequence');
+                } else if (processDefinition.sequences && Array.isArray(processDefinition.sequences)) {
+                    sequences = processDefinition.sequences;
+                }
+                
+                // 각 액티비티의 선행/후행 계산
+                const predecessorMap = new Map(); // activity.id -> [predecessor indices]
+                const successorMap = new Map(); // activity.id -> [successor indices]
+                
+                sequences.forEach(seq => {
+                    if (seq.source && seq.target) {
+                        const sourceIndex = activityIndexMap.get(seq.source);
+                        const targetIndex = activityIndexMap.get(seq.target);
+                        
+                        // source가 activity이고 target도 activity인 경우만
+                        if (sourceIndex !== undefined && targetIndex !== undefined) {
+                            // target의 선행에 source 추가
+                            if (!predecessorMap.has(seq.target)) {
+                                predecessorMap.set(seq.target, []);
+                            }
+                            predecessorMap.get(seq.target).push(sourceIndex + 1); // 1-based index
+                            
+                            // source의 후행에 target 추가
+                            if (!successorMap.has(seq.source)) {
+                                successorMap.set(seq.source, []);
+                            }
+                            successorMap.get(seq.source).push(targetIndex + 1); // 1-based index
+                        }
+                    }
+                });
+                
+                console.log('📊 선행/후행 계산 완료');
+                
                 // ✅ 정렬된 순서대로 액티비티 데이터 재배치 (기존 데이터 보존)
                 activities.forEach((activity, index) => {
                     const rowNum = firstDataRow + index;
@@ -2865,6 +2907,12 @@ export default {
                     
                     // 기존 데이터가 있는지 확인
                     const existingData = existingDataMap.get(activityName);
+                    
+                    // 선행/후행 계산
+                    const predecessors = predecessorMap.get(activity.id) || [];
+                    const successors = successorMap.get(activity.id) || [];
+                    const predecessorText = predecessors.length > 0 ? predecessors.join(', ') : '';
+                    const successorText = successors.length > 0 ? successors.join(', ') : '';
                     
                     if (existingData) {
                         // ✅ 기존 데이터가 있으면 모든 셀 복원 (스타일 포함)
@@ -2900,9 +2948,18 @@ export default {
                             }
                         }
                         
+                        // 선행/후행도 업데이트 (기존 데이터지만 순서가 바뀌었으므로)
+                        if (columnMapping.predecessor !== -1 && predecessorText) {
+                            this.updateCellValueWithExistingStyle(sheet, rowNum, columnMapping.predecessor, predecessorText, existingData);
+                        }
+                        if (columnMapping.successor !== -1 && successorText) {
+                            this.updateCellValueWithExistingStyle(sheet, rowNum, columnMapping.successor, successorText, existingData);
+                        }
+                        
                     } else {
                         // ✅ 새로운 액티비티는 템플릿 스타일로 추가
                         console.log(`  ✨ 새로운 액티비티 추가: "${activityName}"`);
+                        console.log(`     선행: ${predecessorText || '없음'}, 후행: ${successorText || '없음'}`);
                         
                         this.updateCellValueWithStyle(sheet, rowNum, columnMapping.no, index + 1, templateStyles);
                         this.updateCellValueWithStyle(sheet, rowNum, columnMapping.activityName, activityName, templateStyles);
@@ -2917,6 +2974,14 @@ export default {
                         this.updateCellValueWithStyle(sheet, rowNum, columnMapping.system, activity.system || '', templateStyles);
                         this.updateCellValueWithStyle(sheet, rowNum, columnMapping.duration, activity.duration || '', templateStyles);
                         this.updateCellValueWithStyle(sheet, rowNum, columnMapping.instruction, activity.instruction || '', templateStyles);
+                        
+                        // 선행/후행 추가
+                        if (columnMapping.predecessor !== -1) {
+                            this.updateCellValueWithStyle(sheet, rowNum, columnMapping.predecessor, predecessorText, templateStyles);
+                        }
+                        if (columnMapping.successor !== -1) {
+                            this.updateCellValueWithStyle(sheet, rowNum, columnMapping.successor, successorText, templateStyles);
+                        }
                     }
                 });
                 
@@ -3098,7 +3163,9 @@ export default {
                 output: -1,
                 system: -1,
                 duration: -1,
-                instruction: -1
+                instruction: -1,
+                predecessor: -1,  // 선행 (선행자 수)
+                successor: -1     // 후행 (후행자 수)
             };
             
             // 헤더 행의 모든 셀을 검사하여 각 열이 무엇인지 파악
@@ -3127,6 +3194,10 @@ export default {
                         mapping.duration = col;
                     } else if (headerText.includes('소요') || headerText.includes('시간')) {
                         mapping.instruction = col;
+                    } else if (headerText.includes('선행') || headerText.includes('predecessor')) {
+                        mapping.predecessor = col;
+                    } else if (headerText.includes('후행') || headerText.includes('successor') || headerText.includes('라여자')) {
+                        mapping.successor = col;
                     }
                 }
             }
@@ -3194,6 +3265,31 @@ export default {
             // 보존된 템플릿 스타일이 있으면 적용
             if (templateStyles && templateStyles[colNum]) {
                 cell.s = JSON.parse(JSON.stringify(templateStyles[colNum]));
+            }
+            
+            sheet[cellAddress] = cell;
+        },
+
+        /**
+         * 셀 값 업데이트 (기존 행의 스타일 사용)
+         */
+        updateCellValueWithExistingStyle(sheet, rowNum, colNum, value, existingData) {
+            if (colNum === -1) return; // 해당 열이 없으면 스킵
+            
+            const cellAddress = XLSX.utils.encode_cell({ r: rowNum, c: colNum });
+            
+            // 기존 데이터에서 스타일 가져오기
+            const cellData = existingData[colNum];
+            
+            const cell = {
+                v: value,
+                w: String(value),
+                t: typeof value === 'number' ? 'n' : 's'
+            };
+            
+            // 기존 스타일이 있으면 적용
+            if (cellData && cellData.style) {
+                cell.s = JSON.parse(JSON.stringify(cellData.style));
             }
             
             sheet[cellAddress] = cell;
