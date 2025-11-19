@@ -100,7 +100,7 @@
                     <v-card-title class="d-flex align-center">
                         <span>{{ $t('SubProcessPanel.generatedRulePreview') }}</span>
                         <v-spacer></v-spacer>
-                        <v-btn color="primary" density="comfortable" @click="generateFinalizeRule" :disabled="isFinalizeRuleGenerating">
+                        <v-btn color="primary" density="compact" variant="flat" rounded @click="generateFinalizeRule" :disabled="isFinalizeRuleGenerating">
                             <span v-if="isFinalizeRuleGenerating" class="thinking-wave-text">
                                 <span v-for="(char, index) in $t('SubProcessPanel.ruleGenerating') " :key="index" :style="{ animationDelay: (index * 0.1) + 's' }" class="thinking-char">
                                     {{ char === ' ' ? '\u00A0' : char }}
@@ -157,8 +157,8 @@
                         </div>
                     </v-card-text>
                     <v-card-actions class="justify-end">
-                        <v-btn variant="text" color="grey" @click="cancelFinalizeGeneration">{{ $t('SubProcessPanel.cancel') }}</v-btn>
-                        <v-btn color="primary" variant="flat" @click="applyGeneratedFinalizeRule">{{ $t('SubProcessPanel.confirm') }}</v-btn>
+                        <v-btn color="grey" variant="flat" rounded @click="cancelFinalizeGeneration">{{ $t('SubProcessPanel.cancel') }}</v-btn>
+                        <v-btn color="primary" variant="flat" rounded @click="applyGeneratedFinalizeRule">{{ $t('SubProcessPanel.confirm') }}</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-dialog>

@@ -30,7 +30,7 @@
             <v-row class="ma-0 pa-0 mb-4">
                 <v-text-field v-model="copyUengineProperties.fromRole" :label="$t('ReceiveTaskPanel.descriptionFromRole')"></v-text-field>
             </v-row>
-            <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>
+            <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>
         </div>
         <div v-if="sendType == 'rest_api'">
             <div class="mb-1 mt-4">
@@ -59,7 +59,7 @@
                         <v-btn variant="text" density="comfortable" icon="mdi-plus" @click="addHeader()"></v-btn>
                     </v-row>
                 </v-col>   
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0 align-center pb-4">
                     <v-col cols="3" class="pa-0 pr-2">
                         <v-autocomplete
                             :label="$t('BpmnPropertyPanel.methodTypeUrl')"
@@ -70,18 +70,20 @@
                             v-model="copyUengineProperties.method"
                         ></v-autocomplete>
                     </v-col>
-                    <v-col cols="9" class="pa-0">
+                    <v-col class="pa-0">
                         <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.API"></v-text-field>
                     </v-col>
+                    <DetailComponent
+                        :title="$t('SendTaskPanel.methodTypeDescriptionTitle')"
+                        :details="methodTypeDescription"
+                        :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
+                        :iconSize="24"
+                        style="margin-left: 3px; margin-right: -3px;"
+                    />
                 </v-row>
-                <DetailComponent
-                    :title="$t('MessageEventDefinitionPanel.methodTypeDescriptionTitle')"
-                    :details="methodTypeDescription"
-                    :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
-                />
             </div>
             <div style="height: 70vh">
-                <v-row class="ma-0 pa-0" style="height: 100%">
+                <v-row class="ma-0 pa-0 pb-2" style="height: 100%">
                     <vue-monaco-editor
                         v-model:value="copyUengineProperties.inputPayloadTemplate"
                         theme="vs-dark"
@@ -92,7 +94,7 @@
                 </v-row>
             </div>
             <div align="right" @click="generateAPI">
-                <v-btn prepend-icon rounded color="primary">
+                <v-btn prepend-icon rounded color="primary" variant="flat">
                     <template v-slot:prepend>
                         <Icons :icon="'magic'"  />
                     </template>
