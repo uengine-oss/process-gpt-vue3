@@ -11,15 +11,22 @@
                         </v-card-title>
                         <v-spacer></v-spacer>
                         
-                        <!-- <div class="d-flex ga-2">
-                            <v-btn @click="selectedProcessId = null"
-                                color="primary"
-                                variant="flat" 
-                                class="rounded-pill"
-                                density="compact"
-                            >{{ $t('ProcessDefinitionChatWithTree.newProcess') }}
-                            </v-btn>
-                        </div> -->
+                        <div class="d-flex ga-2">
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn 
+                                        v-bind="props"
+                                        @click="handleMegaAddAction"
+                                        icon
+                                        variant="text"
+                                        class="mega-add-btn"
+                                    >
+                                        <Icons icon="plus" :size="12" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('ProcessDefinitionChatWithTree.addMegaProcess') }}</span>
+                            </v-tooltip>
+                        </div>
                     </v-row>
 
                     <div class="process-definition-chat-tree-box-inner mt-2">
@@ -192,6 +199,7 @@
                     @save-activity-changes="saveActivityChanges"
                     @generation-finished="handleGenerationFinished"
                     @process-definition-ready="handleProcessDefinitionReady"
+                    @process-definition-updated="handleProcessDefinitionUpdated"
                     @upload-excel-to-storage="handleUploadExcelToStorage"
                 />
             </v-col>
@@ -210,13 +218,15 @@
             @closeProcessDialog="closeProcessDialog"
         />
 
-        <!-- Mega -> Major 추가 및 수정용 간단한 다이얼로그 -->
+        <!-- Mega 추가/수정 및 Major 추가/수정용 간단한 다이얼로그 -->
         <v-dialog v-model="processDialog" max-width="500" persistent 
-            v-else-if="processDialog && (processDialogMode === 'update' || currentNodeType === 'mega')">
+            v-else-if="processDialog && (processDialogMode === 'update' || (processDialogMode === 'add' && currentNodeType === 'mega' || currentNodeType === 'root'))">
             <v-card>
                 <v-card-title class="pa-4">
                     <span v-if="processDialogMode === 'add'">
-                        {{ $t('ProcessDefinitionChatWithTree.addMajorProcess') }}
+                        {{ currentNodeType === 'root' ? $t('ProcessDefinitionChatWithTree.addMegaProcess') : 
+                           currentNodeType === 'major' ? $t('ProcessDefinitionChatWithTree.addMajorProcess') : 
+                           $t('ProcessDefinitionChatWithTree.addMajorProcess') }}
                     </span>
                     <span v-else>
                         {{ currentNodeType === 'mega' ? $t('ProcessDefinitionChatWithTree.editMegaProcess') : 
@@ -673,6 +683,17 @@ export default {
         },
 
         /**
+         * Mega 프로세스 추가 액션 핸들러 (트리 상단 버튼)
+         */
+        handleMegaAddAction() {
+            this.processDialogMode = 'add';
+            this.currentNodeType = 'root';
+            this.currentNode = null; // Mega는 최상위이므로 부모 노드 없음
+            this.processForm = { id: '', name: '' };
+            this.processDialog = true;
+        },
+
+        /**
          * 노드 추가 액션 핸들러
          */
         handleNodeAddAction(node) {
@@ -713,9 +734,28 @@ export default {
         async handleProcessAdd(newProcess) {
             try {
                 const parentType = this.currentNodeType;
-                const parentId = this.currentNode.data?.originalId;
+                const parentId = this.currentNode?.data?.originalId;
 
-                if (parentType === 'mega') {
+                // processDefinitionMap이 없으면 초기화
+                if (!this.processDefinitionMap) {
+                    this.processDefinitionMap = {
+                        mega_proc_list: []
+                    };
+                }
+                if (!this.processDefinitionMap.mega_proc_list) {
+                    this.processDefinitionMap.mega_proc_list = [];
+                }
+
+                if (parentType === 'root' && !parentId) {
+                    // Mega 프로세스 추가 (최상위)
+                    const megaId = newProcess.id || this.generateUniqueId();
+                    const megaProcess = {
+                        id: megaId,
+                        name: newProcess.name,
+                        major_proc_list: []
+                    };
+                    this.processDefinitionMap.mega_proc_list.push(megaProcess);
+                } else if (parentType === 'mega' && parentId) {
                     // Mega에 Major 추가
                     const mega = this.processDefinitionMap.mega_proc_list.find(m => m.id === parentId);
                     if (mega) {
@@ -907,7 +947,17 @@ export default {
             try {
                 this.processDefinitionMap = await backend.getProcessDefinitionMap();
                 
-                if (this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
+                // processDefinitionMap이 없거나 mega_proc_list가 없으면 초기화
+                if (!this.processDefinitionMap) {
+                    this.processDefinitionMap = {
+                        mega_proc_list: []
+                    };
+                }
+                if (!this.processDefinitionMap.mega_proc_list) {
+                    this.processDefinitionMap.mega_proc_list = [];
+                }
+                
+                if (this.processDefinitionMap.mega_proc_list) {
                     this.convertToVue3TreeviewFormat(this.processDefinitionMap.mega_proc_list);
                     
                     // 트리 상태 복구 - 이중 $nextTick으로 DOM 렌더링 보장
@@ -919,6 +969,11 @@ export default {
                 }
             } catch (error) {
                 console.error('프로세스 정의 체계도 로드 실패:', error);
+                // 에러 발생 시에도 빈 구조로 초기화
+                this.processDefinitionMap = {
+                    mega_proc_list: []
+                };
+                this.convertToVue3TreeviewFormat([]);
                 this.$try({
                     context: this,
                     action: () => {
@@ -1728,6 +1783,25 @@ export default {
                     this.toggleFlowView('flow');
                 });
             // }
+        },
+
+        /**
+         * processDefinition이 업데이트되면 Flow 다시 렌더링
+         */
+        handleProcessDefinitionUpdated(processDefinition) {
+            // Flow가 열려있을 때만 업데이트
+            if (this.showFlowOverlay && processDefinition) {
+                console.log('🔄 프로세스 정의 업데이트 감지 - Flow 다시 렌더링');
+                
+                // 현재 프로세스 정의를 null로 설정한 후 다시 할당하여 강제 리렌더링
+                this.currentProcessDefinitionForFlow = null;
+                
+                this.$nextTick(() => {
+                    // 깊은 복사로 완전히 새로운 객체 생성
+                    this.currentProcessDefinitionForFlow = JSON.parse(JSON.stringify(processDefinition));
+                    console.log('✅ Flow 다시 렌더링 완료');
+                });
+            }
         },
 
         /**
@@ -2715,34 +2789,147 @@ export default {
                 
                 console.log(`📊 기존 데이터 행: ${firstDataRow + 1} ~ ${lastDataRow + 1}`);
                 
-                // 각 액티비티를 기존 행에 매핑하여 업데이트
+                // ✅ 기존 데이터 행의 스타일을 보존할 템플릿 행 찾기 (마지막 데이터 행 사용)
+                const templateRow = lastDataRow >= firstDataRow ? lastDataRow : firstDataRow;
+                
+                // ✅ 템플릿 행의 스타일을 먼저 복사해두기
+                const templateStyles = {};
+                if (templateRow >= firstDataRow) {
+                    for (let col = range.s.c; col <= range.e.c; col++) {
+                        const templateCellAddress = XLSX.utils.encode_cell({ r: templateRow, c: col });
+                        const templateCell = sheet[templateCellAddress];
+                        if (templateCell && templateCell.s) {
+                            // 스타일만 깊은 복사
+                            templateStyles[col] = JSON.parse(JSON.stringify(templateCell.s));
+                        }
+                    }
+                }
+                console.log(`📋 템플릿 스타일 보존 완료: ${Object.keys(templateStyles).length}개 열`);
+                
+                // ✅ 기존 데이터 행을 읽어서 보존 (액티비티 이름/ID로 매핑)
+                const existingDataMap = new Map(); // key: 액티비티 이름, value: 행 전체 데이터
+                console.log(`📖 기존 데이터 행 읽기 시작: ${firstDataRow + 1} ~ ${lastDataRow + 1}`);
+                
+                for (let row = firstDataRow; row <= lastDataRow; row++) {
+                    const rowData = {};
+                    let activityName = '';
+                    
+                    // 해당 행의 모든 셀 데이터 읽기
+                    for (let col = range.s.c; col <= range.e.c; col++) {
+                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                        const cell = sheet[cellAddress];
+                        
+                        if (cell) {
+                            rowData[col] = {
+                                value: cell.v,
+                                style: cell.s ? JSON.parse(JSON.stringify(cell.s)) : null,
+                                type: cell.t
+                            };
+                            
+                            // 액티비티 이름 열인 경우 키로 사용
+                            if (col === columnMapping.activityName && cell.v) {
+                                activityName = String(cell.v).trim();
+                            }
+                        }
+                    }
+                    
+                    // 액티비티 이름이 있으면 Map에 저장
+                    if (activityName && activityName !== '') {
+                        existingDataMap.set(activityName, rowData);
+                        console.log(`📝 기존 데이터 보존: "${activityName}"`);
+                    }
+                }
+                
+                console.log(`✅ 기존 데이터 ${existingDataMap.size}개 보존 완료`);
+                
+                // ✅ 기존 데이터 행 모두 지우기 (재배치를 위해)
+                const maxRowsToClear = Math.max(lastDataRow - firstDataRow + 1, activities.length + 10);
+                console.log(`🗑️ 기존 행 임시 삭제 시작: ${firstDataRow + 1} ~ ${firstDataRow + maxRowsToClear - 1}`);
+                
+                for (let row = firstDataRow; row < firstDataRow + maxRowsToClear; row++) {
+                    for (let col = range.s.c; col <= range.e.c; col++) {
+                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                        if (sheet[cellAddress]) {
+                            delete sheet[cellAddress];
+                        }
+                    }
+                }
+                console.log(`✅ 기존 행 임시 삭제 완료`);
+                
+                // ✅ 정렬된 순서대로 액티비티 데이터 재배치 (기존 데이터 보존)
                 activities.forEach((activity, index) => {
                     const rowNum = firstDataRow + index;
+                    const activityName = activity.name || '';
                     
-                    // 기존 행이 있으면 해당 행의 셀들을 업데이트
-                    // 없으면 마지막 데이터 행의 스타일을 복사해서 새 행 생성
-                    const isExistingRow = rowNum <= lastDataRow;
-                    const templateRow = isExistingRow ? rowNum : lastDataRow;
+                    console.log(`🔄 ${index + 1}번 액티비티 재배치: ${activityName} (행 ${rowNum + 1})`);
                     
-                    console.log(`🔄 ${index + 1}번 액티비티 업데이트: ${activity.name}`);
+                    // 기존 데이터가 있는지 확인
+                    const existingData = existingDataMap.get(activityName);
                     
-                    // 각 열에 데이터 입력 (열 매핑에 따라)
-                    this.updateCellValue(sheet, rowNum, columnMapping.no, index + 1, templateRow);
-                    this.updateCellValue(sheet, rowNum, columnMapping.activityName, activity.name || '', templateRow);
-                    this.updateCellValue(sheet, rowNum, columnMapping.description, activity.description || '', templateRow);
-                    this.updateCellValue(sheet, rowNum, columnMapping.role, activity.role || '', templateRow);
-                    this.updateCellValue(sheet, rowNum, columnMapping.input, 
-                        activity.inputData ? (Array.isArray(activity.inputData) ? activity.inputData.join(', ') : activity.inputData) : '', 
-                        templateRow);
-                    this.updateCellValue(sheet, rowNum, columnMapping.output, 
-                        activity.outputData ? (Array.isArray(activity.outputData) ? activity.outputData.join(', ') : activity.outputData) : '', 
-                        templateRow);
-                    this.updateCellValue(sheet, rowNum, columnMapping.system, activity.system || '', templateRow);
-                    this.updateCellValue(sheet, rowNum, columnMapping.duration, activity.duration || '', templateRow);
-                    this.updateCellValue(sheet, rowNum, columnMapping.instruction, activity.instruction || '', templateRow);
-                    
-                    // 기타 열들은 빈 값으로 유지 (기존 값 보존)
+                    if (existingData) {
+                        // ✅ 기존 데이터가 있으면 모든 셀 복원 (스타일 포함)
+                        console.log(`  📦 기존 데이터 복원: "${activityName}"`);
+                        
+                        for (let col = range.s.c; col <= range.e.c; col++) {
+                            const cellAddress = XLSX.utils.encode_cell({ r: rowNum, c: col });
+                            const cellData = existingData[col];
+                            
+                            if (cellData) {
+                                // 기존 셀 데이터 그대로 복원
+                                const cell = {
+                                    v: cellData.value,
+                                    w: String(cellData.value),
+                                    t: cellData.type || (typeof cellData.value === 'number' ? 'n' : 's')
+                                };
+                                
+                                if (cellData.style) {
+                                    cell.s = cellData.style;
+                                }
+                                
+                                sheet[cellAddress] = cell;
+                            }
+                        }
+                        
+                        // No 열만 새로운 순서 번호로 업데이트
+                        if (columnMapping.no !== -1) {
+                            const noCell = sheet[XLSX.utils.encode_cell({ r: rowNum, c: columnMapping.no })];
+                            if (noCell) {
+                                noCell.v = index + 1;
+                                noCell.w = String(index + 1);
+                                noCell.t = 'n';
+                            }
+                        }
+                        
+                    } else {
+                        // ✅ 새로운 액티비티는 템플릿 스타일로 추가
+                        console.log(`  ✨ 새로운 액티비티 추가: "${activityName}"`);
+                        
+                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.no, index + 1, templateStyles);
+                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.activityName, activityName, templateStyles);
+                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.description, activity.description || '', templateStyles);
+                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.role, activity.role || '', templateStyles);
+                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.input, 
+                            activity.inputData ? (Array.isArray(activity.inputData) ? activity.inputData.join(', ') : activity.inputData) : '', 
+                            templateStyles);
+                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.output, 
+                            activity.outputData ? (Array.isArray(activity.outputData) ? activity.outputData.join(', ') : activity.outputData) : '', 
+                            templateStyles);
+                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.system, activity.system || '', templateStyles);
+                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.duration, activity.duration || '', templateStyles);
+                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.instruction, activity.instruction || '', templateStyles);
+                    }
                 });
+                
+                // ✅ 시트 범위 업데이트 (새로운 데이터 행 수에 맞게)
+                const newLastRow = firstDataRow + activities.length - 1;
+                if (newLastRow >= firstDataRow) {
+                    const newRange = XLSX.utils.encode_range({
+                        s: { r: range.s.r, c: range.s.c },
+                        e: { r: Math.max(newLastRow, range.e.r), c: range.e.c }
+                    });
+                    sheet['!ref'] = newRange;
+                    console.log(`📊 시트 범위 업데이트: ${newRange}`);
+                }
                 
                 console.log(`✅ ${activities.length}개 액티비티 업데이트 완료 (원본 형식 완벽 유지)`);
                 
@@ -2987,6 +3174,29 @@ export default {
                     };
                 }
             }
+        },
+
+        /**
+         * 셀 값 업데이트 (보존된 템플릿 스타일 사용)
+         */
+        updateCellValueWithStyle(sheet, rowNum, colNum, value, templateStyles) {
+            if (colNum === -1) return; // 해당 열이 없으면 스킵
+            
+            const cellAddress = XLSX.utils.encode_cell({ r: rowNum, c: colNum });
+            
+            // 새 셀 생성 (템플릿 스타일 적용)
+            const cell = {
+                v: value,
+                w: String(value),
+                t: typeof value === 'number' ? 'n' : 's'
+            };
+            
+            // 보존된 템플릿 스타일이 있으면 적용
+            if (templateStyles && templateStyles[colNum]) {
+                cell.s = JSON.parse(JSON.stringify(templateStyles[colNum]));
+            }
+            
+            sheet[cellAddress] = cell;
         },
 
         /**
@@ -3650,6 +3860,28 @@ export default {
     justify-content: center;
     padding: 0;
     transition: all 0.2s ease;
+}
+
+/* Mega 추가 버튼 스타일 (노드 액션 버튼과 동일하되 조금 더 크게) */
+.mega-add-btn {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    border-radius: 4px !important;
+    border: 1px solid #ddd !important;
+    background-color: #fff !important;
+    color: #666 !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    transition: all 0.2s ease;
+}
+
+.mega-add-btn:hover {
+    background-color: #f5f5f5 !important;
+    border-color: #bbb !important;
 }
 
 :deep(.input-wrapper) {

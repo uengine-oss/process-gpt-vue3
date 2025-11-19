@@ -1,5 +1,5 @@
 <template>
-  <div class="process-node">
+  <div class="process-node" :class="{ 'offline-node': isOffline }">
     <div class="node-header">
       {{ data.header }}
     </div>
@@ -20,13 +20,20 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 
-defineProps({
+const props = defineProps({
   data: {
     type: Object,
     required: true,
   },
+})
+
+// 시스템이 off-line인지 확인
+const isOffline = computed(() => {
+  const footer = (props.data.footer || '').toLowerCase().trim()
+  return footer === 'off-line' || footer === 'offline'
 })
 </script>
 
@@ -38,6 +45,29 @@ defineProps({
   min-width: 120px;
   font-size: 12px;
   box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* off-line 시스템 스타일 */
+.process-node.offline-node {
+  border: 3px solid #ff0000;
+  box-shadow: 0 0 12px rgba(255, 0, 0, 0.3);
+}
+
+.process-node.offline-node .node-header {
+  background: #ffe5e5;
+  border-bottom-color: #ff0000;
+}
+
+.process-node.offline-node .node-content {
+  border-bottom-color: #ff0000;
+  background: #fff8f8;
+}
+
+.process-node.offline-node .node-footer {
+  background: #ffe5e5;
+  color: #cc0000;
+  font-weight: bold;
 }
 
 .node-header {

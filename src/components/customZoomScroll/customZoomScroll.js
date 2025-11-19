@@ -21,7 +21,14 @@ var sign = Math.sign || function(n) {
 
 export default function CustomZoomScroll(config, eventBus, canvas) {
 
-  ZoomScroll.call(this, config, eventBus, canvas);
+  // 부모 생성자 호출하되, _init()은 나중에 직접 처리
+  config = config || {};
+  
+  this._canvas = canvas;
+  this._container = canvas._container;
+  this._handleWheel = bind(this._handleWheel, this);
+  this._totalDelta = 0;
+  this._scale = config.scale || 0.75;
 
   this.canvas = canvas;
   this._customZoomRange = { min: 0.2, max: 2 };
@@ -33,6 +40,27 @@ export default function CustomZoomScroll(config, eventBus, canvas) {
     canvas.movedDistance = {x:-100, y:0};
   }
 
+  // ✅ wheel 이벤트를 passive: false로 등록 (배포 환경에서 브라우저 확대 방지)
+  var self = this;
+  var container = this._container;
+  
+  if (container) {
+    // passive: false로 등록하여 preventDefault()가 작동하도록 함
+    container.addEventListener('wheel', self._handleWheel, { passive: false });
+    
+    // 컴포넌트가 destroy될 때 이벤트 리스너 정리
+    eventBus.once('diagram.destroy', function() {
+      container.removeEventListener('wheel', self._handleWheel);
+    });
+  }
+
+}
+
+// bind 헬퍼 함수
+function bind(fn, context) {
+  return function() {
+    return fn.apply(context, arguments);
+  };
 }
 
 CustomZoomScroll.$inject = [

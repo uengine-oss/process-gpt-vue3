@@ -3,7 +3,6 @@ import { ref, nextTick, watch, computed } from 'vue'
 import { VueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
-import { MiniMap } from '@vue-flow/minimap'
 // import { initialEdges, initialNodes } from './initial-elements.js'
 import { convertProcessDefinitionToVueFlow } from './processDefinitionToVueFlow.js'
 import ProcessNode from './ProcessNode.vue'
@@ -213,7 +212,6 @@ defineExpose({
     @node-double-click="handleNodeDoubleClick"
   >
     <Background pattern-color="#aaa" :gap="16" />
-    <MiniMap />
     <Controls position="top-left">
       <ControlButton title="Reset Transform" @click="resetTransform">
         <Icon name="reset" />
@@ -233,7 +231,6 @@ defineExpose({
 @import '@vue-flow/core/dist/style.css';
 @import '@vue-flow/core/dist/theme-default.css';
 @import '@vue-flow/controls/dist/style.css';
-@import '@vue-flow/minimap/dist/style.css';
 
 .basic-flow {
   height: 100%;

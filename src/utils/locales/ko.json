@@ -1913,6 +1913,7 @@
         "newProcess": "새 프로세스",
         "noProcessDefinition": "프로세스 정의가 없습니다.",
         "downloadExcel": "엑셀 다운로드",
+        "addMegaProcess": "Mega 프로세스 추가",
         "addMajorProcess": "Major 프로세스 추가",
         "addSubProcess": "Sub 프로세스 추가",
         "editMegaProcess": "Mega 프로세스 수정",

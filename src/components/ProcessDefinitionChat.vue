@@ -162,6 +162,18 @@
                                                     rows="3"
                                                     class="mb-3"
                                                 ></v-textarea>
+                                                
+                                                <v-textarea
+                                                    v-model="selectedFlowActivity.issues"
+                                                    label="이슈"
+                                                    variant="outlined"
+                                                    density="compact"
+                                                    hide-details
+                                                    rows="3"
+                                                    placeholder="이슈 사항을 입력하세요"
+                                                    class="mb-3"
+                                                >
+                                                </v-textarea>
                                             </v-card-text>
                                         </v-card>
                                         
@@ -1930,6 +1942,10 @@ export default {
                             }
                             this.oldProcDefId = unknown.processDefinitionId;
                             this.definitionChangeCount++;
+                            
+                            // 🔥 modifications 처리 완료 후 Flow 업데이트를 위한 이벤트 emit
+                            console.log('🔄 modifications 처리 완료 - Flow 업데이트 이벤트 emit', this.processDefinition);
+                            this.$emit('process-definition-updated', this.processDefinition);
                         }
     
                         if(!jsonProcess.answerType){
@@ -1951,6 +1967,11 @@ export default {
                                     "content": `요청하신 내용에 따라 수정을 완료하였습니다.`,
                                     "timeStamp": Date.now()
                                 });
+                                
+                                // 🔥 프로세스 수정 완료 후 Flow 업데이트를 위한 이벤트 emit
+                                console.log('🔄 프로세스 수정 완료 - Flow 업데이트 이벤트 emit', this.processDefinition);
+                                this.$emit('process-definition-updated', this.processDefinition);
+                                
                                 jsonProcess.modifications.forEach(modification => {
                                     if(modification.action == 'add' 
                                     && modification.value 
@@ -1966,7 +1987,10 @@ export default {
                                 this.isRetry = false;
                                 
                                 this.$emit('process-definition-ready');
-                                // this.$emit('generation-finished', this.processDefinition);
+                                
+                                // 🔥 프로세스 생성 완료 후 Flow 업데이트를 위한 이벤트 emit
+                                console.log('🎉 프로세스 생성 완료 - Flow 업데이트 이벤트 emit', this.processDefinition);
+                                this.$emit('process-definition-updated', this.processDefinition);
 
                                 this.messages.push({
                                     "role": "system",
@@ -2476,6 +2500,10 @@ export default {
                     
                     // 프로세스 미리보기 열기
                     this.$emit("openProcessPreview");
+                    
+                    // 🔥 CrewAI 프로세스 생성 완료 후 Flow 업데이트를 위한 이벤트 emit
+                    console.log('🎉 CrewAI 프로세스 생성 완료 - Flow 업데이트 이벤트 emit', this.processDefinition);
+                    this.$emit('process-definition-updated', this.processDefinition);
 
                     // 성공 메시지들 추가 (기존 로직과 동일)
                     this.messages.push({
@@ -2675,7 +2703,9 @@ export default {
                         this.isAIGenerated = true;
                         this.isChanged = true;
                         
-                        console.log('🔄 점진적 BPMN 업데이트 완료');
+                        // 🔥 실시간 BPMN 업데이트 후 Flow 업데이트를 위한 이벤트 emit
+                        console.log('🔄 점진적 BPMN 업데이트 완료 - Flow 업데이트 이벤트 emit');
+                        this.$emit('process-definition-updated', this.processDefinition);
                     }
                 }
                 

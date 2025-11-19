@@ -293,41 +293,63 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
 
   console.log('시작 노드:', startNodes.map(n => n.id))
 
-  // BFS로 방문 순서 기록
-  const visitOrder = new Map() // nodeId -> 방문 순서 번호
-  const queue = []
-  let orderCounter = 0
+  // 레벨 기반 BFS로 방문 순서 기록 (같은 레벨의 노드들은 같은 order 부여)
+  const visitOrder = new Map() // nodeId -> 레벨(순서) 번호
+  const visited = new Set()
+  let currentLevel = [startNodes.map(n => n.id)] // 레벨별로 노드 ID 배열
+  let levelNumber = 0
 
+  // 시작 노드들에 레벨 0 부여
   startNodes.forEach(node => {
-    queue.push(node.id)
-    visitOrder.set(node.id, orderCounter++)
+    visitOrder.set(node.id, levelNumber)
+    visited.add(node.id)
   })
 
-  const visited = new Set()
-
-  while (queue.length > 0) {
-    const currentId = queue.shift()
+  // 레벨 기반 BFS
+  while (currentLevel[levelNumber] && currentLevel[levelNumber].length > 0) {
+    const nextLevel = []
     
-    if (visited.has(currentId)) continue
-    visited.add(currentId)
-
-    const neighbors = adjacencyList.get(currentId) || []
-    neighbors.forEach(neighborId => {
-      if (!visitOrder.has(neighborId)) {
-        visitOrder.set(neighborId, orderCounter++)
-        queue.push(neighborId)
-      }
+    // 현재 레벨의 모든 노드 처리
+    currentLevel[levelNumber].forEach(currentId => {
+      const neighbors = adjacencyList.get(currentId) || []
+      
+      neighbors.forEach(neighborId => {
+        // 아직 방문하지 않았고, 모든 부모가 처리되었는지 확인
+        if (!visited.has(neighborId)) {
+          // 이 노드의 모든 부모(inEdge의 source)가 이미 방문되었는지 확인
+          const allParents = edges
+            .filter(e => e.target === neighborId)
+            .map(e => e.source)
+          
+          const allParentsVisited = allParents.every(parentId => visited.has(parentId))
+          
+          if (allParentsVisited) {
+            visitOrder.set(neighborId, levelNumber + 1)
+            visited.add(neighborId)
+            nextLevel.push(neighborId)
+          }
+        }
+      })
     })
+    
+    // 다음 레벨로 이동
+    if (nextLevel.length > 0) {
+      levelNumber++
+      currentLevel[levelNumber] = [...new Set(nextLevel)] // 중복 제거
+    } else {
+      break
+    }
   }
 
-  // 방문하지 못한 노드 처리
+  // 방문하지 못한 노드 처리 (고립된 노드 등)
   nodes.forEach(node => {
     if (!visitOrder.has(node.id)) {
-      visitOrder.set(node.id, orderCounter++)
+      levelNumber++
+      visitOrder.set(node.id, levelNumber)
     }
   })
 
-  console.log('방문 순서:', Object.fromEntries(visitOrder))
+  console.log('방문 순서 (레벨 기반):', Object.fromEntries(visitOrder))
 
   // 순서별로 노드 그룹화
   const orderGroups = new Map()
@@ -343,20 +365,82 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
   const START_X = 400
   const START_Y = 50
   const VERTICAL_SPACING = 150
-  const HORIZONTAL_SPACING = 80
+  const BASE_HORIZONTAL_SPACING = 200 // 기본 가로 간격을 넓게
+
+  // 부모-자식 관계 맵 구축
+  const parentMap = new Map() // childId -> [parentId1, parentId2, ...]
+  const childrenMap = new Map() // parentId -> [childId1, childId2, ...]
+  
+  edges.forEach(edge => {
+    // 역행 엣지는 제외 (역행이 아닌 정방향만 부모-자식 관계로 간주)
+    const sourceOrder = visitOrder.get(edge.source)
+    const targetOrder = visitOrder.get(edge.target)
+    if (sourceOrder < targetOrder) { // 정방향만
+      if (!childrenMap.has(edge.source)) {
+        childrenMap.set(edge.source, [])
+      }
+      childrenMap.get(edge.source).push(edge.target)
+      
+      if (!parentMap.has(edge.target)) {
+        parentMap.set(edge.target, [])
+      }
+      parentMap.get(edge.target).push(edge.source)
+    }
+  })
 
   Array.from(orderGroups.keys()).sort((a, b) => a - b).forEach(order => {
     const nodesInOrder = orderGroups.get(order)
     const y = START_Y + order * VERTICAL_SPACING
+    
+    console.log(`📊 레벨 ${order}: ${nodesInOrder.length}개 노드 -`, nodesInOrder.map(n => n.data.content || n.data.label))
 
-    // 같은 순서의 노드들은 가로로 나열 (중앙 정렬)
-    nodesInOrder.forEach((node, index) => {
-      const totalWidth = nodesInOrder.length * HORIZONTAL_SPACING
-      const x = START_X - totalWidth / 2 + index * HORIZONTAL_SPACING
+    if (nodesInOrder.length === 1) {
+      // 단일 노드: 부모 위치 또는 중앙에 배치
+      const node = nodesInOrder[0]
+      const parents = parentMap.get(node.id) || []
       
-      node.position.x = x
+      if (parents.length > 0) {
+        // 부모들의 평균 x 위치
+        const avgParentX = parents.reduce((sum, parentId) => {
+          const parent = nodeMap.get(parentId)
+          return sum + (parent?.position?.x || START_X)
+        }, 0) / parents.length
+        node.position.x = avgParentX
+      } else {
+        node.position.x = START_X
+      }
       node.position.y = y
-    })
+    } else {
+      // 여러 노드: 부모를 기준으로 좌우 분산 배치
+      const parents = new Set()
+      nodesInOrder.forEach(node => {
+        const nodeParents = parentMap.get(node.id) || []
+        nodeParents.forEach(p => parents.add(p))
+      })
+
+      let centerX = START_X
+      if (parents.size > 0) {
+        // 부모들의 평균 위치를 중심으로
+        centerX = Array.from(parents).reduce((sum, parentId) => {
+          const parent = nodeMap.get(parentId)
+          return sum + (parent?.position?.x || START_X)
+        }, 0) / parents.size
+      }
+
+      // 분기되는 노드 수에 따라 간격 조정 (2개부터 넓게)
+      const spacing = BASE_HORIZONTAL_SPACING * Math.max(1, nodesInOrder.length / 2)
+      const totalWidth = (nodesInOrder.length - 1) * spacing
+
+      console.log(`  ↔️ 분기 배치: ${nodesInOrder.length}개 노드, 간격 ${spacing}px, 총 너비 ${totalWidth}px, 중심 X=${centerX}`)
+
+      nodesInOrder.forEach((node, index) => {
+        // 중앙을 기준으로 좌우 분산
+        const x = centerX - totalWidth / 2 + index * spacing
+        node.position.x = x
+        node.position.y = y
+        console.log(`    - ${node.data.content || node.data.label}: x=${x}`)
+      })
+    }
   })
 
   // 역행 엣지 표시 (색상 변경 + 연결 방향 변경 + 노드에 역행 정보 추가)
