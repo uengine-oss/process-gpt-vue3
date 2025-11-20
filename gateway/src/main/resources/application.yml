@@ -13,24 +13,18 @@ spring:
                 #       - Path=/litellm/**,
                 #   filters:
                 #       - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
-                - id: claude-skills
-                  uri: http://localhost:8765
-                  predicates:
-                      - Path=/claude-skills/**,
-                  filters:
-                      - RewritePath=/claude-skills/?(?<segment>.*), /$\{segment}
                 - id: execution
                   uri: http://localhost:8000
                   predicates:
                       - Path=/execution/**,
                   filters:
                       - RewritePath=/execution/?(?<segment>.*), /$\{segment}
-                - id: autonomous
-                  uri: http://localhost:6789
+                - id: claude-skills
+                  uri: http://localhost:8765
                   predicates:
-                      - Path=/autonomous/**,
+                      - Path=/claude-skills/**,
                   filters:
-                      - RewritePath=/autonomous/?(?<segment>.*), /$\{segment}
+                      - RewritePath=/claude-skills/?(?<segment>.*), /$\{segment}
                 - id: memento
                   uri: http://localhost:8005
                   predicates:
@@ -127,13 +121,13 @@ spring:
                       - RewritePath=/execution/?(?<segment>.*), /$\{segment}
                   order: 10
 
-                # Autonomous 서비스
-                - id: autonomous
-                  uri: http://autonomous-service:6789
+                # Claude Skills 서비스
+                - id: claude-skills
+                  uri: http://claude-skills:8765
                   predicates:
-                      - Path=/autonomous/**
+                      - Path=/claude-skills/**,
                   filters:
-                      - RewritePath=/autonomous/?(?<segment>.*), /$\{segment}
+                      - RewritePath=/claude-skills/?(?<segment>.*), /$\{segment}
                   order: 20
 
                 # Memento 서비스
