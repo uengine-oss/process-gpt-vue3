@@ -33,19 +33,40 @@
                             class="flex-fill d-flex flex-column"
                             style="height: 100%;"
                         >
-                                <v-card-text class="text-center pa-4 flex-grow-1 d-flex flex-column justify-center">
+                                <v-chip 
+                                    v-if="option.costKey" 
+                                    size="x-small" 
+                                    class="ml-2"
+                                    :color="getCostColor(option.costKey)"
+                                    variant="outlined"
+                                    style="position: absolute; top: 12px; right: 12px;"
+                                >
+                                    {{ $t(option.costKey) }}
+                                </v-chip>
+                                <v-card-text class="text-center pa-4 pb-0 flex-grow-1 d-flex flex-column justify-center">
                                     <div class="card-icon-vuetify mb-3">
                                         <Icons :icon="option.icon" :color="selectedOrchestrationMethod === option.value ? 'white' : 'black'" :size="50" />
                                     </div>
-                                    <v-card-title class="card-title-vuetify pa-0 mb-2">{{ option.label }}</v-card-title>
-                                    <v-card-subtitle class="card-description-vuetify pa-0">{{ getMethodDescription(option.value) }}</v-card-subtitle>
+                                    <v-card-title class="card-title-vuetify pa-0 mb-2 d-flex align-center justify-center">
+                                        <span>{{ $t(option.titleKey) }}</span>
+                                    
+                                        <!-- 각 옵션별 상세 정보 -->
+                                        <div v-if="option.detailDesc" class="ml-2">
+                                            <DetailComponent
+                                                :title="$t(option.detailDesc.title)"
+                                                :details="option.detailDesc.details"
+                                            />
+                                        </div>
+                                    </v-card-title>
+                                    <v-card-subtitle class="card-description-vuetify pa-0">{{ $t(option.descKey) }}</v-card-subtitle>
+                                    
                                     <v-icon v-if="selectedOrchestrationMethod === option.value" 
                                                 class="selected-indicator-vuetify" 
                                                 color="white"
                                         >mdi-check-circle
                                     </v-icon>
                                 </v-card-text>
-                                <v-card-actions class="justify-end pa-4 pb-4 pr-4 mt-auto">
+                                <v-card-actions class="justify-end pa-4 pt-0 mt-auto">
                                     <!-- <v-btn v-if="showDownloadButton" 
                                             @click="downloadBrowserAgent" 
                                             :disabled="selectedOrchestrationMethod !== option.value"
@@ -80,7 +101,12 @@
 </template>
 
 <script>
+import DetailComponent from '@/components/ui-components/details/DetailComponent.vue'
+
 export default {
+    components: {
+        DetailComponent
+    },
     props: {
         isQueued: {
             type: Boolean,
@@ -114,15 +140,15 @@ export default {
         downloadBrowserAgent() {
             this.$emit('downloadBrowserAgent')
         },
-        getMethodDescription(method) {
-            const descriptions = {
-                'crewai-deep-research': this.$t('AgentSelectInfo.orchestration.crewaiDeepResearch.description'),
-                'crewai-action': this.$t('AgentSelectInfo.orchestration.crewaiAction.description'),
-                'openai-deep-research': this.$t('AgentSelectInfo.orchestration.openaiDeepResearch.description'),
-                'langchain-react': this.$t('AgentSelectInfo.orchestration.langchainReact.description'),
-                'browser-use': this.$t('AgentSelectInfo.orchestration.browserUse.description')
-            };
-            return descriptions[method] || '';
+        getCostColor(costKey) {
+            if (costKey === 'AgentSelectInfo.cost.low') {
+                return 'success';
+            } else if (costKey === 'AgentSelectInfo.cost.medium') {
+                return 'warning';
+            } else if (costKey === 'AgentSelectInfo.cost.high') {
+                return 'error';
+            }
+            return 'grey';
         }
     }
 }

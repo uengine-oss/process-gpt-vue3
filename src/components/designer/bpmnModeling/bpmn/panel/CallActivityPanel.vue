@@ -18,7 +18,7 @@
                 <v-row class="ma-0 pa-0">
                     <div class="mb-1 mt-4">{{$t('SubProcessPanel.forEachVariable')}}</div>
                 </v-row>
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0 align-center pb-4">
                     <v-autocomplete
                         :items="processVariables"
                         :item-props="true"
@@ -29,11 +29,12 @@
                         :label="$t('SubProcessPanel.variable')"
                         variant="outlined"
                     ></v-autocomplete>
+                    <DetailComponent class="ml-2"
+                        :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
+                        :details="forEachVariableDescription"
+                        :iconSize="24"
+                    />
                 </v-row>
-                <DetailComponent
-                    :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
-                    :details="SubProcessDescription"
-                />
             </div>
             <div>
                 <v-row class="ma-0 pa-0">

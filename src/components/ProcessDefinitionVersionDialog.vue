@@ -3,9 +3,13 @@
         <v-dialog v-model="isOpen" max-width="400" persistent>
             <v-card class="ma-0 pa-0">
                 <v-row class="ma-0 pa-4 pb-0 align-center">
-                    <v-card-title class="ma-0 pa-0">{{
-                        isNew ? $t('ProcessDefinitionVersionDialog.title') : $t('ProcessDefinitionVersionDialog.title2')
-                    }}</v-card-title>
+                    <v-card-title class="ma-0 pa-0"
+                    >{{ isNew ? $t('ProcessDefinitionVersionDialog.title') : $t('ProcessDefinitionVersionDialog.title2') }}
+                    </v-card-title>
+
+                    <DetailComponent class="ml-2"
+                        :title="$t('ProcessDefinitionVersionDialog.versionDescriptionTitle')"
+                    />
                     <v-spacer></v-spacer>
                     <v-btn @click="close()" icon variant="text" density="comfortable"
                         style="width: 16px; height: 16px;"
@@ -19,9 +23,6 @@
                         hide-details
                         color="primary"
                     ></v-switch>
-                    <DetailComponent
-                        :title="$t('ProcessDefinitionVersionDialog.versionDescriptionTitle')"
-                    />
                     <div v-if="mode == 'ProcessGPT'">
                         <div v-if="isNew">
                             <v-text-field

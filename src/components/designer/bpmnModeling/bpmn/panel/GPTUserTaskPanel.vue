@@ -111,26 +111,23 @@
                                                 size="x-small" 
                                                 class="ml-2"
                                                 :color="getCostColor(item.raw.costKey)"
-                                                variant="flat"
+                                                variant="outlined"
                                             >
                                                 {{ $t(item.raw.costKey) }}
                                             </v-chip>
+                                
+                                            <!-- 각 아이템별 상세 정보 -->
+                                            <DetailComponent v-if="item.raw.detailDesc" class="py-2 ml-2"
+                                                :title="$t(item.raw.detailDesc.title)"
+                                                :details="item.raw.detailDesc.details"
+                                            />
                                         </div>
                                     </template>
                                     <template v-slot:subtitle>
                                         <div class="text-wrap mt-1">{{ $t(item.raw.descKey) }}</div>
                                     </template>
                                 </v-list-item>
-                                
-                                <!-- 각 아이템별 상세 정보 -->
-                                <div v-if="item.raw.detailDesc" class="py-2">
-                                    <DetailComponent
-                                        :title="$t(item.raw.detailDesc.title)"
-                                        :details="item.raw.detailDesc.details"
-                                    />
-                                </div>
                             </div>
-                            <v-divider class="my-1"></v-divider>
                         </template>
                     </v-select>
                 </div>

@@ -389,10 +389,30 @@
                                                     :disabled="isMethodDisabled(method)"
                                                     class="research-method-item"
                                                 >
-                                                    <v-list-item-title>{{ $t(method.label) }}</v-list-item-title>
+                                                    <v-list-item-title class="d-flex align-center">
+                                                        <span>{{ $t(method.label) }}</span>
+                                                        <v-chip 
+                                                            v-if="method.costKey" 
+                                                            size="x-small" 
+                                                            class="ml-2"
+                                                            :color="getCostColor(method.costKey)"
+                                                            variant="flat"
+                                                        >
+                                                            {{ $t(method.costKey) }}
+                                                        </v-chip>
+                                                    
+                                                        <!-- 각 연구 방법별 상세 정보 -->
+                                                        <div v-if="method.detailDesc" class="detail-component-enabled ml-2">
+                                                            <DetailComponent
+                                                                :title="$t(method.detailDesc.title)"
+                                                                :details="method.detailDesc.details"
+                                                            />
+                                                        </div>
+                                                    </v-list-item-title>
                                                     <v-list-item-subtitle class="text-wrap">
                                                         {{ $t(method.description) }}
                                                     </v-list-item-subtitle>
+                                                    <v-divider class="my-1"></v-divider>
                                                 </v-list-item>
                                             </v-list>
                                         </v-card>
@@ -529,6 +549,7 @@ import AgentFeedback from './AgentFeedback.vue';
 import DelegateTaskForm from '@/components/apps/todolist/DelegateTaskForm.vue';
 import exampleGenerator from '@/components/ai/WorkItemAgentGenerator.js';
 import ReworkDialog from './ReworkDialog.vue';
+import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 
 import JSON5 from 'json5';
 import partialParse from 'partial-json-parser';
@@ -577,7 +598,8 @@ export default {
         AgentMonitor,
         AgentFeedback,
         DelegateTaskForm,
-        ReworkDialog
+        ReworkDialog,
+        DetailComponent
     },
     data: () => ({    
         workItem: null,
@@ -653,11 +675,74 @@ export default {
         researchMethodMenu: false,
         selectedResearchMethod: null,
         researchMethods: [
-            { value: 'default', label: 'WorkItem.quickGenerateExample', description: 'WorkItem.quickGenerateExampleDescription', advanced: false },
-            { value: 'crewaiDeepResearch', label: 'AgentSelectInfo.orchestration.crewaiDeepResearch.title', description: 'AgentSelectInfo.orchestration.crewaiDeepResearch.description', advanced: true },
-            { value: 'crewaiAction', label: 'AgentSelectInfo.orchestration.crewaiAction.title', description: 'AgentSelectInfo.orchestration.crewaiAction.description', advanced: true },
-            { value: 'openaiDeepResearch', label: 'AgentSelectInfo.orchestration.openaiDeepResearch.title', description: 'AgentSelectInfo.orchestration.openaiDeepResearch.description', advanced: true },
-            { value: 'langchainReact', label: 'AgentSelectInfo.orchestration.langchainReact.title', description: 'AgentSelectInfo.orchestration.langchainReact.description', advanced: true },
+            { 
+                value: 'default', 
+                label: 'WorkItem.quickGenerateExample', 
+                description: 'WorkItem.quickGenerateExampleDescription', 
+                advanced: false,
+                costKey: 'AgentSelectInfo.cost.low'
+            },
+            { 
+                value: 'crewaiDeepResearch', 
+                label: 'AgentSelectInfo.orchestration.crewaiDeepResearch.title', 
+                description: 'AgentSelectInfo.orchestration.crewaiDeepResearch.description', 
+                advanced: true,
+                costKey: 'AgentSelectInfo.cost.medium',
+                detailDesc: {
+                    title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.title',
+                    details: [
+                        { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.0.title' },
+                        { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.1.title' },
+                        { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.2.title' }
+                    ]
+                }
+            },
+            { 
+                value: 'crewaiAction', 
+                label: 'AgentSelectInfo.orchestration.crewaiAction.title', 
+                description: 'AgentSelectInfo.orchestration.crewaiAction.description', 
+                advanced: true,
+                costKey: 'AgentSelectInfo.cost.low',
+                detailDesc: {
+                    title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.title',
+                    details: [
+                        { title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.0.title' },
+                        { title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.1.title' },
+                        { title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.2.title' }
+                    ]
+                }
+            },
+            { 
+                value: 'openaiDeepResearch', 
+                label: 'AgentSelectInfo.orchestration.openaiDeepResearch.title', 
+                description: 'AgentSelectInfo.orchestration.openaiDeepResearch.description', 
+                advanced: true,
+                costKey: 'AgentSelectInfo.cost.high',
+                detailDesc: {
+                    title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.title',
+                    details: [
+                        { title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.0.title' },
+                        { title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.1.title' },
+                        { title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.2.title' }
+                    ]
+                }
+            },
+            { 
+                value: 'langchainReact', 
+                label: 'AgentSelectInfo.orchestration.langchainReact.title', 
+                description: 'AgentSelectInfo.orchestration.langchainReact.description', 
+                advanced: true,
+                costKey: 'AgentSelectInfo.cost.medium',
+                detailDesc: {
+                    title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.title',
+                    details: [
+                        { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.0.title' },
+                        { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.1.title' },
+                        { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.2.title' },
+                        { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.3.title' }
+                    ]
+                }
+            },
         ],
     }),
     created() {
@@ -883,6 +968,16 @@ export default {
         },
     },
     methods: {
+        getCostColor(costKey) {
+            if (costKey === 'AgentSelectInfo.cost.low') {
+                return 'success';
+            } else if (costKey === 'AgentSelectInfo.cost.medium') {
+                return 'warning';
+            } else if (costKey === 'AgentSelectInfo.cost.high') {
+                return 'error';
+            }
+            return 'grey';
+        },
         onBpmnLoadStart() {
             this.isBpmnLoading = true;
         },
@@ -1834,5 +1929,15 @@ export default {
     white-space: normal;
     line-height: 1.4;
     margin-top: 4px;
+}
+
+.detail-component-enabled {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+.v-list-item--disabled .detail-component-enabled {
+    pointer-events: auto !important;
+    opacity: 1 !important;
 }
 </style>

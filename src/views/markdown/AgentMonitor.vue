@@ -166,34 +166,90 @@ export default {
             // 공통 옵션 배열
             orchestrationOptions: [
                 { 
+                    titleKey: 'AgentSelectInfo.orchestration.crewaiDeepResearch.title',
                     value: 'crewai-deep-research', 
                     label: this.$t('AgentSelectInfo.orchestration.crewaiDeepResearch.title'), 
                     startLabel: 'CrewAI Deep Research', 
-                    icon: 'playoff'
+                    icon: 'playoff',
+                    descKey: 'AgentSelectInfo.orchestration.crewaiDeepResearch.description',
+                    costKey: 'AgentSelectInfo.cost.medium',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.2.title' }
+                        ]
+                    }
                 },
                 {
+                    titleKey: 'AgentSelectInfo.orchestration.crewaiAction.title',
                     value: 'crewai-action',
                     label: this.$t('AgentSelectInfo.orchestration.crewaiAction.title'),
                     startLabel: 'CrewAI Action',
-                    icon: 'flowchart'
+                    icon: 'flowchart',
+                    descKey: 'AgentSelectInfo.orchestration.crewaiAction.description',
+                    costKey: 'AgentSelectInfo.cost.low',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.2.title' }
+                        ]
+                    }
                 },
                 {
+                    titleKey: 'AgentSelectInfo.orchestration.openaiDeepResearch.title',
                     value: 'openai-deep-research',
                     label: this.$t('AgentSelectInfo.orchestration.openaiDeepResearch.title'),
                     startLabel: 'OpenAI Deep Research',
-                    icon: 'playoff'
+                    icon: 'playoff',
+                    descKey: 'AgentSelectInfo.orchestration.openaiDeepResearch.description',
+                    costKey: 'AgentSelectInfo.cost.high',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.2.title' }
+                        ]
+                    }
                 },
                 {
+                    titleKey: 'AgentSelectInfo.orchestration.langchainReact.title',
                     value: 'langchain-react',
                     label: this.$t('AgentSelectInfo.orchestration.langchainReact.title'),
                     startLabel: 'LangChain Research',
-                    icon: 'playoff'
+                    icon: 'playoff',
+                    descKey: 'AgentSelectInfo.orchestration.langchainReact.description',
+                    costKey: 'AgentSelectInfo.cost.medium',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.2.title' }
+                        ]
+                    }
                 },
                 { 
+                    titleKey: 'AgentSelectInfo.orchestration.browserAutomationAgent.title',
                     value: 'browser-automation-agent', 
                     label: this.$t('AgentSelectInfo.orchestration.browserAutomationAgent.title'), 
                     startLabel: 'Browser Automation Agent', 
-                    icon: 'browser'
+                    icon: 'browser',
+                    descKey: 'AgentSelectInfo.orchestration.browserAutomationAgent.description',
+                    costKey: 'AgentSelectInfo.cost.low',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.2.title' },
+                            { title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.3.title' }
+                        ]
+                    }
                 }
             ],
 
