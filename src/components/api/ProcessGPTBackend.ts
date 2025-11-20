@@ -4734,14 +4734,28 @@ class ProcessGPTBackend implements Backend {
 
     async uploadSkills(options: any) {
         try {
-            const form = new FormData();
-            form.append("file", options.file, options.file.name);
-            
-            const response = await axios.post('/claude-skills/skills/upload', form, {
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
+            let response: any = null;
+            const header = {
+                'Accept': 'application/json'
+            }
+            if (options.type == 'file') {
+                const form = new FormData();
+                form.append("file", options.file, options.file.name);
+                form.append("agent_id", options.agentInfo.id);
+                form.append("tenant_id", window.$tenantName);
+                
+                response = await axios.post('/claude-skills/skills/upload', form, {
+                    headers: header
+                });
+            } else if (options.type == 'url') {
+                response = await axios.post('/claude-skills/skills/upload-from-github', {
+                    url: options.url,
+                    agent_id: options.agentInfo.id,
+                    tenant_id: window.$tenantName
+                }, {
+                    headers: header
+                });
+            }
             
             if (response.status === 200) {
                 const addedSkills = response.data.skills_added;
@@ -4764,23 +4778,59 @@ class ProcessGPTBackend implements Backend {
                     skills: result
                 };
             } else {
-                throw new Error(response.data.message);
+                throw new Error(response);
             }
         } catch (error) {
-            throw new Error(error.message);
+            throw new Error(error.detail);
         }
     }
 
-    async checkSkills(skills: string) {
+    async checkSkills(options: any) {
         try {
-            const response = await axios.get(`/claude-skills/skills/check?name=${skills}`);
+            const encodedSkills = encodeURIComponent(options.skillName);
+            const tenantId = window.$tenantName;
+            let query: string = `name=${encodedSkills}`;
+            if (options.agentInfo.id) {
+                query += `&agent_id=${options.agentInfo.id}`;
+            }
+            if (tenantId) {
+                query += `&tenant_id=${tenantId}`;
+            }
+            const response = await axios.get(`/claude-skills/skills/check?${query}`);
             if (response.status === 200) {
                 return response.data;
             } else {
-                throw new Error(response.data.message);
+                const skills = options.agentInfo.skills.split(',');
+                skills.splice(skills.indexOf(options.skillName), 1);
+                options.agentInfo.skills = skills.join(',');
+                await this.saveSkills(options);
+                return false;
             }
         } catch (error) {
-            throw new Error(error.message);
+            const skills = options.agentInfo.skills.split(',');
+            skills.splice(skills.indexOf(options.skillName), 1);
+            options.agentInfo.skills = skills.join(',');
+            await this.saveSkills(options);
+            return false;
+        }
+    }
+
+    async deleteSkills(options: any) {
+        try {
+            const skillName = options.skillName;
+            const response = await axios.delete(`/claude-skills/skills/${encodeURIComponent(skillName)}`);
+            if (response.status === 200 && response.data && response.data.skill_name) {
+                const deletedSkill = response.data.skill_name;
+                const skills = options.agentInfo.skills.split(',');
+                skills.splice(skills.indexOf(deletedSkill), 1);
+                options.agentInfo.skills = skills.join(',');
+                await this.saveSkills(options);
+                return deletedSkill;
+            } else {
+                return false;
+            }
+        } catch (error) {
+            throw new Error(error.detail);
         }
     }
 
@@ -4794,10 +4844,10 @@ class ProcessGPTBackend implements Backend {
             if (response.status === 200) {
                 return response.data;
             } else {
-                throw new Error(response.data.message);
+                return false;
             }
         } catch (error) {
-            throw new Error(error.message);
+            return false;
         }
     }
 
@@ -4817,7 +4867,7 @@ class ProcessGPTBackend implements Backend {
                 throw new Error(response.data.message);
             }
         } catch (error) {
-            throw new Error(error.message);
+            throw new Error(error.detail);
         }
     }
 
@@ -4826,12 +4876,13 @@ class ProcessGPTBackend implements Backend {
             let url = `/claude-skills/skills/${encodeURIComponent(skillName)}/files/${encodeURIComponent(fileName)}`;
             const response = await axios.delete(url);
             if (response.status === 200) {
+                console.log(response.data);
                 return response.data;
             } else {
                 throw new Error(response.data.message);
             }
         } catch (error) {
-            throw new Error(error.message);
+            throw new Error(error.detail);
         }
     }
 }

@@ -185,6 +185,7 @@
 
         <AgentSkills 
             v-else-if="!editDialog && editSkills"
+            :agentInfo="agentInfo"
             :agentSkills="parsedSkills"
             :isLoading="isSkillLoading"
             @closeEditSkills="toggleEdit('skills')"
@@ -516,8 +517,11 @@ export default {
         uploadSkills(skillsFile) {
             this.$emit('uploadSkills', skillsFile);
         },
-        openSkillFile(fileName) {
-            this.$emit('openSkillFile', fileName);
+        openSkillFile(node) {
+            if (!node || !node.id || node.data.type === 'folder') {
+                return;
+            }
+            this.$emit('openSkillFile', node.id);
         },
     }
 }
