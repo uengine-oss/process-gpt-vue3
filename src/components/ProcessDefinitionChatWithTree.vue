@@ -2659,8 +2659,38 @@ export default {
                 const columnMapping = this.createColumnMappingExcelJS(worksheet, headerRowNum);
                 console.log('📋 열 매핑:', columnMapping);
                 
-                // 첫 데이터 행 (1-based)
-                const firstDataRowNum = headerRowNum + 1;
+                // ✅ 설명 행(Description Row) 감지 및 보존
+                let firstDataRowNum = headerRowNum + 1;
+                
+                // 헤더 다음 행이 설명 행인지 확인 (※로 시작하거나 Activity명이 없는 경우)
+                const potentialDescRow = worksheet.getRow(headerRowNum + 1);
+                if (potentialDescRow && potentialDescRow.values) {
+                    let isDescriptionRow = false;
+                    let hasActivityName = false;
+                    
+                    // 첫 번째 셀이나 Activity 명 열을 확인
+                    potentialDescRow.eachCell({ includeEmpty: false }, (cell, colNum) => {
+                        const cellValue = String(cell.value || '').trim();
+                        
+                        // ※나 특수 문자로 시작하면 설명 행
+                        if (cellValue.startsWith('※') || cellValue.startsWith('*')) {
+                            isDescriptionRow = true;
+                        }
+                        
+                        // Activity명 열에 실제 액티비티 이름이 있는지 확인
+                        if (colNum === columnMapping.activityName && cellValue !== '' && !cellValue.startsWith('※') && !cellValue.startsWith('*')) {
+                            hasActivityName = true;
+                        }
+                    });
+                    
+                    // 설명 행 판정: ※로 시작하거나, Activity명이 없는 경우
+                    if (isDescriptionRow || !hasActivityName) {
+                        firstDataRowNum = headerRowNum + 2; // 설명 행 다음부터 데이터
+                        console.log(`✅ 설명 행 발견: ${headerRowNum + 1}행 - 보존됨`);
+                    }
+                }
+                
+                console.log(`📊 실제 액티비티 데이터 시작: ${firstDataRowNum}행`);
                 
                 // 기존 데이터 행 찾기 (ExcelJS)
                 let lastDataRowNum = firstDataRowNum;
@@ -2701,8 +2731,17 @@ export default {
                 }
                 console.log(`📋 템플릿 스타일 보존 완료: ${Object.keys(templateStyles).length}개 열`);
                 
+                // ✅ 액티비티 이름 정규화 함수 (특수문자, 공백 제거하고 소문자로)
+                const normalizeActivityName = (name) => {
+                    if (!name) return '';
+                    return String(name)
+                        .trim()
+                        .replace(/[\s\(\)\[\]\{\}<>\/\-_,\.]/g, '') // 특수문자 제거
+                        .toLowerCase();
+                };
+                
                 // ✅ 기존 데이터 행을 읽어서 보존 (ExcelJS)
-                const existingDataMap = new Map(); // key: 액티비티 이름, value: 행 전체 데이터
+                const existingDataMap = new Map(); // key: 정규화된 액티비티 이름, value: 행 전체 데이터
                 console.log(`📖 기존 데이터 행 읽기 시작: ${firstDataRowNum} ~ ${lastDataRowNum}`);
                 
                 for (let rowNum = firstDataRowNum; rowNum <= lastDataRowNum; rowNum++) {
@@ -2729,10 +2768,11 @@ export default {
                         }
                     }
                     
-                    // 액티비티 이름이 있으면 Map에 저장
+                    // 액티비티 이름이 있으면 Map에 저장 (정규화된 이름을 키로 사용)
                     if (activityName && activityName !== '') {
-                        existingDataMap.set(activityName, rowData);
-                        console.log(`📝 기존 데이터 보존: "${activityName}"`);
+                        const normalizedName = normalizeActivityName(activityName);
+                        existingDataMap.set(normalizedName, rowData);
+                        console.log(`📝 기존 데이터 보존: "${activityName}" → 정규화: "${normalizedName}"`);
                     }
                 }
                 
@@ -2795,15 +2835,28 @@ export default {
                 
                 console.log('📊 선행/후행 계산 완료');
                 
+                // ✅ 디버깅: 저장된 액티비티 이름 목록 출력
+                console.log('📋 저장된 정규화된 액티비티 이름 목록:', Array.from(existingDataMap.keys()));
+                
                 // ✅ ExcelJS로 정렬된 순서대로 액티비티 데이터 재배치
                 activities.forEach((activity, index) => {
                     const rowNum = firstDataRowNum + index;
                     const activityName = activity.name || '';
+                    const normalizedName = normalizeActivityName(activityName);
                     
-                    console.log(`🔄 ${index + 1}번 액티비티 재배치: ${activityName} (행 ${rowNum})`);
+                    console.log(`🔄 ${index + 1}번 액티비티 재배치: "${activityName}" (행 ${rowNum})`);
+                    console.log(`   - 정규화된 이름: "${normalizedName}"`);
                     
                     const row = worksheet.getRow(rowNum);
-                    const existingData = existingDataMap.get(activityName);
+                    const existingData = existingDataMap.get(normalizedName); // 정규화된 이름으로 검색
+                    
+                    // ✅ 디버깅: 매칭 결과 출력
+                    if (existingData) {
+                        console.log(`   ✅ 매칭 성공! 원본 데이터 있음`);
+                    } else {
+                        console.log(`   ❌ 매칭 실패! 원본 데이터 없음`);
+                        console.log(`   - Map에 저장된 정규화된 키들:`, Array.from(existingDataMap.keys()).map(k => `"${k}"`));
+                    }
                     
                     // 선행/후행 계산
                     const predecessors = predecessorMap.get(activity.id) || [];
@@ -2826,17 +2879,55 @@ export default {
                             }
                         }
                         
-                        // No 열만 새로운 순서 번호로 업데이트
-                        if (columnMapping.no && columnMapping.no !== -1) {
-                            const noCell = row.getCell(columnMapping.no);
-                            noCell.value = index + 1;
+                        // ✅ 값이 있는 컬럼만 업데이트, 없으면 원본 유지
+                        if (columnMapping.activityName && columnMapping.activityName !== -1) {
+                            row.getCell(columnMapping.activityName).value = activityName;
                         }
                         
-                        // 선행/후행도 업데이트
-                        if (columnMapping.predecessor && columnMapping.predecessor !== -1 && predecessorText) {
+                        if (columnMapping.description && columnMapping.description !== -1 && activity.description) {
+                            row.getCell(columnMapping.description).value = activity.description;
+                        }
+                        
+                        if (columnMapping.system && columnMapping.system !== -1 && activity.system) {
+                            row.getCell(columnMapping.system).value = activity.system;
+                        }
+                        
+                        if (columnMapping.role && columnMapping.role !== -1 && activity.role) {
+                            row.getCell(columnMapping.role).value = activity.role;
+                        }
+                        
+                        // ✅ Input, Output 등도 값이 있으면 업데이트, 없으면 원본 유지
+                        if (columnMapping.input && columnMapping.input !== -1) {
+                            const inputValue = activity.input || (activity.inputData ? (Array.isArray(activity.inputData) ? activity.inputData.join(', ') : activity.inputData) : null);
+                            if (inputValue) {
+                                row.getCell(columnMapping.input).value = inputValue;
+                            }
+                        }
+                        
+                        if (columnMapping.output && columnMapping.output !== -1) {
+                            const outputValue = activity.output || (activity.outputData ? (Array.isArray(activity.outputData) ? activity.outputData.join(', ') : activity.outputData) : null);
+                            if (outputValue) {
+                                row.getCell(columnMapping.output).value = outputValue;
+                            }
+                        }
+                        
+                        if (columnMapping.coreData && columnMapping.coreData !== -1 && activity.coreData) {
+                            row.getCell(columnMapping.coreData).value = activity.coreData;
+                        }
+                        
+                        if (columnMapping.participants && columnMapping.participants !== -1 && activity.participants) {
+                            row.getCell(columnMapping.participants).value = activity.participants;
+                        }
+                        
+                        if (columnMapping.no && columnMapping.no !== -1) {
+                            row.getCell(columnMapping.no).value = index + 1;
+                        }
+                        
+                        if (columnMapping.predecessor && columnMapping.predecessor !== -1) {
                             row.getCell(columnMapping.predecessor).value = predecessorText;
                         }
-                        if (columnMapping.successor && columnMapping.successor !== -1 && successorText) {
+                        
+                        if (columnMapping.successor && columnMapping.successor !== -1) {
                             row.getCell(columnMapping.successor).value = successorText;
                         }
                         
@@ -2858,13 +2949,12 @@ export default {
                         setCellWithTemplate(columnMapping.activityName, activityName);
                         setCellWithTemplate(columnMapping.description, activity.description || '');
                         setCellWithTemplate(columnMapping.role, activity.role || '');
-                        setCellWithTemplate(columnMapping.input, 
-                            activity.inputData ? (Array.isArray(activity.inputData) ? activity.inputData.join(', ') : activity.inputData) : '');
-                        setCellWithTemplate(columnMapping.output, 
-                            activity.outputData ? (Array.isArray(activity.outputData) ? activity.outputData.join(', ') : activity.outputData) : '');
                         setCellWithTemplate(columnMapping.system, activity.system || '');
-                        setCellWithTemplate(columnMapping.duration, activity.duration || '');
-                        setCellWithTemplate(columnMapping.instruction, activity.instruction || '');
+                        // ✅ Input, Output, 핵심 Data, 참여자수는 빈 값 (원본이 없으므로)
+                        setCellWithTemplate(columnMapping.input, '');
+                        setCellWithTemplate(columnMapping.output, '');
+                        setCellWithTemplate(columnMapping.coreData, '');
+                        setCellWithTemplate(columnMapping.participants, '');
                         setCellWithTemplate(columnMapping.predecessor, predecessorText);
                         setCellWithTemplate(columnMapping.successor, successorText);
                     }
@@ -3165,8 +3255,8 @@ export default {
                 input: -1,
                 output: -1,
                 system: -1,
-                duration: -1,
-                instruction: -1,
+                coreData: -1,        // 핵심 Data
+                participants: -1,    // 참여자수
                 predecessor: -1,
                 successor: -1
             };
@@ -3193,10 +3283,10 @@ export default {
                         mapping.output = colNum;
                     } else if (headerText.includes('system') || headerText === 'system') {
                         mapping.system = colNum;
-                    } else if (headerText.includes('핵심') || headerText.includes('data')) {
-                        mapping.duration = colNum;
-                    } else if (headerText.includes('소요') || headerText.includes('시간')) {
-                        mapping.instruction = colNum;
+                    } else if (headerText.includes('핵심') && headerText.includes('data')) {
+                        mapping.coreData = colNum;
+                    } else if (headerText.includes('참여자') || headerText.includes('소요') || headerText.includes('시간')) {
+                        mapping.participants = colNum;
                     } else if (headerText.includes('선행') || headerText.includes('predecessor')) {
                         mapping.predecessor = colNum;
                     } else if (headerText.includes('후행') || headerText.includes('successor')) {

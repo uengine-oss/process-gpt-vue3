@@ -300,6 +300,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
               }
             ],
             "elements": [
+              // 모든 데이터(이름, 역할명, 설명, 시스템, inputData, outputData, requiredTime 등)는 사용자가 제공한 정보가 없는 경우 임의로 생성하되, 사용자가 제공한 정보가 존재한다면 동일하게 그대로 생성되어야함. 
+              // 예를 들어 고객이 액티비티명을 인터넷ID 인증(KTPS)서비스품질연동(SLA)단말인증(U-CEMS) 이라고 입력한 경우 그대로 나와야하며 설명도 제공한대로 그대로 나와야함.
               {
                 "elementType": "Event || Sequence || Activity || Gateway", // 아래의 타입별 예시를 보고 생성할 것. 시작, 종료 이벤트와 시퀀스는 필수로 항시 생성되어야함.
                 "id": "event_id(영문)",
@@ -307,7 +309,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                 "role": "역할명",
                 "source": "이전_컴포넌트_id",
                 "type": "StartEvent" | "EndEvent" | "IntermediateCatchEvent",
-                "description": "이벤트 설명(한글)",
+                "description": "이벤트 설명(한글) 제공된 정보 중 이벤트 설명이 있는 경우 반드시 포함. 없다면 임의로 생성",
                 "trigger": "트리거 조건",
                 "system": "사용된 시스템 이름, 제공된 정보 중 시스템 정보가 있는 경우 반드시 포함. 없다면 null",
                 "issues": "해당 엑티비티에 대한 이슈 정보, 제공된 정보 중 이슈 정보가 있는 경우 반드시 포함. 없다면 null"
@@ -323,7 +325,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                     "type": "StartEvent" | "EndEvent" | "IntermediateCatchEvent",
                     "eventType": "Timer" | "Signal" | "Message" | "Conditional",
                     "expression": "타이머 설정(cron 표현식) eventType이 Timer 인 경우에만 사용",
-                    "description": "이벤트 설명(한글)",
+                    "description": "이벤트 설명(한글) 제공된 정보 중 이벤트 설명이 있는 경우 반드시 포함. 없다면 임의로 생성",
                     "trigger": "트리거 조건"
                   }
               # Sequence
@@ -347,15 +349,16 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                     "name": "액티비티명(한글)",
                     "type": "UserActivity" | "EmailActivity" | "ManualActivity",
                     "source": "이전_컴포넌트_id",
-                    "description": "액티비티 설명(한글)",
+                    "description": "액티비티 설명(한글) 제공된 정보 중 액티비티 설명이 있는 경우 반드시 포함. 없다면 임의로 생성",
                     "instruction": "사용자 지침(한글)",
                     "role": "역할명",
-                    "inputData": ["입력 데이터명"],
-                    "outputData": ["출력 데이터명"],
+                    "inputData": ["입력 데이터명"] 제공된 정보 중 입력 데이터 정보가 있는 경우 반드시 포함.,
+                    "outputData": ["출력 데이터명"] 제공된 정보 중 출력 데이터 정보가 있는 경우 반드시 포함,
                     "checkpoints": ["체크포인트1", "체크포인트2"],
                     "duration": "5",
-                    "system": "사용된 시스템 이름, 제공된 정보 중 시스템 정보가 있는 경우 반드시 포함. 없다면 null",
-                    "issues": "해당 엑티비티에 대한 이슈 정보, 제공된 정보 중 이슈 정보가 있는 경우 반드시 포함. 없다면 null"
+                    "system": "사용된 시스템 이름, 제공된 정보 중 시스템 정보가 있는 경우 반드시 포함. off-line 인 경우에는 off-line 이라고 명시, 없다면 null",
+                    "issues": "해당 엑티비티에 대한 이슈 정보, 제공된 정보 중 이슈 정보가 있는 경우 반드시 포함. 없다면 null",
+                    "coreData": ["핵심 데이터명"] 제공된 정보 중 핵심 데이터 정보가 있는 경우 반드시 포함
                   }
               # Gateway
                   {
@@ -365,7 +368,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                     "role": "역할명",
                     "source": "이전_컴포넌트_id",
                     "type": "ExclusiveGateway" | "ParallelGateway" | "InclusiveGateway",
-                    "description": "게이트웨이 설명(한글)",
+                    "description": "게이트웨이 설명(한글) 제공된 정보 중 게이트웨이 설명이 있는 경우 반드시 포함. 없다면 임의로 생성",
                     "system": "사용된 시스템 이름, 제공된 정보 중 시스템 정보가 있는 경우 반드시 포함. 없다면 null"
                   }
             ],

@@ -574,6 +574,15 @@ export default {
                                         if(oldActivity && oldActivity.issues) {
                                             newActivity.issues = oldActivity.issues;
                                         }
+                                        if(oldActivity && oldActivity.inputData) {
+                                            newActivity.inputData = oldActivity.inputData;
+                                        }
+                                        if(oldActivity && oldActivity.outputData) {
+                                            newActivity.outputData = oldActivity.outputData;
+                                        }
+                                        if(oldActivity && oldActivity.coreData) {
+                                            newActivity.coreData = oldActivity.coreData;
+                                        }
                                         return newActivity;
                                     });
                                 }
