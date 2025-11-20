@@ -275,7 +275,7 @@ import ProcessFlowExample from '@/components/ProcessFlowExample.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import VTreeview from 'vue3-treeview';
 import 'vue3-treeview/dist/style.css';
-import * as XLSX from 'xlsx-js-style';
+import ExcelJS from 'exceljs';
 import { useCustomizerStore } from '@/stores/customizer';
 
 const backend = BackendFactory.createBackend();
@@ -1313,23 +1313,20 @@ export default {
                 // Blob을 ArrayBuffer로 변환
                 const arrayBuffer = await blob.arrayBuffer();
 
-                // XLSX로 파싱 (xlsx-js-style로 스타일 포함)
-                const workbook = XLSX.read(arrayBuffer, {
-                    type: 'array',
-                    cellStyles: true,
-                    cellFormula: true,
-                    cellDates: true
-                });
+                // ExcelJS로 파싱 (스타일 포함)
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(arrayBuffer);
 
                 console.log('✅ 엑셀 파싱 완료');
-                console.log('📋 시트 목록:', workbook.SheetNames);
+                const sheetNames = workbook.worksheets.map(ws => ws.name);
+                console.log('📋 시트 목록:', sheetNames);
 
                 // originalWorkbook에 저장
                 this.originalWorkbook = workbook;
                 this.originalWorkbookInfo = {
                     fileName: url.split('/').pop() || 'template.xlsx',
-                    sheetNames: workbook.SheetNames,
-                    sheetCount: workbook.SheetNames.length
+                    sheetNames: sheetNames,
+                    sheetCount: workbook.worksheets.length
                 };
 
                 console.log('💾 원본 엑셀 형식 저장 완료:', this.originalWorkbookInfo);
@@ -1382,204 +1379,182 @@ export default {
         },
 
         /**
-         * XLSX 라이브러리를 사용하여 엑셀 파싱
+         * ExcelJS를 사용하여 엑셀 파싱
          */
         parseWithXLSX(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                
-                reader.onload = (e) => {
-                    try {
-                        const data = e.target.result;
-                        const startTime = Date.now();
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const startTime = Date.now();
+                    
+                    console.log('📄 파일 크기:', file.size, 'bytes');
+                    console.log('📦 ExcelJS 라이브러리:', ExcelJS);
+                    
+                    // ArrayBuffer로 읽기
+                    const arrayBuffer = await file.arrayBuffer();
+                    console.log('📄 ArrayBuffer 크기:', arrayBuffer.byteLength, 'bytes');
+                    
+                    // ExcelJS로 워크북 로드
+                    const workbook = new ExcelJS.Workbook();
+                    await workbook.xlsx.load(arrayBuffer);
+                    
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    console.log(`⏱️ ExcelJS 파싱 시간: ${elapsed.toFixed(2)}초`);
+                    console.log('📦 워크북 객체:', workbook);
+                    
+                    // 워크북 유효성 검증
+                    if (!workbook) {
+                        console.error('❌ 워크북이 null입니다.');
+                        resolve({
+                            success: false,
+                            error: '엑셀 파일을 읽을 수 없습니다.'
+                        });
+                        return;
+                    }
+                    
+                    if (!workbook.worksheets || !Array.isArray(workbook.worksheets)) {
+                        console.error('❌ worksheets가 없습니다:', workbook);
+                        resolve({
+                            success: false,
+                            error: '엑셀 파일 형식이 올바르지 않습니다.'
+                        });
+                        return;
+                    }
+                    
+                    if (workbook.worksheets.length === 0) {
+                        console.error('❌ 시트가 없습니다.');
+                        resolve({
+                            success: false,
+                            error: '엑셀 파일에 시트가 없습니다.'
+                        });
+                        return;
+                    }
+                    
+                    console.log('✅ 워크북 유효성 검증 완료');
+                    console.log('📋 시트 수:', workbook.worksheets.length);
+                    
+                    // 원본 워크북 저장
+                    this.originalWorkbook = workbook;
+                    
+                    // 시트 이름 목록 추출
+                    const sheetNames = workbook.worksheets.map(ws => ws.name);
+                    
+                    // 원본 구조 정보 저장
+                    this.originalWorkbookInfo = {
+                        sheetNames: [...sheetNames],
+                        fileName: file.name,
+                        uploadDate: new Date().toISOString(),
+                        sheetCount: workbook.worksheets.length
+                    };
+                    
+                    console.log('💾 원본 엑셀 형식 저장 완료:', this.originalWorkbookInfo);
+                    
+                    // 스타일 정보 로드 확인 (디버깅용)
+                    console.log('✅ Worksheets 확인 완료');
+                    
+                    if (workbook.worksheets.length > 0) {
+                        const firstSheet = workbook.worksheets[0];
+                        const firstSheetName = firstSheet.name;
                         
-                        console.log('📄 파일 데이터 크기:', data.byteLength, 'bytes');
-                        console.log('📦 XLSX 라이브러리 정보:', {
-                            'XLSX 존재': typeof XLSX !== 'undefined',
-                            'XLSX.read 존재': typeof XLSX.read === 'function',
-                            'XLSX.version': XLSX.version
+                        console.log('📋 첫 번째 시트:', firstSheetName);
+                        
+                        // A1 셀 확인
+                        const cellA1 = firstSheet.getCell('A1');
+                        console.log('🔍 A1 셀 상세:', {
+                            값: cellA1.value,
+                            스타일: cellA1.style,
+                            폰트: cellA1.font,
+                            채우기: cellA1.fill,
+                            테두리: cellA1.border
                         });
                         
-                        // 엑셀 파일 파싱 (xlsx-js-style로 모든 정보 보존)
-                        const workbook = XLSX.read(data, { 
-                            type: 'array',
-                            cellStyles: true,     // ✨ 스타일 정보 보존 (필수!)
-                            cellFormula: true,    // 수식 정보 보존
-                            cellDates: true       // 날짜 형식 보존
+                        // 열 너비 정보
+                        console.log('📏 열 정보:', {
+                            열수: firstSheet.columnCount,
+                            행수: firstSheet.rowCount
                         });
+                    }
+                    
+                    // 모든 시트의 데이터를 추출
+                    const result = {};
+                    
+                    for (let i = 0; i < workbook.worksheets.length; i++) {
+                        const worksheet = workbook.worksheets[i];
+                        const sheetName = worksheet.name;
                         
-                        const elapsed = (Date.now() - startTime) / 1000;
-                        console.log(`⏱️ XLSX 파싱 시간: ${elapsed.toFixed(2)}초`);
-                        console.log('📦 워크북 객체:', workbook);
-                        console.log('📦 워크북 키들:', Object.keys(workbook));
-                        
-                        // 워크북 유효성 검증
-                        if (!workbook) {
-                            console.error('❌ 워크북이 null입니다.');
-                            resolve({
-                                success: false,
-                                error: '엑셀 파일을 읽을 수 없습니다.'
-                            });
-                            return;
-                        }
-                        
-                        if (!workbook.SheetNames) {
-                            console.error('❌ SheetNames가 없습니다:', workbook);
-                            resolve({
-                                success: false,
-                                error: '엑셀 파일 형식이 올바르지 않습니다.'
-                            });
-                            return;
-                        }
-                        
-                        if (!Array.isArray(workbook.SheetNames)) {
-                            console.error('❌ SheetNames가 배열이 아닙니다:', typeof workbook.SheetNames);
-                            resolve({
-                                success: false,
-                                error: '엑셀 파일 구조가 올바르지 않습니다.'
-                            });
-                            return;
-                        }
-                        
-                        if (workbook.SheetNames.length === 0) {
-                            console.error('❌ 시트가 없습니다.');
-                            resolve({
-                                success: false,
-                                error: '엑셀 파일에 시트가 없습니다.'
-                            });
-                            return;
-                        }
-                        
-                        console.log('✅ 워크북 유효성 검증 완료');
-                        console.log('📋 시트 목록:', workbook.SheetNames);
-                        
-                        // 원본 워크북 저장
-                        this.originalWorkbook = workbook;
-                        
-                        // 원본 구조 정보 저장
-                        this.originalWorkbookInfo = {
-                            sheetNames: [...workbook.SheetNames],
-                            fileName: file.name,
-                            uploadDate: new Date().toISOString()
-                        };
-                        
-                        console.log('💾 원본 엑셀 형식 저장 완료:', this.originalWorkbookInfo);
-                        
-                        // Sheets 객체 존재 확인 (먼저 검증)
-                        if (!workbook.Sheets || typeof workbook.Sheets !== 'object') {
-                            console.error('❌ workbook.Sheets가 없거나 올바르지 않습니다.');
-                            resolve({
-                                success: false,
-                                error: '엑셀 파일의 시트 정보를 읽을 수 없습니다.'
-                            });
-                            return;
-                        }
-                        
-                        // 스타일 정보 로드 확인 (디버깅용)
-                        console.log('✅ Sheets 객체 확인 완료');
-                        
-                        if (workbook.SheetNames.length > 0) {
-                            const firstSheetName = workbook.SheetNames[0];
-                            const firstSheet = workbook.Sheets[firstSheetName];
-                            
-                            if (firstSheet) {
-                                const firstCellKey = Object.keys(firstSheet).find(key => !key.startsWith('!'));
-                                const firstCell = firstCellKey ? firstSheet[firstCellKey] : null;
-                                
-                                console.log('📏 스타일 정보 확인:', {
-                                    '시트명': firstSheetName,
-                                    '열너비(!cols)': firstSheet['!cols'] ? '✓ 있음' : '✗ 없음',
-                                    '행높이(!rows)': firstSheet['!rows'] ? '✓ 있음' : '✗ 없음',
-                                    '병합셀(!merges)': firstSheet['!merges'] ? `✓ ${firstSheet['!merges'].length}개` : '✗ 없음',
-                                    '첫번째셀': firstCellKey,
-                                    '첫번째셀스타일(s)': firstCell?.s ? '✓ 있음' : '✗ 없음',
-                                    '첫번째셀정보': firstCell
-                                });
-                                
-                                // A1과 B1 셀 상세 확인
-                                console.log('🔍 A1 셀 상세:', firstSheet['A1']);
-                                console.log('🔍 B1 셀 상세:', firstSheet['B1']);
-                                
-                                // 워크북 Styles 확인
-                                if (workbook.Styles) {
-                                    console.log('🎨 워크북 Fonts:', workbook.Styles.Fonts);
-                                    console.log('🎨 워크북 CellXf:', workbook.Styles.CellXf);
-                                    console.log('🎨 워크북 Fills:', workbook.Styles.Fills);
-                                }
-                            } else {
-                                console.warn('⚠️ 첫 번째 시트를 찾을 수 없습니다.');
+                        try {
+                            if (!worksheet) {
+                                console.warn(`⚠️ 시트 "${sheetName}"를 찾을 수 없습니다.`);
+                                continue;
                             }
-                        }
-                        
-                        // 모든 시트의 데이터를 추출
-                        const result = {};
-                        
-                        for (let i = 0; i < workbook.SheetNames.length; i++) {
-                            const sheetName = workbook.SheetNames[i];
-                            try {
-                            const worksheet = workbook.Sheets[sheetName];
-                                
-                                if (!worksheet) {
-                                    console.warn(`⚠️ 시트 "${sheetName}"를 찾을 수 없습니다.`);
-                                    continue;
+                            
+                            // 시트를 배열 형태로 변환
+                            const jsonArray = [];
+                            worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+                                const rowData = [];
+                                row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                                    // ExcelJS는 formula 결과값이 있으면 result, 없으면 value 사용
+                                    let cellValue = cell.value;
+                                    if (cellValue && typeof cellValue === 'object') {
+                                        // formula, richText 등 복잡한 객체 처리
+                                        if (cellValue.result !== undefined) {
+                                            cellValue = cellValue.result;
+                                        } else if (cellValue.richText) {
+                                            cellValue = cellValue.richText.map(t => t.text).join('');
+                                        } else if (cellValue.text) {
+                                            cellValue = cellValue.text;
+                                        }
+                                    }
+                                    rowData[colNumber - 1] = cellValue !== null && cellValue !== undefined ? cellValue : '';
+                                });
+                                jsonArray.push(rowData);
+                            });
+                            
+                            // 시트를 객체 배열 형태로 변환 (헤더 기반)
+                            const jsonObjects = [];
+                            if (jsonArray.length > 1) {
+                                const headers = jsonArray[0];
+                                for (let r = 1; r < jsonArray.length; r++) {
+                                    const row = jsonArray[r];
+                                    const obj = {};
+                                    let hasData = false;
+                                    for (let c = 0; c < headers.length; c++) {
+                                        if (row[c] !== null && row[c] !== undefined && row[c] !== '') {
+                                            obj[headers[c]] = row[c];
+                                            hasData = true;
+                                        }
+                                    }
+                                    if (hasData) {
+                                        jsonObjects.push(obj);
+                                    }
                                 }
-                                
-                            // 시트를 JSON으로 변환 (두 가지 형태로)
-                                const jsonArray = XLSX.utils.sheet_to_json(worksheet, { 
-                                    header: 1,
-                                    defval: '',
-                                    blankrows: true
-                                });
-                                const jsonObjects = XLSX.utils.sheet_to_json(worksheet, {
-                                    defval: '',
-                                    blankrows: false
-                                });
+                            }
                             
                             result[sheetName] = {
                                 array: jsonArray,      // 배열 형태
                                 objects: jsonObjects   // 객체 배열 형태
                             };
-                                
-                                console.log(`📊 시트 "${sheetName}": ${jsonArray.length}행, ${jsonObjects.length}개 객체`);
-                            } catch (sheetError) {
-                                console.error(`❌ 시트 "${sheetName}" 처리 실패:`, sheetError);
-                                // 시트 하나 실패해도 계속 진행
-                            }
+                            
+                            console.log(`📊 시트 "${sheetName}": ${jsonArray.length}행, ${jsonObjects.length}개 객체`);
+                        } catch (sheetError) {
+                            console.error(`❌ 시트 "${sheetName}" 처리 실패:`, sheetError);
+                            // 시트 하나 실패해도 계속 진행
                         }
-                        
-                        resolve({
-                            success: true,
-                            data: result,
-                            sheetNames: workbook.SheetNames,
-                            sheetCount: workbook.SheetNames.length,
-                            workbook: workbook
-                        });
-                        
-                    } catch (parseError) {
-                        console.error('❌ XLSX 파싱 중 오류:', parseError);
-                        console.error('오류 스택:', parseError.stack);
-                        resolve({
-                            success: false,
-                            error: `파싱 오류: ${parseError.message}`
-                        });
                     }
-                };
-                
-                reader.onerror = (error) => {
-                    console.error('❌ 파일 읽기 중 오류:', error);
+                    
                     resolve({
-                        success: false,
-                        error: '파일을 읽을 수 없습니다.'
+                        success: true,
+                        data: result,
+                        sheetNames: sheetNames,
+                        sheetCount: workbook.worksheets.length,
+                        workbook: workbook
                     });
-                };
-                
-                try {
-                reader.readAsArrayBuffer(file);
-                } catch (readError) {
-                    console.error('❌ FileReader 시작 실패:', readError);
+                    
+                } catch (parseError) {
+                    console.error('❌ ExcelJS 파싱 중 오류:', parseError);
+                    console.error('오류 스택:', parseError.stack);
                     resolve({
                         success: false,
-                        error: `파일 읽기 시작 실패: ${readError.message}`
+                        error: `파싱 오류: ${parseError.message}`
                     });
                 }
             });
@@ -1999,10 +1974,11 @@ export default {
                 
                 console.log('📊 구조 타입:', hasElementsStructure ? 'Elements 구조' : 'Activities 분리 구조');
 
-                // 워크북 생성
-                const workbook = XLSX.utils.book_new();
+                // 워크북 생성 (ExcelJS)
+                const workbook = new ExcelJS.Workbook();
 
                 // 1. 프로세스 기본 정보 시트
+                const processInfoSheet = workbook.addWorksheet('1.프로세스정보');
                 const processInfoData = [
                     ['항목', '내용'],
                     ['Mega Process ID', processDefinition.megaProcessId || ''],
@@ -2014,15 +1990,13 @@ export default {
                     ['자동 레이아웃', processDefinition.isAutoLayout ? '예' : '아니오'],
                     ['생성일', new Date().toLocaleDateString('ko-KR')]
                 ];
-                const processInfoSheet = XLSX.utils.aoa_to_sheet(processInfoData);
-                processInfoSheet['!cols'] = [
-                    { wch: 20 },
-                    { wch: 50 }
-                ];
-                XLSX.utils.book_append_sheet(workbook, processInfoSheet, '1.프로세스정보');
+                processInfoSheet.addRows(processInfoData);
+                processInfoSheet.getColumn(1).width = 20;
+                processInfoSheet.getColumn(2).width = 50;
 
                 // 2. 프로세스 변수(Data) 시트
                 if (processDefinition.data && processDefinition.data.length > 0) {
+                    const dataSheet = workbook.addWorksheet('2.프로세스변수');
                     const dataSheetData = [
                         ['변수명', '설명', '타입']
                     ];
@@ -2035,13 +2009,10 @@ export default {
                         ]);
                     });
 
-                    const dataSheet = XLSX.utils.aoa_to_sheet(dataSheetData);
-                    dataSheet['!cols'] = [
-                        { wch: 20 },  // 변수명
-                        { wch: 50 },  // 설명
-                        { wch: 15 }   // 타입
-                    ];
-                    XLSX.utils.book_append_sheet(workbook, dataSheet, '2.프로세스변수');
+                    dataSheet.addRows(dataSheetData);
+                    dataSheet.getColumn(1).width = 20;  // 변수명
+                    dataSheet.getColumn(2).width = 50;  // 설명
+                    dataSheet.getColumn(3).width = 15;  // 타입
                 }
 
                 // 3. Roles(역할/Lane) 시트 - 실제 사용된 role만 추출
@@ -2096,6 +2067,7 @@ export default {
                     console.log('🔍 사용된 Role 목록:', Array.from(usedRoles));
                     
                     if (filteredRoles.length > 0) {
+                        const rolesSheet = workbook.addWorksheet('3.역할(Lane)');
                         const rolesData = [
                             ['역할 이름', 'Endpoint', '담당 업무', 'X좌표', 'Y좌표', '너비', '높이']
                         ];
@@ -2112,17 +2084,14 @@ export default {
                             ]);
                         });
 
-                        const rolesSheet = XLSX.utils.aoa_to_sheet(rolesData);
-                        rolesSheet['!cols'] = [
-                            { wch: 20 },  // 역할 이름
-                            { wch: 25 },  // Endpoint
-                            { wch: 40 },  // 담당 업무
-                            { wch: 10 },  // X좌표
-                            { wch: 10 },  // Y좌표
-                            { wch: 10 },  // 너비
-                            { wch: 10 }   // 높이
-                        ];
-                        XLSX.utils.book_append_sheet(workbook, rolesSheet, '3.역할(Lane)');
+                        rolesSheet.addRows(rolesData);
+                        rolesSheet.getColumn(1).width = 20;  // 역할 이름
+                        rolesSheet.getColumn(2).width = 25;  // Endpoint
+                        rolesSheet.getColumn(3).width = 40;  // 담당 업무
+                        rolesSheet.getColumn(4).width = 10;  // X좌표
+                        rolesSheet.getColumn(5).width = 10;  // Y좌표
+                        rolesSheet.getColumn(6).width = 10;  // 너비
+                        rolesSheet.getColumn(7).width = 10;  // 높이
                     } else {
                         console.log('⚠️ 사용된 Role이 없습니다. Role 시트를 생성하지 않습니다.');
                     }
@@ -2141,6 +2110,7 @@ export default {
                 // ✅ 시퀀스 정보를 기반으로 액티비티 순서 정렬
                 if (activities.length > 0) {
                     activities = this.sortActivitiesBySequence(activities, processDefinition);
+                    const activitiesSheet = workbook.addWorksheet('4.액티비티');
                     const activitiesData = [
                         ['ID', '이름', '타입', '역할', '설명', '지시사항', 
                          '소요시간(일)', '체크포인트', '입력데이터', '출력데이터', 
@@ -2183,28 +2153,25 @@ export default {
                         ]);
                     });
 
-                    const activitiesSheet = XLSX.utils.aoa_to_sheet(activitiesData);
-                    activitiesSheet['!cols'] = [
-                        { wch: 30 },  // ID
-                        { wch: 25 },  // 이름
-                        { wch: 15 },  // 타입
-                        { wch: 15 },  // 역할
-                        { wch: 40 },  // 설명
-                        { wch: 40 },  // 지시사항
-                        { wch: 12 },  // 소요시간
-                        { wch: 30 },  // 체크포인트
-                        { wch: 30 },  // 입력데이터
-                        { wch: 30 },  // 출력데이터
-                        { wch: 35 },  // 도구(tool)
-                        { wch: 35 },  // 시스템(system)
-                        { wch: 8 },   // Layer
-                        { wch: 8 },   // Order
-                        { wch: 8 },   // X좌표
-                        { wch: 8 },   // Y좌표
-                        { wch: 8 },   // 너비
-                        { wch: 8 }    // 높이
-                    ];
-                    XLSX.utils.book_append_sheet(workbook, activitiesSheet, '4.액티비티');
+                    activitiesSheet.addRows(activitiesData);
+                    activitiesSheet.getColumn(1).width = 30;   // ID
+                    activitiesSheet.getColumn(2).width = 25;   // 이름
+                    activitiesSheet.getColumn(3).width = 15;   // 타입
+                    activitiesSheet.getColumn(4).width = 15;   // 역할
+                    activitiesSheet.getColumn(5).width = 40;   // 설명
+                    activitiesSheet.getColumn(6).width = 40;   // 지시사항
+                    activitiesSheet.getColumn(7).width = 12;   // 소요시간
+                    activitiesSheet.getColumn(8).width = 30;   // 체크포인트
+                    activitiesSheet.getColumn(9).width = 30;   // 입력데이터
+                    activitiesSheet.getColumn(10).width = 30;  // 출력데이터
+                    activitiesSheet.getColumn(11).width = 35;  // 도구(tool)
+                    activitiesSheet.getColumn(12).width = 35;  // 시스템(system)
+                    activitiesSheet.getColumn(13).width = 8;   // Layer
+                    activitiesSheet.getColumn(14).width = 8;   // Order
+                    activitiesSheet.getColumn(15).width = 8;   // X좌표
+                    activitiesSheet.getColumn(16).width = 8;   // Y좌표
+                    activitiesSheet.getColumn(17).width = 8;   // 너비
+                    activitiesSheet.getColumn(18).width = 8;   // 높이
                 }
 
                 // 5. 이벤트 시트 (구조에 따라 분기)
@@ -2218,6 +2185,7 @@ export default {
                 }
 
                 if (events.length > 0) {
+                    const eventsSheet = workbook.addWorksheet('5.이벤트');
                     const eventsData = [
                         ['ID', '이름', '타입', '역할', '설명', '트리거', 
                          'BPMN타입', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
@@ -2253,23 +2221,20 @@ export default {
                         ]);
                     });
 
-                    const eventsSheet = XLSX.utils.aoa_to_sheet(eventsData);
-                    eventsSheet['!cols'] = [
-                        { wch: 30 },  // ID
-                        { wch: 25 },  // 이름
-                        { wch: 15 },  // 타입
-                        { wch: 15 },  // 역할
-                        { wch: 40 },  // 설명
-                        { wch: 30 },  // 트리거
-                        { wch: 20 },  // BPMN타입
-                        { wch: 8 },   // Layer
-                        { wch: 8 },   // Order
-                        { wch: 8 },   // X좌표
-                        { wch: 8 },   // Y좌표
-                        { wch: 8 },   // 너비
-                        { wch: 8 }    // 높이
-                    ];
-                    XLSX.utils.book_append_sheet(workbook, eventsSheet, '5.이벤트');
+                    eventsSheet.addRows(eventsData);
+                    eventsSheet.getColumn(1).width = 30;   // ID
+                    eventsSheet.getColumn(2).width = 25;   // 이름
+                    eventsSheet.getColumn(3).width = 15;   // 타입
+                    eventsSheet.getColumn(4).width = 15;   // 역할
+                    eventsSheet.getColumn(5).width = 40;   // 설명
+                    eventsSheet.getColumn(6).width = 30;   // 트리거
+                    eventsSheet.getColumn(7).width = 20;   // BPMN타입
+                    eventsSheet.getColumn(8).width = 8;    // Layer
+                    eventsSheet.getColumn(9).width = 8;    // Order
+                    eventsSheet.getColumn(10).width = 8;   // X좌표
+                    eventsSheet.getColumn(11).width = 8;   // Y좌표
+                    eventsSheet.getColumn(12).width = 8;   // 너비
+                    eventsSheet.getColumn(13).width = 8;   // 높이
                 }
 
                 // 6. 게이트웨이 시트 (구조에 따라 분기)
@@ -2283,6 +2248,7 @@ export default {
                 }
 
                 if (gateways.length > 0) {
+                    const gatewaysSheet = workbook.addWorksheet('6.게이트웨이');
                     const gatewaysData = [
                         ['ID', '이름', '타입', '역할', '설명', '조건', 
                          'BPMN타입', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
@@ -2320,23 +2286,20 @@ export default {
                         ]);
                     });
 
-                    const gatewaysSheet = XLSX.utils.aoa_to_sheet(gatewaysData);
-                    gatewaysSheet['!cols'] = [
-                        { wch: 30 },  // ID
-                        { wch: 25 },  // 이름
-                        { wch: 15 },  // 타입
-                        { wch: 15 },  // 역할
-                        { wch: 40 },  // 설명
-                        { wch: 30 },  // 조건
-                        { wch: 20 },  // BPMN타입
-                        { wch: 8 },   // Layer
-                        { wch: 8 },   // Order
-                        { wch: 8 },   // X좌표
-                        { wch: 8 },   // Y좌표
-                        { wch: 8 },   // 너비
-                        { wch: 8 }    // 높이
-                    ];
-                    XLSX.utils.book_append_sheet(workbook, gatewaysSheet, '6.게이트웨이');
+                    gatewaysSheet.addRows(gatewaysData);
+                    gatewaysSheet.getColumn(1).width = 30;   // ID
+                    gatewaysSheet.getColumn(2).width = 25;   // 이름
+                    gatewaysSheet.getColumn(3).width = 15;   // 타입
+                    gatewaysSheet.getColumn(4).width = 15;   // 역할
+                    gatewaysSheet.getColumn(5).width = 40;   // 설명
+                    gatewaysSheet.getColumn(6).width = 30;   // 조건
+                    gatewaysSheet.getColumn(7).width = 20;   // BPMN타입
+                    gatewaysSheet.getColumn(8).width = 8;    // Layer
+                    gatewaysSheet.getColumn(9).width = 8;    // Order
+                    gatewaysSheet.getColumn(10).width = 8;   // X좌표
+                    gatewaysSheet.getColumn(11).width = 8;   // Y좌표
+                    gatewaysSheet.getColumn(12).width = 8;   // 너비
+                    gatewaysSheet.getColumn(13).width = 8;   // 높이
                 }
 
                 // 7. 시퀀스(흐름) 시트 (구조에 따라 분기)
@@ -2350,6 +2313,7 @@ export default {
                 }
 
                 if (sequences.length > 0) {
+                    const sequencesSheet = workbook.addWorksheet('7.시퀀스(흐름)');
                     const sequencesData = [
                         ['ID', '이름', '시작(Source)', '종료(Target)', '조건', 'Waypoints']
                     ];
@@ -2382,20 +2346,18 @@ export default {
                         ]);
                     });
 
-                    const sequencesSheet = XLSX.utils.aoa_to_sheet(sequencesData);
-                    sequencesSheet['!cols'] = [
-                        { wch: 30 },  // ID
-                        { wch: 30 },  // 이름
-                        { wch: 30 },  // 시작
-                        { wch: 30 },  // 종료
-                        { wch: 40 },  // 조건
-                        { wch: 50 }   // Waypoints
-                    ];
-                    XLSX.utils.book_append_sheet(workbook, sequencesSheet, '7.시퀀스(흐름)');
+                    sequencesSheet.addRows(sequencesData);
+                    sequencesSheet.getColumn(1).width = 30;  // ID
+                    sequencesSheet.getColumn(2).width = 30;  // 이름
+                    sequencesSheet.getColumn(3).width = 30;  // 시작
+                    sequencesSheet.getColumn(4).width = 30;  // 종료
+                    sequencesSheet.getColumn(5).width = 40;  // 조건
+                    sequencesSheet.getColumn(6).width = 50;  // Waypoints
                 }
 
                 // 8. SubProcesses 시트
                 if (processDefinition.subProcesses && processDefinition.subProcesses.length > 0) {
+                    const subProcessesSheet = workbook.addWorksheet('8.서브프로세스');
                     const subProcessesData = [
                         ['ID', '이름', '설명', '타입']
                     ];
@@ -2409,21 +2371,25 @@ export default {
                         ]);
                     });
 
-                    const subProcessesSheet = XLSX.utils.aoa_to_sheet(subProcessesData);
-                    subProcessesSheet['!cols'] = [
-                        { wch: 30 },  // ID
-                        { wch: 30 },  // 이름
-                        { wch: 50 },  // 설명
-                        { wch: 20 }   // 타입
-                    ];
-                    XLSX.utils.book_append_sheet(workbook, subProcessesSheet, '8.서브프로세스');
+                    subProcessesSheet.addRows(subProcessesData);
+                    subProcessesSheet.getColumn(1).width = 30;  // ID
+                    subProcessesSheet.getColumn(2).width = 30;  // 이름
+                    subProcessesSheet.getColumn(3).width = 50;  // 설명
+                    subProcessesSheet.getColumn(4).width = 20;  // 타입
                 }
 
                 // 파일 이름 생성
                 const fileName = `${processDefinition.processDefinitionName || 'process'}_${new Date().getTime()}.xlsx`;
 
-                // 엑셀 파일 생성 및 다운로드
-                XLSX.writeFile(workbook, fileName);
+                // ExcelJS로 엑셀 파일 생성 및 다운로드
+                const buffer = await workbook.xlsx.writeBuffer();
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                link.click();
+                URL.revokeObjectURL(url);
 
                 console.log('✅ 엑셀 파일 다운로드 완료:', fileName);
                 
@@ -2441,110 +2407,32 @@ export default {
                 // ✅ 원본 엑셀이 없으면 기존 7개 시트 형식으로 다운로드
                 if (!this.originalWorkbook) {
                     console.log('📝 원본 엑셀 없음 → 기존 7개 시트 형식으로 생성');
-                    // TODO: 7개 시트 생성 로직 구현 필요 (주석처리된 로직 재활용)
                     alert('원본 엑셀이 없습니다. 먼저 엑셀을 업로드해주세요.');
                     return;
                 }
                 
                 console.log('📝 원본 워크북 기반 다운로드 시작');
                 
-                // ✅ Deep Clone (스타일 유지)
-                const workbookCopy = JSON.parse(JSON.stringify(this.originalWorkbook));
+                // ✅ ExcelJS Deep Clone (스타일 유지)
+                // ExcelJS는 buffer로 serialize → 다시 load하여 완벽한 복사
+                const cloneBuffer = await this.originalWorkbook.xlsx.writeBuffer();
+                const workbookCopy = new ExcelJS.Workbook();
+                await workbookCopy.xlsx.load(cloneBuffer);
                 
                 console.log('✅ 원본 워크북 복사 완료');
-                console.log('📋 원본 시트 목록:', workbookCopy.SheetNames);
+                console.log('📋 원본 시트 수:', workbookCopy.worksheets.length);
                 
-                // ✅ 모든 시트의 모든 셀 스타일을 fill 구조로 변환 + font 매핑
-                console.log('🎨 스타일 변환 시작 (fgColor → fill 구조 + font 매핑)');
-                let convertedCells = 0;
-                let fontMappedCells = 0;
+                // ExcelJS는 스타일을 자동으로 보존하므로 변환 불필요
+                console.log('✅ ExcelJS는 스타일을 자동으로 보존합니다.');
                 
-                for (const sheetName of workbookCopy.SheetNames) {
-                    const sheet = workbookCopy.Sheets[sheetName];
-                    
-                    for (const cellAddress in sheet) {
-                        if (cellAddress.startsWith('!')) continue; // 특수 속성 건너뛰기
-                        
-                        const cell = sheet[cellAddress];
-                        if (cell && cell.s) {
-                            let targetFgColorRgb = null;
-                            
-                            // s.fgColor 또는 s.bgColor가 직접 있으면 fill 구조로 변환
-                            if (cell.s.fgColor || cell.s.bgColor || cell.s.patternType) {
-                                if (!cell.s.fill) {
-                                    // fill 구조로 변환
-                                    cell.s.fill = {};
-                                    
-                                    if (cell.s.patternType) {
-                                        cell.s.fill.patternType = cell.s.patternType;
-                                        delete cell.s.patternType;
-                                    }
-                                    
-                                    if (cell.s.fgColor) {
-                                        cell.s.fill.fgColor = cell.s.fgColor;
-                                        targetFgColorRgb = cell.s.fgColor.rgb;
-                                        delete cell.s.fgColor;
-                                    }
-                                    
-                                    if (cell.s.bgColor) {
-                                        cell.s.fill.bgColor = cell.s.bgColor;
-                                        delete cell.s.bgColor;
-                                    }
-                                    
-                                    convertedCells++;
-                                }
-                            } else if (cell.s.fill && cell.s.fill.fgColor && cell.s.fill.fgColor.rgb) {
-                                // 이미 fill 구조인 경우
-                                targetFgColorRgb = cell.s.fill.fgColor.rgb;
-                            }
-                            
-                            // ✅ Font 매핑 (배경색 기반)
-                            if (!cell.s.font && targetFgColorRgb && workbookCopy.Styles) {
-                                const cellXf = workbookCopy.Styles.CellXf;
-                                const fonts = workbookCopy.Styles.Fonts;
-                                const fills = workbookCopy.Styles.Fills;
-                                
-                                if (fills && cellXf && fonts) {
-                                    // 배경색으로 fillId 찾기
-                                    let fillId = 0;
-                                    for (let i = 0; i < fills.length; i++) {
-                                        if (fills[i].fgColor && fills[i].fgColor.rgb === targetFgColorRgb) {
-                                            fillId = i;
-                                            break;
-                                        }
-                                    }
-                                    
-                                    // fillId로 CellXf 찾아서 fontId 가져오기
-                                    for (let i = 0; i < cellXf.length; i++) {
-                                        const xf = cellXf[i];
-                                        const xfFillId = xf.fillId || xf.fillid || 0;
-                                        
-                                        if (xfFillId == fillId && (xf.applyFont === true || xf.applyfont === "1")) {
-                                            const fontId = xf.fontId || xf.fontid || 0;
-                                            if (fonts[fontId]) {
-                                                cell.s.font = JSON.parse(JSON.stringify(fonts[fontId]));
-                                                fontMappedCells++;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                console.log(`✅ 스타일 변환 완료: ${convertedCells}개 셀 (fill 구조 변환)`);
-                console.log(`✅ Font 매핑 완료: ${fontMappedCells}개 셀 (배경색 기반)`);
-                
-                // ========== 시트 내용 업데이트 (⚠️ 스타일은 절대 건드리지 않고 값만 업데이트) ==========
+                // ========== 시트 내용 업데이트 (ExcelJS는 스타일 자동 보존) ==========
                 
                 // 1️⃣ 첫 번째 시트 업데이트 (임의 구조 처리 - 헤더 찾아서 매핑)
-                const firstSheetName = workbookCopy.SheetNames[0];
-                if (firstSheetName) {
-                    console.log(`🔄 첫 번째 시트 내용 업데이트: ${firstSheetName} (스타일 유지)`);
+                const firstSheet = workbookCopy.worksheets[0];
+                if (firstSheet) {
+                    console.log(`🔄 첫 번째 시트 내용 업데이트: ${firstSheet.name} (스타일 유지)`);
                     await this.updateOriginalSheetWithNewData(
-                        workbookCopy.Sheets[firstSheetName], 
+                        firstSheet, 
                         processDefinition
                     );
                 }
@@ -2555,7 +2443,8 @@ export default {
                 const hasElementsStructure = processDefinition.elements && Array.isArray(processDefinition.elements);
                 
                 // ✅ 원본에 표준 시트가 있는지 확인
-                const hasStandardSheets = workbookCopy.SheetNames.some(name => 
+                const sheetNames = workbookCopy.worksheets.map(ws => ws.name);
+                const hasStandardSheets = sheetNames.some(name => 
                     ['1.프로세스정보', '2.프로세스변수', '3.역할(Lane)', '4.액티비티', '5.이벤트', '6.게이트웨이', '7.시퀀스(흐름)', '8.서브프로세스'].includes(name)
                 );
                 
@@ -2566,17 +2455,17 @@ export default {
                 }
                 
                 // 1. 프로세스 정보 시트 (원본에 있을 때만)
-                if (hasStandardSheets && workbookCopy.SheetNames.includes('1.프로세스정보')) {
+                if (hasStandardSheets && sheetNames.includes('1.프로세스정보')) {
                     this.addOrUpdateSheet(workbookCopy, '1.프로세스정보', this.createProcessInfoData(processDefinition), false);
                 }
                 
                 // 2. 프로세스 변수 시트 (원본에 있을 때만)
-                if (hasStandardSheets && processDefinition.data && processDefinition.data.length > 0 && workbookCopy.SheetNames.includes('2.프로세스변수')) {
+                if (hasStandardSheets && processDefinition.data && processDefinition.data.length > 0 && sheetNames.includes('2.프로세스변수')) {
                     this.addOrUpdateSheet(workbookCopy, '2.프로세스변수', this.createDataSheetData(processDefinition), false);
                 }
                 
                 // 3. 역할(Lane) 시트 (원본에 있을 때만)
-                if (hasStandardSheets && processDefinition.roles && processDefinition.roles.length > 0 && workbookCopy.SheetNames.includes('3.역할(Lane)')) {
+                if (hasStandardSheets && processDefinition.roles && processDefinition.roles.length > 0 && sheetNames.includes('3.역할(Lane)')) {
                     const filteredRoles = this.getFilteredRoles(processDefinition);
                     if (filteredRoles.length > 0) {
                         this.addOrUpdateSheet(workbookCopy, '3.역할(Lane)', this.createRolesData(filteredRoles), false);
@@ -2584,7 +2473,7 @@ export default {
                 }
                 
                 // 4. 액티비티 시트 (원본에 있을 때만)
-                if (hasStandardSheets && workbookCopy.SheetNames.includes('4.액티비티')) {
+                if (hasStandardSheets && sheetNames.includes('4.액티비티')) {
                     let activities = [];
                     if (hasElementsStructure) {
                         activities = processDefinition.elements.filter(el => el.elementType === 'Activity');
@@ -2600,7 +2489,7 @@ export default {
                 }
                 
                 // 5. 이벤트 시트 (원본에 있을 때만)
-                if (hasStandardSheets && workbookCopy.SheetNames.includes('5.이벤트')) {
+                if (hasStandardSheets && sheetNames.includes('5.이벤트')) {
                     let events = [];
                     if (hasElementsStructure) {
                         events = processDefinition.elements.filter(el => el.elementType === 'Event');
@@ -2614,7 +2503,7 @@ export default {
                 }
                 
                 // 6. 게이트웨이 시트 (원본에 있을 때만)
-                if (hasStandardSheets && workbookCopy.SheetNames.includes('6.게이트웨이')) {
+                if (hasStandardSheets && sheetNames.includes('6.게이트웨이')) {
                     let gateways = [];
                     if (hasElementsStructure) {
                         gateways = processDefinition.elements.filter(el => el.elementType === 'Gateway');
@@ -2628,7 +2517,7 @@ export default {
                 }
                 
                 // 7. 시퀀스(흐름) 시트 (원본에 있을 때만)
-                if (hasStandardSheets && workbookCopy.SheetNames.includes('7.시퀀스(흐름)')) {
+                if (hasStandardSheets && sheetNames.includes('7.시퀀스(흐름)')) {
                     let sequences = [];
                     if (hasElementsStructure) {
                         sequences = processDefinition.elements.filter(el => el.elementType === 'Sequence');
@@ -2642,7 +2531,7 @@ export default {
                 }
                 
                 // 8. 서브프로세스 시트 (원본에 있을 때만)
-                if (hasStandardSheets && processDefinition.subProcesses && processDefinition.subProcesses.length > 0 && workbookCopy.SheetNames.includes('8.서브프로세스')) {
+                if (hasStandardSheets && processDefinition.subProcesses && processDefinition.subProcesses.length > 0 && sheetNames.includes('8.서브프로세스')) {
                     this.addOrUpdateSheet(workbookCopy, '8.서브프로세스', this.createSubProcessesData(processDefinition.subProcesses), false);
                 }
                 
@@ -2654,23 +2543,24 @@ export default {
                 const originalName = this.originalWorkbookInfo.fileName.replace(/\.[^/.]+$/, '');
                 const fileName = `${originalName}_updated_${new Date().getTime()}.xlsx`;
                 
-                // 엑셀 파일 생성 및 다운로드 (xlsx-js-style 표준 방식)
+                // ExcelJS로 엑셀 파일 생성 및 다운로드
                 console.log('💾 원본 엑셀 다운로드 시작...');
                 console.log('📊 워크북 정보:', {
-                    시트수: workbookCopy.SheetNames.length,
-                    시트명: workbookCopy.SheetNames
+                    시트수: workbookCopy.worksheets.length,
+                    시트명: workbookCopy.worksheets.map(ws => ws.name)
                 });
                 
-                // xlsx-js-style은 셀의 's' 속성으로 스타일을 자동 처리
-                XLSX.writeFile(workbookCopy, fileName, {
-                    bookType: 'xlsx',
-                    bookSST: false,
-                    type: 'binary',
-                    cellStyles: true  // ✅ 스타일 쓰기 활성화
-                });
+                // ExcelJS는 스타일을 자동으로 포함하여 buffer 생성
+                const downloadBuffer = await workbookCopy.xlsx.writeBuffer();
+                const blob = new Blob([downloadBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                link.click();
+                URL.revokeObjectURL(url);
                 
                 console.log('✅ 원본 형식 기반 엑셀 다운로드 완료:', fileName);
-                // alert(`원본 엑셀 형식으로 다운로드 완료!\n\n파일명: ${fileName}`);
                 
             } catch (error) {
                 console.error('❌ 원본 형식 기반 다운로드 실패:', error);
@@ -2711,11 +2601,11 @@ export default {
         },
 
         /**
-         * 원본 시트의 데이터만 업데이트 (형식은 완벽히 유지)
+         * 원본 시트의 데이터만 업데이트 (ExcelJS 버전 - 형식은 완벽히 유지)
          */
-        updateOriginalSheetWithNewData(sheet, processDefinition) {
+        updateOriginalSheetWithNewData(worksheet, processDefinition) {
             try {
-                console.log('📝 원본 시트 데이터 업데이트 시작');
+                console.log('📝 원본 시트 데이터 업데이트 시작 (ExcelJS)');
                 
                 // 구조 판별
                 const hasElementsStructure = processDefinition.elements && Array.isArray(processDefinition.elements);
@@ -2734,101 +2624,105 @@ export default {
                 activities = this.sortActivitiesBySequence(activities, processDefinition);
                 console.log(`✅ 시퀀스 기반 정렬 완료: ${activities.length}개 액티비티`);
                 
-                // 원본 시트의 데이터 영역 찾기 (헤더 행 찾기)
-                const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:Z1000');
-                let headerRow = -1;
+                // ExcelJS로 헤더 행 찾기
+                let headerRowNum = -1;
+                const maxRowsToCheck = Math.min(worksheet.rowCount, 50); // 처음 50행만 체크
                 
-                // "No" 또는 "Activity" 같은 헤더를 찾아서 헤더 행 확인
-                for (let row = range.s.r; row <= range.e.r; row++) {
-                    for (let col = range.s.c; col <= range.e.c; col++) {
-                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-                        const cell = sheet[cellAddress];
-                        
-                        if (cell && cell.v) {
-                            const cellValue = String(cell.v).trim().toLowerCase();
+                for (let rowNum = 1; rowNum <= maxRowsToCheck; rowNum++) {
+                    const row = worksheet.getRow(rowNum);
+                    if (!row || !row.values) continue;
+                    
+                    for (let colNum = 1; colNum <= worksheet.columnCount; colNum++) {
+                        const cell = row.getCell(colNum);
+                        if (cell && cell.value) {
+                            const cellValue = String(cell.value).trim().toLowerCase();
                             if (cellValue.includes('no') || 
                                 cellValue.includes('activity') ||
                                 cellValue.includes('담당')) {
-                                headerRow = row;
-                                console.log(`✅ 헤더 행 찾음: ${headerRow + 1}행`);
+                                headerRowNum = rowNum;
+                                console.log(`✅ 헤더 행 찾음: ${headerRowNum}행`);
                                 break;
                             }
                         }
                     }
-                    if (headerRow !== -1) break;
+                    if (headerRowNum !== -1) break;
                 }
                 
-                if (headerRow === -1) {
+                if (headerRowNum === -1) {
                     console.warn('⚠️ 헤더 행을 찾을 수 없습니다.');
                     return;
                 }
                 
-                // 헤더의 열 매핑 생성 (원본 엑셀의 실제 구조 파악)
-                const columnMapping = this.createColumnMapping(sheet, headerRow, range);
+                // 헤더의 열 매핑 생성 (ExcelJS 방식)
+                const columnMapping = this.createColumnMappingExcelJS(worksheet, headerRowNum);
                 console.log('📋 열 매핑:', columnMapping);
                 
-                // 첫 데이터 행
-                const firstDataRow = headerRow + 1;
+                // 첫 데이터 행 (1-based)
+                const firstDataRowNum = headerRowNum + 1;
                 
-                // 기존 데이터 행 찾기 (몇 행까지 데이터가 있는지)
-                let lastDataRow = firstDataRow;
-                for (let row = firstDataRow; row <= range.e.r; row++) {
+                // 기존 데이터 행 찾기 (ExcelJS)
+                let lastDataRowNum = firstDataRowNum;
+                for (let rowNum = firstDataRowNum; rowNum <= worksheet.rowCount; rowNum++) {
+                    const row = worksheet.getRow(rowNum);
+                    if (!row || !row.values) continue;
+                    
                     let hasData = false;
-                    for (let col = range.s.c; col <= range.e.c; col++) {
-                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-                        const cell = sheet[cellAddress];
-                        if (cell && cell.v && String(cell.v).trim() !== '') {
+                    row.eachCell({ includeEmpty: false }, (cell) => {
+                        if (cell.value && String(cell.value).trim() !== '') {
                             hasData = true;
-                            break;
                         }
-                    }
+                    });
+                    
                     if (hasData) {
-                        lastDataRow = row;
+                        lastDataRowNum = rowNum;
+                    } else if (rowNum > lastDataRowNum + 5) {
+                        // 5행 연속 빈 행이면 중단
+                        break;
                     }
                 }
                 
-                console.log(`📊 기존 데이터 행: ${firstDataRow + 1} ~ ${lastDataRow + 1}`);
+                console.log(`📊 기존 데이터 행: ${firstDataRowNum} ~ ${lastDataRowNum}`);
                 
-                // ✅ 기존 데이터 행의 스타일을 보존할 템플릿 행 찾기 (마지막 데이터 행 사용)
-                const templateRow = lastDataRow >= firstDataRow ? lastDataRow : firstDataRow;
-                
-                // ✅ 템플릿 행의 스타일을 먼저 복사해두기
+                // ✅ 템플릿 행의 스타일 보존 (마지막 데이터 행 사용)
+                const templateRowNum = lastDataRowNum >= firstDataRowNum ? lastDataRowNum : firstDataRowNum;
+                const templateRow = worksheet.getRow(templateRowNum);
                 const templateStyles = {};
-                if (templateRow >= firstDataRow) {
-                    for (let col = range.s.c; col <= range.e.c; col++) {
-                        const templateCellAddress = XLSX.utils.encode_cell({ r: templateRow, c: col });
-                        const templateCell = sheet[templateCellAddress];
-                        if (templateCell && templateCell.s) {
-                            // 스타일만 깊은 복사
-                            templateStyles[col] = JSON.parse(JSON.stringify(templateCell.s));
+                
+                if (templateRow) {
+                    for (let colNum = 1; colNum <= worksheet.columnCount; colNum++) {
+                        const cell = templateRow.getCell(colNum);
+                        if (cell && cell.style) {
+                            // ExcelJS 스타일 복사 (deep clone)
+                            templateStyles[colNum] = JSON.parse(JSON.stringify(cell.style));
                         }
                     }
                 }
                 console.log(`📋 템플릿 스타일 보존 완료: ${Object.keys(templateStyles).length}개 열`);
                 
-                // ✅ 기존 데이터 행을 읽어서 보존 (액티비티 이름/ID로 매핑)
+                // ✅ 기존 데이터 행을 읽어서 보존 (ExcelJS)
                 const existingDataMap = new Map(); // key: 액티비티 이름, value: 행 전체 데이터
-                console.log(`📖 기존 데이터 행 읽기 시작: ${firstDataRow + 1} ~ ${lastDataRow + 1}`);
+                console.log(`📖 기존 데이터 행 읽기 시작: ${firstDataRowNum} ~ ${lastDataRowNum}`);
                 
-                for (let row = firstDataRow; row <= lastDataRow; row++) {
+                for (let rowNum = firstDataRowNum; rowNum <= lastDataRowNum; rowNum++) {
+                    const row = worksheet.getRow(rowNum);
+                    if (!row || !row.values) continue;
+                    
                     const rowData = {};
                     let activityName = '';
                     
                     // 해당 행의 모든 셀 데이터 읽기
-                    for (let col = range.s.c; col <= range.e.c; col++) {
-                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-                        const cell = sheet[cellAddress];
-                        
+                    for (let colNum = 1; colNum <= worksheet.columnCount; colNum++) {
+                        const cell = row.getCell(colNum);
                         if (cell) {
-                            rowData[col] = {
-                                value: cell.v,
-                                style: cell.s ? JSON.parse(JSON.stringify(cell.s)) : null,
-                                type: cell.t
+                            rowData[colNum] = {
+                                value: cell.value,
+                                style: cell.style ? JSON.parse(JSON.stringify(cell.style)) : null,
+                                type: cell.type
                             };
                             
                             // 액티비티 이름 열인 경우 키로 사용
-                            if (col === columnMapping.activityName && cell.v) {
-                                activityName = String(cell.v).trim();
+                            if (colNum === columnMapping.activityName && cell.value) {
+                                activityName = String(cell.value).trim();
                             }
                         }
                     }
@@ -2842,19 +2736,20 @@ export default {
                 
                 console.log(`✅ 기존 데이터 ${existingDataMap.size}개 보존 완료`);
                 
-                // ✅ 기존 데이터 행 모두 지우기 (재배치를 위해)
-                const maxRowsToClear = Math.max(lastDataRow - firstDataRow + 1, activities.length + 10);
-                console.log(`🗑️ 기존 행 임시 삭제 시작: ${firstDataRow + 1} ~ ${firstDataRow + maxRowsToClear - 1}`);
+                // ✅ 기존 데이터 행만 지우기 (필요한 만큼만)
+                const maxRowsToClear = Math.max(lastDataRowNum - firstDataRowNum + 1, activities.length);
+                console.log(`🗑️ 기존 행 임시 삭제 시작: ${firstDataRowNum} ~ ${firstDataRowNum + maxRowsToClear - 1}`);
                 
-                for (let row = firstDataRow; row < firstDataRow + maxRowsToClear; row++) {
-                    for (let col = range.s.c; col <= range.e.c; col++) {
-                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-                        if (sheet[cellAddress]) {
-                            delete sheet[cellAddress];
-                        }
+                for (let rowNum = firstDataRowNum; rowNum < firstDataRowNum + maxRowsToClear; rowNum++) {
+                    const row = worksheet.getRow(rowNum);
+                    if (row) {
+                        // 모든 셀 값 삭제 (나중에 복원 또는 새로 추가)
+                        row.eachCell({ includeEmpty: true }, (cell) => {
+                            cell.value = null;
+                        });
                     }
                 }
-                console.log(`✅ 기존 행 임시 삭제 완료`);
+                console.log(`✅ 기존 행 임시 삭제 완료 (${maxRowsToClear}행)`);
                 
                 // ✅ 시퀀스 정보로 선행/후행 계산
                 const activityIndexMap = new Map(); // activity.id -> index
@@ -2898,14 +2793,14 @@ export default {
                 
                 console.log('📊 선행/후행 계산 완료');
                 
-                // ✅ 정렬된 순서대로 액티비티 데이터 재배치 (기존 데이터 보존)
+                // ✅ ExcelJS로 정렬된 순서대로 액티비티 데이터 재배치
                 activities.forEach((activity, index) => {
-                    const rowNum = firstDataRow + index;
+                    const rowNum = firstDataRowNum + index;
                     const activityName = activity.name || '';
                     
-                    console.log(`🔄 ${index + 1}번 액티비티 재배치: ${activityName} (행 ${rowNum + 1})`);
+                    console.log(`🔄 ${index + 1}번 액티비티 재배치: ${activityName} (행 ${rowNum})`);
                     
-                    // 기존 데이터가 있는지 확인
+                    const row = worksheet.getRow(rowNum);
                     const existingData = existingDataMap.get(activityName);
                     
                     // 선행/후행 계산
@@ -2915,88 +2810,139 @@ export default {
                     const successorText = successors.length > 0 ? successors.join(', ') : '';
                     
                     if (existingData) {
-                        // ✅ 기존 데이터가 있으면 모든 셀 복원 (스타일 포함)
+                        // ✅ 기존 데이터가 있으면 모든 셀 복원 (ExcelJS - 스타일 포함)
                         console.log(`  📦 기존 데이터 복원: "${activityName}"`);
                         
-                        for (let col = range.s.c; col <= range.e.c; col++) {
-                            const cellAddress = XLSX.utils.encode_cell({ r: rowNum, c: col });
-                            const cellData = existingData[col];
-                            
+                        for (let colNum = 1; colNum <= worksheet.columnCount; colNum++) {
+                            const cellData = existingData[colNum];
                             if (cellData) {
-                                // 기존 셀 데이터 그대로 복원
-                                const cell = {
-                                    v: cellData.value,
-                                    w: String(cellData.value),
-                                    t: cellData.type || (typeof cellData.value === 'number' ? 'n' : 's')
-                                };
-                                
+                                const cell = row.getCell(colNum);
+                                cell.value = cellData.value;
                                 if (cellData.style) {
-                                    cell.s = cellData.style;
+                                    cell.style = cellData.style;
                                 }
-                                
-                                sheet[cellAddress] = cell;
                             }
                         }
                         
                         // No 열만 새로운 순서 번호로 업데이트
-                        if (columnMapping.no !== -1) {
-                            const noCell = sheet[XLSX.utils.encode_cell({ r: rowNum, c: columnMapping.no })];
-                            if (noCell) {
-                                noCell.v = index + 1;
-                                noCell.w = String(index + 1);
-                                noCell.t = 'n';
-                            }
+                        if (columnMapping.no && columnMapping.no !== -1) {
+                            const noCell = row.getCell(columnMapping.no);
+                            noCell.value = index + 1;
                         }
                         
-                        // 선행/후행도 업데이트 (기존 데이터지만 순서가 바뀌었으므로)
-                        if (columnMapping.predecessor !== -1 && predecessorText) {
-                            this.updateCellValueWithExistingStyle(sheet, rowNum, columnMapping.predecessor, predecessorText, existingData);
+                        // 선행/후행도 업데이트
+                        if (columnMapping.predecessor && columnMapping.predecessor !== -1 && predecessorText) {
+                            row.getCell(columnMapping.predecessor).value = predecessorText;
                         }
-                        if (columnMapping.successor !== -1 && successorText) {
-                            this.updateCellValueWithExistingStyle(sheet, rowNum, columnMapping.successor, successorText, existingData);
+                        if (columnMapping.successor && columnMapping.successor !== -1 && successorText) {
+                            row.getCell(columnMapping.successor).value = successorText;
                         }
                         
                     } else {
-                        // ✅ 새로운 액티비티는 템플릿 스타일로 추가
+                        // ✅ 새로운 액티비티는 템플릿 스타일로 추가 (ExcelJS)
                         console.log(`  ✨ 새로운 액티비티 추가: "${activityName}"`);
-                        console.log(`     선행: ${predecessorText || '없음'}, 후행: ${successorText || '없음'}`);
                         
-                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.no, index + 1, templateStyles);
-                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.activityName, activityName, templateStyles);
-                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.description, activity.description || '', templateStyles);
-                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.role, activity.role || '', templateStyles);
-                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.input, 
-                            activity.inputData ? (Array.isArray(activity.inputData) ? activity.inputData.join(', ') : activity.inputData) : '', 
-                            templateStyles);
-                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.output, 
-                            activity.outputData ? (Array.isArray(activity.outputData) ? activity.outputData.join(', ') : activity.outputData) : '', 
-                            templateStyles);
-                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.system, activity.system || '', templateStyles);
-                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.duration, activity.duration || '', templateStyles);
-                        this.updateCellValueWithStyle(sheet, rowNum, columnMapping.instruction, activity.instruction || '', templateStyles);
+                        // 각 열에 데이터 설정
+                        const setCellWithTemplate = (colNum, value) => {
+                            if (!colNum || colNum === -1) return;
+                            const cell = row.getCell(colNum);
+                            cell.value = value;
+                            if (templateStyles[colNum]) {
+                                cell.style = templateStyles[colNum];
+                            }
+                        };
                         
-                        // 선행/후행 추가
-                        if (columnMapping.predecessor !== -1) {
-                            this.updateCellValueWithStyle(sheet, rowNum, columnMapping.predecessor, predecessorText, templateStyles);
-                        }
-                        if (columnMapping.successor !== -1) {
-                            this.updateCellValueWithStyle(sheet, rowNum, columnMapping.successor, successorText, templateStyles);
-                        }
+                        setCellWithTemplate(columnMapping.no, index + 1);
+                        setCellWithTemplate(columnMapping.activityName, activityName);
+                        setCellWithTemplate(columnMapping.description, activity.description || '');
+                        setCellWithTemplate(columnMapping.role, activity.role || '');
+                        setCellWithTemplate(columnMapping.input, 
+                            activity.inputData ? (Array.isArray(activity.inputData) ? activity.inputData.join(', ') : activity.inputData) : '');
+                        setCellWithTemplate(columnMapping.output, 
+                            activity.outputData ? (Array.isArray(activity.outputData) ? activity.outputData.join(', ') : activity.outputData) : '');
+                        setCellWithTemplate(columnMapping.system, activity.system || '');
+                        setCellWithTemplate(columnMapping.duration, activity.duration || '');
+                        setCellWithTemplate(columnMapping.instruction, activity.instruction || '');
+                        setCellWithTemplate(columnMapping.predecessor, predecessorText);
+                        setCellWithTemplate(columnMapping.successor, successorText);
                     }
                 });
                 
-                // ✅ 시트 범위 업데이트 (새로운 데이터 행 수에 맞게)
-                const newLastRow = firstDataRow + activities.length - 1;
-                if (newLastRow >= firstDataRow) {
-                    const newRange = XLSX.utils.encode_range({
-                        s: { r: range.s.r, c: range.s.c },
-                        e: { r: Math.max(newLastRow, range.e.r), c: range.e.c }
-                    });
-                    sheet['!ref'] = newRange;
-                    console.log(`📊 시트 범위 업데이트: ${newRange}`);
+                console.log(`✅ ${activities.length}개 액티비티 업데이트 완료 (ExcelJS - 원본 스타일 유지)`);
+                
+                // ✅ 남은 빈 행 제거 (더 확실한 방법)
+                const newLastDataRowNum = firstDataRowNum + activities.length - 1;
+                const rowsToDelete = lastDataRowNum - newLastDataRowNum;
+                
+                if (rowsToDelete > 0) {
+                    console.log(`🗑️ 빈 행 제거: ${newLastDataRowNum + 1}행부터 ${rowsToDelete}개 행 삭제`);
+                    
+                    // 방법 1: 역순으로 하나씩 삭제 (더 확실함)
+                    for (let rowNum = lastDataRowNum; rowNum > newLastDataRowNum; rowNum--) {
+                        const row = worksheet.getRow(rowNum);
+                        if (row) {
+                            // 모든 셀 값 제거
+                            row.values = [];
+                            // 행 높이도 제거
+                            row.height = undefined;
+                        }
+                    }
+                    
+                    // 방법 2: spliceRows로 실제 행 삭제
+                    worksheet.spliceRows(newLastDataRowNum + 1, rowsToDelete);
+                    
+                    console.log(`✅ 빈 행 ${rowsToDelete}개 제거 완료`);
                 }
                 
-                console.log(`✅ ${activities.length}개 액티비티 업데이트 완료 (원본 형식 완벽 유지)`);
+                // ✅ 테이블 범위 자동 조정 (ExcelJS Table 객체)
+                console.log(`📊 테이블 객체 확인: worksheet.tables =`, worksheet.tables);
+                
+                if (worksheet.tables && worksheet.tables.length > 0) {
+                    console.log(`📊 테이블 ${worksheet.tables.length}개 발견 - 범위 조정 시작`);
+                    
+                    worksheet.tables.forEach((table, index) => {
+                        try {
+                            // 테이블의 현재 범위 파싱
+                            const tableRef = table.ref;
+                            console.log(`  테이블 ${index + 1} 원본 범위: ${tableRef}`);
+                            const match = tableRef.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
+                            
+                            if (match) {
+                                const [, startCol, startRow, endCol, endRow] = match;
+                                const tableStartRow = parseInt(startRow);
+                                const tableEndRow = parseInt(endRow);
+                                
+                                console.log(`  테이블 ${index + 1}: ${tableRef} (${tableStartRow}~${tableEndRow}행)`);
+                                console.log(`  헤더 행: ${headerRowNum}, 새 마지막 행: ${newLastDataRowNum}`);
+                                
+                                // 헤더 행이 테이블 범위 안에 있는지 확인
+                                if (tableStartRow <= headerRowNum && tableEndRow >= headerRowNum) {
+                                    // 새로운 테이블 범위 계산 (헤더 + 데이터 행)
+                                    const newTableEndRow = newLastDataRowNum;
+                                    
+                                    if (newTableEndRow >= tableStartRow) {
+                                        const newRef = `${startCol}${startRow}:${endCol}${newTableEndRow}`;
+                                        console.log(`  ✏️ 테이블 범위 조정: ${tableRef} → ${newRef}`);
+                                        table.ref = newRef;
+                                        console.log(`  ✅ 테이블 범위 업데이트 완료`);
+                                    } else {
+                                        console.warn(`  ⚠️ 새 테이블 종료 행(${newTableEndRow})이 시작 행(${tableStartRow})보다 작음`);
+                                    }
+                                } else {
+                                    console.log(`  ℹ️ 헤더 행(${headerRowNum})이 테이블 범위(${tableStartRow}~${tableEndRow}) 밖에 있음 - 스킵`);
+                                }
+                            } else {
+                                console.warn(`  ⚠️ 테이블 범위 파싱 실패: ${tableRef}`);
+                            }
+                        } catch (tableError) {
+                            console.error(`  ❌ 테이블 ${index + 1} 범위 조정 실패:`, tableError);
+                        }
+                    });
+                    
+                    console.log(`✅ 모든 테이블 범위 조정 완료`);
+                } else {
+                    console.log(`ℹ️ 테이블 없음 - 범위 조정 스킵`);
+                }
                 
             } catch (error) {
                 console.error('❌ 원본 시트 업데이트 실패:', error);
@@ -3206,6 +3152,61 @@ export default {
         },
 
         /**
+         * ExcelJS용 열 매핑 생성
+         */
+        createColumnMappingExcelJS(worksheet, headerRowNum) {
+            const mapping = {
+                no: -1,
+                activityName: -1,
+                description: -1,
+                role: -1,
+                input: -1,
+                output: -1,
+                system: -1,
+                duration: -1,
+                instruction: -1,
+                predecessor: -1,
+                successor: -1
+            };
+            
+            const headerRow = worksheet.getRow(headerRowNum);
+            if (!headerRow || !headerRow.values) return mapping;
+            
+            // 헤더 행의 모든 셀을 검사하여 각 열이 무엇인지 파악
+            headerRow.eachCell({ includeEmpty: false }, (cell, colNum) => {
+                if (cell && cell.value) {
+                    const headerText = String(cell.value).trim().toLowerCase();
+                    
+                    if (headerText.includes('no') && !headerText.includes('description')) {
+                        mapping.no = colNum;
+                    } else if (headerText.includes('activity') && headerText.includes('명')) {
+                        mapping.activityName = colNum;
+                    } else if (headerText.includes('상세') || headerText.includes('업무') || headerText.includes('description')) {
+                        mapping.description = colNum;
+                    } else if (headerText.includes('담당') || headerText.includes('조직') || headerText.includes('role')) {
+                        mapping.role = colNum;
+                    } else if (headerText.includes('input') || headerText === 'input') {
+                        mapping.input = colNum;
+                    } else if (headerText.includes('output') || headerText === 'output') {
+                        mapping.output = colNum;
+                    } else if (headerText.includes('system') || headerText === 'system') {
+                        mapping.system = colNum;
+                    } else if (headerText.includes('핵심') || headerText.includes('data')) {
+                        mapping.duration = colNum;
+                    } else if (headerText.includes('소요') || headerText.includes('시간')) {
+                        mapping.instruction = colNum;
+                    } else if (headerText.includes('선행') || headerText.includes('predecessor')) {
+                        mapping.predecessor = colNum;
+                    } else if (headerText.includes('후행') || headerText.includes('successor')) {
+                        mapping.successor = colNum;
+                    }
+                }
+            });
+            
+            return mapping;
+        },
+
+        /**
          * 셀 값만 업데이트 (스타일 완벽 보존)
          */
         updateCellValue(sheet, rowNum, colNum, value, templateRow) {
@@ -3296,45 +3297,23 @@ export default {
         },
 
         /**
-         * 새 시트 추가 또는 기존 시트 업데이트
+         * ExcelJS용: 새 시트 추가 또는 기존 시트 업데이트
          */
         addOrUpdateSheet(workbook, sheetName, data, appendIfNotExists = true) {
             try {
-                const sheetIndex = workbook.SheetNames.indexOf(sheetName);
+                // ExcelJS에서 시트 찾기
+                let worksheet = workbook.getWorksheet(sheetName);
                 
-                if (sheetIndex !== -1) {
-                    // 기존 시트가 있으면 업데이트
-                    console.log(`🔄 시트 업데이트: ${sheetName}`);
-                    
-                    // ✅ 이미 변환된 워크북의 시트 사용 (fill 변환 완료된 상태)
-                    if (workbook.Sheets && workbook.Sheets[sheetName]) {
-                        
-                        console.log(`✅ 원본 시트 발견 - 스타일 보존하며 업데이트: ${sheetName}`);
-                        
-                        // ✅ 이미 변환된 시트를 Deep Clone (fill 구조 유지)
-                        const convertedSheet = workbook.Sheets[sheetName];
-                        const styledSheet = this.deepCloneSheetWithStyles(convertedSheet);
-                        
-                        // 데이터만 업데이트 (스타일 유지)
-                        this.updateSheetDataWithStyles(styledSheet, data, convertedSheet);
-                        
-                        workbook.Sheets[sheetName] = styledSheet;
-                    } else {
-                        // 원본에 없는 시트면 새로 생성
-                        console.log(`📝 새로운 시트 생성: ${sheetName}`);
-                        const newSheet = XLSX.utils.aoa_to_sheet(data);
-                        this.setColumnWidths(newSheet, sheetName);
-                        workbook.Sheets[sheetName] = newSheet;
-                    }
+                if (worksheet) {
+                    // 기존 시트가 있으면 데이터만 업데이트 (스타일 보존)
+                    console.log(`🔄 시트 업데이트 (ExcelJS): ${sheetName}`);
+                    this.updateSheetDataWithStylesExcelJS(worksheet, data);
                 } else if (appendIfNotExists) {
                     // 새 시트 추가
-                    console.log(`➕ 새 시트 추가: ${sheetName}`);
-                    const newSheet = XLSX.utils.aoa_to_sheet(data);
-                    
-                    // 열 너비 설정
-                    this.setColumnWidths(newSheet, sheetName);
-                    
-                    XLSX.utils.book_append_sheet(workbook, newSheet, sheetName);
+                    console.log(`➕ 새 시트 추가 (ExcelJS): ${sheetName}`);
+                    worksheet = workbook.addWorksheet(sheetName);
+                    worksheet.addRows(data);
+                    this.setColumnWidthsExcelJS(worksheet, sheetName);
                 }
             } catch (error) {
                 console.error(`❌ 시트 처리 실패 (${sheetName}):`, error);
@@ -3342,7 +3321,54 @@ export default {
         },
         
         /**
-         * 스타일을 보존하면서 시트 데이터 업데이트
+         * ExcelJS용: 스타일을 보존하면서 시트 데이터 업데이트
+         */
+        updateSheetDataWithStylesExcelJS(worksheet, data) {
+            try {
+                console.log(`📝 ExcelJS 시트 데이터 업데이트 (스타일 보존): ${worksheet.name}`);
+                
+                // 각 행마다 데이터 업데이트
+                data.forEach((rowData, rowIndex) => {
+                    const row = worksheet.getRow(rowIndex + 1); // 1-based
+                    rowData.forEach((cellValue, colIndex) => {
+                        const cell = row.getCell(colIndex + 1); // 1-based
+                        // 값만 업데이트, 스타일은 ExcelJS가 자동으로 보존
+                        cell.value = cellValue;
+                    });
+                    row.commit(); // 행 변경사항 적용
+                });
+                
+                console.log(`✅ 시트 업데이트 완료: ${data.length}행`);
+            } catch (error) {
+                console.error('❌ updateSheetDataWithStylesExcelJS 실패:', error);
+            }
+        },
+
+        /**
+         * ExcelJS용: 열 너비 설정
+         */
+        setColumnWidthsExcelJS(worksheet, sheetName) {
+            const widths = {
+                '1.프로세스정보': [20, 50],
+                '2.프로세스변수': [20, 50, 15],
+                '3.역할(Lane)': [20, 25, 40, 10, 10, 10, 10],
+                '4.액티비티': [30, 25, 15, 15, 40, 40, 12, 30, 30, 30, 35, 35, 8, 8, 8, 8, 8, 8],
+                '5.이벤트': [30, 25, 15, 15, 40, 30, 20, 8, 8, 8, 8, 8, 8],
+                '6.게이트웨이': [30, 25, 15, 15, 40, 30, 20, 8, 8, 8, 8, 8, 8],
+                '7.시퀀스(흐름)': [30, 30, 30, 30, 40, 50],
+                '8.서브프로세스': [30, 30, 50, 20]
+            };
+            
+            const colWidths = widths[sheetName];
+            if (colWidths) {
+                colWidths.forEach((width, index) => {
+                    worksheet.getColumn(index + 1).width = width;
+                });
+            }
+        },
+
+        /**
+         * 스타일을 보존하면서 시트 데이터 업데이트 (기존 xlsx-js-style 버전)
          */
         updateSheetDataWithStyles(sheet, data, originalSheet) {
             try {
