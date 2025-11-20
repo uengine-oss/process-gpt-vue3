@@ -370,21 +370,24 @@ export default {
             var me = this;
             me.isSkillLoading = true;
             options.agentInfo = me.agentInfo;
-
-            const data = await this.backend.uploadSkills(options);
-            if (data && data.skills_added && data.skills_added.length > 0) {
-                const skills = me.agentInfo.skills.split(',');
-                data.skills_added.forEach(skill => {
-                    if (!skills.includes(skill.id)) {
-                        skills.push(skill.id);
-                    }
-                });
-                me.agentInfo.skills = skills.join(',');
-            }
-            
             me.$try({
                 context: this,
                 action: async () => {
+                    const data = await this.backend.uploadSkills(options);
+                    if (data && data.skills_added && data.skills_added.length > 0) {
+                        const skills = me.agentInfo.skills.split(',');
+                        data.skills_added.forEach(skill => {
+                            if (!skills.includes(skill.id)) {
+                                skills.push(skill.id);
+                            }
+                        });
+                        me.agentInfo.skills = skills.join(',');
+                    }
+
+                    me.EventBus.emit('skills-updated');
+                    me.isSkillLoading = false;
+                },
+                onFail: () => {
                     me.EventBus.emit('skills-updated');
                     me.isSkillLoading = false;
                 },
