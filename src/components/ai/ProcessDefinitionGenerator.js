@@ -304,7 +304,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                 "type": "StartEvent" | "EndEvent" | "IntermediateCatchEvent",
                 "description": "이벤트 설명(한글)",
                 "trigger": "트리거 조건",
-                "system": "사용된 시스템 이름, 제공된 정보 중 시스템 정보가 있는 경우 반드시 포함. 없다면 null"
+                "system": "사용된 시스템 이름, 제공된 정보 중 시스템 정보가 있는 경우 반드시 포함. 없다면 null",
+                "issues": "해당 엑티비티에 대한 이슈 정보, 제공된 정보 중 이슈 정보가 있는 경우 반드시 포함. 없다면 null"
               }
               // 타입별 예시:
               # Event
@@ -348,7 +349,8 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                     "outputData": ["출력 데이터명"],
                     "checkpoints": ["체크포인트1", "체크포인트2"],
                     "duration": "5",
-                    "system": "사용된 시스템 이름, 제공된 정보 중 시스템 정보가 있는 경우 반드시 포함. 없다면 null"
+                    "system": "사용된 시스템 이름, 제공된 정보 중 시스템 정보가 있는 경우 반드시 포함. 없다면 null",
+                    "issues": "해당 엑티비티에 대한 이슈 정보, 제공된 정보 중 이슈 정보가 있는 경우 반드시 포함. 없다면 null"
                   }
               # Gateway
                   {

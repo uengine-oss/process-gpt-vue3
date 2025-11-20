@@ -1845,6 +1845,7 @@ export default {
                         element.system = this.selectedFlowActivity.footer; // footer가 시스템/도구
                         element.description = this.selectedFlowActivity.description;
                         element.role = this.selectedFlowActivity.header; // header가 역할
+                        element.issues = this.selectedFlowActivity.issues; // issue가 이슈
                         updated = true;
                         console.log('✅ Element 업데이트:', element);
                     }
@@ -1880,6 +1881,7 @@ export default {
                         activity.system = this.selectedFlowActivity.footer; // footer가 시스템/도구
                         activity.description = this.selectedFlowActivity.description;
                         activity.role = this.selectedFlowActivity.header; // header가 역할
+                        activity.issues = this.selectedFlowActivity.issues; // issue가 이슈
                         updated = true;
                         console.log('✅ Activity 업데이트:', activity);
                     }

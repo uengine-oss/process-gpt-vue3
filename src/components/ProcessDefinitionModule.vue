@@ -571,6 +571,9 @@ export default {
                                         if(oldActivity && oldActivity.system) {
                                             newActivity.system = oldActivity.system;
                                         }
+                                        if(oldActivity && oldActivity.issues) {
+                                            newActivity.issues = oldActivity.issues;
+                                        }
                                         return newActivity;
                                     });
                                 }

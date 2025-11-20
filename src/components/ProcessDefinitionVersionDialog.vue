@@ -24,13 +24,13 @@
                     />
                     <div v-if="mode == 'ProcessGPT'">
                         <div v-if="isNew">
-                            <v-text-field
+                            <!-- <v-text-field
                                 v-model="information.proc_def_id"
                                 :label="$t('ProcessDefinitionVersionDialog.id')"
                                 :rules="idRules"
                                 required
                                 class="pb-2"
-                            ></v-text-field>
+                            ></v-text-field> -->
                             <v-text-field
                                 v-model="information.name"
                                 :label="$t('ProcessDefinitionVersionDialog.name')"

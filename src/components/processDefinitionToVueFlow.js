@@ -144,6 +144,7 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
           requiredTime: incomingSequence?.requiredTime || '', // 들어오는 시퀀스의 소요시간
           incomingSequenceId: incomingSequence?.id || null, // 들어오는 시퀀스 ID
           description: activity.description || '', // 설명 추가
+          issues: activity.issues || '', // 이슈 추가
           // backflowSequenceId와 backflowRequiredTime은 레이아웃 단계에서 추가됨
         },
         style: { width: 150, height: 80 },
