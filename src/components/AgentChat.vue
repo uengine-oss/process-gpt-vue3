@@ -366,29 +366,34 @@ export default {
             this.EventBus.emit('skills-updated');
         },
 
-        async uploadSkills(file) {
-            this.isSkillLoading = true;
-            const options = {
-                agentInfo: this.agentInfo,
-                file: file
-            }
-            try {
-                const data = await this.backend.uploadSkills(options);
-                if (data && data.skills_added && data.skills_added.length > 0) {
-                    const skills = this.agentInfo.skills.split(',');
-                    data.skills_added.forEach(skill => {
-                        if (!skills.includes(skill.id)) {
-                            skills.push(skill.id);
-                        }
-                    });
-                    this.agentInfo.skills = skills.join(',');
-                }
-            } catch (error) {
-                console.error('스킬 업로드 실패:', error);
-            } finally {
-                this.isSkillLoading = false;
-                this.EventBus.emit('skills-updated');
-            }
+        async uploadSkills(options) {
+            var me = this;
+            me.isSkillLoading = true;
+            options.agentInfo = me.agentInfo;
+            me.$try({
+                context: this,
+                action: async () => {
+                    const data = await this.backend.uploadSkills(options);
+                    if (data && data.skills_added && data.skills_added.length > 0) {
+                        const skills = me.agentInfo.skills.split(',');
+                        data.skills_added.forEach(skill => {
+                            if (!skills.includes(skill.id)) {
+                                skills.push(skill.id);
+                            }
+                        });
+                        me.agentInfo.skills = skills.join(',');
+                    }
+
+                    me.EventBus.emit('skills-updated');
+                    me.isSkillLoading = false;
+                },
+                onFail: () => {
+                    me.EventBus.emit('skills-updated');
+                    me.isSkillLoading = false;
+                },
+                successMsg: '스킬 업로드 완료',
+                errorMsg: '스킬 업로드 실패',
+            });
         },
 
         async checkSkills(skillName) {
@@ -402,9 +407,15 @@ export default {
 
         async openSkillFile(skill) {
             if (!skill || !skill.includes('::')) return;
-
             const [skillId, fileName] = skill.split('::');
-            const skillFile = await this.backend.getSkillFile(skillId, fileName);
+            let skillFile = await this.backend.getSkillFile(skillId, fileName);
+            if (!skillFile) {
+                skillFile = {
+                    skill_name: skillId,
+                    file_path: fileName,
+                    content: ''
+                }
+            }
             this.skillFile = skillFile;
             this.$router.push({ hash: '#skill-edit' });
         },

@@ -1,21 +1,39 @@
 <template>
     <v-card flat v-if="skillFile">
-        <v-card-title class="d-flex align-center">
-            <span class="text-h6">{{ skillName }}: {{ fileName }}</span>
-            <v-spacer></v-spacer>
-            <v-btn @click="saveSkillFile" variant="text" icon color="primary" :loading="isLoading">
-                <v-icon>mdi-content-save</v-icon>
-            </v-btn>
-            <v-btn v-if="isDeleteable" @click="deleteDialog = true" variant="text" icon color="error">
-                <v-icon>mdi-delete</v-icon>
-            </v-btn>
+        <v-card-title class="d-flex align-center justify-space-between">
+            <div class="d-flex align-center text-h6">
+                <span>{{ skillName }}:</span>
+                <v-text-field
+                    v-if="isEditable"
+                    v-model="fileName"
+                    class="ml-2 my-2"
+                    hide-details
+                    style="min-width: 300px; flex: 1;"
+                ></v-text-field>
+                <span v-else>{{ fileName }}</span>
+            </div>
+            <div class="d-flex align-center gap-2">
+                <v-btn v-if="isMarkdown" @click="toggleMarkdownPreview" variant="text" icon>
+                    <v-icon>{{ markdownPreview ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
+                </v-btn>
+                <v-btn @click="saveSkillFile" variant="text" icon color="primary" :loading="isLoading">
+                    <v-icon>mdi-content-save</v-icon>
+                </v-btn>
+                <v-btn v-if="isEditable" @click="deleteDialog = true" variant="text" icon color="error">
+                    <v-icon>mdi-delete</v-icon>
+                </v-btn>
+            </div>
         </v-card-title>
         <v-card-text class="h-100">
             <!-- <v-textarea 
                 v-model="skillContent"
                 rows="19"
             ></v-textarea> -->
+            <div v-if="markdownPreview" class="h-100 markdown-preview">
+                <div v-html="markdownContent"></div>
+            </div>
             <vue-monaco-editor
+                v-else
                 v-model:value="skillContent"
                 :language="editorLanguage"
                 :options="monacoEditorOptions"
@@ -48,6 +66,8 @@
 </template>
 
 <script>
+import { marked } from 'marked';
+
 export default {
     name: 'AgentSkillEdit',
     props: {
@@ -70,11 +90,18 @@ export default {
                 formatOnType: true,
                 formatOnPaste: true
             },
-            deleteDialog: false
+            deleteDialog: false,
+            
+            // markdown preview
+            markdownPreview: false,
+            markdownContent: ''
         }
     },
     computed: {
-        isDeleteable() {
+        isMarkdown() {
+            return this.fileName && (this.fileName.endsWith('.md') || this.fileName.endsWith('.markdown'));
+        },
+        isEditable() {
             return this.fileName && this.fileName !== 'SKILL.md' && !this.isLoading;
         },
         editorLanguage() {
@@ -104,6 +131,9 @@ export default {
     watch: {
         skillFile: {
             handler(newVal) {
+                this.markdownPreview = false;
+                this.markdownContent = '';
+
                 if (newVal) {
                     this.skillName = newVal.skill_name;
                     this.skillContent = newVal.content;
@@ -137,7 +167,28 @@ export default {
             if (editor) {
                 editor.layout({ height: 200, width: editor.getLayoutInfo().width });
             }
+        },
+        toggleMarkdownPreview() {
+            if (!this.markdownPreview) {
+                // markdown 옵션 설정
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+                // markdown 렌더링
+                this.markdownContent = marked(this.skillContent);
+            } else {
+                this.markdownContent = '';
+            }
+            this.markdownPreview = !this.markdownPreview;
         }
     }
 }
 </script>
+
+<style scoped>
+.markdown-preview {
+    height: 100%;
+    overflow-y: auto;
+}
+</style>
