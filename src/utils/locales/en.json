@@ -397,7 +397,16 @@
         "executeProcess": "Execute Process",
         "participants": "Participants",
         "moveTop": "Move to Top",
-        "moveBottom": "Move to Bottom"
+        "moveBottom": "Move to Bottom",
+        "helpTitle": "Chat Help",
+        "helpIntro": "This chat is an AI assistant that provides answers based on various information.\n\nMain Features:",
+        "helpScheduleRegistration": "• Schedule Registration: Automatically registers schedules when requested during conversation\n  e.g., \"Schedule a team meeting at 10 AM tomorrow\"",
+        "helpScheduleQuery": "• Schedule Inquiry: Answers questions about registered schedules\n  e.g., \"Tell me this week's schedule\", \"What's on next Monday?\"",
+        "helpProcessStart": "• Process Start: Automatically starts processes when requested\n  e.g., \"Start the vacation request process\"",
+        "helpDocumentQuery": "• Document Inquiry: Answers questions about company documents or information\n  e.g., \"Find last month's sales report\"",
+        "helpDocumentGeneration": "• Document Generation: Automatically generates documents when requested\n  e.g., \"Create a quarterly performance report\"",
+        "helpTodoRegistration": "• To-Do List Registration: Automatically adds tasks when requested\n  e.g., \"Add customer meeting preparation to my to-do list\"",
+        "helpNote": "※ Note: This chat does not support process definition map generation"
     },
     "accountTab": {
         "accountSetting": "Account Settings",
@@ -649,11 +658,19 @@
         "name": "Name",
         "message": "Description",
         "save": "Save",
-        "versionDescriptionTitle": "If checked, it will save by incrementing the version by one step, otherwise it will save in the current version.",
+        "versionDescriptionTitle": "Save Help Guide",
         "idRequired": "ID is required.",
         "idRules": "Use lowercase letters, numbers, and underscores only (e.g., new_process_id)",
         "nameRequired": "Name is required.",
-        "optimize": "Use Process Definition Optimization"
+        "optimize": "Use Process Definition Optimization",
+        "generatingName": "Generating recommended name...",
+        "generatingId": "Generating recommended ID...",
+        "duplicateWarning": "This ID is already in use. To overwrite the existing process, check the box and save.",
+        "regenerateNameTooltip": "Get New Name Suggestion",
+        "regenerateIdTooltip": "Get New ID Suggestion",
+        "helpIntro": "You can configure version management and optimization options when saving the process.\n\nMain Features:",
+        "helpVersionToggle": "• Version Toggle: If checked, saves by incrementing the version by one step; if unchecked, saves to the current version\n  e.g., 0.1 → 1.0 (checked), 0.1 → 0.2 (unchecked)",
+        "helpOptimize": "• Definition Optimization: When checked, AI automatically analyzes and configures the input data required for each task (activity) in the process\n  - Automatically connects data flow between tasks\n  - Intelligently recommends required information for each task\n  - Automates data linkage without manual configuration"
     },
     "FormDefinitionPanel": {
         "editForm": "Edit Form Attribute",

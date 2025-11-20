@@ -5,7 +5,8 @@
             style="overflow: auto;"
         >
             <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
-                <Chat
+                <Chat 
+                    :showDetailInfo="true"
                     :definitionMapOnlyInput="true"
                     :disableChat="false"
                     :isMobile="isMobile"

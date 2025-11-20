@@ -9,6 +9,7 @@
 
                     <DetailComponent class="ml-2"
                         :title="$t('ProcessDefinitionVersionDialog.versionDescriptionTitle')"
+                        :details="versionHelpDetails"
                     />
                     <v-spacer></v-spacer>
                     <v-btn @click="close()" icon variant="text" density="comfortable"
@@ -26,19 +27,77 @@
                     <div v-if="mode == 'ProcessGPT'">
                         <div v-if="isNew">
                             <v-text-field
-                                v-model="information.proc_def_id"
-                                :label="$t('ProcessDefinitionVersionDialog.id')"
-                                :rules="idRules"
-                                required
-                                class="pb-2"
-                            ></v-text-field>
-                            <v-text-field
                                 v-model="information.name"
-                                :label="$t('ProcessDefinitionVersionDialog.name')"
                                 :rules="[(v) => !!v || $t('ProcessDefinitionVersionDialog.nameRequired')]"
                                 required
                                 class="pb-2"
-                            ></v-text-field>
+                            >
+                                <template v-slot:label>
+                                    <span v-if="!isGeneratingName">{{ $t('ProcessDefinitionVersionDialog.name') }}</span>
+                                    <span v-else class="thinking-wave-text">
+                                        <span v-for="(char, index) in $t('ProcessDefinitionVersionDialog.generatingName')" :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
+                                            {{ char === ' ' ? '\u00A0' : char }}
+                                        </span>
+                                    </span>
+                                </template>
+                                <template v-if="information.name && !isGeneratingName && isNew && mode === 'ProcessGPT'" v-slot:append-inner>
+                                    <v-tooltip location="top">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                @click="regenerateName"
+                                                icon
+                                                size="x-small"
+                                                variant="text"
+                                                :disabled="isGeneratingName"
+                                            >
+                                                <v-icon size="18">mdi-auto-fix</v-icon>
+                                            </v-btn>
+                                        </template>
+                                        <span>{{ $t('ProcessDefinitionVersionDialog.regenerateNameTooltip') }}</span>
+                                    </v-tooltip>
+                                </template>
+                            </v-text-field>
+                            <v-text-field
+                                v-model="information.proc_def_id"
+                                :rules="idRules"
+                                required
+                                class="pb-2"
+                            >
+                                <template v-slot:label>
+                                    <span v-if="!isGeneratingId">{{ $t('ProcessDefinitionVersionDialog.id') }}</span>
+                                    <span v-else class="thinking-wave-text">
+                                        <span v-for="(char, index) in $t('ProcessDefinitionVersionDialog.generatingId')" :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
+                                            {{ char === ' ' ? '\u00A0' : char }}
+                                        </span>
+                                    </span>
+                                </template>
+                                <template v-if="information.proc_def_id && !isGeneratingId && isNew && mode === 'ProcessGPT'" v-slot:append-inner>
+                                    <v-tooltip location="top">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                @click="generateIdSuggestions"
+                                                icon
+                                                size="x-small"
+                                                variant="text"
+                                                :disabled="isGeneratingId"
+                                            >
+                                                <v-icon size="18">mdi-auto-fix</v-icon>
+                                            </v-btn>
+                                        </template>
+                                        <span>{{ $t('ProcessDefinitionVersionDialog.regenerateIdTooltip') }}</span>
+                                    </v-tooltip>
+                                </template>
+                            </v-text-field>
+                            <v-checkbox
+                                v-if="isDuplicateId && isNew"
+                                v-model="overwriteConfirm"
+                                :label="$t('ProcessDefinitionVersionDialog.duplicateWarning')"
+                                color="warning"
+                                hide-details
+                                class="mt-0 pt-0"
+                            ></v-checkbox>
                         </div>
                         <v-textarea class="process-definition-version-dialog-textarea"
                             v-if="isVersion"
@@ -101,12 +160,17 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import ProcessDefinitionIdGenerator from '@/components/ai/ProcessDefinitionIdGenerator';
+import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
+import { useBpmnStore } from '@/stores/bpmn';
 const backend = BackendFactory.createBackend();
 // import xmljs from 'xml-js';
 // import diff from 'deep-diff';
 export default {
     name: 'ProcessDefinitionVersionDialog',
-    components: {},
+    components: {
+        DetailComponent
+    },
     props: {
         open: Boolean,
         process: Object,
@@ -131,7 +195,24 @@ export default {
             releaseName: null
         },
         isOpen: false, // inner var
-        checkOptimize: false
+        checkOptimize: false,
+        isGeneratingName: false, // AI 이름 생성 중 여부
+        isGeneratingId: false, // AI ID 생성 중 여부
+        regenerateIdOnly: false, // true: ID만 재생성, false: 이름+ID 모두 생성
+        nameInputTimeout: null,
+        idGenerator: null,
+        bpmnProcessInfo: null, // BPMN에서 추출한 participant + activity 정보 (AI 프롬프트용)
+        processDefinition: null,
+        previousSuggestions: [],
+        previousNameSuggestions: [], // 이전에 AI가 추천했던 이름 목록
+        isDuplicateId: false,
+        overwriteConfirm: false,
+        idCheckTimeout: null,
+        versionHelpDetails: [
+            { title: "ProcessDefinitionVersionDialog.helpIntro" },
+            { title: "ProcessDefinitionVersionDialog.helpVersionToggle" },
+            { title: "ProcessDefinitionVersionDialog.helpOptimize" }
+        ]
     }),
     computed: {
         idRules() {
@@ -177,13 +258,74 @@ export default {
                 this.$emit('update:useOptimize', newVal);
             },
         },
+        // Name 필드 감시: 사용자가 프로세스 이름 입력 시 2초 후 AI가 자동으로 ID 추천
+        'information.name': {
+            handler(newVal) {
+                // AI 생성 중이면 watch 실행 안 함 (중복 생성 방지)
+                if (this.isGeneratingName || this.isGeneratingId) {
+                    return;
+                }
+                
+                // 이전 타이머 취소 (연속 타이핑 시 마지막 입력 2초 후에만 실행)
+                if (this.nameInputTimeout) {
+                    clearTimeout(this.nameInputTimeout);
+                }
+                
+                // 새 프로세스이고 ID가 비어있을 때만 자동 생성
+                if (newVal && newVal.trim() && this.isNew && this.mode === 'ProcessGPT' && !this.information.proc_def_id) {
+                    this.isGeneratingId = true;
+                    this.nameInputTimeout = setTimeout(() => {
+                        this.generateIdSuggestions();
+                    }, 2000);
+                } else {
+                    this.isGeneratingId = false;
+                }
+            },
+        },
+        // ID 필드 감시: 사용자가 직접 입력한 ID의 중복 여부를 체크
+        'information.proc_def_id': {
+            async handler(newVal) {
+                // 이전 타이머 취소 (debounce: 타이핑 멈춘 후 500ms 후 체크)
+                if (this.idCheckTimeout) {
+                    clearTimeout(this.idCheckTimeout);
+                }
+                
+                if (newVal && newVal.trim() && this.isNew) {
+                    this.idCheckTimeout = setTimeout(async () => {
+                        try {
+                            // DB에서 동일한 ID가 있는지 확인
+                            const exists = await backend.getRawDefinition(newVal);
+                            if (exists) {
+                                // 중복 ID 발견 → 경고 체크박스 표시
+                                this.isDuplicateId = true;
+                                this.overwriteConfirm = false;
+                            } else {
+                                this.isDuplicateId = false;
+                                this.overwriteConfirm = false;
+                            }
+                        } catch (error) {
+                            this.isDuplicateId = false;
+                            this.overwriteConfirm = false;
+                        }
+                    }, 500);
+                } else {
+                    this.isDuplicateId = false;
+                    this.overwriteConfirm = false;
+                }
+            },
+        },
         open: {
             async handler(newVal) {
                 if (newVal) {
                     await this.load();
                     this.isOpen = true;
                 } else {
+                    // 다이얼로그 닫을 때 ID 생성 관련 상태 초기화
                     this.isOpen = false;
+                    this.previousSuggestions = [];  // 이전 추천 ID 목록 초기화
+                    this.previousNameSuggestions = [];  // 이전 추천 이름 목록 초기화
+                    this.isDuplicateId = false;     // 중복 상태 초기화
+                    this.overwriteConfirm = false;  // 덮어쓰기 확인 초기화
                 }
             },
         },
@@ -197,6 +339,146 @@ export default {
         this.checkOptimize = this.useOptimize;
     },
     methods: {
+        /**
+         * AI를 통해 프로세스 이름 재생성
+         * - BPMN activity names를 기반으로 새로운 이름과 ID를 생성
+         * - 이전 추천 목록을 프롬프트에 포함하여 중복 방지
+         */
+        async regenerateName() {
+            const me = this;
+            if (!me.bpmnProcessInfo || !me.bpmnProcessInfo.trim()) {
+                return;
+            }
+            me.regenerateIdOnly = false; // 이름+ID 모두 생성
+            me.isGeneratingName = true;
+            me.isGeneratingId = true;
+            
+            try {
+                me.idGenerator = new ProcessDefinitionIdGenerator(me, {
+                    isStream: true,
+                    preferredLanguage: "Korean"
+                });
+                await me.idGenerator.generate();
+            } catch (error) {
+                console.error('이름 생성 중 오류 발생:', error);
+                me.isGeneratingName = false;
+                me.isGeneratingId = false;
+            }
+        },
+        /**
+         * AI를 통해 프로세스 ID만 재생성
+         * - 현재 이름을 기반으로 AI가 적절한 ID를 1개 생성
+         * - 이전 추천 목록(previousSuggestions)을 프롬프트에 포함하여 중복 방지
+         * - 이름은 변경하지 않음
+         */
+        async generateIdSuggestions() {
+            const me = this;
+            if (!me.information.name || !me.information.name.trim()) {
+                return;
+            }
+            me.regenerateIdOnly = true; // ID만 생성
+            me.isGeneratingId = true;
+            
+            try {
+                me.bpmnProcessInfo = me.information.name; // 현재 입력된 이름을 AI 프롬프트로 전달
+                me.idGenerator = new ProcessDefinitionIdGenerator(me, {
+                    isStream: true,
+                    preferredLanguage: "Korean"
+                });
+                await me.idGenerator.generate();
+            } catch (error) {
+                console.error('ID 생성 중 오류 발생:', error);
+                me.isGeneratingId = false;
+            }
+        },
+        /**
+         * AI 생성 완료 후 응답 처리
+         * - AI 응답을 파싱하여 추천 이름과 ID를 추출
+         * - 이전 추천 목록과 비교하여 중복 방지
+         * - DB 중복 체크 후 최종 ID를 필드에 자동 입력
+         * - DB 중복 시 6자리 UUID를 추가하여 고유 ID 생성
+         */
+        async onGenerationFinished(response) {
+            const me = this;
+            try {
+                // AI 응답에서 name과 id 추출 (name: value\nid: value 형식)
+                const lines = response.trim().split('\n');
+                let name = '';
+                let id = '';
+                
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith('name:')) {
+                        name = trimmedLine.split(':')[1]?.trim() || '';
+                    } else if (trimmedLine.startsWith('id:')) {
+                        id = trimmedLine.split(':')[1]?.trim() || '';
+                    }
+                }
+                
+                if (!id) {
+                    me.isGeneratingName = false;
+                    me.isGeneratingId = false;
+                    return;
+                }
+                
+                // 이름 설정: ID만 재생성할 때는 이름 변경 안 함
+                if (name && !me.regenerateIdOnly) {
+                    me.information.name = name;
+                    me.previousNameSuggestions.push(name); // 이전 이름 목록에 추가
+                }
+                
+                // 1단계: 이전 추천 목록에 이미 있는 ID인지 확인
+                if (me.previousSuggestions.includes(id)) {
+                    me.isGeneratingName = false;
+                    me.isGeneratingId = false;
+                    return;
+                }
+                
+                me.previousSuggestions.push(id);  // 새로운 ID는 목록에 추가
+                
+                try {
+                    // 2단계: DB에 동일한 ID가 있는지 확인
+                    const exists = await backend.getRawDefinition(id);
+                    if (!exists) {
+                        // DB에 없음 → 바로 사용 가능
+                        me.information.proc_def_id = id;
+                    } else {
+                        // 3단계: DB 중복 발견 → 6자리 UUID 추가하여 고유 ID 생성
+                        let uniqueId = null;
+                        let attempts = 0;
+                        
+                        while (!uniqueId && attempts < 5) {
+                            const shortUuid = Math.random().toString(36).substring(2, 8);
+                            const candidateId = `${id}_${shortUuid}`;
+                            
+                            try {
+                                const uuidExists = await backend.getRawDefinition(candidateId);
+                                if (!uuidExists) {
+                                    uniqueId = candidateId;
+                                }
+                            } catch (error) {
+                                uniqueId = candidateId;
+                            }
+                            attempts++;
+                        }
+                        if (uniqueId) {
+                            me.information.proc_def_id = uniqueId;
+                        }
+                    }
+                } catch (error) {
+                    // DB 조회 에러 시 원본 ID 사용
+                    me.information.proc_def_id = id;
+                }
+                
+                me.isGeneratingName = false;
+                me.isGeneratingId = false;
+                
+            } catch (error) {
+                console.error('응답 파싱 중 오류 발생:', error);
+                me.isGeneratingName = false;
+                me.isGeneratingId = false;
+            }
+        },
         async load() {
             var me = this;
             if (me.process && me.process.processDefinitionId) {
@@ -245,7 +527,6 @@ export default {
                             orderBy: 'timeStamp',
                             size: 1
                         });
-                        console.log(versionInfo);
                         if(versionInfo) {
                             versionInfo.sort((a, b) => parseFloat(b.version) - parseFloat(a.version));
                             const highestVersion = versionInfo.length > 0 ? versionInfo[0].version : null;
@@ -258,9 +539,11 @@ export default {
                         me.information.name = defId
                     }
                 } else {
+                    // BPMN을 불러오지 못한 경우: DB에 없으므로 새 프로세스
+                    // (AI로 생성한 경우 processDefinitionId가 임시로 있지만 실제로는 저장 안 됨)
                     me.isNew = true;
-                    me.information.proc_def_id = me.process.processDefinitionId;
-                    me.information.name = me.process.processDefinitionName;
+                    me.information.proc_def_id = me.process.processDefinitionId || '';
+                    me.information.name = me.process.processDefinitionName || '';
                 }
             } else {
                 me.isNew = true;
@@ -270,16 +553,80 @@ export default {
                     me.information.name = me.$route.query.name;
                     me.information.message = '';
                 } else {
+                    // BPMN modeler에서 직접 name 추출
+                    let activityNames = [];
+                    let participantName = '';
+                    try {
+                        const store = useBpmnStore();
+                        const modeler = store.getModeler;
+                        if (modeler) {
+                            const elementRegistry = modeler.get('elementRegistry');
+                            const allElements = elementRegistry.getAll();
+                            
+                            // participant와 task들의 name 수집
+                            allElements.forEach(element => {
+                                if (element.businessObject) {
+                                    const bo = element.businessObject;
+                                    // Participant name 수집 (프로세스 전체 제목)
+                                    if (bo.$type === 'bpmn:Participant' && bo.name) {
+                                        participantName = bo.name;
+                                    }
+                                    // Task name 수집 (개별 활동)
+                                    if ((bo.$type === 'bpmn:UserTask' || 
+                                         bo.$type === 'bpmn:ManualTask' ||
+                                         bo.$type === 'bpmn:ServiceTask' ||
+                                         bo.$type === 'bpmn:Task') && bo.name) {
+                                        activityNames.push(bo.name);
+                                    }
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        // BPMN name 추출 실패 무시
+                    }
+                    
                     me.information = {
                         arcv_id: '',
                         version: 0.0,
-                        name: me.processName ? me.processName : '',
+                        name: me.processName ? me.processName : '', // AI 모델링 생성 시 헤더에서 전달받은 이름 사용
                         proc_def_id: '',
                         snapshot: '',
                         diff: '',
                         timeStamp: '',
                         message: ''
                     };
+                    
+                    // participant와 activity name들을 AI에게 보내서 프로세스 이름 생성
+                    // 주의: 새 프로세스이고, 헤더에서 받은 이름이 없을 때만 실행 (AI 모델링 생성 시에는 이미 이름이 있음)
+                    if ((participantName || activityNames.length > 0) && me.isNew && me.mode === 'ProcessGPT' && !me.processName) {
+                        // Participant name(전체 프로세스 제목) + Activity names(개별 활동들)
+                        const nameComponents = [];
+                        if (participantName) {
+                            nameComponents.push(`프로세스: ${participantName}`);
+                        }
+                        if (activityNames.length > 0) {
+                            nameComponents.push(`활동: ${activityNames.join(', ')}`);
+                        }
+                        me.bpmnProcessInfo = nameComponents.join(' | '); // AI 프롬프트에 사용
+                        
+                        me.regenerateIdOnly = false; // 이름+ID 모두 생성
+                        me.isGeneratingName = true; // 이름 생성 시작
+                        me.isGeneratingId = true; // ID 생성 시작
+                        
+                        setTimeout(async () => {
+                            try {
+                                me.idGenerator = new ProcessDefinitionIdGenerator(me, {
+                                    isStream: true,
+                                    preferredLanguage: "Korean"
+                                });
+                                await me.idGenerator.generate();
+                            } catch (error) {
+                                console.error('AI 생성 중 오류 발생:', error);
+                                me.isGeneratingName = false;
+                                me.isGeneratingId = false;
+                            }
+                        }, 500);
+                    }
                 }
             }
             // me.isOpen = true;
@@ -334,6 +681,12 @@ export default {
             } else {
                 return false;
             }
+            
+            // ID 중복 안전장치: 중복 ID이면서 덮어쓰기 미확인 시 저장 불가
+            if (this.isDuplicateId && !this.overwriteConfirm) {
+                return false;
+            }
+            
             return true;
         }
     }

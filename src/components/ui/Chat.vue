@@ -934,6 +934,12 @@
                     <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
                         <v-row class="pa-0 ma-0">
                             <div class="definition-map-chat-menu-background">
+                                <DetailComponent 
+                                    v-if="showDetailInfo"
+                                    :iconSize="20"
+                                    :title="$t('chat.helpTitle')"
+                                    :details="chatDocumentHelpDetails"
+                                />
                                 <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
@@ -1139,6 +1145,7 @@ import defaultWorkIcon from '@/assets/images/chat/chat-icon.png';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ChatRoomNameGenerator from "@/components/ai/ChatRoomNameGenerator.js";
 import ProcessWorkResult from './ProcessWorkResult.vue';
+import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import { marked } from 'marked';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -1152,7 +1159,8 @@ export default {
         Record,
         DynamicForm,
         SummaryButton,
-        ProcessWorkResult
+        ProcessWorkResult,
+        DetailComponent
     },
     mixins: [
         ProgressAnimated,
@@ -1203,6 +1211,10 @@ export default {
             default: false
         },
         agentMessage: {
+            type: Boolean,
+            default: false
+        },
+        showDetailInfo: {
             type: Boolean,
             default: false
         }
@@ -1295,7 +1307,19 @@ export default {
             currentUserPicture: localStorage.getItem('picture') || '/images/defaultUser.png',
             
             // 메시지 전송 중 플래그
-            isSending: false
+            isSending: false,
+            
+            // 문서 도움말 상세정보
+            chatDocumentHelpDetails: [
+                { title: "chat.helpIntro" },
+                { title: "chat.helpScheduleRegistration" },
+                { title: "chat.helpScheduleQuery" },
+                { title: "chat.helpProcessStart" },
+                { title: "chat.helpDocumentQuery" },
+                { title: "chat.helpDocumentGeneration" },
+                { title: "chat.helpTodoRegistration" },
+                { title: "chat.helpNote" }
+            ]
         };
     },
     created() {
