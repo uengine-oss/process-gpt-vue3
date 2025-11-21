@@ -26,7 +26,7 @@
         <v-textarea v-model="promptInput.prompt" style="width:100%" :disabled="disabled.promptTextarea" :label="$t('BpmnPropertyPanel.scriptPrompt')"></v-textarea>
         <div class="d-flex justify-end mt-2">
             <v-btn @click="generateScript"
-                prepend-icon rounded color="primary"
+                prepend-icon rounded color="primary" variant="flat"
                 :disabled="disabled.generateScriptBtn"
             >
                 <Icons :icon="'magic'" style="margin-right:5px;"  />

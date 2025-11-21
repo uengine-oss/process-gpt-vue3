@@ -620,7 +620,8 @@
         "days": "일",
         "selectForm": "참조할 폼 선택",
         "noFormSelected": "폼을 선택해주세요",
-        "instruction": "지침"
+        "instruction": "지침",
+        "scriptVariable": "스크립트 내부에서 사용할 변수는 프로세스 변수에 정의해야 합니다."
     },
     "PDFPreviewer": {
         "saveDocument": "PDF 저장",
@@ -697,7 +698,14 @@
         "nameToWatch": "감시 필드 명"
     },
     "BpmnParameterContexts": {
-        "addArgument": "아규먼트 추가"
+        "addArgument": "아규먼트 추가",
+        "calleeVariable": "피호출측 변수",
+        "argument": "아규먼트",
+        "transformation": "변환",
+        "direction": "연결방향"
+    },
+    "BpmnRoleParameterContexts": {
+        "addMapping": "매핑 추가"
     },
     "DefaultArguments": {
         "parameterContext": "파라미터 컨텍스트"
@@ -706,7 +714,8 @@
         "parameterContext": "파라미터 컨텍스트",
         "selectDefinition": "프로세스 정의 선택",
         "noDefinitionSelected": "프로세스 정의가 선택되지 않았습니다.",
-        "roleMapping": "역할 매핑"
+        "roleMapping": "역할 매핑",
+        "move": "이동"
     },
     "ReceiveTaskPanel": {
         "dataMapping": "데이터 매핑",
@@ -784,6 +793,14 @@
     },
     "Mapper" : {
         "mapper" : "매퍼"
+    },
+    "TaskPanel": {
+        "inputData": "입력 데이터 (JSON/XML)",
+        "resultInputVariable": "결과 입력 변수"
+    },
+    "ManualTaskPanel": {
+        "inputData": "입력 데이터 (JSON/XML)",
+        "resultInputVariable": "결과 입력 변수"
     },
     "SubProcessPanel" : {
         "forEachRole" : "역할 기반 다중 생성",

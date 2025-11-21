@@ -618,7 +618,8 @@
         "days": "days",
         "selectForm": "Select Form to Reference",
         "noFormSelected": "Sel  ect a form to reference",
-        "instruction": "Instruction"
+        "instruction": "Instruction",
+        "scriptVariable": "Variables used in the script must be defined in the process variables."
     },
     "PDFPreviewer": {
         "saveDocument": "Save PDF",
@@ -695,7 +696,14 @@
         "nameToWatch": "Name to Watch"
     },
     "BpmnParameterContexts": {
-        "addArgument": "Add Argument"
+        "addArgument": "Add Argument",
+        "calleeVariable": "Callee Variable",
+        "argument": "Argument",
+        "transformation": "Transformation",
+        "direction": "Connection Direction"
+    },
+    "BpmnRoleParameterContexts": {
+        "addMapping": "Add Mapping"
     },
     "DefaultArguments": {
         "parameterContext": "Parameter Context"
@@ -704,7 +712,8 @@
         "parameterContext": "Parameter Context",
         "selectDefinition": "Select Definition",
         "noDefinitionSelected": "No definition selected.",
-        "roleMapping": "Role Mapping"
+        "roleMapping": "Role Mapping",
+        "move": "Move"
     },
     "ReceiveTaskPanel": {
         "dataMapping": "Data Mapping",
@@ -782,6 +791,14 @@
     },
     "Mapper": {
         "mapper": "Mapper"
+    },
+    "TaskPanel": {
+        "inputData": "Input Data (JSON/XML)",
+        "resultInputVariable": "Result Input Variable"
+    },
+    "ManualTaskPanel": {
+        "inputData": "Input Data (JSON/XML)",
+        "resultInputVariable": "Result Input Variable"
     },
     "SubProcessPanel": {
         "forEachRole": "Role-based Multiple Creation",

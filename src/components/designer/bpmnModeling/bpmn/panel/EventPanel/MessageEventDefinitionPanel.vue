@@ -3,7 +3,7 @@
         <div style="height: 100%" v-if="element.$type === 'bpmn:IntermediateThrowEvent'">
             <div class="mb-2 mt-4">
                 
-                <v-row class="ma-0 pa-0">
+                <v-row class="ma-0 pa-0 align-center">
                     <v-col cols="3" class="pa-0 pr-2">
                         <v-autocomplete
                             :label="$t('BpmnPropertyPanel.methodTypeUrl')"
@@ -14,15 +14,18 @@
                             v-model="copyUengineProperties.method"
                         ></v-autocomplete>
                     </v-col>
-                    <v-col cols="9" class="pa-0">
+                    <v-col class="pa-0">
                         <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.uriTemplate"></v-text-field>
                     </v-col>
+                    <DetailComponent
+                        :title="$t('SendTaskPanel.methodTypeDescriptionTitle')"
+                        :details="methodTypeDescription"
+                        :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
+                        :iconSize="24"
+                        style="margin-left: 4px; margin-right: 0px;"
+                    />
                 </v-row>
-                <DetailComponent
-                    :title="$t('SendTaskPanel.methodTypeDescriptionTitle')"
-                    :details="methodTypeDescription"
-                    :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
-                />
+                
             </div>
             <div style="height: 70%">
                 <v-row class="ma-0 pa-0" style="height: 100%">
@@ -36,7 +39,7 @@
                 </v-row>
             </div>
             <div>
-                <v-row class="ma-0 pa-0 mt-4">
+                <v-row class="ma-0 pa-0 align-center mt-4">
                     <v-autocomplete
                         :label="$t('ScriptTaskPanel.return')"
                         :items="processVariables"
@@ -48,33 +51,43 @@
                         variant="outlined"
                     ></v-autocomplete>
                     <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
+                    <DetailComponent class="ml-1 mt-5"
+                        style="padding-bottom:20px;"
+                        :title="$t('SendTaskPanel.returnTitle')"
+                        :iconSize="24"
+                    />
                 </v-row>
             </div>
-            <DetailComponent
-                style="padding-bottom:20px;"
-                :title="$t('SendTaskPanel.returnTitle')"
-            />
         </div>
         <div v-else-if="this.element.$type === 'bpmn:IntermediateCatchEvent' || this.element.$type === 'bpmn:StartEvent'">
             <div>
-                <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.correlationKey')" v-model="copyUengineProperties.correlationKey"></v-text-field>
-                <DetailComponent
-                    :title="$t('MessageEventDefinitionPanel.correlationKeyTitle')"
-                    :details="correlationKeyDescription"
-                    :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
-                />
-
-                <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.servicePath')" v-model="copyUengineProperties.servicePath"></v-text-field>
-                <DetailComponent
-                    :title="$t('MessageEventDefinitionPanel.servicePathTitle')"
-                    :details="servicePathDescription"
-                />
-
-                <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.operationRef')" v-model="copyUengineProperties.operationRef"></v-text-field>
-                <DetailComponent
-                    :title="$t('MessageEventDefinitionPanel.operationReferenceTitle')"
-                    :details="operationReferenceDescription"
-                />
+                <v-row class="ma-0 pa-0 align-center">
+                    <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.correlationKey')" v-model="copyUengineProperties.correlationKey"></v-text-field>
+                    <DetailComponent class="ml-2 mt-4"
+                        :title="$t('MessageEventDefinitionPanel.correlationKeyTitle')"
+                        :details="correlationKeyDescription"
+                        :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
+                        :iconSize="24"
+                    />  
+                </v-row>
+                
+                <v-row class="ma-0 pa-0 align-center">
+                    <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.servicePath')" v-model="copyUengineProperties.servicePath"></v-text-field>
+                    <DetailComponent class="ml-2 mt-4"
+                        :title="$t('MessageEventDefinitionPanel.servicePathTitle')"
+                        :details="servicePathDescription"
+                        :iconSize="24"
+                    />
+                </v-row>
+                
+                <v-row class="ma-0 pa-0 align-center">
+                    <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.operationRef')" v-model="copyUengineProperties.operationRef"></v-text-field>
+                    <DetailComponent class="ml-2 mt-4"
+                        :title="$t('MessageEventDefinitionPanel.operationReferenceTitle')"
+                        :details="operationReferenceDescription"
+                        :iconSize="24"
+                    />
+                </v-row>
             </div>
         </div>
     </div>

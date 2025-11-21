@@ -1,27 +1,34 @@
 <template>
     <div style="width: 100%">
         <div v-for="(parameterContext, idx) in parameterContexts" :key="idx">
-            <v-row>
+            <v-row class="ml-0 pa-0">
                 <v-col v-if="forSubProcess" cols="3">
                     <v-select v-if="definitionVariables" v-model="parameterContext.argument.text"
-                        :items="definitionVariables" item-title="name" item-value="name" label="피호출측 변수"></v-select>
+                        :items="definitionVariables" item-title="name" item-value="name" 
+                        :label="$t('BpmnParameterContexts.calleeVariable')"
+                    ></v-select>
                     <v-text-field v-else v-model="parameterContext.argument.text" label="input"
                         id="input"></v-text-field>
                 </v-col>
 
                 <v-col v-else cols="3">
-                    <v-text-field name="input" id="input" label="아규먼트"
+                    <v-text-field name="input" id="input" 
+                        :label="$t('BpmnParameterContexts.argument')"
                         v-model="parameterContext.argument.text"></v-text-field>
                 </v-col>
 
                 <v-col v-if="parameterContext.transformerMapping" cols="3">
                     <v-select v-model="parameterContext.transformerMapping.transformer" style="min-width: 20px;"
-                        :items="transformerList" label="변환"></v-select>
+                        :items="transformerList" 
+                        :label="$t('BpmnParameterContexts.transformation')"
+                    ></v-select>
                 </v-col>
 
                 <v-col cols="3">
                     <v-select v-model="parameterContext.direction" style="min-width: 20px;"
-                        @change="directionChanged(parameterContext)" :items="connectDirections" label="연결방향">
+                        @change="directionChanged(parameterContext)" :items="connectDirections" 
+                        :label="$t('BpmnParameterContexts.direction')"
+                    >
                         <template v-slot:selection="{ item }">
                             <v-icon>{{ iconForDirection(item.value) }}</v-icon>
                         </template>
@@ -48,8 +55,11 @@
             </v-row>
         </div>
         <v-spacer></v-spacer>
-        <v-btn text color="primary" rounded class="mb-3" @click="addMapping">
-            {{ $t('BpmnParameterContexts.addArgument') }}
+        <v-btn text color="primary" variant="flat" rounded style="margin: 0 0 28px 8px;" @click="addMapping">
+            <v-row class="pa-0 ma-0 align-center">
+                <v-icon class="mr-2" style="padding-top: 3px;">mdi-plus</v-icon>
+                <div>{{ $t('BpmnParameterContexts.addArgument') }}</div>
+            </v-row>
         </v-btn>
     </div>
 </template>

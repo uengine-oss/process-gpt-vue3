@@ -3,7 +3,9 @@
         <div class="included" style="margin-bottom: 22px">
             <div style="margin-bottom: 8px">
                 {{ $t('CallActivityPanel.selectDefinition') }}
-                <v-btn @click="moveDefinition()">이동</v-btn>
+                <v-btn @click="moveDefinition()" text rounded color="secondary" variant="flat" density="compact" class="ml-2">
+                    {{ $t('CallActivityPanel.move') }}
+                </v-btn>
             </div>
             <ProcessDefinitionDisplay 
                 v-model="copyUengineProperties.definitionId" 
