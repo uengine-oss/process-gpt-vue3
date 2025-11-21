@@ -1,262 +1,273 @@
 <template>
     <v-card>
         <!-- 닫기 버튼을 우측 끝에 배치 -->
-        <v-card-title class="d-flex justify-end pa-2 pb-0">
-            <v-btn @click="close" icon variant="text" density="comfortable">
-                <Icons :icon="'close'" :size="16" />
+        <v-row class="ma-0 pa-4 pb-0 align-center">
+            <v-card-title class="pa-0"
+            >{{ $t('processDefinitionMap.marketplace') }}
+            </v-card-title>
+            <v-spacer></v-spacer>
+            <v-btn @click="close"
+                class="ml-auto" 
+                variant="text" 
+                density="compact"
+                icon
+            >
+                <v-icon>mdi-close</v-icon>
             </v-btn>
-        </v-card-title>
+        </v-row>
         <!-- 
             반응형으로 가득차게 만들기 위해 v-container, v-row, v-col을 사용하고,
             내부 div의 스타일을 제거하여 가로로 가득차게 만듦
-    -->
-        <v-row class="ma-0 pa-0 pl-4 pr-4 pt-4">
-            <v-col cols="12" class="pa-0">
-                <div class="d-flex align-center flex-fill border border-borderColor rounded-pill px-5 w-100">
-                    <Icons :icon="'magnifer-linear'" :size="22" />
-                    <v-text-field v-model="searchKeyword"
-                        variant="plain"
-                        density="compact"
-                        class="position-relative pt-0 ml-3 custom-placeholer-color"
-                        :placeholder="$t('ProcessDefinitionMarketPlace.searchPlaceholder')"
-                        single-line hide-details
-                        @update:model-value="onSearchChange"
-                        :loading="isSearching"
-                    ></v-text-field>
-                </div>
-            </v-col>
-        </v-row>
-        <v-card-text class="pa-0 ma-0">
-            <!-- 태그 필터 칩 그룹 (탭 상단에 위치) -->
-            <v-chip-group v-if="!isSearchMode"
-                v-model="selectedTag"
-                selected-class="tag-selected"
-                column
-                class="marketplace-tag-list pa-4"
-                @update:model-value="onTagChange"
-            >
-                <v-chip
-                    key="all"
-                    value="all"
-                    :color="selectedTag === 'all' ? 'primary' : undefined"
-                    :text-color="selectedTag === 'all' ? 'white' : undefined"
-                    :variant="selectedTag === 'all' ? 'elevated' : 'tonal'"
-                    filter
-                    class="tag-chip"
+        -->
+        <div class="marketplace-scroll-area">
+            <v-row class="ma-0 pa-0 pl-4 pr-4 pt-4">
+                <v-col cols="12" class="pa-0">
+                    <div class="d-flex align-center flex-fill border border-borderColor rounded-pill px-5 w-100">
+                        <Icons :icon="'magnifer-linear'" :size="22" />
+                        <v-text-field v-model="searchKeyword"
+                            variant="plain"
+                            density="compact"
+                            class="position-relative pt-0 ml-3 custom-placeholer-color"
+                            :placeholder="$t('ProcessDefinitionMarketPlace.searchPlaceholder')"
+                            single-line hide-details
+                            @update:model-value="onSearchChange"
+                            :loading="isSearching"
+                        ></v-text-field>
+                    </div>
+                </v-col>
+            </v-row>
+            <v-card-text class="pa-0 ma-0">
+                <!-- 태그 필터 칩 그룹 (탭 상단에 위치) -->
+                <v-chip-group v-if="!isSearchMode"
+                    v-model="selectedTag"
+                    selected-class="tag-selected"
+                    column
+                    class="marketplace-tag-list pa-4"
+                    @update:model-value="onTagChange"
                 >
-                    {{ $t('ProcessDefinitionMarketPlace.allCategory') }}
-                </v-chip>
-                <v-chip
-                    v-for="tag in getAllAvailableTags()"
-                    :key="tag"
-                    :value="tag"
-                    :color="tag === selectedTag ? 'primary' : undefined"
-                    :text-color="tag === selectedTag ? 'white' : undefined"
-                    :variant="tag === selectedTag ? 'elevated' : 'tonal'"
-                    filter
-                    class="tag-chip"
-                >
-                    {{ tag }}
-                </v-chip>
-            </v-chip-group>
-            
-            <!-- 검색 결과가 있는 경우 -->
-            <template v-if="isSearchMode">
-                <v-card-title class="text-h5 mt-4" v-if="!isSearching">
-                    "{{ searchKeyword }}" {{ $t('ProcessDefinitionMarketPlace.searchResultTitle') }} ({{ searchResults && searchResults.length || 0 }}{{ $t('ProcessDefinitionMarketPlace.countUnit') }})
-                </v-card-title>
-                <v-card-title class="text-h5 mt-4" v-else>
-                    "{{ searchKeyword }}" {{ $t('ProcessDefinitionMarketPlace.searchingTitle') }}
-                </v-card-title>
+                    <v-chip
+                        key="all"
+                        value="all"
+                        :color="selectedTag === 'all' ? 'primary' : undefined"
+                        :text-color="selectedTag === 'all' ? 'white' : undefined"
+                        :variant="selectedTag === 'all' ? 'elevated' : 'tonal'"
+                        filter
+                        class="tag-chip"
+                    >
+                        {{ $t('ProcessDefinitionMarketPlace.allCategory') }}
+                    </v-chip>
+                    <v-chip
+                        v-for="tag in getAllAvailableTags()"
+                        :key="tag"
+                        :value="tag"
+                        :color="tag === selectedTag ? 'primary' : undefined"
+                        :text-color="tag === selectedTag ? 'white' : undefined"
+                        :variant="tag === selectedTag ? 'elevated' : 'tonal'"
+                        filter
+                        class="tag-chip"
+                    >
+                        {{ tag }}
+                    </v-chip>
+                </v-chip-group>
                 
-                <v-row dense class="ma-0 pa-0 marketplace-scroll-area">
-                    <v-col v-for="definition in searchResults" :key="definition.id" cols="12" sm="6" md="4" class="mb-0 pa-2 pl-4">
-                        <!-- 카테고리 표시 (모든 항목 표시) -->
-                        <div class="category-label">
-                            {{ getCategoryLabel(definition) }}
-                        </div>
-                        <v-card variant="outlined">
-                            <v-img class="marketplace-image" height="140px" cover :src="definition.image || ''">
-                                <div class="chip-container pb-2">
-                                    <v-chip
-                                        v-for="tag in definition.tags"
-                                        :key="tag"
-                                        size="small"
-                                        class="template-chip"
-                                        color="primary"
-                                        variant="outlined"
-                                    >
-                                        {{ tag }}
-                                    </v-chip>
-                                </div>
-                            </v-img>
-                            <div class="pa-2">
-                                <v-row class="ma-0 pa-0">
-                                    <v-col cols="9" class="ma-0 pa-0">
-                                        <v-card-title class="ma-0 pa-0">{{ definition.name }}</v-card-title>
-                                    </v-col>
-                                    <!-- 칩을 col 내부에서 오른쪽 끝에 배치 -->
-                                    <v-col cols="3" class="ma-0 pa-0 d-flex justify-end">
-                                        <!-- '추가' 텍스트 대신 mdi-plus 아이콘으로 대체 -->
-                                        <v-chip v-if="definition.import_count > 0" color="primary" density="compact">
-                                            <v-icon size="12" class="mr-1">mdi-plus</v-icon>
-                                            {{ definition.import_count }}
-                                        </v-chip>
-                                    </v-col>
-                                </v-row>
-                                <div class="text-body-1">{{ definition.description }}</div>
-                                <v-divider class="my-4"></v-divider>
-                                <v-row class="ma-0 pa-0">
-                                    <div class="text-body-1">{{ definition.author_name }}</div>
-                                    <v-btn 
-                                        :disabled="definition.isImported"
-                                        @click="importDefinition(definition)" 
-                                        :color="definition.isImported ? 'grey' : 'primary'" 
-                                        variant="flat"
-                                        density="compact"
-                                        class="ml-auto"
-                                        rounded="xl"
-                                    >
-                                        {{ definition.isImported ? $t('ProcessDefinitionMarketPlace.addedButton') : $t('ProcessDefinitionMarketPlace.addButton') }}
-                                    </v-btn>
-                                </v-row>
+                <!-- 검색 결과가 있는 경우 -->
+                <template v-if="isSearchMode">
+                    <v-card-title class="text-h5 mt-4" v-if="!isSearching">
+                        "{{ searchKeyword }}" {{ $t('ProcessDefinitionMarketPlace.searchResultTitle') }} ({{ searchResults && searchResults.length || 0 }}{{ $t('ProcessDefinitionMarketPlace.countUnit') }})
+                    </v-card-title>
+                    <v-card-title class="text-h5 mt-4" v-else>
+                        "{{ searchKeyword }}" {{ $t('ProcessDefinitionMarketPlace.searchingTitle') }}
+                    </v-card-title>
+                    
+                    <v-row dense class="ma-0 pa-0">
+                        <v-col v-for="definition in searchResults" :key="definition.id" cols="12" sm="6" md="4" class="mb-0 pa-2 pl-4">
+                            <!-- 카테고리 표시 (모든 항목 표시) -->
+                            <div class="category-label">
+                                {{ getCategoryLabel(definition) }}
                             </div>
-                        </v-card>
-                    </v-col>
-                </v-row>
-            </template>
-            
-            <!-- 선택된 태그가 '전체'일 때 심플하게 모든 정의 표시 -->
-            <template v-else-if="selectedTag === 'all'">
-                <v-card-title class="text-h5 pl-4 pr-4 pt-4">
-                    {{ $t('ProcessDefinitionMarketPlace.allTemplates') }}
-                </v-card-title>
+                            <v-card variant="outlined">
+                                <v-img class="marketplace-image" height="140px" cover :src="definition.image || ''">
+                                    <div class="chip-container pb-2">
+                                        <v-chip
+                                            v-for="tag in definition.tags"
+                                            :key="tag"
+                                            size="small"
+                                            class="template-chip"
+                                            color="primary"
+                                            variant="outlined"
+                                        >
+                                            {{ tag }}
+                                        </v-chip>
+                                    </div>
+                                </v-img>
+                                <div class="pa-2">
+                                    <v-row class="ma-0 pa-0">
+                                        <v-col cols="9" class="ma-0 pa-0">
+                                            <v-card-title class="ma-0 pa-0">{{ definition.name }}</v-card-title>
+                                        </v-col>
+                                        <!-- 칩을 col 내부에서 오른쪽 끝에 배치 -->
+                                        <v-col cols="3" class="ma-0 pa-0 d-flex justify-end">
+                                            <!-- '추가' 텍스트 대신 mdi-plus 아이콘으로 대체 -->
+                                            <v-chip v-if="definition.import_count > 0" color="primary" density="compact">
+                                                <v-icon size="12" class="mr-1">mdi-plus</v-icon>
+                                                {{ definition.import_count }}
+                                            </v-chip>
+                                        </v-col>
+                                    </v-row>
+                                    <div class="text-body-1">{{ definition.description }}</div>
+                                    <v-divider class="my-4"></v-divider>
+                                    <v-row class="ma-0 pa-0">
+                                        <div class="text-body-1">{{ definition.author_name }}</div>
+                                        <v-btn 
+                                            :disabled="definition.isImported"
+                                            @click="importDefinition(definition)" 
+                                            :color="definition.isImported ? 'grey' : 'primary'" 
+                                            variant="flat"
+                                            density="compact"
+                                            class="ml-auto"
+                                            rounded="xl"
+                                        >
+                                            {{ definition.isImported ? $t('ProcessDefinitionMarketPlace.addedButton') : $t('ProcessDefinitionMarketPlace.addButton') }}
+                                        </v-btn>
+                                    </v-row>
+                                </div>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+                </template>
                 
-                <v-row dense class="marketplace-scroll-area pa-0 ma-0 pl-2 pr-2">
-                    <v-col v-for="definition in definitionList" :key="definition.id" cols="12" sm="6" md="4" class="mb-4 pa-2">
-                        <!-- 카테고리 표시 -->
-                        <div class="category-label">
-                            {{ getCategoryLabel(definition) }}
-                        </div>
-                        <v-card variant="outlined">
-                            <v-img 
-                                class="marketplace-image" 
-                                height="140px" 
-                                cover
-                                :src="definition.image || ''"
-                            >
-                                <div class="chip-container pb-2">
-                                    <v-chip
-                                        v-for="tag in definition.tags"
-                                        :key="tag"
-                                        size="small"
-                                        class="template-chip"
-                                        color="primary"
-                                        variant="outlined"
-                                    >
-                                        {{ tag }}
-                                    </v-chip>
-                                </div>
-                            </v-img>
-                            <div class="pa-2">
-                                <v-row class="ma-0 pa-0">
-                                    <v-col cols="9" class="ma-0 pa-0">
-                                        <v-card-title class="ma-0 pa-0">{{ definition.name }}</v-card-title>
-                                    </v-col>
-                                    <!-- 칩을 col 내부에서 오른쪽 끝에 배치 -->
-                                    <v-col cols="3" class="ma-0 pa-0 d-flex justify-end">
-                                        <!-- '추가' 텍스트 대신 mdi-plus 아이콘으로 대체 -->
-                                        <v-chip v-if="definition.import_count > 0" color="primary" density="compact">
-                                            <v-icon size="12" class="mr-1">mdi-plus</v-icon>
-                                            {{ definition.import_count }}
-                                        </v-chip>
-                                    </v-col>
-                                </v-row>
-                                <div class="text-body-1">{{ definition.description }}</div>
-                                <v-divider class="my-4"></v-divider>
-                                <v-row class="ma-0 pa-0">
-                                    <div class="text-body-1">{{ definition.author_name }}</div>
-                                    <v-btn 
-                                        :disabled="definition.isImported"
-                                        @click="importDefinition(definition)" 
-                                        :color="definition.isImported ? 'grey' : 'primary'" 
-                                        variant="flat"
-                                        density="compact"
-                                        class="ml-auto"
-                                        rounded="xl"
-                                    >
-                                        {{ definition.isImported ? $t('ProcessDefinitionMarketPlace.addedButton') : $t('ProcessDefinitionMarketPlace.addButton') }}
-                                    </v-btn>
-                                </v-row>
+                <!-- 선택된 태그가 '전체'일 때 심플하게 모든 정의 표시 -->
+                <template v-else-if="selectedTag === 'all'">
+                    <v-card-title class="text-h5 pl-4 pr-4 pt-4">
+                        {{ $t('ProcessDefinitionMarketPlace.allTemplates') }}
+                    </v-card-title>
+                    
+                    <v-row dense class="pa-0 ma-0 pl-2 pr-2">
+                        <v-col v-for="definition in definitionList" :key="definition.id" cols="12" sm="6" md="4" class="mb-4 pa-2">
+                            <!-- 카테고리 표시 -->
+                            <div class="category-label">
+                                {{ getCategoryLabel(definition) }}
                             </div>
-                        </v-card>
-                    </v-col>
-                </v-row>
-            </template>
-            
-            <!-- 특정 태그가 선택된 경우 -->
-            <template v-else>
-                <v-card-title class="text-h5 mt-2 pl-4 pr-4">
-                    {{ selectedTag }} {{ $t('ProcessDefinitionMarketPlace.relatedTemplates') }}
-                </v-card-title>
+                            <v-card variant="outlined">
+                                <v-img 
+                                    class="marketplace-image" 
+                                    height="140px" 
+                                    cover
+                                    :src="definition.image || ''"
+                                >
+                                    <div class="chip-container pb-2">
+                                        <v-chip
+                                            v-for="tag in definition.tags"
+                                            :key="tag"
+                                            size="small"
+                                            class="template-chip"
+                                            color="primary"
+                                            variant="outlined"
+                                        >
+                                            {{ tag }}
+                                        </v-chip>
+                                    </div>
+                                </v-img>
+                                <div class="pa-2">
+                                    <v-row class="ma-0 pa-0">
+                                        <v-col cols="9" class="ma-0 pa-0">
+                                            <v-card-title class="ma-0 pa-0">{{ definition.name }}</v-card-title>
+                                        </v-col>
+                                        <!-- 칩을 col 내부에서 오른쪽 끝에 배치 -->
+                                        <v-col cols="3" class="ma-0 pa-0 d-flex justify-end">
+                                            <!-- '추가' 텍스트 대신 mdi-plus 아이콘으로 대체 -->
+                                            <v-chip v-if="definition.import_count > 0" color="primary" density="compact">
+                                                <v-icon size="12" class="mr-1">mdi-plus</v-icon>
+                                                {{ definition.import_count }}
+                                            </v-chip>
+                                        </v-col>
+                                    </v-row>
+                                    <div class="text-body-1">{{ definition.description }}</div>
+                                    <v-divider class="my-4"></v-divider>
+                                    <v-row class="ma-0 pa-0">
+                                        <div class="text-body-1">{{ definition.author_name }}</div>
+                                        <v-btn 
+                                            :disabled="definition.isImported"
+                                            @click="importDefinition(definition)" 
+                                            :color="definition.isImported ? 'grey' : 'primary'" 
+                                            variant="flat"
+                                            density="compact"
+                                            class="ml-auto"
+                                            rounded="xl"
+                                        >
+                                            {{ definition.isImported ? $t('ProcessDefinitionMarketPlace.addedButton') : $t('ProcessDefinitionMarketPlace.addButton') }}
+                                        </v-btn>
+                                    </v-row>
+                                </div>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+                </template>
                 
-                <v-row dense class="marketplace-scroll-area pa-0 ma-0">
-                    <v-col v-for="definition in filteredDefinitions" :key="definition.id" cols="12" sm="6" md="4" class="mb-0 pa-2 pl-4">
-                        <!-- 카테고리 표시 (모든 항목 표시) -->
-                        <div class="category-label">
-                            {{ getCategoryLabel(definition) }}
-                        </div>
-                        <v-card variant="outlined">
-                            <v-img class="marketplace-image" height="140px" cover :src="definition.image || ''">
-                                <div class="chip-container pb-2">
-                                    <v-chip
-                                        v-for="tag in definition.tags"
-                                        :key="tag"
-                                        size="small"
-                                        class="template-chip"
-                                        color="primary"
-                                        variant="outlined"
-                                    >
-                                        {{ tag }}
-                                    </v-chip>
-                                </div>
-                            </v-img>
-                            <div class="pa-2">
-                                <v-row class="ma-0 pa-0">
-                                    <v-col cols="9" class="ma-0 pa-0">
-                                        <v-card-title class="ma-0 pa-0">{{ definition.name }}</v-card-title>
-                                    </v-col>
-                                    <!-- 칩을 col 내부에서 오른쪽 끝에 배치 -->
-                                    <v-col cols="3" class="ma-0 pa-0 d-flex justify-end">
-                                        <!-- '추가' 텍스트 대신 mdi-plus 아이콘으로 대체 -->
-                                        <v-chip v-if="definition.import_count > 0" color="primary" density="compact">
-                                            <v-icon size="12" class="mr-1">mdi-plus</v-icon>
-                                            {{ definition.import_count }}
-                                        </v-chip>
-                                    </v-col>
-                                </v-row>
-                                <div class="text-body-1">{{ definition.description }}</div>
-                                <v-divider class="my-4"></v-divider>
-                                <v-row class="ma-0 pa-0">
-                                    <div class="text-body-1">{{ definition.author_name }}</div>
-                                    <v-btn 
-                                        :disabled="definition.isImported"
-                                        @click="importDefinition(definition)" 
-                                        :color="definition.isImported ? 'grey' : 'primary'" 
-                                        variant="flat"
-                                        density="compact"
-                                        class="ml-auto"
-                                        rounded="xl"
-                                    >
-                                        {{ definition.isImported ? $t('ProcessDefinitionMarketPlace.addedButton') : $t('ProcessDefinitionMarketPlace.addButton') }}
-                                    </v-btn>
-                                </v-row>
+                <!-- 특정 태그가 선택된 경우 -->
+                <template v-else>
+                    <v-card-title class="text-h5 mt-2 pl-4 pr-4">
+                        {{ selectedTag }} {{ $t('ProcessDefinitionMarketPlace.relatedTemplates') }}
+                    </v-card-title>
+                    
+                    <v-row dense class="pa-0 ma-0">
+                        <v-col v-for="definition in filteredDefinitions" :key="definition.id" cols="12" sm="6" md="4" class="mb-0 pa-2 pl-4">
+                            <!-- 카테고리 표시 (모든 항목 표시) -->
+                            <div class="category-label">
+                                {{ getCategoryLabel(definition) }}
                             </div>
-                        </v-card>
-                    </v-col>
-                </v-row>
-            </template>
-        </v-card-text>
+                            <v-card variant="outlined">
+                                <v-img class="marketplace-image" height="140px" cover :src="definition.image || ''">
+                                    <div class="chip-container pb-2">
+                                        <v-chip
+                                            v-for="tag in definition.tags"
+                                            :key="tag"
+                                            size="small"
+                                            class="template-chip"
+                                            color="primary"
+                                            variant="outlined"
+                                        >
+                                            {{ tag }}
+                                        </v-chip>
+                                    </div>
+                                </v-img>
+                                <div class="pa-2">
+                                    <v-row class="ma-0 pa-0">
+                                        <v-col cols="9" class="ma-0 pa-0">
+                                            <v-card-title class="ma-0 pa-0">{{ definition.name }}</v-card-title>
+                                        </v-col>
+                                        <!-- 칩을 col 내부에서 오른쪽 끝에 배치 -->
+                                        <v-col cols="3" class="ma-0 pa-0 d-flex justify-end">
+                                            <!-- '추가' 텍스트 대신 mdi-plus 아이콘으로 대체 -->
+                                            <v-chip v-if="definition.import_count > 0" color="primary" density="compact">
+                                                <v-icon size="12" class="mr-1">mdi-plus</v-icon>
+                                                {{ definition.import_count }}
+                                            </v-chip>
+                                        </v-col>
+                                    </v-row>
+                                    <div class="text-body-1">{{ definition.description }}</div>
+                                    <v-divider class="my-4"></v-divider>
+                                    <v-row class="ma-0 pa-0">
+                                        <div class="text-body-1">{{ definition.author_name }}</div>
+                                        <v-btn 
+                                            :disabled="definition.isImported"
+                                            @click="importDefinition(definition)" 
+                                            :color="definition.isImported ? 'grey' : 'primary'" 
+                                            variant="flat"
+                                            density="compact"
+                                            class="ml-auto"
+                                            rounded="xl"
+                                        >
+                                            {{ definition.isImported ? $t('ProcessDefinitionMarketPlace.addedButton') : $t('ProcessDefinitionMarketPlace.addButton') }}
+                                        </v-btn>
+                                    </v-row>
+                                </div>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+                </template>
+            </v-card-text>
+        </div>
     </v-card>
 </template>
 
@@ -557,8 +568,8 @@ export default {
 
 <style scoped>
 .marketplace-scroll-area {
-    max-height: 56vh;
-    min-height: 56vh;
+    max-height: calc(100vh - 56px);
+    min-height: calc(100vh - 56px);
     overflow: auto;
     padding: 0px 8px 0px 8px;
 }
@@ -603,11 +614,5 @@ export default {
 }
 
 @media only screen and (max-width: 600px) {
-    .marketplace-scroll-area {
-        max-height: 100%;
-        min-height: 100%;
-        overflow: auto;
-        padding: 0px 8px 0px 8px;
-    }
 }
 </style>

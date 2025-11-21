@@ -1,11 +1,8 @@
 <template>
     <v-col v-if="infoDetail">
         <v-alert color="#2196F3" variant="outlined">
-            <template v-slot:title>
-                <Icons style="padding-left:-5px;" :icon="'info-line'" :size="32" :color="'#2196F3'"/>
-            </template>
-            <small style="white-space: pre-line; font-size:14px;">
-                {{ infoDetail }}
+            <small style="white-space: pre-line; font-size:14px; line-height: 32px;">
+                <Icons :icon="'info-line'" :size="32" :color="'#2196F3'" style="display: inline-block; vertical-align: top; margin-right: 8px;"/>{{ infoDetail }}
             </small>
         </v-alert>
     </v-col>
