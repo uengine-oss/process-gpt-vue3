@@ -265,6 +265,27 @@
         "consultingAI": "프로세스 컨설팅 AI",
         "consultingButton": "프로세스 컨설팅 시작하기",
         "analyzeAndImproveProcessWithAI": "프로세스 컨설팅 시작하기",
+        "usageGuide": {
+            "title": "프로세스 정의 체계도 사용 가이드",
+            "details": [
+                {
+                    "icon": "pencil",
+                    "title": "연필 아이콘\n편집 버튼으로 프로세스 정의 체계도를 수정할 수 있습니다."
+                },
+                {
+                    "icon": "image-download",
+                    "title": "이미지 다운로드 아이콘\n생성된 체계도를 이미지로 다운로드하는 기능입니다."
+                },
+                {
+                    "icon": "magic",
+                    "title": "프로세스 컨설팅\nAI를 활용해 초기 프로세스를 만들 수 있습니다.\n예) '휴가신청 프로세스를 생성해줘'와 같이 입력하면 자동으로 생성됩니다."
+                },
+                {
+                    "icon": "market",
+                    "title": "마켓플레이스\n이미 다른 사람들에 의해 등록된 예시 프로세스를 테스트 및 동작시켜볼 수 있습니다."
+                }
+            ]
+        },
         "editingUser": "{name} 님이 수정 중 입니다.",
         "checkIn": "잠금",
         "checkOut": "잠금 해제",
