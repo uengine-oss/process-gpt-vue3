@@ -301,7 +301,7 @@ export default {
 
             businessObject.set('extensionElements', extensionElements);
         },
-        upsertElementJsonProperties(modeler, elementId, jsonString) {
+        upsertElementJsonProperties(modeler, elementId, jsonString, role) {
             try {
                 const elementRegistry = modeler.get('elementRegistry');
                 const bpmnFactory = modeler.get('bpmnFactory');
@@ -323,7 +323,23 @@ export default {
                     uprops = bpmnFactory.create('uengine:Properties', { json: '' });
                     values.push(uprops);
                 }
-                uprops.json = jsonString || '{}';
+                
+                // role이 전달되면 기존 properties에 role 추가/업데이트
+                if (role !== undefined) {
+                    let propsJson = {};
+                    try {
+                        if (uprops.json) {
+                            propsJson = JSON.parse(uprops.json);
+                        }
+                    } catch (e) {
+                        propsJson = {};
+                    }
+                    propsJson.role = role;
+                    uprops.json = JSON.stringify(propsJson);
+                } else {
+                    // role이 없으면 기존 방식대로 jsonString 사용
+                    uprops.json = jsonString || '{}';
+                }
             } catch (e) {
                 console.warn('Failed to upsert element properties for', elementId, e);
             }
@@ -577,6 +593,91 @@ export default {
                         this.applySubprocessProperties(modeler, me.processDefinition?.subProcesses || []);
                     } catch (e) {
                         console.warn('applySubprocessProperties failed', e);
+                    }
+
+                    // update element roles in properties from XML (without propsJson interference)
+                    try {
+                        const modeler = store.getModeler;
+                        
+                        // 현재 XML로 lane 기반 role 추출 (propsJson 영향 없이 순수 lane 정보만)
+                        const tempXml = await modeler.saveXML({ format: true, preamble: true });
+                        const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
+                        const xmlResult = await parser.parseStringPromise(tempXml.xml);
+                        
+                        // lane 역색인 생성 (elementId -> laneName)
+                        const laneMap = new Map();
+                        const processes = xmlResult['bpmn:definitions']?.['bpmn:process'];
+                        const procList = Array.isArray(processes) ? processes : [processes];
+                        
+                        procList.forEach(proc => {
+                            const laneSet = proc?.['bpmn:laneSet'];
+                            if (laneSet) {
+                                const lanes = laneSet['bpmn:lane'];
+                                const laneList = Array.isArray(lanes) ? lanes : lanes ? [lanes] : [];
+                                laneList.forEach(lane => {
+                                    const refs = lane['bpmn:flowNodeRef'];
+                                    const refList = Array.isArray(refs) ? refs : refs ? [refs] : [];
+                                    refList.forEach(ref => {
+                                        laneMap.set(ref, lane.name);
+                                    });
+                                });
+                            }
+                        });
+                        
+                        // lane 정보를 사용해서 properties 업데이트
+                        if (me.processDefinition.activities) {
+                            me.processDefinition.activities.forEach(act => {
+                                const laneName = laneMap.get(act.id);
+                                if (laneName) {
+                                    this.upsertElementJsonProperties(modeler, act.id, null, laneName);
+                                }
+                            });
+                        }
+                        
+                        if (me.processDefinition.events) {
+                            me.processDefinition.events.forEach(evt => {
+                                const laneName = laneMap.get(evt.id);
+                                if (laneName) {
+                                    this.upsertElementJsonProperties(modeler, evt.id, null, laneName);
+                                }
+                            });
+                        }
+                        
+                        if (me.processDefinition.gateways) {
+                            me.processDefinition.gateways.forEach(gw => {
+                                const laneName = laneMap.get(gw.id);
+                                if (laneName) {
+                                    this.upsertElementJsonProperties(modeler, gw.id, null, laneName);
+                                }
+                            });
+                        }
+                        
+                        // 업데이트된 properties를 반영하기 위해 다시 XML 생성
+                        xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                        
+                        // properties가 업데이트된 XML로 processDefinition 다시 생성 (한 번에 동기화)
+                        const updatedProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
+                        updatedProcessDefinition.data = me.processVariables;
+                        
+                        // tool 정보 복원
+                        if (updatedProcessDefinition.activities && me.processDefinition.activities) {
+                            updatedProcessDefinition.activities = updatedProcessDefinition.activities.map(newActivity => {
+                                const oldActivity = me.processDefinition.activities.find(old => old.id === newActivity.id);
+                                if (oldActivity && oldActivity.tool) {
+                                    newActivity.tool = oldActivity.tool;
+                                }
+                                return newActivity;
+                            });
+                        }
+                        
+                        if (info.name && info.name != '') {
+                            updatedProcessDefinition.processDefinitionName = info.name;
+                        }
+                        
+                        me.processDefinition = updatedProcessDefinition;
+                        info.definition = me.processDefinition;
+                    } catch (e) {
+                        console.warn('update element roles failed', e);
                     }
 
                     await me.saveModel(info, xmlObj.xml);
