@@ -265,6 +265,27 @@
         "consultingAI": "Process Consulting AI",
         "consultingButton": "Start Process Consulting",
         "analyzeAndImproveProcessWithAI": "Start process consulting with AI",
+        "usageGuide": {
+            "title": "Process Definition Map Usage Guide",
+            "details": [
+                {
+                    "icon": "pencil",
+                    "title": "Pencil Icon\nEdit button to modify the process definition map."
+                },
+                {
+                    "icon": "image-download",
+                    "title": "Image Download Icon\nDownload the generated diagram as an image."
+                },
+                {
+                    "icon": "magic",
+                    "title": "Process Consulting\nCreate initial processes using AI.\nExample: Enter 'Create a leave request process' to automatically generate it."
+                },
+                {
+                    "icon": "market",
+                    "title": "Marketplace\nTest and operate example processes registered by other users."
+                }
+            ]
+        },
         "editingUser": "is editing.",
         "checkIn": "Check In",
         "checkOut": "Check Out",
@@ -618,7 +639,8 @@
         "days": "days",
         "selectForm": "Select Form to Reference",
         "noFormSelected": "Sel  ect a form to reference",
-        "instruction": "Instruction"
+        "instruction": "Instruction",
+        "scriptVariable": "Variables used in the script must be defined in the process variables."
     },
     "PDFPreviewer": {
         "saveDocument": "Save PDF",
@@ -695,7 +717,14 @@
         "nameToWatch": "Name to Watch"
     },
     "BpmnParameterContexts": {
-        "addArgument": "Add Argument"
+        "addArgument": "Add Argument",
+        "calleeVariable": "Callee Variable",
+        "argument": "Argument",
+        "transformation": "Transformation",
+        "direction": "Connection Direction"
+    },
+    "BpmnRoleParameterContexts": {
+        "addMapping": "Add Mapping"
     },
     "DefaultArguments": {
         "parameterContext": "Parameter Context"
@@ -704,7 +733,8 @@
         "parameterContext": "Parameter Context",
         "selectDefinition": "Select Definition",
         "noDefinitionSelected": "No definition selected.",
-        "roleMapping": "Role Mapping"
+        "roleMapping": "Role Mapping",
+        "move": "Move"
     },
     "ReceiveTaskPanel": {
         "dataMapping": "Data Mapping",
@@ -782,6 +812,14 @@
     },
     "Mapper": {
         "mapper": "Mapper"
+    },
+    "TaskPanel": {
+        "inputData": "Input Data (JSON/XML)",
+        "resultInputVariable": "Result Input Variable"
+    },
+    "ManualTaskPanel": {
+        "inputData": "Input Data (JSON/XML)",
+        "resultInputVariable": "Result Input Variable"
     },
     "SubProcessPanel": {
         "forEachRole": "Role-based Multiple Creation",
