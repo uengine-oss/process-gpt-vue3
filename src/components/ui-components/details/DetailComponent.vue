@@ -32,8 +32,15 @@
                     <v-card-text class="pa-4 pt-2" style="max-height: 400px; overflow-y: auto;">
                         <div v-for="(item, index) in details" :key="index">
                             <div class="mb-3">
-                                <div v-if="item.title" class="detail-item-content">
-                                    {{ $t(item.title) }}
+                                <div v-if="item.title" class="detail-item-content d-flex align-start">
+                                    <Icons 
+                                        v-if="item.icon" 
+                                        :icon="item.icon" 
+                                        :size="20" 
+                                        class="mr-2 mt-1" 
+                                        style="flex-shrink: 0;"
+                                    />
+                                    <span>{{ $t(item.title) }}</span>
                                 </div>
                                 <v-img 
                                     v-if="item.image"

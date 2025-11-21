@@ -1453,6 +1453,12 @@ export default {
                     me.EventBus.emit('definitions-updated');
 
                     if(!info.skipSaveProcMap){
+                        // 프로세스 이름이 변경된 경우 정의 체계도(proc_map)의 이름도 동기화
+                        if (info.name && info.proc_def_id) {
+                            await backend.updateProcessNameInMap(info.proc_def_id, info.name);
+                            // 최신 데이터로 메모리 동기화
+                            me.processDefinitionMap = await backend.getProcessDefinitionMap();
+                        }
                         await backend.putProcessDefinitionMap(me.processDefinitionMap);
                     }
 

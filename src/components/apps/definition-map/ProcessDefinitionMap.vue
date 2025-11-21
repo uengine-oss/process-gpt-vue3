@@ -15,13 +15,18 @@
             </div>
             
             <div v-if="componentName != 'SubProcessDetail'" class="pa-0 pl-6 pt-4 pr-6 d-flex align-center"
-                style="position: sticky; top: 0; z-index:2; background-color:white">
+                style="position: sticky; top: 0; z-index:2; background-color:white"
+            >
                 <h5 v-if="!globalIsMobile.value" class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
                 <v-row v-else class="ma-0 pa-0">
                     <!-- 수정: public 경로부터 시작하는 favicon 이미지 추가 -->
                     <img src="/process-gpt-favicon.png" alt="Process GPT Favicon" style="height:24px; margin-right:8px;" />
                     <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.mobileTitle') }}</h5>
                 </v-row>
+                <DetailComponent class="ml-2"
+                    :title="$t('processDefinitionMap.usageGuide.title')"
+                    :details="usageGuideDetails"
+                />
                 <v-btn v-if="!isExecutionByProject && $route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" 
                     size="24" @click="goProcessMap">
                     <Icons :icon="'arrow-go-back'"/>
@@ -86,15 +91,14 @@
                     </v-tooltip>
 
                     <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
-                    <v-tooltip v-if="!isExecutionByProject && componentName != 'SubProcessDetail' && !globalIsMobile.value" :text="$t('processDefinition.zoom')">
+                    <!-- <v-tooltip v-if="!isExecutionByProject && componentName != 'SubProcessDetail' && !globalIsMobile.value" :text="$t('processDefinition.zoom')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="ml-3"
                                 @click="$globalState.methods.toggleZoom()" icon variant="text" :size="24">
-                                <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
                                 <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"/>
                             </v-btn>
                         </template>
-                    </v-tooltip>
+                    </v-tooltip> -->
                 </div>
             </div>
 
@@ -220,8 +224,9 @@
             </v-card>
         </v-dialog>
 
-        <v-dialog v-model="openMarketplaceDialog" max-width="1200" persistent
-            :fullscreen="isMobile"
+        <v-dialog v-model="openMarketplaceDialog" 
+            persistent
+            fullscreen
         >
             <process-definition-market-place @closeMarketplaceDialog="closeMarketplaceDialog" />
         </v-dialog>
@@ -237,6 +242,7 @@ import ViewProcessDetails from './ViewProcessDetails.vue';
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPlace.vue';
 import Chat from '@/components/ui/Chat.vue';
+import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -256,7 +262,8 @@ export default {
         DefinitionMapList,
         ProcessDefinitionChat,
         ProcessDefinitionMarketPlace,
-        Chat
+        Chat,
+        DetailComponent
     },
     props: {
         componentName: {
@@ -292,7 +299,25 @@ export default {
         openMarketplaceDialog: false,
         isSimulateMode: false,
         windowWidth: window.innerWidth,
-        pendingRoute: null
+        pendingRoute: null,
+        usageGuideDetails: [
+            { 
+                icon: 'pencil', 
+                title: 'processDefinitionMap.usageGuide.details.0.title' 
+            },
+            { 
+                icon: 'image-download', 
+                title: 'processDefinitionMap.usageGuide.details.1.title' 
+            },
+            { 
+                icon: 'magic', 
+                title: 'processDefinitionMap.usageGuide.details.2.title' 
+            },
+            { 
+                icon: 'market', 
+                title: 'processDefinitionMap.usageGuide.details.3.title' 
+            }
+        ]
     }),
     computed: {
         useLock() {
