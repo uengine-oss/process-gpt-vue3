@@ -43,20 +43,24 @@
                 </template>
 
                 <!-- editable cron expression -->
-                <v-text-field
-                class="mt-4"
-                :modelValue="expression"
-                @update:model-value="nextValue = $event"
-                @blur="value = nextValue"
-                label="cron expression"
-                :error-messages="error" />
-
+                <v-row class="ma-0 pa-0 align-center">
+                    <v-text-field
+                        class="mt-4"
+                        :modelValue="expression"
+                        @update:model-value="nextValue = $event"
+                        @blur="value = nextValue"
+                        label="cron expression"
+                        :error-messages="error" 
+                    />
+                    <DetailComponent class="ml-2 mt-4"
+                        :title="$t('TimerEventDefinitionPanel.cronDescriptionTitle')"
+                        :details="cronDescription"
+                        :iconSize="24"
+                    />
+                </v-row>
             </div>
         </cron-core>
-        <DetailComponent
-            :title="$t('TimerEventDefinitionPanel.cronDescriptionTitle')"
-            :details="cronDescription"
-        />
+        
     </div>
 </template>
 <script>

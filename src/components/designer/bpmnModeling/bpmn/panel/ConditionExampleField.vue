@@ -2,13 +2,13 @@
     <div>
         <!-- 예시 생성 버튼 -->
         <div class="d-flex justify-end mt-4">
-            <v-btn @click="generateExamples" color="primary" density="compact" :disabled="isGenerating">
+            <v-btn @click="generateExamples" color="primary" density="compact" rounded variant="flat" :disabled="isGenerating">
                 <span v-if="isGenerating" class="thinking-wave-text">
                     <span v-for="(char, index) in '예시 생성 중...' " :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
                         {{ char === ' ' ? '\u00A0' : char }}
                     </span>
                 </span>
-                <span v-else>예시 생성</span>
+                <span v-else>{{ $t('ConditionExampleField.generateExamples') }}</span>
             </v-btn>
         </div>
 
@@ -54,8 +54,8 @@ export default {
     data() {
         return {
             header: [
-                { key: 'when', name: '조건 (When)' },
-                { key: 'then', name: '결과 (Then)' }
+                { key: 'when', name: this.$t('ConditionExampleField.when') },
+                { key: 'then', name: this.$t('ConditionExampleField.then') }
             ],
             goodExamples: [],
             badExamples: [],

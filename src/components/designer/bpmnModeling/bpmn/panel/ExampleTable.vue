@@ -13,7 +13,7 @@
                         <th v-for="header in headers" :key="header.key" class="text-center">
                             {{ header.name }}
                         </th>
-                        <th class="text-center">작업</th>
+                        <th class="text-center">{{ $t('ExampleTable.operation') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -64,7 +64,7 @@
                 prepend-icon="mdi-plus"
                 @click="addNewRow"
             >
-                새 예시 추가
+                {{ $t('ExampleTable.addNewExample') }}
             </v-btn>
         </div>
 
@@ -72,7 +72,7 @@
         <v-dialog v-model="dateTimeDialog" max-width="400px">
             <v-card>
                 <v-card-title>
-                    <span class="text-h5">유효 기간 설정</span>
+                    <span class="text-h5">{{ $t('ExampleTable.validPeriodSetting') }}</span>
                 </v-card-title>
                 <v-card-text>
                     <v-container>
@@ -80,7 +80,7 @@
                             <v-col cols="12">
                                 <v-text-field
                                     v-model="editingExample.valid_at"
-                                    label="유효 시작일"
+                                    :label="$t('ExampleTable.validStartDate')"
                                     type="datetime-local"
                                     variant="outlined"
                                     prepend-icon="mdi-calendar-start"
@@ -89,7 +89,7 @@
                             <v-col cols="12">
                                 <v-text-field
                                     v-model="editingExample.invalid_at"
-                                    label="유효 종료일"
+                                    :label="$t('ExampleTable.validEndDate')"
                                     type="datetime-local"
                                     variant="outlined"
                                     prepend-icon="mdi-calendar-end"
@@ -105,14 +105,14 @@
                         text
                         @click="closeDateTimeDialog"
                     >
-                        취소
+                        {{ $t('ExampleTable.cancel') }}
                     </v-btn>
                     <v-btn
                         color="blue darken-1"
                         text
                         @click="saveDateTimeSettings"
                     >
-                        저장
+                        {{ $t('ExampleTable.save') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -149,10 +149,10 @@ export default {
     },
     computed: {
         icon() {
-            return this.title === '좋은 예시' ? 'mdi-check-circle-outline' : 'mdi-cancel';
+            return this.title === this.$t('ExampleTable.goodExamples') ? 'mdi-check-circle-outline' : 'mdi-cancel';
         },
         title() {
-            return this.type === 'good' ? '좋은 예시' : '나쁜 예시';
+            return this.type === 'good' ? this.$t('ExampleTable.goodExamples') : this.$t('ExampleTable.badExamples');
         }
     },
     methods: {

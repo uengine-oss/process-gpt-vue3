@@ -23,7 +23,7 @@
             />
         </div>
         <div v-if="mode == 'ProcessGPT'" class="mt-4 d-flex justify-end">
-            <v-btn @click="generateRule" color="primary" density="compact">
+            <v-btn @click="generateRule" color="primary" density="compact" rounded variant="flat">
                 
                 <span v-if="isRuleGenerating" class="thinking-wave-text">
                     <span v-for="(char, index) in $t('BpmnPropertyPanel.ruleGenerating') " :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
@@ -35,8 +35,6 @@
                 </span>
             </v-btn>
         </div>
-
-
 
         <!-- Generation Result Dialog -->
         <v-dialog v-model="generationDialog" max-width="960" persistent>
@@ -110,8 +108,8 @@
         </v-dialog>
 
         <br>
-        <div>{{ $t('BpmnPropertyPanel.priority') }}</div>
-        <div>
+        <div class="mb-1">{{ $t('BpmnPropertyPanel.priority') }}</div>
+        <div class="mb-4">
             <v-text-field 
                 v-model="copyUengineProperties.priority" 
                 :disabled="isViewMode" 

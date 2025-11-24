@@ -2181,5 +2181,22 @@
     "AgentSkills": {
         "skills": "스킬",
         "skillUpload": "스킬 파일(.zip) 업로드"
+    },
+    "ConditionExampleField": {
+        "generateExamples": "예시 생성",
+        "generatingExamples": "예시 생성 중...",
+        "when": "조건 (When)",
+        "then": "결과 (Then)"
+    },
+    "ExampleTable": {
+        "operation": "작업",
+        "addNewExample": "새 예시 추가",
+        "validPeriodSetting": "유효 기간 설정",
+        "validStartDate": "유효 시작일",
+        "validEndDate": "유효 종료일",
+        "cancel": "취소",
+        "save": "저장",
+        "goodExamples": "좋은 예시",
+        "badExamples": "나쁜 예시"
     }
 }
