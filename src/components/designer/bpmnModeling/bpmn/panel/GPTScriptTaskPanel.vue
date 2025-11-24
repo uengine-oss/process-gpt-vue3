@@ -3,7 +3,7 @@
         <div class="mb-6">
             <div class="mb-2">{{ $t('BpmnPropertyPanel.scriptType') + ' : ' + language }}</div>
             <h6 class="text-caption mb-2">
-                ※ 스크립트 내부에서 사용할 변수는 프로세스 변수에 정의해야 합니다.
+                ※ {{ $t('BpmnPropertyPanel.scriptVariable') }}
             </h6>
             <v-card variant="outlined" class="pa-2" style="border-radius:8px !important;">
                 <v-textarea

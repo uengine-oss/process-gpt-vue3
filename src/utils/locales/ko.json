@@ -641,7 +641,8 @@
         "days": "일",
         "selectForm": "참조할 폼 선택",
         "noFormSelected": "폼을 선택해주세요",
-        "instruction": "지침"
+        "instruction": "지침",
+        "scriptVariable": "스크립트 내부에서 사용할 변수는 프로세스 변수에 정의해야 합니다."
     },
     "PDFPreviewer": {
         "saveDocument": "PDF 저장",
@@ -718,7 +719,14 @@
         "nameToWatch": "감시 필드 명"
     },
     "BpmnParameterContexts": {
-        "addArgument": "아규먼트 추가"
+        "addArgument": "아규먼트 추가",
+        "calleeVariable": "피호출측 변수",
+        "argument": "아규먼트",
+        "transformation": "변환",
+        "direction": "연결방향"
+    },
+    "BpmnRoleParameterContexts": {
+        "addMapping": "매핑 추가"
     },
     "DefaultArguments": {
         "parameterContext": "파라미터 컨텍스트"
@@ -727,7 +735,8 @@
         "parameterContext": "파라미터 컨텍스트",
         "selectDefinition": "프로세스 정의 선택",
         "noDefinitionSelected": "프로세스 정의가 선택되지 않았습니다.",
-        "roleMapping": "역할 매핑"
+        "roleMapping": "역할 매핑",
+        "move": "이동"
     },
     "ReceiveTaskPanel": {
         "dataMapping": "데이터 매핑",
@@ -805,6 +814,14 @@
     },
     "Mapper" : {
         "mapper" : "매퍼"
+    },
+    "TaskPanel": {
+        "inputData": "입력 데이터 (JSON/XML)",
+        "resultInputVariable": "결과 입력 변수"
+    },
+    "ManualTaskPanel": {
+        "inputData": "입력 데이터 (JSON/XML)",
+        "resultInputVariable": "결과 입력 변수"
     },
     "SubProcessPanel" : {
         "forEachRole" : "역할 기반 다중 생성",
@@ -888,7 +905,14 @@
         "time": "시간 선택",
         "frequency": "빈도 선택",
         "cronDescriptionTitle": "Cron 표현식을 사용하여 Timer Intermediate Catch Event가 트리거될 시간을 정밀하게 설정할 수 있습니다.",
-        "cronDescriptionSubTitle": "형식: Cron 표현식은 다섯 개의 필드로 구성되며, 각 필드는 분, 시간, 일, 월, 요일을 나타냅니다. \n예시: \n0 0 * * * : 매일 자정 (00:00)에 이벤트가 트리거됩니다. \n15 10 * * * : 매일 10:15 AM에 이벤트가 트리거됩니다. \n0 9 1 * * : 매월 1일 9:00 AM에 이벤트가 트리거됩니다. \n0 0 * * 1 : 매주 월요일 자정 (00:00)에 이벤트가 트리거됩니다. \n*/10 * * * * : 매 10분마다 이벤트가 트리거됩니다."
+        "cronDescriptionSubTitle": "형식: Cron 표현식은 다섯 개의 필드로 구성되며, 각 필드는 분, 시간, 일, 월, 요일을 나타냅니다. \n예시: \n0 0 * * * : 매일 자정 (00:00)에 이벤트가 트리거됩니다. \n15 10 * * * : 매일 10:15 AM에 이벤트가 트리거됩니다. \n0 9 1 * * : 매월 1일 9:00 AM에 이벤트가 트리거됩니다. \n0 0 * * 1 : 매주 월요일 자정 (00:00)에 이벤트가 트리거됩니다. \n*/10 * * * * : 매 10분마다 이벤트가 트리거됩니다.",
+        "ruleGenerator": "결정론적 규칙화",
+        "ruleGenerating": "결정론적 규칙화 중...",
+        "generatedRulePreview": "결정론적 규칙 미리보기",
+        "generatedCron": "생성된 Cron",
+        "cancel": "취소",
+        "confirm": "확인",
+        "regenerate": "재생성"
     },
     "GatewayPanel" : {
         "gatewayDescriptionTitle" : "Gateway 조건처리를 통해 다음 작업으로 넘어가는 것을 선택할 때 사용함",

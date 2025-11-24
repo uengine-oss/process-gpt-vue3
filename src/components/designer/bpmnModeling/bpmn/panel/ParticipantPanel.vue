@@ -2,23 +2,29 @@
     <div>
         <div class="included" style="margin-bottom: 22px; height: 100%">
             <div class="mb-1 mt-4">{{}}</div>
-            <v-autocomplete v-model="copyUengineProperties.selectedSystem" :items="systemList" @input="$evt => selectSystem($evt)" 
-                density="comfortable"
-                variant="outlined"
-                :label="$t('ParticipantPanel.system')"
-            />
-            <DetailComponent
-                :title="$t('ParticipantPanel.systemDefinitionDescriptionTitle')"
-                :details="methodTypeDescription"
-            />
-            <v-row class="ma-0 pa-0">
-                <v-text-field :label="$t('ParticipantPanel.apiUrl')" v-model="copyUengineProperties.serviceURL"></v-text-field>
+            <v-row class="ma-0 pa-0 align-center pb-2">
+                <v-autocomplete v-model="copyUengineProperties.selectedSystem" :items="systemList" @input="$evt => selectSystem($evt)" 
+                    density="comfortable"
+                    variant="outlined"
+                    :label="$t('ParticipantPanel.system')"
+                />
+                <DetailComponent class="ml-2"
+                    :title="$t('ParticipantPanel.systemDefinitionDescriptionTitle')"
+                    :details="methodTypeDescription"
+                    :iconSize="24"
+                />
             </v-row>
-            <DetailComponent
-                :title="$t('ParticipantPanel.apiUrlDescriptionTitle')"
-                :details="apiUrlDescription"
-                :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
-            />
+            
+            <v-row class="ma-0 pa-0 align-center pb-2">
+                <v-text-field :label="$t('ParticipantPanel.apiUrl')" v-model="copyUengineProperties.serviceURL"></v-text-field>
+                <DetailComponent class="ml-2"
+                    :title="$t('ParticipantPanel.apiUrlDescriptionTitle')"
+                    :details="apiUrlDescription"
+                    :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
+                    :iconSize="24"
+                />  
+            </v-row>
+            
             <div class="mb-1 mt-4">{{$t('ParticipantPanel.openAPISpec')}}</div>
             <v-row class="ma-0 pa-0" style="height: 50vh">
                 <vue-monaco-editor

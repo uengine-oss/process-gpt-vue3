@@ -4325,10 +4325,12 @@ class ProcessGPTBackend implements Backend {
             let activityId = null;
             if (definition.activities.length > 0) {
                 definition.activities.forEach((activity: any) => {
-                    if(activity.tool.includes('formHandler:') && activity.tool.replace('formHandler:', '') === formId) {
+                    if(activity.tool && (activity.tool.includes('formHandler:') && activity.tool.replace('formHandler:', '') === formId)){
                         activityId = activity.id;
                     }
                 });
+            } else {
+                activityId = null;
             }
 
             let executionScope = null;

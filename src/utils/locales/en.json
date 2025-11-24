@@ -639,7 +639,8 @@
         "days": "days",
         "selectForm": "Select Form to Reference",
         "noFormSelected": "Sel  ect a form to reference",
-        "instruction": "Instruction"
+        "instruction": "Instruction",
+        "scriptVariable": "Variables used in the script must be defined in the process variables."
     },
     "PDFPreviewer": {
         "saveDocument": "Save PDF",
@@ -716,7 +717,14 @@
         "nameToWatch": "Name to Watch"
     },
     "BpmnParameterContexts": {
-        "addArgument": "Add Argument"
+        "addArgument": "Add Argument",
+        "calleeVariable": "Callee Variable",
+        "argument": "Argument",
+        "transformation": "Transformation",
+        "direction": "Connection Direction"
+    },
+    "BpmnRoleParameterContexts": {
+        "addMapping": "Add Mapping"
     },
     "DefaultArguments": {
         "parameterContext": "Parameter Context"
@@ -725,7 +733,8 @@
         "parameterContext": "Parameter Context",
         "selectDefinition": "Select Definition",
         "noDefinitionSelected": "No definition selected.",
-        "roleMapping": "Role Mapping"
+        "roleMapping": "Role Mapping",
+        "move": "Move"
     },
     "ReceiveTaskPanel": {
         "dataMapping": "Data Mapping",
@@ -803,6 +812,14 @@
     },
     "Mapper": {
         "mapper": "Mapper"
+    },
+    "TaskPanel": {
+        "inputData": "Input Data (JSON/XML)",
+        "resultInputVariable": "Result Input Variable"
+    },
+    "ManualTaskPanel": {
+        "inputData": "Input Data (JSON/XML)",
+        "resultInputVariable": "Result Input Variable"
     },
     "SubProcessPanel": {
         "forEachRole": "Role-based Multiple Creation",
@@ -886,7 +903,14 @@
         "time": "Select Time",
         "frequency": "Select Frequency",
         "cronDescriptionTitle": "You can use a Cron expression to precisely set the time at which the Timer Intermediate Catch Event will be triggered.",
-        "cronDescriptionSubTitle": "Format: A Cron expression consists of five fields, each representing minutes, hours, day of the month, month, and day of the week. \nExamples: \n0 0 * * * : Triggers the event every day at midnight (00:00). \n15 10 * * * : Triggers the event every day at 10:15 AM. \n0 9 1 * * : Triggers the event on the 1st of every month at 9:00 AM. \n0 0 * * 1 : Triggers the event every Monday at midnight (00:00). \n*/10 * * * * : Triggers the event every 10 minutes."
+        "cronDescriptionSubTitle": "Format: A Cron expression consists of five fields, each representing minutes, hours, day of the month, month, and day of the week. \nExamples: \n0 0 * * * : Triggers the event every day at midnight (00:00). \n15 10 * * * : Triggers the event every day at 10:15 AM. \n0 9 1 * * : Triggers the event on the 1st of every month at 9:00 AM. \n0 0 * * 1 : Triggers the event every Monday at midnight (00:00). \n*/10 * * * * : Triggers the event every 10 minutes.",
+        "ruleGenerator": "Deterministic Rule Generation",
+        "ruleGenerating": "Deterministic Rule Generation...",
+        "generatedRulePreview": "Deterministic Rule Preview",
+        "generatedCron": "Generated Cron",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "regenerate": "Regenerate"
     },
     "GatewayPanel": {
         "gatewayDescriptionTitle": "Used when selecting to proceed to the next task through Gateway condition processing.",
