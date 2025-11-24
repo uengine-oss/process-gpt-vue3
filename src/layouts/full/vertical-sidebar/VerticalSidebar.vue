@@ -91,7 +91,7 @@
                 <VerticalHeader v-if="globalIsMobile.value" @update-noti-count="updateNotiCount" />
 
                 <!-- 프로젝트 타이틀 + 목록 -->
-                <div v-if="isShowProject" class="mb-4">
+                <!-- <div v-if="isShowProject" class="mb-4">
                     <div  class="d-flex align-center">
                         <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.projectList') }}
@@ -114,7 +114,7 @@
                     <v-col class="pa-0">
                         <ProjectList/>
                     </v-col>
-                </div>
+                </div> -->
                 
                 <!-- 인스턴스 타이틀 + 목록 -->
                 <v-col  class="pa-0 mb-4">
@@ -425,13 +425,13 @@ export default {
                     to: '/ui-definitions/chat',
                     disable: true
                 },
-                {
-                    title: 'BSCard.title',
-                    icon: 'compass',
-                    BgColor: 'primary',
-                    to: '/bscard',
-                    disable: true
-                },
+                // {
+                //     title: 'BSCard.title',
+                //     icon: 'compass',
+                //     BgColor: 'primary',
+                //     to: '/bscard',
+                //     disable: true
+                // },
                 {
                     title: 'systemDefinition.title',
                     icon: 'server-line-duotone',

@@ -6,7 +6,9 @@
         v-hammer:pan="onPan" 
         v-hammer:pinch="onPinch"
     >
-        <div :class="isMobile ? 'mobile-position' : 'desktop-position'">
+        <div :class="isMobile ? 'mobile-position' : 'desktop-position'"
+            :style="laneAssignments.length > 0 ? 'top: 38px;' : ''"
+        >
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
@@ -14,46 +16,62 @@
                 <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
-        <!-- 참여자 보기 확장 패널 -->
-        <div v-if="laneAssignments.length > 0" class="participants-panel-wrapper">
-            <v-expansion-panels v-model="participantsPanelOpen" class="participants-expansion-panel">
-                <v-expansion-panel elevation="10">
-                    <v-expansion-panel-title class="participants-panel-title pa-4">
-                        <div class="d-flex align-center">
-                            <v-icon size="small" class="mr-2">mdi-account-group</v-icon>
-                            <span class="text-body-2 font-weight-medium">{{ $t('BpmnUengineViewer.viewParticipants') }}</span>
-                            <v-chip size="x-small" class="ml-2">{{ laneAssignments.length }}</v-chip>
-                        </div>
-                    </v-expansion-panel-title>
-                    <v-expansion-panel-text class="bpmn-uengine-viewer-laneAssignments">
-                        <div class="participants-list" style="max-height: 300px; overflow-y: auto;">
-                            <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="participant-item pa-4 pt-2 pb-2">
-                                <div class="d-flex align-center">
-                                    <v-avatar size="32" class="mr-3">
-                                        <v-img 
-                                            :src="assignment.profileImage" 
-                                            :alt="assignment.assignee"
-                                            cover
-                                        >
-                                            <template v-slot:error>
-                                                <v-img src="/images/defaultUser.png" cover>
-                                                    <template v-slot:error>
-                                                        <v-icon size="small" style="color: #666;">mdi-account</v-icon>
-                                                    </template>
-                                                </v-img>
-                                            </template>
-                                        </v-img>
-                                    </v-avatar>
-                                    <div class="flex-grow-1">
-                                        <div class="text-body-2 font-weight-medium" style="color: #444;">{{ assignment.laneName }}</div>
-                                        <div class="text-caption" style="color: #666;">{{ assignment.assignee }}</div>
-                                    </div>
+        <!-- 참여자 보기 툴팁 -->
+        <div v-if="laneAssignments.length > 0" class="participants-tooltip-wrapper">
+            <v-menu
+                open-on-hover
+                :open-delay="200"
+                :close-delay="200"
+                location="bottom"
+                max-width="400"
+            >
+                <template v-slot:activator="{ props }">
+                    <v-btn
+                        v-bind="props"
+                        icon
+                        size="x-small"
+                        variant="text"
+                        class="detail-info-button"
+                    >
+                        <v-icon>mdi-account-group</v-icon>
+                    </v-btn>
+                </template>
+
+                <v-card class="participants-popup-card">
+                    <v-card-title class="pa-4 pb-2 d-flex align-center">
+                        <v-icon class="mr-2" style="flex-shrink: 0;">mdi-account-group</v-icon>
+                        <span class="participants-title-text">{{ $t('BpmnUengineViewer.viewParticipants') }}</span>
+                    </v-card-title>
+
+                    <v-divider class="my-1"></v-divider>
+
+                    <v-card-text class="pa-0" style="max-height: 400px; overflow-y: auto;">
+                        <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="participant-item pa-2">
+                            <div class="d-flex align-center">
+                                <v-avatar size="32" class="mr-3">
+                                    <v-img 
+                                        :src="assignment.profileImage" 
+                                        :alt="assignment.assignee"
+                                        cover
+                                    >
+                                        <template v-slot:error>
+                                            <v-img src="/images/defaultUser.png" cover>
+                                                <template v-slot:error>
+                                                    <v-icon size="small" style="color: #666;">mdi-account</v-icon>
+                                                </template>
+                                            </v-img>
+                                        </template>
+                                    </v-img>
+                                </v-avatar>
+                                <div class="flex-grow-1">
+                                    <div class="text-body-2 font-weight-medium" style="color: #444;">{{ assignment.laneName }}</div>
+                                    <div class="text-caption" style="color: #666;">{{ assignment.assignee }}</div>
                                 </div>
                             </div>
                         </div>
-                    </v-expansion-panel-text>
-                </v-expansion-panel>
-            </v-expansion-panels>
+                    </v-card-text>
+                </v-card>
+            </v-menu>
         </div>
         <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 0px; left: 20px; pointer-events: auto; z-index: 10;">
             <v-row class="ma-0 pa-0">
@@ -161,8 +179,7 @@ export default {
             resizeTimeout: null,
             panStart: { x: 0, y: 0 },
             pinchStartZoom: 1,
-            laneAssignments: [],
-            participantsPanelOpen: undefined
+            laneAssignments: []
         };
     },
     computed: {
@@ -1063,42 +1080,39 @@ svg .bpmn-diff-deleted marker[id*="sequenceflow-end"] path {
   pointer-events: none !important;
 }
 
-/* 참여자 패널 스타일 */
-.participants-panel-wrapper {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  pointer-events: auto;
-  z-index: 10;
+/* 참여자 툴팁 스타일 */
+.participants-tooltip-wrapper {
+    position: absolute;
+    top: 0px;
+    right: 16px;
+    z-index: 10;
 }
 
-.participants-expansion-panel {
-  border-radius: 12px !important;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+.participants-trigger-button {
+    border-radius: 8px !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
 }
 
-.participants-panel-title {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  min-height: 36px !important;
+.participants-popup-card {
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.participants-title-text {
+    font-size: 0.95rem;
+    font-weight: 600;
 }
 
 .participant-item {
-  border-radius: 8px;
-  transition: background-color 0.2s;
+    border-radius: 8px;
+    transition: background-color 0.2s;
 }
 
 .participant-item:hover {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-.participants-list {
-  padding-top: 4px;
+    background-color: rgba(0, 0, 0, 0.03);
 }
 
 @media (max-width: 768px) {
-  .participants-panel-wrapper {
-    max-width: 280px;
-  }
 }
 </style>

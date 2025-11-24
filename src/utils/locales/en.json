@@ -903,7 +903,14 @@
         "time": "Select Time",
         "frequency": "Select Frequency",
         "cronDescriptionTitle": "You can use a Cron expression to precisely set the time at which the Timer Intermediate Catch Event will be triggered.",
-        "cronDescriptionSubTitle": "Format: A Cron expression consists of five fields, each representing minutes, hours, day of the month, month, and day of the week. \nExamples: \n0 0 * * * : Triggers the event every day at midnight (00:00). \n15 10 * * * : Triggers the event every day at 10:15 AM. \n0 9 1 * * : Triggers the event on the 1st of every month at 9:00 AM. \n0 0 * * 1 : Triggers the event every Monday at midnight (00:00). \n*/10 * * * * : Triggers the event every 10 minutes."
+        "cronDescriptionSubTitle": "Format: A Cron expression consists of five fields, each representing minutes, hours, day of the month, month, and day of the week. \nExamples: \n0 0 * * * : Triggers the event every day at midnight (00:00). \n15 10 * * * : Triggers the event every day at 10:15 AM. \n0 9 1 * * : Triggers the event on the 1st of every month at 9:00 AM. \n0 0 * * 1 : Triggers the event every Monday at midnight (00:00). \n*/10 * * * * : Triggers the event every 10 minutes.",
+        "ruleGenerator": "Deterministic Rule Generation",
+        "ruleGenerating": "Deterministic Rule Generation...",
+        "generatedRulePreview": "Deterministic Rule Preview",
+        "generatedCron": "Generated Cron",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "regenerate": "Regenerate"
     },
     "GatewayPanel": {
         "gatewayDescriptionTitle": "Used when selecting to proceed to the next task through Gateway condition processing.",
@@ -1540,7 +1547,8 @@
         "agentManagement": "Agent Management"
     },
     "ReportField": {
-        "title": "Content Editor"
+        "title": "Content Editor",
+        "save": "Save"
     },
     "OrganizationAddDialog": {
         "add": "Add"

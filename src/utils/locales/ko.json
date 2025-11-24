@@ -905,7 +905,14 @@
         "time": "시간 선택",
         "frequency": "빈도 선택",
         "cronDescriptionTitle": "Cron 표현식을 사용하여 Timer Intermediate Catch Event가 트리거될 시간을 정밀하게 설정할 수 있습니다.",
-        "cronDescriptionSubTitle": "형식: Cron 표현식은 다섯 개의 필드로 구성되며, 각 필드는 분, 시간, 일, 월, 요일을 나타냅니다. \n예시: \n0 0 * * * : 매일 자정 (00:00)에 이벤트가 트리거됩니다. \n15 10 * * * : 매일 10:15 AM에 이벤트가 트리거됩니다. \n0 9 1 * * : 매월 1일 9:00 AM에 이벤트가 트리거됩니다. \n0 0 * * 1 : 매주 월요일 자정 (00:00)에 이벤트가 트리거됩니다. \n*/10 * * * * : 매 10분마다 이벤트가 트리거됩니다."
+        "cronDescriptionSubTitle": "형식: Cron 표현식은 다섯 개의 필드로 구성되며, 각 필드는 분, 시간, 일, 월, 요일을 나타냅니다. \n예시: \n0 0 * * * : 매일 자정 (00:00)에 이벤트가 트리거됩니다. \n15 10 * * * : 매일 10:15 AM에 이벤트가 트리거됩니다. \n0 9 1 * * : 매월 1일 9:00 AM에 이벤트가 트리거됩니다. \n0 0 * * 1 : 매주 월요일 자정 (00:00)에 이벤트가 트리거됩니다. \n*/10 * * * * : 매 10분마다 이벤트가 트리거됩니다.",
+        "ruleGenerator": "결정론적 규칙화",
+        "ruleGenerating": "결정론적 규칙화 중...",
+        "generatedRulePreview": "결정론적 규칙 미리보기",
+        "generatedCron": "생성된 Cron",
+        "cancel": "취소",
+        "confirm": "확인",
+        "regenerate": "재생성"
     },
     "GatewayPanel" : {
         "gatewayDescriptionTitle" : "Gateway 조건처리를 통해 다음 작업으로 넘어가는 것을 선택할 때 사용함",
@@ -1542,7 +1549,8 @@
         "agentManagement": "에이전트 관리"
     },
     "ReportField": {
-        "title": "컨텐츠 에디터"
+        "title": "컨텐츠 에디터",
+        "save": "저장"
     },
     "OrganizationAddDialog": {
         "add": "추가"
