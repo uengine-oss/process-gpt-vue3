@@ -1220,7 +1220,9 @@ export default {
                 this.generator.researchMethod = researchMethod;
             }
             
-            const form = await backend.getFormFields(null, this.workItem.activity.tracingTag, this.processDefinition.processDefinitionId);
+            const processDefinitionId = this.processDefinition ? this.processDefinition.processDefinitionId : (this.workItem?.worklist?.defId ? this.workItem.worklist.defId : null);
+            const activityId = this.workItem?.activity?.tracingTag ? this.workItem.activity.tracingTag : null;
+            const form = await backend.getFormFields(null, activityId, processDefinitionId);
             const formFields = form ? form.fields_json : [];
 
             this.isGeneratingExample = true;
