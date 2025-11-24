@@ -1525,7 +1525,8 @@
         "agentManagement": "에이전트 관리"
     },
     "ReportField": {
-        "title": "컨텐츠 에디터"
+        "title": "컨텐츠 에디터",
+        "save": "저장"
     },
     "OrganizationAddDialog": {
         "add": "추가"

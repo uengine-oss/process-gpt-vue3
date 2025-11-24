@@ -1523,7 +1523,8 @@
         "agentManagement": "Agent Management"
     },
     "ReportField": {
-        "title": "Content Editor"
+        "title": "Content Editor",
+        "save": "Save"
     },
     "OrganizationAddDialog": {
         "add": "Add"
