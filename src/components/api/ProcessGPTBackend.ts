@@ -2647,32 +2647,60 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadFile(fileName: string, file: File, storageType: string, options?: any) {
+    async uploadFile(fileName: string, file: File, options?: any) {
         try {
-            let response: any;
-            if (storageType === 'drive') {
-                response = await this.uploadFileToDrive(fileName, file, options);
-            } else {
-                storageType = 'storage';
-                response = await this.uploadFileToStorage(fileName, file);
-            }
+            let result: any = null;
+            await this.uploadFileToStorage(file, options).then(async (response) => {
+                if (response) {
+                    await this.putInstanceSource({
+                        id: options.file_id,
+                        proc_inst_id: options.proc_inst_id,
+                        file_name: fileName,
+                        file_path: response.public_url,
+                        is_process: true
+                    });
+                    result = { success: true, message: 'File uploaded successfully' };
+                } else {
+                    result = { error: true, message: response.message };
+                }
+            }).catch(error => {
+                result = { error: true, message: error.message };
+            });
 
-            if (!response.error) {
-                this.processFile(response, storageType, options);
-                return response;
-            } else {
-                return response;
-            }
+            // 드라이브 업로드는 비동기로 백그라운드에서 처리
+            this.getDriveInfo().then(checkDrive => {
+                if (checkDrive) {
+                    this.uploadFileToDrive(fileName, file, options).catch(error => {
+                        // 백그라운드 에러는 콘솔에만 출력 (무시)
+                        console.error('드라이브 업로드 실패:', error);
+                    });
+                }
+            }).catch(error => {
+                // 드라이브 정보 확인 실패도 무시
+                console.error('드라이브 정보 확인 실패:', error);
+            });
+
+            return result;
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
         }
     }
 
-    async uploadFileToStorage(fileName: string, file: File) {
+    async uploadFileToStorage(file: File, options?: any) {
         try {
-            const response = await storage.uploadFile(fileName, file);
-            return response;
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('tenant_id', window.$tenantName);
+            formData.append('options', JSON.stringify(options));
+
+            const response = await axios.post('/memento/save-to-storage', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            
+            return response.data;
         } catch (error) {
             throw new Error(error.message);
         }
@@ -2705,14 +2733,6 @@ class ProcessGPTBackend implements Backend {
                         tenant_id: window.$tenantName
                     }
                     await storage.putObject('chat_attachments', putObj);
-                } else if (options && options.proc_inst_id && options.file_id) {
-                    const putObj = {
-                        id: options.file_id,
-                        proc_inst_id: options.proc_inst_id,
-                        file_path: response.data.download_url,
-                        is_process: true
-                    }
-                    await storage.putObject('proc_inst_source', putObj);
                 }
                 return response.data;
             } else {
@@ -2817,27 +2837,28 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async processFile(file: any, storageType: string, options?: any) {
+    async processFile(file: any, options?: any) {
         try {
             let file_path = '';
             let original_filename = '';
-            if (storageType == 'storage') {
-                file_path = file.fullPath.replace('files/', '');
-                original_filename = file.original_filename;
-            } else {
+            if (options.storageType == 'drive') {
                 if (options && options.folder_path) {
                     file_path = file.file_id;
                 } else {
                     file_path = file.file_name;
                 }
                 original_filename = file.file_name;
+            } else {
+                file_path = file.fullPath.replace('files/', '');
+                original_filename = file.original_filename;
             }
 
             const response = await axios.post('/memento/process', {
                 file_path: file_path,
                 original_filename: original_filename,
-                storage_type: storageType,
-                tenant_id: window.$tenantName
+                storage_type: options.storageType,
+                tenant_id: window.$tenantName,
+                options: options
             }, {
                 headers: {
                     'Content-Type': 'application/json'

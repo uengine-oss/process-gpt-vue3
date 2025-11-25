@@ -1674,7 +1674,7 @@ export default {
                 chat_room_id: me.chatRoomId,
                 user_name: me.userInfo.name
             }
-            backend.uploadFile(fileName, me.file[0], 'drive', fileObj).then((response) => {
+            backend.uploadFile(fileName, me.file[0], fileObj).then((response) => {
                 me.$try({
                     action: async () => {
                         console.log(response);
