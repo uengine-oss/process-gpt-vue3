@@ -26,8 +26,8 @@
                     >
                         <v-card 
                             :class="['method-card-vuetify', { 'selected': selectedOrchestrationMethod === option.value }]"
-                            :color="selectedOrchestrationMethod === option.value ? 'primary' : 'white'"
-                            :variant="selectedOrchestrationMethod === option.value ? 'elevated' : 'outlined'"
+                            :style="selectedOrchestrationMethod === option.value ? 'background-color:rgb(var(--v-theme-primary), 0.15) !important;' : ''"
+                            :variant="selectedOrchestrationMethod === option.value ? '' : 'outlined'"
                             @click="selectOrchestrationMethod(option.value)"
                             hover
                             class="flex-fill d-flex flex-column"
@@ -45,7 +45,7 @@
                                 </v-chip>
                                 <v-card-text class="text-center pa-4 pb-0 flex-grow-1 d-flex flex-column justify-center">
                                     <div class="card-icon-vuetify mb-3">
-                                        <Icons :icon="option.icon" :color="selectedOrchestrationMethod === option.value ? 'white' : 'black'" :size="50" />
+                                        <Icons :icon="option.icon" color="black" :size="50" />
                                     </div>
                                     <v-card-title class="card-title-vuetify pa-0 mb-2 d-flex align-center justify-center">
                                         <span>{{ $t(option.titleKey) }}</span>
@@ -60,13 +60,15 @@
                                     </v-card-title>
                                     <v-card-subtitle class="card-description-vuetify pa-0">{{ $t(option.descKey) }}</v-card-subtitle>
                                     
-                                    <v-icon v-if="selectedOrchestrationMethod === option.value" 
+                                    <!-- <v-icon v-if="selectedOrchestrationMethod === option.value" 
                                                 class="selected-indicator-vuetify" 
                                                 color="white"
                                         >mdi-check-circle
-                                    </v-icon>
+                                    </v-icon> -->
                                 </v-card-text>
-                                <v-card-actions class="justify-end pa-4 pt-0 mt-auto">
+                                <v-card-actions v-if="selectedOrchestrationMethod == option.value"
+                                    class="justify-end pa-4 pt-0 mt-auto"
+                                >
                                     <!-- <v-btn v-if="showDownloadButton" 
                                             @click="downloadBrowserAgent" 
                                             :disabled="selectedOrchestrationMethod !== option.value"
@@ -76,12 +78,11 @@
                                             density="compact"
                                     >{{ $t('agentMonitor.download') }}</v-btn> -->
                                     <v-btn 
-                                            @click="startTask" 
-                                            :disabled="selectedOrchestrationMethod !== option.value"
-                                            :color="selectedOrchestrationMethod === option.value ? '' : 'primary'"
-                                            variant="elevated" 
-                                            class="rounded-pill"
-                                            density="compact"
+                                        @click="startTask" 
+                                        :color="selectedOrchestrationMethod === option.value ? '' : 'primary'"
+                                        variant="flat"
+                                        class="rounded-pill"
+                                        density="compact"
                                     >{{ $t('agentMonitor.start') }}</v-btn>
                                 </v-card-actions>
                         </v-card>
@@ -206,11 +207,6 @@ export default {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
 }
 
-.method-card-vuetify.selected {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 30px rgba(25, 118, 210, 0.3) !important;
-}
-
 .card-icon-vuetify {
     font-size: 48px;
     line-height: 1;
@@ -234,10 +230,6 @@ export default {
     color: #1d2129 !important;
 }
 
-.method-card-vuetify.selected .card-title-vuetify {
-    color: white !important;
-}
-
 .card-description-vuetify {
     font-size: 12px !important;
     line-height: 1.5 !important;
@@ -246,10 +238,6 @@ export default {
     white-space: pre-line;
     text-align: left;
     color: #606770 !important;
-}
-
-.method-card-vuetify.selected .card-description-vuetify {
-    color: rgba(255, 255, 255, 0.9) !important;
 }
 
 .selected-indicator-vuetify {

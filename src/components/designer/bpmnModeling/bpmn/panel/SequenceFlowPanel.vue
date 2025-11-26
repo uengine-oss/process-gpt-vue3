@@ -23,7 +23,7 @@
             />
         </div>
         <div v-if="mode == 'ProcessGPT'" class="mt-4 d-flex justify-end">
-            <v-btn @click="generateRule" color="primary" density="compact">
+            <v-btn @click="generateRule" color="primary" density="compact" rounded variant="flat">
                 
                 <span v-if="isRuleGenerating" class="thinking-wave-text">
                     <span v-for="(char, index) in $t('BpmnPropertyPanel.ruleGenerating') " :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
@@ -36,15 +36,15 @@
             </v-btn>
         </div>
 
-
-
         <!-- Generation Result Dialog -->
         <v-dialog v-model="generationDialog" max-width="960" persistent>
         <v-card>
-            <v-card-title class="d-flex align-center">
-                <span>{{ $t('BpmnPropertyPanel.generatedRulePreview') }}</span>
+            <v-row class="ma-0 pa-4 pb-0 align-center">
+                <v-card-title class="pa-0"
+                >{{ $t('BpmnPropertyPanel.generatedRulePreview') }}
+                </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn color="primary" density="comfortable" @click="generateRule" :disabled="isRuleGenerating">
+                <v-btn color="primary" density="comfortable" variant="flat" rounded @click="generateRule" :disabled="isRuleGenerating">
                     <span v-if="isRuleGenerating" class="thinking-wave-text">
                         <span v-for="(char, index) in $t('BpmnPropertyPanel.ruleGenerating') " :key="index" :style="{ animationDelay: (index * 0.1) + 's' }" class="thinking-char">
                             {{ char === ' ' ? '\u00A0' : char }}
@@ -54,8 +54,8 @@
                         {{  $t('BpmnPropertyPanel.regenerate') }}
                     </span>
                 </v-btn>
-            </v-card-title>
-            <v-card-text>
+            </v-row>
+            <v-card-text class="ma-0 pa-4 pb-0">
                 <div class="mb-2">{{ $t('BpmnPropertyPanel.generatedFunction') }}</div>
                 <v-textarea
                     readonly
@@ -102,16 +102,17 @@
                     </v-table>
                 </div>
             </v-card-text>
-            <v-card-actions class="justify-end">
-                <v-btn variant="text" color="grey" @click="cancelGeneration">{{ $t('BpmnPropertyPanel.cancel') }}</v-btn>
-                <v-btn color="primary" variant="flat" @click="applyGeneratedRule">{{ $t('BpmnPropertyPanel.confirm') }}</v-btn>
-            </v-card-actions>
+            <v-row class="ma-0 pa-4 pt-0">
+                <v-spacer></v-spacer>
+                <v-btn color="grey" variant="flat" rounded class="mr-2" @click="cancelGeneration">{{ $t('BpmnPropertyPanel.cancel') }}</v-btn>
+                <v-btn color="primary" variant="flat" rounded @click="applyGeneratedRule">{{ $t('BpmnPropertyPanel.confirm') }}</v-btn>
+            </v-row>
         </v-card>
         </v-dialog>
 
         <br>
-        <div>{{ $t('BpmnPropertyPanel.priority') }}</div>
-        <div>
+        <div class="mb-1">{{ $t('BpmnPropertyPanel.priority') }}</div>
+        <div class="mb-4">
             <v-text-field 
                 v-model="copyUengineProperties.priority" 
                 :disabled="isViewMode" 

@@ -135,7 +135,7 @@ hr {
 }
 
 .vue-bpmn-diagram-container-view-mode .bjs-container {
-    height: 93% !important;
+    height: 100% !important;
 }
 
 .form-definition-preview-form section {
@@ -182,7 +182,7 @@ hr {
 }
 
 .gantt-detail-overlay-contents {
-    height: calc(100vh - 300px);
+    max-height: 50vh;
     overflow: auto;;
 }
 
@@ -1320,11 +1320,6 @@ hr {
     .mcp-server-list-box {
         height: calc(100vh - 200px) !important;
         overflow: auto;
-    }
-
-    .gantt-detail-overlay-contents {
-        height: calc(100vh - 170px);
-        overflow: auto;;
     }
 
     .gantt-detail-overlay {

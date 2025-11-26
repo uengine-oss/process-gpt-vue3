@@ -37,10 +37,9 @@
                         <div class="text-h5 font-weight-semibold">{{ $t('ProcessGPTExecute.roleMapping') }}</div>
                     </v-row>
                     <div class="mt-4">
-                        <div v-for="roleMapping in roleMappings" :key="roleMapping.name">
-                            <user-select-field v-model="roleMapping.endpoint"
-                                :disabled="roleMapping.disabled"
-                                :name="roleMapping.name"
+                        <div v-for="role in roleMappings" :key="role.name">
+                            <user-select-field v-model="role.endpoint"
+                                :name="role.name"
                                 :item-value="'id'"
                                 :hide-details="true"
                                 :use-agent="true"
@@ -123,11 +122,6 @@ export default {
             type: Boolean,
             default: false
         },
-        // 최초 제출화면에서 고급 연구방식 disabled 처리
-        disableAdvancedResearch: {
-            type: Boolean,
-            default: false
-        },
     },
     data: () => ({
         definition: {},
@@ -138,7 +132,7 @@ export default {
         activityIndex: 0,
         renderKey: 0,
         simulationInstances: [],
-        isStarted: true
+        isStarted: true,
     }),
     async mounted() {
         if (this.processDefinition && this.processDefinition.processDefinitionId) {
@@ -157,6 +151,9 @@ export default {
         },
         isCompleted() {
             return this.$refs.workItemRef && this.$refs.workItemRef.isCompleted || false;
+        },
+        disableAdvancedResearch() {
+            return this.isSimulate == 'true' ? true : false;
         }
     },
     methods: {
@@ -187,55 +184,60 @@ export default {
                 startActivity = this.findStartActivity();
             }
             if (startActivity) {
-                let parameters = [];
-                if (startActivity.properties) {
-                    const properties = JSON.parse(startActivity.properties);
-                    if (properties.parameters) {
-                        parameters = properties.parameters;
+                if (me.isSimulate !== 'true') {
+                    const newWorkItem = await this.createNewWorkItem(startActivity);
+                    me.workItem = await backend.getWorkItem(newWorkItem.id);
+                } else {
+                    let parameters = [];
+                    if (startActivity.properties) {
+                        const properties = JSON.parse(startActivity.properties);
+                        if (properties.parameters) {
+                            parameters = properties.parameters;
+                            parameters.forEach((item) => {
+                                item.variable.defaultValue = "";
+                            })
+                        }
+                    }
+                    
+                    let parameterValues = {};
+                    if (parameters.length > 0) {
                         parameters.forEach((item) => {
-                            item.variable.defaultValue = "";
+                            parameterValues[item.argument.text] = item.variable.defaultValue
                         })
                     }
-                }
-                
-                let parameterValues = {};
-                if (parameters.length > 0) {
-                    parameters.forEach((item) => {
-                        parameterValues[item.argument.text] = item.variable.defaultValue
-                    })
-                }
 
-                if(startActivity.tool && startActivity.tool.includes("formHandler:definition-map_")){
-                    startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.processDefinition.id + '_')
-                }
+                    if(startActivity.tool && startActivity.tool.includes("formHandler:definition-map_")){
+                        startActivity.tool = startActivity.tool.replace("formHandler:definition-map_", me.processDefinition.id + '_')
+                    }
 
-                me.workItem = {
-                    worklist: {
-                        defId: me.processDefinition.id,
-                        role: startActivity.role,
-                        endpoint: "",
-                        instId: me.instId,
-                        rootInstId: me.instId,
-                        taskId: me.uuid(),
-                        startDate: new Date(),
-                        dueDate: null,
-                        status: 'TODO',
-                        description: startActivity.description || "",
-                        tool: startActivity.tool || ""
-                    },
-                    activity: {
-                        name: startActivity.name,
-                        tracingTag: startActivity.id || '',
-                        parameters: parameters || [],
-                        tool: startActivity.tool || "",
-                        type: startActivity.type || "",
-                        instruction: startActivity.instruction ? startActivity.instruction : "",
-                        checkpoints: startActivity.checkpoints ? startActivity.checkpoints : [],
-                        pythonCode: startActivity.pythonCode ? startActivity.pythonCode : ""
-                    },
-                    parameterValues: parameterValues || {}
+                    me.workItem = {
+                        worklist: {
+                            defId: me.processDefinition.id,
+                            role: startActivity.role,
+                            endpoint: "",
+                            instId: me.instId,
+                            rootInstId: me.instId,
+                            taskId: me.uuid(),
+                            startDate: new Date(),
+                            dueDate: null,
+                            status: 'TODO',
+                            description: startActivity.description || "",
+                            tool: startActivity.tool || ""
+                        },
+                        activity: {
+                            name: startActivity.name,
+                            tracingTag: startActivity.id || '',
+                            parameters: parameters || [],
+                            tool: startActivity.tool || "",
+                            type: startActivity.type || "",
+                            instruction: startActivity.instruction ? startActivity.instruction : "",
+                            checkpoints: startActivity.checkpoints ? startActivity.checkpoints : [],
+                            pythonCode: startActivity.pythonCode ? startActivity.pythonCode : ""
+                        },
+                        parameterValues: parameterValues || {}
+                    }
+                    me.renderKey++;
                 }
-                me.renderKey++;
 
                 function isUUID(uuid) {
                     const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -266,7 +268,7 @@ export default {
                         endpoint: hasDefaultRole ? role.default : role.endpoint,
                         resolutionRule: role.resolutionRule,
                         default: hasDefaultRole ? role.default : '',
-                        disabled: disabled
+                        // disabled: disabled
                     };
                 });
 
@@ -284,6 +286,30 @@ export default {
                     }
                 }
             }
+        },
+        async createNewWorkItem(activity) {
+            if (!activity) return;
+            var me = this;
+            const query = `[Description]\n${activity.description}\n\n[Instruction]\n${activity.instruction}`;
+            const newWorkItem = {
+                id: me.uuid(),
+                user_id: localStorage.getItem('uid'),
+                username: localStorage.getItem('userName'),
+                proc_inst_id: me.instId,
+                root_proc_inst_id: me.instId,
+                proc_def_id: me.processDefinition.processDefinitionId,
+                activity_id: activity.id,
+                activity_name: activity.name,
+                status: 'NEW',
+                tool: activity.tool || "",
+                description: activity.description || "",
+                query: query || "",
+                duration: activity.duration || 0,
+                start_date: new Date().toISOString(),
+                due_date: new Date(new Date().getTime() + activity.duration * 60 * 1000).toISOString(),
+            }
+            await backend.putWorkItem(newWorkItem.id, newWorkItem);
+            return newWorkItem;
         },
         closeDialog() {
             this.$emit('close');

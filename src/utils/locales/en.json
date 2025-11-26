@@ -1547,7 +1547,8 @@
         "agentManagement": "Agent Management"
     },
     "ReportField": {
-        "title": "Content Editor"
+        "title": "Content Editor",
+        "save": "Save"
     },
     "OrganizationAddDialog": {
         "add": "Add"
@@ -2171,5 +2172,22 @@
     "AgentSkills": {
         "skills": "Skills",
         "skillUpload": "Upload Skill File (.zip)"
+    },
+    "ConditionExampleField": {
+        "generateExamples": "Generate Examples",
+        "generatingExamples": "Generating Examples...",
+        "when": "Condition (When)",
+        "then": "Result (Then)"
+    },
+    "ExampleTable": {
+        "operation": "Operation",
+        "addNewExample": "Add New Example",
+        "validPeriodSetting": "Valid Period Setting",
+        "validStartDate": "Valid Start Date",
+        "validEndDate": "Valid End Date",
+        "cancel": "Cancel",
+        "save": "Save",
+        "goodExamples": "Good Examples",
+        "badExamples": "Bad Examples"
     }
 }

@@ -176,7 +176,6 @@
                     >
                         <v-window-item v-if="isTabAvailable('progress')" value="progress">
                             <div
-                                class="pa-2"
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 260px); color: black; overflow: auto'"
 
                             >

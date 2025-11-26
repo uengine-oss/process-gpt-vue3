@@ -99,18 +99,11 @@
             ref="fileInput"
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,.ppt,.pptx"
+            accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
             style="display: none"
             @change="onFileSelect"
         >
 
-        <!-- 스낵바 -->
-        <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-            {{ snackbar.message }}
-            <template v-slot:actions>
-                <v-btn variant="text" @click="snackbar.show = false">닫기</v-btn>
-            </template>
-        </v-snackbar>
     </div>
 </template>
 
@@ -141,11 +134,6 @@ export default {
         sourceList: [],
         isDragOver: false,
         selectedFile: null,
-        snackbar: {
-            show: false,
-            message: '',
-            color: 'success'
-        }
     }),
     mounted() {
         this.init();
@@ -247,65 +235,73 @@ export default {
                         isError: false
                     };
                     this.sourceList.push(sourceItem);
-                    
-                    me.$try({
-                        context: me,
-                        action: async () => {
-                            const defId = me.instance && me.instance.defId ? me.instance.defId : me.processDefinitionId;
+                    const defId = me.instance && me.instance.defId ? me.instance.defId : me.processDefinitionId;
 
-                            const today = new Date();
-                            const year = today.getFullYear();
-                            const month = String(today.getMonth() + 1).padStart(2, '0');
-                            const day = String(today.getDate()).padStart(2, '0');
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
 
-                            const options = {
-                                folder_path: `${defId}/${year}/${month}/${day}/${instId}/source/`,
-                                proc_inst_id: instId,
-                                file_id: fileId
-                            };
+                    const options = {
+                        folder_path: `${defId}/${year}/${month}/${day}/${instId}/source/`,
+                        proc_inst_id: instId,
+                        file_id: fileId
+                    };
 
-                            await backend.uploadFile(file.name, file, 'drive', options);
-                            const result = await backend.putInstanceSource({
-                                id: fileId,
-                                proc_inst_id: instId,
-                                file_name: file.name
-                            });
-                            if (result.error) {
+                    const response = await backend.uploadFile(file.name, file, options);
+                    if (response.error) {
+                        me.$try({
+                            action: () => {
+                                throw new Error(response.message);
+                            },
+                            onFail: () => {
                                 me.sourceList.forEach(item => {
                                     if (item.id === fileId) {
                                         item.isError = true;
                                     }
                                 });
-
-                                me.showSnackbar(result.error.message, 'error');
-                                return;
-                            }
-                            await this.getSourceList();
-                        },
-                        onFail: (error) => {
-                            me.sourceList.forEach(item => {
-                                if (item.id === fileId) {
-                                    item.isError = true;
-                                }
-                            });
-                        },
-                        successMsg: `${file.name} 파일이 업로드되었습니다.`
-                    });
+                            },
+                            errorMsg: `${file.name} 파일 업로드에 실패했습니다. ${response.message}`
+                        })
+                    } else {
+                        me.$try({
+                            action: () => {
+                                me.sourceList.forEach(item => {
+                                    if (item.id === fileId) {
+                                        item.isProcess = true;
+                                    }
+                                });
+                            },
+                            successMsg: `${file.name} 파일이 업로드되었습니다.`,
+                        })
+                    }
+                    
                 }
             }
         },
 
         validateFile(file) {
-            const allowedTypes = ['.pdf', '.doc', '.docx', '.txt', '.csv', '.xls', '.xlsx', '.ppt', '.pptx'];
+            var me = this;
+            const allowedTypes = ['.pdf', '.doc', '.docx', '.txt', '.csv', '.xls', '.xlsx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'];
             const fileExtension = this.getFileExtension(file.name);
             
             if (!allowedTypes.includes(fileExtension)) {
-                this.showSnackbar(`${file.name}은 지원되지 않는 파일 형식입니다.`, 'error');
+                me.$try({
+                    action: () => {
+                        throw new Error(`${file.name}은 지원되지 않는 파일 형식입니다.`);
+                    },
+                    errorMsg: `${file.name}은 지원되지 않는 파일 형식입니다.`
+                })
                 return false;
             }
 
             if (file.size > 50 * 1024 * 1024) { // 50MB 제한
-                this.showSnackbar(`${file.name} 파일이 너무 큽니다. (최대 50MB)`, 'error');
+                me.$try({
+                    action: () => {
+                        throw new Error(`${file.name} 파일이 너무 큽니다. (최대 50MB)`);
+                    },
+                    errorMsg: `${file.name} 파일이 너무 큽니다. (최대 50MB)`
+                })
                 return false;
             }
 
@@ -326,7 +322,14 @@ export default {
                 '.xls': 'mdi-file-excel-box',
                 '.xlsx': 'mdi-file-excel-box',
                 '.ppt': 'mdi-file-powerpoint-box',
-                '.pptx': 'mdi-file-powerpoint-box'
+                '.pptx': 'mdi-file-powerpoint-box',
+                '.jpg': 'mdi-file-image',
+                '.jpeg': 'mdi-file-image',
+                '.png': 'mdi-file-image',
+                '.gif': 'mdi-file-image',
+                '.webp': 'mdi-file-image',
+                '.bmp': 'mdi-file-image',
+                '.tiff': 'mdi-file-image'
             };
             return iconMap[fileType] || 'mdi-file-document';
         },
@@ -341,7 +344,14 @@ export default {
                 '.xls': 'green',
                 '.xlsx': 'green',
                 '.ppt': 'blue',
-                '.pptx': 'blue'
+                '.pptx': 'blue',
+                '.jpg': 'purple',
+                '.jpeg': 'purple',
+                '.png': 'purple',
+                '.gif': 'purple',
+                '.webp': 'purple',
+                '.bmp': 'purple',
+                '.tiff': 'purple'
             };
             return colorMap[fileType] || 'grey';
         },
@@ -364,24 +374,26 @@ export default {
         },
 
         async deleteFile(file) {
+            var me = this;
             if (!file.isError) {
                 const result = await backend.deleteInstanceSource(file);
                 if (result.error) {
-                    this.showSnackbar(result.error.message, 'error');
+                    me.$try({
+                        action: () => {
+                            throw new Error(result.error.message);
+                        },
+                        errorMsg: result.error.message
+                    })
                     return;
                 }
             }
-            this.sourceList = this.sourceList.filter(item => item.id !== file.id);
-            this.showSnackbar(`${file.name} 파일이 삭제되었습니다.`, 'success');
+            me.$try({
+                action: () => {
+                    me.sourceList = me.sourceList.filter(item => item.id !== file.id);
+                },
+                successMsg: `${file.name} 파일이 삭제되었습니다.`
+            })
         },
-
-        showSnackbar(message, color = 'success') {
-            this.snackbar = {
-                show: true,
-                message,
-                color
-            };
-        }
     },
 }
 </script>

@@ -309,13 +309,8 @@ export default {
                 action: async () => {
                     // 안전한 formDefId 설정
                     try {
-                        if(me.isDryRun) {
-                            const tool = me.dryRunWorkItem?.activity?.tool;
-                            me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
-                        } else {
-                            const tool = me.workItem?.worklist?.tool;
-                            me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
-                        }
+                        const tool = me.workItem?.worklist?.tool;
+                        me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
                     } catch (error) {
                         console.warn('formDefId 설정 중 오류:', error);
                         me.formDefId = null;

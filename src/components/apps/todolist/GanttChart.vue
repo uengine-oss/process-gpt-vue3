@@ -39,6 +39,12 @@
                 <v-card flat dense>
                     <!-- 상세 정보 -->
                     <v-row class="ma-0 pa-0 pa-4 pb-0 align-center">
+                        <!-- 상단 요약 -->
+                        <div class="issue-title">{{ editItem.name }}</div>
+                        <v-chip class="ml-2"
+                            color="primary"
+                            density="compact"
+                        >{{ getStatusText(editItem.status) }}</v-chip>
                         <v-spacer></v-spacer>
                         <v-tooltip :text="getTooltipText()">
                             <template v-slot:activator="{ props }">
@@ -64,14 +70,6 @@
                         class="ma-0 pa-0"
                     >
                         <v-col class="ma-0 pa-0">
-                            <!-- 상단 요약 -->
-                            <div class="issue-header pa-4">
-                                <div class="issue-title">{{ editItem.name }}</div>
-                                <v-chip class="ml-2"
-                                    color="primary"
-                                    density="compact"
-                                >{{ getStatusText(editItem.status) }}</v-chip>
-                            </div>
                             <div class="gantt-detail-overlay-contents pa-4">
                             <!-- {{ editItem }} -->
                                 <div v-if="editItem.description" class="issue-desc mt-2">
@@ -118,7 +116,6 @@
                             {{ editItem.target.name }}
                         </div>
                     </v-card-text>
-                   
                 </v-card>
             </div>
         </div>

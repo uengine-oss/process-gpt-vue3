@@ -462,10 +462,19 @@ BEGIN
 
     -- 할일 항목 상태 enum
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'todo_status') THEN
-        CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
+        CREATE TYPE todo_status AS ENUM ('NEW', 'TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
         RAISE NOTICE 'Created todo_status enum type';
     ELSE
-        RAISE NOTICE 'todo_status enum type already exists';
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_enum 
+            WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'todo_status')
+            AND enumlabel = 'NEW'
+        ) THEN
+            ALTER TYPE todo_status ADD VALUE 'NEW';
+            RAISE NOTICE 'Added NEW value to todo_status enum type';
+        ELSE
+            RAISE NOTICE 'NEW value already exists in todo_status enum type';
+        END IF;
     END IF;
 
     -- 에이전트 모드 enum
@@ -580,6 +589,7 @@ BEGIN
         -- 기존 데이터를 새 enum 타입으로 변환
         UPDATE public.todolist 
         SET status_new = CASE 
+            WHEN status = 'NEW' THEN 'NEW'::todo_status
             WHEN status = 'TODO' THEN 'TODO'::todo_status
             WHEN status = 'IN_PROGRESS' THEN 'IN_PROGRESS'::todo_status
             WHEN status = 'DONE' THEN 'DONE'::todo_status
