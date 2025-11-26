@@ -1554,12 +1554,162 @@ export default {
                     me.EventBus.emit('definitions-updated');
 
                     if(!info.skipSaveProcMap){
-                        // 프로세스 이름이 변경된 경우 정의 체계도(proc_map)의 이름도 동기화
-                        if (info.name && info.proc_def_id) {
-                            await backend.updateProcessNameInMap(info.proc_def_id, info.name);
-                            // 최신 데이터로 메모리 동기화
-                            me.processDefinitionMap = await backend.getProcessDefinitionMap();
+                        // 최신 정의 체계도 불러오기
+                        me.processDefinitionMap = await backend.getProcessDefinitionMap();
+                        
+                        // BPMN XML에서 mega/major 프로세스 ID 추출
+                        let megaProcessId = null;
+                        let majorProcessId = null;
+                        try {
+                            const parser = new DOMParser();
+                            const xmlDoc = parser.parseFromString(xml, 'text/xml');
+                            const processElement = xmlDoc.querySelector('process');
+                            if (processElement) {
+                                megaProcessId = processElement.getAttribute('megaProcessId');
+                                majorProcessId = processElement.getAttribute('majorProcessId');
+                            }
+                            console.log(`[정의체계도] 프로세스 추가 - Mega: ${megaProcessId}, Major: ${majorProcessId}, Process: ${info.proc_def_id}`);
+                        } catch (e) {
+                            console.warn('Failed to parse XML for mega/major process IDs:', e);
                         }
+                        
+                        // proc_map에 해당 프로세스가 이미 있는지 확인
+                        let processExists = false;
+                        if (me.processDefinitionMap && me.processDefinitionMap.mega_proc_list) {
+                            for (const megaProc of me.processDefinitionMap.mega_proc_list) {
+                                if (megaProc.major_proc_list) {
+                                    for (const majorProc of megaProc.major_proc_list) {
+                                        if (majorProc.sub_proc_list) {
+                                            const existingProc = majorProc.sub_proc_list.find(
+                                                sub => sub.id === info.proc_def_id
+                                            );
+                                            if (existingProc) {
+                                                processExists = true;
+                                                // 기존 프로세스는 이름만 업데이트
+                                                existingProc.name = info.name;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                if (processExists) break;
+                            }
+                        }
+                        
+                        // 신규 프로세스인 경우 proc_map에 추가
+                        if (!processExists) {
+                            // proc_map 구조 초기화
+                            if (!me.processDefinitionMap) {
+                                me.processDefinitionMap = { mega_proc_list: [] };
+                            }
+                            if (!me.processDefinitionMap.mega_proc_list) {
+                                me.processDefinitionMap.mega_proc_list = [];
+                            }
+                            
+                            // mega/major 정보가 없거나 "미분류"인 경우
+                            if (!megaProcessId || !majorProcessId || 
+                                megaProcessId === '미분류' || majorProcessId === '미분류') {
+                                console.log(`[정의체계도] 미분류 프로세스로 추가`);
+                                
+                                // "미분류" 메가 프로세스 찾기 (기존 것 재사용)
+                                let unclassifiedMega = me.processDefinitionMap.mega_proc_list.find(
+                                    mega => mega.id === 'unclassified' || mega.name === '미분류'
+                                );
+                                
+                                if (!unclassifiedMega) {
+                                    console.log(`[정의체계도] 미분류 Mega 프로세스 생성`);
+                                    unclassifiedMega = {
+                                        id: 'unclassified',
+                                        name: '미분류',
+                                        major_proc_list: []
+                                    };
+                                    me.processDefinitionMap.mega_proc_list.push(unclassifiedMega);
+                                } else {
+                                    console.log(`[정의체계도] 기존 미분류 Mega 프로세스 사용`);
+                                }
+                                
+                                // "미분류" 메이저 프로세스 찾기 (기존 것 재사용)
+                                let unclassifiedMajor = unclassifiedMega.major_proc_list.find(
+                                    major => major.id === 'unclassified_major' || major.name === '미분류'
+                                );
+                                
+                                if (!unclassifiedMajor) {
+                                    console.log(`[정의체계도] 미분류 Major 프로세스 생성`);
+                                    unclassifiedMajor = {
+                                        id: 'unclassified_major',
+                                        name: '미분류',
+                                        sub_proc_list: []
+                                    };
+                                    unclassifiedMega.major_proc_list.push(unclassifiedMajor);
+                                } else {
+                                    console.log(`[정의체계도] 기존 미분류 Major 프로세스 사용`);
+                                }
+                                
+                                // 서브 프로세스 추가
+                                if (!unclassifiedMajor.sub_proc_list) {
+                                    unclassifiedMajor.sub_proc_list = [];
+                                }
+                                unclassifiedMajor.sub_proc_list.push({
+                                    id: info.proc_def_id,
+                                    name: info.name,
+                                    path: info.proc_def_id
+                                });
+                                console.log(`[정의체계도] 미분류 프로세스 추가 완료: ${info.name}`);
+                            } else {
+                                // mega/major 정보가 있는 경우
+                                // 메가 프로세스 찾기: id 또는 name으로 검색 (기존 것 재사용)
+                                let megaProc = me.processDefinitionMap.mega_proc_list.find(
+                                    mega => mega.id === megaProcessId || mega.name === megaProcessId
+                                );
+                                
+                                if (!megaProc) {
+                                    // 기존에 없으면 새로 생성
+                                    console.log(`[정의체계도] 새 Mega 프로세스 생성: ${megaProcessId}`);
+                                    megaProc = {
+                                        id: megaProcessId,
+                                        name: megaProcessId,
+                                        major_proc_list: []
+                                    };
+                                    me.processDefinitionMap.mega_proc_list.push(megaProc);
+                                } else {
+                                    console.log(`[정의체계도] 기존 Mega 프로세스 사용: ${megaProc.name} (id: ${megaProc.id})`);
+                                }
+                                
+                                // 메이저 프로세스 찾기: id 또는 name으로 검색 (기존 것 재사용)
+                                if (!megaProc.major_proc_list) {
+                                    megaProc.major_proc_list = [];
+                                }
+                                let majorProc = megaProc.major_proc_list.find(
+                                    major => major.id === majorProcessId || major.name === majorProcessId
+                                );
+                                
+                                if (!majorProc) {
+                                    // 기존에 없으면 새로 생성
+                                    console.log(`[정의체계도] 새 Major 프로세스 생성: ${majorProcessId}`);
+                                    majorProc = {
+                                        id: majorProcessId,
+                                        name: majorProcessId,
+                                        sub_proc_list: []
+                                    };
+                                    megaProc.major_proc_list.push(majorProc);
+                                } else {
+                                    console.log(`[정의체계도] 기존 Major 프로세스 사용: ${majorProc.name} (id: ${majorProc.id})`);
+                                }
+                                
+                                // 서브 프로세스 추가
+                                if (!majorProc.sub_proc_list) {
+                                    majorProc.sub_proc_list = [];
+                                }
+                                majorProc.sub_proc_list.push({
+                                    id: info.proc_def_id,
+                                    name: info.name,
+                                    path: info.proc_def_id
+                                });
+                                console.log(`[정의체계도] 프로세스 추가 완료: ${info.name} → ${megaProc.name}/${majorProc.name}`);
+                            }
+                        }
+                        
+                        // 업데이트된 proc_map 저장
                         await backend.putProcessDefinitionMap(me.processDefinitionMap);
                     }
 

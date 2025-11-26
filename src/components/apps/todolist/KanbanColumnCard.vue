@@ -14,6 +14,9 @@
                         <v-col class="pa-0 d-flex align-center" cols="9">
                             <span style="font-size:16px; font-weight:500; line-height: 20px;">{{ task.name }}</span>
                             <v-chip v-if="reworkCount" class="ml-1" size="small" color="info" variant="flat" density="comfortable">{{ reworkCount }}</v-chip>
+                            <v-chip v-if="task.status === 'SUBMITTED'" class="ml-1" size="small" color="success" variant="flat" density="comfortable">
+                                제출됨
+                            </v-chip>
                         </v-col>
                         <v-col class="pa-0" cols="3">
                             <v-row class="ma-0 pa-0 justify-end align-start"

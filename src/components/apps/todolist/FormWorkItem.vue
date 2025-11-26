@@ -372,26 +372,39 @@ export default {
         },
         async loadForm(){
             var me = this;
-            if(!me.workItem || !me.workItem.activity || !me.workItem.activity.outParameterContext) return;
+            
+            // ✅ 수정: outParameterContext가 없어도 formDefId로 로드 시도
+            let outFormName = me.workItem?.activity?.outParameterContext?.variable?.name || me.formDefId;
             
             if (me.workItem && me.workItem.worklist.output && me.formDefId && me.isCompleted) {
-                me.formData = me.workItem.worklist.output[me.formDefId] || {};
+                if(me.formDefId == 'defaultform') {
+                    me.formData = me.workItem.worklist.output['defaultForm'] || {};
+                } else {
+                    me.formData = me.workItem.worklist.output[me.formDefId] || {};
+                }
                 return;
             }
 
-            let outFormName = me.workItem.activity.outParameterContext.variable.name || me.formDefId
-            let outVariable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.$route.params.taskId, outFormName);
-            
-            if (outVariable && outVariable.valueMap) {
-                me.formData = outVariable.valueMap;
-
-                if(outVariable.valueMap['user_input_text']) me.newMessage = outVariable.valueMap['user_input_text']
-            }
-            
-            if(me.workItem?.parameterValues){
-                const parameterValues = me.workItem.parameterValues[outFormName];
-                if(parameterValues && parameterValues.valueMap){
-                    me.formData = parameterValues.valueMap;
+            // ✅ outFormName이 있을 때만 데이터 로드
+            if(outFormName) {
+                let outVariable = await backend.getVariableWithTaskId(
+                    me.workItem.worklist.instId, 
+                    me.$route.params.taskId, 
+                    outFormName
+                );
+                
+                if (outVariable && outVariable.valueMap) {
+                    me.formData = outVariable.valueMap;
+                    if(outVariable.valueMap['user_input_text']) {
+                        me.newMessage = outVariable.valueMap['user_input_text'];
+                    }
+                }
+                
+                if(me.workItem?.parameterValues){
+                    const parameterValues = me.workItem.parameterValues[outFormName];
+                    if(parameterValues && parameterValues.valueMap){
+                        me.formData = parameterValues.valueMap;
+                    }
                 }
             }
         },
