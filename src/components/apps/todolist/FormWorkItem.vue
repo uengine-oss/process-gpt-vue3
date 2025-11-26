@@ -328,7 +328,14 @@ export default {
                         me.html = localStorage.getItem(formId);    
                     }
                     if(!me.html) {
-                        me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
+                        const options = {
+                            type: 'form',
+                            match: {
+                                proc_def_id: me.processDefinition ? me.processDefinition.processDefinitionId : (me.workItem?.worklist?.defId ? me.workItem.worklist.defId : null),
+                                activity_id: me.workItem?.activity?.tracingTag ? me.workItem.activity.tracingTag : null
+                            }
+                        }
+                        me.html = await backend.getRawDefinition(me.formDefId, options);
                     }
                     if(!me.html) {
                         me.formDefId = 'defaultform'

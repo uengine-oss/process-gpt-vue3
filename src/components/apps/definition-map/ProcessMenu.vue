@@ -12,7 +12,8 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip v-if="type == 'sub'" :text="$t('ProcessMenu.editProcess')">
+            <!-- 기존 정의체계도 내부에서 서브프로세스 편집창 호출하던 버튼 -->
+            <!-- <v-tooltip v-if="type == 'sub'" :text="$t('ProcessMenu.editProcess')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="editProcess"
                         icon v-bind="props"
@@ -22,8 +23,8 @@
                         <Icons :icon="'pencil-cog'" :width="12" :height="12"  />
                     </v-btn>
                 </template>
-            </v-tooltip>
-            <v-tooltip v-if="type != 'map'" :text="$t('ProcessMenu.edit')">
+            </v-tooltip> -->
+            <v-tooltip v-if="type != 'map' && type != 'sub'" :text="$t('ProcessMenu.edit')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="openEditDialog('update')"
                         icon v-bind="props"

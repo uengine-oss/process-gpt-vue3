@@ -40,14 +40,14 @@
             max-width="1600px" 
             transition="dialog-transition"
         >
-            <v-card>
-                <div class="d-flex pa-4">
+            <v-card class="pa-4">
+                <div class="d-flex pb-4">
                     <v-card-title class="pa-0">{{ $i18n.global.t('ReportField.title') }}</v-card-title>
                     <v-btn icon class="ml-auto" variant="text" @click="cancelMarkdown" density="compact">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </div>
-                <v-card-text class="ml-4 mr-4 editor" style="height: 80vh; padding: 0 !important; overflow: auto;">
+                <v-card-text class="pa-0 editor" style="height: 80vh; padding: 0 !important; overflow: auto;">
                     <markdown-editor
                         ref="markdownEditor"
                         v-model="localModelValue"
@@ -56,14 +56,14 @@
                         :readOnly="localReadonly"
                     ></markdown-editor>
                 </v-card-text>
-                <v-row class="ma-0 pa-4 pr-2">
+                <v-row v-if="!localReadonly" class="ma-0 pa-4 pr-0 pb-0">
                     <v-spacer></v-spacer>
                     <v-btn @click="saveMarkdown"
                         :color="themeColor"
                         variant="elevated" 
                         class="rounded-pill"
                         density="compact"
-                    >저장</v-btn>
+                    >{{ $i18n.global.t('ReportField.save') }}</v-btn>
                 </v-row>
             </v-card>
         </v-dialog>

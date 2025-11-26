@@ -176,7 +176,6 @@
                     >
                         <v-window-item v-if="isTabAvailable('progress')" value="progress">
                             <div
-                                class="pa-2"
                                 :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 260px); color: black; overflow: auto'"
 
                             >
@@ -1220,8 +1219,10 @@ export default {
                 this.generator.researchMethod = researchMethod;
             }
             
-            const form = await backend.getFormFields(null, this.workItem.activity.tracingTag, this.workItem.worklist.defId);
-            const formFields = form.fields_json;
+            const processDefinitionId = this.processDefinition ? this.processDefinition.processDefinitionId : (this.workItem?.worklist?.defId ? this.workItem.worklist.defId : null);
+            const activityId = this.workItem?.activity?.tracingTag ? this.workItem.activity.tracingTag : null;
+            const form = await backend.getFormFields(null, activityId, processDefinitionId);
+            const formFields = form ? form.fields_json : [];
 
             this.isGeneratingExample = true;
             this.isVisionMode = false
@@ -1420,8 +1421,10 @@ export default {
         onReceived(partialResponse) {
             // 스트리밍 중 부분적으로 받은 데이터를 실시간으로 처리
             const me = this;
-            me.$try({
-                action: async () => {
+            
+            // requestAnimationFrame으로 UI 업데이트를 다음 프레임으로 미루기
+            requestAnimationFrame(() => {
+                try {
                     // JSON 추출 시도
                     let jsonStr = me.extractJSON(partialResponse);
                     if (!jsonStr || !jsonStr.includes('{')) return;
@@ -1458,8 +1461,10 @@ export default {
                             me.EventBus.emit('form-values-updated', newFields);
                         }
                     }
+                } catch (error) {
+                    // 에러는 무시 (스트리밍 중이므로)
+                    console.warn('onReceived 처리 중 에러:', error);
                 }
-                // 스트리밍 중에는 메시지를 표시하지 않음 (너무 자주 호출되므로)
             });
         },
         onGenerationFinished(response) {

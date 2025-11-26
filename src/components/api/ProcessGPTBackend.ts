@@ -1089,6 +1089,72 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * 프로세스 정의 체계도(proc_map)의 프로세스 이름 동기화
+     * 
+     * 프로세스 정의(proc_def) 저장 시 이름이 변경되면 
+     * 정의 체계도(configuration 테이블의 proc_map)에 있는 동일한 ID의 프로세스 이름도 자동으로 업데이트
+     * 
+     * @param procDefId - 업데이트할 프로세스 정의 ID
+     * @param newName - 새로운 프로세스 이름
+     * 
+     * 특징:
+     * - tenant_id 기반 격리: 현재 테넌트의 proc_map만 조회/수정
+     * - uuid 기반 업데이트: 다른 테넌트 데이터 보호
+     * - 동일 ID 전체 업데이트: proc_map 내 모든 동일 ID의 이름 일괄 변경
+     */
+    async updateProcessNameInMap(procDefId: string, newName: string) {
+        try {
+            // 현재 테넌트의 proc_map만 조회
+            const options = {
+                match: {
+                    key: 'proc_map',
+                    tenant_id: window.$tenantName
+                }
+            };
+            const procMapRecord = await storage.getObject('configuration', options);
+            
+            if (!procMapRecord || !procMapRecord.value || !procMapRecord.value.mega_proc_list) {
+                return;
+            }
+
+            let isUpdated = false;
+
+            // mega > major > sub 계층 구조를 순회하며 동일 ID의 이름 업데이트
+            procMapRecord.value.mega_proc_list.forEach((megaProc: any) => {
+                if (megaProc.major_proc_list) {
+                    megaProc.major_proc_list.forEach((majorProc: any) => {
+                        if (majorProc.sub_proc_list) {
+                            majorProc.sub_proc_list.forEach((subProc: any) => {
+                                if (subProc.id === procDefId) {
+                                    subProc.name = newName;
+                                    isUpdated = true;
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+
+            // uuid 기반으로 현재 테넌트의 proc_map만 업데이트
+            if (isUpdated) {
+                const { error } = await window.$supabase
+                    .from('configuration')
+                    .update({ 
+                        value: procMapRecord.value 
+                    })
+                    .eq('uuid', procMapRecord.uuid);
+                
+                if (error) {
+                    throw new Error(error.message);
+                }
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getBSCard() {
         try {
             const options = {
@@ -4277,10 +4343,12 @@ class ProcessGPTBackend implements Backend {
             let activityId = null;
             if (definition.activities.length > 0) {
                 definition.activities.forEach((activity: any) => {
-                    if(activity.tool.includes('formHandler:') && activity.tool.replace('formHandler:', '') === formId) {
+                    if(activity.tool && (activity.tool.includes('formHandler:') && activity.tool.replace('formHandler:', '') === formId)){
                         activityId = activity.id;
                     }
                 });
+            } else {
+                activityId = null;
             }
 
             let executionScope = null;

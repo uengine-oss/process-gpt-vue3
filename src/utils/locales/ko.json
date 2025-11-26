@@ -265,6 +265,27 @@
         "consultingAI": "프로세스 컨설팅 AI",
         "consultingButton": "프로세스 컨설팅 시작하기",
         "analyzeAndImproveProcessWithAI": "프로세스 컨설팅 시작하기",
+        "usageGuide": {
+            "title": "프로세스 정의 체계도 사용 가이드",
+            "details": [
+                {
+                    "icon": "pencil",
+                    "title": "연필 아이콘\n편집 버튼으로 프로세스 정의 체계도를 수정할 수 있습니다."
+                },
+                {
+                    "icon": "image-download",
+                    "title": "이미지 다운로드 아이콘\n생성된 체계도를 이미지로 다운로드하는 기능입니다."
+                },
+                {
+                    "icon": "magic",
+                    "title": "프로세스 컨설팅\nAI를 활용해 초기 프로세스를 만들 수 있습니다.\n예) '휴가신청 프로세스를 생성해줘'와 같이 입력하면 자동으로 생성됩니다."
+                },
+                {
+                    "icon": "market",
+                    "title": "마켓플레이스\n이미 다른 사람들에 의해 등록된 예시 프로세스를 테스트 및 동작시켜볼 수 있습니다."
+                }
+            ]
+        },
         "editingUser": "{name} 님이 수정 중 입니다.",
         "checkIn": "잠금",
         "checkOut": "잠금 해제",
@@ -620,7 +641,8 @@
         "days": "일",
         "selectForm": "참조할 폼 선택",
         "noFormSelected": "폼을 선택해주세요",
-        "instruction": "지침"
+        "instruction": "지침",
+        "scriptVariable": "스크립트 내부에서 사용할 변수는 프로세스 변수에 정의해야 합니다."
     },
     "PDFPreviewer": {
         "saveDocument": "PDF 저장",
@@ -697,7 +719,14 @@
         "nameToWatch": "감시 필드 명"
     },
     "BpmnParameterContexts": {
-        "addArgument": "아규먼트 추가"
+        "addArgument": "아규먼트 추가",
+        "calleeVariable": "피호출측 변수",
+        "argument": "아규먼트",
+        "transformation": "변환",
+        "direction": "연결방향"
+    },
+    "BpmnRoleParameterContexts": {
+        "addMapping": "매핑 추가"
     },
     "DefaultArguments": {
         "parameterContext": "파라미터 컨텍스트"
@@ -706,7 +735,8 @@
         "parameterContext": "파라미터 컨텍스트",
         "selectDefinition": "프로세스 정의 선택",
         "noDefinitionSelected": "프로세스 정의가 선택되지 않았습니다.",
-        "roleMapping": "역할 매핑"
+        "roleMapping": "역할 매핑",
+        "move": "이동"
     },
     "ReceiveTaskPanel": {
         "dataMapping": "데이터 매핑",
@@ -784,6 +814,14 @@
     },
     "Mapper" : {
         "mapper" : "매퍼"
+    },
+    "TaskPanel": {
+        "inputData": "입력 데이터 (JSON/XML)",
+        "resultInputVariable": "결과 입력 변수"
+    },
+    "ManualTaskPanel": {
+        "inputData": "입력 데이터 (JSON/XML)",
+        "resultInputVariable": "결과 입력 변수"
     },
     "SubProcessPanel" : {
         "forEachRole" : "역할 기반 다중 생성",
@@ -867,7 +905,14 @@
         "time": "시간 선택",
         "frequency": "빈도 선택",
         "cronDescriptionTitle": "Cron 표현식을 사용하여 Timer Intermediate Catch Event가 트리거될 시간을 정밀하게 설정할 수 있습니다.",
-        "cronDescriptionSubTitle": "형식: Cron 표현식은 다섯 개의 필드로 구성되며, 각 필드는 분, 시간, 일, 월, 요일을 나타냅니다. \n예시: \n0 0 * * * : 매일 자정 (00:00)에 이벤트가 트리거됩니다. \n15 10 * * * : 매일 10:15 AM에 이벤트가 트리거됩니다. \n0 9 1 * * : 매월 1일 9:00 AM에 이벤트가 트리거됩니다. \n0 0 * * 1 : 매주 월요일 자정 (00:00)에 이벤트가 트리거됩니다. \n*/10 * * * * : 매 10분마다 이벤트가 트리거됩니다."
+        "cronDescriptionSubTitle": "형식: Cron 표현식은 다섯 개의 필드로 구성되며, 각 필드는 분, 시간, 일, 월, 요일을 나타냅니다. \n예시: \n0 0 * * * : 매일 자정 (00:00)에 이벤트가 트리거됩니다. \n15 10 * * * : 매일 10:15 AM에 이벤트가 트리거됩니다. \n0 9 1 * * : 매월 1일 9:00 AM에 이벤트가 트리거됩니다. \n0 0 * * 1 : 매주 월요일 자정 (00:00)에 이벤트가 트리거됩니다. \n*/10 * * * * : 매 10분마다 이벤트가 트리거됩니다.",
+        "ruleGenerator": "결정론적 규칙화",
+        "ruleGenerating": "결정론적 규칙화 중...",
+        "generatedRulePreview": "결정론적 규칙 미리보기",
+        "generatedCron": "생성된 Cron",
+        "cancel": "취소",
+        "confirm": "확인",
+        "regenerate": "재생성"
     },
     "GatewayPanel" : {
         "gatewayDescriptionTitle" : "Gateway 조건처리를 통해 다음 작업으로 넘어가는 것을 선택할 때 사용함",
@@ -1504,7 +1549,8 @@
         "agentManagement": "에이전트 관리"
     },
     "ReportField": {
-        "title": "컨텐츠 에디터"
+        "title": "컨텐츠 에디터",
+        "save": "저장"
     },
     "OrganizationAddDialog": {
         "add": "추가"
@@ -2143,5 +2189,22 @@
     "AgentSkills": {
         "skills": "스킬",
         "skillUpload": "스킬 파일(.zip) 업로드"
+    },
+    "ConditionExampleField": {
+        "generateExamples": "예시 생성",
+        "generatingExamples": "예시 생성 중...",
+        "when": "조건 (When)",
+        "then": "결과 (Then)"
+    },
+    "ExampleTable": {
+        "operation": "작업",
+        "addNewExample": "새 예시 추가",
+        "validPeriodSetting": "유효 기간 설정",
+        "validStartDate": "유효 시작일",
+        "validEndDate": "유효 종료일",
+        "cancel": "취소",
+        "save": "저장",
+        "goodExamples": "좋은 예시",
+        "badExamples": "나쁜 예시"
     }
 }

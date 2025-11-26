@@ -359,6 +359,16 @@ export default {
                 // 탭 상태를 localStorage에 저장
                 localStorage.setItem('instanceCard-lastTab', newVal);
                 
+                // gantt 탭 선택 시 tasks와 dependencies 데이터 재로드
+                if (newVal === 'gantt') {
+                    // userList가 비어있으면 로드
+                    if (!this.userList || this.userList.length === 0) {
+                        await this.loadUserInfo();
+                    }
+                    // tasks 데이터 재로드
+                    await this.loadTasks();
+                }
+                
                 // 탭 변경 시 해당 컴포넌트 초기화
                 await this.$nextTick();
                 const activeComponents = this.$refs[newVal];

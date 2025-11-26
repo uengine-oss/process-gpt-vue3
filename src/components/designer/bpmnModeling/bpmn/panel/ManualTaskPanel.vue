@@ -43,11 +43,11 @@
             </v-row>
         </div>
         <div>
-            <v-row class="ma-0 pa-0">
-                <v-text-field v-model="copyUengineProperties.inputPayloadTemplate" label="입력 데이터 (JSON/XML)"></v-text-field>
+            <v-row class="ma-0 pa-0 mb-2">
+                <v-text-field v-model="copyUengineProperties.inputPayloadTemplate" :label="$t('ManualTaskPanel.inputData')"></v-text-field>
             </v-row>
             <v-row class="ma-0 pa-0">
-                <v-text-field v-model="copyUengineProperties.dataInput.name" label="결과 입력 변수"></v-text-field>
+                <v-text-field v-model="copyUengineProperties.dataInput.name" :label="$t('ManualTaskPanel.resultInputVariable')"></v-text-field>
             </v-row>
         </div>
 

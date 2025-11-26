@@ -3,7 +3,7 @@
         <!-- definition id 가 없어도 데이터가 있다면 최선을 다하여 출력하자 -->
         <!--<div v-if="calleeDefinitionId">-->
         <div v-for="(roleBinding, idx) in copyRoleBindings" :key="idx">
-            <v-row>
+            <v-row class="ml-0 pa-0">
                 <v-col cols="3">
                     <div>
                         <v-select label="Callee Roles" name="input" id="input" v-model="roleBinding.argument"
@@ -19,7 +19,7 @@
                 <v-col cols="3">
                     <div>
                         <v-select v-model="roleBinding.direction" style="min-width: 20px;" :items="connectDirections"
-                            item-props label="연결방향">
+                            item-props :label="$t('BpmnParameterContexts.direction')">
                             <template v-slot:selection="{ item }">
                                 <v-icon>{{ iconForDirection(item.value) }}</v-icon>
                             </template>
@@ -54,7 +54,12 @@
             </v-row>
         </div>
 
-        <v-btn v-on:click="add">매핑 추가</v-btn>
+        <v-btn text color="primary" variant="flat" rounded style="margin: 0 0 20px 8px;" v-on:click="add">
+            <v-row class="pa-0 ma-0 align-center">
+                <v-icon class="mr-2" style="padding-top: 3px;">mdi-plus</v-icon>
+                <div>{{ $t('BpmnRoleParameterContexts.addMapping') }}</div>
+            </v-row>
+        </v-btn>
     </div>
     <!--</div>-->
 </template>

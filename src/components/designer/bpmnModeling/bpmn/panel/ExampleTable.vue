@@ -13,7 +13,7 @@
                         <th v-for="header in headers" :key="header.key" class="text-center">
                             {{ header.name }}
                         </th>
-                        <th class="text-center">작업</th>
+                        <th class="text-center">{{ $t('ExampleTable.operation') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,17 +40,21 @@
                             <v-btn
                                 icon="mdi-calendar-edit"
                                 variant="text"
-                                color="primary"
-                                size="small"
+                                color="secondary"
+                                size="medium"
+                                class="ml-4"
                                 @click="openDateTimeDialog(index)"
                             />
                             <v-btn
-                                icon="mdi-delete"
-                                variant="text"
+                                icon
                                 color="error"
-                                size="small"
+                                variant="text"
+                                class="text-medium-emphasis"
+                                style="margin-top: -4px;"
                                 @click="removeRow(index)"
-                            />
+                                >
+                                <TrashIcon size="20"/>
+                            </v-btn>
                         </td>
                     </tr>
                 </tbody>
@@ -59,62 +63,60 @@
         
         <div class="d-flex justify-center mt-3">
             <v-btn
-                color="primary"
+                color="secondary"
                 variant="outlined"
+                class="rounded-pill"
                 prepend-icon="mdi-plus"
                 @click="addNewRow"
             >
-                새 예시 추가
+                {{ $t('ExampleTable.addNewExample') }}
             </v-btn>
         </div>
 
         <!-- 날짜/시간 설정 다이얼로그 -->
         <v-dialog v-model="dateTimeDialog" max-width="400px">
             <v-card>
-                <v-card-title>
-                    <span class="text-h5">유효 기간 설정</span>
-                </v-card-title>
-                <v-card-text>
-                    <v-container>
-                        <v-row>
-                            <v-col cols="12">
-                                <v-text-field
-                                    v-model="editingExample.valid_at"
-                                    label="유효 시작일"
-                                    type="datetime-local"
-                                    variant="outlined"
-                                    prepend-icon="mdi-calendar-start"
-                                />
-                            </v-col>
-                            <v-col cols="12">
-                                <v-text-field
-                                    v-model="editingExample.invalid_at"
-                                    label="유효 종료일"
-                                    type="datetime-local"
-                                    variant="outlined"
-                                    prepend-icon="mdi-calendar-end"
-                                />
-                            </v-col>
-                        </v-row>
-                    </v-container>
+                <v-row class="ma-0 pa-4 pb-0 align-center">
+                    <v-card-title class="pa-0"
+                    >{{ $t('ExampleTable.validPeriodSetting') }}
+                    </v-card-title>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="closeDateTimeDialog"
+                        class="ml-auto" 
+                        variant="text" 
+                        density="compact"
+                        icon
+                    >
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-row>
+                <v-card-text class="ma-0 pa-4 pb-0">
+                    <v-row class="ma-0 pa-0 pt-2">
+                        <v-text-field
+                            v-model="editingExample.valid_at"
+                            :label="$t('ExampleTable.validStartDate')"
+                            type="datetime-local"
+                            variant="outlined"
+                            prepend-icon="mdi-calendar-start"
+                        />
+                        <v-text-field
+                            v-model="editingExample.invalid_at"
+                            :label="$t('ExampleTable.validEndDate')"
+                            type="datetime-local"
+                            variant="outlined"
+                            prepend-icon="mdi-calendar-end"
+                        />
+                    </v-row>
                 </v-card-text>
-                <v-card-actions>
-                    <v-spacer />
-                    <v-btn
-                        color="blue darken-1"
-                        text
-                        @click="closeDateTimeDialog"
-                    >
-                        취소
+                <v-row class="ma-0 pa-4 pt-0">
+                    <v-spacer></v-spacer>
+                    <v-btn @click="saveDateTimeSettings"
+                        color="primary"
+                        variant="flat" 
+                        class="rounded-pill"
+                    >{{ $t('ExampleTable.save') }}
                     </v-btn>
-                    <v-btn
-                        color="blue darken-1"
-                        text
-                        @click="saveDateTimeSettings"
-                    >
-                        저장
-                    </v-btn>
-                </v-card-actions>
+                </v-row>
             </v-card>
         </v-dialog>
     </div>
@@ -149,10 +151,10 @@ export default {
     },
     computed: {
         icon() {
-            return this.title === '좋은 예시' ? 'mdi-check-circle-outline' : 'mdi-cancel';
+            return this.title === this.$t('ExampleTable.goodExamples') ? 'mdi-check-circle-outline' : 'mdi-cancel';
         },
         title() {
-            return this.type === 'good' ? '좋은 예시' : '나쁜 예시';
+            return this.type === 'good' ? this.$t('ExampleTable.goodExamples') : this.$t('ExampleTable.badExamples');
         }
     },
     methods: {

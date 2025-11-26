@@ -12,7 +12,7 @@
                     <v-radio :label="$t('SubProcessPanel.forEachVariable')" :value="false"></v-radio>
                 </v-radio-group>
                 <div v-if="isForEachRole">
-                    <v-row class="ma-0 pa-0">
+                    <v-row class="ma-0 pa-0 align-center">
                         <v-autocomplete
                             :items="roles"
                             v-model="selectedRole"
@@ -27,14 +27,15 @@
                             :is-view-mode="isViewMode"
                             :parameter-contexts="copyUengineProperties.variableBindings"
                         ></bpmn-parameter-contexts> -->
+                        <DetailComponent class="ml-2"
+                            :title="$t('SubProcessPanel.forEachRoleDescriptionTitle')"
+                            :details="forEachRoleDescription"
+                            :iconSize="24"
+                        />
                     </v-row>
-                    <DetailComponent
-                        :title="$t('SubProcessPanel.forEachRoleDescriptionTitle')"
-                        :details="forEachRoleDescription"
-                    />
                 </div>
                 <div v-else> 
-                    <v-row class="ma-0 pa-0">
+                    <v-row class="ma-0 pa-0 align-center">
                         <v-autocomplete
                             v-if="mode == 'uEngine'"
                             :items="processVariables"
@@ -53,12 +54,13 @@
                             :is-view-mode="isViewMode"
                             :parameter-contexts="copyUengineProperties.variableBindings"
                         ></bpmn-parameter-contexts> -->
+                        <DetailComponent class="ml-2"
+                            :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
+                            :details="SubProcessDescription"
+                            :detailUrl="'https://www.youtube.com/watch?v=nhQCDfYa6Gk'"
+                            :iconSize="24"
+                        />
                     </v-row>
-                    <DetailComponent
-                        :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
-                        :details="SubProcessDescription"
-                        :detailUrl="'https://www.youtube.com/watch?v=nhQCDfYa6Gk'"
-                    />
                 </div>
             </div>
 
