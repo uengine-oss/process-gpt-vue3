@@ -66,7 +66,7 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 -- 프로세스 인스턴스 상태 enum
 CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
 -- 할일 항목 상태 enum
-CREATE TYPE todo_status AS ENUM ('TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
+CREATE TYPE todo_status AS ENUM ('NEW', 'TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
 -- 에이전트 모드 enum
 CREATE TYPE agent_mode AS ENUM ('DRAFT', 'COMPLETE');
 -- 오케스트레이션 방식 enum

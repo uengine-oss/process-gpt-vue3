@@ -104,13 +104,6 @@
             @change="onFileSelect"
         >
 
-        <!-- 스낵바 -->
-        <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-            {{ snackbar.message }}
-            <template v-slot:actions>
-                <v-btn variant="text" @click="snackbar.show = false">닫기</v-btn>
-            </template>
-        </v-snackbar>
     </div>
 </template>
 
@@ -141,11 +134,6 @@ export default {
         sourceList: [],
         isDragOver: false,
         selectedFile: null,
-        snackbar: {
-            show: false,
-            message: '',
-            color: 'success'
-        }
     }),
     mounted() {
         this.init();
@@ -261,37 +249,59 @@ export default {
                     };
 
                     const response = await backend.uploadFile(file.name, file, options);
-                    console.log(response);
-                    if (response.success) {
-                        me.sourceList.forEach(item => {
-                            if (item.id === fileId) {
-                                item.isProcess = true;
-                            }
-                        });
-                        me.showSnackbar(`${file.name} 파일이 업로드되었습니다.`, 'success');
+                    if (response.error) {
+                        me.$try({
+                            action: () => {
+                                throw new Error(response.message);
+                            },
+                            onFail: () => {
+                                me.sourceList.forEach(item => {
+                                    if (item.id === fileId) {
+                                        item.isError = true;
+                                    }
+                                });
+                            },
+                            errorMsg: `${file.name} 파일 업로드에 실패했습니다. ${response.message}`
+                        })
                     } else {
-                        me.sourceList.forEach(item => {
-                            if (item.id === fileId) {
-                                item.isError = true;
-                            }
-                        });
-                        me.showSnackbar(response.message, 'error');
+                        me.$try({
+                            action: () => {
+                                me.sourceList.forEach(item => {
+                                    if (item.id === fileId) {
+                                        item.isProcess = true;
+                                    }
+                                });
+                            },
+                            successMsg: `${file.name} 파일이 업로드되었습니다.`,
+                        })
                     }
+                    
                 }
             }
         },
 
         validateFile(file) {
+            var me = this;
             const allowedTypes = ['.pdf', '.doc', '.docx', '.txt', '.csv', '.xls', '.xlsx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'];
             const fileExtension = this.getFileExtension(file.name);
             
             if (!allowedTypes.includes(fileExtension)) {
-                this.showSnackbar(`${file.name}은 지원되지 않는 파일 형식입니다.`, 'error');
+                me.$try({
+                    action: () => {
+                        throw new Error(`${file.name}은 지원되지 않는 파일 형식입니다.`);
+                    },
+                    errorMsg: `${file.name}은 지원되지 않는 파일 형식입니다.`
+                })
                 return false;
             }
 
             if (file.size > 50 * 1024 * 1024) { // 50MB 제한
-                this.showSnackbar(`${file.name} 파일이 너무 큽니다. (최대 50MB)`, 'error');
+                me.$try({
+                    action: () => {
+                        throw new Error(`${file.name} 파일이 너무 큽니다. (최대 50MB)`);
+                    },
+                    errorMsg: `${file.name} 파일이 너무 큽니다. (최대 50MB)`
+                })
                 return false;
             }
 
@@ -364,24 +374,26 @@ export default {
         },
 
         async deleteFile(file) {
+            var me = this;
             if (!file.isError) {
                 const result = await backend.deleteInstanceSource(file);
                 if (result.error) {
-                    this.showSnackbar(result.error.message, 'error');
+                    me.$try({
+                        action: () => {
+                            throw new Error(result.error.message);
+                        },
+                        errorMsg: result.error.message
+                    })
                     return;
                 }
             }
-            this.sourceList = this.sourceList.filter(item => item.id !== file.id);
-            this.showSnackbar(`${file.name} 파일이 삭제되었습니다.`, 'success');
+            me.$try({
+                action: () => {
+                    me.sourceList = me.sourceList.filter(item => item.id !== file.id);
+                },
+                successMsg: `${file.name} 파일이 삭제되었습니다.`
+            })
         },
-
-        showSnackbar(message, color = 'success') {
-            this.snackbar = {
-                show: true,
-                message,
-                color
-            };
-        }
     },
 }
 </script>
