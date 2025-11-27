@@ -102,13 +102,22 @@
                             hide-details
                             density="compact"
                         ></v-select>
-                        <v-textarea class="process-definition-version-dialog-textarea"
-                            v-if="information.version_tag === 'major' || information.version_tag === 'minor'"
-                            v-model="information.message"
-                            :label="$t('ProcessDefinitionVersionDialog.message')"
-                            hide-details
-                            auto-grows
-                        ></v-textarea>
+                        <div class="position-relative">
+                            <v-textarea class="process-definition-version-dialog-textarea"
+                                v-if="information.version_tag === 'major' || information.version_tag === 'minor'"
+                                v-model="information.message"
+                                :label="$t('ProcessDefinitionVersionDialog.message')"
+                                hide-details
+                                auto-grows
+                            ></v-textarea>
+                            <div v-if="isDiffGenerating"
+                                class="text-caption text-grey-darken-1 mt-1 d-flex align-center">
+                                <v-progress-circular indeterminate size="14" width="2" color="primary"
+                                    class="mr-1"
+                                ></v-progress-circular>
+                                <span>{{ $t('ProcessDefinitionVersionDialog.generatingDiff') || '변경 내역을 분석 중입니다...' }}</span>
+                            </div>
+                        </div>
                     </div>
                     <div v-else>
                         <div v-if="isVersion">
@@ -164,6 +173,7 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinitionIdGenerator from '@/components/ai/ProcessDefinitionIdGenerator';
+import BpmnDiffGenerator from '@/components/ai/BpmnDiffGenerator.js';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 const backend = BackendFactory.createBackend();
@@ -179,7 +189,9 @@ export default {
         process: Object,
         definition: Object,
         processName: String,
-        useOptimize: Boolean
+        useOptimize: Boolean,
+        // 현재 모델러에서 편집 중인 최신 BPMN XML (ProcessGPT 모드에서만 사용)
+        currentBpmn: String,
     },
     data: () => ({
         isMajor: false, // legacy flag, 현재는 사용 안 함
@@ -217,7 +229,9 @@ export default {
             { title: "ProcessDefinitionVersionDialog.helpIntro" },
             { title: "ProcessDefinitionVersionDialog.helpVersionToggle" },
             { title: "ProcessDefinitionVersionDialog.helpOptimize" }
-        ]
+        ],
+        // 버전 변경 설명(AI Diff) 생성 중 여부
+        isDiffGenerating: false,
     }),
     computed: {
         idRules() {
@@ -534,6 +548,20 @@ export default {
                                 version_tag: 'minor'
                             };
                         }
+                        if (me.mode === 'ProcessGPT') {
+                            try {
+                                const previousXml = bpmn; // 항상 proc_def 기준
+                                const currentXml = me.currentBpmn || bpmn;
+                                if (currentXml) {
+                                    me.isDiffGenerating = true;
+                                    await me.generateVersionDiffDescription(previousXml, currentXml);
+                                }
+                            } catch (e) {
+                                console.error('버전 변경 설명 생성 중 오류:', e);
+                            } finally {
+                                me.isDiffGenerating = false;
+                            }
+                        }
                     } else {
                         let defId = me.$route.params.pathMatch.join('/');
                         if(me.process && me.process.processDefinitionId) {
@@ -648,6 +676,62 @@ export default {
                 }
             }
             // me.isOpen = true;
+        },
+        /**
+         * BPMN 이전/현재 버전을 비교하여 설명란(information.message)을 자동 생성
+         * - ProcessGPT 모드에서만 사용
+         */
+        async generateVersionDiffDescription(previousXml, currentXml) {
+            if (this.mode !== 'ProcessGPT') return;
+            if (!currentXml || typeof currentXml !== 'string') return;
+
+            const client = {
+                onGenerationFinished: (response) => {
+                    try {
+                        let obj = null;
+                        try {
+                            obj = JSON.parse(response);
+                        } catch (e) {
+                            // JSON 이 아닌 경우는 무시
+                            console.warn('BPMN diff 응답 JSON 파싱 실패:', e);
+                            return;
+                        }
+                        if (!obj) return;
+
+                        const summary = typeof obj.summary === 'string' ? obj.summary.trim() : '';
+                        const changes = Array.isArray(obj.changes) ? obj.changes : [];
+
+                        // 요약 + 변경 항목을 설명란에 채워 넣기
+                        let message = '';
+                        if (summary) {
+                            message += summary;
+                        }
+                        if (changes.length > 0) {
+                            const bulletLines = changes
+                                .filter((c) => typeof c === 'string' && c.trim().length > 0)
+                                .map((c) => `- ${c.trim()}`);
+                            if (bulletLines.length > 0) {
+                                message += (message ? '\n\n' : '') + bulletLines.join('\n');
+                            }
+                        }
+
+                        if (message) {
+                            this.information.message = message;
+                        }
+                    } catch (e) {
+                        console.error('BPMN diff 설명 처리 중 오류:', e);
+                    }
+                }
+            };
+
+            const generator = new BpmnDiffGenerator(client, {
+                previousXml: previousXml || '',
+                currentXml: currentXml || '',
+                processId: this.information.proc_def_id || (this.process && this.process.processDefinitionId) || '',
+                language: 'Korean'
+            });
+
+            await generator.generate();
         },
         save() {
             var me = this;
