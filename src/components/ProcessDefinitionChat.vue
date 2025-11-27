@@ -79,6 +79,7 @@
                     :processName="projectName"
                     :type="'bpmn'"
                     :useOptimize="useOptimize"
+                    :currentBpmn="bpmn"
                     @update:useOptimize="useOptimize = $event"
                     @close="toggleVersionDialog"
                     @save="beforeSaveDefinition"
