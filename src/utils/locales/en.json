@@ -679,6 +679,7 @@
         "id": "ID",
         "name": "Name",
         "message": "Description",
+        "versionTag": "Version Tag",
         "save": "Save",
         "versionDescriptionTitle": "Save Help Guide",
         "idRequired": "ID is required.",

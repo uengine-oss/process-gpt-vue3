@@ -118,13 +118,13 @@ class ProcessGPTBackend implements Backend {
                     await storage.delete(`form_def/${defId}`, { key: 'proc_def_id' });
                 }
                 
-                const arcv = await storage.list('proc_def_arcv', {
+                const arcv = await storage.list('proc_def_version', {
                     sort: 'desc',
                     orderBy: 'timeStamp',
                     match: { 'proc_def_id': defId }
                 });
                 if (arcv && arcv.length > 0) {
-                    await storage.delete(`proc_def_arcv/${defId}`, { key: 'proc_def_id' });
+                    await storage.delete(`proc_def_version/${defId}`, { key: 'proc_def_id' });
                 }
 
                 const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
@@ -244,15 +244,17 @@ class ProcessGPTBackend implements Backend {
             await storage.putObject('proc_def', procDef);
 
             if (options.version) {
-                const procDefArcv: any = {
+                const procDefVersion: any = {
                     arcv_id: options.arcv_id,
                     proc_def_id: defId,
                     version: options.version,
+                    version_tag: options.version_tag,
                     snapshot: xml,
+                    definition: options.definition ?? procDef.definition,
                     diff: options.diff,
                     message: options.message,
                 }
-                await storage.putObject('proc_def_arcv', procDefArcv);
+                await storage.putObject('proc_def_version', procDefVersion);
             }
 
             const isLocked = await storage.getObject(`lock/${defId}`, { key: 'id' });
@@ -293,17 +295,37 @@ class ProcessGPTBackend implements Backend {
                         return null;
                     }
                     return data;
-                } else if (options.type === "bpmn" || options.type === "dmn") {
+                } else if (options.type === "bpmn") {
                     if (defId.includes('/')) defId = defId.replace(/\//g, "_")
-                    let data = null;
-                    // ::TODO: 개정된 프로세스 실행에 대한 작업 완료 후 사용
-                    // if (options.version && options.version != '') {
-                    //     data = await storage.getString(`proc_def_arcv`, { column: 'snapshot', match: {
-                    //         proc_def_id: defId, arcv_id: options.version
-                    //     } });
-                    // } else {
-                    data = await storage.getString(`proc_def`, { column: 'bpmn', match: { id: defId } });
-                    // }
+                    let data: any = null;
+
+                    // 버전이 명시된 경우: proc_def_version에서 해당 버전 스냅샷 조회
+                    if (options.version) {
+                        const match: any = {
+                            proc_def_id: defId,
+                            version: options.version,
+                        };
+                        if (options.version_tag) {
+                            match.version_tag = options.version_tag;
+                        }
+                        try {
+                            const versionRow = await storage.getObject('proc_def_version', { match });
+                            if (versionRow && (versionRow as any).snapshot) {
+                                data = (versionRow as any).snapshot;
+                            }
+                        } catch (e) {
+                            data = null;
+                        }
+                    }
+
+                    // 버전 스냅샷이 없으면 항상 현재 proc_def 기준 bpmn 사용
+                    if (!data) {
+                        data = await storage.getString(`proc_def`, { column: 'bpmn', match: { id: defId } });
+                    }
+                    return data;
+                } else if (options.type === "dmn") {
+                    if (defId.includes('/')) defId = defId.replace(/\//g, "_")
+                    const data = await storage.getString(`proc_def`, { column: 'bpmn', match: { id: defId } });
                     return data;
                 }
             } else {
@@ -433,6 +455,88 @@ class ProcessGPTBackend implements Backend {
         try {
             const organization = await storage.getObject(path, options);
             return organization;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    /**
+     * 실행용 프로세스 정의 조회
+     * - 1순위: proc_def_version 중 version_tag = 'major' 이면서 가장 높은 version
+     * - 2순위: 해당 레코드가 없으면 proc_def에서 현재 정의 사용
+     * - todolist / bpm_proc_inst 등에 버전 정보를 전달하기 위해 version, version_tag 도 함께 반환
+     */
+    async getExecutionDefinition(defId: string): Promise<{ definition: any; bpmn: string; version?: string; version_tag?: string } | null> {
+        try {
+            if (!defId) return null;
+
+            defId = defId.toLowerCase();
+
+            // 1) proc_def_version 중 major 태그 대상 조회
+            let versions: any[] = [];
+            try {
+                versions = await storage.list('proc_def_version', {
+                    match: {
+                        proc_def_id: defId,
+                        version_tag: 'major',
+                    },
+                });
+            } catch (e) {
+                versions = [];
+            }
+
+            if (versions && versions.length > 0) {
+                // 문자열 버전(X.Y)을 숫자로 해석해서 가장 큰 값 선택
+                versions.sort((a: any, b: any) => {
+                    const va = parseFloat(a.version || '0') || 0;
+                    const vb = parseFloat(b.version || '0') || 0;
+                    return vb - va;
+                });
+
+                const latest = versions[0];
+                return {
+                    definition: latest.definition,
+                    bpmn: latest.snapshot,
+                    version: latest.version,
+                    version_tag: latest.version_tag,
+                };
+            }
+
+            // 2) major 버전이 없으면 proc_def의 현재 정의 사용
+            const procDef = await storage.getObject('proc_def', {
+                match: { id: defId },
+            });
+
+            if (!procDef) return null;
+
+            return {
+                definition: procDef.definition,
+                bpmn: procDef.bpmn,
+            };
+        } catch (error) {
+            return null;
+        }
+    }
+
+    /**
+     * 시뮬레이션용 프로세스 정의 조회
+     * - 항상 proc_def의 현재 정의를 사용
+     */
+    async getSimulationDefinition(defId: string): Promise<{ definition: any; bpmn: string } | null> {
+        try {
+            if (!defId) return null;
+            defId = defId.toLowerCase();
+
+            const procDef = await storage.getObject('proc_def', {
+                match: { id: defId },
+            });
+
+            if (!procDef) return null;
+
+            return {
+                definition: procDef.definition,
+                bpmn: procDef.bpmn,
+            };
         } catch (error) {
             return null;
         }
@@ -604,7 +708,9 @@ class ProcessGPTBackend implements Backend {
                     defVerId: instance && instance.defVersion ? instance.defVersion : null,
                     output: workitem.output || "",
                     log: workitem.log || "",
-                    orchestration: workitem.agent_orch || ""
+                    orchestration: workitem.agent_orch || "",
+                    version_tag: workitem.version_tag || null,
+                    version: workitem.version || null,
                 },
                 activity: {
                     name: workitem.activity_name || "",
@@ -658,9 +764,10 @@ class ProcessGPTBackend implements Backend {
                     delete filter.match.root_proc_inst_id;
                 }
                 list = await storage.list('todolist', filter);
-            } else {
-                list = list.filter((item: any) => item.tool !== null && item.tool !== undefined && item.tool !== '');
             }
+            //  else {
+            //     list = list.filter((item: any) => item.tool !== null && item.tool !== undefined && item.tool !== '');
+            // }
             
             // 페이지네이션 처리
             let paginatedList = list;
@@ -1330,7 +1437,7 @@ class ProcessGPTBackend implements Backend {
                 if (!options.match) options.match = {};
                 options.match.proc_def_id = defId;
             }
-            list = await storage.list('proc_def_arcv', options);
+            list = await storage.list('proc_def_version', options);
             const procDefName = await storage.getString(`proc_def/${defId}`, { key: 'id', column: "name" });
             if(procDefName) {
                 list.forEach((item: any) => {
@@ -1649,7 +1756,10 @@ class ProcessGPTBackend implements Backend {
                 process_definition_id: workItem.proc_def_id,
                 activity_id: workItem.activity_id,
                 chat_room_id: workItem.proc_inst_id,
-                task_id: workItem.id
+                task_id: workItem.id,
+                // complete 호출 시에도 todolist 버전 정보를 함께 전달
+                version_tag: (workItem as any).version_tag || null,
+                version: (workItem as any).version || null,
             };
 
             return await me.executeInstance(input);
@@ -3633,7 +3743,9 @@ class ProcessGPTBackend implements Backend {
             deleted_at: item.deleted_at,
             parent_proc_inst_id: item.parent_proc_inst_id,
             root_proc_inst_id: item.root_proc_inst_id,
-            execution_scope: item.execution_scope
+            execution_scope: item.execution_scope,
+            version: item.version,
+            version_tag: item.version_tag
         }
     }
 
@@ -3659,7 +3771,9 @@ class ProcessGPTBackend implements Backend {
             projectId: item.project_id || null,
             updatedAt: item.updated_at,
             log: item.log || "",
-            task: item
+            task: item,
+            version_tag: item.version_tag || null,
+            version: item.version || null,
         }
     }
 

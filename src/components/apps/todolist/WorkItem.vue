@@ -23,9 +23,16 @@
                     </h5>
                     <v-chip v-if="workItemStatus"
                         size="x-small" variant="outlined" 
-                        style = "margin: 2px 0px 0px 5px !important; display: flex; align-items: center"
+                        style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center"
                         :style="isMobile ? 'margin: 0px !important;' : ''">
                         {{ workItemStatus }}
+                    </v-chip>
+                    <v-chip v-if="workItemVersionLabel"
+                        size="x-small" variant="outlined"
+                        color="primary"
+                        style="margin: 2px 0px 0px 5px !important; display: flex; align-items: center"
+                        :style="isMobile ? 'margin: 0px !important;' : ''">
+                        {{ workItemVersionLabel }}
                     </v-chip>
                     <v-spacer></v-spacer>
                     <!-- 위임하기 UI -->
@@ -857,6 +864,13 @@ export default {
 
             return this.workItem.worklist.status;
         },
+        workItemVersionLabel() {
+            if (!this.workItem || !this.workItem.worklist) return null;
+            const version = this.workItem.worklist.version;
+            if (!version) return null;
+            const tag = this.workItem.worklist.version_tag;
+            return tag ? `v ${version}` : version;
+        },
         isCompleted() {
             return this.workItemStatus == "COMPLETED" || this.workItemStatus == "DONE"
         },
@@ -1544,14 +1558,32 @@ export default {
                     if (me.isDryRun) {
                         me.workItem = me.dryRunWorkItem
                         me.currentActivities = [me.workItem.activity.tracingTag];
-                        if(me.isSimulate == 'true' && me.processDefinition.bpmn) {
+                        if (me.processDefinition && me.processDefinition.bpmn) {
                             me.bpmn = me.processDefinition.bpmn;
-                        } else {
+                        } else if (me.isSimulate == 'true') {
                             me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
+                        } else {
+                            try {
+                                const execDef = await backend.getExecutionDefinition(me.definitionId);
+                                if (execDef && execDef.bpmn) {
+                                    me.bpmn = execDef.bpmn;
+                                } else {
+                                    me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
+                                }
+                            } catch (e) {
+                                me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
+                            }
                         }
                     } else {
                         me.workItem = await backend.getWorkItem(me.currentTaskId);
-                        me.bpmn = await backend.getRawDefinition(me.workItem.worklist.defId, { type: 'bpmn', version: me.workItem.worklist.defVerId });
+                        me.bpmn = await backend.getRawDefinition(
+                            me.workItem.worklist.defId,
+                            {
+                                type: 'bpmn',
+                                version: me.workItem.worklist.version,
+                                version_tag: me.workItem.worklist.version_tag
+                            }
+                        );
                         if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
                         me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
                         
@@ -1566,7 +1598,6 @@ export default {
                         }
 
                         if (me.mode !== 'ProcessGPT') {
-                            // FormWorkItem 데이터 로드
                             await me.loadRefForm();
                         }
                     }
