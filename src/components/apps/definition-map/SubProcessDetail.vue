@@ -357,19 +357,28 @@ export default {
                             })
                         })
                     })
-                    // defObj.id.replace(/_/g, '/');
-                    // const defInfo = await backend.getRawDefinition(defId, null);
-                    if(obj.id){
-                        let path = obj.id.replace(/_/g, '/');
-                        me.bpmn = await backend.getRawDefinition(path, { type: 'bpmn' });
+                    if (obj.id) {
+                        let path = obj.id;
+
+                        const execDef = await backend.getExecutionDefinition(path);
+                        if (execDef && execDef.bpmn) {
+                            me.bpmn = execDef.bpmn;
+                            if (execDef.definition) {
+                                me.processDefinitionData = execDef.definition;
+                            }
+                        } else {
+                            me.bpmn = await backend.getRawDefinition(path, { type: 'bpmn' });
+                        }
                     } else {
                         me.bpmn = null;
                     }
                     me.processDefinition = obj;
                     
-                    const value = await backend.getRawDefinition(me.processDefinition.id);
-                    if (value) {
-                        me.processDefinitionData = value.definition;
+                    if (!me.processDefinitionData && me.processDefinition.id) {
+                        const value = await backend.getRawDefinition(me.processDefinition.id);
+                        if (value) {
+                            me.processDefinitionData = value.definition;
+                        }
                     }
                     await this.checkEditable();
                     me.onLoad = true;

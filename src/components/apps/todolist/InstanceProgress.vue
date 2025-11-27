@@ -74,6 +74,9 @@ export default {
                 return null;
             }
         },
+        mode() {
+            return window.$mode;
+        },
     },
     watch: {
         '$route': {
@@ -100,7 +103,11 @@ export default {
                 context: me,
                 action: async () => {
                     if (me.instance && me.instance.defId) {
-                        me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn', version: this.instance.defVer });
+                        if(me.mode == 'ProcessGPT') {
+                            me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn', version: this.instance.version });
+                        } else {
+                            me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn', version: this.instance.defVer });
+                        }
                         await me.initStatus();
                         me.updatedDefKey++;
                     }

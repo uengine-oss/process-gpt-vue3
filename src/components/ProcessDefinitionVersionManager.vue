@@ -134,7 +134,7 @@ export default {
         type: String
     },
     data: () => ({
-        basePath: 'proc_def_arcv',
+        basePath: 'proc_def_version',
         isOpen: false, // inner var
 
         // xml

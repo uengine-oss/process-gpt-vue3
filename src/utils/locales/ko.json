@@ -681,6 +681,7 @@
         "id": "아이디",
         "name": "이름",
         "message": "설명",
+        "versionTag": "버전 태그",
         "save": "저장",
         "versionDescriptionTitle": "저장 관련 도움말",
         "idRequired": "ID는 필수 항목입니다.",
