@@ -36,7 +36,7 @@ export default class AgentChatGenerator extends AIGenerator {
                 });
             }
             
-            const response = await fetch('/execution/multi-agent/chat', {
+            const response = await fetch('/completion/multi-agent/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -934,7 +934,7 @@ export default {
                             if(this.currentChatRoom.id == chatRoomId && this.messages.length > 0 && this.messages[this.messages.length - 1].email == 'system@uengine.org'){
                                 this.messages[this.messages.length - 1].content = '테이블 생성 중...'
                             }
-                            const responseTable = await axios.post(`/execution/process-data-query`, {
+                            const responseTable = await axios.post(`/completion/process-data-query`, {
                                 input: {
                                     query: responseObj.content,
                                     user_id: this.userInfo.email

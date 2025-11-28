@@ -245,6 +245,7 @@ create table if not exists public.bpm_proc_inst (
     updated_at timestamp with time zone default now(),
     is_deleted boolean not null default false,
     deleted_at timestamp with time zone null,
+    is_clean_up boolean not null default false,
     constraint bpm_proc_inst_pkey primary key (proc_inst_id),
     constraint bpm_proc_inst_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;

@@ -11,7 +11,7 @@
                         <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default">
                             <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
                             <div v-if="admin">
-                                <v-tab v-if="superAdmin" value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
+                                <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
                                 <v-tab v-if="superAdmin" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
                                 <v-tab value="MCP-Servers"> {{ $t('accountTab.mcpServers') }} </v-tab>
                                 <v-tab value="MCP-Environments"> {{ $t('accountTab.environments') }} </v-tab>
@@ -72,7 +72,6 @@
 
                         <template v-if="admin">
                             <v-btn
-                                v-if="superAdmin"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -174,7 +173,7 @@
                                 style="overflow: auto;"
                                 :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
                             >
-                                <ManageAccessTab />
+                                <ManageAccessTab :editable="superAdmin" />
                             </div>
                         </v-window-item>
                         <v-window-item value="Drive">

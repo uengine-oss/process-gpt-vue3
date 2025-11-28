@@ -406,9 +406,9 @@ class ProcessGPTBackend implements Backend {
             input.email = email;
             input['tenant_id'] = window.$tenantName;
 
-            let url = `/execution/complete`;
+            let url = `/completion/complete`;
             if (input.answer && input.answer.image != null) {
-                url = `/execution/vision-complete`;
+                url = `/completion/vision-complete`;
             }
 
             const request = { input };
@@ -2050,7 +2050,7 @@ class ProcessGPTBackend implements Backend {
     async bindRole(roles: any, defId?: string) {
         try {
             let result: any = null;
-            await axios.post(`/execution/role-binding`, {
+            await axios.post(`/completion/role-binding`, {
                 "input": {
                     "roles": roles,
                     "uuid": localStorage.getItem('uid'),
@@ -2220,7 +2220,7 @@ class ProcessGPTBackend implements Backend {
     async searchVector(keyword: string) {
         try {
             let list = [];
-            const response = await axios.post('/execution/process-search', {
+            const response = await axios.post('/completion/process-search', {
                 query: keyword
             });
             let vectorResult = response.data;
@@ -2383,7 +2383,7 @@ class ProcessGPTBackend implements Backend {
 
     async fetchAgentData(endpoint: string) {
         try {
-            const response = await axios.get(`/execution/multi-agent/fetch-data?agent_url=${encodeURIComponent(endpoint)}`);
+            const response = await axios.get(`/completion/multi-agent/fetch-data?agent_url=${encodeURIComponent(endpoint)}`);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -2530,7 +2530,7 @@ class ProcessGPTBackend implements Backend {
                     }
                 }
             }
-            const response = await axios.post('/execution/set-tenant', request);
+            const response = await axios.post('/completion/set-tenant', request);
             if (response.status === 200) {
                 const isOwner = await storage.checkTenantOwner(tenantId);
                 const putObj: any = {
@@ -2613,7 +2613,7 @@ class ProcessGPTBackend implements Backend {
             const request = {
                 input: userInfo
             }
-            const response = await axios.post('/execution/invite-user', request);
+            const response = await axios.post('/completion/invite-user', request);
             if (response.status === 200) {
                 if (response.data) {
                     return response.data;
@@ -2640,7 +2640,7 @@ class ProcessGPTBackend implements Backend {
             const request = {
                 input: userInfo
             }
-            const response = await axios.post('/execution/create-user', request);
+            const response = await axios.post('/completion/create-user', request);
             if (response.status === 200) {
                 if (response.data) {
                     return response.data;
@@ -2673,7 +2673,7 @@ class ProcessGPTBackend implements Backend {
                         user_info: userInfo
                     }
                 }
-                const response = await axios.post('/execution/update-user', request); 
+                const response = await axios.post('/completion/update-user', request); 
                 return response.data;
             }
         } catch (error) {
@@ -2964,7 +2964,7 @@ class ProcessGPTBackend implements Backend {
     }
 
     async getEmbedding(text) {
-        const response = await axios.post('/execution/langchain-chat/embeddings', JSON.stringify({
+        const response = await axios.post('/completion/langchain-chat/embeddings', JSON.stringify({
             text: text,
             model: 'text-embedding-3-small',
             vendor: 'openai'
@@ -3060,7 +3060,7 @@ class ProcessGPTBackend implements Backend {
 
     async addSampleProcess() {
         try {
-            const response = await axios.post('/execution/insert-sample');
+            const response = await axios.post('/completion/insert-sample');
             // console.log(response.data);
         } catch (error) {
             //@ts-ignore
@@ -3696,7 +3696,7 @@ class ProcessGPTBackend implements Backend {
 
     async getMCPTools() {
         try {
-            const response = await axios.get('/execution/mcp-tools');
+            const response = await axios.get('/completion/mcp-tools');
             return response.data;
         } catch (error) {
             throw new Error(error.message);
@@ -4488,7 +4488,7 @@ class ProcessGPTBackend implements Backend {
 
     async getFeedback(obj: any) {
         try {
-            const response = await axios.post('/execution/get-feedback', obj);
+            const response = await axios.post('/completion/get-feedback', obj);
             return response.data;
         } catch (error) {
             throw new Error(error.message);
@@ -4527,7 +4527,7 @@ class ProcessGPTBackend implements Backend {
 
     async getFeedbackDiff(taskId: string) {
         try {
-            const response = await axios.post('/execution/get-feedback-diff', {
+            const response = await axios.post('/completion/get-feedback-diff', {
                 taskId: taskId
             });
             return response.data;
@@ -4691,7 +4691,7 @@ class ProcessGPTBackend implements Backend {
 
     async getReworkActivities(workItem: any) {
         try {
-            const response = await axios.post('/execution/get-rework-activities', workItem);
+            const response = await axios.post('/completion/get-rework-activities', workItem);
             if (response.status === 200) {
                 return response.data;
             } else {
@@ -4707,7 +4707,7 @@ class ProcessGPTBackend implements Backend {
             if (!item.instanceId || !item.activities) {
                 throw new Error('instance Id and activities are required');
             }
-            const response = await axios.post('/execution/rework-complete', item);
+            const response = await axios.post('/completion/rework-complete', item);
             if (response.status === 200) {
                 return response.data;
             } else {

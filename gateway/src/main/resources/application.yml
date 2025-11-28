@@ -13,12 +13,12 @@ spring:
                 #       - Path=/litellm/**,
                 #   filters:
                 #       - RewritePath=/litellm/?(?<segment>.*), /$\{segment}
-                - id: execution
+                - id: completion
                   uri: http://localhost:8000
                   predicates:
-                      - Path=/execution/**,
+                      - Path=/completion/**,
                   filters:
-                      - RewritePath=/execution/?(?<segment>.*), /$\{segment}
+                      - RewritePath=/completion/?(?<segment>.*), /$\{segment}
                 - id: claude-skills
                   uri: http://localhost:8765
                   predicates:
@@ -112,13 +112,13 @@ spring:
                       - RewritePath=/mcp/?(?<segment>.*), /$\{segment}
                   order: 3
 
-                # Execution 서비스
-                - id: execution
-                  uri: http://execution-service:8000
+                # Completion 서비스
+                - id: completion
+                  uri: http://completion-service:8000
                   predicates:
-                      - Path=/execution/**
+                      - Path=/completion/**
                   filters:
-                      - RewritePath=/execution/?(?<segment>.*), /$\{segment}
+                      - RewritePath=/completion/?(?<segment>.*), /$\{segment}
                   order: 10
 
                 # Claude Skills 서비스

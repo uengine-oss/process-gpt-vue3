@@ -870,6 +870,7 @@ export default {
                 if(this.bpmn && this.isStarted) {
                     tabs = [
                         { value: 'progress', label: this.$t('WorkItem.progress') },
+                        { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
                     ];
                 } else if (this.bpmn && !this.isStarted && this.isCompleted) {
                     tabs = [
@@ -1019,7 +1020,7 @@ export default {
             formData.append('audio', audioBlob);
 
             try {
-                const response = await axios.post(`/execution/upload`, formData);
+                const response = await axios.post(`/completion/upload`, formData);
                 const data = response.data;
                 this.newMessage = data.transcript;
                 this.beforeGenerateExample();
@@ -1228,7 +1229,7 @@ export default {
             this.isVisionMode = false
             this.imgKeyList = []
 
-            if(this.formData && typeof this.formData == 'object'){
+            if(this.formData && typeof this.formData == 'object') {
                 for (const key of Object.keys(this.formData)) {
                     const field = formFields.find(f => f.key == key) || null;
 

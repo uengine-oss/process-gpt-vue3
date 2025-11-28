@@ -40,7 +40,7 @@ async function setInitialSettings() {
     isLoading.value = true;
     
     try {
-        const response = await axios.post('/execution/set-initial-info', {
+        const response = await axios.post('/completion/set-initial-info', {
             input: {
                 user_id: getUserId(),
                 user_name: username.value,

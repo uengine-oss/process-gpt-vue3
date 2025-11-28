@@ -46,7 +46,7 @@
                                 <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ item.email }}</div>
                             </div>
                         </div>
-                        <div class="d-flex align-center">
+                        <div v-if="editable" class="d-flex align-center">
                             <v-chip variant="elevated"
                                 :color="item.is_admin ? 'primary' : 'gray'"
                                 class="chip-select-wrapper"
@@ -119,6 +119,12 @@ export default {
     components: {
         VDataTable,
         InviteUserCard
+    },
+    props: {
+        editable: {
+            type: Boolean,
+            default: true
+        }
     },
     data: () => ({
         isMobile: false,

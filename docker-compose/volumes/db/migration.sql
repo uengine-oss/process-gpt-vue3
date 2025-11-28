@@ -201,6 +201,7 @@ ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS deleted_at timestamp w
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS parent_proc_inst_id text;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS root_proc_inst_id text;
 ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS execution_scope text;
+ALTER TABLE public.bpm_proc_inst ADD COLUMN IF NOT EXISTS is_clean_up boolean DEFAULT false;
 
 -- Properly migrate current_user_ids to participants
 DO $$
