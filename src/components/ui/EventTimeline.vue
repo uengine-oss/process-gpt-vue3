@@ -520,8 +520,8 @@ export default {
                                     await this.saveEventToDatabase(item.payload);
                                 }
                                 
-                                // Vue 반응성을 위한 강제 업데이트
-                                this.$forceUpdate();
+                                // ✅ $forceUpdate() 제거 - watch 무한 루프 방지
+                                // Vue의 반응성 시스템이 자동으로 처리합니다
                             }).catch(error => {
                                 console.error('[EventTimeline] 파일 처리 중 오류:', error);
                             });
