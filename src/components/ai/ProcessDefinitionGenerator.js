@@ -101,14 +101,15 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
     - UserActivity (사용자 태스크)**: 사람이 소프트웨어 애플리케이션을 통해 수행하는 작업
       - 예시: 폼 작성, 승인, 검토, 의사결정, 데이터 입력 등
       - 특징: 사용자 인터페이스를 통해 사람이 직접 처리하는 작업
-      
+      ${window.$mode !== 'ProcessGPT' ? `
     - EmailActivity (발송 태스크)**: 다른 풀(Pool)에 메시지를 전송하는 작업
       - 예시: 알림 발송, 공지사항 전달, 승인 결과 통보 등
       - 특징: 메시지가 전송되면 작업이 완료됨
       
     - ManualActivity (수동 태스크)**: 비즈니스 프로세스 실행 엔진이나 애플리케이션의 도움 없이 수행되는 작업
       - 예시: 물리적 배송, 수동 검사, 전화 통화, 문서 스캔, 현장 작업 등
-      - 특징: 시스템이 자동화할 수 없는 사람의 직접적인 물리적 작업
+      - 특징: 시스템이 자동화할 수 없는 사람의 직접적인 물리적 작업` : `
+    - 중요: 현재 모드에서는 UserActivity만 사용 가능합니다. EmailActivity와 ManualActivity는 지원되지 않습니다.`}
     - 서브(하위)프로세스가 필요하다고 판단되는 경우:
       - 하나의 단계 자체가 Task 가 아닌 "subProcesses" 항목이 된다. 
         - 예를 들어 사용자의 요청이 
@@ -335,7 +336,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                     "elementType": "Activity",
                     "id": "activity_id(영문, lowercase)",
                     "name": "액티비티명(한글)",
-                    "type": "UserActivity" | "EmailActivity" | "ManualActivity",
+                    "type": ${window.$mode === 'ProcessGPT' ? '"UserActivity"' : '"UserActivity" | "EmailActivity" | "ManualActivity"'},
                     "source": "이전_컴포넌트_id",
                     "description": "액티비티 설명(한글)",
                     "instruction": "사용자 지침(한글)",
@@ -406,7 +407,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                       "name": "액티비티명(한글)",
                       "role": "역할명",
                       "tool": "formHandler:form_name",
-                      "type": "userTask" | "emailTask" | "manualTask",
+                      "type": ${window.$mode === 'ProcessGPT' ? '"userTask"' : '"userTask" | "emailTask" | "manualTask"'},
                       "process": "subprocess_id",
                       "duration": 5,
                       "inputData": [],
