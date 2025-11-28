@@ -5,7 +5,7 @@
             <div v-if="errorMessage" class="error-banner">{{ errorMessage }}</div>
             
             <EventTimeline 
-                v-if="!isInitialLoading && (timeline.length > 0 || isActionsMode)"
+                v-show="!isInitialLoading && (timeline.length > 0 || isActionsMode)"
                 :timeline="timeline"
                 :human-query-answers="humanQueryAnswers"
                 :expanded-tasks="expandedTasks"
@@ -30,7 +30,7 @@
 
             <!-- 빈 상태 -->
             <EmptyState 
-                v-else-if="!isInitialLoading"
+                v-if="!isInitialLoading"
                 :is-queued="isQueued"
                 :orchestration-options="orchestrationOptions"
                 :selected-orchestration-method="selectedOrchestrationMethod"
