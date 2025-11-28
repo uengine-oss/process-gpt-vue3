@@ -69,7 +69,7 @@ export default class AIGenerator {
 
         this.cacheReplayDelay = this.options.cacheReplayDelay ? this.options.cacheReplayDelay : 3000;
         
-        this.backendUrl = '/execution/langchain-chat';
+        this.backendUrl = '/completion/langchain-chat';
         this.vendor = 'openai';
         this.modelConfig = {
             temperature: 1,

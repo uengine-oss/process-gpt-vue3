@@ -1020,7 +1020,7 @@ export default {
             formData.append('audio', audioBlob);
 
             try {
-                const response = await axios.post(`/execution/upload`, formData);
+                const response = await axios.post(`/completion/upload`, formData);
                 const data = response.data;
                 this.newMessage = data.transcript;
                 this.beforeGenerateExample();
