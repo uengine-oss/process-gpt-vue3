@@ -74,17 +74,22 @@ ${currentXml}
 
 HARD CONSTRAINTS
 1) Return ONLY the JSON object below. No extra text or explanation outside JSON.
-2) Write explanations for general, non-technical business users.
+2) The JSON MUST be strictly valid and directly parsable by JavaScript JSON.parse():
+   - Use double quotes (") for ALL keys and ALL string values.
+   - Do NOT output any bare text, comments, or explanations outside of the JSON object.
+   - Do NOT use trailing commas.
+   - Do NOT wrap the JSON in backticks, markdown, or code fences.
+3) Write explanations for general, non-technical business users.
    - DO NOT mention XML, tags, attributes, element IDs, or technical names like "bpmn:task", "sequenceFlow", "startEvent", "gateway", etc.
    - Instead, describe changes in plain language (e.g., "승인 단계가 추가되었습니다.", "검토 후 분기 조건이 바뀌었습니다.").
-3) If previous_xml is empty or clearly has no BPMN content, treat this as a NEW process
+4) If previous_xml is empty or clearly has no BPMN content, treat this as a NEW process
    and describe the main structure of current_xml instead of doing a diff, again in business terms only.
-4) If there are no meaningful business-level changes (only cosmetic XML changes), set:
+5) If there are no meaningful business-level changes (only cosmetic XML changes), set:
    - "summary": ""  (empty string)
    - "changes": []  (empty array)
    so that the caller can leave the description field blank.
-5) Group changes by type where possible (e.g., steps, responsible roles, branching conditions, notifications).
-6) Be concise but clear; avoid extremely long paragraphs.
+6) Group changes by type where possible (e.g., steps, responsible roles, branching conditions, notifications).
+7) Be concise but clear; avoid extremely long paragraphs.
 
 OUTPUT FORMAT (STRICT)
 {
