@@ -1065,6 +1065,7 @@ export default {
                     task.instruction = '' //`${activity.name} instruction`;
                     task.process = activity.process;
                     task.attachedEvents = activity.attachedEvents || null;
+                    task.tool = 'formHandler:defaultform';
 
                     task.role = normalizeRole(resolveRole(activity.id, lanesForRole, parentLanes));
 
@@ -1083,8 +1084,6 @@ export default {
                         task.attachments = propsJson.attachments || task.attachments;
                         task.inputData = propsJson.inputData || task.inputData;
                         task.tool = propsJson.tool || task.tool;
-                    } else {
-                        task.tool = 'formHandler:defaultform';
                     }
                     
                     if (propsJson && propsJson.variableForHtmlFormContext && propsJson.variableForHtmlFormContext.name) {
