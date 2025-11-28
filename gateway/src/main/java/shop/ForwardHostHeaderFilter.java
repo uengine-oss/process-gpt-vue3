@@ -29,7 +29,7 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
     private static final Logger logger = LoggerFactory.getLogger(ForwardHostHeaderFilter.class);
 
     private static final String SECRET_KEY = Optional.ofNullable(System.getenv("SECRET_KEY"))
-            .orElse("super-secret-jwt-token-with-at-least-32-characters-long");
+            .orElse("orfXPeAYQy47qP3x7/M6zCMacfyGTQwNwEikQx6WWfy4xsvITZqm9JJGA0roLB+Qb3Jt1/ZGZsSc7FAhuTeQpg==");
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
