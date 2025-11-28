@@ -249,6 +249,29 @@ export default {
                 });
             }
         },
+        // async handleFileChange(event) {
+        //     try {
+        //         const file = event.target.files[0];
+        //         const fileName = file.name;
+        //         console.log('[FileField] 파일 업로드 시도:', fileName);
+        //         const res = await backend.uploadFile(fileName, file);
+        //         if (res && res.error) {
+        //             console.warn('[FileField] 파일 업로드 응답 에러:', res.error);
+        //             this.$emit('update:modelValue', { path: null, name: null });
+        //         } else if (res && res.path) {
+        //             console.log('[FileField] 파일 업로드 성공:', res.path);
+        //             this.$emit('update:modelValue', { path: res.path, name: fileName });
+        //         } else {
+        //             console.warn('[FileField] 파일 업로드 응답이 비어있음');
+        //             this.$emit('update:modelValue', { path: null, name: null });
+        //         }
+        //     } catch (error) {
+        //         console.error('[FileField] 파일 업로드 에러 발생:', error);
+        //         this.$emit('update:modelValue', { path: null, name: null });
+        //         // 에러를 부모 컴포넌트에 전달 (선택적)
+        //         this.$emit('upload-error', error);
+        //     }
+        // },
         async handleFileChange(event) {
             try {
                 const file = event.target.files[0];
