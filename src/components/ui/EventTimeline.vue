@@ -472,7 +472,11 @@ export default {
                                                 content: fileData.parsed_content
                                             });
                                             
-                                            // 5. 파싱이 완료된 File 객체 반환
+                                            // 5. File 객체에 원본 URL 정보 추가 (브라우저 유즈 파일임을 표시)
+                                            fileObject.originalUrl = fileData.url;
+                                            fileObject.isBrowserUseFile = true;
+                                            
+                                            // 6. 파싱이 완료된 File 객체 반환
                                             return fileObject;
                                         } catch (error) {
                                             console.error(`[EventTimeline] 파일 처리 실패 (${fileName}):`, error);

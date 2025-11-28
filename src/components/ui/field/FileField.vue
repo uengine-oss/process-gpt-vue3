@@ -187,7 +187,15 @@ export default {
             const newFiles = data.files.map(file => {
                 // File 객체에 추가 속성 설정
                 file.originalFileName = file.name;
-                file.path = file.name; // 임시 path
+                
+                // ✅ 브라우저 유즈 파일인 경우 원본 URL 사용
+                if (file.isBrowserUseFile && file.originalUrl) {
+                    file.path = file.originalUrl;
+                    console.log(`[FileField] 브라우저 유즈 파일 - 원본 URL 사용: ${file.originalUrl}`);
+                } else {
+                    file.path = file.name; // 임시 path
+                }
+                
                 return file;
             });
             
@@ -226,11 +234,17 @@ export default {
                 }
             }
             
-            // 첫 번째 파일을 modelValue로 업데이트 (중복이 아닌 경우에만)
+            // ✅ 첫 번째 파일을 modelValue로 업데이트 - 브라우저 유즈 파일인 경우 원본 URL 사용
             if (this.selectedFiles && this.selectedFiles.length > 0 && this.selectedFiles[0].name) {
                 const firstFile = this.selectedFiles[0];
+                const filePath = firstFile.isBrowserUseFile && firstFile.originalUrl 
+                    ? firstFile.originalUrl 
+                    : (firstFile.path || firstFile.name);
+                
+                console.log(`[FileField] ✅ modelValue 업데이트: path=${filePath}, name=${firstFile.originalFileName || firstFile.name}`);
+                
                 this.$emit('update:modelValue', { 
-                    path: firstFile.path || firstFile.name, 
+                    path: filePath, 
                     name: firstFile.originalFileName || firstFile.name 
                 });
             }
@@ -238,23 +252,36 @@ export default {
         async handleFileChange(event) {
             try {
                 const file = event.target.files[0];
-                const fileName = file.name;
-                console.log('[FileField] 파일 업로드 시도:', fileName);
-                const res = await backend.uploadFile(fileName, file);
-                if (res && res.error) {
-                    console.warn('[FileField] 파일 업로드 응답 에러:', res.error);
-                    this.$emit('update:modelValue', { path: null, name: null });
-                } else if (res && res.path) {
-                    console.log('[FileField] 파일 업로드 성공:', res.path);
-                    this.$emit('update:modelValue', { path: res.path, name: fileName });
-                } else {
-                    console.warn('[FileField] 파일 업로드 응답이 비어있음');
-                    this.$emit('update:modelValue', { path: null, name: null });
+                if (!file) {
+                    console.warn('[FileField] 선택된 파일이 없습니다');
+                    return;
                 }
+                
+                const fileName = file.name;
+                console.log('[FileField] 파일 선택됨:', fileName);
+                console.log('[FileField] this.name:', this.name);
+                console.log('[FileField] 현재 modelValue:', this.modelValue);
+                
+                // ✅ 테스트용 하드코딩된 URL
+                const hardcodedUrl = 'https://gjdyydowgrinjjkfkwtl.supabase.co/storage/v1/object/public/browser_use/proposal_writing.0722c8b6-beb6-47a6-a2a6-babbd4c2ed44/2cf60362-0d92-42c3-8f24-b6154c4b0fb0/57ec04c5-7cef-444d-b4d6-97c2bb0cd1a6.hwp';
+                
+                const newValue = { 
+                    path: hardcodedUrl, 
+                    name: fileName 
+                };
+                
+                console.log('[FileField] ✅ emit할 값:', newValue);
+                this.$emit('update:modelValue', newValue);
+                console.log('[FileField] ✅ update:modelValue emit 완료');
+                
+                // 약간의 딜레이 후 값이 반영되었는지 확인
+                setTimeout(() => {
+                    console.log('[FileField] 0.5초 후 modelValue:', this.modelValue);
+                }, 500);
+                
             } catch (error) {
-                console.error('[FileField] 파일 업로드 에러 발생:', error);
+                console.error('[FileField] 파일 처리 에러 발생:', error);
                 this.$emit('update:modelValue', { path: null, name: null });
-                // 에러를 부모 컴포넌트에 전달 (선택적)
                 this.$emit('upload-error', error);
             }
         },
