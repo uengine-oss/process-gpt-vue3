@@ -1899,10 +1899,12 @@ export default {
                 this.inputData = data.generatedFiles;
                 console.log('[WorkItem] inputData 설정됨:', this.inputData);
                 
-                // generateExample 함수 자동 실행
-                this.$nextTick(() => {
-                    this.beforeGenerateExample();
-                });
+                // ✅ 브라우저 유즈 완료 후 자동 초안 생성 제거
+                // 파일이 자동으로 첨부되므로 초안 생성 시 파일이 삭제되는 문제 방지
+                // this.$nextTick(() => {
+                //     this.beforeGenerateExample();
+                // });
+                console.log('[WorkItem] 브라우저 유즈 완료 - 자동 초안 생성 스킵');
             }
         }
     }
