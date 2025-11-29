@@ -30,7 +30,7 @@
 
             <!-- 빈 상태 -->
             <EmptyState 
-                v-if="!isInitialLoading"
+                v-if="!isInitialLoading && timeline.length === 0 && !isActionsMode"
                 :is-queued="isQueued"
                 :orchestration-options="orchestrationOptions"
                 :selected-orchestration-method="selectedOrchestrationMethod"
