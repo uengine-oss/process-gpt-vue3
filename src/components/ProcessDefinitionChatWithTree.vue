@@ -2,7 +2,7 @@
     <div>
         <v-row class="ma-0 pa-0 process-definition-chat-tree-box">
             <!-- 왼쪽: TreeView -->
-            <v-col v-if="isTreeViewVisible" cols="12" md="3" class="pa-0">
+            <v-col v-if="isTreeViewVisible" cols="12" class="pa-0 tree-view-container" :style="{ width: treeViewWidth + 'px', maxWidth: treeViewWidth + 'px', flexBasis: treeViewWidth + 'px' }">
                 <v-card elevation="10" class="pa-3 tree-view-card">
                     <v-row class="ma-0 pa-0">
                         <v-card-title class="ma-0 pa-0">
@@ -82,11 +82,17 @@
                             {{ $t('ProcessDefinitionChatWithTree.noProcessDefinition') }}
                         </v-alert>
                     </div>
+
+                    <!-- 리사이즈 핸들 - 트리뷰 카드 내부 우측에 배치 -->
+                    <div
+                        class="resize-handle"
+                        @mousedown="startResize"
+                    ></div>
                 </v-card>
             </v-col>
 
             <!-- 오른쪽: ProcessDefinitionChat -->
-            <v-col cols="12" :md="isTreeViewVisible ? 9 : 12" class="pa-0 chat-container">
+            <v-col cols="12" class="pa-0 chat-container" :style="{ width: isTreeViewVisible ? `calc(100% - ${treeViewWidth}px)` : '100%', maxWidth: isTreeViewVisible ? `calc(100% - ${treeViewWidth}px)` : '100%', flexBasis: isTreeViewVisible ? `calc(100% - ${treeViewWidth}px)` : '100%' }">
                 <v-card flat class="pa-3">
                     <div class="ma-0 pa-0 align-center d-flex">
                         <!-- 트리뷰 토글 버튼 -->
@@ -329,6 +335,10 @@ export default {
         openedNodes: [],
         // 트리뷰 표시 상태
         isTreeViewVisible: true,
+        // 트리뷰 너비 (픽셀)
+        treeViewWidth: 350,
+        // 리사이즈 중 여부
+        isResizing: false,
         // Flow 오버레이 표시 상태
         showFlowOverlay: false,
         // Vue Flow에 표시할 현재 프로세스 정의
@@ -351,6 +361,16 @@ export default {
             console.error('트리 상태 불러오기 실패:', error);
         }
         
+        // 저장된 트리뷰 너비 불러오기
+        try {
+            const savedWidth = localStorage.getItem('processTreeViewWidth');
+            if (savedWidth) {
+                this.treeViewWidth = parseInt(savedWidth, 10);
+            }
+        } catch (error) {
+            console.error('트리뷰 너비 불러오기 실패:', error);
+        }
+        
         await this.loadProcessDefinitionMap();
     },
     async mounted() {
@@ -360,6 +380,10 @@ export default {
         if (customizer.Sidebar_drawer) {
             customizer.SET_SIDEBAR_DRAWER();
         }
+        
+        // 리사이즈 이벤트 리스너 등록
+        document.addEventListener('mousemove', this.handleMouseMove);
+        document.addEventListener('mouseup', this.handleMouseUp);
 
         const processMap = await backend.getProcessDefinitionMap();
         let firstSubProcessId = null;
@@ -467,7 +491,24 @@ export default {
                     });
                 }
             }
+        },
+        // 트리뷰 표시 상태 변경 감지
+        isTreeViewVisible: {
+            handler(newValue) {
+                if (newValue) {
+                    // 트리뷰가 다시 보일 때 클릭 이벤트 재부착
+                    console.log('🔄 트리뷰 다시 표시 - 클릭 이벤트 재부착');
+                    this.$nextTick(() => {
+                        this.attachNodeClickEvents();
+                    });
+                }
+            }
         }
+    },
+    beforeUnmount() {
+        // 리사이즈 이벤트 리스너 제거
+        document.removeEventListener('mousemove', this.handleMouseMove);
+        document.removeEventListener('mouseup', this.handleMouseUp);
     },
     methods: {
         /**
@@ -1200,6 +1241,48 @@ export default {
         },
 
         /**
+         * 리사이즈 시작
+         */
+        startResize() {
+            this.isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        },
+
+        /**
+         * 마우스 이동 처리 (리사이즈)
+         */
+        handleMouseMove(e) {
+            if (!this.isResizing) return;
+
+            const minWidth = 250;
+            const maxWidth = window.innerWidth * 0.5; // 화면의 50%까지
+            const newWidth = e.clientX;
+
+            if (newWidth >= minWidth && newWidth <= maxWidth) {
+                this.treeViewWidth = newWidth;
+            }
+        },
+
+        /**
+         * 마우스 업 처리 (리사이즈 종료)
+         */
+        handleMouseUp() {
+            if (this.isResizing) {
+                this.isResizing = false;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                
+                // 트리뷰 너비 저장
+                try {
+                    localStorage.setItem('processTreeViewWidth', this.treeViewWidth.toString());
+                } catch (error) {
+                    console.error('트리뷰 너비 저장 실패:', error);
+                }
+            }
+        },
+
+        /**
          * 파일 다이얼로그 열기
          */
         openFileDialog() {
@@ -1717,19 +1800,29 @@ export default {
         /**
          * Flow 뷰 토글 (BPMN ↔ Flow)
          */
-        toggleFlowView(type) {
+        async toggleFlowView(type) {
             const chatComponent = this.$refs.processDefinitionChat;
             
             if (!this.showFlowOverlay || (type == 'flow' && !chatComponent.isConsultingMode)) {
                 // Flow 뷰 열기
-            if (chatComponent && chatComponent.processDefinition) {
-                // 프로세스 정의를 복사하여 저장 (참조 문제 방지)
-                this.currentProcessDefinitionForFlow = JSON.parse(JSON.stringify(chatComponent.processDefinition));
+                if (chatComponent && chatComponent.processDefinition) {
+                    // BPMN 맵에서 변경된 내용이 있을 수 있으므로 최신 BPMN을 processDefinition으로 변환
+                    if (chatComponent.bpmn) {
+                        try {
+                            console.log('🔄 Flow 모드 전환 전 BPMN을 processDefinition으로 변환');
+                            await chatComponent.changeBpmn(chatComponent.bpmn);
+                        } catch (error) {
+                            console.error('❌ BPMN to processDefinition 변환 오류:', error);
+                        }
+                    }
+                    
+                    // 프로세스 정의를 복사하여 저장 (참조 문제 방지)
+                    this.currentProcessDefinitionForFlow = JSON.parse(JSON.stringify(chatComponent.processDefinition));
                     this.showFlowOverlay = true;
-            } else {
-                console.warn('⚠️ 표시할 프로세스 정의가 없습니다.');
-                alert('표시할 프로세스 정의가 없습니다. 먼저 프로세스를 선택해주세요.');
-            }
+                } else {
+                    console.warn('⚠️ 표시할 프로세스 정의가 없습니다.');
+                    alert('표시할 프로세스 정의가 없습니다. 먼저 프로세스를 선택해주세요.');
+                }
             } else {
                 // BPMN 뷰로 돌아가기
                 this.closeFlowOverlay();
@@ -1829,7 +1922,7 @@ export default {
                     return;
                 }
                 
-                const processDefinition = chatComponent.processDefinition;
+                let processDefinition = chatComponent.processDefinition;  // ✅ const → let으로 변경
                 let updated = false;
                 
                 // 액티비티 이름 (content 또는 name)
@@ -1919,8 +2012,47 @@ export default {
                         this.currentProcessDefinitionForFlow = JSON.parse(JSON.stringify(processDefinition));
                         console.log('✅ Flow 화면 업데이트 완료');
                     });
+
+                    // ✅ BPMN Modeler를 통해 최신 XML 생성 (system, issues, requiredTime 포함)
+                    let updatedBpmn = chatComponent.bpmn;
+                    try {
+                        // ✅ 방법 1: 먼저 processDefinition을 elements 구조로 변환
+                        if (!processDefinition.elements && processDefinition.activities) {
+                            console.log('🔄 예전 구조 감지 - elements 구조로 변환 시작');
+                            
+                            // convertOldFormatToElements 메서드 사용
+                            if (chatComponent.convertOldFormatToElements) {
+                                processDefinition = await chatComponent.convertOldFormatToElements(processDefinition);
+                                console.log('✅ elements 구조 변환 완료');
+                            }
+                        }
+                        
+                        console.log('🔍 processDefinition 구조 확인:');
+                        console.log('  - elements 타입:', Array.isArray(processDefinition.elements) ? '배열' : (typeof processDefinition.elements));
+                        console.log('  - elements 개수:', Array.isArray(processDefinition.elements) ? processDefinition.elements.length : (processDefinition.elements ? Object.keys(processDefinition.elements).length : 0));
+                        
+                        // ✅ 방법 2: createBpmnXml로 XML 생성
+                        if (chatComponent.createBpmnXml && processDefinition.elements) {
+                            updatedBpmn = chatComponent.createBpmnXml(processDefinition, false);
+                            console.log('✅ 최신 XML 생성 완료 (system, issues, requiredTime 포함)');
+                        } else {
+                            console.warn('⚠️ createBpmnXml 실패, 기존 BPMN 사용');
+                        }
+                    } catch (error) {
+                        console.error('❌ XML 생성 중 오류:', error);
+                        console.error('상세 스택:', error.stack);
+                        // 오류 발생 시 기존 BPMN 사용
+                    }
+
+                    const info = {                   
+                        name: chatComponent.processDefinition.processDefinitionName,                
+                        type: "bpmn",
+                        definition: processDefinition  // ✅ 변환된 processDefinition 사용
+                    }
                     
-                    console.log('✅ 액티비티 업데이트 완료 (메모리에만 저장)');
+                    // ✅ 새로 생성한 XML로 저장
+                    await backend.putRawDefinition(updatedBpmn, chatComponent.processDefinition.processDefinitionId, info);
+                    console.log('✅ 액티비티 업데이트 완료 (최신 XML 저장)');
                 } else {
                     console.error('❌ 액티비티를 찾을 수 없습니다:', activityName);
                 }
@@ -3947,11 +4079,57 @@ export default {
 </script>
 
 <style scoped>
+/* 트리뷰 컨테이너 */
+.tree-view-container {
+    position: relative;
+}
+
 /* 트리뷰 카드 스타일 */
 .tree-view-card {
     height: 100%;
     overflow-y: auto;
     border-right: 1px solid #e0e0e0;
+    position: relative;
+}
+
+/* 리사이즈 핸들 - 트리뷰 카드 우측에 absolute 배치 */
+.resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+    z-index: 100;
+}
+
+.resize-handle:hover {
+    background-color: rgba(25, 118, 210, 0.3);
+}
+
+.resize-handle:active {
+    background-color: rgba(25, 118, 210, 0.6);
+}
+
+/* 리사이즈 중일 때 */
+.resize-handle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 40px;
+    background-color: rgba(25, 118, 210, 0.2);
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.resize-handle:hover::before {
+    opacity: 1;
 }
 
 /* 채팅 컨테이너 스타일 */

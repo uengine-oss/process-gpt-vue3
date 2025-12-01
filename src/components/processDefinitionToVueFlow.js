@@ -54,23 +54,23 @@ function calculateStrokeWidthByTime(requiredTime) {
   
   // 구간별로 다른 증가율 적용
   if (seconds <= TIME_RANGES.SECOND) {
-    // 초 단위 (0~60초): 0~0.15 비율 (가장 얇게)
-    ratio = (seconds / TIME_RANGES.SECOND) * 0.15
+    // 초 단위 (0~60초): 0~0.1 비율 (가장 얇게)
+    ratio = (seconds / TIME_RANGES.SECOND) * 0.1
   } else if (seconds <= TIME_RANGES.MINUTE) {
-    // 분 단위 (1분~1시간): 0.15~0.4 비율
+    // 분 단위 (1분~1시간): 0.1~0.2 비율
     const progress = (seconds - TIME_RANGES.SECOND) / (TIME_RANGES.MINUTE - TIME_RANGES.SECOND)
-    ratio = 0.15 + progress * 0.25
+    ratio = 0.1 + progress * 0.1
   } else if (seconds <= TIME_RANGES.HOUR) {
-    // 시간 단위 (1시간~1일): 0.4~0.7 비율
+    // 시간 단위 (1시간~1일): 0.2~0.3 비율
     const progress = (seconds - TIME_RANGES.MINUTE) / (TIME_RANGES.HOUR - TIME_RANGES.MINUTE)
-    ratio = 0.4 + progress * 0.3
+    ratio = 0.2 + progress * 0.1
   } else if (seconds <= TIME_RANGES.DAY) {
-    // 일 단위 (1일~7일): 0.7~1.0 비율 (가장 굵게)
+    // 일 단위 (1일~7일): 0.3~0.4 비율 (가장 굵게)
     const progress = (seconds - TIME_RANGES.HOUR) / (TIME_RANGES.DAY - TIME_RANGES.HOUR)
-    ratio = 0.7 + progress * 0.3
+    ratio = 0.3 + progress * 0.1
   } else {
     // 7일 이상: 최대값
-    ratio = 1.0
+    ratio = 0.5
   }
   
   // 굵기 계산
@@ -132,6 +132,15 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
         (seq.target === activity.id || seq.targetRef === activity.id)
       )
 
+      // tool 정보에서 시스템 추출 (formHandler:xxx 형식)
+      let systemName = 'on-line'
+      if (activity.system) {
+        systemName = activity.system
+      } else if (activity.tool && activity.tool.includes(':')) {
+        const toolParts = activity.tool.split(':')
+        systemName = toolParts[1] || 'on-line'
+      }
+
       nodes.push({
         id: nodeId,
         type: 'process',
@@ -140,7 +149,7 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
           id: activity.id, // 원본 ID 추가
           header: activity.role || '역할',
           content: activity.name || `Activity ${index + 1}`,
-          footer: activity.system || 'system', // system 필드 사용
+          footer: systemName, // system 필드 또는 tool에서 추출
           requiredTime: incomingSequence?.requiredTime || '', // 들어오는 시퀀스의 소요시간
           incomingSequenceId: incomingSequence?.id || null, // 들어오는 시퀀스 ID
           description: activity.description || '', // 설명 추가

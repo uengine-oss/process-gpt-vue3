@@ -15,6 +15,10 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  diffActivities: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
 const emit = defineEmits(['node-double-click'])
@@ -51,6 +55,9 @@ watch(
       // 깊은 복사
       nodes.value = JSON.parse(JSON.stringify(newData.nodes))
       edges.value = JSON.parse(JSON.stringify(newData.edges))
+      
+      // diffActivities가 있으면 노드에 적용
+      applyDiffToNodes()
 
       console.log(`✅ Vue Flow 업데이트: 노드 ${nodes.value.length}개, 엣지 ${edges.value.length}개`)
 
@@ -68,6 +75,82 @@ watch(
   },
   { immediate: true, deep: true }
 )
+
+// diffActivities가 변경되면 노드에 다시 적용
+watch(
+  () => props.diffActivities,
+  () => {
+    applyDiffToNodes()
+  },
+  { deep: true }
+)
+
+// diffActivities를 노드에 적용하는 함수
+function applyDiffToNodes() {
+  if (!props.diffActivities || Object.keys(props.diffActivities).length === 0) {
+    return
+  }
+  
+  nodes.value.forEach(node => {
+    const activityId = node.data?.id
+    if (activityId && props.diffActivities[activityId]) {
+      const changeType = props.diffActivities[activityId]
+      
+      // 노드 데이터에 차이점 정보 추가
+      node.data.diffType = changeType
+      
+      // 스타일 적용
+      if (!node.style) {
+        node.style = {}
+      }
+      
+      if (changeType === 'added') {
+        node.style.border = '3px solid #2ecc71'
+        node.style.boxShadow = '0 0 10px rgba(46, 204, 113, 0.5)'
+      } else if (changeType === 'deleted') {
+        node.style.border = '3px solid #e74c3c'
+        node.style.boxShadow = '0 0 10px rgba(231, 76, 60, 0.5)'
+      } else if (changeType === 'modified') {
+        node.style.border = '3px solid #2ecc71'
+        node.style.boxShadow = '0 0 10px rgba(46, 204, 113, 0.5)'
+      }
+    }
+  })
+  
+  // 엣지에도 적용
+  edges.value.forEach(edge => {
+    // edge id에서 원본 시퀀스 id 추출 (edge_${seq.id} 형식)
+    const sequenceId = edge.id.replace('edge_', '')
+    
+    if (sequenceId && props.diffActivities[sequenceId]) {
+      const changeType = props.diffActivities[sequenceId]
+      
+      if (!edge.style) {
+        edge.style = {}
+      }
+      
+      if (changeType === 'added') {
+        edge.style.stroke = '#2ecc71'
+        edge.style.strokeWidth = 3
+        if (edge.markerEnd) {
+          edge.markerEnd.color = '#2ecc71'
+        }
+      } else if (changeType === 'deleted') {
+        edge.style.stroke = '#e74c3c'
+        edge.style.strokeWidth = 3
+        if (edge.markerEnd) {
+          edge.markerEnd.color = '#e74c3c'
+        }
+      } else if (changeType === 'modified') {
+        edge.style.stroke = '#2ecc71'
+        edge.style.strokeWidth = 3
+        if (edge.markerEnd) {
+          edge.markerEnd.color = '#2ecc71'
+        }
+      }
+    }
+  })
+}
 
 // 커스텀 노드 타입 등록
 const nodeTypes = {
@@ -234,8 +317,9 @@ defineExpose({
 
 .basic-flow {
   height: 100%;
-  min-height: 80vh;
+  width: 100%;
   background-color: #f5f5f5;
+  overflow: hidden;
 }
 
 .basic-flow.dark {

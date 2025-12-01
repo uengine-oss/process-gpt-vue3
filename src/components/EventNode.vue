@@ -1,5 +1,5 @@
 <template>
-  <div class="event-node" :class="nodeClass">
+  <div class="event-node" :class="[nodeClass, diffClass]">
     <div class="event-label">{{ data.label }}</div>
     <Handle type="target" :position="Position.Left" id="left" :style="{ opacity: 0 }" />
     <Handle type="source" :position="Position.Right" id="right-source" :style="{ right: '0px', opacity: 0 }" />
@@ -21,6 +21,13 @@ const props = defineProps({
 })
 
 const nodeClass = computed(() => props.data.type || 'intermediate-event-node')
+
+const diffClass = computed(() => {
+  if (props.data.diffType === 'added') return 'diff-added'
+  if (props.data.diffType === 'deleted') return 'diff-deleted'
+  if (props.data.diffType === 'modified') return 'diff-modified'
+  return ''
+})
 </script>
 
 <style scoped>
@@ -50,6 +57,24 @@ const nodeClass = computed(() => props.data.type || 'intermediate-event-node')
   align-items: center;
   justify-content: center;
   overflow: hidden;
+}
+
+/* Diff 스타일 - 추가된 노드 */
+.event-node.diff-added {
+  border: 3px solid #2ecc71 !important;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.5) !important;
+}
+
+/* Diff 스타일 - 삭제된 노드 */
+.event-node.diff-deleted {
+  border: 3px solid #e74c3c !important;
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.5) !important;
+}
+
+/* Diff 스타일 - 수정된 노드 */
+.event-node.diff-modified {
+  border: 3px solid #2ecc71 !important;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.5) !important;
 }
 </style>
 

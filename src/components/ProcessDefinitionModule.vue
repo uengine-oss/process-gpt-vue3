@@ -1025,6 +1025,10 @@ export default {
                         task.attachments = propsJson.attachments || task.attachments;
                         task.inputData = propsJson.inputData || task.inputData;
                         task.tool = propsJson.tool || task.tool;
+                        
+                        // ✅ system, issues 추가
+                        task.system = propsJson.system || task.system;
+                        task.issues = propsJson.issues || task.issues;
                     } else {
                         task.tool = 'formHandler:defaultform';
                     }
@@ -1053,18 +1057,26 @@ export default {
 
                 const buildSequence = (flow) => {
                     let condition = '';
+                    let requiredTime = '';
+                    
+                    const propsJson = getPropsJson(flow) || {};
+                    
                     if (window.$mode == 'ProcessGPT') {
                         condition = flow.condition || '';
                     } else {
-                        const fjStr = flow['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'];
-                        condition = (fjStr ? safeJson(fjStr, {})?.condition : '') || flow.condition || '';
+                        condition = propsJson?.condition || flow.condition || '';
                     }
+                    
+                    // ✅ requiredTime 추가
+                    requiredTime = propsJson?.requiredTime || '';
+                    
                     return {
                         id: flow.id,
                         name: flow.name,
                         source: flow.sourceRef || flow.source,
                         target: flow.targetRef || flow.target,
                         condition,
+                        requiredTime,
                         properties:
                         flow['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
                     };
@@ -1277,6 +1289,57 @@ export default {
                 reordered.activities = moveSubprocToEnd(reordered.activities, subprocIds);
                 reordered.gateways = moveSubprocToEnd(reordered.gateways, subprocIds);
                 // sequences는 요구사항에 없으므로 유지 (원하면 동일 규칙 적용 가능)
+
+                // ✅ 기존 processDefinition이 있다면 issues, system, requiredTime 정보 복원
+                if (this.processDefinition) {
+                    // Activities 정보 복원
+                    if (this.processDefinition.activities) {
+                        reordered.activities = reordered.activities.map(newActivity => {
+                            const oldActivity = this.processDefinition.activities.find(old => old.id === newActivity.id);
+                            if (oldActivity) {
+                                if (oldActivity.issues) newActivity.issues = oldActivity.issues;
+                                if (oldActivity.system) newActivity.system = oldActivity.system;
+                            }
+                            return newActivity;
+                        });
+                    } else if (this.processDefinition.elements) {
+                        // Elements 구조인 경우
+                        reordered.activities = reordered.activities.map(newActivity => {
+                            const oldElement = this.processDefinition.elements.find(old => 
+                                old.id === newActivity.id && old.elementType === 'Activity'
+                            );
+                            if (oldElement) {
+                                if (oldElement.issues) newActivity.issues = oldElement.issues;
+                                if (oldElement.system) newActivity.system = oldElement.system;
+                            }
+                            return newActivity;
+                        });
+                    }
+
+                    // Sequences 정보 복원
+                    if (this.processDefinition.sequences) {
+                        reordered.sequences = reordered.sequences.map(newSequence => {
+                            const oldSequence = this.processDefinition.sequences.find(old => old.id === newSequence.id);
+                            if (oldSequence && oldSequence.requiredTime) {
+                                newSequence.requiredTime = oldSequence.requiredTime;
+                            }
+                            return newSequence;
+                        });
+                    } else if (this.processDefinition.elements) {
+                        // Elements 구조인 경우
+                        reordered.sequences = reordered.sequences.map(newSequence => {
+                            const oldElement = this.processDefinition.elements.find(old => 
+                                old.id === newSequence.id && old.elementType === 'Sequence'
+                            );
+                            if (oldElement && oldElement.requiredTime) {
+                                newSequence.requiredTime = oldElement.requiredTime;
+                            }
+                            return newSequence;
+                        });
+                    }
+                    
+                    console.log('✅ 기존 processDefinition의 issues, system, requiredTime 정보 복원 완료');
+                }
 
                 return reordered;
 

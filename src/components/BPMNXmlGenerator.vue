@@ -394,6 +394,10 @@ export default {
 
       if (element.description)   paramObj.description = element.description;
       if (element.role)          paramObj.role        = element.role;
+      
+      // ✅ system, issues 추가
+      if (element.system)        paramObj.system      = element.system;
+      if (element.issues)        paramObj.issues      = element.issues;
 
       // input/output 매핑
       const toMappingObj = (list, dir) => list.map(item => ({
@@ -522,6 +526,9 @@ export default {
     }, 
     createProcessElements(xmlDoc, jsonModel, process, inComing, outGoing) {
       console.log('createProcessElements 시작');
+      console.log('📊 jsonModel.elements 타입:', Array.isArray(jsonModel.elements) ? '배열' : (typeof jsonModel.elements));
+      console.log('📊 jsonModel.elements 길이/키:', Array.isArray(jsonModel.elements) ? jsonModel.elements.length : (jsonModel.elements ? Object.keys(jsonModel.elements).length : 0));
+      
       const laneActivityMapping = {};
       
       if (jsonModel.elements) {
@@ -530,22 +537,26 @@ export default {
         
         if (Array.isArray(jsonModel.elements)) {
           // 배열 형태의 elements 처리
-          jsonModel.elements.forEach(element => {
+          console.log('📋 배열 형태 elements 처리');
+          jsonModel.elements.forEach((element, idx) => {
+            console.log(`  - 요소 ${idx}: elementType=${element.elementType}, id=${element.id}`);
             if (element.elementType && element.elementType !== 'Sequence') {
               displayableElements.push(element);
             }
           });
         } else {
           // 객체 형태의 elements 처리
+          console.log('📋 객체 형태 elements 처리');
           Object.keys(jsonModel.elements).forEach(key => {
             const element = jsonModel.elements[key];
+            console.log(`  - 요소 ${key}: elementType=${element.elementType}, id=${element.id}`);
             if (element.elementType && element.elementType !== 'Sequence') {
               displayableElements.push(element);
             }
           });
         }
         
-        console.log('처리할 요소 수:', displayableElements.length);
+        console.log('✅ 처리할 요소 수:', displayableElements.length);
         
         displayableElements.forEach(element => {
           if (element.elementType === 'Activity') {
@@ -1400,28 +1411,32 @@ export default {
           sequenceFlow.setAttribute('sourceRef', sequence.source);
           sequenceFlow.setAttribute('targetRef', sequence.target);
 
-          // 🔽 조건이 있을 경우 extensionElements 추가
-          if (sequence.condition) {
+          // 🔽 조건 또는 requiredTime이 있을 경우 extensionElements 추가
+          if (sequence.condition || sequence.requiredTime) {
             const ext = xmlDoc.createElementNS(this.NAMESPACES.BPMN, 'bpmn:extensionElements');
             const prop = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:properties');
             const json = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:json');
 
-            let conditionPayload = {
-              condition: null
-            };
+            let conditionPayload = {};
 
-            if (typeof sequence.condition === 'string') {
-              conditionPayload.condition = sequence.condition;
-              sequenceFlow.setAttribute('name', sequence.condition || '');
-            } else {
-              conditionPayload = {
-                condition: {
+            // ✅ requiredTime 추가
+            if (sequence.requiredTime) {
+              conditionPayload.requiredTime = sequence.requiredTime;
+            }
+
+            // condition 추가
+            if (sequence.condition) {
+              if (typeof sequence.condition === 'string') {
+                conditionPayload.condition = sequence.condition;
+                sequenceFlow.setAttribute('name', sequence.condition || '');
+              } else {
+                conditionPayload.condition = {
                   _type: sequence.condition._type || 'org.uengine.kernel.Evaluate',
                   key: sequence.condition.key || '',
                   value: sequence.condition.value || '',
                   condition: sequence.condition.condition || '=='
-                }
-              };
+                };
+              }
             }
             
             json.textContent = JSON.stringify(conditionPayload);
@@ -1502,13 +1517,18 @@ export default {
         const { activityPos, offsetPos, roleVector } = this.createShapes(xmlDoc, jsonModel, bpmnPlane, isHorizontal);
         console.log('모양 생성 완료:', Object.keys(activityPos).length, '개의 모양 생성됨');
         
+        // ✅ mainWidth, mainHeight를 상위 스코프에 선언
+        let mainWidth, mainHeight;
+        
         // 참가자 모양 생성
         if(jsonModel.isAutoLayout) {
           this.createParticipantShapeInAutoLayout(xmlDoc, bpmnPlane, isHorizontal, jsonModel);
         } else {
-        const { mainWidth, mainHeight } = this.createParticipantShape(
-            xmlDoc, bpmnPlane, isHorizontal, roleVector
-        );
+          const participantShape = this.createParticipantShape(
+              xmlDoc, bpmnPlane, isHorizontal, roleVector
+          );
+          mainWidth = participantShape.mainWidth;
+          mainHeight = participantShape.mainHeight;
         }
         
         // 레인 경계 계산 및 모양 생성
@@ -1516,8 +1536,8 @@ export default {
           console.log('오토레이아웃 모드 확인됨, 자동 레인 생성 시작');
           this.createLaneShapesInAutoLayout(xmlDoc, bpmnPlane, jsonModel, isHorizontal);
         } else {
-        const laneBounds = this.calculateLaneBounds(roleVector);
-        this.createLaneShapes(xmlDoc, bpmnPlane, roleVector, laneBounds, isHorizontal, mainWidth, mainHeight);
+          const laneBounds = this.calculateLaneBounds(roleVector);
+          this.createLaneShapes(xmlDoc, bpmnPlane, roleVector, laneBounds, isHorizontal, mainWidth, mainHeight);
         }
         
         // 시퀀스 엣지(선) 생성

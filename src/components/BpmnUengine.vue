@@ -292,20 +292,8 @@ export default {
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
+            // 항상 세로형으로 고정
             let isHorizontal = false;
-            if(self.isMobile) {
-                isHorizontal = false;
-            } else {
-                isHorizontal = true;
-            }
-
-            if(orientation) {
-                if(orientation === 'horizontal') {
-                    isHorizontal = true;
-                } else {
-                    isHorizontal = false;
-                }
-            }
 
             this.isHorizontal = isHorizontal;
             
@@ -435,6 +423,8 @@ export default {
                         const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
                         self.bpmnXML = xml;
                         self.validate();
+                        // BPMN 변경사항을 부모 컴포넌트에 전달하여 processDefinition 업데이트
+                        self.$emit('changeBpmn', xml);
                     }
                 });
 

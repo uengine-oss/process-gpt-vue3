@@ -93,12 +93,13 @@
                                             <h3 class="text-h6">액티비티 속성</h3>
                                             <v-spacer></v-spacer>
                                             <v-btn 
-                                                icon 
-                                                variant="text" 
+                                                color="primary"
+                                                variant="flat" 
                                                 size="small"
-                                                @click="closeAndSave"
+                                                @click="saveActivity"
                                             >
-                                                <v-icon>mdi-close</v-icon>
+                                                <v-icon class="mr-1">mdi-content-save</v-icon>
+                                                저장
                                             </v-btn>
                                         </div>
                                         
@@ -710,6 +711,23 @@ export default {
         },
         
         /**
+         * 액티비티 변경사항 저장
+         */
+        async saveActivity() {
+            const me = this;
+            
+            try {
+                // 1. processDefinition 변수 업데이트
+                me.$emit('save-activity-changes', me.selectedFlowActivity);
+                this.$emit('closeActivityPanel');              
+                console.log('✅ 액티비티 변경사항이 저장되었습니다.');
+            } catch (error) {
+                console.error('❌ 액티비티 저장 중 오류:', error);
+                
+            }
+        },
+        
+        /**
          * 액티비티 변경사항 저장 후 닫기
          */
         closeAndSave() {
@@ -1161,8 +1179,17 @@ export default {
             this.bpmn = bpmn;
             this.definitionChangeCount++;
         },
-        changeBpmn(newVal) {
+        async changeBpmn(newVal) {
             this.loadBPMN(newVal);
+            // BPMN이 변경되면 processDefinition도 업데이트
+            if (newVal) {
+                try {
+                    this.processDefinition = await this.convertXMLToJSON(newVal);
+                    console.log('🔄 BPMN 변경으로 processDefinition 업데이트:', this.processDefinition);
+                } catch (error) {
+                    console.error('❌ BPMN to JSON 변환 오류:', error);
+                }
+            }
         },
         changeElement(newVal) {
             this.bpmn = newVal;
@@ -1450,7 +1477,7 @@ export default {
                             }
                             
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
-                            this.bpmn = this.createBpmnXml(unknown, this.isHorizontal);
+                            this.bpmn = this.createBpmnXml(unknown, false); // 항상 세로형으로 생성
                             this.definitionChangeCount++;
 
                             if (!this.isConsultingMode) {
@@ -1565,7 +1592,10 @@ export default {
                     inputData: activity.inputData || [],
                     outputData: activity.outputData || [],
                     checkpoints: checkpoints,
-                    duration: duration
+                    duration: duration,
+                    // ✅ system, issues 추가
+                    system: activity.system || "",
+                    issues: activity.issues || ""
                 };
                 
                 oldObj.elements.push(newElement);
@@ -1660,6 +1690,11 @@ export default {
                 
                 if (condition) {
                     newElement.condition = condition;
+                }
+                
+                // ✅ requiredTime 추가
+                if (sequence.requiredTime) {
+                    newElement.requiredTime = sequence.requiredTime;
                 }
                 
                 oldObj.elements.push(newElement);
@@ -1926,7 +1961,7 @@ export default {
                                     
                                     // 6. BPMN XML 재생성
                                     try {
-                                        this.bpmn = this.createBpmnXml(this.processDefinition, this.isHorizontal);
+                                        this.bpmn = this.createBpmnXml(this.processDefinition, false); // 항상 세로형으로 생성
                                     } catch (error) {
                                         console.error('Error creating BPMN XML:', error);
                                         // 오류 발생 시 기본 BPMN 구조 유지
@@ -1938,7 +1973,7 @@ export default {
                                 if(this.processDefinition['activities'] && this.processDefinition['sequences']) {
                                     this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
                                 }
-                                this.bpmn = this.createBpmnXml(this.processDefinition, this.isHorizontal);
+                                this.bpmn = this.createBpmnXml(this.processDefinition, false); // 항상 세로형으로 생성
                             }
                             this.oldProcDefId = unknown.processDefinitionId;
                             this.definitionChangeCount++;
@@ -2471,7 +2506,7 @@ export default {
                     if (!this.processDefinition) this.processDefinition = {};
                     
                     // BPMN XML 생성
-                    this.bpmn = this.createBpmnXml(processDefinition, this.isHorizontal);
+                    this.bpmn = this.createBpmnXml(processDefinition, false); // 항상 세로형으로 생성
                     
                     // 프로젝트 정보 설정 - 트리에서 생성한 프로세스인 경우 트리에서 정한 ID 사용
                     if (this.treeProcessLocation && this.treeProcessLocation.processDefinitionId) {
@@ -2672,7 +2707,7 @@ export default {
                 }
 
                 
-                this.bpmn = this.createBpmnXml(processDefinition, this.isHorizontal);
+                this.bpmn = this.createBpmnXml(processDefinition, false); // 항상 세로형으로 생성
                 
                 this.lastParsedJSON = processDefinition;
                 
@@ -2688,7 +2723,7 @@ export default {
                     
                     // BPMN XML 생성
                     if (reorderedProcess.elements && reorderedProcess.elements.length > 0) {
-                        this.bpmn = this.createBpmnXml(reorderedProcess, this.isHorizontal);
+                        this.bpmn = this.createBpmnXml(reorderedProcess, false); // 항상 세로형으로 생성
                         
                         // 프로젝트 정보 설정
                         if (reorderedProcess.processDefinitionName) {

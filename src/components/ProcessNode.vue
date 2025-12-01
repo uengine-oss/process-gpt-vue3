@@ -1,5 +1,11 @@
 <template>
-  <div class="process-node" :class="{ 'offline-node': isOffline, 'has-issue': hasIssue }">
+  <div class="process-node" :class="{ 
+    'offline-node': isOffline, 
+    'has-issue': hasIssue,
+    'diff-added': data.diffType === 'added',
+    'diff-deleted': data.diffType === 'deleted',
+    'diff-modified': data.diffType === 'modified'
+  }">
     <!-- 이슈 있을 때 느낌표 아이콘 -->
     <div v-if="hasIssue" class="issue-indicator">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -67,6 +73,24 @@ const hasIssue = computed(() => {
 .process-node.has-issue {
   border: 4px solid #ff0000;
   box-shadow: 0 0 8px rgba(255, 0, 0, 0.3);
+}
+
+/* Diff 스타일 - 추가된 노드 */
+.process-node.diff-added {
+  border: 3px solid #2ecc71 !important;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.5) !important;
+}
+
+/* Diff 스타일 - 삭제된 노드 */
+.process-node.diff-deleted {
+  border: 3px solid #e74c3c !important;
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.5) !important;
+}
+
+/* Diff 스타일 - 수정된 노드 */
+.process-node.diff-modified {
+  border: 3px solid #2ecc71 !important;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.5) !important;
 }
 
 /* 이슈 표시 아이콘 (좌측 상단) */

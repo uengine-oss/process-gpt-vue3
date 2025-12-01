@@ -31,16 +31,14 @@
             </div>
 
             <div class="d-flex pa-4 pt-2 align-center"
-                :class="showXML ? '' : 'pb-0'"
+                :class="viewMode === 'xml' ? '' : 'pb-0'"
             >
                 <div class="mx-2">
-                    <v-switch v-model="showXML" 
-                        class="version-history-switch"
-                        :label="showXML ? 'XML' : 'BPMN'"
-                        density="compact"
-                        color="primary" 
-                        hide-details
-                    ></v-switch>
+                    <v-btn-toggle v-model="viewMode" mandatory density="compact" class="mx-2">
+                        <v-btn value="xml" size="small">XML</v-btn>
+                        <v-btn value="bpmn" size="small">BPMN</v-btn>
+                        <v-btn value="flow" size="small">Flow</v-btn>
+                    </v-btn-toggle>
                 </div>
                 <v-btn @click="downloadXML" variant="text" class="mx-2">
                     {{ $t('ProcessDefinitionVersionManager.download') }}
@@ -50,10 +48,11 @@
                 </v-btn>
             </div>
 
-            <v-card-text :class="showXML ? 'pa-4 pt-6 pb-0' : 'pa-4'"
-                :style="showXML ? 'height: calc(100vh - 280px);' : 'height: 100vh;'"
+            <v-card-text :class="viewMode === 'xml' ? 'pa-4 pt-6 pb-0' : 'pa-4 pb-0'"
+                :style="viewMode === 'xml' ? 'height: calc(100vh - 280px);' : 'height: calc(100vh - 260px);'"
             >
-                <div v-if="showXML" style="height: 100%; position: relative;">
+                <!-- XML 모드 -->
+                <div v-if="viewMode === 'xml'" style="height: 100%; position: relative;">
                     <div class="version-manager-version-number" style="left: 0px; top: -32px;">버전: {{ currentSelectedVersion }}</div>
                     <div class="version-manager-version-number" style="left: 50%; top: -32px;">버전: {{ latestVersion }}</div>
                     <vuediff :prev="currentSelectedXML || ''" :current="currentXML || ''" mode="split" theme="light"
@@ -62,7 +61,9 @@
                         style="height: 100%;"
                     />
                 </div>
-                <div v-else style="height: 100%; display: flex; align-items: center; gap: 8px;" :class="{ 'flex-column': isMobile }">
+                
+                <!-- BPMN 모드 -->
+                <div v-else-if="viewMode === 'bpmn'" style="height: 100%; display: flex; align-items: center; gap: 8px;" :class="{ 'flex-column': isMobile }">
                     <v-card outlined
                         style="width: 100%; position: relative;"
                         :style="{ height: isMobile ? '50%' : '100%' }"
@@ -101,6 +102,41 @@
                         ></BpmnUengine>
                     </v-card>
                 </div>
+                
+                <!-- Flow 모드 -->
+                <div v-else-if="viewMode === 'flow'" style="height: 100%; display: flex; align-items: stretch; gap: 8px; overflow: hidden;" :class="{ 'flex-column': isMobile }">
+                    <v-card outlined
+                        style="width: 100%; position: relative; overflow: hidden;"
+                        :style="{ height: isMobile ? '50%' : '100%' }"
+                        elevation="10"
+                    >
+                        <div class="version-manager-version-number">버전: {{ currentSelectedVersion }}</div>
+                        <ProcessFlowExample
+                            v-if="currentSelectedProcessDefinition"
+                            :key="key + '_flow_left'"
+                            :process-definition="currentSelectedProcessDefinition"
+                            :diff-activities="leftDiffActivities"
+                            style="height: 100%; width: 100%;"
+                        ></ProcessFlowExample>
+                    </v-card>
+                    <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <v-icon :size="isMobile ? '24' : '48'">{{ isMobile ? 'mdi-arrow-down-bold' : 'mdi-arrow-right-bold' }}</v-icon>
+                    </div>
+                    <v-card outlined
+                        style="width: 100%; position: relative; overflow: hidden;"
+                        :style="{ height: isMobile ? '50%' : '100%' }"
+                        elevation="10"
+                    >
+                        <div class="version-manager-version-number">버전: {{ latestVersion }}</div>
+                        <ProcessFlowExample
+                            v-if="latestProcessDefinition"
+                            :key="key + '_flow_right'"
+                            :process-definition="latestProcessDefinition"
+                            :diff-activities="rightDiffActivities"
+                            style="height: 100%; width: 100%;"
+                        ></ProcessFlowExample>
+                    </v-card>
+                </div>
             </v-card-text>
             <v-card-actions class="pa-0 pt-2">
                 <v-slider v-model="currentIndex" step="1" min="0" :max="lists.length - 1" show-ticks="always"
@@ -119,6 +155,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import customBpmnModule from '@/components/customBpmn';
 const backend = BackendFactory.createBackend();
 import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
+import ProcessFlowExample from '@/components/ProcessFlowExample.vue';
 
 // import 'vue-diff/dist/index.css';
 export default {
@@ -127,6 +164,7 @@ export default {
     components: {
         Icon,
         BpmnUengine,
+        ProcessFlowExample,
     },
     props: {
         open: Boolean,
@@ -137,8 +175,8 @@ export default {
         basePath: 'proc_def_arcv',
         isOpen: false, // inner var
 
-        // xml
-        showXML: false, // xml or bpmn
+        // view mode
+        viewMode: 'bpmn', // xml, bpmn, flow
         key: 0, // update component
         // slider
         currentIndex: 0,
@@ -155,7 +193,11 @@ export default {
 
         lastProcessInfo: null,
         leftDiffActivities: {},
-        rightDiffActivities: {}
+        rightDiffActivities: {},
+        
+        // Flow 모드용 프로세스 정의
+        currentSelectedProcessDefinition: null,
+        latestProcessDefinition: null,
     }),
     computed: {
         beforeXML() {
@@ -225,6 +267,12 @@ export default {
                 me.currentIndex = me.lists.length - 1;
                 me.lists[me.currentIndex].xml = await me.loadXMLOfVer(me.lists[me.currentIndex].version);
                 await me.setCurrentInfo(me.lists[me.currentIndex].xml);
+                
+                // Flow 모드용 프로세스 정의 변환
+                me.currentSelectedProcessDefinition = await me.convertXMLToJSON(me.lists[me.currentIndex].xml);
+                me.latestProcessDefinition = JSON.parse(JSON.stringify(me.currentSelectedProcessDefinition));
+                me.lastProcessInfo = JSON.parse(JSON.stringify(me.currentSelectedProcessDefinition));
+                
                 me.isOpen = true;
             } else {
                 me.$try({
@@ -240,13 +288,22 @@ export default {
             if (!me.lists[index]) return;
             if (!me.lists[index].xml) me.lists[index].xml = await me.loadXMLOfVer(me.lists[index].version)
             await me.setCurrentInfo(me.lists[index].xml);
+            
+            // Flow 모드용 프로세스 정의 변환
+            me.currentSelectedProcessDefinition = await me.convertXMLToJSON(me.lists[index].xml);
+            
             if(index == me.lists.length - 1){
                 me.lastProcessInfo = JSON.parse(JSON.stringify(me.currentInfo))
+                me.latestProcessDefinition = JSON.parse(JSON.stringify(me.currentSelectedProcessDefinition))
                 me.leftDiffActivities = {};
                 me.rightDiffActivities = {};
             } else {    
                 if(!me.lists[me.lists.length - 1].xml) me.lists[me.lists.length - 1].xml = await me.loadXMLOfVer(me.lists[me.lists.length - 1].version)
                 if(!me.lastProcessInfo) await me.setLastVersionInfo(me.lists[me.lists.length - 1].xml);
+                
+                // 최신 버전의 프로세스 정의 변환
+                if(!me.latestProcessDefinition) me.latestProcessDefinition = await me.convertXMLToJSON(me.lists[me.lists.length - 1].xml);
+                
                 me.calculateDifferences();
             }
             me.loading = false
