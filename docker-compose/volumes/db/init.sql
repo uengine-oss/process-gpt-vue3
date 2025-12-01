@@ -305,6 +305,7 @@ create table if not exists public.todolist (
     temp_feedback text null,
     output_url text null,
     rework_count integer null default 0,
+    query text null,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -1775,8 +1776,7 @@ create table if not exists public.proc_inst_source (
     created_at timestamp with time zone not null default now(),
     is_process boolean not null default false,
     file_path text null,
-    constraint proc_inst_source_pkey primary key (id),
-    constraint proc_inst_source_proc_inst_id_fkey foreign key (proc_inst_id) references bpm_proc_inst (proc_inst_id) on update cascade on delete cascade
+    constraint proc_inst_source_pkey primary key (id)
 ) tablespace pg_default;
 
 
