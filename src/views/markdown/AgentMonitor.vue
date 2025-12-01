@@ -460,12 +460,8 @@ export default {
                 if (newVal.worklist.orchestration) {
                     this.selectedOrchestrationMethod = newVal.worklist.orchestration;
                 }
-                if (this.isActionsMode) {
-                    await this.loadActionsModeData()
-                } else {
-                    await this.loadData()
-                    await this.fetchTodoStatus()
-                }
+                await this.loadData()
+                await this.fetchTodoStatus()
                 this.cleanup()
                 this.setupRealtimeSubscription(newVal.worklist.taskId)
             },
@@ -1106,12 +1102,30 @@ export default {
 
                 // 피드백 데이터 처리
                 const feedbackArr = this.safeArrayParse(data.feedback);
-                this.chatMessages = feedbackArr
+                const feedbackMessages = feedbackArr
                     .map(item => ({
                         time: item.time,
                         content: this.extractContent(item.content)
                     }))
                     .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+                // 기본적으로 피드백 메시지를 설정
+                this.chatMessages = feedbackMessages;
+                
+                // isActionsMode일 때 첫 번째 요소를 workItem.description으로 "고정"하고,
+                // 그 뒤에 피드백 메시지들을 이어 붙이도록 처리
+                if (this.isActionsMode && this.workItem && this.workItem.worklist && this.workItem.worklist.description) {
+                    const descriptionContent = this.extractContent(this.workItem.worklist.description);
+                    const startDate = this.workItem.worklist.startDate || new Date().toISOString();
+
+                    const descriptionMessage = {
+                        time: startDate,
+                        content: descriptionContent
+                    };
+
+                    // description을 항상 첫 번째 요소로 두고, 그 뒤에 피드백 메시지를 배치
+                    this.chatMessages = [descriptionMessage, ...feedbackMessages];
+                }
 
                 // agent_orch 동기화
                 const validOrchs = this.orchestrationOptions.map(o => o.value);
@@ -1137,25 +1151,25 @@ export default {
                 this.handleError(error, '작업 중단 중 오류가 발생했습니다');
             }
         },
-        async submitChatInActionsMode(content) {
-            const itemData = {
-                message: content.text,
-                agentOrch: this.selectedOrchestrationMethod
-            }
-            const newWorkItem = await this.$parent.createWorkItem(itemData); 
-            if (!newWorkItem) return;
-            this.isLoading = true;
-        },
         async submitChat(content) {
             if (!content) return;
 
-            if (this.isActionsMode) {
-                await this.submitChatInActionsMode(content);
-                return;
-            }
-
             const taskId = this.validateTaskId();
             if (!taskId) return;
+
+            if (this.isActionsMode) {
+                if (this.todoStatus.status === 'NEW') {
+                    await backend.putWorkItem(taskId, {
+                        status: 'IN_PROGRESS',
+                        description: content.text,
+                        query: content.text,
+                    });
+                    this.isLoading = true;
+                    this.chatMessages.push({ time: new Date().toISOString(), content: content.text });
+                    this.$emit('update:new-tab-title', content.text);
+                    return;
+                }
+            }
 
             try {
                 const existingFeedback = this.safeArrayParse(this.todoStatus.feedback);
@@ -1221,37 +1235,6 @@ export default {
             this.selectedOrchestrationMethod = value;
         },
 
-        // ========================================
-        // 액션 모드 데이터 조회 - 메시지 + 이벤트
-        // ========================================
-        async loadActionsModeData() {
-            try {
-                // 메시지 조회
-                await this.getMessages(this.$parent.instId);
-                this.chatMessages = this.messages.map(item => ({
-                    time: item.timeStamp,
-                    content: item.content
-                }));
-                console.log('chatMessages', this.chatMessages);
-                // 워크아이템 조회
-                const worklist = await backend.getWorkListByInstId(this.$parent.instId);
-                if (worklist && worklist.length > 0) {
-                    // 이벤트 조회
-                    const eventPromises = worklist.map(async (item) => {
-                        const events = await backend.fetchEventList({
-                            match: {
-                                todo_id: item.taskId
-                            }
-                        });
-                        return events;
-                    });
-                    const results = await Promise.all(eventPromises);
-                    this.events = results.flat();
-                }
-            } finally {
-                this.isInitialLoading = false;
-            }
-        },
 
         // ========================================
         // 🔧 Browser Dialog 메서드들
@@ -1274,10 +1257,10 @@ export default {
             console.error('Supabase 세션 오류:', error);
         }
         
-        if (!this.isActionsMode) {
-            await this.loadData()
-            await this.fetchTodoStatus()
-            const taskId = this.getTaskIdFromWorkItem();
+        await this.loadData()
+        await this.fetchTodoStatus()
+        const taskId = this.getTaskIdFromWorkItem();
+        if (taskId) {
             this.setupRealtimeSubscription(taskId)
         }
     },
@@ -1285,13 +1268,8 @@ export default {
         // 외부 클릭 감지를 위한 이벤트 리스너 추가
         document.addEventListener('click', this.handleOutsideClick);
 
-        if (this.isActionsMode && this.workItem) {
-            await this.loadActionsModeData()
-            const taskId = this.getTaskIdFromWorkItem();
-            this.setupRealtimeSubscription(taskId)
-            if (this.workItem.worklist) {
-                this.selectedOrchestrationMethod = this.workItem.worklist.orchestration || 'crewai-action';
-            }
+        if (this.workItem && this.workItem.worklist) {
+            this.selectedOrchestrationMethod = this.workItem.worklist.orchestration || 'crewai-action';
         }
     },
     beforeUnmount() {
@@ -1313,6 +1291,7 @@ export default {
     flex-direction: column;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     box-sizing: border-box;
+    overflow: hidden; /* 부모에서 스크롤 제거 */
 }
 
 .actions-mode {
