@@ -1262,6 +1262,18 @@
                         }
                     ]
                 }
+            },
+            "visionParse": {
+                "title": "Vision Parse",
+                "description": "Vision Parse research.",
+                "detailDesc": {
+                    "title": "Image analysis and text extraction",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\n→ Image analysis\n→ Text extraction and organization"
+                        }
+                    ]
+                }
             }
         },
         "cost": {

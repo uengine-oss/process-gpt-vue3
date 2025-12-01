@@ -250,6 +250,15 @@ export default {
                             { title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.3.title' }
                         ]
                     }
+                },
+                {
+                    titleKey: 'AgentSelectInfo.orchestration.visionParse.title',
+                    value: 'visionparse',
+                    label: this.$t('AgentSelectInfo.orchestration.visionParse.title'),
+                    startLabel: 'Vision Parse',
+                    icon: 'add-media-image',
+                    descKey: 'AgentSelectInfo.orchestration.visionParse.description',
+                    costKey: 'AgentSelectInfo.cost.high',
                 }
             ],
 
