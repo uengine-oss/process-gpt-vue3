@@ -301,7 +301,8 @@ export default {
                         content: null,
                         isCrewCompleted: false,
                         agentProfile: data?.agent_profile,
-                        isHumanAsked: false
+                        isHumanAsked: false,
+                        taskDescription: data?.task_description || null
                     })
                 } else if (event_type === 'task_completed' && taskMap.has(jobId)) {
                     const task = taskMap.get(jobId)

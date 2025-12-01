@@ -15,7 +15,7 @@
                                 </div>
                                 <div class="task-info">
                                     <h3 class="task-title">{{ getDisplayName(item.payload) }}</h3>
-                                    <p class="task-description">{{ item.payload.goal }}</p>
+                                    <p class="task-description">{{ getTaskDescription(item.payload) }}</p>
                                 </div>
                             </div>
                             <div class="task-header-right">
@@ -716,6 +716,14 @@ export default {
             }
             const name = task.name?.trim()
             return (!name || name.toLowerCase() === 'unknown') ? task.role : task.name
+        },
+        getTaskDescription(task) {
+            // 액션 모드(crewai-action)일 때 task_description 표시
+            const isCrewaiAction = this.todoStatus?.agent_orch === 'crewai-action' || task.crewType === 'action'
+            if (isCrewaiAction && task.taskDescription) {
+                return task.taskDescription
+            }
+            return task.goal || 'Task'
         },
         getStatusText(task) {
             if (!task.isCompleted) return this.$t('EventTimeline.inProgress');
