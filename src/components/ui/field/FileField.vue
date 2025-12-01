@@ -249,62 +249,26 @@ export default {
                 });
             }
         },
-        // async handleFileChange(event) {
-        //     try {
-        //         const file = event.target.files[0];
-        //         const fileName = file.name;
-        //         console.log('[FileField] 파일 업로드 시도:', fileName);
-        //         const res = await backend.uploadFile(fileName, file);
-        //         if (res && res.error) {
-        //             console.warn('[FileField] 파일 업로드 응답 에러:', res.error);
-        //             this.$emit('update:modelValue', { path: null, name: null });
-        //         } else if (res && res.path) {
-        //             console.log('[FileField] 파일 업로드 성공:', res.path);
-        //             this.$emit('update:modelValue', { path: res.path, name: fileName });
-        //         } else {
-        //             console.warn('[FileField] 파일 업로드 응답이 비어있음');
-        //             this.$emit('update:modelValue', { path: null, name: null });
-        //         }
-        //     } catch (error) {
-        //         console.error('[FileField] 파일 업로드 에러 발생:', error);
-        //         this.$emit('update:modelValue', { path: null, name: null });
-        //         // 에러를 부모 컴포넌트에 전달 (선택적)
-        //         this.$emit('upload-error', error);
-        //     }
-        // },
         async handleFileChange(event) {
             try {
                 const file = event.target.files[0];
-                if (!file) {
-                    console.warn('[FileField] 선택된 파일이 없습니다');
-                    return;
-                }
-                
                 const fileName = file.name;
-                console.log('[FileField] 파일 선택됨:', fileName);
-                console.log('[FileField] this.name:', this.name);
-                console.log('[FileField] 현재 modelValue:', this.modelValue);
-                
-                // ✅ 테스트용 하드코딩된 URL
-                const hardcodedUrl = 'https://gjdyydowgrinjjkfkwtl.supabase.co/storage/v1/object/public/browser_use/proposal_writing.0722c8b6-beb6-47a6-a2a6-babbd4c2ed44/2cf60362-0d92-42c3-8f24-b6154c4b0fb0/57ec04c5-7cef-444d-b4d6-97c2bb0cd1a6.hwp';
-                
-                const newValue = { 
-                    path: hardcodedUrl, 
-                    name: fileName 
-                };
-                
-                console.log('[FileField] ✅ emit할 값:', newValue);
-                this.$emit('update:modelValue', newValue);
-                console.log('[FileField] ✅ update:modelValue emit 완료');
-                
-                // 약간의 딜레이 후 값이 반영되었는지 확인
-                setTimeout(() => {
-                    console.log('[FileField] 0.5초 후 modelValue:', this.modelValue);
-                }, 500);
-                
+                console.log('[FileField] 파일 업로드 시도:', fileName);
+                const res = await backend.uploadFile(fileName, file);
+                if (res && res.error) {
+                    console.warn('[FileField] 파일 업로드 응답 에러:', res.error);
+                    this.$emit('update:modelValue', { path: null, name: null });
+                } else if (res && res.path) {
+                    console.log('[FileField] 파일 업로드 성공:', res.path);
+                    this.$emit('update:modelValue', { path: res.path, name: fileName });
+                } else {
+                    console.warn('[FileField] 파일 업로드 응답이 비어있음');
+                    this.$emit('update:modelValue', { path: null, name: null });
+                }
             } catch (error) {
-                console.error('[FileField] 파일 처리 에러 발생:', error);
+                console.error('[FileField] 파일 업로드 에러 발생:', error);
                 this.$emit('update:modelValue', { path: null, name: null });
+                // 에러를 부모 컴포넌트에 전달 (선택적)
                 this.$emit('upload-error', error);
             }
         },

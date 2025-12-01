@@ -679,6 +679,7 @@
         "id": "ID",
         "name": "Name",
         "message": "Description",
+        "versionTag": "Version Tag",
         "save": "Save",
         "versionDescriptionTitle": "Save Help Guide",
         "idRequired": "ID is required.",
@@ -692,7 +693,8 @@
         "regenerateIdTooltip": "Get New ID Suggestion",
         "helpIntro": "You can configure version management and optimization options when saving the process.\n\nMain Features:",
         "helpVersionToggle": "• Version Toggle: If checked, saves by incrementing the version by one step; if unchecked, saves to the current version\n  e.g., 0.1 → 1.0 (checked), 0.1 → 0.2 (unchecked)",
-        "helpOptimize": "• Definition Optimization: When checked, AI automatically analyzes and configures the input data required for each task (activity) in the process\n  - Automatically connects data flow between tasks\n  - Intelligently recommends required information for each task\n  - Automates data linkage without manual configuration"
+        "helpOptimize": "• Definition Optimization: When checked, AI automatically analyzes and configures the input data required for each task (activity) in the process\n  - Automatically connects data flow between tasks\n  - Intelligently recommends required information for each task\n  - Automates data linkage without manual configuration",
+        "generatingDiff": "Analyzing process changes..."
     },
     "FormDefinitionPanel": {
         "editForm": "Edit Form Attribute",
@@ -2025,7 +2027,10 @@
         "download": "Download",
         "changeToVersion": "Change to Version",
         "noXmlData": "No XML data available for the selected version.",
-        "copiedToClipboard": "Copied to clipboard."
+        "copiedToClipboard": "Copied to clipboard.",
+        "relativeJustNow": "just now",
+        "relativeMinutesAgo": "{minutes} minutes ago",
+        "relativeHoursAgo": "{hours} hours ago"
     },
     "AgentList": {
         "title": "Agent List",
