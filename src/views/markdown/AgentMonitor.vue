@@ -790,6 +790,19 @@ export default {
                         }
                     });
                     
+                    // task_started 이벤트의 task_description 확인
+                    data.forEach(row => {
+                        if (row.event_type === 'task_started') {
+                            console.log('[DB Load] task_started 이벤트 (초기 로드):', {
+                                id: row.id,
+                                job_id: row.job_id,
+                                data: row.data,
+                                task_description: row.data?.task_description,
+                                goal: row.data?.goal
+                            });
+                        }
+                    });
+                    
                     this.events = data;
                     this.isCancelled = data.some(e => e.event_type === 'crew_completed');
                 }
