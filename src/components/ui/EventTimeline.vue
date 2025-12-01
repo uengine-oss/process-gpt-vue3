@@ -718,10 +718,19 @@ export default {
             return (!name || name.toLowerCase() === 'unknown') ? task.role : task.name
         },
         getTaskDescription(task) {
+            console.log('[EventTimeline] getTaskDescription 호출:', {
+                taskId: task.id,
+                taskDescription: task.taskDescription,
+                goal: task.goal,
+                crewType: task.crewType,
+                hasTaskDescription: !!task.taskDescription
+            })
             // task_description이 있으면 항상 표시
             if (task.taskDescription) {
+                console.log('[EventTimeline] task_description 반환:', task.taskDescription)
                 return task.taskDescription
             }
+            console.log('[EventTimeline] goal 반환:', task.goal || 'Task')
             return task.goal || 'Task'
         },
         getStatusText(task) {

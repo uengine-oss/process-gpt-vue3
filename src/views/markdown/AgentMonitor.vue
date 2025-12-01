@@ -288,6 +288,14 @@ export default {
                     humanRespondedJobIds.add(jobId)
                     humanResponseByJobId[jobId] = e
                 } else if (event_type === 'task_started') {
+                    console.log('[AgentMonitor] task_started 이벤트:', {
+                        jobId,
+                        data,
+                        task_description: data?.task_description,
+                        goal: data?.goal,
+                        name: data?.name,
+                        role: data?.role
+                    })
                     taskMap.set(jobId, {
                         id,
                         jobId,
@@ -304,6 +312,7 @@ export default {
                         isHumanAsked: false,
                         taskDescription: data?.task_description || null
                     })
+                    console.log('[AgentMonitor] 생성된 task 객체:', taskMap.get(jobId))
                 } else if (event_type === 'task_completed' && taskMap.has(jobId)) {
                     const task = taskMap.get(jobId)
                     task.isCompleted = true
