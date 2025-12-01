@@ -19,11 +19,6 @@
                     </v-btn>
                 </v-row>
                 <v-card-text class="ma-0 pa-4 pb-4 pt-0">
-                    <v-switch v-model="isVersion"
-                        :label="`${$t('ProcessDefinitionVersionDialog.minorUpdate')}: ${newVersion}`"
-                        hide-details
-                        color="primary"
-                    ></v-switch>
                     <div v-if="mode == 'ProcessGPT'">
                         <div v-if="isNew">
                             <v-text-field
@@ -99,13 +94,30 @@
                                 class="mt-0 pt-0"
                             ></v-checkbox>
                         </div>
-                        <v-textarea class="process-definition-version-dialog-textarea"
-                            v-if="isVersion"
-                            v-model="information.message"
-                            :label="$t('ProcessDefinitionVersionDialog.message')"
+                        <v-select
+                            v-model="information.version_tag"
+                            :items="versionTagItems"
+                            :label="$t('ProcessDefinitionVersionDialog.versionTag')"
+                            class="pb-2"
                             hide-details
-                            auto-grows
-                        ></v-textarea>
+                            density="compact"
+                        ></v-select>
+                        <div class="position-relative">
+                            <v-textarea class="process-definition-version-dialog-textarea"
+                                v-if="information.version_tag === 'major' || information.version_tag === 'minor'"
+                                v-model="information.message"
+                                :label="$t('ProcessDefinitionVersionDialog.message')"
+                                hide-details
+                                auto-grows
+                            ></v-textarea>
+                            <div v-if="isDiffGenerating"
+                                class="text-caption text-grey-darken-1 mt-1 d-flex align-center">
+                                <v-progress-circular indeterminate size="14" width="2" color="primary"
+                                    class="mr-1"
+                                ></v-progress-circular>
+                                <span>{{ $t('ProcessDefinitionVersionDialog.generatingDiff') || '변경 내역을 분석 중입니다...' }}</span>
+                            </div>
+                        </div>
                     </div>
                     <div v-else>
                         <div v-if="isVersion">
@@ -161,6 +173,7 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinitionIdGenerator from '@/components/ai/ProcessDefinitionIdGenerator';
+import BpmnDiffGenerator from '@/components/ai/BpmnDiffGenerator.js';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 const backend = BackendFactory.createBackend();
@@ -176,16 +189,18 @@ export default {
         process: Object,
         definition: Object,
         processName: String,
-        useOptimize: Boolean
+        useOptimize: Boolean,
+        // 현재 모델러에서 편집 중인 최신 BPMN XML (ProcessGPT 모드에서만 사용)
+        currentBpmn: String,
     },
     data: () => ({
-        isVersion: false,
-        isMajor: false, // default:false (minor)
+        isMajor: false, // legacy flag, 현재는 사용 안 함
         isRelease: false,
         isNew: false,
         information: {
             arcv_id: null,
             version: 0.0,
+            version_tag: 'minor', // 기본값: minor
             name: null,
             proc_def_id: null,
             snapshot: null,
@@ -208,11 +223,15 @@ export default {
         isDuplicateId: false,
         overwriteConfirm: false,
         idCheckTimeout: null,
+        // 마이너 / 메이저 타입 선택 가능 (minor가 상단)
+        versionTagItems: ['minor', 'major'],
         versionHelpDetails: [
             { title: "ProcessDefinitionVersionDialog.helpIntro" },
             { title: "ProcessDefinitionVersionDialog.helpVersionToggle" },
             { title: "ProcessDefinitionVersionDialog.helpOptimize" }
-        ]
+        ],
+        // 버전 변경 설명(AI Diff) 생성 중 여부
+        isDiffGenerating: false,
     }),
     computed: {
         idRules() {
@@ -222,16 +241,25 @@ export default {
             ];
         },
         newVersion() {
-            // 4.13
-            let major = Math.floor(this.information.version); // 4
-            let minor = this.information.version.toString().includes('.') ? Number(this.information.version.toString().split('.')[1]) : 0; // 13
+            // 현재 버전 X.Y 기준으로 major/minor에 따라 다음 버전 계산
+            let baseVersion = this.information.version || '0.0';
+            let major = Math.floor(parseFloat(baseVersion)) || 0;
+            let minor = baseVersion.toString().includes('.')
+                ? Number(baseVersion.toString().split('.')[1]) || 0
+                : 0;
 
-            if (this.isVersion) {
+            if (this.information.version_tag === 'major') {
+                // 메이저: X.Y -> (X+1).0
                 major += 1;
-                return Number(major).toFixed(1); // major 업데이트 시, major만 1 증가하고 minor를 0으로 초기화
+                return `${major}.0`;
             }
-            minor += 1;
-            return `${major}.${minor}`;
+            if (this.information.version_tag === 'minor') {
+                // 마이너: X.Y -> X.(Y+1)
+                minor += 1;
+                return `${major}.${minor}`;
+            }
+            // 태그가 없으면 기존 버전 그대로 노출
+            return baseVersion;
         },
         useLock() {
             if (this.mode == 'ProcessGPT') {
@@ -481,6 +509,9 @@ export default {
         },
         async load() {
             var me = this;
+            // 다이얼로그를 띄울 때마다 버전 태그는 항상 minor에서 시작
+            me.information.version_tag = 'minor';
+
             if (me.process && me.process.processDefinitionId) {
                 me.isNew = false;
                 var bpmn = null;
@@ -513,8 +544,23 @@ export default {
                                 snapshot: bpmn,
                                 diff: null,
                                 timeStamp: null,
-                                message: null
+                                message: null,
+                                version_tag: 'minor'
                             };
+                        }
+                        if (me.mode === 'ProcessGPT') {
+                            try {
+                                const previousXml = bpmn; // 항상 proc_def 기준
+                                const currentXml = me.currentBpmn || bpmn;
+                                if (currentXml) {
+                                    me.isDiffGenerating = true;
+                                    await me.generateVersionDiffDescription(previousXml, currentXml);
+                                }
+                            } catch (e) {
+                                console.error('버전 변경 설명 생성 중 오류:', e);
+                            } finally {
+                                me.isDiffGenerating = false;
+                            }
                         }
                     } else {
                         let defId = me.$route.params.pathMatch.join('/');
@@ -547,7 +593,6 @@ export default {
                 }
             } else {
                 me.isNew = true;
-                me.isVersion = false;
                 if (me.$route.query && me.$route.query.id && me.$route.query.name) {
                     me.information.id = me.$route.query.id;
                     me.information.name = me.$route.query.name;
@@ -593,7 +638,8 @@ export default {
                         snapshot: '',
                         diff: '',
                         timeStamp: '',
-                        message: ''
+                        message: '',
+                        version_tag: 'minor'
                     };
                     
                     // participant와 activity name들을 AI에게 보내서 프로세스 이름 생성
@@ -631,6 +677,62 @@ export default {
             }
             // me.isOpen = true;
         },
+        /**
+         * BPMN 이전/현재 버전을 비교하여 설명란(information.message)을 자동 생성
+         * - ProcessGPT 모드에서만 사용
+         */
+        async generateVersionDiffDescription(previousXml, currentXml) {
+            if (this.mode !== 'ProcessGPT') return;
+            if (!currentXml || typeof currentXml !== 'string') return;
+
+            const client = {
+                onGenerationFinished: (response) => {
+                    try {
+                        let obj = null;
+                        try {
+                            obj = JSON.parse(response);
+                        } catch (e) {
+                            // JSON 이 아닌 경우는 무시
+                            console.warn('BPMN diff 응답 JSON 파싱 실패:', e);
+                            return;
+                        }
+                        if (!obj) return;
+
+                        const summary = typeof obj.summary === 'string' ? obj.summary.trim() : '';
+                        const changes = Array.isArray(obj.changes) ? obj.changes : [];
+
+                        // 요약 + 변경 항목을 설명란에 채워 넣기
+                        let message = '';
+                        if (summary) {
+                            message += summary;
+                        }
+                        if (changes.length > 0) {
+                            const bulletLines = changes
+                                .filter((c) => typeof c === 'string' && c.trim().length > 0)
+                                .map((c) => `- ${c.trim()}`);
+                            if (bulletLines.length > 0) {
+                                message += (message ? '\n\n' : '') + bulletLines.join('\n');
+                            }
+                        }
+
+                        if (message) {
+                            this.information.message = message;
+                        }
+                    } catch (e) {
+                        console.error('BPMN diff 설명 처리 중 오류:', e);
+                    }
+                }
+            };
+
+            const generator = new BpmnDiffGenerator(client, {
+                previousXml: previousXml || '',
+                currentXml: currentXml || '',
+                processId: this.information.proc_def_id || (this.process && this.process.processDefinitionId) || '',
+                language: 'Korean'
+            });
+
+            await generator.generate();
+        },
         save() {
             var me = this;
             this.$try({
@@ -643,7 +745,8 @@ export default {
                         arcv_id: me.process
                             ? `${me.process.processDefinitionId}_${me.newVersion}`
                             : `${me.information.proc_def_id}_${me.newVersion}`,
-                        version: this.isVersion ? me.newVersion : null,
+                        version: me.information.version_tag ? me.newVersion : null,
+                        version_tag: me.information.version_tag,
                         name: me.information.name,
                         proc_def_id: me.information.proc_def_id,
                         prevSnapshot: me.information.snapshot,
@@ -679,6 +782,11 @@ export default {
                     return false; 
                 }
             } else {
+                return false;
+            }
+
+            // 버전 태그 필수: 선택되지 않은 경우 저장 불가
+            if (!this.information.version_tag) {
                 return false;
             }
             

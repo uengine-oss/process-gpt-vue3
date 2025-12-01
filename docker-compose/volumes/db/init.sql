@@ -186,6 +186,22 @@ create table if not exists public.proc_def_arcv (
     constraint proc_def_arcv_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
 
+create table if not exists public.proc_def_version (
+    arcv_id text not null,
+    proc_def_id text not null,
+    version text not null,
+    version_tag text null,
+    snapshot text null,
+    definition jsonb null,
+    "timeStamp" timestamp without time zone null default current_timestamp,
+    diff text null,
+    message text null,
+    uuid uuid not null default gen_random_uuid (),
+    tenant_id text null default public.tenant_id(),
+    constraint proc_def_version_pkey primary key (uuid),
+    constraint proc_def_version_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
+) tablespace pg_default;
+
 create table if not exists public.form_def (
     uuid uuid not null default gen_random_uuid (),
     html text not null,
@@ -237,7 +253,9 @@ create table if not exists public.bpm_proc_inst (
     variables_data jsonb null,
     status process_status null,
     tenant_id text null default public.tenant_id(),
-    proc_def_version text null,
+     proc_def_version text null,
+    version_tag text null,
+    version text null,
     project_id uuid null,
     start_date timestamp without time zone null,
     end_date timestamp without time zone null,
@@ -258,6 +276,8 @@ create table if not exists public.todolist (
     root_proc_inst_id text null,
     execution_scope text null,
     proc_def_id text null,
+    version_tag text null,
+    version text null,
     activity_id text null,
     activity_name text null,
     start_date timestamp without time zone null,
@@ -1046,6 +1066,7 @@ ALTER TABLE configuration ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proc_map_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proc_def ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proc_def_arcv ENABLE ROW LEVEL SECURITY;
+ALTER TABLE proc_def_version ENABLE ROW LEVEL SECURITY;
 ALTER TABLE form_def ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lock ENABLE ROW LEVEL SECURITY;
@@ -1090,11 +1111,16 @@ CREATE POLICY proc_def_select_policy ON proc_def FOR SELECT TO authenticated USI
 CREATE POLICY proc_def_update_policy ON proc_def FOR UPDATE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
 CREATE POLICY proc_def_delete_policy ON proc_def FOR DELETE TO authenticated USING ((tenant_id = public.tenant_id()) AND (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)));
 
--- Proc def arcv policies
 CREATE POLICY proc_def_arcv_insert_policy ON proc_def_arcv FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
 CREATE POLICY proc_def_arcv_select_policy ON proc_def_arcv FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY proc_def_arcv_update_policy ON proc_def_arcv FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
 CREATE POLICY proc_def_arcv_delete_policy ON proc_def_arcv FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
+
+-- Proc def version policies
+CREATE POLICY proc_def_version_insert_policy ON proc_def_version FOR INSERT TO authenticated WITH CHECK (tenant_id = public.tenant_id());
+CREATE POLICY proc_def_version_select_policy ON proc_def_version FOR SELECT TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY proc_def_version_update_policy ON proc_def_version FOR UPDATE TO authenticated USING (tenant_id = public.tenant_id());
+CREATE POLICY proc_def_version_delete_policy ON proc_def_version FOR DELETE TO authenticated USING (tenant_id = public.tenant_id());
 
 -- Form def policies
 CREATE POLICY form_def_insert_policy ON form_def FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true));

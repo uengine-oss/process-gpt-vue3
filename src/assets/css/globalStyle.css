@@ -624,7 +624,10 @@ hr {
 }
 
 .process-definition-version-dialog-textarea .v-field__field {
-    height: 25vh;
+    /* 이전: 고정 height 25vh 때문에 내용이 잘려보이는 문제 발생 */
+    /* 자동 높이 + 최대 높이만 제한하여 더 자연스럽게 보이도록 조정 */
+    height: auto;
+    max-height: 40vh;
     overflow-y: auto;
 }
 

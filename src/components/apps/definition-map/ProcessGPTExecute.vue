@@ -127,6 +127,7 @@ export default {
         definition: {},
         workItem: null,
         instId: "",
+        effectiveBpmn: "",
         roleMappings: [],
         isMobile: false,
         activityIndex: 0,
@@ -136,8 +137,47 @@ export default {
     }),
     async mounted() {
         if (this.processDefinition && this.processDefinition.processDefinitionId) {
-            this.instId = `${this.processDefinition.processDefinitionId}.${this.uuid()}`;
+            const defId = this.processDefinition.processDefinitionId;
+
+            if (this.isSimulate === 'false') {
+                // 실행 모드: 운영 버전(major 태그 최신) 기준으로 정의 로딩
+                const execDef = await backend.getExecutionDefinition(defId);
+                if (execDef) {
+                    if (execDef.definition) {
+                        Object.assign(this.processDefinition, execDef.definition);
+                    }
+                    if (execDef.bpmn) {
+                        this.effectiveBpmn = execDef.bpmn;
+                    }
+                    // 프로세스 실행 시 complete 호출에 사용할 버전 정보 세팅
+                    if (execDef.version) {
+                        this.processDefinition.version = execDef.version;
+                    }
+                    if (execDef.version_tag) {
+                        this.processDefinition.version_tag = execDef.version_tag;
+                    }
+                }
+            } else {
+                // 시뮬레이션 모드: 항상 proc_def(현재 정의) 기준으로 로딩
+                const simDef = await backend.getSimulationDefinition(defId);
+                if (simDef) {
+                    if (simDef.definition) {
+                        Object.assign(this.processDefinition, simDef.definition);
+                    }
+                    if (simDef.bpmn) {
+                        this.effectiveBpmn = simDef.bpmn;
+                    }
+                }
+            }
+
+            // 정의에서 별도로 가져오지 못했다면, props로 들어온 bpmn을 기본값으로 사용
+            if (!this.effectiveBpmn && this.bpmn) {
+                this.effectiveBpmn = this.bpmn;
+            }
+
+            this.instId = `${defId}.${this.uuid()}`;
         }
+
         await this.init();
         this.checkIfMobile();
         window.addEventListener('resize', this.checkIfMobile);
@@ -166,8 +206,8 @@ export default {
         },
         async init() {
             var me = this;
-            if(me.bpmn) {
-                me.processDefinition.bpmn = me.bpmn;
+            if(me.effectiveBpmn) {
+                me.processDefinition.bpmn = me.effectiveBpmn;
             }
             me.definition = me.processDefinition;
 
@@ -376,7 +416,10 @@ export default {
                     activity_id: me.workItem.activity.tracingTag,
                     role_mappings: me.roleMappings,
                     answer: answer,
-                    form_values: value || {}
+                    form_values: value || {},
+                    // todolist / 엔진 쪽에서 사용할 버전 정보 전달
+                    version_tag: me.processDefinition.version_tag || 'major',
+                    version: me.processDefinition.version || null,
                 };
                 
                 if (me.$refs.instanceSourceRef) {
