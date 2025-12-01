@@ -749,6 +749,16 @@ export default {
                     ]
                 }
             },
+            { 
+                value: 'visionParse', 
+                label: 'AgentSelectInfo.orchestration.visionParse.title', 
+                description: 'AgentSelectInfo.orchestration.visionParse.description', 
+                advanced: true,
+                costKey: 'AgentSelectInfo.cost.high',
+                detailDesc: {
+                    title: 'AgentSelectInfo.orchestration.visionParse.detailDesc.title'
+                }
+            },
         ],
     }),
     created() {
@@ -787,7 +797,8 @@ export default {
                     'crewai-action': this.$t('agentMonitor.crewaiAction'),
                     'openai-deep-research': this.$t('agentMonitor.openaiDeepResearch'),
                     'langchain-react': this.$t('agentMonitor.langchainReact'),
-                    'browser-automation-agent': 'Browser Automation Agent'
+                    'browser-automation-agent': 'Browser Automation Agent',
+                    'visionparse': 'Vision Parse'
                 };
                 return mapping[orch] || orch;
             }
@@ -1184,7 +1195,8 @@ export default {
                 'crewaiDeepResearch': 'crewai-deep-research',
                 'crewaiAction': 'crewai-action',
                 'openaiDeepResearch': 'openai-deep-research',
-                'langchainReact': 'langchain-react'
+                'langchainReact': 'langchain-react',
+                'visionParse': 'visionparse'
             };
             return mapping[researchMethod] || researchMethod;
         },

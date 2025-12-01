@@ -1264,6 +1264,18 @@
                         }
                     ]
                 }
+            },
+            "visionParse": {
+                "title": "이미지 분석",
+                "description": "이미지 분석 연구.",
+                "detailDesc": {
+                    "title": "이미지 분석 및 텍스트 추출",
+                    "details": [
+                        {
+                            "title": "🎯 작동 방식:\n→ 이미지 분석\n→ 텍스트 추출 및 정리"
+                        }
+                    ]
+                }
             }
         },
         "cost": {
