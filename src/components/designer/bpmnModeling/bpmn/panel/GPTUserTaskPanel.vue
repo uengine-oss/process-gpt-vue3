@@ -505,7 +505,7 @@ export default {
                 me.activeTab = 'preview'
             }
             me.formId = me.activity.tool != '' && me.activity.tool.includes('formHandler:') ? me.activity.tool.replace('formHandler:', '') : '';
-            if (!me.formId || me.formId == '') {
+            if (!me.formId || me.formId == '' || me.formId == 'defaultform') {
                 let formId = '';
                 if (!me.processDefinition || !me.processDefinition.processDefinitionId) {
                     formId = me.element.id + '_form';
@@ -534,6 +534,7 @@ export default {
             }
 
             if(!me.tempFormHtml) {
+                me.formId = 'defaultform';
                 me.tempFormHtml = await me.backend.getRawDefinition('defaultform', { type: 'form' });
             }
             
