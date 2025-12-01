@@ -2027,7 +2027,10 @@
         "download": "Download",
         "changeToVersion": "Change to Version",
         "noXmlData": "No XML data available for the selected version.",
-        "copiedToClipboard": "Copied to clipboard."
+        "copiedToClipboard": "Copied to clipboard.",
+        "relativeJustNow": "just now",
+        "relativeMinutesAgo": "{minutes} minutes ago",
+        "relativeHoursAgo": "{hours} hours ago"
     },
     "AgentList": {
         "title": "Agent List",
