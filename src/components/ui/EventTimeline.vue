@@ -718,9 +718,8 @@ export default {
             return (!name || name.toLowerCase() === 'unknown') ? task.role : task.name
         },
         getTaskDescription(task) {
-            // 액션 모드(crewai-action)일 때 task_description 표시
-            const isCrewaiAction = this.todoStatus?.agent_orch === 'crewai-action' || task.crewType === 'action'
-            if (isCrewaiAction && task.taskDescription) {
+            // task_description이 있으면 항상 표시
+            if (task.taskDescription) {
                 return task.taskDescription
             }
             return task.goal || 'Task'
