@@ -293,7 +293,6 @@ export default {
                 // 현재 탭이 있으면 워크아이템 업데이트
                 if (this.currentTab) {
                     this.workItemsByTab[this.currentTab.id] = workItem;
-                    console.log(this.workItemsByTab);
                 }
                 
                 return workItem;
