@@ -62,44 +62,52 @@
                         style="height: 100%;"
                     />
                 </div>
-                <div v-else style="height: 100%; display: flex; align-items: center; gap: 8px;" :class="{ 'flex-column': isMobile }">
-                    <v-card outlined
-                        style="width: 100%; position: relative;"
-                        :style="{ height: isMobile ? '50%' : '100%' }"
-                        elevation="10"
+                <div v-else style="height: 100%;" :class="{ 'flex-column': isMobile }">
+                    <div v-if="currentSelectedVersion"
+                        class="pb-2 text-caption text-grey-darken-1"
+                        style="padding-left: 4px;"
                     >
-                        <div class="version-manager-version-number">버전: {{ currentSelectedVersion }}</div>
-                        <BpmnUengine
-                            :key="key + '_left'"
-                            :bpmn="currentSelectedXML"
-                            :options="options"
-                            :isViewMode="false"
-                            :diffActivities="leftDiffActivities"
-                            :onLoadStart="() => {}"
-                            :onLoadEnd="() => {}"
-                            style="height: 100%; width: 100%;"
-                        ></BpmnUengine>
-                    </v-card>
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                        <v-icon :size="isMobile ? '24' : '48'">{{ isMobile ? 'mdi-arrow-down-bold' : 'mdi-arrow-right-bold' }}</v-icon>
+                        버전 {{ currentSelectedVersion }} · 최종 수정: {{ formatVersionTime(currentSelectedTime) }}
                     </div>
-                    <v-card outlined
-                        style="width: 100%; position: relative;"
-                        :style="{ height: isMobile ? '50%' : '100%' }"
-                        elevation="10"
-                    >
-                        <div class="version-manager-version-number">버전: {{ latestVersion }}</div>
-                        <BpmnUengine
-                            :key="key + '_right'"
-                            :bpmn="currentXML"
-                            :options="options"
-                            :isViewMode="false"
-                            :diffActivities="rightDiffActivities"
-                            :onLoadStart="() => {}"
-                            :onLoadEnd="() => {}"
-                            style="height: 100%; width: 100%;"
-                        ></BpmnUengine>
-                    </v-card>
+                    <div style="height: 100%; display: flex; align-items: center; gap: 8px;" :class="{ 'flex-column': isMobile }">
+                        <v-card outlined
+                            style="width: 100%; position: relative;"
+                            :style="{ height: isMobile ? '50%' : '100%' }"
+                            elevation="10"
+                        >
+                            <div class="version-manager-version-number">버전: {{ currentSelectedVersion }}</div>
+                            <BpmnUengine
+                                :key="key + '_left'"
+                                :bpmn="currentSelectedXML"
+                                :options="options"
+                                :isViewMode="false"
+                                :diffActivities="leftDiffActivities"
+                                :onLoadStart="() => {}"
+                                :onLoadEnd="() => {}"
+                                style="height: 100%; width: 100%;"
+                            ></BpmnUengine>
+                        </v-card>
+                        <div style="display: flex; align-items: center; justify-content: center;">
+                            <v-icon :size="isMobile ? '24' : '48'">{{ isMobile ? 'mdi-arrow-down-bold' : 'mdi-arrow-right-bold' }}</v-icon>
+                        </div>
+                        <v-card outlined
+                            style="width: 100%; position: relative;"
+                            :style="{ height: isMobile ? '50%' : '100%' }"
+                            elevation="10"
+                        >
+                            <div class="version-manager-version-number">버전: {{ latestVersion }}</div>
+                            <BpmnUengine
+                                :key="key + '_right'"
+                                :bpmn="currentXML"
+                                :options="options"
+                                :isViewMode="false"
+                                :diffActivities="rightDiffActivities"
+                                :onLoadStart="() => {}"
+                                :onLoadEnd="() => {}"
+                                style="height: 100%; width: 100%;"
+                            ></BpmnUengine>
+                        </v-card>
+                    </div>
                 </div>
             </v-card-text>
             <v-card-actions class="pa-0 pt-2">
@@ -197,6 +205,12 @@ export default {
             }
             return null;
         },
+        currentSelectedTime() {
+            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
+                return this.lists[this.currentIndex].timeStamp;
+            }
+            return null;
+        },
     },
     watch: {
         "open": function (newVal) {
@@ -215,7 +229,7 @@ export default {
             var me = this
             me.loading = true
             let result = await backend.getDefinitionVersions(me.process.processDefinitionId, {
-                key: 'version, message',
+                key: 'version, message, timeStamp',
                 sort: 'asc',
                 orderBy: 'timeStamp',
                 type: me.type
@@ -272,6 +286,41 @@ export default {
             } else {
                 alert(me.$t('ProcessDefinitionVersionManager.noXmlData'));
             }
+        },
+        formatVersionTime(timeStamp) {
+            if (!timeStamp) return '';
+            const date = new Date(timeStamp);
+            if (isNaN(date.getTime())) {
+                return timeStamp;
+            }
+
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            if (diffMs < 0) {
+                // 미래 시간이면 그냥 절대 시간으로 표시
+                return date.toLocaleString();
+            }
+
+            const diffSec = Math.floor(diffMs / 1000);
+            const diffMin = Math.floor(diffSec / 60);
+            const diffHour = Math.floor(diffMin / 60);
+
+            // 24시간 이내일 때 상대 시간 표시
+            if (diffHour < 24) {
+                if (diffMin < 1) {
+                    // 1분 미만 -> 방금
+                    return this.$t('ProcessDefinitionVersionManager.relativeJustNow');
+                }
+                if (diffHour < 1) {
+                    // 1시간 미만 -> ~분 전
+                    return this.$t('ProcessDefinitionVersionManager.relativeMinutesAgo', { minutes: diffMin });
+                }
+                // 24시간 미만 -> ~시간 전
+                return this.$t('ProcessDefinitionVersionManager.relativeHoursAgo', { hours: diffHour });
+            }
+
+            // 그 외에는 절대 시간
+            return date.toLocaleString();
         },
         async setCurrentInfo(xml) {
             let me = this;
