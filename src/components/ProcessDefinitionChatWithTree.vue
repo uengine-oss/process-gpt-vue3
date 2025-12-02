@@ -1595,14 +1595,52 @@ export default {
                             // 시트를 객체 배열 형태로 변환 (헤더 기반)
                             const jsonObjects = [];
                             if (jsonArray.length > 1) {
-                                const headers = jsonArray[0];
-                                for (let r = 1; r < jsonArray.length; r++) {
+                                // 헤더 행 찾기 (No, Activity 명, 담당 등의 키워드가 있는 행)
+                                let headerRowIndex = -1;
+                                for (let r = 0; r < Math.min(jsonArray.length, 10); r++) {
+                                    const row = jsonArray[r];
+                                    if (!row || row.length === 0) continue;
+                                    
+                                    // 헤더 행인지 확인 (No, Activity, 담당 등의 키워드 확인)
+                                    const rowStr = row.join('|').toLowerCase();
+                                    if (rowStr.includes('no') && 
+                                        (rowStr.includes('activity') || rowStr.includes('담당'))) {
+                                        headerRowIndex = r;
+                                        console.log(`✅ 헤더 행 찾음: ${headerRowIndex}행`);
+                                        break;
+                                    }
+                                }
+                                
+                                // 헤더를 찾지 못한 경우 첫 번째 행을 헤더로 사용
+                                if (headerRowIndex === -1) {
+                                    console.warn('⚠️ 헤더 행을 찾을 수 없어 첫 번째 행을 헤더로 사용합니다.');
+                                    headerRowIndex = 0;
+                                }
+                                
+                                const headers = jsonArray[headerRowIndex];
+                                let dataStartRow = headerRowIndex + 1;
+                                
+                                // 설명 행(※로 시작) 스킵
+                                if (dataStartRow < jsonArray.length) {
+                                    const nextRow = jsonArray[dataStartRow];
+                                    if (nextRow && nextRow.length > 0) {
+                                        const firstCell = String(nextRow[0] || '').trim();
+                                        if (firstCell.startsWith('※') || firstCell === '0') {
+                                            dataStartRow++;
+                                            console.log('📋 설명 행 스킵');
+                                        }
+                                    }
+                                }
+                                
+                                // 데이터 행 파싱
+                                for (let r = dataStartRow; r < jsonArray.length; r++) {
                                     const row = jsonArray[r];
                                     const obj = {};
                                     let hasData = false;
                                     for (let c = 0; c < headers.length; c++) {
-                                        if (row[c] !== null && row[c] !== undefined && row[c] !== '') {
-                                            obj[headers[c]] = row[c];
+                                        const header = headers[c];
+                                        if (header && row[c] !== null && row[c] !== undefined && row[c] !== '') {
+                                            obj[header] = row[c];
                                             hasData = true;
                                         }
                                     }
@@ -1669,11 +1707,27 @@ export default {
                 let excelContent = '';
                 this.parsedExcelData.sheetNames.forEach(sheetName => {
                     const sheetData = this.parsedExcelData.data[sheetName];
-                    excelContent += `\n\n[시트: ${sheetName}]\n`;
-                    excelContent += JSON.stringify(sheetData.objects, null, 2);
+                    excelContent += `\n\n[시트: ${sheetName}]\n\n`;
+                    
+                    // 객체 배열이 있는 경우
+                    if (sheetData.objects && sheetData.objects.length > 0) {
+                        // 헤더 추출
+                        const headers = Object.keys(sheetData.objects[0]);
+                        excelContent += headers.join('\t') + '\n';
+                        
+                        // 데이터 행 추가
+                        sheetData.objects.forEach(row => {
+                            const values = headers.map(h => {
+                                const val = row[h];
+                                // 값이 없으면 빈 문자열, 있으면 문자열로 변환
+                                return val !== null && val !== undefined ? String(val) : '';
+                            });
+                            excelContent += values.join('\t') + '\n';
+                        });
+                    }
                 });
 
-                // console.log('📋 엑셀 내용:', excelContent);
+                console.log('📋 엑셀 내용 (미리보기):', excelContent.substring(0, 500) + '...');
 
                 // 메시지 생성
                 const message = {

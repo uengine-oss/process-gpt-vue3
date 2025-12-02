@@ -329,6 +329,10 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                     "trigger": "트리거 조건"
                   }
               # Sequence
+              // 사용자가 제공한 선행, 후행 정보가 존재한다면 해당 정보를 참고하여 시퀀스의 source, target 을 생성해야함.
+              // 예를 들어 1. A, 2. B, 3. C 순으로 액티비티가 있고 1번 A의 후행이 2번, 2번 B의 후행이 3번 C라면 1번 A와 2번 B 사이에 시퀀스를 생성하고, 2번 B와 3번 C 사이에 시퀀스를 생성해야함.
+              // 만약 다른 액티비티지만 선행이나 후행이 동일한게 존재한다면 병렬로 진행되는 프로세스임으로 둘 다 정상적으로 생성되어야함.
+              // 선행, 후행 정보를 보고 빠짐없이 모두 생성되어야함.
                   {
                     "elementType": "Sequence",
                     "id": "sequence_id(영문)",
