@@ -1967,70 +1967,87 @@ export default {
             try {
                 if (!this.selectedFlowActivity) return;
                 
-                console.log('💾 액티비티 저장 시작:', this.selectedFlowActivity);
-                
-                // 원본 프로세스 정의에서 해당 액티비티 찾아서 업데이트
                 const chatComponent = this.$refs.processDefinitionChat;
                 if (!chatComponent || !chatComponent.processDefinition) {
                     console.error('❌ 프로세스 정의를 찾을 수 없습니다.');
                     return;
                 }
                 
-                let processDefinition = chatComponent.processDefinition;  // ✅ const → let으로 변경
+                let processDefinition = chatComponent.processDefinition;
                 let updated = false;
-                
-                // 액티비티 이름 (content 또는 name)
                 const activityName = this.selectedFlowActivity.content || this.selectedFlowActivity.name;
                 
                 // 1. 원본 processDefinition 업데이트
-                // Elements 구조인 경우
                 if (processDefinition.elements && Array.isArray(processDefinition.elements)) {
                     const element = processDefinition.elements.find(el => 
-                        el.id === this.selectedFlowActivity.id || el.name === activityName
+                        el && (el.id === this.selectedFlowActivity.id || el.name === activityName)
                     );
+                    
                     if (element) {
                         element.system = this.selectedFlowActivity.footer; // footer가 시스템/도구
                         element.description = this.selectedFlowActivity.description;
                         element.role = this.selectedFlowActivity.header; // header가 역할
                         element.issues = this.selectedFlowActivity.issues; // issue가 이슈
+                        
+                        // ✅ inputData, outputData, coreData 업데이트
+                        if (this.selectedFlowActivity.inputData !== undefined) {
+                            element.inputData = this.selectedFlowActivity.inputData;
+                        }
+                        if (this.selectedFlowActivity.outputData !== undefined) {
+                            element.outputData = this.selectedFlowActivity.outputData;
+                        }
+                        if (this.selectedFlowActivity.coreData !== undefined) {
+                            element.coreData = this.selectedFlowActivity.coreData;
+                        }
+                        
                         updated = true;
-                        console.log('✅ Element 업데이트:', element);
+                        console.log('✅ Element 업데이트');
                     }
                     
                     // 들어오는 시퀀스의 requiredTime 업데이트
                     if (this.selectedFlowActivity.incomingSequenceId) {
                         const sequence = processDefinition.elements.find(el => 
-                            el.id === this.selectedFlowActivity.incomingSequenceId
+                            el && el.id === this.selectedFlowActivity.incomingSequenceId
                         );
                         if (sequence) {
                             sequence.requiredTime = this.selectedFlowActivity.requiredTime;
-                            console.log('✅ Incoming Sequence requiredTime 업데이트:', sequence);
                         }
                     }
                     
                     // 역행 시퀀스의 requiredTime 업데이트
                     if (this.selectedFlowActivity.backflowSequenceId) {
                         const sequence = processDefinition.elements.find(el => 
-                            el.id === this.selectedFlowActivity.backflowSequenceId
+                            el && el.id === this.selectedFlowActivity.backflowSequenceId
                         );
                         if (sequence) {
                             sequence.requiredTime = this.selectedFlowActivity.backflowRequiredTime;
-                            console.log('✅ Backflow Sequence requiredTime 업데이트:', sequence);
                         }
                     }
                 } 
-                // Activities 분리 구조인 경우
                 else if (processDefinition.activities && Array.isArray(processDefinition.activities)) {
                     const activity = processDefinition.activities.find(act => 
                         act.id === this.selectedFlowActivity.id || act.name === activityName
                     );
+                    
                     if (activity) {
                         activity.system = this.selectedFlowActivity.footer; // footer가 시스템/도구
                         activity.description = this.selectedFlowActivity.description;
                         activity.role = this.selectedFlowActivity.header; // header가 역할
                         activity.issues = this.selectedFlowActivity.issues; // issue가 이슈
+                        
+                        // ✅ inputData, outputData, coreData 업데이트
+                        if (this.selectedFlowActivity.inputData !== undefined) {
+                            activity.inputData = this.selectedFlowActivity.inputData;
+                        }
+                        if (this.selectedFlowActivity.outputData !== undefined) {
+                            activity.outputData = this.selectedFlowActivity.outputData;
+                        }
+                        if (this.selectedFlowActivity.coreData !== undefined) {
+                            activity.coreData = this.selectedFlowActivity.coreData;
+                        }
+                        
                         updated = true;
-                        console.log('✅ Activity 업데이트:', activity);
+                        console.log('✅ Activity 업데이트');
                     }
                     
                     // 들어오는 시퀀스의 requiredTime 업데이트
@@ -2040,7 +2057,6 @@ export default {
                         );
                         if (sequence) {
                             sequence.requiredTime = this.selectedFlowActivity.requiredTime;
-                            console.log('✅ Incoming Sequence requiredTime 업데이트:', sequence);
                         }
                     }
                     
@@ -2051,68 +2067,62 @@ export default {
                         );
                         if (sequence) {
                             sequence.requiredTime = this.selectedFlowActivity.backflowRequiredTime;
-                            console.log('✅ Backflow Sequence requiredTime 업데이트:', sequence);
                         }
                     }
                 }
                 
                 if (updated) {
-                    // 2. currentProcessDefinitionForFlow를 완전히 새로운 객체로 교체 (Vue 반응성 트리거)
-                    // 기존 객체를 null로 설정한 후 다시 할당하여 강제 리렌더링
-                    this.currentProcessDefinitionForFlow = null;
-                    
-                    this.$nextTick(() => {
-                        // 깊은 복사로 완전히 새로운 객체 생성
-                        this.currentProcessDefinitionForFlow = JSON.parse(JSON.stringify(processDefinition));
-                        console.log('✅ Flow 화면 업데이트 완료');
-                    });
-
-                    // ✅ BPMN Modeler를 통해 최신 XML 생성 (system, issues, requiredTime 포함)
                     let updatedBpmn = chatComponent.bpmn;
                     try {
-                        // ✅ 방법 1: 먼저 processDefinition을 elements 구조로 변환
+                        // ✅ elements 구조로 변환
                         if (!processDefinition.elements && processDefinition.activities) {
-                            console.log('🔄 예전 구조 감지 - elements 구조로 변환 시작');
-                            
-                            // convertOldFormatToElements 메서드 사용
                             if (chatComponent.convertOldFormatToElements) {
                                 processDefinition = await chatComponent.convertOldFormatToElements(processDefinition);
-                                console.log('✅ elements 구조 변환 완료');
                             }
                         }
                         
-                        console.log('🔍 processDefinition 구조 확인:');
-                        console.log('  - elements 타입:', Array.isArray(processDefinition.elements) ? '배열' : (typeof processDefinition.elements));
-                        console.log('  - elements 개수:', Array.isArray(processDefinition.elements) ? processDefinition.elements.length : (processDefinition.elements ? Object.keys(processDefinition.elements).length : 0));
+                        // ✅ null 제거
+                        if (Array.isArray(processDefinition.elements)) {
+                            processDefinition.elements = processDefinition.elements.filter(el => el !== null && el !== undefined);
+                        }
                         
-                        // ✅ 방법 2: createBpmnXml로 XML 생성
-                        if (chatComponent.createBpmnXml && processDefinition.elements) {
-                            updatedBpmn = chatComponent.createBpmnXml(processDefinition, false);
-                            console.log('✅ 최신 XML 생성 완료 (system, issues, requiredTime 포함)');
-                        } else {
-                            console.warn('⚠️ createBpmnXml 실패, 기존 BPMN 사용');
+                        // ✅ 중요: chatComponent.processDefinition을 완전히 새로운 객체로 교체 (Vue 반응성 강제)
+                        chatComponent.processDefinition = JSON.parse(JSON.stringify(processDefinition));
+                        
+                        // ✅ 동기화 후 XML 생성 (chatComponent.processDefinition이 업데이트된 상태에서)
+                        if (chatComponent.createBpmnXml && chatComponent.processDefinition.elements) {
+                            updatedBpmn = chatComponent.createBpmnXml(chatComponent.processDefinition, false);
+                            console.log('✅ XML 생성 완료');
                         }
                     } catch (error) {
-                        console.error('❌ XML 생성 중 오류:', error);
-                        console.error('상세 스택:', error.stack);
-                        // 오류 발생 시 기존 BPMN 사용
+                        console.error('❌ XML 생성 오류:', error.message);
                     }
 
                     const info = {                   
                         name: chatComponent.processDefinition.processDefinitionName,                
                         type: "bpmn",
-                        definition: processDefinition  // ✅ 변환된 processDefinition 사용
+                        definition: chatComponent.processDefinition
                     }
                     
-                    // ✅ 새로 생성한 XML로 저장
+                    // ✅ 저장
                     await backend.putRawDefinition(updatedBpmn, chatComponent.processDefinition.processDefinitionId, info);
-                    console.log('✅ 액티비티 업데이트 완료 (최신 XML 저장)');
+                    
+                    // ✅ 중요: chatComponent.bpmn도 업데이트 (이후 saveDefinition에서 오래된 XML 사용 방지)
+                    chatComponent.bpmn = updatedBpmn;
+                    
+                    console.log('✅ 저장 완료');
+                    
+                    // Flow 화면 업데이트
+                    this.currentProcessDefinitionForFlow = null;
+                    this.$nextTick(() => {
+                        this.currentProcessDefinitionForFlow = JSON.parse(JSON.stringify(chatComponent.processDefinition));
+                    });
                 } else {
-                    console.error('❌ 액티비티를 찾을 수 없습니다:', activityName);
+                    console.error('❌ 액티비티를 찾을 수 없습니다');
                 }
                 
             } catch (error) {
-                console.error('❌ 액티비티 저장 실패:', error);
+                console.error('❌ 저장 실패:', error.message);
             }
         },
 

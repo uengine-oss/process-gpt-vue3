@@ -395,9 +395,9 @@ export default {
       if (element.description)   paramObj.description = element.description;
       if (element.role)          paramObj.role        = element.role;
       
-      // ✅ system, issues 추가
-      if (element.system)        paramObj.system      = element.system;
-      if (element.issues)        paramObj.issues      = element.issues;
+      // ✅ system, issues 추가 (undefined가 아니면 저장, 빈 문자열도 저장)
+      if (element.system !== undefined && element.system !== null)  paramObj.system  = element.system;
+      if (element.issues !== undefined && element.issues !== null)  paramObj.issues  = element.issues;
 
       // input/output 매핑
       const toMappingObj = (list, dir) => list.map(item => ({
@@ -410,6 +410,12 @@ export default {
 
       if (element.inputData?.length)  paramObj.inputMapping  = toMappingObj(element.inputData, 'to');
       if (element.outputData?.length) paramObj.outputMapping = toMappingObj(element.outputData, 'from');
+      
+      // ✅ inputData, outputData, coreData 원본 배열도 저장 (ProcessDefinitionModule에서 사용)
+      // undefined가 아니면 저장 (빈 배열도 저장)
+      if (element.inputData !== undefined && element.inputData !== null)   paramObj.inputData  = element.inputData;
+      if (element.outputData !== undefined && element.outputData !== null) paramObj.outputData = element.outputData;
+      if (element.coreData !== undefined && element.coreData !== null)     paramObj.coreData   = element.coreData;
 
       if (element.checkpoints?.length) paramObj.checkpoints = element.checkpoints;
 
@@ -1412,20 +1418,22 @@ export default {
           sequenceFlow.setAttribute('targetRef', sequence.target);
 
           // 🔽 조건 또는 requiredTime이 있을 경우 extensionElements 추가
-          if (sequence.condition || sequence.requiredTime) {
+          // ✅ condition이나 requiredTime이 undefined/null이 아니면 extension 생성 (빈 문자열도 저장)
+          if ((sequence.condition !== undefined && sequence.condition !== null) || 
+              (sequence.requiredTime !== undefined && sequence.requiredTime !== null)) {
             const ext = xmlDoc.createElementNS(this.NAMESPACES.BPMN, 'bpmn:extensionElements');
             const prop = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:properties');
             const json = xmlDoc.createElementNS(this.NAMESPACES.UENGINE, 'uengine:json');
 
             let conditionPayload = {};
 
-            // ✅ requiredTime 추가
-            if (sequence.requiredTime) {
+            // ✅ requiredTime 추가 (undefined/null이 아니면 저장)
+            if (sequence.requiredTime !== undefined && sequence.requiredTime !== null) {
               conditionPayload.requiredTime = sequence.requiredTime;
             }
 
             // condition 추가
-            if (sequence.condition) {
+            if (sequence.condition !== undefined && sequence.condition !== null && sequence.condition !== '') {
               if (typeof sequence.condition === 'string') {
                 conditionPayload.condition = sequence.condition;
                 sequenceFlow.setAttribute('name', sequence.condition || '');

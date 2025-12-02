@@ -74,7 +74,7 @@
                     
                     <!-- Flow 오버레이 (leftpart에만 표시) -->
                     <transition name="fade">
-                        <div v-if="showFlowOverlay && currentProcessDefinitionForFlow" 
+                        <div v-if="showFlowOverlay && currentProcessDefinitionForFlow && !isXmlMode" 
                              class="flow-overlay-leftpart">
                             <div class="flow-content">
                                 <div :style="{ width: showActivityPanel ? '70%' : '100%', height: '100%', transition: 'width 0.3s' }">

@@ -1029,6 +1029,10 @@ export default {
                         // ✅ system, issues 추가
                         task.system = propsJson.system || task.system;
                         task.issues = propsJson.issues || task.issues;
+                        
+                        // ✅ outputData, coreData 추가
+                        task.outputData = propsJson.outputData || task.outputData;
+                        task.coreData = propsJson.coreData || task.coreData;
                     } else {
                         task.tool = 'formHandler:defaultform';
                     }
