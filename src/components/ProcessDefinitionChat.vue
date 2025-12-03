@@ -1341,17 +1341,8 @@ export default {
                     this.processDefinition.processDefinitionId = originalId;
                 }
                 
-                // BPMN XML 재생성 (읽기 전용, processDefinition 수정 안 함)
-                if (this.createBpmnXml && this.processDefinition.elements) {
-                    this.bpmn = this.createBpmnXml(this.processDefinition, false);
-                    console.log('✅ BPMN XML 재생성 완료');
-                }
-                
-                // Vue 반응성 트리거
-                this.definitionChangeCount++;
-                this.isChanged = true;
-                
-                console.log('✅ 액티비티 업데이트 완료');
+                // ⚠️ Vue 반응성 트리거는 saveActivityChanges()에서 처리 (XML 생성 후)
+                console.log('✅ 액티비티 업데이트 완료 (elements/sequences만 수정)');
                 return this.processDefinition;
                 
             } catch (error) {
@@ -1404,7 +1395,35 @@ export default {
                     this.processDefinition.excel_template_url = metadataBackup.excel_template_url;
                 }
                 
-                // 2. 백엔드 저장
+                // ✅ 2. elements 구조로 변환 (필요한 경우)
+                if (!this.processDefinition.elements && this.processDefinition.activities) {
+                    console.log('🔄 예전 구조 감지 - elements 구조로 변환 시작');
+                    if (this.convertOldFormatToElements) {
+                        this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
+                        console.log('✅ elements 구조 변환 완료');
+                    }
+                }
+                
+                // ✅ 3. null 제거
+                if (Array.isArray(this.processDefinition.elements)) {
+                    this.processDefinition.elements = this.processDefinition.elements.filter(el => el !== null && el !== undefined);
+                    console.log('✅ null 요소 제거 완료');
+                }
+                
+                // ✅ 4. BPMN XML 재생성 (저장 전 최신 상태 반영)
+                if (this.createBpmnXml && this.processDefinition.elements) {
+                    this.bpmn = this.createBpmnXml(this.processDefinition, false);
+                    console.log('✅ 저장용 BPMN XML 재생성 완료');
+                } else {
+                    console.warn('⚠️ createBpmnXml 실패 또는 elements 없음:', {
+                        hasCreateBpmnXml: !!this.createBpmnXml,
+                        hasElements: !!this.processDefinition.elements,
+                        elementsType: typeof this.processDefinition.elements,
+                        elementsLength: this.processDefinition.elements?.length
+                    });
+                }
+                
+                // 5. 백엔드 저장
                 const info = {
                     name: this.processDefinition.processDefinitionName,
                     type: "bpmn",
@@ -1429,7 +1448,12 @@ export default {
                     info
                 );
                 
+                // ✅ Vue 반응성 트리거 (XML 보기 화면 업데이트)
+                this.definitionChangeCount++;
+                this.isChanged = true;
+                
                 console.log('✅ 액티비티 저장 완료:', activityData.id);
+                console.log('🔄 definitionChangeCount 업데이트:', this.definitionChangeCount);
                 
                 // 3. 업데이트된 processDefinition 반환
                 return this.processDefinition;
