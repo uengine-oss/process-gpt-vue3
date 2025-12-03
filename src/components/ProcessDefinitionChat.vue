@@ -717,23 +717,25 @@ export default {
             const me = this;
             
             try {
-                // 1. processDefinition 변수 업데이트
-                me.$emit('save-activity-changes', me.selectedFlowActivity);
-                this.$emit('closeActivityPanel');              
-                console.log('✅ 액티비티 변경사항이 저장되었습니다.');
+                // ✅ 직접 저장 처리 (이벤트 emit 불필요)
+                await me.saveActivityChanges(me.selectedFlowActivity);
+                
+                // Flow 화면 업데이트를 위한 이벤트
+                me.$emit('process-definition-updated', me.processDefinition);
+                me.$emit('closeActivityPanel');
+                
+                console.log('✅ 액티비티 저장 완료');
             } catch (error) {
                 console.error('❌ 액티비티 저장 중 오류:', error);
-                
+                alert('저장 중 오류가 발생했습니다: ' + error.message);
             }
         },
         
         /**
          * 액티비티 변경사항 저장 후 닫기
          */
-        closeAndSave() {
-            // 저장 후 닫기
-            this.$emit('save-activity-changes', this.selectedFlowActivity);
-            this.$emit('closeActivityPanel');
+        async closeAndSave() {
+            await this.saveActivity();
         },
         
         async addTeamMembers(teamMemberData){
@@ -1223,6 +1225,219 @@ export default {
             // this.processDefinition = val
             // this.bpmn = this.createBpmnXml(val)
             this.isChanged = true;
+        },
+        /**
+         * Flow 화면에서 액티비티 정보를 업데이트하는 메서드
+         * ⚠️ 중요: elements/activities/sequences만 수정, 메타데이터는 절대 건드리지 않음
+         * @param {Object} activityData - 업데이트할 액티비티 정보
+         * @returns {Promise<Object>} 업데이트된 processDefinition
+         */
+        async updateActivityFromFlow(activityData) {
+            try {
+                console.log('🔄 액티비티 업데이트 시작:', activityData.id);
+                
+                if (!this.processDefinition) {
+                    throw new Error('프로세스 정의를 찾을 수 없습니다.');
+                }
+                
+                // ✅ 메타데이터 보호 - 업데이트 전 확인
+                const originalName = this.processDefinition.processDefinitionName;
+                const originalId = this.processDefinition.processDefinitionId;
+                
+                const activityName = activityData.content || activityData.name;
+                let updated = false;
+                
+                // elements 구조로 처리
+                if (this.processDefinition.elements && Array.isArray(this.processDefinition.elements)) {
+                    const element = this.processDefinition.elements.find(el => 
+                        el && (el.id === activityData.id || el.name === activityName)
+                    );
+                    
+                    if (element) {
+                        // ✅ element 속성만 수정 (processDefinition 메타데이터 건드리지 않음)
+                        element.system = activityData.footer;
+                        element.description = activityData.description;
+                        element.role = activityData.header;
+                        element.issues = activityData.issues;
+                        
+                        // 데이터 속성 업데이트
+                        if (activityData.inputData !== undefined) element.inputData = activityData.inputData;
+                        if (activityData.outputData !== undefined) element.outputData = activityData.outputData;
+                        if (activityData.coreData !== undefined) element.coreData = activityData.coreData;
+                        
+                        updated = true;
+                        console.log('✅ Element 업데이트:', element.name);
+                    }
+                    
+                    // ✅ 시퀀스만 수정 (processDefinition 메타데이터 건드리지 않음)
+                    if (activityData.incomingSequenceId) {
+                        const sequence = this.processDefinition.elements.find(el => 
+                            el && el.id === activityData.incomingSequenceId
+                        );
+                        if (sequence) {
+                            sequence.requiredTime = activityData.requiredTime;
+                            console.log('✅ 들어오는 시퀀스 시간 업데이트:', sequence.id);
+                        }
+                    }
+                    
+                    if (activityData.backflowSequenceId) {
+                        const sequence = this.processDefinition.elements.find(el => 
+                            el && el.id === activityData.backflowSequenceId
+                        );
+                        if (sequence) {
+                            sequence.requiredTime = activityData.backflowRequiredTime;
+                            console.log('✅ 역행 시퀀스 시간 업데이트:', sequence.id);
+                        }
+                    }
+                }
+                // activities 구조로 처리 (구형 포맷)
+                else if (this.processDefinition.activities && Array.isArray(this.processDefinition.activities)) {
+                    const activity = this.processDefinition.activities.find(act => 
+                        act && (act.id === activityData.id || act.name === activityName)
+                    );
+                    
+                    if (activity) {
+                        // ✅ activity 속성만 수정
+                        activity.system = activityData.footer;
+                        activity.description = activityData.description;
+                        activity.role = activityData.header;
+                        activity.issues = activityData.issues;
+                        
+                        if (activityData.inputData !== undefined) activity.inputData = activityData.inputData;
+                        if (activityData.outputData !== undefined) activity.outputData = activityData.outputData;
+                        if (activityData.coreData !== undefined) activity.coreData = activityData.coreData;
+                        
+                        updated = true;
+                        console.log('✅ Activity 업데이트:', activity.name);
+                    }
+                    
+                    // ✅ 시퀀스만 수정
+                    if (activityData.incomingSequenceId && this.processDefinition.sequences) {
+                        const sequence = this.processDefinition.sequences.find(seq => 
+                            seq.id === activityData.incomingSequenceId
+                        );
+                        if (sequence) sequence.requiredTime = activityData.requiredTime;
+                    }
+                    
+                    if (activityData.backflowSequenceId && this.processDefinition.sequences) {
+                        const sequence = this.processDefinition.sequences.find(seq => 
+                            seq.id === activityData.backflowSequenceId
+                        );
+                        if (sequence) sequence.requiredTime = activityData.backflowRequiredTime;
+                    }
+                }
+                
+                if (!updated) {
+                    throw new Error('액티비티를 찾을 수 없습니다: ' + activityData.id);
+                }
+                
+                // ✅ 메타데이터 검증 - 혹시 손실되었다면 복원
+                if (!this.processDefinition.processDefinitionName && originalName) {
+                    console.warn('⚠️ processDefinitionName 손실 감지, 복원:', originalName);
+                    this.processDefinition.processDefinitionName = originalName;
+                }
+                if (!this.processDefinition.processDefinitionId && originalId) {
+                    console.warn('⚠️ processDefinitionId 손실 감지, 복원:', originalId);
+                    this.processDefinition.processDefinitionId = originalId;
+                }
+                
+                // BPMN XML 재생성 (읽기 전용, processDefinition 수정 안 함)
+                if (this.createBpmnXml && this.processDefinition.elements) {
+                    this.bpmn = this.createBpmnXml(this.processDefinition, false);
+                    console.log('✅ BPMN XML 재생성 완료');
+                }
+                
+                // Vue 반응성 트리거
+                this.definitionChangeCount++;
+                this.isChanged = true;
+                
+                console.log('✅ 액티비티 업데이트 완료');
+                return this.processDefinition;
+                
+            } catch (error) {
+                console.error('❌ 액티비티 업데이트 실패:', error.message);
+                throw error;
+            }
+        },
+        /**
+         * Flow 화면에서 액티비티 저장 (업데이트 + 백엔드 저장)
+         * @param {Object} activityData - 저장할 액티비티 정보
+         * @returns {Promise<Object>} 업데이트된 processDefinition
+         */
+        async saveActivityChanges(activityData) {
+            try {
+                if (!activityData) {
+                    throw new Error('저장할 액티비티 정보가 없습니다.');
+                }
+                
+                console.log('💾 액티비티 저장 시작:', activityData.id);
+                
+                // ✅ 저장 전 메타데이터 백업 (processDefinitionName 보존)
+                const metadataBackup = {
+                    processDefinitionId: this.processDefinition.processDefinitionId,
+                    processDefinitionName: this.processDefinition.processDefinitionName,
+                    shortDescription: this.processDefinition.shortDescription,
+                    version: this.processDefinition.version,
+                    excel_template_url: this.processDefinition.excel_template_url,
+                };
+                
+                console.log('📋 메타데이터 백업:', metadataBackup);
+                
+                // 1. 액티비티 업데이트 (elements/sequences만 수정)
+                await this.updateActivityFromFlow(activityData);
+                
+                // ✅ 저장 후 메타데이터 복원 (혹시 손실되었다면)
+                if (!this.processDefinition.processDefinitionName && metadataBackup.processDefinitionName) {
+                    console.warn('⚠️ processDefinitionName이 손실되어 복원합니다.');
+                    this.processDefinition.processDefinitionName = metadataBackup.processDefinitionName;
+                }
+                if (!this.processDefinition.processDefinitionId && metadataBackup.processDefinitionId) {
+                    this.processDefinition.processDefinitionId = metadataBackup.processDefinitionId;
+                }
+                if (metadataBackup.shortDescription && !this.processDefinition.shortDescription) {
+                    this.processDefinition.shortDescription = metadataBackup.shortDescription;
+                }
+                if (metadataBackup.version && !this.processDefinition.version) {
+                    this.processDefinition.version = metadataBackup.version;
+                }
+                if (metadataBackup.excel_template_url && !this.processDefinition.excel_template_url) {
+                    this.processDefinition.excel_template_url = metadataBackup.excel_template_url;
+                }
+                
+                // 2. 백엔드 저장
+                const info = {
+                    name: this.processDefinition.processDefinitionName,
+                    type: "bpmn",
+                    definition: this.processDefinition
+                };
+                
+                console.log('💾 저장할 정보:', {
+                    processDefinitionName: info.name,
+                    processDefinitionId: this.processDefinition.processDefinitionId,
+                    elementsCount: this.processDefinition.elements?.length || 0
+                });
+                
+                // ✅ processDefinitionName이 null이면 저장 중단
+                if (!info.name) {
+                    console.error('❌ processDefinitionName이 null입니다. 백업:', metadataBackup);
+                    throw new Error('프로세스 이름을 찾을 수 없습니다. 저장을 중단합니다.');
+                }
+                
+                await backend.putRawDefinition(
+                    this.bpmn,
+                    this.processDefinition.processDefinitionId,
+                    info
+                );
+                
+                console.log('✅ 액티비티 저장 완료:', activityData.id);
+                
+                // 3. 업데이트된 processDefinition 반환
+                return this.processDefinition;
+                
+            } catch (error) {
+                console.error('❌ 액티비티 저장 실패:', error.message);
+                throw error;
+            }
         },
         async loadData(path) {
             const me = this;
