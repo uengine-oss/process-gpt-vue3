@@ -218,7 +218,8 @@ export default {
                     tools: user.tools,
                     skills: user.skills,
                     agent_type: user.agent_type,
-                    is_agent: user.is_agent
+                    isAgent: user.is_agent,
+                    alias: user.alias,
                 };
             }
             
@@ -234,7 +235,8 @@ export default {
                 tools: content.tools,
                 skills: content.skills,
                 agent_type: content.agent_type,
-                is_agent: content.is_agent || content.isAgent
+                isAgent: content.is_agent || content.isAgent,
+                alias: content.alias,
             };
         },
         getUserDataById(nodeId) {

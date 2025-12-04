@@ -1,9 +1,9 @@
 <template>
     <div>
-        <!-- 편집 모드가 아니고 A2A 타입이 아닐 때만 생성 기능 표시 -->
+        <!-- 편집 모드가 아니고 A2A, PGAGENT 타입이 아닐 때만 생성 기능 표시 -->
         <UserInputGenerator
             class="agent-field-User-input-generator pb-2"
-            v-if="!isEdit && type !== 'a2a'"
+            v-if="!isEdit && type !== 'a2a' && type !== 'pgagent'"
             :teamInfo="teamInfo"
             :type="type"
             :reset="resetGenerator"
@@ -13,8 +13,8 @@
             @generation-finished="onGenerationFinished"
         />
         
-        <!-- 생성 중일 때 스켈레톤 표시 (A2A 타입이 아닐 때만) -->
-        <div v-if="isGenerating && !isEdit && type !== 'a2a'" class="agent-field-skeleton">
+        <!-- 생성 중일 때 스켈레톤 표시 (A2A, PGAGENT 타입이 아닐 때만) -->
+        <div v-if="isGenerating && !isEdit && type !== 'a2a' && type !== 'pgagent'" class="agent-field-skeleton">
             <v-skeleton-loader
                 type="image"
                 class="mx-auto"
@@ -49,6 +49,38 @@
                     v-model="agent.name" 
                     :label="$t('agentField.agentName')" 
                     :rules="nameRules"
+                    class="mb-2"
+                ></v-text-field>
+                <v-textarea
+                    v-model="agent.description" 
+                    :label="$t('agentField.agentDescription')"
+                    class="mb-2"
+                    rows="3"
+                ></v-textarea>
+                <v-combobox
+                    v-model="selectedSkills"
+                    :items="skills"
+                    :label="$t('agentField.agentSkills')"
+                    multiple
+                    chips
+                    clearable
+                    closable-chips
+                    variant="outlined"
+                ></v-combobox>
+            </div>
+
+            <div v-else-if="type === 'pgagent'">
+                <v-text-field 
+                    v-model="agent.name" 
+                    :label="$t('agentField.agentName')" 
+                    :rules="nameRules"
+                    class="mb-2"
+                ></v-text-field>
+                <v-text-field 
+                    v-model="agent.alias" 
+                    :label="$t('agentField.alias')" 
+                    :rules="aliasRules"
+                    @blur="checkAlias(agent.alias)"
                     class="mb-2"
                 ></v-text-field>
                 <v-textarea
@@ -196,6 +228,7 @@ export default {
     },
     data() {
         return {
+            backend: null,
             agent: {
                 id: '',
                 name: '',
@@ -205,6 +238,7 @@ export default {
                 isAgent: true,
                 endpoint: '',
                 img: '',
+                alias: '',
                 description: '',
                 skills: '',
                 model: ''
@@ -275,13 +309,16 @@ export default {
                 ]
             },
             selectedProvider: '',
-            selectedModel: ''
+            selectedModel: '',
+            aliasRules: [
+                (value) => !!value || this.$t('organizationChartDefinition.aliasRequired'),
+            ]
         }
     },
     computed: {
         showDetailFields() {
-            // A2A 타입일 때는 바로 필드를 표시
-            if (this.type === 'a2a') {
+            // A2A, PGAGENT 타입일 때는 바로 필드를 표시
+            if (this.type === 'a2a' || this.type === 'pgagent') {
                 return true;
             }
             // 일반 agent 타입일 때는 기존 로직 사용
@@ -332,6 +369,8 @@ export default {
         }
     },
     async mounted() {
+        this.backend = BackendFactory.createBackend();
+
         if (this.modelValue && this.modelValue.isAgent) {
             this.agent = this.modelValue;
             if (this.agent.tools) this.selectedTools = this.agent.tools.split(',');
@@ -372,9 +411,10 @@ export default {
                     if (generatedData.tools) {
                         this.selectedTools = generatedData.tools.split(',').map(tool => tool.trim());
                     }
-                } else if (this.type === 'a2a') {
+                } else if (this.type === 'a2a' || this.type === 'pgagent') {
                     if (generatedData.id) this.agent.id = generatedData.id;
                     if (generatedData.name) this.agent.name = generatedData.name;
+                    if (generatedData.alias) this.agent.alias = generatedData.alias;
                     if (generatedData.description) this.agent.description = generatedData.description;
                     
                     if (generatedData.skills) {
@@ -419,10 +459,7 @@ export default {
 
             this.isLoading = true;
             try {
-                const backend = BackendFactory.createBackend();
-                const data = await backend.fetchAgentData(this.agent.endpoint);
-                console.log(data);
-
+                const data = await this.backend.fetchAgentData(this.agent.endpoint);
                 if (data.name) this.agent.name = data.name;
                 if (data.description) this.agent.description = data.description;
                 if (data.skills) this.selectedSkills = data.skills.map(skill => skill.id);
@@ -440,6 +477,18 @@ export default {
         onProviderChange(value) {
             const models = this.getModelsForProvider(value);
             this.selectedModel = models.length ? models[0].key : '';
+        },
+        async checkAlias(value) {
+            this.aliasRules = [
+                (value) => !!value || this.$t('organizationChartDefinition.aliasRequired'),
+                async (value) => {
+                    if (value) {
+                        const data = await this.backend.checkAgentAlias(value);
+                        return data.error ? this.$t('organizationChartDefinition.aliasAlreadyExists') : true;
+                    }
+                    return true;
+                }
+            ];
         }
     }
 }

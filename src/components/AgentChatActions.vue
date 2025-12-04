@@ -210,10 +210,14 @@ export default {
                 // 새 탭으로 전환
                 this.currentTabIndex = this.tabs.length - 1;
                 
+                let agentOrch = 'crewai-action';
+                if (this.agentInfo?.agent_type !== 'agent') {
+                    agentOrch = this.agentInfo?.alias;
+                }
                 // 새 워크아이템 생성
                 const newWorkItem = await this.createWorkItem({
                     message: '',
-                    agentOrch: this.agentInfo?.agent_type || 'crewai-action'
+                    agentOrch: agentOrch
                 });
                 
                 if (newWorkItem) {

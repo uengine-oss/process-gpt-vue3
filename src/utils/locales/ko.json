@@ -225,6 +225,7 @@
         "addNewUser": "신규 사용자(팀원) 추가",
         "addNewAgent": "신규 에이전트 추가",
         "addNewA2A": "A2A 에이전트 추가",
+        "addNewPGAgent": "ProcessGPT 에이전트 추가",
         "userName": "이름",
         "userEmail": "이메일",
         "idRequired": "ID를 입력해주세요.",
@@ -237,7 +238,9 @@
         "addNewUserExplanation": "신규 사용자를 추가하려면 이름과 이메일을 입력해 주세요. 입력된 이메일 주소로 회원가입이 자동 처리되며, 초기 비밀번호는 000000으로 설정됩니다.",
         "agent": "에이전트",
         "deleteAgentExplanation": "팀원 삭제가 아닌 영구 삭제입니다. 삭제된 에이전트는 복구할 수 없습니다. 팀원 삭제를 원하신다면 소속 팀의 + 버튼을 눌러 팀원을 수정해주세요.",
-        "oauth": "OAuth 설정"
+        "oauth": "OAuth 설정",
+        "aliasRequired": "별칭을 입력해주세요.",
+        "aliasAlreadyExists": "이미 존재하는 별칭입니다."
     },
     "agentField": {
         "agentId": "에이전트 ID",
@@ -250,7 +253,8 @@
         "agentTools": "도구",
         "agentSkills": "기술",
         "aiProvider": "AI 제공사",
-        "aiModel": "AI 모델"
+        "aiModel": "AI 모델",
+        "alias": "별칭"
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
@@ -508,7 +512,8 @@
         "indicatesRequiredField": "*환경변수 설정은 필수 항목입니다.",
         "billing": "청구",
         "confirmDeleteConnectionTitle": "접속 정보 삭제",
-        "confirmDeleteConnectionText": "\"{name}\"을(를) 삭제하시겠습니까?"
+        "confirmDeleteConnectionText": "\"{name}\"을(를) 삭제하시겠습니까?",
+        "skills": "스킬"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -2080,7 +2085,11 @@
         "labels": {
             "goal": "목표",
             "persona": "페르소나",
-            "tools": "도구 목록"
+            "tools": "도구 목록",
+            "description": "설명",
+            "endpoint": "엔드포인트",
+            "model": "모델",
+            "alias": "별칭"
         },
         "fallback": {
             "goal": "에이전트의 목표가 설정되지 않았습니다."
