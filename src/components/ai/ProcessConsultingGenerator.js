@@ -97,6 +97,8 @@ export default class ProcessConsultingGenerator extends AIGenerator {
             9. 물리시설 선정(내선, 외선)
             역할: 자동처리
             설명: •  고객이 요청한 서비스 제공을 위한 최적의 국사내 시설과 국사외 시설을 자동(필요시, 운영자 수동)으로 선정, - 외선 : 고객 댁내와 근접한 단자함 위치등과 연계하여 국사외 시설을 선정, - 내선 : 철가정보를 이용하여 외선과 연결된 교환시설, 인터넷시설 및 Tie등을 선정
+            input: 오더정보,
+            output: 시설정보 \n - 내선 시설 \n - 외선 시설,
             source: 8번 액티비티명,
             target: 시설확정, 오더 수령(10번, 13번 액티비티명)
 
@@ -104,6 +106,8 @@ export default class ProcessConsultingGenerator extends AIGenerator {
             역할: 자동처리
             설명: •  논리시설, 물리시설 단계에서 선정된 외선/내선 및 장치 포트 시설을 최종 확정하는 단계이며,                         
             •  필요시, 자동선정된 시설을 다른 시설로 변경할 수 있음
+            input: 시설정보(자동선정),
+            output: 확정시설정보,
             source: 물리시설 선정(내선, 외선),
             target: (국사내)점퍼작업, 장치연동(11번, 12번 액티비티명)
 
@@ -112,6 +116,8 @@ export default class ProcessConsultingGenerator extends AIGenerator {
             설명: 물리시설/시설확정 단계에서 선정된 외선시설과 내선시설을 연결하기 위한 단계로 시험실 운영자들이 점퍼명령서를 출력하여 작업을 수행함
             (동선기반 저속급 VDSL일 경우 필요,
             대부분의 95%의 인터�internet_new의 경우 국사내 점퍼작업 없음)
+            input: 작업명령서,
+            output: 점퍼 연결,
             source: 시설확정,
             target: 21번 액티비티명
 
@@ -119,6 +125,8 @@ export default class ProcessConsultingGenerator extends AIGenerator {
             역할: 자동처리
             설명: •  물리시설/시설확정 단계에서 선정된 장치(교환기 및 인터넷 Switch)의 포트에 대한 Activation 작업 수행
             • PSTN의 경우 단순 Activation이나 인터넷의 경우 상품에 따른 속도설정 및 max_host 설정이 추가됨
+            input: 오더 정보 내 교환기, 인터넷 포트,
+            output: "",
             source: 시설확정,
             target: 18번 액티비티명
 
@@ -126,6 +134,8 @@ export default class ProcessConsultingGenerator extends AIGenerator {
             역할: KTS현장직원
             설명: o 모바일 OSS에서 당일 작업 오더 수령
             o  설치주소 및 기반 시설 실물 확인
+            input: 오더 수령,
+            output: 오더 개인 할당,
             source: 물리시설 선정(내선, 외선),
             target: 14번 액티비티명
 

@@ -5,16 +5,16 @@
  */
 function parseTimeToSeconds(timeStr) {
   if (!timeStr || typeof timeStr !== 'string') return 0
-  
+
   const timeStr_lower = timeStr.toLowerCase().trim()
-  
+
   // 숫자와 단위 분리
   const match = timeStr_lower.match(/^(\d+(?:\.\d+)?)\s*([smhd]?)/)
   if (!match) return 0
-  
+
   const value = parseFloat(match[1])
   const unit = match[2] || 's' // 기본 단위는 초
-  
+
   switch (unit) {
     case 's': return value // 초
     case 'm': return value * 60 // 분
@@ -31,13 +31,13 @@ function parseTimeToSeconds(timeStr) {
  */
 function calculateStrokeWidthByTime(requiredTime) {
   const seconds = parseTimeToSeconds(requiredTime)
-  
+
   // 설정값
   const MIN_WIDTH = 2 // 최소 굵기
   const MAX_WIDTH = 10 // 최대 굵기 (더 굵게)
   const MIN_MARKER = 11 // 최소 화살표 크기
   const MAX_MARKER = 24 // 최대 화살표 크기 (더 크게)
-  
+
   // 시간 구간별 기준값 (초 단위)
   const TIME_RANGES = {
     SECOND: 60,        // 1분 = 60초
@@ -45,13 +45,13 @@ function calculateStrokeWidthByTime(requiredTime) {
     HOUR: 86400,       // 1일 = 86400초
     DAY: 604800        // 7일 = 604800초 (최대 기준)
   }
-  
+
   if (seconds <= 0) {
     return { strokeWidth: MIN_WIDTH, markerSize: MIN_MARKER }
   }
-  
+
   let ratio = 0
-  
+
   // 구간별로 다른 증가율 적용
   if (seconds <= TIME_RANGES.SECOND) {
     // 초 단위 (0~60초): 0~0.1 비율 (가장 얇게)
@@ -72,11 +72,11 @@ function calculateStrokeWidthByTime(requiredTime) {
     // 7일 이상: 최대값
     ratio = 0.5
   }
-  
+
   // 굵기 계산
   const strokeWidth = MIN_WIDTH + (MAX_WIDTH - MIN_WIDTH) * ratio
   const markerSize = MIN_MARKER + (MAX_MARKER - MIN_MARKER) * ratio
-  
+
   return {
     strokeWidth: Math.round(strokeWidth * 10) / 10, // 소수점 1자리
     markerSize: Math.round(markerSize)
@@ -102,7 +102,7 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
     // Sequences를 먼저 추출 (액티비티에 연결된 시퀀스 정보를 찾기 위해)
     let sequences = []
     if (hasElementsStructure) {
-      if(processDefinition.sequences) {
+      if (processDefinition.sequences) {
         sequences = processDefinition.sequences
       } else {
         sequences = processDefinition.elements.filter(el => el.elementType === 'Sequence')
@@ -114,7 +114,7 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
     // 1. Activities 변환
     let activities = []
     if (hasElementsStructure) {
-      if(processDefinition.activities) {
+      if (processDefinition.activities) {
         activities = processDefinition.activities
       } else {
         activities = processDefinition.elements.filter(el => el.elementType === 'Activity')
@@ -123,16 +123,22 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
       activities = processDefinition.activities
     }
 
+    let inputs = {}
+    let outputs = {}
     activities.forEach((activity, index) => {
       const nodeId = `activity_${activity.id || index}`
       nodeIdMap.set(activity.id, nodeId)
 
       // 이 액티비티로 들어오는 시퀀스 찾기 (target이 이 액티비티)
-      const incomingSequence = sequences.find(seq => 
+      const incomingSequence = sequences.find(seq =>
         (seq.target === activity.id || seq.targetRef === activity.id)
       )
-
+      console.log(activity);
+      let input = activity?.inputData || ''
+      let output = activity?.outputData || ''
       // tool 정보에서 시스템 추출 (formHandler:xxx 형식)
+      inputs[nodeId] = input
+      outputs[nodeId] = output
       let systemName = 'on-line'
       if (activity.system) {
         systemName = activity.system
@@ -216,27 +222,31 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
       // source/sourceRef, target/targetRef 처리
       const sourceOriginalId = seq.source || seq.sourceRef
       const targetOriginalId = seq.target || seq.targetRef
-      
+
       const sourceId = nodeIdMap.get(sourceOriginalId)
       const targetId = nodeIdMap.get(targetOriginalId)
 
       if (sourceId && targetId) {
         // 소요시간에 따른 선 굵기 계산
         const { strokeWidth, markerSize } = calculateStrokeWidthByTime(seq.requiredTime)
-        
+
         if (seq.requiredTime) {
           console.log(`⏱️ ${seq.requiredTime} → 굵기: ${strokeWidth}px, 화살표: ${markerSize}px`)
         }
-        
+
+        const inputData = Array.isArray(inputs[sourceId]) ? inputs[sourceId].join(', ') : inputs[sourceId]
+        const outputData = Array.isArray(outputs[targetId]) ? outputs[targetId].join(', ') : outputs[targetId]
+        console.log(inputData, outputData)
         edges.push({
           id: `edge_${seq.id || index}`,
           source: sourceId,
           target: targetId,
           sourceHandle: 'bottom', // 일반 흐름: 아래에서 출발
           targetHandle: 'top',     // 일반 흐름: 위로 도착
-          type: 'default', // 곡선
+          type: 'custom-edge', // 커스텀 엣지 사용
           label: seq.requiredTime || '', // 선 중간에 표시
-          style: { stroke: '#333', strokeWidth: strokeWidth },
+          data: { ...seq, input: inputData, output: outputData }, // 클릭 이벤트 처리를 위한 데이터 추가
+          style: { stroke: '#333', strokeWidth: strokeWidth, cursor: 'pointer' }, // 커서 스타일 추가
           markerEnd: {
             type: 'arrowclosed',
             width: markerSize,
@@ -244,6 +254,7 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
             color: '#333',
           },
         })
+
       }
     })
 
@@ -270,7 +281,7 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
   // 노드 맵
   const nodeMap = new Map()
   nodes.forEach(node => nodeMap.set(node.id, node))
-  
+
   // 엣지 ID로 원본 시퀀스를 찾기 위한 맵
   const edgeToSequenceMap = new Map()
   edges.forEach((edge, index) => {
@@ -299,8 +310,8 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
   })
 
   // 시작 노드 찾기: start-event 타입 우선, 없으면 inDegree 0
-  let startNodes = nodes.filter(n => 
-    n.type === 'event' && 
+  let startNodes = nodes.filter(n =>
+    n.type === 'event' &&
     n.data.type === 'start-event-node' &&
     inDegree.get(n.id) === 0
   )
@@ -326,11 +337,11 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
   // 레벨 기반 BFS
   while (currentLevel[levelNumber] && currentLevel[levelNumber].length > 0) {
     const nextLevel = []
-    
+
     // 현재 레벨의 모든 노드 처리
     currentLevel[levelNumber].forEach(currentId => {
       const neighbors = adjacencyList.get(currentId) || []
-      
+
       neighbors.forEach(neighborId => {
         // 아직 방문하지 않았고, 모든 부모가 처리되었는지 확인
         if (!visited.has(neighborId)) {
@@ -338,9 +349,9 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
           const allParents = edges
             .filter(e => e.target === neighborId)
             .map(e => e.source)
-          
+
           const allParentsVisited = allParents.every(parentId => visited.has(parentId))
-          
+
           if (allParentsVisited) {
             visitOrder.set(neighborId, levelNumber + 1)
             visited.add(neighborId)
@@ -349,7 +360,7 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
         }
       })
     })
-    
+
     // 다음 레벨로 이동
     if (nextLevel.length > 0) {
       levelNumber++
@@ -388,7 +399,7 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
   // 부모-자식 관계 맵 구축
   const parentMap = new Map() // childId -> [parentId1, parentId2, ...]
   const childrenMap = new Map() // parentId -> [childId1, childId2, ...]
-  
+
   edges.forEach(edge => {
     // 역행 엣지는 제외 (역행이 아닌 정방향만 부모-자식 관계로 간주)
     const sourceOrder = visitOrder.get(edge.source)
@@ -398,7 +409,7 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
         childrenMap.set(edge.source, [])
       }
       childrenMap.get(edge.source).push(edge.target)
-      
+
       if (!parentMap.has(edge.target)) {
         parentMap.set(edge.target, [])
       }
@@ -409,14 +420,14 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
   Array.from(orderGroups.keys()).sort((a, b) => a - b).forEach(order => {
     const nodesInOrder = orderGroups.get(order)
     const y = START_Y + order * VERTICAL_SPACING
-    
+
     console.log(`📊 레벨 ${order}: ${nodesInOrder.length}개 노드 -`, nodesInOrder.map(n => n.data.content || n.data.label))
 
     if (nodesInOrder.length === 1) {
       // 단일 노드: 부모 위치 또는 중앙에 배치
       const node = nodesInOrder[0]
       const parents = parentMap.get(node.id) || []
-      
+
       if (parents.length > 0) {
         // 부모들의 평균 x 위치
         const avgParentX = parents.reduce((sum, parentId) => {
@@ -471,14 +482,14 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
       // 기존 굵기는 유지하고 색상만 빨간색으로 변경
       edge.style.stroke = '#ff0000'
       edge.markerEnd.color = '#ff0000'
-      
+
       // 연결 방향 변경: 오른쪽에서 출발 → 오른쪽으로 도착
       edge.sourceHandle = 'right-source'  // 출발: 오른쪽
       edge.targetHandle = 'right'          // 도착: 오른쪽
-      
+
       // 원본 시퀀스 정보 찾기
       const sequence = edgeToSequenceMap.get(edge.id)
-      
+
       // source 노드(출발 노드)에 역행 시퀀스 정보 추가
       const sourceNode = nodeMap.get(edge.source)
       if (sourceNode && sequence) {
@@ -488,7 +499,7 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
       } else {
         console.warn(`⚠️ 역행 시퀀스를 찾지 못함: edge ${edge.id}, sourceNode: ${!!sourceNode}, sequence: ${!!sequence}`)
       }
-      
+
       console.log(`🔴 역행: ${edge.source}(순서${sourceOrder}) -> ${edge.target}(순서${targetOrder}) [right→right]`)
     }
   })
