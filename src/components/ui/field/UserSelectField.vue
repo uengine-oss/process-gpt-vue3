@@ -21,10 +21,20 @@
             </template>
 
             <template v-slot:item="{ props, item }">
-                <v-list-item v-bind="props"
-                    :title="item.raw.username ?? item.raw.email" 
-                    :subtitle="item.raw.email"
-                ></v-list-item>
+                <v-list-item v-bind="props">
+                    <template v-slot:title>
+                        <div class="d-flex align-center">
+                            <span class="font-weight-medium">{{ item.raw.username ?? item.raw.email }}</span>
+                            <v-chip v-if="item.raw.isAgent" size="x-small" class="ml-2" color="primary" variant="outlined">
+                                {{ getAgentType(item.raw.agentType) }}
+                            </v-chip>
+                        </div>
+                    </template>
+                    <template v-slot:subtitle>
+                        <div v-if="!item.raw.isAgent" class="text-wrap">{{ item.raw.email }}</div>
+                        <div v-else class="text-wrap">{{ item.raw.goal || item.raw.description }}</div>
+                    </template>
+                </v-list-item>
             </template>
         </v-autocomplete>
     </div>
@@ -78,12 +88,16 @@ export default {
         useAgent: {
             type: Boolean,
             default: false
+        },
+        useMultiple: {
+            type: Boolean,
+            default: true
         }
     },
 
     data() {
         return {
-            localModelValue: [],
+            localModelValue: this.useMultiple ? [] : null,
 
             localName: "",
             localAlias: "",
@@ -101,7 +115,6 @@ export default {
             userList: [],
 
             backend: null,
-            useMultiple: true
         };
     },
 
@@ -110,14 +123,22 @@ export default {
             handler() {
                 if(JSON.stringify(this.localModelValue) === JSON.stringify(this.modelValue)) return
                 if(this.isProcessGPT) {
-                    this.localModelValue = (this.modelValue && this.modelValue.length > 0) ? this.modelValue : []
+                    if (this.useMultiple) {
+                        this.localModelValue = (this.modelValue && this.modelValue.length > 0) ? this.modelValue : []
+                    } else {
+                        this.localModelValue = this.modelValue || null
+                    }
                 } else {
                     if(!this.modelValue) {
-                        this.localModelValue = []
+                        this.localModelValue = this.useMultiple ? [] : null
                     } else if(Object.keys(this.modelValue).includes('values')) {
                         this.localModelValue = this.modelValue.values
                     } else {
-                        this.localModelValue = Array.isArray(this.modelValue) ? this.modelValue : [this.modelValue]
+                        if (this.useMultiple) {
+                            this.localModelValue = Array.isArray(this.modelValue) ? this.modelValue : [this.modelValue]
+                        } else {
+                            this.localModelValue = Array.isArray(this.modelValue) ? this.modelValue[0] : this.modelValue
+                        }
                     }
                 }
             },
@@ -135,7 +156,7 @@ export default {
         }
     },
     created() {
-        this.localModelValue = this.modelValue ?? []
+        this.localModelValue = this.modelValue ?? (this.useMultiple ? [] : null)
         
         this.localName = this.name ?? "name"
         this.localAlias = this.alias ?? ""
@@ -148,19 +169,35 @@ export default {
         this.userList = await this.backend.getUserList();
 
         if(this.useAgent) {
-            // 모든 유저를 선택 목록에 포함
-            this.usersToSelect = this.userList.map(member => {
-                return {
-                    id: member.id,
-                    username: member.username,
-                    email: member.email || member.id,
-                    is_agent: member.is_agent
-                };
-            });
-            this.useMultiple = true;
+            if (this.useMultiple) {
+                // 모든 유저를 선택 목록에 포함
+                this.usersToSelect = this.userList.map(member => {
+                    return {
+                        id: member.id,
+                        username: member.username,
+                        email: member.email,
+                        goal: member.goal,
+                        description: member.description,
+                        isAgent: member.is_agent,
+                        agentType: member.agent_type,
+                    };
+                });
+            } else {
+                const agentList = this.userList.filter(member => member.is_agent);
+                this.usersToSelect = agentList.map(agent => {
+                    return {
+                        id: agent.id,
+                        username: agent.username,
+                        email: agent.email,
+                        goal: agent.goal,
+                        description: agent.description,
+                        isAgent: agent.is_agent,
+                        agentType: agent.agent_type,
+                    };
+                });
+            }
         } else {
             this.usersToSelect = this.userList.filter(member => !member.is_agent);
-            this.useMultiple = false;
         }
     },
 
@@ -170,23 +207,36 @@ export default {
                 return;
             }
 
-            // 선택된 값들 중 is_agent가 false인 유저가 2개 이상인지 확인
+            // 선택된 값들 중 isAgent가 false인 유저가 2개 이상인지 확인
             const nonAgentUsers = newValue.filter(user => {
                 const userData = this.returnObject ? user : this.usersToSelect.find(u => u[this.itemValue] === user);
-                return userData && !userData.is_agent;
+                return userData && !userData.isAgent;
             });
 
             if (nonAgentUsers.length > 1) {
-                // is_agent가 false인 유저가 2개 이상이면 마지막 선택된 것만 유지
+                // isAgent가 false인 유저가 2개 이상이면 마지막 선택된 것만 유지
                 const lastNonAgentUser = nonAgentUsers[nonAgentUsers.length - 1];
                 const agentUsers = newValue.filter(user => {
                     const userData = this.returnObject ? user : this.usersToSelect.find(u => u[this.itemValue] === user);
-                    return userData && userData.is_agent;
+                    return userData && userData.isAgent;
                 });
                 
                 this.localModelValue = [...agentUsers, lastNonAgentUser];
             } else {
                 this.localModelValue = newValue;
+            }
+        },
+
+        getAgentType(agentType) {
+            switch (agentType) {
+                case 'agent':
+                    return 'Agent';
+                case 'a2a':
+                    return 'A2A';
+                case 'pgagent':
+                    return 'ProcessGPT Agent';
+                default:
+                    return 'Agent';
             }
         }
     }

@@ -284,7 +284,7 @@ export default {
                         selectedTab = hashTab;
                     } else {
                         // 해시가 없거나 유효하지 않으면 기본 탭
-                        selectedTab = this.agentInfo.agent_type == 'a2a' ? 'actions' : 'learning';
+                        selectedTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
                         // 기본 탭으로 설정할 때는 해시도 업데이트 (router.push 사용)
                         this.$router.push({ hash: '#' + selectedTab });
                     }

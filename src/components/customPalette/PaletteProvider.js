@@ -220,7 +220,6 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
       }
     });
     if(isSubprocessImported) {
-      alert('서브프로세스가 포함된 프로세스는 가로/세로 회전을 지원하지 않습니다.');
       onLoadEnd();
       return;
     }

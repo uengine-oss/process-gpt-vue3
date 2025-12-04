@@ -45,12 +45,12 @@
                 </v-row>
                 
                 <div class="agent-chat-info-content pa-4">
-                    <!-- Goal Section - 모든 버전에서 표시 -->
-                    <div class="pa-0 mb-1">
+                    <!-- Goal Section (agent only) -->
+                    <div v-if="isSectionVisible('goal')" class="pa-0 mb-1">
                         <v-icon size="small" class="mr-1">mdi-target</v-icon>
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.goal') }}</span>
                     </div>
-                    <p class="text-body-2 text-medium-emphasis mb-3">
+                    <p v-if="isSectionVisible('goal')" class="text-body-2 text-medium-emphasis mb-3">
                         {{ getDisplayText(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 'goal', 50) }}
                         <v-btn
                             v-if="shouldShowToggleButton(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 50)"
@@ -65,12 +65,12 @@
                         </v-btn>
                     </p>
 
-                    <!-- Persona Section -->
-                    <div v-if="agentInfo.persona" class="pa-0 mb-1">
+                    <!-- Persona Section (agent only) -->
+                    <div v-if="isSectionVisible('persona')" class="pa-0 mb-1">
                         <v-icon size="small" class="mr-1">mdi-account-tie</v-icon>
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.persona') }}</span>
                     </div>
-                    <p v-if="agentInfo.persona" class="text-body-2 text-medium-emphasis mb-3">
+                    <p v-if="isSectionVisible('persona')" class="text-body-2 text-medium-emphasis mb-3">
                         {{ getDisplayText(agentInfo.persona, 'persona', 50) }}
                         <v-btn
                             v-if="shouldShowToggleButton(agentInfo.persona, 50)"
@@ -85,12 +85,12 @@
                         </v-btn>
                     </p>
                     
-                    <!-- Tools Section -->
-                    <div v-if="agentInfo.tools && agentInfo.tools.length > 0" class="pa-0 mb-1">
+                    <!-- Tools Section (agent only) -->
+                    <div v-if="isSectionVisible('tools')" class="pa-0 mb-1">
                         <v-icon size="small" class="mr-1">mdi-tools</v-icon>
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.tools') }}</span>
                     </div>
-                    <div v-if="agentInfo.tools && agentInfo.tools.length > 0" class="mb-3">
+                    <div v-if="isSectionVisible('tools')" class="mb-3">
                         <v-chip-group class="tools-chips">
                             <v-chip 
                                 v-for="tool in getDisplayTools()" 
@@ -116,23 +116,66 @@
                         </v-chip-group>
                     </div>
 
-                    <!-- Skills Section -->
-                    <div class="d-flex align-center pa-0 mb-1">
-                        <span class="text-body-2 font-weight-medium mr-1"> {{ $t('AgentSkills.skills') }} </span>
-                        <div v-if="agentType === 'agent'" class="ml-auto">
-                            <v-btn @click="toggleEdit('skills')" 
-                                variant="text" 
-                                :size="20" icon 
-                                class="rounded-pill"
-                            >
-                                <Icons v-if="!editSkills" :icon="'pencil'" :size="12"/>
-                                <v-icon v-else size="16">mdi-check</v-icon>
-                            </v-btn>
-                        </div>
+                    <!-- Endpoint Section (a2a only) -->
+                    <div v-if="isSectionVisible('endpoint')" class="pa-0 mb-1">
+                        <v-icon size="small" class="mr-1">mdi-cloud-outline</v-icon>
+                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.endpoint') }}</span>
                     </div>
-                    <v-chip-group v-if="!editSkills" class="mb-3">
-                        <v-chip 
-                            v-for="skill in parsedSkills" 
+                    <p v-if="isSectionVisible('endpoint')" class="text-body-2 text-medium-emphasis mb-3">
+                        {{ getDisplayText(agentInfo.endpoint, 'endpoint', 50) }}
+                        <v-btn
+                            v-if="shouldShowToggleButton(agentInfo.endpoint, 50)"
+                            @click="toggleTextExpansion('endpoint')"
+                            variant="text"
+                            size="small"
+                            color="primary"
+                            class="pa-0 text-caption ml-1"
+                            style="min-width: auto; height: auto; vertical-align: baseline;"
+                        >
+                            {{ expandedTexts.endpoint ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                        </v-btn>
+                    </p>
+
+                    <!-- Description Section (a2a / pgagent) -->
+                    <div v-if="isSectionVisible('description')" class="pa-0 mb-1">
+                        <v-icon size="small" class="mr-1">mdi-text</v-icon>
+                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.description') }}</span>
+                    </div>
+                    <p v-if="isSectionVisible('description')" class="text-body-2 text-medium-emphasis mb-3">
+                        {{ getDisplayText(agentInfo.description, 'description', 50) }}
+                        <v-btn
+                            v-if="shouldShowToggleButton(agentInfo.description, 50)"
+                            @click="toggleTextExpansion('description')"
+                            variant="text" size="small" color="primary" class="pa-0 text-caption ml-1" style="min-width: auto; height: auto; vertical-align: baseline;">
+                            {{ expandedTexts.description ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                        </v-btn>
+                    </p>
+
+                    <!-- Model Section (agent only) -->
+                    <div v-if="isSectionVisible('model')" class="pa-0 mb-1">
+                        <v-icon size="small" class="mr-1">mdi-robot</v-icon>
+                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.model') }}</span>
+                    </div>
+                    <p v-if="isSectionVisible('model')" class="text-body-2 text-medium-emphasis mb-3">
+                        {{ agentInfo.model }}
+                    </p>
+
+                    <!-- Alias Section (pgagent only; a2a alias는 기본값/숨김) -->
+                    <div v-if="isSectionVisible('alias')" class="pa-0 mb-1">
+                        <v-icon size="small" class="mr-1">mdi-account-box-outline</v-icon>
+                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.alias') }}</span>
+                    </div>
+                    <p v-if="isSectionVisible('alias')" class="text-body-2 text-medium-emphasis mb-3">
+                        {{ agentInfo.alias }}
+                    </p>
+
+                    <!-- Skills Section (agent / a2a / pgagent) -->
+                    <div v-if="isSectionVisible('skills')" class="d-flex align-center pa-0 mb-1">
+                        <span class="text-body-2 font-weight-medium mr-1"> {{ $t('AgentSkills.skills') }} </span>
+                    </div>
+                    <v-chip-group v-if="isSectionVisible('skills') && !editSkills" class="mb-3">
+                        <v-chip
+                            v-for="skill in parsedSkills"
                             :key="skill"
                             size="small"
                             variant="outlined"
@@ -159,7 +202,7 @@
                     </v-tabs>
 
                     <!-- DMN Tabs -->
-                    <div v-if="!editDialog && agentType !== 'a2a'">
+                    <div v-if="!editDialog && agentType === 'agent'">
                         <v-divider class="mb-4"></v-divider>
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.businessRule') }}</span>
                         <v-btn size="x-small" variant="text" icon @click="handleDmnChange(null)">
@@ -195,7 +238,8 @@
 
         <!-- 편집 모드일 때 OrganizationEditDialog 표시 -->
         <div v-else>
-            <OrganizationEditDialog class="agent-chat-info-organization-edit-dialog"
+            <OrganizationEditDialog
+                class="agent-chat-info-organization-edit-dialog"
                 :dialogType="'edit-agent'"
                 :editNode="editNode"
                 @updateNode="updateAgent"
@@ -253,7 +297,9 @@ export default {
             expandedTexts: {
                 goal: false,
                 persona: false,
-                tools: false
+                tools: false,
+                description: false,
+                endpoint: false
             },
             editProperties: {
                 goal: {
@@ -297,18 +343,18 @@ export default {
     },
     computed: {
         tabList() {
-            if (this.agentInfo.agent_type == 'a2a') {
-                this.agentType = 'a2a';
-                return [
-                    { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }
-                ]
-            } else {
+            if (this.agentInfo.agent_type == 'agent') {
                 this.agentType = 'agent';
                 return [
                     { label: this.$t('AgentChatInfo.tabs.learning'), value: 'learning', icon: 'mdi-school' },
                     { label: this.$t('AgentChatInfo.tabs.question'), value: 'question', icon: 'mdi-chat' },
                     { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' },
                     { label: this.$t('AgentChatInfo.tabs.knowledge'), value: 'knowledge', icon: 'mdi-database' },
+                ]
+            } else {
+                this.agentType = this.agentInfo.agent_type;
+                return [
+                    { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }
                 ]
             }
         },
@@ -449,24 +495,41 @@ export default {
             this.imageLoaded = true;
         },
 
+        /**
+         * 타입별로 어떤 섹션을 노출할지 정의
+         * - agent: goal, persona, tools, skills, model
+         * - a2a: endpoint, description, skills (alias는 기본값/숨김)
+         * - pgagent: alias, description, skills
+         */
+        getSectionConfig() {
+            return {
+                agent: ['goal', 'persona', 'tools', 'skills', 'model'],
+                a2a: ['endpoint', 'description', 'skills'],
+                pgagent: ['alias', 'description', 'skills']
+            };
+        },
+
+        getCurrentAgentType() {
+            return this.agentInfo.agent_type || this.agentType || 'agent';
+        },
+
+        isSectionVisible(section) {
+            const config = this.getSectionConfig();
+            const type = this.getCurrentAgentType();
+            const sections = config[type] || config.agent;
+            return sections.includes(section);
+        },
+
         openEditDialog() {
             // agentInfo 데이터를 editNode 형태로 변환 (AgentField가 기대하는 구조에 맞춤)
+            // 먼저 agentInfo를 복사하고, 키가 다른 항목만 매핑
             this.editNode = {
                 data: {
-                    id: this.agentInfo.id || '',
+                    ...this.agentInfo,
                     name: this.agentInfo.username || this.agentInfo.name || this.$t('AgentChatInfo.defaultAgentName'),
-                    email: this.agentInfo.email || '',
-                    role: this.agentInfo.role || '',
-                    goal: this.agentInfo.goal || '',
-                    persona: this.agentInfo.persona || '',
-                    endpoint: this.agentInfo.endpoint || '',
-                    description: this.agentInfo.description || '',
-                    skills: this.agentInfo.skills || '',
                     img: this.agentInfo.profile || this.agentInfo.img || '',
-                    model: this.agentInfo.model || '',
                     type: this.agentInfo.agent_type || this.agentInfo.type || 'agent',
-                    isAgent: true,
-                    tools: this.agentInfo.tools || ''
+                    isAgent: true
                 }
             };
             
