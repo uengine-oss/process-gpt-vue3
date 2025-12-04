@@ -214,7 +214,7 @@ function handleEdgeClick(event) {
   if (edge) {
 
     if (edge.data) {
-      // edge.data.showInputOutput = !edge.data.showInputOutput
+      edge.data.showInputOutput = !edge.data.showInputOutput
 
     }
   }
@@ -344,7 +344,7 @@ defineExpose({
       </ControlButton>
     </Controls>
 
-    <!-- <Panel position="bottom-right" class="legend-panel">
+    <Panel position="bottom-right" class="legend-panel">
       <div class="legend-title">범례 (Legend)</div>
       
       <div class="legend-section">
@@ -367,7 +367,7 @@ defineExpose({
           <span>일반 흐름 (소요시간 비례 굵기)</span>
         </div>
       </div>
-    </Panel> -->
+    </Panel>
   </VueFlow>
 </template>
 
