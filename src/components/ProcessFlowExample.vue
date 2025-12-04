@@ -365,6 +365,11 @@ defineExpose({
         <div class="legend-item">
           <div class="edge-preview normal"></div>
           <span>일반 흐름 (소요시간 비례 굵기)</span>
+          
+        </div>
+        <div class="legend-item">
+          <div class="edge-preview backflow"></div>
+          <span>역행 흐름 (붉은색)</span>
         </div>
       </div>
     </Panel>

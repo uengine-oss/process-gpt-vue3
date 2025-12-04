@@ -234,8 +234,8 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
           console.log(`⏱️ ${seq.requiredTime} → 굵기: ${strokeWidth}px, 화살표: ${markerSize}px`)
         }
 
-        const inputData = Array.isArray(inputs[sourceId]) ? inputs[sourceId].join(', ') : inputs[sourceId]
-        const outputData = Array.isArray(outputs[targetId]) ? outputs[targetId].join(', ') : outputs[targetId]
+        const inputData = Array.isArray(inputs[targetId]) ? inputs[targetId].join(', ') : inputs[targetId]
+        const outputData = Array.isArray(outputs[sourceId]) ? outputs[sourceId].join(', ') : outputs[sourceId]
         console.log(inputData, outputData)
         edges.push({
           id: `edge_${seq.id || index}`,
