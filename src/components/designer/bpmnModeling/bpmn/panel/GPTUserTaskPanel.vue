@@ -13,15 +13,22 @@
             <v-window-item value="setting" class="pa-4">
                 <!-- Duration -->
                 <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="mb-4"></v-text-field>
+                
                 <!-- Description -->
                 <Description v-model="activity.description" class="mb-4"></Description>
                 
                 <!-- Instruction -->
                 <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
+                
+                <v-divider class="mb-2"></v-divider>
+                
                 <!-- Checkpoints -->
-                <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
+                <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-2"></Checkpoints>
+                
+                <v-divider class="mb-4"></v-divider>
+                
                 <!-- Attachments -->
-                <div>
+                <!-- <div>
                     <v-file-input
                         :label="$t('BpmnPropertyPanel.attachments')"
                         multiple
@@ -37,9 +44,23 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <!-- Draft -->
+                </div> -->
+
+                <!-- agent -->
+                <span class="text-body-1">{{ $t('WorkItem.researchMethod') }}</span>
                 <div class="mt-4">
+                    <user-select-field
+                        v-model="selectedAgent"
+                        :name="$t('organizationChartDefinition.agent')"
+                        :hide-details="true"
+                        :return-object="true"
+                        :use-agent="true"
+                        :use-multiple="false"
+                    ></user-select-field>
+                </div>
+
+                <!-- agent mode -->
+                <div v-if="selectedAgent !== null" class="mt-4">
                     <v-select 
                         v-model="activity.agentMode" 
                         :items="agentModeItems" 
@@ -76,8 +97,9 @@
                         </template>
                     </v-select>
                 </div>
+
                 <!-- Orchestration -->
-                <div v-if="activity.agentMode === 'draft' || activity.agentMode === 'complete'" class="mt-4">
+                <div v-if="agentType == 'agent'" class="mt-4">
                     <v-select 
                         v-model="activity.orchestration" 
                         :items="orchestrationItems" 
@@ -189,7 +211,7 @@
 import Instruction from '@/components/designer/InstructionField.vue';
 import Checkpoints from '@/components/designer/CheckpointsField.vue';
 import Description from '@/components/designer/DescriptionField.vue';
-import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
+import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
@@ -203,7 +225,7 @@ export default {
         Checkpoints,
         Description,
         FormDefinition,
-        DetailComponent
+        UserSelectField
     },
     props: {
         uengineProperties: Object,
@@ -229,8 +251,9 @@ export default {
                 instruction: '',
                 description: '',
                 checkpoints: [''],
+                agent: '',
                 agentMode: 'none',
-                orchestration: 'none',
+                orchestration: null,
                 tool: '',
                 inputData: []
             },
@@ -256,23 +279,6 @@ export default {
                 }
             ],
             orchestrationItems: [
-                { 
-                    titleKey: 'AgentSelectInfo.orchestration.none.title',
-                    value: 'none',
-                    descKey: 'AgentSelectInfo.orchestration.none.description',
-                    detailDescTitleKey: 'AgentSelectInfo.orchestration.none.detailDesc.title',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.none.detailDesc.title',
-                        details: [
-                            {
-                                title: 'AgentSelectInfo.orchestration.none.detailDesc.details.0.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.none.detailDesc.details.1.title'
-                            }
-                        ]
-                    }
-                },
                 { 
                     titleKey: 'AgentSelectInfo.orchestration.crewaiDeepResearch.title',
                     value: 'crewai-deep-research',
@@ -314,80 +320,14 @@ export default {
                             }
                         ]
                     }
-                },
-                { 
-                    titleKey: 'AgentSelectInfo.orchestration.openaiDeepResearch.title',
-                    value: 'openai-deep-research',
-                    icon: 'playoff',
-                    descKey: 'AgentSelectInfo.orchestration.openaiDeepResearch.description',
-                    costKey: 'AgentSelectInfo.cost.high',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.title',
-                        details: [
-                            {
-                                title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.0.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.1.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.2.title'
-                            }
-                        ]
-                    }
-                },
-                { 
-                    titleKey: 'AgentSelectInfo.orchestration.browserAutomationAgent.title',
-                    value: 'browser-automation-agent',
-                    icon: 'browser',
-                    descKey: 'AgentSelectInfo.orchestration.browserAutomationAgent.description',
-                    costKey: 'AgentSelectInfo.cost.low',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.title',
-                        details: [
-                            {
-                                title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.0.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.1.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.2.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.3.title'
-                            }
-                        ]
-                    }
-                },
-                { 
-                    titleKey: 'AgentSelectInfo.orchestration.agentToAgent.title',
-                    value: 'a2a',
-                    icon: 'sitemap',
-                    descKey: 'AgentSelectInfo.orchestration.agentToAgent.description',
-                    costKey: 'AgentSelectInfo.cost.high',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.title',
-                        details: [
-                            {
-                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.0.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.1.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.2.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.agentToAgent.detailDesc.details.3.title'
-                            }
-                        ]
-                    }
                 }
             ],
             selectedForms: [],
             availableForms: [],
             formFields: {},
+            
+            selectedAgent: null,
+            agentType: null,
         };
     },
     created() {
@@ -411,8 +351,9 @@ export default {
             if (this.copyUengineProperties.description !== undefined) this.activity.description = this.copyUengineProperties.description;
             if (this.copyUengineProperties.instruction !== undefined) this.activity.instruction = this.copyUengineProperties.instruction;
             if (this.copyUengineProperties.checkpoints !== undefined) this.activity.checkpoints = this.copyUengineProperties.checkpoints;
+            if (this.copyUengineProperties.agent !== undefined) this.activity.agent = this.copyUengineProperties.agent;
             if (this.copyUengineProperties.agentMode !== undefined) this.activity.agentMode = this.copyUengineProperties.agentMode;
-            if (this.copyUengineProperties.orchestration !== undefined) this.activity.orchestration = this.copyUengineProperties.orchestration;
+            if (this.copyUengineProperties.orchestration !== undefined && this.copyUengineProperties.orchestration !== 'none') this.activity.orchestration = this.copyUengineProperties.orchestration;
             if (this.copyUengineProperties.attachments !== undefined) this.activity.attachments = this.copyUengineProperties.attachments;
             if (this.copyUengineProperties.inputData !== undefined) this.activity.inputData = this.copyUengineProperties.inputData;
             if (this.copyUengineProperties.tool !== undefined) this.activity.tool = this.copyUengineProperties.tool;
@@ -486,6 +427,22 @@ export default {
             handler() {
                 this.updateInputData()
             }
+        },
+        selectedAgent: {
+            deep: true,
+            handler(newVal) {
+                if (newVal && newVal.id) {
+                    this.agentType = newVal.agentType;
+                    this.activity.agent = newVal.id;
+                    if (this.agentType !== 'agent') {
+                        this.activity.orchestration = this.agentType;
+                    } else {
+                        this.activity.orchestration = 'crewai-action';
+                    }
+                } else {
+                    this.agentType = null;
+                }
+            }
         }
     },
     methods: {
@@ -537,6 +494,20 @@ export default {
                 me.formId = 'defaultform';
                 me.tempFormHtml = await me.backend.getRawDefinition('defaultform', { type: 'form' });
             }
+
+            // activity.agent 값으로 selectedAgent 초기화
+            if (me.activity.agent && me.activity.agent !== null) {
+                const agent = await me.backend.getAgent(me.activity.agent);
+                if (agent) {
+                    me.selectedAgent = {
+                        ...agent,
+                        id: agent.id,
+                        name: agent.username,
+                        isAgent: agent.is_agent,
+                        agentType: agent.agent_type,
+                    };
+                }
+            }
             
             me.copyDefinition = me.definition;
         },
@@ -576,6 +547,7 @@ export default {
                 instruction: me.activity.instruction,
                 description: me.activity.description,
                 checkpoints: me.activity.checkpoints,
+                agent: me.activity.agent,
                 agentMode: me.activity.agentMode,
                 orchestration: me.activity.orchestration,
                 attachments: me.activity.attachments,

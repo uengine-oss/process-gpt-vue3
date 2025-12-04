@@ -1,5 +1,5 @@
 <template>
-    <v-card class="pa-0">
+    <v-card class="pa-0" flat>
         <v-row class="ma-0 pa-4">
             <v-card-title class="text-h6 pa-0">{{ dialogTitle }}</v-card-title>
             <v-spacer></v-spacer>
@@ -94,7 +94,8 @@ export default {
         isValid() {
             if (this.dialogType.includes('edit')) {
                 const name = this.editNode.data?.name || this.editNode.name;
-                return this.nameRules.every(rule => rule(name) === true);
+                const alias = this.editNode.data?.alias || '';
+                return this.nameRules.every(rule => rule(name) === true) && this.aliasRules.every(rule => rule(alias) === true);
             } else {
                 return true
             }
@@ -126,6 +127,11 @@ export default {
             }
             this.editRoles = roles
             return roles
+        },
+        aliasRules() {
+            return [
+                (value) => !!value || this.$t('organizationChartDefinition.aliasRequired')
+            ];
         }
     },
     watch: {

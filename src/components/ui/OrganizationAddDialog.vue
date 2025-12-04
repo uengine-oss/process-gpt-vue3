@@ -119,6 +119,16 @@
                         :dialogReset="dialogReset"
                     />
                 </v-window-item>
+
+                <v-window-item value="pgagent">
+                    <AgentField v-model="newAgent"
+                        class="agent-field-dialog-contents"
+                        :nameRules="nameRules"
+                        :teamInfo="teamInfo"
+                        :type="tab"
+                        :dialogReset="dialogReset"
+                    />
+                </v-window-item>
             </v-window>
         </v-card-text>
 
@@ -169,6 +179,10 @@ export default {
                 // text: 'A2A 에이전트 추가',
                 value: 'a2a',
             },
+            {
+                text: 'organizationChartDefinition.addNewPGAgent',
+                value: 'pgagent',
+            },
         ],
         
         selectedList: [],
@@ -197,7 +211,8 @@ export default {
             type: 'agent',
             endpoint: '',
             description: '',
-            tools: ''
+            tools: '',
+            alias: ''
         },
     }),
     computed: {
@@ -240,7 +255,7 @@ export default {
         }
 
         this.teamMembers = this.userList.map(member => {
-            if (!member.is_agent) {
+            if (!member.isAgent) {
                 return {
                     id: member.id,
                     name: member.username,
@@ -269,6 +284,23 @@ export default {
                             isAgent: member.is_agent || true,
                             type: member.agent_type,
                             pid: this.teamInfo.id || ''
+                        }
+                    }
+                } else if (member.agent_type == 'pgagent') {
+                    return {
+                        id: member.id,
+                        name: member.username,
+                        data: {
+                            id: member.id,
+                            name: member.username,
+                            img: member.profile || '/images/chat-icon.png',
+                            role: member.role || '',
+                            description: member.description || '',
+                            skills: member.skills || '',
+                            isAgent: member.is_agent || true,
+                            type: member.agent_type,
+                            pid: this.teamInfo.id || '',
+                            alias: member.alias || ''
                         }
                     }
                 } else {

@@ -16,7 +16,7 @@
 
         <v-dialog 
             v-model="addDialog" 
-            :max-width="isMobile ? '100vw' : 500"
+            :max-width="isMobile ? '100vw' : 800"
             :fullscreen="isMobile"
         >
             <OrganizationAddDialog

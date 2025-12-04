@@ -283,7 +283,6 @@ export default {
                     const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
                     return regex.test(uuid);
                 }
-                let activities = me.processDefinition.activities.filter((activity) => activity.agentMode && activity.agentMode != 'none');
                 const roles = me.processDefinition.roles;
                 let hasDefaultRole = false;
                 me.roleMappings = roles.map((role) => {
