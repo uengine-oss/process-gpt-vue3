@@ -352,7 +352,6 @@ export default {
                     { label: this.$t('AgentChatInfo.tabs.knowledge'), value: 'knowledge', icon: 'mdi-database' },
                 ]
             } else {
-                console.log(this.agentInfo.agent_type);
                 this.agentType = this.agentInfo.agent_type;
                 return [
                     { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }

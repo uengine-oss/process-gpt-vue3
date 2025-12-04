@@ -92,12 +92,32 @@ export default {
             ];
         },
         isValid() {
-            if (this.dialogType.includes('edit')) {
-                const name = this.editNode.data?.name || this.editNode.name;
+            if (this.dialogType === 'edit-agent') {
+                const name = this.editNode.data?.name || this.editNode.name || '';
                 const alias = this.editNode.data?.alias || '';
-                return this.nameRules.every(rule => rule(name) === true) && this.aliasRules.every(rule => rule(alias) === true);
+                
+                // nameRules 검증: 모든 rule이 true를 반환해야 함
+                const nameValid = this.nameRules.every(rule => {
+                    const result = rule(name);
+                    return result === true;
+                });
+                
+                // aliasRules 검증: pgagent 타입일 때만 체크
+                let aliasValid = true;
+                if (this.editNode.data?.type === 'pgagent') {
+                    aliasValid = this.aliasRules.every(rule => {
+                        const result = rule(alias);
+                        return result === true;
+                    });
+                }
+                
+                return nameValid && aliasValid;
+            } else if (this.dialogType === 'edit-user') {
+                // edit-user는 role 선택만 하므로 항상 true
+                return true;
             } else {
-                return true
+                // delete 등 다른 경우
+                return true;
             }
         },
         dialogTitle() {

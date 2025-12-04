@@ -80,7 +80,7 @@
                     v-model="agent.alias" 
                     :label="$t('agentField.alias')" 
                     :rules="aliasRules"
-                    @blur="checkAlias(agent.alias)"
+                    @blur="checkAlias(agent.id)"
                     class="mb-2"
                 ></v-text-field>
                 <v-textarea
@@ -195,7 +195,9 @@ export default {
                 endpoint: '',
                 description: '',
                 skills: '',
-                model: ''
+                model: '',
+                alias: '',
+                tools: ''
             })
         },
         teamInfo: {
@@ -241,7 +243,8 @@ export default {
                 alias: '',
                 description: '',
                 skills: '',
-                model: ''
+                model: '',
+                tools: ''
             },
             mcpTools: {},
             toolList: [],
@@ -463,7 +466,6 @@ export default {
                 if (data.name) this.agent.name = data.name;
                 if (data.description) this.agent.description = data.description;
                 if (data.skills) this.selectedSkills = data.skills.map(skill => skill.id);
-                console.log(this.selectedSkills);
 
             } catch (error) {
                 console.error('Error fetching agent data:', error);
@@ -478,12 +480,12 @@ export default {
             const models = this.getModelsForProvider(value);
             this.selectedModel = models.length ? models[0].key : '';
         },
-        async checkAlias(value) {
+        async checkAlias(id) {
             this.aliasRules = [
                 (value) => !!value || this.$t('organizationChartDefinition.aliasRequired'),
                 async (value) => {
                     if (value) {
-                        const data = await this.backend.checkAgentAlias(value);
+                        const data = await this.backend.checkAgentAlias(value, id);
                         return data.error ? this.$t('organizationChartDefinition.aliasAlreadyExists') : true;
                     }
                     return true;

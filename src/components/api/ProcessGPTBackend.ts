@@ -2492,7 +2492,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async checkAgentAlias(alias: string) {
+    async checkAgentAlias(alias: string, id: string) {
         try {
             const options = {
                 match: {
@@ -2500,8 +2500,8 @@ class ProcessGPTBackend implements Backend {
                     tenant_id: window.$tenantName
                 }
             }
-            const agent = await storage.getObject('users', options);
-            if (agent) {
+            const existingAgent = await storage.getObject('users', options);
+            if (existingAgent && existingAgent.id !== id) {
                 return { error: true, message: 'Alias already exists' };
             }
             return { error: false, message: 'Alias is available' };
