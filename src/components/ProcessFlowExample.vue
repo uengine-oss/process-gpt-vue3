@@ -349,7 +349,7 @@ defineExpose({
       
       <div class="legend-section">
         <div class="legend-subtitle">노드 (Node)</div>
-        <div class="legend-item" style="align-items: center;">
+        <div class="legend-item" style="align-items: center; justify-content: center;">
           <div class="process-node-preview">
             <div class="node-header">Role</div>
             <div class="node-content">Activity</div>
