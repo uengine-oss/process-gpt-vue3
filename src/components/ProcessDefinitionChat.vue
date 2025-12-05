@@ -1167,7 +1167,7 @@ export default {
                     } catch(e){
                         try {
                             jsonProcess = partialParse(response);
-                            if(jsonProcess && Object.keys(jsonProcess).length !== 0){
+                            if(!jsonProcess || Object.keys(jsonProcess).length === 0){
                                 jsonProcess = partialParse(response + '"');
                             }
                         } catch(e){
