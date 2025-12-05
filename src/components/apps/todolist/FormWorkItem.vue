@@ -389,7 +389,17 @@ export default {
                 );
                 
                 if (outVariable && outVariable.valueMap) {
-                    me.formData = outVariable.valueMap;
+                    // ✅ 완전히 덮어쓰지 않고, 빈값이 아닌 값만 병합
+                    Object.keys(outVariable.valueMap).forEach(key => {
+                        const newValue = outVariable.valueMap[key];
+                        const existingValue = me.formData[key];
+                        
+                        // 기존 값이 없거나, 새 값이 유효한 경우에만 업데이트
+                        if (!existingValue || (newValue && newValue !== '')) {
+                            me.formData[key] = newValue;
+                        }
+                    });
+                    
                     if(outVariable.valueMap['user_input_text']) {
                         me.newMessage = outVariable.valueMap['user_input_text'];
                     }
@@ -398,7 +408,16 @@ export default {
                 if(me.workItem?.parameterValues){
                     const parameterValues = me.workItem.parameterValues[outFormName];
                     if(parameterValues && parameterValues.valueMap){
-                        me.formData = parameterValues.valueMap;
+                        // ✅ 완전히 덮어쓰지 않고, 빈값이 아닌 값만 병합
+                        Object.keys(parameterValues.valueMap).forEach(key => {
+                            const newValue = parameterValues.valueMap[key];
+                            const existingValue = me.formData[key];
+                            
+                            // 기존 값이 없거나, 새 값이 유효한 경우에만 업데이트
+                            if (!existingValue || (newValue && newValue !== '')) {
+                                me.formData[key] = newValue;
+                            }
+                        });
                     }
                 }
             }
