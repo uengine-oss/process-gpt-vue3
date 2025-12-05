@@ -66,19 +66,30 @@ class Graph {
             }
         });
         
-        // 그룹 정보 추가
-        this.groups.push({
-            id: groupId,
-            nodes: nodeIds,
-            minX: 0,
-            maxX: 0,
-            minY: 0,
-            maxY: 0
-        });
+        // 이미 존재하는 그룹이 있으면 노드만 병합하고, 없으면 새로 추가
+        let existing = this.groups.find(g => g.id === groupId);
+        if (existing) {
+            nodeIds.forEach(id => {
+                if (!existing.nodes.includes(id)) {
+                    existing.nodes.push(id);
+                }
+            });
+        } else {
+            this.groups.push({
+                id: groupId,
+                nodes: [...nodeIds],
+                minX: 0,
+                maxX: 0,
+                minY: 0,
+                maxY: 0
+            });
+        }
         
         // 위치 기반으로 groupOrder에 추가 (정렬된 상태 유지)
-        // 일단 새 그룹을 추가하고, 위치에 따라 그룹 순서를 재정렬
-        this.groupOrder.push(groupId);
+        // 이미 존재하는 ID 는 중복 추가하지 않음
+        if (!this.groupOrder.includes(groupId)) {
+            this.groupOrder.push(groupId);
+        }
         
         // 가로/세로 레이아웃 모드 확인 (horizontal 값은 SugiyamaLayout에서 참조)
         const isHorizontalLayout = window.isHorizontalLayout || false;
@@ -173,6 +184,22 @@ class SugiyamaLayout {
             });
         }
         
+        // 서브프로세스를 위한 가상 노드가 있는 경우, canonical 노드의 레이어를 기준으로 맞춘다.
+        const subProcGroups = {};
+        this.graph.nodes.forEach(node => {
+            if (node.__realSubProcessId) {
+                const key = node.__realSubProcessId;
+                if (!subProcGroups[key]) subProcGroups[key] = [];
+                subProcGroups[key].push(node);
+            }
+        });
+        Object.values(subProcGroups).forEach(nodes => {
+            const canonical = nodes.find(n => n.__isCanonical) || nodes[0];
+            nodes.forEach(n => {
+                n.layer = canonical.layer;
+            });
+        });
+
         // 노드를 계층 배열로 구성
         this.layers = [];
         let maxLayer = 0;
@@ -287,7 +314,17 @@ class SugiyamaLayout {
     assignCoordinates() {
         const defaultNodeWidth = 100;
         const defaultNodeHeight = 40;
-        const layerHeight = 150;
+        // 세로 방향 간격은 "레이어별" 최대 height 를 기준으로 계산한다.
+        // (모든 레이어가 가장 큰 노드 기준으로 동일 간격이 되지 않도록)
+        const layerMaxHeights = this.layers.map(layer => {
+            let maxH = 0;
+            layer.forEach(node => {
+                const h = node.height || defaultNodeHeight;
+                if (h > maxH) maxH = h;
+            });
+            return maxH || defaultNodeHeight;
+        });
+        const baseLayerGap = 30; // 레이어 사이 여백
         const horizontalSpacing = 20;
         const minNodeMargin = 10; // 노드와 레인 경계 사이의 최소 여백
         
@@ -296,11 +333,23 @@ class SugiyamaLayout {
         // 그룹 경계 미리 계산 및 초기화
         this.initializeGroupBoundaries();
 
-        // 그룹 순서에 따라 수평 위치 배치
+        // 그룹 순서에 따라 수평 위치 배치 (현재는 실제 사용 X 이지만, 추후 확장 대비)
         const groupOrderMap = {};
         this.graph.groupOrder.forEach((groupId, index) => {
             groupOrderMap[groupId] = index;
         });
+
+        // 레이어별 y 오프셋 계산: 각 레이어의 최대 높이 + baseLayerGap 만큼 아래로 누적
+        const layerOffsets = [];
+        let currentY = 60; // 상단 여백
+        for (let i = 0; i < this.layers.length; i++) {
+            const maxH = layerMaxHeights[i] || defaultNodeHeight;
+            // 이 레이어의 센터 위치를 먼저 기록하고, 다음 레이어로 내려간다.
+            layerOffsets[i] = currentY + maxH / 2;
+            currentY += maxH + baseLayerGap;
+        }
+        // 모든 레이어를 누적한 실제 다이어그램 높이 (레이어별 최대 높이 기반)
+        const totalDiagramHeight = currentY;
 
         // 각 그룹의 수평 위치 범위 계산
         const groupHorizontalRanges = this.calculateGroupHorizontalRanges(0, 0);
@@ -337,14 +386,17 @@ class SugiyamaLayout {
                     continue;
                 }
                 
-                // 각 노드의 크기 확인 및 조정
+                // 각 노드의 크기 확인
                 groupNodes.forEach(node => {
                     const originalWidth = node.width;
-                    console.log(`[DEBUG_NODE_SIZE] 노드 크기 통일: ID=${node.id}, 원래 너비=${originalWidth || 'undefined'}, 새 너비=${node.width}`);
+                    console.log(`[DEBUG_NODE_SIZE] 노드 크기 확인: ID=${node.id}, width=${originalWidth || defaultNodeWidth}`);
                 });
                 
-                // 각 노드의 크기를 고려한 총 필요 너비 계산
-                const totalNodesWidth = groupNodes.length * defaultNodeWidth;
+                // 각 노드의 실제 width 를 사용하여 총 필요 너비 계산
+                const totalNodesWidth = groupNodes.reduce((sum, node) => {
+                    const w = node.width || defaultNodeWidth;
+                    return sum + w;
+                }, 0);
                 const totalSpacing = horizontalSpacing * (groupNodes.length - 1);
                 
                 // 공간이 부족하면 간격 조절
@@ -355,8 +407,11 @@ class SugiyamaLayout {
                     console.log(`[DEBUG_SPACING] 노드 간격 조정: 그룹=${groupId}, 원래 간격=${horizontalSpacing}, 새 간격=${actualSpacing.toFixed(1)}`);
                 }
                 
-                // 그룹 내 시작 X 위치 계산 (좌측 정렬)
-                let startX = groupRange.minX + minNodeMargin;
+                // 그룹 내 시작 X 위치 계산
+                // - 기본은 좌우 여백을 제외한 영역 내에서 "전체 사용 폭"을 중앙 정렬
+                const usedWidth = totalNodesWidth + totalSpacing;
+                const centerSpace = Math.max(0, availableWidth - usedWidth);
+                let startX = groupRange.minX + minNodeMargin + centerSpace / 2;
                 
                 // 시작 위치가 레인 경계 내에 있는지 확인
                 const originalStartX = startX;
@@ -373,7 +428,8 @@ class SugiyamaLayout {
                 console.log(`[DEBUG_NODE_PLACEMENT] 그룹=${groupId}, 레이어=${i}, 노드 배치 시작: ${groupNodes.length}개 노드`);
                 
                 groupNodes.forEach((node, idx) => {
-                    const width = defaultNodeWidth;
+                    // 노드마다 실제 width/height 사용 (없으면 기본값)
+                    const width = node.width || defaultNodeWidth;
                     const height = node.height || defaultNodeHeight;
                     
                     // 노드가 레인 경계를 벗어나지 않도록 조정
@@ -400,7 +456,8 @@ class SugiyamaLayout {
                     }
                     
                     node.x = nodeX;
-                    node.y = i * layerHeight + 40;
+                    // 세로 위치: 레이어별 최대 높이를 반영한 y 오프셋 사용
+                    node.y = layerOffsets[i];
                     
                     console.log(`[DEBUG_NODE_FINAL] 노드 최종 위치: ID=${node.id}, x=${node.x.toFixed(1)}, y=${node.y}, 레인=${node.group}`);
                     
@@ -412,8 +469,8 @@ class SugiyamaLayout {
             }
         }
         
-        // 그룹 경계 최종 업데이트
-        this.updateGroupBoundaries(layerHeight);
+        // 그룹 경계 최종 업데이트 (전체 다이어그램 높이를 전달)
+        this.updateGroupBoundaries(totalDiagramHeight);
         
         // 노드 위치 최종 확인 [DEBUG_FINAL_CHECK]
         console.log('[DEBUG_FINAL_CHECK] 노드 위치와 그룹 경계 최종 확인:');
@@ -438,50 +495,69 @@ class SugiyamaLayout {
     // 그룹의 수평 위치 범위 계산
     calculateGroupHorizontalRanges(totalWidth, spacing) {
         const ranges = {};
-        const groupCount = this.graph.groupOrder.length;
-        
-        if (groupCount === 0) return ranges;
-        
-        // 각 그룹별 레이어당 노드 수 계산 및 최대 밀도 파악
-        const groupLayerDensity = {};
-        
-        this.graph.groupOrder.forEach(groupId => {
+        const groupOrder = this.graph.groupOrder || [];
+
+        if (!groupOrder.length) return ranges;
+
+        const defaultNodeWidth = 100;
+        const horizontalSpacing = 20;
+        const minNodeMargin = 10;
+
+        let currentX = 0;
+
+        groupOrder.forEach(groupId => {
             const nodesInGroup = this.graph.getNodesInGroup(groupId);
-            
-            // 그룹별 레이어당 노드 수 파악
-            const layerCounts = {};
-            let maxNodesInLayer = 0;
-            
+
+            if (!nodesInGroup || !nodesInGroup.length) {
+                ranges[groupId] = {
+                    minX: currentX,
+                    maxX: currentX
+                };
+                return;
+            }
+
+            // 그룹 내 노드를 레이어별로 분류
+            const layers = {};
             nodesInGroup.forEach(node => {
                 const layer = node.layer || 0;
-                if (!layerCounts[layer]) layerCounts[layer] = 0;
-                layerCounts[layer]++;
-                
-                // 레이어별 최대 노드 수 업데이트
-                maxNodesInLayer = Math.max(maxNodesInLayer, layerCounts[layer]);
+                if (!layers[layer]) layers[layer] = [];
+                layers[layer].push(node);
             });
-            
-            groupLayerDensity[groupId] = {
-                layerCounts,
-                maxNodesInLayer
-            };
-            
-            console.log(`[DEBUG_DENSITY] 그룹=${groupId}, 최대 레이어 밀도=${maxNodesInLayer}개 노드`);
-        });
-        
-        let currentX = 0;
-        Object.keys(groupLayerDensity).forEach(groupId => {
-            const group = groupLayerDensity[groupId];
-            const baseWidth = 120;
-            const groupWidth = baseWidth * group.maxNodesInLayer;
+
+            // 각 레이어에서 실제 노드 width 합 + 간격을 계산하고,
+            // 그 중 최대값을 그룹(레인)의 필요 너비로 사용
+            let maxLayerWidth = 0;
+            Object.keys(layers).forEach(layerKey => {
+                const layerNodes = layers[layerKey];
+                const widthSum = layerNodes.reduce((sum, n) => {
+                    const w = n.width || defaultNodeWidth;
+                    return sum + w;
+                }, 0);
+
+                const spacingSum = horizontalSpacing * (layerNodes.length - 1);
+                const requiredWidth = widthSum + spacingSum + 2 * minNodeMargin;
+
+                maxLayerWidth = Math.max(maxLayerWidth, requiredWidth);
+
+                console.log(`[DEBUG_DENSITY] 그룹=${groupId}, 레이어=${layerKey}, 노드수=${layerNodes.length}, widthSum=${widthSum}, requiredWidth=${requiredWidth}`);
+            });
+
+            // 방어 코드: 모든 레이어에서 계산이 안 된 경우 기본 폭 사용
+            if (maxLayerWidth === 0) {
+                maxLayerWidth = 2 * minNodeMargin + defaultNodeWidth;
+            }
+
             ranges[groupId] = {
                 minX: currentX,
-                maxX: currentX + groupWidth
+                maxX: currentX + maxLayerWidth
             };
-            currentX += groupWidth;
+
+            console.log(`[DEBUG_RANGE_GROUP] 그룹=${groupId}, minX=${currentX}, maxX=${currentX + maxLayerWidth}, width=${maxLayerWidth}`);
+
+            currentX += maxLayerWidth;
         });
 
-        console.log('[DEBUG_RANGES] 그룹 수평 범위 계산:', ranges);
+        console.log('[DEBUG_RANGES] 그룹 수평 범위 계산(실제 노드 width 반영):', ranges);
         return ranges;
     }
     
@@ -496,7 +572,8 @@ class SugiyamaLayout {
     }
     
     // 그룹 경계 최종 업데이트
-    updateGroupBoundaries(layerHeight) {
+    // layerHeight 인자는 "전체 다이어그램 높이(totalDiagramHeight)" 로 전달된다.
+    updateGroupBoundaries(totalDiagramHeight) {
         // 전체 그래프에서 가장 큰 레이어 값 찾기
         let globalMaxLayer = 0;
         this.graph.nodes.forEach(node => {
@@ -520,10 +597,10 @@ class SugiyamaLayout {
                 group.minX = laneMinX;
                 group.maxX = laneMaxX;
                 
-                // Y 경계는 모든 레인이 동일하게 설정
-                const totalHeight = (globalMaxLayer + 1) * layerHeight;
+                // Y 경계는 모든 레인이 동일하게 설정하되,
+                // assignCoordinates 에서 계산된 실제 다이어그램 높이(totalDiagramHeight)를 사용한다.
                 group.minY = 0;
-                group.maxY = totalHeight;
+                group.maxY = totalDiagramHeight;
                 
                 // 그룹 높이 설정
                 group.height = group.maxY - group.minY;
