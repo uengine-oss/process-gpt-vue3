@@ -3,7 +3,6 @@ import { i18n } from '@/main';
 import '@/components/autoLayout/graph-algorithm.js';
 import '@/components/autoLayout/enhancedSugiyamaLayout.js';
 import '@/components/autoLayout/bpmn-auto-layout.js';
-import '@/components/autoLayout/bpmn-auto-layout_v2.js';
 
 export default function PaletteProvider(palette,
    create, 
@@ -163,8 +162,10 @@ PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onL
   var eventBus = this._eventBus;
 
   try {
-      const useV2 = !!window.BpmnAutoLayoutV2;
-      const hasV1 = !!window.BpmnAutoLayout;
+      if (!window.BpmnAutoLayout) {
+          console.error('BpmnAutoLayout 이 존재하지 않습니다.');
+          return;
+      }
       
       setTimeout(() => {
           try {
@@ -172,26 +173,7 @@ PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onL
               const elementRegistry = bpmnJS.get('elementRegistry');
               const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
               const horizontal = participant[0].di.isHorizontal;
-
-              // V2가 있으면 SubProcess 전용 V2 엔진으로 실행, 없으면 V1 사용
-              if (useV2) {
-                  window.BpmnAutoLayoutV2.applyAutoLayout(
-                    bpmnJS,
-                    { horizontal: horizontal },
-                    onLoadStart,
-                    onLoadEnd
-                  );
-              } else if (hasV1) {
-                  window.BpmnAutoLayout.applyAutoLayout(
-                    bpmnJS,
-                    { horizontal: horizontal },
-                    onLoadStart,
-                    onLoadEnd
-                  );
-              } else {
-                  console.error('BpmnAutoLayout / BpmnAutoLayoutV2 가 존재하지 않습니다.');
-                  return;
-              }
+              window.BpmnAutoLayout.applyAutoLayout(bpmnJS, { horizontal: horizontal }, onLoadStart, onLoadEnd);
               
               const canvas = elementFactory._canvas;
               if (canvas && canvas.zoom) {

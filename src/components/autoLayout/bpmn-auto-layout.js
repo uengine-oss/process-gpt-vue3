@@ -32,17 +32,17 @@
       const graph = new Graph();
       
       // BPMN 모델에서 요소 가져오기
-      const elementRegistry = bpmnModeler.get('elementRegistry');
-      let elements = elementRegistry.getAll();
-
-      // (옵션) 전역 필터 훅이 정의되어 있으면 요소 목록을 한 번 더 필터링한다.
-      // V2 등에서 SubProcess 자식 노드를 제외하고 싶을 때 사용.
-      if (typeof global !== 'undefined' && typeof global.__bpmnAutoLayoutFilterElements === 'function') {
-        try {
-          elements = elements.filter(el => global.__bpmnAutoLayoutFilterElements(el));
-        } catch (e) {
-          console.warn('[BPMN] __bpmnAutoLayoutFilterElements 실행 중 오류, 필터를 무시하고 전체 요소를 사용합니다.', e);
+      const elements = bpmnModeler.get('elementRegistry').getAll();
+      
+      // 서브프로세스가 있으면 깨지는 문제가 있어 서브프로세스가 있을 경우에는 임시 비활성화
+      let isSubprocessImported = false;
+      elements.forEach(element => {
+        if(element.type === "bpmn:SubProcess") {
+          isSubprocessImported = true;
         }
+      });
+      if(isSubprocessImported) {
+        return;
       }
       // 노드 맵 생성 (빠른 참조를 위함)
       const nodeMap = {};
@@ -86,136 +86,43 @@
         return typeMap[elementType] || elementType.replace('bpmn:', '');
       }
       
-      // SubProcess 가 여러 레인을 걸치는 정보를 활용하기 위한 맵
-      const subProcVirtualMap = {}; // realId -> { canonicalId, virtualIds }
-      
       // 먼저 노드 추가 (실제 도형 요소만)
       elements.forEach(element => {
-        if (!element.businessObject || !element.businessObject.$type || element.labelTarget) {
-          return;
+        // 연결선(Flow)은 제외하고 실제 노드만 추가
+        if (element.businessObject && 
+            element.businessObject.$type && 
+            !element.labelTarget && 
+            validNodeTypes.includes(element.businessObject.$type)) {
+          
+          // 레이블 제외, 실제 요소만 처리
+          const id = element.id;
+          const type = getTypeLabel(element.businessObject.$type);
+          const label = element.businessObject.name || type;
+          
+          // 그래프에 노드 추가하고 실제 크기 설정
+          graph.addNode(id, label);
+          const node = graph.getNode(id);
+          node.width = element.width || 100;
+          node.height = element.height || 80;
+          
+          // 노드 타입 저장 (게이트웨이 여부 확인용)
+          node.nodeType = element.businessObject.$type;
+          
+          // 노드 맵에 저장
+          nodeMap[id] = element;
         }
-
-        const bo = element.businessObject;
-        if (!validNodeTypes.includes(bo.$type)) {
-          return;
-        }
-
-        const id = element.id;
-        const type = getTypeLabel(bo.$type);
-        const label = bo.name || type;
-
-        // 서브프로세스가 여러 레인을 걸치면: 레인 수만큼 가상 노드를 만든다.
-        const overlappedLaneIds = bo.__v2OverlappedLaneIds;
-        if (bo.$type === 'bpmn:SubProcess' &&
-            Array.isArray(overlappedLaneIds) &&
-            overlappedLaneIds.length > 1) {
-
-          const count = overlappedLaneIds.length;
-
-          // BPMN 실제 크기
-          let bpmnWidth = element.width || 100;
-          let bpmnHeight = element.height || 80;
-
-          // 레인 방향에 따라 BPMN 상에서 먼저 분할을 적용한다.
-          // - horizontal=true  : Lane 이 위아래로 쌓임 → 세로(height)를 Lane 수로 나눈다.
-          // - horizontal=false : Lane 이 좌우로 배치 → 가로(width)를 Lane 수로 나눈다.
-          if (horizontal) {
-            bpmnHeight = bpmnHeight / count;
-          } else {
-            bpmnWidth = bpmnWidth / count;
-          }
-
-          // 그래프 알고리즘은 "세로 레이아웃" 기준이므로,
-          // 가로 스윔레인(horizontal=true) 인 경우 width/height 를 반대로 넣어준다.
-          let baseWidth = bpmnWidth;
-          let baseHeight = bpmnHeight;
-          if (horizontal) {
-            const tmp = baseWidth;
-            baseWidth = baseHeight;
-            baseHeight = tmp;
-          }
-
-          console.log('[AUTO_LAYOUT][subprocess-nodes]', {
-            id,
-            horizontal,
-            overlappedLaneIds,
-            bpmn: { width: element.width, height: element.height },
-            perLaneBpmn: { width: bpmnWidth, height: bpmnHeight },
-            graphNode: { width: baseWidth, height: baseHeight }
-          });
-
-          const virtualIds = [];
-
-          overlappedLaneIds.forEach((laneId, idx) => {
-            const virtualId = `${id}__lane${idx}`;
-            graph.addNode(virtualId, label);
-            const vNode = graph.getNode(virtualId);
-            vNode.width = baseWidth;
-            vNode.height = baseHeight;
-            vNode.nodeType = bo.$type;
-            vNode.group = laneId;
-            vNode.__realSubProcessId = id;
-            vNode.__isCanonical = idx === 0;
-
-            virtualIds.push(virtualId);
-
-            // 해당 레인 ID 를 그룹으로 갖는 Lane 그룹을 미리 생성/갱신
-            graph.createGroup(laneId, [virtualId]);
-          });
-
-          if (virtualIds.length) {
-            subProcVirtualMap[id] = {
-              canonicalId: virtualIds[0],
-              virtualIds
-            };
-            // 실제 BPMN 서브프로세스는 canonical 가상 노드에 매핑
-            nodeMap[virtualIds[0]] = element;
-          }
-
-          return; // 이 서브프로세스에 대해서는 별도 실노드를 추가하지 않는다.
-        }
-
-        // 일반 노드 처리 (기존 로직)
-        graph.addNode(id, label);
-        const node = graph.getNode(id);
-        let nodeWidth = element.width || 100;
-        let nodeHeight = element.height || 80;
-
-        // 가로 스윔레인 모드일 때는 그래프가 세로 기준으로 동작하므로
-        // width/height 를 반대로 넣어서 레이아웃 계산이 일관되게 되도록 한다.
-        if (horizontal) {
-          const tmp = nodeWidth;
-          nodeWidth = nodeHeight;
-          nodeHeight = tmp;
-        }
-
-        node.width = nodeWidth;
-        node.height = nodeHeight;
-        node.nodeType = bo.$type;
-
-        nodeMap[id] = element;
       });
-
-      // 서브프로세스 가상 노드를 고려한 노드 ID 매핑
-      function resolveNodeIdForEdge(originalId) {
-        const info = subProcVirtualMap[originalId];
-        return info ? info.canonicalId : originalId;
-      }
-
+      
       // 엣지 추가 (연결선 - SequenceFlow만)
       elements.forEach(element => {
-        if (!element.businessObject ||
-            element.businessObject.$type !== 'bpmn:SequenceFlow' ||
-            !element.source ||
-            !element.target) {
-          return;
-        }
-
-        const resolvedSourceId = resolveNodeIdForEdge(element.source.id);
-        const resolvedTargetId = resolveNodeIdForEdge(element.target.id);
-
-        if (nodeMap[resolvedSourceId] && nodeMap[resolvedTargetId]) {
-          graph.addEdge(resolvedSourceId, resolvedTargetId);
+        if (element.businessObject && 
+            element.businessObject.$type === 'bpmn:SequenceFlow' && 
+            element.source && 
+            element.target && 
+            nodeMap[element.source.id] && 
+            nodeMap[element.target.id]) {
+          
+          graph.addEdge(element.source.id, element.target.id);
         }
       });
       
@@ -562,7 +469,6 @@
         return map;
       }
 
-
       // 캡처된 정보를 바탕으로, 최종 레이아웃 이후 boundary 위치를 보정
       function applyBoundaryAttachments(attachments, elements, modeling) {
         if (!attachments || attachments.size === 0) return;
@@ -663,45 +569,10 @@
       // 레이아웃 전에 boundary 부착 정보 및 boundary 플로우 endpoint 정보 캡처
       const boundaryAttachments = captureBoundaryAttachments(elements);
       const boundaryFlowEndpoints = captureBoundaryFlowEndpoints(elements);
-      // 레이아웃 실행 전에, graph.nodes 를 깊은 복사해서 "이전 상태"를 남긴다.
-      const beforeNodes = JSON.parse(JSON.stringify(graph.nodes));
-      console.log('[AUTO_LAYOUT][before-run] graph.nodes', beforeNodes);
 
       // 확장된 Sugiyama 레이아웃 적용
       const layout = new EnhancedSugiyamaLayout(graph, horizontal);
       layout.run();
-
-      // 레이아웃 실행 후, 변경된 graph.nodes 도 깊은 복사해서 "이후 상태"를 남긴다.
-      const afterNodes = JSON.parse(JSON.stringify(graph.nodes));
-      console.log('[AUTO_LAYOUT][after-run] graph.nodes', afterNodes);
-      // 서브프로세스: 레인 수만큼의 가상 노드가 있을 때,
-      // 그 가상 노드들의 중간 지점에 실제 서브프로세스를 위치시키기 위해
-      // canonical 가상 노드의 좌표를 보정한다.
-      Object.entries(subProcVirtualMap).forEach(([realId, info]) => {
-        const { canonicalId, virtualIds } = info;
-        const virtualNodes = virtualIds
-          .map(vid => graph.getNode(vid))
-          .filter(Boolean);
-        if (!virtualNodes.length) return;
-
-        const canonicalNode = graph.getNode(canonicalId);
-        if (!canonicalNode) return;
-
-        let sumX = 0;
-        let sumY = 0;
-        virtualNodes.forEach(n => {
-          sumX += n.x;
-          sumY += n.y;
-        });
-
-        const midX = sumX / virtualNodes.length;
-        const midY = sumY / virtualNodes.length;
-
-        // 여러 레인에 걸친 가상 노드들의 "중심" 위치에 canonical 노드를 두어
-        // 실제 서브프로세스 박스가 두 레인을 고르게 관통하도록 한다.
-        canonicalNode.x = midX;
-        canonicalNode.y = midY;
-      });
       
       // 모델러의 캔버스와 변환 모듈 가져오기
       const canvas = bpmnModeler.get('canvas');
@@ -761,26 +632,6 @@
           // 좌표값 유효성 검사
           const dx = newPosition.x - element.x;
           const dy = newPosition.y - element.y;
-
-          // 디버깅용 로그: 그래프 좌표와 BPMN 좌표 변경 전/후 비교
-          console.log('[AUTO_LAYOUT][move-shape]', {
-            id: element.id,
-            type: element.type || (element.businessObject && element.businessObject.$type),
-            graph: {
-              nodeX: node.x,
-              nodeY: node.y,
-              nodeWidth: node.width,
-              nodeHeight: node.height,
-            },
-            before: {
-              x: element.x,
-              y: element.y,
-              width: element.width,
-              height: element.height,
-            },
-            target: newPosition,
-            delta: { dx, dy },
-          });
           
           // 무한대나 NaN 값이 아닌지 확인
           if (!isFinite(dx) || !isFinite(dy) || isNaN(dx) || isNaN(dy)) {
@@ -793,38 +644,35 @@
             return; // 거의 이동이 없는 경우 건너뜀
           }
           
-          // element가 Root(캔버스 루트)인지 여부에 따라 처리 분기
-          // - 일반 노드/서브프로세스/레인은 element 자신을 그대로 이동
-          // - 진짜 루트(프로세스/콜라보레이션)인 경우에만 children 중 실제 shape 를 찾아 이동
+          // element가 Root이고 children 배열이 있는 경우 처리
           if (!element.waypoints) {
             let elementToMove = element;
-
-            const boType = element.businessObject && element.businessObject.$type;
-            const isRootLike =
-              !element.parent ||
-              boType === 'bpmn:Process' ||
-              boType === 'bpmn:Collaboration';
-
-            if (isRootLike && element.labels && element.children) {
-              // 루트 요소인 경우, 실제 shape 요소(Participant 등)를 찾아 이동시킴
-              const childrenWithShape = element.children.filter(child =>
-                child.type && !child.waypoints && child.type.includes('bpmn:')
-              );
-
+            
+            // Root 요소인 경우, 실제 shape를 찾아서 이동시킴
+            if (element.labels && element.children) {
+              // 실제 shape 요소를 찾아 이동시킴
+              const childrenWithShape = element.children.filter(child => 
+                child.type && !child.waypoints && child.type.includes('bpmn:'));
+                
               if (childrenWithShape.length > 0) {
                 elementToMove = childrenWithShape[0];
               }
             }
-
+            
+            // 유효한 shape이고 이동 가능한지 확인
             if (elementToMove && elementToMove.id && typeof elementToMove.x === 'number') {
               try {
-                modeling.moveShape(elementToMove, { x: dx, y: dy });
+                modeling.moveShape(elementToMove, {
+                  x: dx,
+                  y: dy
+                });
 
                 // 경계 이벤트(바운더리 이벤트)가 붙어 있으면 같이 이동
                 if (elementToMove.attachers && elementToMove.attachers.length > 0) {
                   elementToMove.attachers.forEach(attacher => {
                     if (attacher && typeof attacher.x === 'number') {
                       try {
+                        // 경계 이벤트 자체 이동
                         modeling.moveShape(attacher, { x: dx, y: dy });
                       } catch (attErr) {
                         console.warn(`경계 이벤트 ${attacher.id} 이동 중 오류:`, attErr);
@@ -832,13 +680,16 @@
                     }
                   });
                 }
-
+                
                 // 라벨 요소가 있는 경우 함께 이동
                 if (element.labels && element.labels.length > 0) {
                   element.labels.forEach(label => {
                     if (label && label.id && typeof label.x === 'number') {
                       try {
-                        modeling.moveShape(label, { x: dx, y: dy });
+                        modeling.moveShape(label, {
+                          x: dx,
+                          y: dy
+                        });
                       } catch (labelErr) {
                         console.warn(`라벨 ${label.id} 이동 중 오류:`, labelErr);
                       }
@@ -883,13 +734,6 @@
         
         // 가로 배치 모드인 경우 x, y 값 교환 고려
         if (horizontal) {
-          console.log('[AUTO_LAYOUT][resize-lane]', {
-            id: element.id,
-            type: element.type || (element.businessObject && element.businessObject.$type),
-            groupBounds: { minX, maxX, minY, maxY },
-            before: { x: element.x, y: element.y, width: element.width, height: element.height },
-            mode: 'horizontal'
-          });
           modeling.resizeShape(element, {
             x: minY - margin, // x에 minY 사용
             y: minX - margin, // y에 minX 사용
@@ -897,13 +741,6 @@
             height: maxX - minX + margin * 2 // height에 x 차이 사용
           });
         } else {
-          console.log('[AUTO_LAYOUT][resize-lane]', {
-            id: element.id,
-            type: element.type || (element.businessObject && element.businessObject.$type),
-            groupBounds: { minX, maxX, minY, maxY },
-            before: { x: element.x, y: element.y, width: element.width, height: element.height },
-            mode: 'vertical'
-          });
           modeling.resizeShape(element, {
             x: minX - margin,
             y: minY - margin,
@@ -936,18 +773,6 @@
           
           // 가로 배치 모드인 경우 x, y 값 교환 고려
           if (horizontal) {
-            console.log('[AUTO_LAYOUT][resize-participant]', {
-              id: participantElement.id,
-              type: participantElement.type || (participantElement.businessObject && participantElement.businessObject.$type),
-              laneBounds: { minX, maxX, minY, maxY },
-              before: {
-                x: participantElement.x,
-                y: participantElement.y,
-                width: participantElement.width,
-                height: participantElement.height
-              },
-              mode: 'horizontal'
-            });
             modeling.resizeShape(participantElement, {
               x: minY - margin, // x에 minY 사용
               y: minX - margin, // y에 minX 사용
@@ -955,18 +780,6 @@
               height: maxX - minX + margin * 2 // height에 x 차이 사용
             });
           } else {
-            console.log('[AUTO_LAYOUT][resize-participant]', {
-              id: participantElement.id,
-              type: participantElement.type || (participantElement.businessObject && participantElement.businessObject.$type),
-              laneBounds: { minX, maxX, minY, maxY },
-              before: {
-                x: participantElement.x,
-                y: participantElement.y,
-                width: participantElement.width,
-                height: participantElement.height
-              },
-              mode: 'vertical'
-            });
             modeling.resizeShape(participantElement, {
               x: minX - margin,
               y: minY - margin,
