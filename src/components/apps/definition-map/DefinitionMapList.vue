@@ -94,6 +94,15 @@ export default {
     },
     methods: {
         addProcess(newProcess) {
+            // 같은 레벨에 동일한 이름이 있는지 검증
+            const isDuplicate = this.value.mega_proc_list.some(
+                item => item.name.toLowerCase() === newProcess.name.toLowerCase()
+            );
+            if (isDuplicate) {
+                alert(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
+                return;
+            }
+            
             const id = newProcess.name.toLowerCase().replace(/[/.]/g, "_");
             var newMegaProc = {
                 id: id,
