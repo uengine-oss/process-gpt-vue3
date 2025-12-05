@@ -225,6 +225,7 @@
         "addNewUser": "Add New User(Team Member)",
         "addNewAgent": "Add New Agent",
         "addNewA2A": "Add A2A Agent",
+        "addNewPGAgent": "Add ProcessGPT Agent",
         "userName": "Name",
         "userEmail": "Email",
         "idRequired": "Please enter your ID.",
@@ -237,7 +238,9 @@
         "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000.",
         "agent": "Agent",
         "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member.",
-        "oauth": "OAuth Settings"
+        "oauth": "OAuth Settings",
+        "aliasRequired": "Please enter your alias.",
+        "aliasAlreadyExists": "Alias already exists."
     },
     "agentField": {
         "agentId": "Agent ID",
@@ -250,7 +253,8 @@
         "agentTools": "Tools",
         "agentSkills": "Skills",
         "aiProvider": "AI Provider",
-        "aiModel": "AI Model"
+        "aiModel": "AI Model",
+        "alias": "Alias"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
@@ -456,8 +460,8 @@
         "edit": "Edit",
         "cancel": "Cancel",
         "close": "Close",
-        "dataSource": "dataSource",
-        "dataSourceConnection": "dataSource Connection",
+        "dataSource": "DataSource",
+        "dataSourceConnection": "DataSource Connection",
         "experimentalFeature": "Experimental Feature",
         "experimentalFeatureExplanationOn": "Automatically connect external DataSource when scanning forms",
         "experimentalFeatureExplanationOff": "Do not use DataSource connection when scanning forms",
@@ -506,7 +510,8 @@
         "indicatesRequiredField": "*Environment variable configuration is required.",
         "billing": "Billing",
         "confirmDeleteConnectionTitle": "Delete Connection Info",
-        "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?"
+        "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?",
+        "skills": "Skills"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -2063,7 +2068,11 @@
         "labels": {
             "goal": "Goal",
             "persona": "Persona",
-            "tools": "Tools"
+            "tools": "Tools",
+            "description": "Description",
+            "endpoint": "Endpoint",
+            "model": "Model",
+            "alias": "Alias"
         },
         "fallback": {
             "goal": "Agent goal is not configured yet."

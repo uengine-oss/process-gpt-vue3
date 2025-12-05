@@ -102,6 +102,7 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS agent_type text;
 ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials;
 ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials_updated_at;
 ALTER TABLE public.users DROP COLUMN IF EXISTS url;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alias text;
 
 
 -- configuration table
@@ -257,7 +258,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS log text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS project_id uuid;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_mode agent_mode;
-ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch agent_orch;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback jsonb;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS draft_status draft_status;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone default now();
@@ -490,25 +491,6 @@ BEGIN
         RAISE NOTICE 'agent_mode enum type already exists';
     END IF;
 
-    -- 오케스트레이션 방식 enum
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'agent_orch') THEN
-        CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-automation-agent', 'a2a', 'visionparse');
-        RAISE NOTICE 'Created agent_orch enum type';
-    ELSE
-        -- 기존 enum에 langchain-react 값 추가
-        IF NOT EXISTS (
-            SELECT 1 FROM pg_enum 
-            WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'agent_orch')
-            AND enumlabel = 'langchain-react'
-        ) THEN
-            ALTER TYPE agent_orch ADD VALUE 'langchain-react';
-            ALTER TYPE agent_orch ADD VALUE 'visionparse';
-            RAISE NOTICE 'Added langchain-react value to agent_orch enum type';
-        ELSE
-            RAISE NOTICE 'langchain-react value already exists in agent_orch enum type';
-        END IF;
-    END IF;
-
     -- 이벤트 타입 enum
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event_type_enum') THEN
         CREATE TYPE event_type_enum AS ENUM (
@@ -648,41 +630,7 @@ BEGIN
     END IF;
 END $$;
 
--- 4. todolist 테이블 agent_orch 컬럼 마이그레이션
-DO $$
-BEGIN
-    -- agent_orch 컬럼이 text 타입인지 확인
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'todolist' 
-        AND column_name = 'agent_orch' 
-        AND data_type = 'text'
-    ) THEN
-        -- 임시 컬럼 추가
-        ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch_new agent_orch;
-        
-        -- 기존 데이터를 새 enum 타입으로 변환
-        UPDATE public.todolist 
-        SET agent_orch_new = CASE 
-            WHEN agent_orch = 'crewai-deep-research' THEN 'crewai-deep-research'::agent_orch
-            WHEN agent_orch = 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
-            WHEN agent_orch = 'crewai-action' THEN 'crewai-action'::agent_orch
-            WHEN agent_orch = 'langchain-react' THEN 'langchain-react'::agent_orch
-            WHEN agent_orch = 'visionparse' THEN 'visionparse'::agent_orch
-            ELSE NULL  -- 기본값을 NULL로 설정
-        END;
-        
-        -- 기존 컬럼 삭제 후 새 컬럼명 변경
-        ALTER TABLE public.todolist DROP COLUMN agent_orch;
-        ALTER TABLE public.todolist RENAME COLUMN agent_orch_new TO agent_orch;
-        
-        RAISE NOTICE 'Successfully migrated todolist.agent_orch to agent_orch enum';
-    ELSE
-        RAISE NOTICE 'todolist.agent_orch is already agent_orch enum or column does not exist';
-    END IF;
-END $$;
-
--- 5. todolist 테이블 draft_status 컬럼 마이그레이션
+-- 4. todolist 테이블 draft_status 컬럼 마이그레이션
 DO $$
 BEGIN
     -- draft_status 컬럼이 text 타입인지 확인
@@ -854,18 +802,6 @@ BEGIN
         RAISE NOTICE 'events.event_type: event_type_enum';
     ELSE
         RAISE NOTICE 'events.event_type: not migrated';
-    END IF;
-
-    -- todolist agent_orch 확인
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'todolist' 
-        AND column_name = 'agent_orch' 
-        AND udt_name = 'agent_orch'
-    ) THEN
-        RAISE NOTICE 'todolist.agent_orch: agent_orch enum';
-    ELSE
-        RAISE NOTICE 'todolist.agent_orch: not migrated';
     END IF;
     
     RAISE NOTICE '=== Migration Complete ===';
@@ -1931,4 +1867,36 @@ ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS created_at TIMESTAM
 ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS is_process BOOLEAN DEFAULT FALSE;
 ALTER TABLE public.proc_inst_source ADD COLUMN IF NOT EXISTS file_path TEXT;
 
-    
+
+-- users 테이블 agent_type 컬럼 마이그레이션
+UPDATE public.users SET agent_type = 'agent' WHERE is_agent = true AND agent_type IS NULL;
+
+
+-- todolist 테이블 agent_orch 컬럼을 다시 text로 마이그레이션
+DO $$
+BEGIN
+    -- agent_orch 컬럼이 enum 타입(agent_orch)인지 확인
+    IF EXISTS (
+        SELECT 1 
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'todolist'
+          AND column_name = 'agent_orch'
+          AND udt_name = 'agent_orch'
+    ) THEN
+        -- 임시 text 컬럼 추가
+        ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS agent_orch_text text;
+
+        -- enum 값을 text로 복사
+        UPDATE public.todolist
+        SET agent_orch_text = agent_orch::text;
+
+        -- 기존 enum 컬럼 삭제 후 새 컬럼명을 agent_orch로 변경
+        ALTER TABLE public.todolist DROP COLUMN agent_orch;
+        ALTER TABLE public.todolist RENAME COLUMN agent_orch_text TO agent_orch;
+
+        RAISE NOTICE 'Successfully migrated todolist.agent_orch back to text';
+    ELSE
+        RAISE NOTICE 'todolist.agent_orch is already text or column does not exist';
+    END IF;
+END $$;

@@ -2472,8 +2472,9 @@ class ProcessGPTBackend implements Backend {
                 skills: newAgent.skills,
                 model: newAgent.model,
                 tenant_id: window.$tenantName,
-                is_agent: true,
-                agent_type: newAgent.endpoint === '' ? null : 'a2a'
+                is_agent: newAgent.isAgent,
+                agent_type: newAgent.type,
+                alias: newAgent.alias
             }
             await storage.putObject('users', putObj);
         } catch (error) {
@@ -2488,6 +2489,25 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    async checkAgentAlias(alias: string, id: string) {
+        try {
+            const options = {
+                match: {
+                    alias: alias,
+                    tenant_id: window.$tenantName
+                }
+            }
+            const existingAgent = await storage.getObject('users', options);
+            if (existingAgent && existingAgent.id !== id) {
+                return { error: true, message: 'Alias already exists' };
+            }
+            return { error: false, message: 'Alias is available' };
+        } catch (error) {
+            //@ts-ignore
+            return { error: true, message: error.message };
         }
     }
 

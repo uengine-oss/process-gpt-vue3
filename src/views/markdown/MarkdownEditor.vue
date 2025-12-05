@@ -390,11 +390,12 @@ export default {
             // 2. \-- → -- 로 치환
             result = result.replace(/\\--/g, '--');
             // 3. * 리스트 항목에 fragment 주석 자동 추가
+            const fragmentComment = '<' + '!-- .element: class="fragment" --' + '>';
             result = result.replace(/^(\s*\* .+?)(\s*)$/gm, (match, item, space) => {
-                if (item.includes('<!--')) {
+                if (item.includes('<' + '!--')) {
                     return match;
                 } else {
-                    return `${item} <!-- .element: class="fragment" -->${space}`;
+                    return item + ' ' + fragmentComment + space;
                 }
             });
 

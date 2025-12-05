@@ -61,9 +61,9 @@ To set up the local development environment, follow these steps:
    - **[process-gpt-memento](https://github.com/uengine-oss/process-gpt-memento)**: Document-based RAG service
    - **[process-gpt-crewai-action](https://github.com/uengine-oss/process-gpt-crewai-action)**: CrewAI-based agent orchestration service for action execution
    - **[process-gpt-crewai-deep-research](https://github.com/uengine-oss/process-gpt-crewai-deep-research)**: CrewAI-based agent orchestration service for deep research tasks
-   - **[process-gpt-openai-deep-research](https://github.com/uengine-oss/process-gpt-openai-deep-research)**: OpenAI-based agent orchestration service for deep research tasks
-   - **[process-gpt-langchain-react](https://github.com/uengine-oss/process-gpt-langchain-react)**: LangChain ReAct pattern-based agent orchestration service
+   - **[process-gpt-openai-deep-research](https://github.com/uengine-oss/process-gpt-openai-deep-research)**: OpenAI-based agent service for deep research tasks
    - **[process-gpt-browser-use](https://github.com/uengine-oss/process-gpt-browser-use)**: Browser automation service with Spring Gateway routing
+   - **[process-gpt-a2a-orch](https://github.com/uengine-oss/process-gpt-a2a-orch)**: Agent-to-Agent(A2A) service
    - **[process-gpt-react-voice-agent](https://github.com/uengine-oss/process-gpt-react-voice-agent)**: Voice chat service
 
    Each service should be started from its respective repository directory. Refer to each service's documentation for specific setup and run instructions.
