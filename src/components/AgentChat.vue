@@ -163,6 +163,14 @@ export default {
                     await handler.activate();
                 }
             }
+        },
+        'agentInfo.agent_type': {
+            handler(newVal, oldVal) {
+                // agent_type이 변경되면 탭 핸들러 재구성
+                if (newVal !== oldVal) {
+                    this.setupTabHandlers();
+                }
+            }
         }
     },
     created() {
@@ -176,6 +184,8 @@ export default {
         if (!this.agentInfo) {
             this.agentInfo = await this.backend.getUserById(this.id);
         }
+        // agentInfo 로드 후 탭 핸들러 재구성
+        this.setupTabHandlers();
         this.activeTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
         await this.init();
 
@@ -192,11 +202,16 @@ export default {
     methods: {
         /**
          * 각 탭의 동작을 정의
+         * tabList를 기반으로 노출되는 탭만 핸들러에 포함
          */
         setupTabHandlers() {
-            this.tabHandlers = {
+            const agentType = this.agentInfo?.agent_type || 'agent';
+            const handlers = {};
+
+            // tabList에 따라 조건부로 탭 핸들러 구성
+            if (agentType === 'agent') {
                 // 학습 모드
-                'learning': {
+                handlers['learning'] = {
                     component: 'AgentChatLearning',
                     props: (vm) => ({}),
                     events: (vm) => ({
@@ -205,10 +220,10 @@ export default {
                     activate: async () => {
                         this.selectedDmnId = null;
                     }
-                },
+                };
 
                 // 질문 모드
-                'question': {
+                handlers['question'] = {
                     component: 'AgentChatQuestion',
                     props: (vm) => ({}),
                     events: (vm) => ({
@@ -217,22 +232,10 @@ export default {
                     activate: async () => {
                         this.selectedDmnId = null;
                     }
-                },
-
-                // 액션 모드
-                'actions': {
-                    component: 'AgentChatActions',
-                    props: (vm) => ({
-                        agentInfo: vm.agentInfo
-                    }),
-                    events: () => ({}),
-                    activate: async () => {
-                        this.selectedDmnId = null;
-                    }
-                },
+                };
 
                 // 지식 관리
-                'knowledge': {
+                handlers['knowledge'] = {
                     component: 'AgentKnowledgeManagement',
                     props: (vm) => ({
                         knowledges: vm.knowledges,
@@ -245,10 +248,10 @@ export default {
                         this.selectedDmnId = null;
                         await this.getKnowledge();
                     }
-                },
+                };
 
-                // 비즈니스 규칙 학습
-                'dmn-modeling': {
+                // 비즈니스 규칙 학습 (agent일 때만)
+                handlers['dmn-modeling'] = {
                     component: 'BusinessRuleLearning',
                     props: (vm) => ({
                         ownerInfo: vm.agentInfo,
@@ -256,24 +259,22 @@ export default {
                     }),
                     events: () => ({}),
                     activate: () => {}
-                },
+                };
+            }
 
-                // 스킬 편집
-                'skill-edit': {
-                    component: 'AgentSkillEdit',
-                    props: (vm) => ({
-                        skillFile: vm.skillFile,
-                        isLoading: vm.isSkillLoading
-                    }),
-                    events: (vm) => ({
-                        saveSkillFile: vm.saveSkillFile,
-                        deleteSkillFile: vm.deleteSkillFile,
-                    }),
-                    activate: () => {
-                        this.isSkillLoading = false;
-                    }
-                },
+            // 액션 모드 (모든 agent_type에 공통)
+            handlers['actions'] = {
+                component: 'AgentChatActions',
+                props: (vm) => ({
+                    agentInfo: vm.agentInfo
+                }),
+                events: () => ({}),
+                activate: async () => {
+                    this.selectedDmnId = null;
+                }
             };
+
+            this.tabHandlers = handlers;
         },
 
         async init() {

@@ -118,6 +118,8 @@
 import UserSelectField from '@/components/ui/field/UserSelectField.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 
+import { useDefaultSetting } from '@/stores/defaultSetting';
+
 export default {
     components: {
         UserSelectField,
@@ -139,6 +141,7 @@ export default {
     },
     data() {
         return {
+            defaultSetting: useDefaultSetting(),
             activity: this.modelValue,
             agentModeItems: [
                 { 
@@ -253,7 +256,6 @@ export default {
     },
     created() {
         if (this.modelValue) {
-            console.log(this.modelValue);
             if (this.modelValue.agentMode && this.modelValue.agentMode !== '') {
                 this.activity.agentMode = this.modelValue.agentMode.toLowerCase();
             } else {
@@ -273,7 +275,10 @@ export default {
             if (this.activity.agent.includes(',')) {
                 const agents = this.activity.agent.split(',');
                 for (const agentId of agents) {
-                    const agent = await this.backend.getAgent(agentId);
+                    const agent = this.defaultSetting.getAgentById(agentId);
+                    if (!agent) {
+                        agent = await this.backend.getAgent(agentId);
+                    }
                     if (agent) {
                         this.selectedAgent = {
                             ...agent,

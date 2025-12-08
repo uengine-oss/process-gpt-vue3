@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="enableEdit" class="proc-menu-btn-box text-right">
-            <v-tooltip :text="$t('ProcessMenu.setPermission')">
+            <v-tooltip v-if="isPal" :text="$t('ProcessMenu.setPermission')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="setPermission"
                         icon v-bind="props"

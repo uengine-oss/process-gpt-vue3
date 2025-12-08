@@ -438,7 +438,7 @@ export default {
         },
         isQueued() {
             // 유효한 orchestration 값이 있는지 확인
-            const validOrch = this.todoStatus.agent_orch !== null && this.todoStatus.agent_orch !== '';
+            const validOrch = this.todoStatus && this.todoStatus.agent_orch !== null && this.todoStatus.agent_orch !== '';
             // 시작 직후(첫 이벤트 이전)에도 대기 문구가 뜨도록 hasReceivedEvent 조건 제거
             return this.todoStatus &&
                 this.todoStatus.status === 'IN_PROGRESS' &&

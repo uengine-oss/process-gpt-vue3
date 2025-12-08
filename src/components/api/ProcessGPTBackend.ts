@@ -889,7 +889,6 @@ class ProcessGPTBackend implements Backend {
         try {
             await storage.delete(`todolist/${taskId}`, { key: 'id' });
         } catch (error) {
-            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -903,7 +902,6 @@ class ProcessGPTBackend implements Backend {
             }
             return null;
         } catch (error) {
-            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -1134,6 +1132,7 @@ class ProcessGPTBackend implements Backend {
      */
     async getProcessDefinitionMap() {
         try {
+            const isPal = window.$pal;
             const options = {
                 match: {
                     key: 'proc_map',
@@ -1153,13 +1152,17 @@ class ProcessGPTBackend implements Backend {
                     }
                 };
                 renameLabels(procMap.value);
-                const usePermissions = await this.checkUsePermissions();
-                const role = localStorage.getItem('role');
-                if (role == 'superAdmin' || !usePermissions) {
-                    return procMap.value;
+                if (isPal) {
+                    const usePermissions = await this.checkUsePermissions();
+                    const role = localStorage.getItem('role');
+                    if (role == 'superAdmin' || !usePermissions) {
+                        return procMap.value;
+                    } else {
+                        const filteredMap = await this.filterProcDefMap(procMap.value);
+                        return filteredMap;
+                    }
                 } else {
-                    const filteredMap = await this.filterProcDefMap(procMap.value);
-                    return filteredMap;
+                    return procMap.value;
                 }
             }
             return {};
@@ -1172,6 +1175,7 @@ class ProcessGPTBackend implements Backend {
 
     async putProcessDefinitionMap(editedMap: any) {
         try {
+            const isPal = window.$pal;
             const options = {
                 match: {
                     key: 'proc_map',
@@ -1181,7 +1185,7 @@ class ProcessGPTBackend implements Backend {
             const procMapId = await storage.getString('configuration', options);
             let updatedProcMap: any = null;
             const role = localStorage.getItem('role');
-            if (role !== 'superAdmin') {
+            if (role !== 'superAdmin' && isPal) {
                 const existingProcMap = await storage.getObject('configuration', options);
                 const usePermissions = await this.checkUsePermissions();
                 if (usePermissions) {
