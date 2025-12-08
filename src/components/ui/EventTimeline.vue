@@ -514,6 +514,14 @@ export default {
                                     });
                                 }
                                 
+                                // EventBus로 파싱된 텍스트 내용 전송
+                                if (nonImageFiles.length > 0 && this.EventBus) {
+                                    console.log(`[EventTimeline] EventBus로 ${nonImageFiles.length}개 파싱된 텍스트 전송`);
+                                    this.EventBus.emit('parsed-content-generated', {
+                                        contents: nonImageFiles
+                                    });
+                                }
+                                
                                 // 모든 파싱이 완료된 후 DB에 저장
                                 if (this.isParseSuccess) {
                                     console.log(`[EventTimeline] 파싱 결과를 DB에 저장 중...`);
