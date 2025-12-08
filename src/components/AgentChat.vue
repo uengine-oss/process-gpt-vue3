@@ -53,6 +53,8 @@ import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
+import { useDefaultSetting } from '@/stores/defaultSetting';
+
 export default {
     mixins: [AgentCrudMixin],
     components: {
@@ -66,6 +68,7 @@ export default {
         AgentSkillEdit,
     },
     data: () => ({
+        defaultSetting: useDefaultSetting(),
         agentInfo: {
             id: '',
             profile: '/images/chat-icon.png',
@@ -78,6 +81,7 @@ export default {
             endpoint: '',
             description: '',
             model: '',
+            is_default: false,
         },
         activeTab: '',
 
@@ -134,7 +138,10 @@ export default {
                 
                 // agent ID가 변경된 경우에만 agentInfo와 init 호출
                 if (newRoute.params.id !== oldRoute.params.id) {
-                    this.agentInfo = await this.backend.getUserById(newRoute.params.id);
+                    this.agentInfo = this.defaultSetting.getAgentById(newRoute.params.id);
+                    if (!this.agentInfo) {
+                        this.agentInfo = await this.backend.getUserById(newRoute.params.id);
+                    }
                     await this.init();
                 }
             },
@@ -165,7 +172,11 @@ export default {
         this.setupTabHandlers();
     },
     async mounted() {
-        this.agentInfo = await this.backend.getUserById(this.id);
+        this.agentInfo = this.defaultSetting.getAgentById(this.id);
+        if (!this.agentInfo) {
+            this.agentInfo = await this.backend.getUserById(this.id);
+        }
+        this.activeTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
         await this.init();
 
         this.EventBus.on('dmn-saved', async (data) => {

@@ -89,14 +89,12 @@ export default {
             agent: '',
             agentMode: 'draft',
             orchestration: 'crewai-action',
-        }
+        },
+        instId: ''
     }),
     computed: {
         id() {
             return this.$route.params.id;
-        },
-        instId() {
-            return this.agentInfo?.id ? `${this.agentInfo.id}-actions` : '';
         },
         currentTab() {
             return this.tabs[this.currentTabIndex] || null;
@@ -105,7 +103,40 @@ export default {
             return this.workItemsByTab[this.currentTab.id] || this.defaultWorkItem;
         }
     },
-    created() {
+    watch: {
+        agentInfo: {
+            async handler(newVal, oldVal) {
+                if (newVal) {
+                    if (newVal.id !== oldVal.id) {
+                        await this.init();
+                        this.selectedAgent = {
+                            agent: newVal.id,
+                            agentMode: 'draft',
+                            orchestration: newVal.agent_type === 'agent' ? 'crewai-action' : newVal.alias,
+                        }
+                        if (newVal.agent_type) {
+                            this.defaultWorkItem.worklist.orchestration = newVal.alias;
+                        }
+                        this.instId = `${newVal.id}-actions`;
+                        
+                        this.hoveredTabIndex = null;
+                        this.hoverTimeout = null;
+                        this.tabs = [];
+                        this.workItemsByTab = {};
+                        this.tabCounter = 1;
+                        
+                        // 기존 워크리스트 로드하여 탭으로 표시
+                        await this.loadExistingWorkItems();
+                        
+                        // 탭이 없으면 새 탭 생성
+                        if (this.tabs.length === 0) {
+                            await this.addNewTab();
+                        }
+                    }
+                }
+            },
+            deep: true
+        }
     },
     async mounted() {
         await this.init();
@@ -113,12 +144,14 @@ export default {
             this.selectedAgent = {
                 agent: this.agentInfo.id,
                 agentMode: 'draft',
-                orchestration: this.agentInfo.agent_type === 'agent' ? 'crewai-action' : this.agentInfo.agent_type,
+                orchestration: this.agentInfo.agent_type === 'agent' ? 'crewai-action' : this.agentInfo.alias,
             }
         }
         if (this.agentInfo.agent_type) {
-            this.defaultWorkItem.worklist.orchestration = this.agentInfo.agent_type;
+            this.defaultWorkItem.worklist.orchestration = this.agentInfo.alias;
         }
+        this.instId = `${this.agentInfo?.id}-actions`;
+
         // 기존 워크리스트 로드하여 탭으로 표시
         await this.loadExistingWorkItems();
         

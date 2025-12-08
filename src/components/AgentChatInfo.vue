@@ -34,6 +34,7 @@
                     
                     <!-- 수정 버튼 -->
                     <v-btn 
+                        v-if="!agentInfo.is_default"
                         @click="openEditDialog"
                         variant="text"
                         :size="20"
