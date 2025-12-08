@@ -224,9 +224,13 @@ export default {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal !== oldVal) {
-                    if (this.$refs.formDefinition && this.$refs.formDefinition[0]) {
+                    // 폼 편집 탭에서 나갈 때 HTML 저장
+                    if (oldVal === 'edit' && this.$refs.formDefinition && this.$refs.formDefinition[0]) {
                         this.tempFormHtml = this.$refs.formDefinition[0].getFormHTML();
-                    } else if (newVal == 'inputData') {
+                    }
+                    
+                    // 참조정보 탭으로 들어갈 때 이전 폼 목록 로드
+                    if (newVal === 'inputData') {
                         await this.getPreviousForms();
                     }
                 }
