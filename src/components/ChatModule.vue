@@ -598,25 +598,25 @@ export default {
                                 });
                             }
                             let messageWriting = this.messages[this.messages.length - 1];
-                            let tmp;
-                            try {
-                                tmp = JSON.parse(response);
-                            } catch(e){
-                                try {
-                                    tmp = partialParse(response);
-                                    if(!tmp || Object.keys(tmp).length === 0){
-                                        tmp = partialParse(response + '"');
-                                    }
-                                } catch(e){
-                                    tmp = this.extractJSON(response);
-                                    try {
-                                        tmp = JSON.parse(tmp);
-                                    } catch(e){
-                                        tmp = partialParse(tmp)
-                                    }
-                                }
-                            }
-                            messageWriting.content = tmp.content;
+                            // let tmp;
+                            // try {
+                            //     tmp = JSON.parse(response);
+                            // } catch(e){
+                            //     try {
+                            //         tmp = partialParse(response);
+                            //         if(!tmp || Object.keys(tmp).length === 0){
+                            //             tmp = partialParse(response + '"');
+                            //         }
+                            //     } catch(e){
+                            //         tmp = this.extractJSON(response);
+                            //         try {
+                            //             tmp = JSON.parse(tmp);
+                            //         } catch(e){
+                            //             tmp = partialParse(tmp)
+                            //         }
+                            //     }
+                            // }
+                            messageWriting.content = response;
 
                             if(!this.isMentoMode && response) {
                                 if(!response.includes("}")){
