@@ -89,16 +89,12 @@
                     class="mb-2"
                     rows="3"
                 ></v-textarea>
-                <v-combobox
-                    v-model="selectedSkills"
-                    :items="skills"
+                <v-textarea
+                    v-model="agent.skills" 
                     :label="$t('agentField.agentSkills')"
-                    multiple
-                    chips
-                    clearable
-                    closable-chips
-                    variant="outlined"
-                ></v-combobox>
+                    class="mb-2"
+                    rows="3"
+                ></v-textarea>
             </div>
 
             <div v-else>

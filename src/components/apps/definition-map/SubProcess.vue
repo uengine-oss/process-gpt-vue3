@@ -1,34 +1,31 @@
 <template>
     <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style pr-3 pl-3">
         <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
-            <v-row class="ma-0 pa-0">
-                <v-col :cols="enableEdit ? '6' : '12'" class="ma-0 pa-0 text-left align-center" @click="handleClick">
-                    <v-row class="ma-0 pa-0 align-center">
-                        <div>{{ value.name }}</div>
-                       
-                        <div class="ml-auto">
-                             <!-- v-if="value.new" -->
-                             <v-chip v-if="isNew(value.id)" 
-                                class="ml-auto"
-                                color="primary"
-                                variant="outlined"
-                                size="x-small"
-                            >New</v-chip>
-                            <v-btn 
-                                v-if="isExecutionByProject" 
-                                variant="elevated" 
-                                color="primary" 
-                                size="x-small" 
-                                @click="clickPlayBtn()" 
-                                class="rounded-pill"
-                            >
-                                {{ $t('SubProcess.execute') }}
-                            </v-btn>
-                        </div>
-                    </v-row>
-                </v-col>
-                <v-col :cols="enableEdit ? '6' : ''" class="ma-0 pa-0">
-                <div class="ml-auto add-sub-process">
+            <v-row class="ma-0 pa-0 align-center">
+                <div  @click="handleClick"
+                    class="ma-0 pa-0 d-flex align-center"
+                    style="flex: 1; min-width: 0; gap: 4px;"
+                >
+                    <div>{{ value.name }}</div>
+                    
+                        <!-- v-if="value.new" -->
+                    <v-chip v-if="isNew(value.id) && !enableEdit" 
+                        color="primary"
+                        variant="outlined"
+                        size="x-small"
+                    >New</v-chip>
+                </div>
+                <div class="ml-auto add-sub-process" style="flex-shrink: 0;">
+                    <v-btn 
+                        v-if="isExecutionByProject" 
+                        variant="elevated" 
+                        color="primary" 
+                        size="x-small" 
+                        @click="clickPlayBtn()" 
+                        class="rounded-pill"
+                    >
+                        {{ $t('SubProcess.execute') }}
+                    </v-btn>
                     <ProcessMenu
                         :size="16"
                         :type="type"
@@ -40,7 +37,6 @@
                         @setPermission="openPermissionDialog(value)"
                     />
                 </div>
-                </v-col>
             </v-row>
         </h6>
         <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'update'"

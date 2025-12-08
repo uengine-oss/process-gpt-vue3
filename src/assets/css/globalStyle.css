@@ -636,7 +636,12 @@ hr {
     overflow-y: auto;
 }
 .work-item-skeleton-loader .v-skeleton-loader__image {
-    height: 70vh;
+    height: calc(100% - 50px);
+    border-radius: 8px;
+}
+
+.process-definition-skeleton-loader .v-skeleton-loader__image {
+    height: calc(100vh - 120px);
     border-radius: 8px;
 }
 
