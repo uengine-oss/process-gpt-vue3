@@ -628,13 +628,13 @@ export default {
         
                             if (messageWriting.jsonContent) {
                                 let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
-                                const match = messageWriting.content.match(regex);
+                                const match = messageWriting.jsonContent.match(regex);
                                 if (match) {
-                                    messageWriting.content = messageWriting.content.replace(match[1], '');
+                                    messageWriting.content = messageWriting.jsonContent.replace(match[1], '');
                                     regex = /`{3}(?:json|markdown)?\s?\n/g;
-                                    messageWriting.content = messageWriting.content.replace(regex, '');
-                                    messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
-                                    messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                                    messageWriting.content = messageWriting.jsonContent.replace(regex, '');
+                                    messageWriting.content = messageWriting.jsonContent.replace(/\s?\n?`{3}?\s?\n/g, '');
+                                    messageWriting.content = messageWriting.jsonContent.replace(/`{3}/g, '');
                                 }
                             }
                             this.afterModelCreated(response);
