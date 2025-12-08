@@ -1158,6 +1158,9 @@ export default {
                 }
             }
         },
+        afterModelStopped(response) {
+            console.log(response);
+        },
         async afterModelCreated(response) {
             let jsonProcess;
             try {
