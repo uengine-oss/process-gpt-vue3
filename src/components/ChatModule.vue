@@ -598,25 +598,25 @@ export default {
                                 });
                             }
                             let messageWriting = this.messages[this.messages.length - 1];
-                            let tmp;
-                            try {
-                                tmp = JSON.parse(response);
-                            } catch(e){
-                                try {
-                                    tmp = partialParse(response);
-                                    if(!tmp || Object.keys(tmp).length === 0){
-                                        tmp = partialParse(response + '"');
-                                    }
-                                } catch(e){
-                                    tmp = this.extractJSON(response);
-                                    try {
-                                        tmp = JSON.parse(tmp);
-                                    } catch(e){
-                                        tmp = partialParse(tmp)
-                                    }
-                                }
-                            }
-                            messageWriting.content = tmp.content;
+                            // let tmp;
+                            // try {
+                            //     tmp = JSON.parse(response);
+                            // } catch(e){
+                            //     try {
+                            //         tmp = partialParse(response);
+                            //         if(!tmp || Object.keys(tmp).length === 0){
+                            //             tmp = partialParse(response + '"');
+                            //         }
+                            //     } catch(e){
+                            //         tmp = this.extractJSON(response);
+                            //         try {
+                            //             tmp = JSON.parse(tmp);
+                            //         } catch(e){
+                            //             tmp = partialParse(tmp)
+                            //         }
+                            //     }
+                            // }
+                            messageWriting.content = response;
 
                             if(!this.isMentoMode && response) {
                                 if(!response.includes("}")){
@@ -628,13 +628,13 @@ export default {
         
                             if (messageWriting.jsonContent) {
                                 let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
-                                const match = messageWriting.content.match(regex);
+                                const match = messageWriting.jsonContent.match(regex);
                                 if (match) {
-                                    messageWriting.content = messageWriting.content.replace(match[1], '');
+                                    messageWriting.content = messageWriting.jsonContent.replace(match[1], '');
                                     regex = /`{3}(?:json|markdown)?\s?\n/g;
-                                    messageWriting.content = messageWriting.content.replace(regex, '');
-                                    messageWriting.content = messageWriting.content.replace(/\s?\n?`{3}?\s?\n/g, '');
-                                    messageWriting.content = messageWriting.content.replace(/`{3}/g, '');
+                                    messageWriting.content = messageWriting.jsonContent.replace(regex, '');
+                                    messageWriting.content = messageWriting.jsonContent.replace(/\s?\n?`{3}?\s?\n/g, '');
+                                    messageWriting.content = messageWriting.jsonContent.replace(/`{3}/g, '');
                                 }
                             }
                             this.afterModelCreated(response);

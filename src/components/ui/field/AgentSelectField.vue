@@ -233,7 +233,7 @@ export default {
                     this.activity.agent = newVal.id;
                     if (this.agentType !== 'agent') {
                         this.activity.orchestration = this.agentAlias;
-                    } else {
+                    } else if (this.agentType === 'agent' && (this.activity.orchestration === null || this.activity.orchestration === '')) {
                         this.activity.orchestration = 'crewai-action';
                     }
                 } else {
@@ -252,8 +252,20 @@ export default {
         }
     },
     created() {
-        if (this.modelValue && this.modelValue.agentMode) {
-            this.activity.agentMode = this.modelValue.agentMode.toLowerCase();
+        if (this.modelValue) {
+            console.log(this.modelValue);
+            if (this.modelValue.agentMode && this.modelValue.agentMode !== '') {
+                this.activity.agentMode = this.modelValue.agentMode.toLowerCase();
+            } else {
+                this.activity.agentMode = 'none';
+                this.activity.orchestration = null;
+            }
+        } else {
+            this.activity = {
+                agent: null,
+                agentMode: 'none',
+                orchestration: null,
+            };
         }
     },
     async mounted() {
