@@ -44,6 +44,7 @@
             <AgentMonitor
                 v-if="currentTab"
                 :workItem="currentWorkItem"
+                :selectedAgentType="selectedAgent"
                 :isActionsMode="true"
                 :howToUseInfo="howToUseInfo"
                 @update:new-tab-title="updateNewTabTitle"
@@ -83,7 +84,12 @@ export default {
         howToUseInfo: {
             text: 'agentChat.actionsModeInfo'
         },
-        tabCounter: 1 // 탭 제목 생성용 카운터
+        tabCounter: 1, // 탭 제목 생성용 카운터
+        selectedAgent: {
+            agent: '',
+            agentMode: 'draft',
+            orchestration: 'crewai-action',
+        }
     }),
     computed: {
         id() {
@@ -103,6 +109,13 @@ export default {
     },
     async mounted() {
         await this.init();
+        if (this.agentInfo) {
+            this.selectedAgent = {
+                agent: this.agentInfo.id,
+                agentMode: 'draft',
+                orchestration: this.agentInfo.agent_type === 'agent' ? 'crewai-action' : this.agentInfo.agent_type,
+            }
+        }
         if (this.agentInfo.agent_type) {
             this.defaultWorkItem.worklist.orchestration = this.agentInfo.agent_type;
         }

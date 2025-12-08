@@ -1096,7 +1096,8 @@
         "runningResearchMethod": "Running Research Method",
         "delegateMessage": "Task '{taskName}' has been delegated to {username}.",
         "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {username}.",
-        "runAgain": "Run Again"
+        "runAgain": "Run Again",
+        "select": "Select"
     },
     "AgentSelectInfo": {
         "orcation": "Agent Research Method",
@@ -2175,7 +2176,8 @@
         "persona": "Persona",
         "tools": "Tools & Skills",
         "knowledge": "Knowledge Ontology",
-        "achievements": "Achievements & Badges"
+        "achievements": "Achievements & Badges",
+        "settings": "Settings"
     },
     "Gantt": {
         "description": "Description",

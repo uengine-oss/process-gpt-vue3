@@ -709,6 +709,7 @@ class ProcessGPTBackend implements Backend {
                     output: workitem.output || "",
                     log: workitem.log || "",
                     orchestration: workitem.agent_orch || "",
+                    agentMode: workitem.agent_mode || "",
                     version_tag: workitem.version_tag || null,
                     version: workitem.version || null,
                 },
@@ -2446,7 +2447,8 @@ class ProcessGPTBackend implements Backend {
         try {
             const options = {
                 match: {
-                    id: agentId
+                    id: agentId,
+                    is_agent: true
                 }
             }
             const agent = await storage.getObject('users', options);

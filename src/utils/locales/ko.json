@@ -1098,7 +1098,8 @@
         "runningResearchMethod": "진행 중인 연구방식",
         "delegateMessage": "'{taskName}'업무를 {username}에게 위임하였습니다.",
         "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {username}으로 위임하였습니다.",
-        "runAgain": "다시 수행하기"
+        "runAgain": "다시 수행하기",
+        "select": "선택"
     },
     "AgentSelectInfo": {
         "orcation" : "에이전트 연구 방식",
@@ -2192,7 +2193,8 @@
         "persona": "페르소나",
         "tools": "툴 & 스킬",
         "knowledge": "지식 온톨로지",
-        "achievements": "성과 & 뱃지"
+        "achievements": "성과 & 뱃지",
+        "settings": "설정"
     },
     "Gantt": {
         "description": "설명",
