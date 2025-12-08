@@ -215,18 +215,11 @@ class ProcessGPTBackend implements Backend {
                         tenant_id: window.$tenantName
                     }
                 }
-                if(putObj.id != 'defaultform') {
-                    await storage.putObject('form_def', putObj);
-                    return
-                } else if(putObj.id == 'defaultform' 
-                    && putObj.fields_json && putObj.fields_json.length > 0
-                    && putObj.fields_json[0].text == '자유입력' && putObj.fields_json[0].key == 'free_input') {
-                    putObj.id = `${putObj.proc_def_id}_${putObj.activity_id.toLowerCase()}_form`
-                    await storage.putObject('form_def', putObj);
-                    return
-                } else {
-                    throw new Error("An error occurred while analyzing the form fields.");
+                if(!putObj.id || putObj.id == 'defaultform' || putObj.id == null || putObj.id == '') {
+                    putObj.id = `${putObj.proc_def_id}_${putObj.activity_id?.toLowerCase()}_form`
                 }
+                await storage.putObject('form_def', putObj);
+                return
             }
 
             var procDef: any = await storage.getObject('proc_def', {
