@@ -230,6 +230,7 @@ export default {
         }
     },
     data: () => ({
+        formInfo: null,
         html: null,
         formDefId: null,
         formData: {},
@@ -299,6 +300,14 @@ export default {
                 }
             }
         });
+
+        
+        this.EventBus.on('form-html-updated', async (data) => {
+            console.log(data);
+            console.log(this.html);
+            console.log(this.formInfo.fields_json);
+        });
+
         await this.init();
     },
     methods: {
@@ -335,7 +344,8 @@ export default {
                                 activity_id: me.workItem?.activity?.tracingTag ? me.workItem.activity.tracingTag : null
                             }
                         }
-                        me.html = await backend.getRawDefinition(me.formDefId, options);
+                        me.formInfo = await backend.getFormFields(me.formDefId);
+                        me.html = me.formInfo.html;
                     }
                     if(!me.html) {
                         me.formDefId = 'defaultform'
