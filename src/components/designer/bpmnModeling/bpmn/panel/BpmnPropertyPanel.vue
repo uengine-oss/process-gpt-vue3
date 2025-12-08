@@ -70,17 +70,31 @@
                 @addUengineVariable="(val) => $emit('addUengineVariable', val)"
                 :key="componentKey"
             ></component>
-            <v-dialog v-if="isViewMode" v-model="printDialog" max-width="800px">
+            <v-dialog
+                v-if="isViewMode"
+                v-model="printDialog"
+                max-width="1150px"
+                max-height="80vh"
+            >
                 <template v-slot:activator="{ on, attrs }">
                     <v-btn block color="primary" class="panel-download-btn" v-bind="attrs" v-on="on" @click="printDocument">
                         {{ $t('BpmnPropertyPanel.printDocument') }}
                     </v-btn>
                 </template>
-                <v-card>
+                <v-card style="max-height: 80vh; display: flex; flex-direction: column;">
                     <v-card-title class="headline">{{ $t('BpmnPropertyPanel.pdfPreview') }}</v-card-title>
-                    <v-card-text >
-                        <PDFPreviewer :element="html" @closeDialog="printDialog = false" :name="name" />
+                    <v-card-text style="flex: 1; overflow: auto;">
+                        <PDFPreviewer ref="pdfPreviewer" :element="html" :name="name" />
                     </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="primary" text @click="$refs.pdfPreviewer.saveDocument()">
+                            {{ $t('PDFPreviewer.saveDocument') }}
+                        </v-btn>
+                        <v-btn color="error" text @click="printDialog = false">
+                            {{ $t('PDFPreviewer.close') }}
+                        </v-btn>
+                    </v-card-actions>
                 </v-card>
             </v-dialog>
         </v-card-text>
