@@ -696,9 +696,9 @@
         "duplicateWarning": "This ID is already in use. To overwrite the existing process, check the box and save.",
         "regenerateNameTooltip": "Get New Name Suggestion",
         "regenerateIdTooltip": "Get New ID Suggestion",
-        "helpIntro": "You can configure version management and optimization options when saving the process.\n\nMain Features:",
-        "helpVersionToggle": "• Version Toggle: If checked, saves by incrementing the version by one step; if unchecked, saves to the current version\n  e.g., 0.1 → 1.0 (checked), 0.1 → 0.2 (unchecked)",
-        "helpOptimize": "• Definition Optimization: When checked, AI automatically analyzes and configures the input data required for each task (activity) in the process\n  - Automatically connects data flow between tasks\n  - Intelligently recommends required information for each task\n  - Automates data linkage without manual configuration",
+        "helpIntro": "In this dialog, you can save the process while configuring the version, description, and optimization options.\n\nEach save is recorded as a separate version; existing versions remain unchanged.",
+        "helpVersionToggle": "• Version Tag (minor / major):\n  - minor: Increases the decimal part of the current version by 1. e.g., 1.3 → 1.4\n    * Typically used as an \"intermediate\" or working save before promoting to a major version, while you are still iterating on the process.\n  - major: Increases the integer part by 1 and resets the decimal to 0. e.g., 1.3 → 2.0\n    * Used for versions that are actually applied/released to users and treated as the main production version.\n  The next version number is automatically calculated from the selected tag and used when saving.",
+        "helpOptimize": "• Process Definition Optimization: When enabled, AI analyzes the process definition at save time and automatically refines the input data (reference information) and data flow for each activity.\n  - Checks and connects data flow between activities\n  - Recommends missing or unnecessary fields to improve definition quality\n  - Automates repetitive manual tuning so you can model faster.",
         "generatingDiff": "Analyzing process changes..."
     },
     "FormDefinitionPanel": {
