@@ -39,7 +39,7 @@
                 @start-task="startTask"
                 @download-browser-agent="downloadBrowserAgent"
             /> -->
-            <div v-if="isInitialLoading && timeline.length === 0 && !isActionsMode">
+            <div v-if="timeline.length === 0 && !isActionsMode && !isQueued">
                 <AgentSelectField
                     :model-value="selectedAgent"
                     :backend="backend"
@@ -47,6 +47,22 @@
                     @update:model-value="updateWorkItem"
                 />
             </div>
+            
+            <div v-if="timeline.length === 0" class="empty-state">
+                <div v-if="isQueued">
+                    <div v-for="(char, index) in $t('agentMonitor.workQueued')" :key="index" 
+                        :style="{ animationDelay: `${index * 0.1}s` }"
+                        class="thinking-char"
+                    >{{ char === ' ' ? '\u00A0' : char }}
+                    </div>
+                    <p>{{ $t('agentMonitor.workStarted') }}</p>
+                </div>
+                <div v-else>
+                    <h3>{{ $t('agentMonitor.noWorkInProgress') }}</h3>
+                    <p>{{ $t('agentMonitor.workStarted') }}</p>
+                </div>
+            </div>
+
             <!-- 로딩 상태 -->
             <div v-if="isLoading" class="feedback-loading">
                 <div class="loading-spinner"></div>
@@ -223,7 +239,7 @@ export default {
 
             selectedAgent: {
                 agent: '',
-                agentMode: 'none',
+                agentMode: 'draft',
                 orchestration: null,
             },
         }
@@ -345,6 +361,23 @@ export default {
                         eventRow: e
                     })
                 } else if (event_type === 'human_checked') {
+                    const content = data.data;
+                    taskMap.set(jobId, {
+                        id,
+                        jobId,
+                        goal: data?.goal || 'Task',
+                        name: data?.name || '',
+                        role: data?.role || 'Agent',
+                        crewType: crew_type || 'default',
+                        startTime: timestamp,
+                        isCompleted: true,
+                        outputRaw: data || null,
+                        content: content || null,
+                        isCrewCompleted: false,
+                        agentProfile: data?.agent_profile,
+                        isHumanAsked: false,
+                        taskDescription: data?.message || null
+                    })
                     this.handleHumanCheckedEvent(e);
                 }
             })
@@ -404,13 +437,13 @@ export default {
             return usageMap
         },
         isQueued() {
-            // 유효한 orchestration 값 목록 생성
-            const validOrchs = this.orchestrationOptions.map(o => o.value)
+            // 유효한 orchestration 값이 있는지 확인
+            const validOrch = this.todoStatus.agent_orch !== null && this.todoStatus.agent_orch !== '';
             // 시작 직후(첫 이벤트 이전)에도 대기 문구가 뜨도록 hasReceivedEvent 조건 제거
             return this.todoStatus &&
                 this.todoStatus.status === 'IN_PROGRESS' &&
-                (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') &&
-                validOrchs.includes(this.todoStatus.agent_orch)
+                (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') && 
+                validOrch;
         },
         timeline() {
             const taskItems = this.tasks.map(task => ({ type: 'task', time: task.startTime, payload: task }));
@@ -1306,6 +1339,7 @@ export default {
                     newVal.agentMode = newVal.agentMode.toUpperCase();
                 }
             }
+            this.selectedAgent = newVal;
             this.selectOrchestrationMethod(newVal);
             await this.startTask(newVal);
         },
@@ -1614,4 +1648,31 @@ export default {
     border: none;
     background: white;
 }
+
+.empty-state {
+    text-align: center;
+    padding: 0px;
+    background: white;
+    margin-top: 12px;
+    overflow: auto;
+}
+
+.empty-state .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.empty-state h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1d2129;
+    margin: 0 0 8px 0;
+}
+
+.empty-state p {
+    font-size: 14px;
+    color: #606770;
+    margin: 0;
+}
+
 </style>
