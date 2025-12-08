@@ -204,6 +204,7 @@ export default {
 
             selectedAgent: null,
             agentType: null,
+            agentAlias: null,
         }
     },
     computed: {
@@ -228,14 +229,16 @@ export default {
             handler(newVal) {
                 if (newVal && newVal.id) {
                     this.agentType = newVal.agentType;
+                    this.agentAlias = newVal.alias;
                     this.activity.agent = newVal.id;
                     if (this.agentType !== 'agent') {
-                        this.activity.orchestration = this.agentType;
+                        this.activity.orchestration = this.agentAlias;
                     } else {
                         this.activity.orchestration = 'crewai-action';
                     }
                 } else {
                     this.agentType = null;
+                    this.agentAlias = null;
                 }
             }
         },
@@ -266,6 +269,7 @@ export default {
                             name: agent.username,
                             isAgent: agent.is_agent,
                             agentType: agent.agent_type,
+                            alias: agent.alias,
                         };
                     }
                 }
@@ -278,6 +282,7 @@ export default {
                         name: agent.username,
                         isAgent: agent.is_agent,
                         agentType: agent.agent_type,
+                        alias: agent.alias,
                     };
                 }
             }

@@ -180,6 +180,7 @@ export default {
                         description: member.description,
                         isAgent: member.is_agent,
                         agentType: member.agent_type,
+                        alias: member.alias,
                     };
                 });
             } else {
@@ -193,6 +194,7 @@ export default {
                         description: agent.description,
                         isAgent: agent.is_agent,
                         agentType: agent.agent_type,
+                        alias: agent.alias,
                     };
                 });
             }

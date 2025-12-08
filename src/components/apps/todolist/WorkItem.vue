@@ -960,6 +960,11 @@ export default {
                     this.selectedTab = firstAvailableTab.value;
                 }
             }
+            if(newTab == 'agent-monitor') {
+                if(this.selectedAgent.agentMode == 'none') {
+                    this.selectedAgent.agentMode = 'draft';
+                }
+            }
         },
         currentRunningResearchMethod(newValue) {
             // currentRunningResearchMethod가 있으면 agent-monitor 탭으로 변경
@@ -1965,7 +1970,7 @@ export default {
 
             if (newVal && newVal.agentMode) {
                 if (newVal.agentMode === 'none') return;
-                if (newVal.agentMode === 'default') {
+                if (newVal.orchestration === 'default') {
                     this.beforeGenerateExample(null);
                     return;
                 } else {

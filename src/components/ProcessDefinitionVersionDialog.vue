@@ -345,8 +345,11 @@ export default {
         open: {
             async handler(newVal) {
                 if (newVal) {
-                    await this.load();
+                    // 먼저 다이얼로그를 띄운 뒤, 비동기로 load() 실행
                     this.isOpen = true;
+                    this.$nextTick(() => {
+                        this.load();
+                    });
                 } else {
                     // 다이얼로그 닫을 때 ID 생성 관련 상태 초기화
                     this.isOpen = false;
