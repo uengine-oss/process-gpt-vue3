@@ -19,7 +19,7 @@
             반응형으로 가득차게 만들기 위해 v-container, v-row, v-col을 사용하고,
             내부 div의 스타일을 제거하여 가로로 가득차게 만듦
         -->
-        <div class="marketplace-scroll-area">
+        <div class="marketplace-scroll-area" @scroll="handleScroll">
             <v-row class="ma-0 pa-0 pl-4 pr-4 pt-4">
                 <v-col cols="12" class="pa-0">
                     <div class="d-flex align-center flex-fill border border-borderColor rounded-pill px-5 w-100">
@@ -142,6 +142,25 @@
                         {{ $t('ProcessDefinitionMarketPlace.allTemplates') }}
                     </v-card-title>
                     
+                    <!-- 초기 로딩 중 스켈레톤 카드 -->
+                    <v-row v-if="isLoading && definitionList.length === 0" dense class="pa-0 ma-0 pl-2 pr-2">
+                        <v-col v-for="n in limit" :key="'skeleton-initial-' + n" cols="12" sm="6" md="4" class="mb-4 pa-2">
+                            <v-card variant="outlined" class="skeleton-card">
+                                <v-skeleton-loader type="image"></v-skeleton-loader>
+                                <div class="pa-2">
+                                    <v-skeleton-loader type="heading" class="mb-2"></v-skeleton-loader>
+                                    <v-skeleton-loader type="text" class="mb-4"></v-skeleton-loader>
+                                    <v-divider class="my-4"></v-divider>
+                                    <div class="d-flex align-center">
+                                        <v-skeleton-loader type="text" style="width: 100px;"></v-skeleton-loader>
+                                        <v-spacer></v-spacer>
+                                        <v-skeleton-loader type="button" class="skeleton-button-rounded"></v-skeleton-loader>
+                                    </div>
+                                </div>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+                    
                     <v-row dense class="pa-0 ma-0 pl-2 pr-2">
                         <v-col v-for="definition in definitionList" :key="definition.id" cols="12" sm="6" md="4" class="mb-4 pa-2">
                             <!-- 카테고리 표시 -->
@@ -198,6 +217,25 @@
                                             {{ definition.isImported ? $t('ProcessDefinitionMarketPlace.addedButton') : $t('ProcessDefinitionMarketPlace.addButton') }}
                                         </v-btn>
                                     </v-row>
+                                </div>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+                    
+                    <!-- 추가 로딩 중 스켈레톤 카드 -->
+                    <v-row v-if="loadingMore" dense class="pa-0 ma-0 pl-2 pr-2">
+                        <v-col v-for="n in limit" :key="'skeleton-' + n" cols="12" sm="6" md="4" class="mb-4 pa-2">
+                            <v-card variant="outlined" class="skeleton-card">
+                                <v-skeleton-loader type="image"></v-skeleton-loader>
+                                <div class="pa-2">
+                                    <v-skeleton-loader type="heading" class="mb-2"></v-skeleton-loader>
+                                    <v-skeleton-loader type="text" class="mb-4"></v-skeleton-loader>
+                                    <v-divider class="my-4"></v-divider>
+                                    <div class="d-flex align-center">
+                                        <v-skeleton-loader type="text" style="width: 100px;"></v-skeleton-loader>
+                                        <v-spacer></v-spacer>
+                                        <v-skeleton-loader type="button" class="skeleton-button-rounded"></v-skeleton-loader>
+                                    </div>
                                 </div>
                             </v-card>
                         </v-col>
@@ -285,7 +323,11 @@ export default {
         searchKeyword: '',
         isSearching: false,
         searchResults: [],
-        searchTimeout: null
+        searchTimeout: null,
+        offset: 0,
+        limit: 12,
+        hasMore: true,
+        loadingMore: false
     }),
     async mounted() {
         await this.getDefinitionList();
@@ -313,10 +355,28 @@ export default {
         }
     },
     methods: {
-        async getDefinitionList() {
-            this.isLoading = true;
+        async getDefinitionList(reset = true) {
+            if (reset) {
+                this.isLoading = true;
+                this.offset = 0;
+                this.definitionList = [];
+                this.hasMore = true;
+            } else {
+                this.loadingMore = true;
+            }
+            
             try {
-                const list = await backend.listMarketplaceDefinition();
+                const list = await backend.listMarketplaceDefinition(undefined, false, this.limit, this.offset);
+                
+                if (!Array.isArray(list)) {
+                    console.error('마켓플레이스 정의를 가져오는 중 오류 발생: list가 배열이 아닙니다');
+                    return;
+                }
+                
+                if (list.length < this.limit) {
+                    this.hasMore = false;
+                }
+                
                 const promises = list.map(async (definition) => {
                     const result = await backend.getRawDefinition(definition.id);
                     let isImported = false;
@@ -324,10 +384,8 @@ export default {
                         isImported = true;
                     }
                     
-                    // 태그 중복 제거 및 공백 처리
                     let tags = [];
                     if (definition.tags) {
-                        // 쉼표로 구분된 태그를 분리하고 중복 제거
                         const tagSet = new Set();
                         definition.tags.split(',').forEach(tag => {
                             const trimmedTag = tag.trim();
@@ -345,11 +403,10 @@ export default {
                     };
                 });
                 
-                // 모든 비동기 작업이 완료될 때까지 기다림
                 const definitions = await Promise.all(promises);
-                this.definitionList = definitions;
+                this.definitionList = [...this.definitionList, ...definitions];
+                this.offset += this.limit;
                 
-                // 데이터 로딩 완료 후 첫 번째 탭 선택 (중복 보장)
                 if (this.categories.length > 0) {
                     this.selectedTab = this.categories[0];
                 }
@@ -357,6 +414,19 @@ export default {
                 console.error('마켓플레이스 정의를 가져오는 중 오류 발생:', error);
             } finally {
                 this.isLoading = false;
+                this.loadingMore = false;
+            }
+        },
+        async loadMoreDefinitions() {
+            if (!this.hasMore || this.loadingMore || this.isLoading) return;
+            await this.getDefinitionList(false);
+        },
+        handleScroll(event) {
+            const element = event.target;
+            const scrollBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
+            
+            if (scrollBottom === 0 && !this.loadingMore && this.hasMore && !this.isLoading && this.selectedTag === 'all') {
+                this.loadMoreDefinitions();
             }
         },
         async importDefinition(definition) {
@@ -614,5 +684,15 @@ export default {
 }
 
 @media only screen and (max-width: 600px) {
+}
+
+.skeleton-card {
+    overflow: hidden;
+}
+
+.skeleton-button-rounded :deep(.v-skeleton-loader__button) {
+    border-radius: 24px !important;
+    width: 80px;
+    height: 32px;
 }
 </style>
