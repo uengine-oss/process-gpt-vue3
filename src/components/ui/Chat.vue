@@ -665,7 +665,7 @@
                             </v-col>
                         </div>
                     </perfect-scrollbar>
-                    <div v-if="!definitionMapOnlyInput" :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
+                    <div v-if="!definitionMapOnlyInput" style="position:relative; z-index: 9999;">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
                                 <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">

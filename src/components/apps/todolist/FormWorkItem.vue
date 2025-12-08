@@ -311,7 +311,6 @@ export default {
         this.EventBus.on('form-html-updated', async (data) => {
             if (data && Object.keys(data).length > 0) {
                 const updatedHtml = await this.updateFormHtmlWithChipValues(data);
-                
                 // HTML 업데이트
                 if (updatedHtml !== this.html) {
                     this.html = updatedHtml;
@@ -803,7 +802,7 @@ export default {
                         
                         // chip group을 text-field 아래에 추가
                         // data 속성으로 값을 저장하고, 나중에 JavaScript로 렌더링
-                        const chipGroupHtml = `<div class="text-field-chip-group" data-field-name="${escapedKey}" data-chip-values='${chipValuesJson.replace(/'/g, '&#39;')}' style="margin-bottom: 16px;"></div>`;
+                        const chipGroupHtml = `<div style="font-size: 12px; color: #666; margin-top: 4px;">선택 옵션: </div><div class="text-field-chip-group" data-field-name="${escapedKey}" data-chip-values='${chipValuesJson.replace(/'/g, '&#39;')}' style="margin-bottom: 16px;"></div>`;
                         
                         // 원래 태그가 self-closing이었는지 확인
                         const isSelfClosing = closing.trim() === '/>' || closing.trim().startsWith('/>');

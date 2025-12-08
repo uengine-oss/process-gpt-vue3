@@ -882,7 +882,6 @@ class ProcessGPTBackend implements Backend {
         try {
             await storage.delete(`todolist/${taskId}`, { key: 'id' });
         } catch (error) {
-            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -896,7 +895,6 @@ class ProcessGPTBackend implements Backend {
             }
             return null;
         } catch (error) {
-            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -1127,6 +1125,7 @@ class ProcessGPTBackend implements Backend {
      */
     async getProcessDefinitionMap() {
         try {
+            const isPal = window.$pal;
             const options = {
                 match: {
                     key: 'proc_map',
@@ -1146,13 +1145,17 @@ class ProcessGPTBackend implements Backend {
                     }
                 };
                 renameLabels(procMap.value);
-                const usePermissions = await this.checkUsePermissions();
-                const role = localStorage.getItem('role');
-                if (role == 'superAdmin' || !usePermissions) {
-                    return procMap.value;
+                if (isPal) {
+                    const usePermissions = await this.checkUsePermissions();
+                    const role = localStorage.getItem('role');
+                    if (role == 'superAdmin' || !usePermissions) {
+                        return procMap.value;
+                    } else {
+                        const filteredMap = await this.filterProcDefMap(procMap.value);
+                        return filteredMap;
+                    }
                 } else {
-                    const filteredMap = await this.filterProcDefMap(procMap.value);
-                    return filteredMap;
+                    return procMap.value;
                 }
             }
             return {};
@@ -1165,6 +1168,7 @@ class ProcessGPTBackend implements Backend {
 
     async putProcessDefinitionMap(editedMap: any) {
         try {
+            const isPal = window.$pal;
             const options = {
                 match: {
                     key: 'proc_map',
@@ -1174,7 +1178,7 @@ class ProcessGPTBackend implements Backend {
             const procMapId = await storage.getString('configuration', options);
             let updatedProcMap: any = null;
             const role = localStorage.getItem('role');
-            if (role !== 'superAdmin') {
+            if (role !== 'superAdmin' && isPal) {
                 const existingProcMap = await storage.getObject('configuration', options);
                 const usePermissions = await this.checkUsePermissions();
                 if (usePermissions) {
@@ -3269,18 +3273,26 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async listMarketplaceDefinition(tagOrKeyword?: string, isSearch: boolean = false) {
+    async listMarketplaceDefinition(tagOrKeyword?: string, isSearch: boolean = false, limit?: number, offset: number = 0) {
         try {
             const options = {
                 orderBy: 'import_count',
                 sort: 'desc',
             }
-            const list = await storage.list('proc_def_marketplace', options);
+            
+            const allList = await storage.list('proc_def_marketplace', options);
+            
+            if (!Array.isArray(allList)) {
+                console.error('storage.list가 배열을 반환하지 않았습니다:', allList);
+                return [];
+            }
+            
+            let list = allList;
             
             // 검색 기능이 활성화된 경우
             if (isSearch && tagOrKeyword && tagOrKeyword.trim() !== '') {
                 const keyword = tagOrKeyword.toLowerCase().trim();
-                return list.filter(item => {
+                list = list.filter(item => {
                     // 이름, 작성자, 태그 검색
                     const nameMatch = item.name && item.name.toLowerCase().includes(keyword);
                     const authorMatch = item.author_name && item.author_name.toLowerCase().includes(keyword);
@@ -3297,16 +3309,24 @@ class ProcessGPTBackend implements Backend {
             }
             // 태그 필터링
             else if (tagOrKeyword && tagOrKeyword !== 'all') {
-                return list.filter(item => {
+                list = list.filter(item => {
                     if (!item.tags) return false;
                     const tags = item.tags.split(',').map((t: string) => t.trim());
                     return tags.includes(tagOrKeyword);
                 });
             }
             
+            // 페이지네이션 적용
+            if (limit !== undefined) {
+                const start = offset;
+                const end = offset + limit;
+                return list.slice(start, end);
+            }
+            
             return list;
         } catch (error) {
-            throw new Error(error.message);
+            console.error('❌ [백엔드] listMarketplaceDefinition 오류:', error);
+            return [];
         }
     }
 
