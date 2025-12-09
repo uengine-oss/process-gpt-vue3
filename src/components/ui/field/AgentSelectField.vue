@@ -277,9 +277,9 @@ export default {
             if (this.activity.agent.includes(',')) {
                 const agents = this.activity.agent.split(',');
                 for (const agentId of agents) {
-                    const agent = this.defaultSetting.getAgentById(agentId);
+                    let agent = this.defaultSetting.getAgentById(agentId);
                     if (!agent) {
-                        agent = await this.backend.getAgent(agentId);
+                        agent = await this.backend.getUserById(agentId);
                     }
                     if (agent) {
                         this.selectedAgent = {
@@ -293,7 +293,11 @@ export default {
                     }
                 }
             } else {
-                const agent = await this.backend.getAgent(this.activity.agent);
+                const agentId = this.activity.agent;
+                let agent = this.defaultSetting.getAgentById(agentId);
+                if (!agent) {
+                    agent = await this.backend.getUserById(agentId);
+                }
                 if (agent) {
                     this.selectedAgent = {
                         ...agent,
