@@ -331,9 +331,7 @@ export default {
         },
         isShowInstances() {
             if (!this.pal && !this.JMS) {
-                if (this.instanceItem.length > 0 && !this.instanceItem[0].disable) {
-                    return true;
-                }
+                return true;
             }
             return false;
         },

@@ -95,6 +95,7 @@ export default {
             orchestration: 'crewai-action',
         },
         instId: '',
+        isInitialized: false, // 초기화 완료 플래그
 
         generator: null,
     }),
@@ -112,8 +113,9 @@ export default {
     watch: {
         agentInfo: {
             async handler(newVal, oldVal) {
-                if (newVal) {
-                    if (newVal.id !== oldVal.id) {
+                if (newVal && this.isInitialized) {
+                    // oldVal이 유효하고 id가 다를 때만 실행 (초기 로드 제외)
+                    if (oldVal && oldVal.id && newVal.id !== oldVal.id) {
                         await this.init();
                         this.selectedAgent = {
                             agent: newVal.id,
@@ -170,6 +172,9 @@ export default {
         if (this.tabs.length === 0) {
             await this.addNewTab();
         }
+        
+        // 초기화 완료 플래그 설정
+        this.isInitialized = true;
     },
     methods: {
         uuid() {
@@ -213,7 +218,7 @@ export default {
                         const workItem = await backend.getWorkItem(workItemRef.taskId);
                         if (workItem) {
                             const tabId = this.uuid();
-                            const tabTitle = workItem.activity_name || workItem.worklist.description || workItem.worklist.query || `새 대화 ${this.tabCounter++}`;
+                            const tabTitle = workItem.activity.name || workItem.worklist.description || workItem.worklist.query || `새 대화 ${this.tabCounter++}`;
                             
                             this.tabs.push({
                                 id: tabId,
