@@ -336,7 +336,7 @@
 
                                                 <!-- markdown message -->
                                                 <div v-else-if="(message.contentType && message.contentType == 'markdown') || (message.role == 'system' && !message.contentType)" 
-                                                    :class="agentMessage ? 'agent-message' : 'other-message'"
+                                                    :class="agentMessage || message.role == 'system' ? 'agent-message' : 'other-message'"
                                                 >
                                                     <div v-html="renderedMarkdown(message.content, filteredMessages.length - 1 == index && isLoading)" 
                                                         class="markdown-content pl-3 py-2"
@@ -2471,7 +2471,6 @@ pre {
   position: relative;
   max-width: 100%;
   margin-bottom: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
 }
 
 .my-message {
@@ -2483,11 +2482,12 @@ pre {
 .other-message {
   margin-right: auto;
   border-radius: 8px !important;
+  background-color: #f5f5f5 !important;
 }
 
 .agent-message {
   margin-right: auto;
-  background-color: #ffffff !important;
+  background-color: transparent !important;
   border-radius: 8px !important;
 }
 
