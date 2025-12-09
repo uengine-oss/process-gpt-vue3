@@ -645,6 +645,11 @@ hr {
     border-radius: 8px;
 }
 
+.process-instance-chat-skeleton-loader .v-skeleton-loader__image {
+    height: calc(100vh - 280px);
+    border-radius: 8px;
+}
+
 .agent-field-skeleton .v-skeleton-loader__image {
     border-radius: 10px !important;
     height: 40vh !important;

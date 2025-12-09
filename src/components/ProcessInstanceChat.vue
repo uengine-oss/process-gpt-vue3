@@ -1,12 +1,19 @@
 <template>
     <div style="background-color: rgba(255, 255, 255, 0); width: 100%;">
-        <Chat :messages="messages" :agentInfo="agentInfo"
+        <v-skeleton-loader
+            v-if="messages.length === 0"
+            type="image"
+            class="mx-auto process-instance-chat-skeleton-loader"
+        ></v-skeleton-loader>
+        
+        <Chat v-else :messages="messages" :agentInfo="agentInfo"
             :userInfo="userInfo" :disableChat="disableChat"
             :type="'instances'" :name="chatName" 
             :chatRoomId="chatRoomId" :hideInput="!isTaskMode"
             @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
             @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
-            ref="chatComponent">
+            ref="chatComponent"
+        >
             <template v-slot:custom-title>
                 <div></div>
             </template>
@@ -58,7 +65,6 @@
                                 </div>
                             </v-sheet>
                         </template>
-
                     </div>
                 </div>
                 <!-- feedback -->
