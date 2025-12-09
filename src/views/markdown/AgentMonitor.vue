@@ -830,6 +830,16 @@ export default {
                 if (error) throw error;
                 
                 if (data) {
+                    // timestamp가 같을 때 task_started가 task_completed보다 먼저 오도록 정렬
+                    data.sort((a, b) => {
+                        const timeCompare = new Date(a.timestamp) - new Date(b.timestamp);
+                        if (timeCompare !== 0) return timeCompare;
+                        
+                        // timestamp가 같으면 event_type으로 정렬 (task_started < task_completed)
+                        if (a.event_type === 'task_started' && b.event_type === 'task_completed') return -1;
+                        if (a.event_type === 'task_completed' && b.event_type === 'task_started') return 1;
+                        return 0;
+                    });
                     // final_report_merge가 포함된 job_id에 대한 상세 로그 (DB에서 가져온 데이터)
                     data.forEach(row => {
                         if (row.job_id && row.job_id.includes('final_report_merge')) {
