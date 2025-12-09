@@ -81,12 +81,14 @@ export const useDefaultSetting = defineStore({
             "computer-use": {
                 "url": "http://computer-use:8000/mcp",
                 "type": "http",
-                "enabled": true
+                "enabled": true,
+                "is_default": true
             },
             "claude-skills": {
                 "url": "http://claude-skills:8765/mcp",
                 "type": "http",
-                "enabled": true
+                "enabled": true,
+                "is_default": true
             }
         }
     }),
