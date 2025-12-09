@@ -541,18 +541,8 @@ export default {
     methods: {
         onBpmnLoadStart() {
             this.isBpmnLoading = true;
-            if (this.bpmnLoadingTimer) {
-                clearTimeout(this.bpmnLoadingTimer);
-            }
-            this.bpmnLoadingTimer = setTimeout(() => {
-                this.isBpmnLoading = false;
-            }, 1000);
         },
         onBpmnLoadEnd() {
-            if (this.bpmnLoadingTimer) {
-                clearTimeout(this.bpmnLoadingTimer);
-                this.bpmnLoadingTimer = null;
-            }
             this.isBpmnLoading = false;
         },
         updateCurrentStep(){
@@ -1006,8 +996,12 @@ export default {
         handleShown() {
             console.log('diagram shown');
         },
+        handleBpmnShown() {
+            this.onBpmnLoadEnd();
+        },
         handleBpmnDone() {
             this.setDefinition();
+            this.onBpmnLoadEnd();
         },
         handleLoading() {
             console.log('diagram loading');
