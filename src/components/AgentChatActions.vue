@@ -268,8 +268,12 @@ export default {
                 this.currentTabIndex = this.tabs.length - 1;
                 
                 let agentOrch = 'crewai-action';
-                if (this.agentInfo?.agent_type !== 'agent') {
+                if (this.agentInfo?.agent_type === 'pgagent') {
                     agentOrch = this.agentInfo?.alias;
+                } else if (this.agentInfo?.agent_type === 'a2a') {
+                    agentOrch = this.agentInfo?.alias;
+                } else {
+                    agentOrch = 'crewai-action';
                 }
                 // 새 워크아이템 생성
                 const newWorkItem = await this.createWorkItem({
