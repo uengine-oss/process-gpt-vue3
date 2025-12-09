@@ -234,10 +234,12 @@ export default {
                     this.agentType = newVal.agentType;
                     this.agentAlias = newVal.alias;
                     this.activity.agent = newVal.id;
-                    if (this.agentType !== 'agent') {
-                        this.activity.orchestration = this.agentAlias;
-                    } else if (this.agentType === 'agent' && (this.activity.orchestration === null || this.activity.orchestration === '')) {
+                    if (this.agentType === 'agent' && (this.activity.orchestration === null || this.activity.orchestration === '')) {
                         this.activity.orchestration = 'crewai-action';
+                    } else if (this.agentType === 'pgagent') {
+                        this.activity.orchestration = this.agentAlias;
+                    } else if (this.agentType === 'a2a') {
+                        this.activity.orchestration = this.agentType;
                     }
                 } else {
                     this.agentType = null;

@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10">
-        <AppBaseCard :customMenuName="agentInfo.username">
+        <AppBaseCard>
             <template v-slot:leftpart="{ closeDrawer }">
                 <AgentChatInfo 
                     :agentInfo="agentInfo" 
@@ -74,7 +74,7 @@ export default {
             profile: '/images/chat-icon.png',
             username: 'Agent',
             goal: '',
-            agent_type: 'agent',
+            agent_type: '',
             skills: '',
             tools: '',
             persona: '',
@@ -83,7 +83,7 @@ export default {
             model: '',
             is_default: false,
         },
-        activeTab: '',
+        activeTab: 'actions',
 
         // knowledge management
         knowledges: [],
