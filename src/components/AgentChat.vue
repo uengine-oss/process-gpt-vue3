@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10">
-        <AppBaseCard :customMenuName="agentInfo.username">
+        <AppBaseCard>
             <template v-slot:leftpart="{ closeDrawer }">
                 <AgentChatInfo 
                     :agentInfo="agentInfo" 
@@ -74,7 +74,7 @@ export default {
             profile: '/images/chat-icon.png',
             username: 'Agent',
             goal: '',
-            agent_type: 'agent',
+            agent_type: '',
             skills: '',
             tools: '',
             persona: '',
@@ -83,7 +83,7 @@ export default {
             model: '',
             is_default: false,
         },
-        activeTab: '',
+        activeTab: 'actions',
 
         // knowledge management
         knowledges: [],
@@ -129,13 +129,8 @@ export default {
     watch: {
         "$route": {
             async handler(newRoute, oldRoute) {
-                if (newRoute.query && newRoute.query.dmnId) {
-                    this.selectedDmnId = newRoute.query.dmnId;
-                } else {
-                    this.selectedDmnId = null;
-                }
                 if (newRoute.hash) this.activeTab = newRoute.hash.replace('#', '');
-                
+                this.selectedDmnId = null;                
                 // agent ID가 변경된 경우에만 agentInfo와 init 호출
                 if (newRoute.params.id !== oldRoute.params.id) {
                     this.agentInfo = this.defaultSetting.getAgentById(newRoute.params.id);
@@ -149,15 +144,6 @@ export default {
         },
         activeTab: {
             async handler(newVal, oldVal) {
-                // 초기 로딩이 아닌 경우에만 URL 해시 업데이트
-                // 하지만 이미 $router.push로 변경된 경우는 제외
-                if (newVal && oldVal !== '' && !this.isInitializing) {
-                    const currentHash = window.location.hash.replace('#', '');
-                    if (currentHash !== newVal) {
-                        window.location.hash = newVal;
-                    }
-                }
-                
                 const handler = this.tabHandlers?.[newVal];
                 if (handler && typeof handler.activate === 'function') {
                     await handler.activate();
@@ -186,17 +172,14 @@ export default {
         }
         // agentInfo 로드 후 탭 핸들러 재구성
         this.setupTabHandlers();
-        this.activeTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
         await this.init();
 
         this.EventBus.on('dmn-saved', async (data) => {
             this.selectedDmnId = data.id;
-            this.$router.push({ query: { dmnId: data.id }, hash: '#dmn-modeling' });
         });
 
         this.EventBus.on('dmn-deleted', () => {
             this.selectedDmnId = null;
-            this.$router.push({ query: {}, hash: '#' + this.activeTab });
         });
     },
     methods: {
@@ -284,22 +267,15 @@ export default {
             
             try {
                 let selectedTab = '';
-                if (this.$route.query && this.$route.query.dmnId) {
-                    this.selectedDmnId = this.$route.query.dmnId;
-                    selectedTab = 'dmn-modeling';
+                // URL 해시가 있으면 해당 탭으로, 없으면 기본 탭으로 설정
+                const hashTab = window.location.hash.replace('#', '');
+                
+                // 해시가 있고 유효한 탭이면 해시 우선
+                if (hashTab && this.tabHandlers && this.tabHandlers[hashTab]) {
+                    selectedTab = hashTab;
                 } else {
-                    // URL 해시가 있으면 해당 탭으로, 없으면 기본 탭으로 설정
-                    const hashTab = window.location.hash.replace('#', '');
-                    
-                    // 해시가 있고 유효한 탭이면 해시 우선
-                    if (hashTab && this.tabHandlers && this.tabHandlers[hashTab]) {
-                        selectedTab = hashTab;
-                    } else {
-                        // 해시가 없거나 유효하지 않으면 기본 탭
-                        selectedTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
-                        // 기본 탭으로 설정할 때는 해시도 업데이트 (router.push 사용)
-                        this.$router.push({ hash: '#' + selectedTab });
-                    }
+                    // 해시가 없거나 유효하지 않으면 기본 탭
+                    selectedTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
                 }
 
                 // activeTab 설정
