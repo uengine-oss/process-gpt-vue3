@@ -353,12 +353,14 @@ export default {
         if (this.$route.query.processMessage) {
             try {
                 const messageData = JSON.parse(decodeURIComponent(this.$route.query.processMessage));
-                this.handleProcessDefinitionMessage(messageData);
+                await this.handleProcessDefinitionMessage(messageData);
                 
-                // query parameter 제거
+                // query parameter 제거 (메시지 처리 완료 후)
                 this.$router.replace({ path: '/chats' });
             } catch (error) {
-                console.error('Failed to parse process message:', error);
+                console.error('ProcessDefinitionMap 메시지 처리 실패:', error);
+                // 에러 발생 시에도 query parameter는 제거
+                this.$router.replace({ path: '/chats' });
             }
         }
 
@@ -979,7 +981,7 @@ export default {
                 }
             }
         },
-        handleProcessDefinitionMessage(message) {
+        async handleProcessDefinitionMessage(message) {
             let systemChatRoom = {
                 "id": this.uuid(),
                 "name": message.chatRoomName,
@@ -998,8 +1000,38 @@ export default {
             if (systemChatRoom) {
                 // 시스템 채팅방 선택
                 this.chatRoomSelected(systemChatRoom);
-                delete message.chatRoomName
-                this.beforeSendMessage(message);
+                delete message.chatRoomName;
+                
+                if (message && (message.text != '' || (message.images && message.images.length > 0) || message.image != null)) {
+                    // 1. 메시지 객체 생성
+                    const messageObj = this.createMessageObj(message);
+                    
+                    // 2. DB에 저장
+                    this.putMessage(messageObj);
+                    
+                    // 3. UI에 즉시 표시
+                    this.messages.push(messageObj);
+                    
+                    // 4. AI 생성을 위한 설정
+                    if(!this.generator.contexts) {
+                        let contexts = await this.backend.listDefinition();
+                        this.generator.setContexts(contexts);
+                    }
+                    
+                    let instanceList = await this.backend.getAllInstanceList(); 
+                    this.generator.setWorkList(instanceList);
+                    
+                    // 5. AI 생성 시작 (sendMessage를 호출하지 않아 중복 추가 방지)
+                    this.lastSendMessage = message;
+                    if(this.ProcessGPTActive) {
+                        this.startGenerate();
+                    }
+                    
+                    // saveAccessPage 에러 무시
+                    this.backend.saveAccessPage(this.userInfo.email, 'chat:' + this.currentChatRoom.id).catch(e => {
+                        console.warn('saveAccessPage 실패:', e);
+                    });
+                }
             }
 
         },
