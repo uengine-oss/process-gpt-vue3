@@ -126,29 +126,43 @@
             >
                 <!---Avatar-->
                 <template v-slot:prepend>
-                    <v-avatar color="#f0f5f9" size="large"
-                        style="width: 50px; height: 50px; display: flex; flex-wrap: wrap;">
-                        <template v-if="chat.participants.length">
-                            <template
-                                v-if="chat.participants.filter(participant => participant.email !== userInfo.email).length === 1">
-                                <!-- 참가자가 나 이외 한 명만 있는 경우 -->
-                                <img :src="getProfile(chat.participants.find(participant => participant.email !== userInfo.email))"
-                                    :alt="chat.participants.find(participant => participant.email !== userInfo.email).username"
-                                    style="width: 100%; height: 100%; object-fit: cover;" />
+                    <div style="position: relative; display: inline-block;"
+                        class="mr-2"
+                    >
+                        <v-avatar color="#f0f5f9" size="large"
+                            style="width: 50px; height: 50px; display: flex; flex-wrap: wrap;">
+                            <template v-if="chat.participants.length">
+                                <template
+                                    v-if="chat.participants.filter(participant => participant.email !== userInfo.email).length === 1">
+                                    <!-- 참가자가 나 이외 한 명만 있는 경우 -->
+                                    <img :src="getProfile(chat.participants.find(participant => participant.email !== userInfo.email))"
+                                        :alt="chat.participants.find(participant => participant.email !== userInfo.email).username"
+                                        style="width: 100%; height: 100%; object-fit: cover;" />
+                                </template>
+                                <template v-else>
+                                    <!-- 참가자가 여러 명이며 본인을 제외한 경우 -->
+                                    <div v-for="(participant, index) in chat.participants.filter(participant => participant.email !== userInfo.email).slice(0, 4)"
+                                        :key="participant.id" style="width: 50%; height: 50%; position: relative;">
+                                        <img :src="getProfile(participant)" :alt="participant.username"
+                                            style="width: 100%; height: 100%; object-fit: cover;" />
+                                    </div>
+                                </template>
                             </template>
                             <template v-else>
-                                <!-- 참가자가 여러 명이며 본인을 제외한 경우 -->
-                                <div v-for="(participant, index) in chat.participants.filter(participant => participant.email !== userInfo.email).slice(0, 4)"
-                                    :key="participant.id" style="width: 50%; height: 50%; position: relative;">
-                                    <img :src="getProfile(participant)" :alt="participant.username"
-                                        style="width: 100%; height: 100%; object-fit: cover;" />
-                                </div>
+                                <v-icon icon="mdi-account-multiple" size="large"></v-icon>
                             </template>
-                        </template>
-                        <template v-else>
-                            <v-icon icon="mdi-account-multiple" size="large"></v-icon>
-                        </template>
-                    </v-avatar>
+                        </v-avatar>
+                        <!-- NEW 칩 표시 -->
+                        <v-chip
+                            v-if="chat.message.msg === 'NEW' || chat.participants.find(participant => participant.email == userInfo.email).isExistUnReadMessage"
+                            color="primary"
+                            variant="flat"
+                            size="x-small"
+                            style="position: absolute; top: -8px; right: -16px; font-size: 10px; height: 18px; padding: 0 6px;"
+                        >
+                            new
+                        </v-chip>
+                    </div>
                 </template>
                 <!---Name-->
                 <v-list-item-title class="text-subtitle-1 textPrimary w-100 font-weight-semibold">{{ getChatRoomName(chat) }}</v-list-item-title>
@@ -161,6 +175,7 @@
                     <span v-if="backgroundGeneratingRooms.has(chat.id)" class="generating-status">
                         <v-icon size="small" class="mr-1">mdi-dots-horizontal</v-icon>
                     </span>
+                    <span v-else-if="chat.message.msg === 'NEW'">{{ $t('chatListing.newChatRoom') }}</span>
                     <span v-else>{{ chat.message.msg }}</span>
                 </div>
                 <!---Last seen--->
@@ -168,13 +183,14 @@
                     <div :key="refreshKey">
                         <small class="textPrimary text-subtitle-2">
                             {{ formatTimeOrNow(chat.message.createdAt) }}
-                            <v-badge
+                            <!-- 기존 신규 메시지 표시를 위해 사용되던 UI -->
+                            <!-- <v-badge
                                 v-if="chat.participants.find(participant => participant.email == userInfo.email).isExistUnReadMessage"
                                 style="position: relative; top: 1.5px;" dot inline color="info">
-                            </v-badge>
+                            </v-badge> -->
                             <v-menu location="end">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" size="x-small" icon>
+                                    <v-btn v-bind="props" size="x-small" icon variant="text">
                                         <v-icon>mdi-dots-vertical</v-icon>
                                     </v-btn>
                                 </template>

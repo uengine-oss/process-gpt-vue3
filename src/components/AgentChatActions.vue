@@ -55,6 +55,10 @@
 
 <script>
 import AgentMonitor from "@/views/markdown/AgentMonitor.vue";
+import ChatGenerator from "@/components/ai/WorkItemAgentGenerator.js";
+
+import JSON5 from 'json5';
+import partialParse from 'partial-json-parser';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -90,7 +94,9 @@ export default {
             agentMode: 'draft',
             orchestration: 'crewai-action',
         },
-        instId: ''
+        instId: '',
+
+        generator: null,
     }),
     computed: {
         id() {
@@ -124,7 +130,7 @@ export default {
                         this.tabs = [];
                         this.workItemsByTab = {};
                         this.tabCounter = 1;
-                        
+
                         // 기존 워크리스트 로드하여 탭으로 표시
                         await this.loadExistingWorkItems();
                         
@@ -139,6 +145,11 @@ export default {
         }
     },
     async mounted() {
+        this.generator = new ChatGenerator(this, {
+            isStream: true,
+            preferredLanguage: "Korean",
+        });
+
         await this.init();
         if (this.agentInfo) {
             this.selectedAgent = {
@@ -202,7 +213,7 @@ export default {
                         const workItem = await backend.getWorkItem(workItemRef.taskId);
                         if (workItem) {
                             const tabId = this.uuid();
-                            const tabTitle = workItem.worklist.description || workItem.worklist.query || `새 대화 ${this.tabCounter++}`;
+                            const tabTitle = workItem.activity_name || workItem.worklist.description || workItem.worklist.query || `새 대화 ${this.tabCounter++}`;
                             
                             this.tabs.push({
                                 id: tabId,
@@ -257,8 +268,12 @@ export default {
                 this.currentTabIndex = this.tabs.length - 1;
                 
                 let agentOrch = 'crewai-action';
-                if (this.agentInfo?.agent_type !== 'agent') {
+                if (this.agentInfo?.agent_type === 'pgagent') {
                     agentOrch = this.agentInfo?.alias;
+                } else if (this.agentInfo?.agent_type === 'a2a') {
+                    agentOrch = this.agentInfo?.alias;
+                } else {
+                    agentOrch = 'crewai-action';
                 }
                 // 새 워크아이템 생성
                 const newWorkItem = await this.createWorkItem({
@@ -351,9 +366,93 @@ export default {
                 return null;
             }
         },
-        updateNewTabTitle(title) {
-            this.currentTab.title = title;
-        }
+        updateNewTabTitle(title, taskId) {
+            if (this.generator) {
+                this.generator.previousMessages = []
+                this.generator.previousMessages.push({
+                    "content": `다음 내용을 대화방 제목으로 사용할 수 있도록 요약해줘: ${title}
+결과는 {"title": "대화방 제목"} 형식으로 생성해줘.`,
+                    "role": "user"
+                });
+                this.generator.generate();
+            }
+            this.currentTab.workItemId = taskId;
+        },
+        onModelCreated(response) {
+            //
+        },
+        async onGenerationFinished(response) {
+            let jsonData = response;
+            if (typeof response == 'string') {
+                jsonData = this.extractJSON(response);
+                if(jsonData && jsonData.includes('{')){
+                    try {
+                        jsonData = JSON.parse(jsonData);
+                    } catch(e) {
+                        console.log(e)
+                        jsonData = partialParse(jsonData)
+                    }
+                } else {
+                    jsonData = null
+                }
+            }
+            if (jsonData && jsonData.title && this.currentTab) {
+                await backend.putWorkItem(this.currentTab.workItemId, {
+                    id: this.currentTab.workItemId,
+                    activity_name: jsonData.title,
+                });
+                this.currentTab.title = jsonData.title;
+            }
+        },
+        hasUnclosedTripleBackticks(inputString) {
+            // 백틱 세 개의 시작과 끝을 찾는 정규 표현식
+            const regex = /`{3}/g;
+            let match;
+            let isOpen = false;
+
+            // 모든 백틱 세 개의 시작과 끝을 찾습니다
+            while ((match = regex.exec(inputString)) !== null) {
+                // 현재 상태를 토글합니다 (열림 -> 닫힘, 닫힘 -> 열림)
+                isOpen = !isOpen;
+            }
+
+            // 마지막으로 찾은 백틱 세 개가 닫혀있지 않은 경우 true 반환
+            return isOpen;
+        },
+        extractJSON(inputString, checkFunction) {
+            try {
+                JSON5.parse(inputString); // if no problem, just return the whole thing
+                return inputString;
+            } catch (e) {}
+
+            if (this.hasUnclosedTripleBackticks(inputString)) {
+                inputString = inputString + '\n```';
+            }
+
+            // 정규 표현식 정의
+            //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
+            let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+            
+            // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
+            let match = inputString.match(regex);
+            // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
+            if (match) {
+                if (checkFunction)
+                    match.forEach((shouldBeJson) => {
+                        const lastIndex = shouldBeJson.lastIndexOf('}');
+                        const result = shouldBeJson.slice(0, lastIndex + 1);
+                        if (checkFunction(result)) return result;
+                    });
+                else return match[1];
+            } else {
+                regex = /\{[\s\S]*\}/
+                match = inputString.match(regex);
+                return match && match[0] ? match[0] : null;
+            }
+
+            // 매치된 결과가 없으면 null 반환
+            return null;
+        },
     }
 }
 </script>

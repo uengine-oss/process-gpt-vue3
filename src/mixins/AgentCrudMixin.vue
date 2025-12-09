@@ -1,8 +1,15 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { useDefaultSetting } from '@/stores/defaultSetting';
 
 export default {
     name: 'AgentCrudMixin',
+    setup() {
+        const defaultSetting = useDefaultSetting();
+        return {
+            defaultSetting
+        }
+    },
     methods: {
         /**
          * 새로운 에이전트 추가
@@ -183,10 +190,12 @@ export default {
          */
         async getAgentById(agentId) {
             try {
-                const backend = BackendFactory.createBackend();
-                const agent = await backend.getUserById(agentId);
-                
-                return agent;
+                let agent = this.defaultSetting.getAgentById(agentId);
+                if (!agent) {
+                    const backend = BackendFactory.createBackend();
+                    agent = await backend.getUserById(agentId);
+                }
+                return agent || null;
                 
             } catch (error) {
                 console.error('에이전트 조회 실패:', error);

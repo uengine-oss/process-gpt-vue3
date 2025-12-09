@@ -1236,7 +1236,7 @@ export default {
                     });
                     this.isLoading = true;
                     this.chatMessages.push({ time: new Date().toISOString(), content: content.text });
-                    this.$emit('update:new-tab-title', content.text);
+                    this.$emit('update:new-tab-title', content.text, taskId);
                     return;
                 }
             }

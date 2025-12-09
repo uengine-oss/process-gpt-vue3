@@ -234,10 +234,12 @@ export default {
                     this.agentType = newVal.agentType;
                     this.agentAlias = newVal.alias;
                     this.activity.agent = newVal.id;
-                    if (this.agentType !== 'agent') {
-                        this.activity.orchestration = this.agentAlias;
-                    } else if (this.agentType === 'agent' && (this.activity.orchestration === null || this.activity.orchestration === '')) {
+                    if (this.agentType === 'agent' && (this.activity.orchestration === null || this.activity.orchestration === '')) {
                         this.activity.orchestration = 'crewai-action';
+                    } else if (this.agentType === 'pgagent') {
+                        this.activity.orchestration = this.agentAlias;
+                    } else if (this.agentType === 'a2a') {
+                        this.activity.orchestration = this.agentType;
                     }
                 } else {
                     this.agentType = null;
@@ -275,9 +277,9 @@ export default {
             if (this.activity.agent.includes(',')) {
                 const agents = this.activity.agent.split(',');
                 for (const agentId of agents) {
-                    const agent = this.defaultSetting.getAgentById(agentId);
+                    let agent = this.defaultSetting.getAgentById(agentId);
                     if (!agent) {
-                        agent = await this.backend.getAgent(agentId);
+                        agent = await this.backend.getUserById(agentId);
                     }
                     if (agent) {
                         this.selectedAgent = {
@@ -291,7 +293,11 @@ export default {
                     }
                 }
             } else {
-                const agent = await this.backend.getAgent(this.activity.agent);
+                const agentId = this.activity.agent;
+                let agent = this.defaultSetting.getAgentById(agentId);
+                if (!agent) {
+                    agent = await this.backend.getUserById(agentId);
+                }
                 if (agent) {
                     this.selectedAgent = {
                         ...agent,
