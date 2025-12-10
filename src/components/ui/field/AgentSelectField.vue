@@ -249,9 +249,14 @@ export default {
         },
         activity: {
             deep: true,
-            handler() {
+            handler(newVal) {
+                if (newVal && newVal.agentMode === 'none') {
+                    newVal.agent = null;
+                    newVal.orchestration = null;
+                }
                 if (!this.isExecute) {
-                    this.$emit('update:modelValue', this.activity);
+                    console.log('newVal', newVal);
+                    this.$emit('update:modelValue', newVal);
                 }
             }
         }
@@ -281,7 +286,7 @@ export default {
                     if (!agent) {
                         agent = await this.backend.getUserById(agentId);
                     }
-                    if (agent) {
+                    if (agent && agent.id && agent.is_agent) {
                         this.selectedAgent = {
                             ...agent,
                             id: agent.id,
@@ -298,7 +303,7 @@ export default {
                 if (!agent) {
                     agent = await this.backend.getUserById(agentId);
                 }
-                if (agent) {
+                if (agent && agent.id && agent.is_agent) {
                     this.selectedAgent = {
                         ...agent,
                         id: agent.id,
