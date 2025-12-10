@@ -462,11 +462,11 @@ export default {
                 this.organizationItem = [
                     {
                         title: 'organizationChartDefinition.title',
-                        icon: 'users-group-rounded-line-duotone',
+                        icon: 'plus',
                         BgColor: 'primary',
                         to: '/organization',
                         disable: false,
-                        size: 20
+                        size: 12
                     },
                 ];
             }
