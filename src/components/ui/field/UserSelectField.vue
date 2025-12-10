@@ -44,6 +44,8 @@
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
 import BackendFactory from '@/components/api/BackendFactory';
 
+import { useDefaultSetting } from '@/stores/defaultSetting';
+
 export default {
     name: "UserSelectField",
 
@@ -169,19 +171,13 @@ export default {
         this.userList = await this.backend.getUserList();
 
         if(this.useAgent) {
+            // 기본 에이전트 목록 추가
+            const defaultSetting = useDefaultSetting();
+            const defaultAgentList = defaultSetting.getAgentList;
+            this.userList = [...defaultAgentList, ...this.userList];
+
             if (this.useMultiple) {
-                // 모든 유저를 선택 목록에 포함
-                this.usersToSelect = this.userList.map(member => {
-                    return {
-                        id: member.id,
-                        username: member.username,
-                        email: member.email,
-                        goal: member.goal,
-                        description: member.description,
-                        isAgent: member.is_agent,
-                        agentType: member.agent_type,
-                    };
-                });
+                this.usersToSelect = this.userList;
             } else {
                 const agentList = this.userList.filter(member => member.is_agent);
                 this.usersToSelect = agentList.map(agent => {
@@ -193,6 +189,7 @@ export default {
                         description: agent.description,
                         isAgent: agent.is_agent,
                         agentType: agent.agent_type,
+                        alias: agent.alias,
                     };
                 });
             }

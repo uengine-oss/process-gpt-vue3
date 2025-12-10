@@ -34,6 +34,7 @@
                     
                     <!-- 수정 버튼 -->
                     <v-btn 
+                        v-if="!agentInfo.is_default"
                         @click="openEditDialog"
                         variant="text"
                         :size="20"
@@ -171,9 +172,12 @@
 
                     <!-- Skills Section (agent / a2a / pgagent) -->
                     <div v-if="isSectionVisible('skills')" class="d-flex align-center pa-0 mb-1">
-                        <span class="text-body-2 font-weight-medium mr-1"> {{ $t('AgentSkills.skills') }} </span>
+                        <span class="text-body-2 font-weight-medium mr-1">
+                            <v-icon size="small" class="mr-1">mdi-brain</v-icon>
+                            {{ parsedSkills ? $t('AgentSkills.skills') : $t('agentField.agentSkills') }}
+                        </span>
                     </div>
-                    <v-chip-group v-if="isSectionVisible('skills') && !editSkills" class="mb-3">
+                    <v-chip-group v-if="isSectionVisible('skills') && !editSkills && parsedSkills && parsedSkills.length > 0" class="mb-3">
                         <v-chip
                             v-for="skill in parsedSkills"
                             :key="skill"
@@ -184,6 +188,9 @@
                             {{ skill }}
                         </v-chip>
                     </v-chip-group>
+                    <p v-else-if="isSectionVisible('skills') && !editSkills && !parsedSkills" class="text-body-2 text-medium-emphasis mb-3">
+                        {{ agentInfo.skills }}
+                    </p>
                     
                     <v-divider class="mb-4"></v-divider>
                     
@@ -379,7 +386,7 @@ export default {
         },
 
         parsedSkills() {
-            if (!this.agentInfo.skills) return [];
+            if (!this.agentInfo.skills || this.agentInfo.skills === '' || this.agentInfo.agent_type === 'pgagent') return null;
 
             if (typeof this.agentInfo.skills === 'string') {
                 if (this.agentInfo.skills.includes(',')) {
@@ -408,9 +415,11 @@ export default {
     watch: {
         agentInfo: {
             handler(newVal) {
-                // profile이 실제로 변경되었을 때만 처리
-                if (newVal.profile !== this.currentProfileUrl) {
-                    this.initializeImage();
+                if (newVal) {
+                    // profile이 실제로 변경되었을 때만 처리
+                    if (newVal.profile !== this.currentProfileUrl) {
+                        this.initializeImage();
+                    }
                 }
             },
             deep: true,
@@ -510,7 +519,7 @@ export default {
         },
 
         getCurrentAgentType() {
-            return this.agentInfo.agent_type || this.agentType || 'agent';
+            return this.agentInfo && this.agentInfo.agent_type ? this.agentInfo.agent_type : this.agentType || 'agent';
         },
 
         isSectionVisible(section) {

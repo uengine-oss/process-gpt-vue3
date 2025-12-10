@@ -269,7 +269,17 @@
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-monitor')" value="agent-monitor" class="pa-0" style="height: 100%;">
                             <!-- 워크아이템 에이전트 맡기기 -->
-                            <AgentMonitor ref="agentMonitor" :html="html" :workItem="workItem" :key="updatedDefKey" @browser-use-completed="handleBrowserUseCompleted" @update:agent-busy="updateAgentBusyState"/>
+                            <AgentMonitor 
+                                ref="agentMonitor" 
+                                :html="html" 
+                                :workItem="workItem" 
+                                :key="updatedDefKey" 
+                                :selected-agent-type="selectedAgent"
+                                @browser-use-completed="handleBrowserUseCompleted" 
+                                @update:agent-busy="updateAgentBusyState"
+                                @before-generate-example="beforeGenerateExample"
+                                @update-work-item="updateWorkItem"
+                            />
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
                             <!-- 워크아이템 에이전트 학습 -->
@@ -380,47 +390,13 @@
                                             </v-btn>
                                         </template>
                                         
-                                        <v-card min-width="400">
-                                            <!-- 진행 중인 연구 방식 표시 -->
-                                            <v-card-title v-if="currentRunningResearchMethod" class="text-subtitle-2 pa-3 bg-blue-grey-lighten-5">
-                                                <v-icon icon="mdi-circle-medium" color="primary" size="small" class="mr-1"></v-icon>
-                                                {{ $t('WorkItem.runningResearchMethod') }}: <strong class="ml-1">{{ currentRunningResearchMethod }}</strong>
-                                            </v-card-title>
-                                            
-                                            <v-list>
-                                                <v-list-item
-                                                    v-for="method in researchMethods"
-                                                    :key="method.value"
-                                                    @click="!isMethodDisabled(method) && selectResearchMethod(method.value)"
-                                                    :disabled="isMethodDisabled(method)"
-                                                    class="research-method-item"
-                                                >
-                                                    <v-list-item-title class="d-flex align-center">
-                                                        <span>{{ $t(method.label) }}</span>
-                                                        <v-chip 
-                                                            v-if="method.costKey" 
-                                                            size="x-small" 
-                                                            class="ml-2"
-                                                            :color="getCostColor(method.costKey)"
-                                                            variant="flat"
-                                                        >
-                                                            {{ $t(method.costKey) }}
-                                                        </v-chip>
-                                                    
-                                                        <!-- 각 연구 방법별 상세 정보 -->
-                                                        <div v-if="method.detailDesc" class="detail-component-enabled ml-2">
-                                                            <DetailComponent
-                                                                :title="$t(method.detailDesc.title)"
-                                                                :details="method.detailDesc.details"
-                                                            />
-                                                        </div>
-                                                    </v-list-item-title>
-                                                    <v-list-item-subtitle class="text-wrap">
-                                                        {{ $t(method.description) }}
-                                                    </v-list-item-subtitle>
-                                                    <v-divider class="my-1"></v-divider>
-                                                </v-list-item>
-                                            </v-list>
+                                        <v-card min-width="400" class="px-4 pt-1 pb-4">
+                                            <AgentSelectField
+                                                :model-value="selectedAgent"
+                                                :backend="backend"
+                                                :is-execute="true"
+                                                @update:model-value="updateWorkItem"
+                                            />
                                         </v-card>
                                     </v-menu>
                                     <!-- 피드백 버튼만 유지 -->
@@ -556,12 +532,12 @@ import DelegateTaskForm from '@/components/apps/todolist/DelegateTaskForm.vue';
 import exampleGenerator from '@/components/ai/WorkItemAgentGenerator.js';
 import ReworkDialog from './ReworkDialog.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
+import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
 
 import JSON5 from 'json5';
 import partialParse from 'partial-json-parser';
 import axios from 'axios';
 
-const backend = BackendFactory.createBackend();
 export default {
     props: {
         definitionId: {
@@ -605,9 +581,12 @@ export default {
         AgentFeedback,
         DelegateTaskForm,
         ReworkDialog,
-        DetailComponent
+        DetailComponent,
+        AgentSelectField
     },
-    data: () => ({    
+    data: () => ({
+        backend: null,
+
         workItem: null,
         workListByInstId: null,
         windowWidth: window.innerWidth,
@@ -760,8 +739,16 @@ export default {
                 }
             },
         ],
+
+        selectedAgent: {
+            agent: '',
+            agentMode: 'none',
+            orchestration: null,
+        },
     }),
     created() {
+        this.backend = BackendFactory.createBackend();
+
         // this.init();
         this.EventBus.on('process-definition-updated', async () => {
             this.updatedDefKey++;
@@ -973,6 +960,11 @@ export default {
                     this.selectedTab = firstAvailableTab.value;
                 }
             }
+            if(newTab == 'agent-monitor') {
+                if(this.selectedAgent.agentMode == 'none') {
+                    this.selectedAgent.agentMode = 'draft';
+                }
+            }
         },
         currentRunningResearchMethod(newValue) {
             // currentRunningResearchMethod가 있으면 agent-monitor 탭으로 변경
@@ -984,9 +976,25 @@ export default {
             async handler(newVal) {
                 if (newVal && newVal.worklist && newVal.worklist.taskId) {
                     this.loadAssigneeInfo();
-                    this.enableReworkButton = await backend.enableRework(newVal);
+                    this.enableReworkButton = await this.backend.enableRework(newVal);
                     // 에이전트 상태 초기화
                     this.checkInitialAgentBusyState();
+
+                    this.selectedAgent = {
+                        agent: newVal.worklist.endpoint || "",
+                        agentMode: newVal.worklist.agentMode.toLowerCase() || "none",
+                        orchestration: newVal.worklist.orchestration || null
+                    };
+                }
+            },
+            deep: true
+        },
+        selectedAgent: {
+            handler(newVal) {
+                if (newVal && newVal.agentMode && newVal.agentMode !== 'none') {
+                    if (newVal.orchestration === 'default') {
+                        this.beforeGenerateExample(null);
+                    }
                 }
             },
             deep: true
@@ -1248,7 +1256,7 @@ export default {
             
             const processDefinitionId = this.processDefinition ? this.processDefinition.processDefinitionId : (this.workItem?.worklist?.defId ? this.workItem.worklist.defId : null);
             const activityId = this.workItem?.activity?.tracingTag ? this.workItem.activity.tracingTag : null;
-            const form = await backend.getFormFields(null, activityId, processDefinitionId);
+            const form = await this.backend.getFormFields(null, activityId, processDefinitionId);
             const formFields = form ? form.fields_json : [];
 
             this.isGeneratingExample = true;
@@ -1378,7 +1386,7 @@ export default {
                 })
             }
             if(this.processInstance && this.processInstance.instId){
-                const instance = await backend.getInstance(this.processInstance.instId);
+                const instance = await this.backend.getInstance(this.processInstance.instId);
                 this.generator.previousMessages.push({
                     "content": "이전 작업 내역 리스트: " + JSON.stringify(instance),
                     "role": "user"
@@ -1427,12 +1435,12 @@ export default {
                 "role": "user"
             })
             
-            const userList = await backend.getUserList();
+            const userList = await this.backend.getUserList();
             this.generator.previousMessages.push({
                 "content": "유저 목록: " + JSON.stringify(userList),
                 "role": "user"
             })
-            const organization = await backend.getOrganization(`db://configuration/organization`, {key: 'key'});
+            const organization = await this.backend.getOrganization(`db://configuration/organization`, {key: 'key'});
             if(organization && organization.value){
                 this.generator.previousMessages.push({
                     "content": "회사 조직도: " + JSON.stringify(organization.value),
@@ -1574,22 +1582,22 @@ export default {
                         if (me.processDefinition && me.processDefinition.bpmn) {
                             me.bpmn = me.processDefinition.bpmn;
                         } else if (me.isSimulate == 'true') {
-                            me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
+                            me.bpmn = await this.backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
                         } else {
                             try {
-                                const execDef = await backend.getExecutionDefinition(me.definitionId);
+                                const execDef = await this.backend.getExecutionDefinition(me.definitionId);
                                 if (execDef && execDef.bpmn) {
                                     me.bpmn = execDef.bpmn;
                                 } else {
-                                    me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
+                                    me.bpmn = await this.backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
                                 }
                             } catch (e) {
-                                me.bpmn = await backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
+                                me.bpmn = await this.backend.getRawDefinition(me.definitionId, { type: 'bpmn' });
                             }
                         }
                     } else {
-                        me.workItem = await backend.getWorkItem(me.currentTaskId);
-                        me.bpmn = await backend.getRawDefinition(
+                        me.workItem = await this.backend.getWorkItem(me.currentTaskId);
+                        me.bpmn = await this.backend.getRawDefinition(
                             me.workItem.worklist.defId,
                             {
                                 type: 'bpmn',
@@ -1598,7 +1606,7 @@ export default {
                             }
                         );
                         if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
-                        me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
+                        me.workListByInstId = await this.backend.getWorkListByInstId(me.workItem.worklist.instId);
                         
                         let tmp = {}
                         tmp[me.workItem?.activity?.tracingTag] = "Running"
@@ -1616,8 +1624,8 @@ export default {
                     }
 
                     if(me.workItem.worklist && me.workItem.worklist.instId) {
-                        me.taskStatus = await backend.getActivitiesStatus(me.workItem.worklist.instId);
-                        me.processInstance = await backend.getInstance(me.workItem.worklist.instId);
+                        me.taskStatus = await this.backend.getActivitiesStatus(me.workItem.worklist.instId);
+                        me.processInstance = await this.backend.getInstance(me.workItem.worklist.instId);
                     }
 
                     if (me.mode == 'ProcessGPT' && !me.pal) {
@@ -1635,7 +1643,7 @@ export default {
             var me = this;
             if(!me.workItem || !me.workItem.activity) return;
             if (me.workItem && me.workItem.worklist && me.workItem.activity && !me.workItem.activity.inParameterContexts) {
-                const refForms = await backend.getRefForm(me.workItem.worklist.taskId);
+                const refForms = await this.backend.getRefForm(me.workItem.worklist.taskId);
                 refForms.forEach((refForm) => {
                     const tabName = `${me.$t('WorkItem.previous')} (${refForm.name}) ${me.$t('WorkItem.inputForm')}`;
                     me.inFormNameTabs.push(tabName);
@@ -1650,7 +1658,7 @@ export default {
 
             const promises = me.workItem.activity.inParameterContexts.map(async inParameterContext => {
                 const formName = inParameterContext.variable.name; 
-                const variable = await backend.getVariableWithTaskId(
+                const variable = await this.backend.getVariableWithTaskId(
                     me.workItem.worklist.instId, 
                     me.$route.params.taskId, 
                     formName
@@ -1658,13 +1666,13 @@ export default {
                 
                 if(Array.isArray(variable)) { 
                     const itemPromises = variable.map(async (item, idx) => {
-                        const form = await backend.getRawDefinition(item.formDefId, { type: 'form' });
+                        const form = await this.backend.getRawDefinition(item.formDefId, { type: 'form' });
                         me.inFormNameTabs.push(item.subProcessLabel || `${formName}-${idx + 1}`);
                         me.inFormValues.push({'html': form, 'formData': item.valueMap});
                     });
                     await Promise.all(itemPromises);
                 } else if(variable) {
-                    const form = await backend.getRawDefinition(variable.formDefId, { type: 'form' });
+                    const form = await this.backend.getRawDefinition(variable.formDefId, { type: 'form' });
                     me.inFormNameTabs.push(variable.subProcessLabel || formName);
                     me.inFormValues.push({'html': form, 'formData': variable.valueMap});
                 }
@@ -1721,7 +1729,7 @@ export default {
                 if(window.location.pathname == '/definition-map'){
                     this.tempFormHtml = localStorage.getItem(this.formId);
                 } else {
-                    this.tempFormHtml = await backend.getRawDefinition(this.formId, { type: 'form' })
+                    this.tempFormHtml = await this.backend.getRawDefinition(this.formId, { type: 'form' })
                 }
             }
         },
@@ -1738,9 +1746,9 @@ export default {
                 context: me,
                 action: async () => {
                     try {
-                        const latestWorkItem = await backend.getWorkItem(me.workItem.worklist.taskId);
+                        const latestWorkItem = await this.backend.getWorkItem(me.workItem.worklist.taskId);
                         if (latestWorkItem && latestWorkItem.worklist.endpoint) {
-                            me.assigneeUserInfo = await backend.getUserList({
+                            me.assigneeUserInfo = await this.backend.getUserList({
                                 orderBy: 'id',
                                 startAt: latestWorkItem.worklist.endpoint,
                                 endAt: latestWorkItem.worklist.endpoint
@@ -1785,7 +1793,7 @@ export default {
                     const previousUserId = me.workItem.worklist.endpoint;
                     
                     // role_bindings 업데이트
-                    const instance = await backend.getInstance(me.workItem.worklist.instId);
+                    const instance = await this.backend.getInstance(me.workItem.worklist.instId);
                     if (instance && instance.roleBindings) {
                         const roleBindings = instance.roleBindings;
                         let updated = false;
@@ -1834,7 +1842,7 @@ export default {
                         });
 
                         if (updated) {
-                            await backend.putObject('bpm_proc_inst', {
+                            await this.backend.putObject('bpm_proc_inst', {
                                 proc_inst_id: me.workItem.worklist.instId,
                                 role_bindings: roleBindings
                             });
@@ -1843,7 +1851,7 @@ export default {
                     }
                   
                     await Promise.all([
-                        backend.updateInstanceChat(me.workItem.worklist.instId, {
+                        this.backend.updateInstanceChat(me.workItem.worklist.instId, {
                             "name": localStorage.getItem('userName'),
                             "role": "user",
                             "email": localStorage.getItem('email'),
@@ -1851,7 +1859,7 @@ export default {
                             "content": notificationMessage,
                             "timeStamp": new Date().toISOString()
                         }),
-                        backend.putWorkItem(me.workItem.worklist.taskId, {
+                        this.backend.putWorkItem(me.workItem.worklist.taskId, {
                             'user_id': userIdForBackend,
                             'username': delegateUser.username
                         })
@@ -1900,7 +1908,7 @@ export default {
                 instanceId: this.workItem.worklist.instId,
                 activityId: this.workItem.activity.tracingTag
             }
-            const result = await backend.getReworkActivities(options);
+            const result = await this.backend.getReworkActivities(options);
             if (result.reference) {
                 this.reworkActivities.reference = result.reference;
             }
@@ -1911,7 +1919,7 @@ export default {
         submitRework(activities) {
             var me = this;
             
-            backend.reWorkItem({
+            this.backend.reWorkItem({
                 instanceId: me.workItem.worklist.instId,
                 activities: activities,
                 activityId: me.workItem.activity.tracingTag
@@ -1948,6 +1956,49 @@ export default {
                 //     this.beforeGenerateExample();
                 // });
                 console.log('[WorkItem] 브라우저 유즈 완료 - 자동 초안 생성 스킵');
+            }
+        },
+
+        async updateWorkItem(newVal) {
+            const oldVal = {
+                agent: this.workItem.worklist.agent,
+                agentMode: this.workItem.worklist.agentMode,
+                orchestration: this.workItem.worklist.orchestration
+            }
+            let changed = false;
+            
+            // oldVal과 newVal 비교
+            if (newVal) {
+                if (oldVal.agent !== newVal.agent ||
+                    oldVal.agentMode !== newVal.agentMode ||
+                    oldVal.orchestration !== newVal.orchestration) {
+                    changed = true;
+                }
+            }
+
+            if (!changed) return;
+
+            if (newVal && newVal.agentMode) {
+                if (newVal.agentMode === 'none') return;
+                if (newVal.orchestration === 'default') {
+                    this.beforeGenerateExample(null);
+                    return;
+                } else {
+                    newVal.agentMode = newVal.agentMode.toUpperCase();
+                }
+            }
+
+            // 탭을 agent-monitor로 변경
+            this.selectedTab = 'agent-monitor';
+                
+            // AgentMonitor가 렌더링될 때까지 대기
+            await this.$nextTick();
+            
+            // AgentMonitor의 메서드 호출
+            if (this.$refs.agentMonitor) {
+                this.$refs.agentMonitor.selectOrchestrationMethod(newVal);
+                // startTask 호출
+                await this.$refs.agentMonitor.startTask(newVal);
             }
         }
     }

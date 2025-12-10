@@ -9,7 +9,7 @@
 
                     <DetailComponent class="ml-2"
                         :title="$t('ProcessDefinitionVersionDialog.versionDescriptionTitle')"
-                        :details="versionHelpDetails"
+                        :details="displayVersionHelpDetails"
                     />
                     <v-spacer></v-spacer>
                     <v-btn @click="close()" icon variant="text" density="comfortable"
@@ -274,6 +274,15 @@ export default {
         isPal() {
             return window.$pal;
         },
+        // PAL 모드에서는 최적화(helpOptimize) 항목을 숨기기 위한 헬프 목록
+        displayVersionHelpDetails() {
+            if (this.isPal) {
+                return this.versionHelpDetails.filter(
+                    (item) => item.title !== 'ProcessDefinitionVersionDialog.helpOptimize'
+                );
+            }
+            return this.versionHelpDetails;
+        },
     },
     watch: {
         useOptimize: {
@@ -345,8 +354,11 @@ export default {
         open: {
             async handler(newVal) {
                 if (newVal) {
-                    await this.load();
+                    // 먼저 다이얼로그를 띄운 뒤, 비동기로 load() 실행
                     this.isOpen = true;
+                    this.$nextTick(() => {
+                        this.load();
+                    });
                 } else {
                     // 다이얼로그 닫을 때 ID 생성 관련 상태 초기화
                     this.isOpen = false;

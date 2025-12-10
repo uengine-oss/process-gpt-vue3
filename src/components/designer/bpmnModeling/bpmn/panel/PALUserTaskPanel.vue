@@ -99,10 +99,16 @@ export default {
     },
     data() {
         return {
-            copyUengineProperties: null,
+            // GPTUserTaskPanel.vue 와 동일하게, 최초에 props 로부터 복사본 생성
+            copyUengineProperties: JSON.parse(JSON.stringify(this.uengineProperties)),
             copyDefinition: null,
             backend: null,
-            activity: {},
+            activity: {
+                description: '',
+                checkpoints: [''],
+                attachments: [],
+                taskLink: ''
+            },
             formId: '',
             tempFormHtml: '',
             activeTab: 'setting',
@@ -110,20 +116,36 @@ export default {
         };
     },
     created() {
-        var me = this;
         this.backend = BackendFactory.createBackend();
-    },
-    async mounted() {
-        let me = this;
-        me.copyUengineProperties = JSON.parse(JSON.stringify(this.uengineProperties));
-        if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
+
+        // processDefinition 에서 기본값 설정 (GPT 패널과 동일한 패턴)
+        if (this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
             const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
             if (activity) {
-                this.activity = activity;
+                this.activity = { ...this.activity, ...activity };
             } else {
                 console.log('Activity not found');
             }
         }
+
+        // copyUengineProperties 로 덮어쓰기 (편집된 최신 내용 우선)
+        if (this.copyUengineProperties) {
+            if (this.copyUengineProperties.description !== undefined) {
+                this.activity.description = this.copyUengineProperties.description;
+            }
+            if (this.copyUengineProperties.checkpoints !== undefined) {
+                this.activity.checkpoints = this.copyUengineProperties.checkpoints;
+            }
+            if (this.copyUengineProperties.attachments !== undefined) {
+                this.activity.attachments = this.copyUengineProperties.attachments;
+            }
+            if (this.copyUengineProperties.taskLink !== undefined) {
+                this.activity.taskLink = this.copyUengineProperties.taskLink;
+            }
+        }
+    },
+    async mounted() {
+        let me = this;
         await me.init();
     },
     computed: {
@@ -179,7 +201,23 @@ export default {
             me.copyDefinition = me.definition;
         },
         async beforeSave() {
-            var me = this;
+            const me = this;
+
+            // GPTUserTaskPanel.vue 와 동일하게, 체크포인트가 모두 비어 있으면 빈 배열로 정규화
+            if (me.activity && me.activity.checkpoints && me.activity.checkpoints.join() === '') {
+                me.activity.checkpoints = [];
+            }
+
+            // PAL 패널에서 사용하는 필드만 uengineProperties 에 반영
+            // (기존에 존재하던 값은 그대로 두고, PAL 관련 필드만 최신값으로 덮어씀)
+            me.copyUengineProperties = {
+                ...(me.copyUengineProperties || {}),
+                description: me.activity ? me.activity.description : undefined,
+                checkpoints: me.activity ? me.activity.checkpoints : undefined,
+                attachments: me.activity ? me.activity.attachments : undefined,
+                taskLink: me.activity ? me.activity.taskLink : undefined,
+            };
+
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },
         onTextChange(text) {

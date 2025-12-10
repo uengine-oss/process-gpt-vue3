@@ -316,6 +316,16 @@ export default {
                 if (me.currentInfo && me.currentInfo.shortDescription && me.currentInfo.shortDescription.text) {
                     me.lists[me.currentIndex].message = me.currentInfo.shortDescription.text;
                 }
+
+                // BUGFIX: 다른 버전들도 클릭하지 않아도 설명이 보이도록, XML을 로드해서 message를 미리 채워준다.
+                for (let i = 0; i < me.lists.length - 1; i++) {
+                    const xml = await me.loadXMLOfVer(me.lists[i].version);
+                    me.lists[i].xml = xml;
+                    if (me.currentInfo && me.currentInfo.shortDescription && me.currentInfo.shortDescription.text) {
+                        me.lists[i].message = me.currentInfo.shortDescription.text;
+                    }
+                }
+
                 me.isOpen = true;
             } else {
                 me.$try({

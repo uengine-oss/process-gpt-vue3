@@ -336,7 +336,7 @@
 
                                                 <!-- markdown message -->
                                                 <div v-else-if="(message.contentType && message.contentType == 'markdown') || (message.role == 'system' && !message.contentType)" 
-                                                    :class="agentMessage ? 'agent-message' : 'other-message'"
+                                                    :class="agentMessage || message.role == 'system' ? 'agent-message' : 'other-message'"
                                                 >
                                                     <div v-html="renderedMarkdown(message.content, filteredMessages.length - 1 == index && isLoading)" 
                                                         class="markdown-content pl-3 py-2"
@@ -665,17 +665,17 @@
                             </v-col>
                         </div>
                     </perfect-scrollbar>
-                    <div v-if="!definitionMapOnlyInput" :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
+                    <div v-if="!definitionMapOnlyInput" style="position:relative; z-index: 9999;">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
-                                <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
+                                <!-- <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
                                             style="width:30px; height:30px;" :disabled="disableChat">
                                             <Icons :icon="'document'" :size="20" />
                                         </v-btn>
                                     </template>
-                                </v-tooltip>
+                                </v-tooltip> -->
                                 <!-- <v-tooltip v-if="isMobile" :text="$t('chat.camera')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
@@ -940,14 +940,14 @@
                                     :title="$t('chat.helpTitle')"
                                     :details="chatDocumentHelpDetails"
                                 />
-                                <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
+                                <!-- <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
                                             style="width:30px; height:30px;" :disabled="disableChat || isGenerationFinished">
                                             <Icons :icon="'document'" :size="20" />
                                         </v-btn>
                                     </template>
-                                </v-tooltip>
+                                </v-tooltip> -->
                                 <!-- <v-tooltip v-if="isMobile" :text="$t('chat.camera')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
@@ -2471,7 +2471,6 @@ pre {
   position: relative;
   max-width: 100%;
   margin-bottom: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
 }
 
 .my-message {
@@ -2483,11 +2482,12 @@ pre {
 .other-message {
   margin-right: auto;
   border-radius: 8px !important;
+  background-color: #f5f5f5 !important;
 }
 
 .agent-message {
   margin-right: auto;
-  background-color: #ffffff !important;
+  background-color: transparent !important;
   border-radius: 8px !important;
 }
 
