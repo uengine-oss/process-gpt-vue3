@@ -668,14 +668,14 @@
                     <div v-if="!definitionMapOnlyInput" style="position:relative; z-index: 9999;">
                         <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
-                                <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
+                                <!-- <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
                                             style="width:30px; height:30px;" :disabled="disableChat">
                                             <Icons :icon="'document'" :size="20" />
                                         </v-btn>
                                     </template>
-                                </v-tooltip>
+                                </v-tooltip> -->
                                 <!-- <v-tooltip v-if="isMobile" :text="$t('chat.camera')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
@@ -940,14 +940,14 @@
                                     :title="$t('chat.helpTitle')"
                                     :details="chatDocumentHelpDetails"
                                 />
-                                <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
+                                <!-- <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
                                             style="width:30px; height:30px;" :disabled="disableChat || isGenerationFinished">
                                             <Icons :icon="'document'" :size="20" />
                                         </v-btn>
                                     </template>
-                                </v-tooltip>
+                                </v-tooltip> -->
                                 <!-- <v-tooltip v-if="isMobile" :text="$t('chat.camera')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
