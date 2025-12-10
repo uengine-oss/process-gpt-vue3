@@ -288,24 +288,7 @@ export default {
                         taskDescription: data?.task_description || null
                     })
                     // console.log('[AgentMonitor] 생성된 task 객체:', taskMap.get(jobId))
-                } else if (event_type === 'task_working') {
-                    taskMap.set(jobId, {
-                        id,
-                        jobId,
-                        goal: data?.goal || 'Task',
-                        name: data?.name || '',
-                        role: data?.role || 'Agent',
-                        crewType: crew_type || 'default',
-                        startTime: timestamp,
-                        isCompleted: false,
-                        outputRaw: data || null,
-                        content: data || null,
-                        isCrewCompleted: false,
-                        agentProfile: data?.agent_profile,
-                        isHumanAsked: false,
-                        taskDescription: data?.task_description || null
-                    })
-                }  else if (event_type === 'task_completed' && taskMap.has(jobId)) {
+                } else if (event_type === 'task_completed' && taskMap.has(jobId)) {
                     const task = taskMap.get(jobId)
                     task.isCompleted = true
                     task.outputRaw = data || null
@@ -411,14 +394,14 @@ export default {
                 .slice()
                 .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
                 .forEach(e => {
-                    const { event_type, data, job_id, id } = e
+                    const { event_type, data, job_id, id, crew_type } = e
                     const jobId = job_id || data?.job_id || id
                     if (!usageMap[jobId]) usageMap[jobId] = []
 
                     if (event_type === 'tool_usage_started') {
                         usageMap[jobId].push({
-                            tool_name: data.tool_name,
-                            query: data.query,
+                            tool_name: data.tool_name || crew_type,
+                            query: data.query || null,
                             info: null,
                             status: 'searching'
                         })
@@ -428,10 +411,17 @@ export default {
                         for (let i = list.length - 1; i >= 0; i--) {
                             if (list[i].tool_name === data.tool_name && list[i].status === 'searching') {
                                 list[i].status = 'done'
-                                list[i].info = data.info
+                                list[i].info = data.info || data.message || null
                                 break
                             }
                         }
+                    } else if (event_type === 'task_working') {
+                        usageMap[jobId].push({
+                            tool_name: crew_type,
+                            query: data.query || null,
+                            info: data.info || data.message || null,
+                            status: 'done'
+                        })
                     }
                 })
             return usageMap
@@ -824,7 +814,7 @@ export default {
                     .from('events')
                     .select('*')
                     .eq('todo_id', taskId)
-                    .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked', 'human_response', 'error', 'human_checked'])
+                    .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked', 'human_response', 'error', 'human_checked', 'task_working'])
                     .order('timestamp', { ascending: true });
 
                 if (error) throw error;
@@ -876,6 +866,7 @@ export default {
             try {
                 const validEventTypes = [
                     'task_started',
+                    'task_working',
                     'task_completed',
                     'crew_completed',
                     'tool_usage_started',
@@ -899,8 +890,7 @@ export default {
                         }
 
                         const isValidEvent = !this.events.some(e => e.id === id) && validEventTypes.includes(event_type) && todoId === taskId;
-                        // console.log('todostatus', this.todoStatus);
-
+                        
                         if (isValidEvent) {
                             // === task_completed인 경우 data 없을 때 fallback 재조회 ===
                             if (event_type === 'task_completed' && (!row.data || Object.keys(row.data).length === 0)) {

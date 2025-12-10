@@ -985,7 +985,6 @@ export default {
                         agentMode: newVal.worklist.agentMode.toLowerCase() || "none",
                         orchestration: newVal.worklist.orchestration || null
                     };
-                    console.log(this.selectedAgent);
                 }
             },
             deep: true
