@@ -39,6 +39,7 @@ import customPopupMenu from './customPopupMenu';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import '@/components/autoLayout/bpmn-auto-layout.js';
+import { markRaw } from 'vue';
 
 
 const backend = BackendFactory.createBackend();
@@ -49,6 +50,19 @@ WARNING = 0,
 
 export default {
     name: 'bpmn-uengine',
+    emits: [
+        'closePDFDialog',
+        'error',
+        'shown',
+        'openDefinition',
+        'loading',
+        'openPanel',
+        'updateXml',
+        'definition',
+        'addShape',
+        'done',
+        'changeElement'
+    ],
     props: {
         url: {
             type: String
@@ -141,7 +155,7 @@ export default {
         if (this.bpmn) {
             this.diagramXML = this.bpmn;
         } else {
-            this.diagramXML = '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <bpmn:extensionElements> <uengine:properties> </uengine:properties> </bpmn:extensionElements> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>';
+            this.diagramXML = '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <uengine:ProcessVariables id="ProcessVariables_1"> <uengine:ProcessVariable key="variable1" value="value1"/> <uengine:ProcessVariable key="variable2" value="value2"/> </uengine:ProcessVariables> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>'
         }
         // if (this.mode == 'uEngine') {
         this.bpmnViewer.importXML(this.diagramXML);
@@ -383,30 +397,65 @@ export default {
                         height: viewbox.height + 100
                     });
                 }
-                
-                eventBus.on('shape.added', async function (event) {
-                    const element = event.element;
-                    const businessObject = element.businessObject;
-
-                    if (businessObject.extensionElements) {
-                        businessObject.extensionElements.values[0].json = '{}';
-                    }
-
-
-                    try {
-                        let xml = await self.getXML;
-                        // console..log(xml);
-                        self.extendUEngineProperties(element);
-                    } catch (error) {
-                        alert(error);
-                    }
-                });
                 // you may hook into any of the following events
                 if (self.isViewMode) {
+                    const elementRegistry = self.bpmnViewer.get('elementRegistry');
+                    const overlays = self.bpmnViewer.get('overlays');
+                    
+                    const callActivities = elementRegistry.filter(element => element.type === 'bpmn:CallActivity');
+                    
+                    callActivities.forEach(element => {
+                        const businessObject = element.businessObject;
+                        if (businessObject.extensionElements && businessObject.extensionElements.values && businessObject.extensionElements.values.length > 0) {
+                            const json = businessObject.extensionElements.values[0].json;
+                            if (json) {
+                                try {
+                                    const properties = JSON.parse(json);
+                                    if (properties.definitionId) {
+                                        const html = document.createElement('div');
+                                        html.className = 'call-activity-link-btn';
+                                        html.style.cssText = 'cursor: pointer; width: 20px; height: 20px; background: #fff; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+                                        html.innerHTML = '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: #333;"></i>';
+                                        
+                                        html.addEventListener('click', function(e) {
+                                            e.stopPropagation(); // Prevent element selection
+                                            window.open(`/definitions/${properties.definitionId.replace('.bpmn', '')}`, '_blank');
+                                        });
+
+                                        overlays.add(element.id, {
+                                            position: {
+                                                top: -10,
+                                                right: -10
+                                            },
+                                            html: html
+                                        });
+                                    }
+                                } catch (err) {
+                                    console.error('Failed to parse CallActivity properties', err);
+                                }
+                            }
+                        }
+                    });
+
                     eventBus.on('element.dblclick', function (e) {
                         // self.openPanel = true;
                         if (e.element.type.includes('CallActivity')) {
                             self.$emit('openDefinition', e.element.businessObject);
+                        } else if (e.element.type.includes('Collaboration')) {
+                            const businessObject = e.element.businessObject;
+                            if (businessObject.extensionElements && businessObject.extensionElements.values && businessObject.extensionElements.values.length > 0) {
+                                const json = businessObject.extensionElements.values[0].json;
+                                if (json) {
+                                    try {
+                                        const properties = JSON.parse(json);
+                                        if (properties.definitionId) {
+                                            window.open(`/definitions/${properties.definitionId.replace('.bpmn', '')}`, '_blank');
+                                        }
+                                    } catch (err) {
+                                        console.error('Failed to parse CallActivity properties', err);
+                                    }
+                                }
+                            }
                         } else {
                             self.$emit('openPanel', e.element.id);
                         }
@@ -417,8 +466,6 @@ export default {
                         self.$emit('openPanel', e.element.id);
                     });
                 }
-
-
                 
                 eventBus.on('commandStack.changed', async function (evt) {
                     console.log('commandStack.changed');
@@ -512,7 +559,7 @@ export default {
                     },
                     self.options
                 );
-                self.bpmnViewer = new BpmnModeler(viewerOptions);
+                self.bpmnViewer = markRaw(new BpmnModeler(viewerOptions));
             } else {
                 var _options = Object.assign(
                     {
@@ -539,7 +586,7 @@ export default {
                         ]
                     },
                 );
-                self.bpmnViewer = new BpmnModeler(_options);
+                self.bpmnViewer = markRaw(new BpmnModeler(_options));
             }
             
             self.bpmnStore = useBpmnStore();

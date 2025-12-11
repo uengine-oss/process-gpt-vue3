@@ -362,6 +362,7 @@ export default {
         currentActivities: [],
         validationList: {},
         // definitionPath: null
+        options: {},
 
         bpmnKey: 0,
     }),

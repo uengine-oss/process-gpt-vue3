@@ -69,6 +69,16 @@
                                 </v-select>
                             </v-chip>
                         </div>
+                        <v-btn 
+                            v-if="isAdmin"
+                            @click="openDeleteDialog(item)" 
+                            icon
+                            variant="text"
+                            size="small"
+                            class="ml-2"
+                        >
+                            <v-icon color="error">mdi-delete</v-icon>
+                        </v-btn>
                     </div>
                 </template>
             </v-data-table>
@@ -103,6 +113,52 @@
             <v-card-text class="pa-0" max-height="500" style="overflow-y: auto;">
                 <InviteUserCard @close="closeInviteUserCard" type="manageAccess" :userList="users" />
             </v-card-text>
+        </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="deleteDialog" max-width="500px">
+        <v-card>
+            <v-row class="ma-0 pa-4 pb-0 align-center">
+                <v-card-title class="pa-0"
+                >{{ $t('accountTab.confirmDeleteTitle') }}
+                </v-card-title>
+                <v-spacer></v-spacer>
+                <v-btn @click="closeDeleteDialog"
+                    class="ml-auto" 
+                    variant="text" 
+                    density="compact"
+                    icon
+                >
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </v-row>
+            <v-card-text class="pa-4">
+                <p class="text-subtitle-1 mb-4">
+                    {{ $t('accountTab.confirmDeleteMessage', { name: deleteTargetUser ? deleteTargetUser.name : '' }) }}
+                </p>
+                <p class="text-body-2 text-grey-darken-1 mb-2">
+                    {{ $t('accountTab.confirmDeleteInstruction') }}
+                </p>
+                <v-text-field
+                    v-model="confirmName"
+                    :placeholder="deleteTargetUser ? deleteTargetUser.name : ''"
+                    variant="outlined"
+                    density="comfortable"
+                    hide-details
+                    autofocus
+                ></v-text-field>
+            </v-card-text>
+
+            <v-row class="ma-0 pa-4 pr-2">
+                <v-spacer></v-spacer>
+                <v-btn @click="confirmDelete"
+                    :disabled="!isDeleteEnabled"
+                    color="error"
+                    variant="flat"
+                    class="rounded-pill"
+                >{{ $t('accountTab.delete') }}
+                </v-btn>
+            </v-row>
         </v-card>
     </v-dialog>
 </template>
@@ -141,7 +197,19 @@ export default {
             { title: 'Action', key: 'action', sortable: false, align: 'end' }
         ],
         openInviteUserCard: false,
+        deleteDialog: false,
+        deleteTargetUser: null,
+        confirmName: '',
     }),
+    computed: {
+        isAdmin() {
+            const isAdmin = localStorage.getItem('isAdmin') == 'true';
+            return isAdmin;
+        },
+        isDeleteEnabled() {
+            return this.confirmName === (this.deleteTargetUser ? this.deleteTargetUser.name : '');
+        }
+    },
     async mounted() {
         this.checkIfMobile();
         window.addEventListener('resize', this.checkIfMobile);
@@ -176,11 +244,64 @@ export default {
             }
             await backend.updateUserInfo({ type: 'update', user: userInfo });
         },
+        async deleteUserFromOrganization(userId) {
+            const orgData = await backend.getData('configuration', { match: { key: 'organization' } });
+            
+            if (orgData && orgData.value && orgData.value.chart) {
+                const deleteNode = (children) => {
+                    if (!children) return children;
+                    
+                    return children.filter(item => {
+                        if (item.id === userId) {
+                            return false;
+                        }
+                        if (item.children && item.children.length > 0) {
+                            item.children = deleteNode(item.children);
+                        }
+                        return true;
+                    });
+                };
+                
+                orgData.value.chart.children = deleteNode(orgData.value.chart.children);
+                
+                const putObj = {
+                    key: 'organization',
+                    value: orgData.value,
+                    uuid: orgData.uuid
+                };
+                
+                await backend.putObject('configuration', putObj);
+                this.EventBus.emit('user-deleted', userId);
+            }
+        },
         async deleteUser(user) {
-            await backend.updateUserInfo({ type: 'delete', user: user });
+            await this.$try({
+                action: async () => {
+                    await backend.updateUserInfo({ type: 'delete', user: user });
+                    this.users = this.users.filter(u => u.id !== user.id);
+                    await this.deleteUserFromOrganization(user.id);
+                },
+                successMsg: this.$t('accountTab.deleteUserSuccess', { name: user.name }),
+                errorMsg: this.$t('accountTab.deleteUserFailed', { name: user.name })
+            });
         },
         checkIfMobile() {
             this.isMobile = window.innerWidth <= 768;
+        },
+        openDeleteDialog(user) {
+            this.deleteTargetUser = user;
+            this.deleteDialog = true;
+        },
+        closeDeleteDialog() {
+            this.deleteDialog = false;
+            this.deleteTargetUser = null;
+            this.confirmName = '';
+        },
+        async confirmDelete() {
+            if (this.deleteTargetUser) {
+                await this.deleteUser(this.deleteTargetUser);
+                this.closeDeleteDialog();
+            }
         }
     }
 };

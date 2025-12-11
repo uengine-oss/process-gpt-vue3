@@ -457,6 +457,9 @@ export default {
         // 에이전트가 진행 중이거나 대기열에 있는 상태
         isAgentBusy() {
             return this.isQueued || this.timeline.length > 0 || this.isLoading;
+        },
+        isDraftBrowserUseMode() {
+            return this.todoStatus && this.todoStatus.draft && this.todoStatus.agent_orch === 'browser-automation-agent' && this.todoStatus.agent_mode === 'DRAFT' && this.todoStatus.draft_status === 'COMPLETED';
         }
     },
     watch: {
@@ -1114,19 +1117,25 @@ export default {
             }
         },
         async fetchTodoStatus() {
+            var me = this;
             const taskId = this.validateTaskId();
             if (!taskId) return;
 
             try {
                 const { data, error } = await window.$supabase
                     .from('todolist')
-                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer')
+                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer, draft')
                     .eq('id', taskId)
                     .single();
 
                 if (error) throw error;
 
                 this.todoStatus = data;
+                if(this.isDraftBrowserUseMode) {
+                    Object.values(data.draft).forEach(function draftData(draft) {
+                        me.EventBus.emit('form-values-updated', draft); 
+                    });
+                }
                 this.isLoading = ['STARTED', 'FB_REQUESTED'].includes(data.draft_status);
                 this.isCancelled = data.draft_status === 'CANCELLED';
 

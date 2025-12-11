@@ -52,6 +52,16 @@
                     @update:modelValue="(newVal) => activity = newVal"
                     class="mb-4"
                 ></AgentSelectField>
+                
+                <v-divider class="mb-4"></v-divider>
+                
+                <!-- Custom Properties (Key-Value) -->
+                <KeyValueField
+                    v-model="activity.customProperties"
+                    :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
+                    :readonly="isViewMode"
+                    class="mb-4"
+                ></KeyValueField>
             </v-window-item>
 
             <!-- Input Data -->
@@ -111,6 +121,7 @@ import Instruction from '@/components/designer/InstructionField.vue';
 import Checkpoints from '@/components/designer/CheckpointsField.vue';
 import Description from '@/components/designer/DescriptionField.vue';
 import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
+import KeyValueField from '@/components/designer/KeyValueField.vue';
 
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
@@ -124,7 +135,8 @@ export default {
         Checkpoints,
         Description,
         FormDefinition,
-        AgentSelectField
+        AgentSelectField,
+        KeyValueField
     },
     props: {
         uengineProperties: Object,
@@ -154,7 +166,8 @@ export default {
                 agentMode: 'none',
                 orchestration: null,
                 tool: '',
-                inputData: []
+                inputData: [],
+                customProperties: []
             },
             formId: '',
             tempFormHtml: '',
@@ -192,6 +205,7 @@ export default {
             if (this.copyUengineProperties.attachments !== undefined) this.activity.attachments = this.copyUengineProperties.attachments;
             if (this.copyUengineProperties.inputData !== undefined) this.activity.inputData = this.copyUengineProperties.inputData;
             if (this.copyUengineProperties.tool !== undefined) this.activity.tool = this.copyUengineProperties.tool;
+            if (this.copyUengineProperties.customProperties !== undefined) this.activity.customProperties = this.copyUengineProperties.customProperties;
         }
 
         if (this.activity.inputData) {
@@ -326,6 +340,9 @@ export default {
             if (me.tempFormHtml && me.tempFormHtml != '') {
                 if (me.lastPath) {
                     if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
+                        if(me.formId == 'defaultform') {
+                            me.formId = me.element.id + '_form';
+                        }
                         localStorage.setItem(me.formId, me.tempFormHtml);
                     } else {
                         await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
@@ -351,7 +368,8 @@ export default {
                 orchestration: me.activity.orchestration,
                 attachments: me.activity.attachments,
                 inputData: me.activity.inputData,
-                tool: me.activity.tool
+                tool: me.activity.tool,
+                customProperties: me.activity.customProperties
             };
 
             me.$emit('update:uengineProperties', me.copyUengineProperties);
