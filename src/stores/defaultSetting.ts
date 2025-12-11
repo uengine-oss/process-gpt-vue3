@@ -6,13 +6,13 @@ export const useDefaultSetting = defineStore({
         agentList: [
             {
                 "id": "973c62b9-4a53-f793-b91e-6c151edbb0f0",
-                "username": "기본 에이전트",
+                "username": "기본 LLM",
                 "profile": "/images/chat-icon.png",
                 "email": null,
                 "role": "",
                 "goal": "",
                 "persona": "",
-                "description": "기본 에이전트",
+                "description": "기본 AI 모델을 사용한 빠른 초안 생성. ex) 기본 문서 작성, 간단한 분석 (1~3분 소요)",
                 "tools": "",
                 "skills": null,
                 "is_agent": true,
@@ -20,7 +20,8 @@ export const useDefaultSetting = defineStore({
                 "endpoint": "",
                 "agent_type": "pgagent",
                 "alias": "default",
-                "is_default": true
+                "is_default": true,
+                "is_hidden": true
             },
             {
                 "id": "8e9df0ec-142b-3ba3-518b-b49395592187",
@@ -30,7 +31,7 @@ export const useDefaultSetting = defineStore({
                 "role": "",
                 "goal": "",
                 "persona": "",
-                "description": "GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결",
+                "description": "GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 (3~10분 소요)",
                 "tools": "",
                 "skills": null,
                 "is_agent": true,
