@@ -17,7 +17,7 @@
         "reworkRequested": "Rework has been requested."
     },
     "errorMsg": {
-        "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
+        "isBackendConnected": "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
         "languageChangeFailed": "Failed to change language settings."
     },
     "App": {
@@ -37,17 +37,17 @@
     "headerMenu": {
         "sidebar": "Sidebar",
         "dashboard": "Dashboard",
-        "todoList" : "My Task List",
-        "schedule" : "Scheduler",
+        "todoList": "My Task List",
+        "schedule": "Scheduler",
         "calendar": "Calendar",
         "layoutSetting": "Layout Setting",
-        "admin" : "Admin Page",
-        "setting" : "Setting",
+        "admin": "Admin Page",
+        "setting": "Setting",
         "search": "Search",
         "searchResult": "Search Result",
         "searchKeyword": "Enter the keyword you want to search for and press enter.",
         "noSearchResult": "No search results found.",
-        "pricing" : "Pricing Information"
+        "pricing": "Pricing Information"
     },
     "DashboardTodoList": {
         "todo": "My Task List",
@@ -645,7 +645,15 @@
         "selectForm": "Select Form to Reference",
         "noFormSelected": "Sel  ect a form to reference",
         "instruction": "Instruction",
-        "scriptVariable": "Variables used in the script must be defined in the process variables."
+        "scriptVariable": "Variables used in the script must be defined in the process variables.",
+        "customProperties": "Custom Properties"
+    },
+    "KeyValueField": {
+        "add": "Add",
+        "key": "Key",
+        "value": "Value",
+        "noItems": "No items registered.",
+        "duplicateKey": "Duplicate Key."
     },
     "PDFPreviewer": {
         "saveDocument": "Save PDF",
@@ -886,11 +894,11 @@
         "operationReferenceTitle": "An operation reference is a reference that designates the operation to be performed to process a specific message.",
         "operationReferenceSubTitle": "It defines the actions or business logic that should be executed when the message arrives. In BPMN, an operation reference helps clarify the content of the message and the task it triggers. \nFor example, a specific operation reference may perform a database update or call an external service upon receiving the message."
     },
-    "DetailComponent" : {
+    "DetailComponent": {
         "details": "Details",
         "allDetails": "View full description"
     },
-    "SendTaskPanel" : {
+    "SendTaskPanel": {
         "generation": "Generation",
         "return": "Variable to store the return value",
         "methodTypeDescriptionTitle": "Set the method (GET, POST, PUT, PATCH) to use when sending an API request and the server's endpoint URL to process the request.",
@@ -899,7 +907,7 @@
         "message": "Send Email",
         "send": "Send Rest API"
     },
-    "ScriptTaskPanel" : {
+    "ScriptTaskPanel": {
         "return": "Variable to store the return value",
         "scriptDescriptionTitle": "Script Task enables the execution of micro-level configurations or actions that are difficult to handle solely through process configuration by directly setting activities using JavaScript or Java.",
         "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list."
@@ -927,23 +935,23 @@
         "gatewayDescriptionSubTitle3": "Event-based gateway: It can only proceed to the next task when a specific event occurs.",
         "gatewayDescriptionSubTitle4": "Complex Gateway (Not Implemented): Users can add arbitrary conditions to select the next task."
     },
-    "SystemList" : {
-        "addDialogTitle" : "Add System",
+    "SystemList": {
+        "addDialogTitle": "Add System",
         "editDialogTitle": "Edit System",
-        "name" : "Name",
-        "description" : "Description",
-        "apiUrl" : "API URL",
-        "add" : "Add",
-        "edit" : "Edit"
+        "name": "Name",
+        "description": "Description",
+        "apiUrl": "API URL",
+        "add": "Add",
+        "edit": "Edit"
     },
-    "System" : {
-        "description" : "Description",
-        "edit" : "Edit",
+    "System": {
+        "description": "Description",
+        "edit": "Edit",
         "delete": "Delete",
-        "confirmDeleteTitle" : "Delete System Definition",
-        "confirmDeleteText" : "Are you sure you want to delete?"
+        "confirmDeleteTitle": "Delete System Definition",
+        "confirmDeleteText": "Are you sure you want to delete?"
     },
-    "PaletteProvider" : {
+    "PaletteProvider": {
         "undoCmdZ": "Undo (Cmd + Z)",
         "undoCtrlZ": "Undo (Ctrl + Z)",
         "RedoCmdShiftZ": "Redo (Cmd + Shift + Z)",
@@ -1824,7 +1832,7 @@
         "privacyPolicyDescription3": "The collected information will not be used for any purpose other than the delivery of services, and will be immediately destroyed once the service is completed.",
         "privacyPolicyClose": "Close"
     },
-     "DelegateTask": {
+    "DelegateTask": {
         "title": "Delegate Task",
         "delegate": "Delegate",
         "close": "Close",

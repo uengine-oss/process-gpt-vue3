@@ -58,7 +58,7 @@
                 <!-- Custom Properties (Key-Value) -->
                 <KeyValueField
                     v-model="activity.customProperties"
-                    :label="$t('BpmnPropertyPanel.customProperties') || '커스텀 속성'"
+                    :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
                     :readonly="isViewMode"
                     class="mb-4"
                 ></KeyValueField>
