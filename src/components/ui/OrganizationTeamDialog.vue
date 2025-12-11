@@ -137,7 +137,11 @@ export default {
             this.$emit('closeDialog')
         },
         update() {
-            this.$emit('updateTeam', this.dialogType, this.editNode, this.newTeam)
+            if (this.dialogType === 'edit') {
+                this.$emit('updateTeam', this.dialogType, this.editNode, this.editNode.data)
+            } else {
+                this.$emit('updateTeam', this.dialogType, this.editNode, this.newTeam)
+            }
         },
     }
 }
