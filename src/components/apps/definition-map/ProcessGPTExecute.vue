@@ -43,6 +43,7 @@
                                 :item-value="'id'"
                                 :hide-details="true"
                                 :use-agent="true"
+                                :use-multiple="true"
                             ></user-select-field>
                         </div>
                     </div>

@@ -1976,11 +1976,18 @@ export default {
                 }
             }
 
-            if (!changed) return;
+            if (!changed) {
+                this.researchMethodMenu = false;
+                return;
+            }
 
             if (newVal && newVal.agentMode) {
-                if (newVal.agentMode === 'none') return;
+                if (newVal.agentMode === 'none') {
+                    this.researchMethodMenu = false;
+                    return;
+                }
                 if (newVal.orchestration === 'default') {
+                    this.researchMethodMenu = false;
                     this.beforeGenerateExample(null);
                     return;
                 } else {
@@ -2000,6 +2007,9 @@ export default {
                 // startTask 호출
                 await this.$refs.agentMonitor.startTask(newVal);
             }
+            
+            // 메뉴 닫기
+            this.researchMethodMenu = false;
         }
     }
 };

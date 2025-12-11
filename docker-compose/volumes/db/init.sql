@@ -390,6 +390,7 @@ create table if not exists public.form_def_marketplace (
     proc_def_id text not null,
     activity_id text not null,
     html text not null,
+    fields_json jsonb null,
     author_uid text null,
     constraint form_def_marketplace_pkey primary key (uuid)
 ) tablespace pg_default;
@@ -1218,7 +1219,7 @@ alter publication supabase_realtime add table todolist;
 alter publication supabase_realtime add table bpm_proc_inst;
 alter publication supabase_realtime add table proc_def; 
 alter publication supabase_realtime add table project;
-
+alter publication supabase_realtime add table events;
 
 
 -- schedule 관련
