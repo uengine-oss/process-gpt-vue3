@@ -48,6 +48,7 @@
         "searchKeyword": "검색하고자 하는 키워드 입력 후 엔터를 눌러주세요.",
         "searching": "검색 중",
         "noSearchResult": "검색 결과가 없습니다.",
+        "agent": "에이전트",
         "pricing": "가격 정보"
     },
     "DashboardTodoList": {
